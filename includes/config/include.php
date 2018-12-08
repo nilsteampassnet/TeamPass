@@ -53,6 +53,8 @@ $mngPages = array(
     'api' => 'api.php',
     'fields' => 'fields.php',
     'defect' => 'defect.php',
+    'actions' => 'actions.php',
+    'uploads' => 'uploads.php',
 );
 
 // Utilities Pages

@@ -52,9 +52,6 @@ $('.toggle').on('toggle', function(e, active) {
         if (e.target.id == "restricted_to") {
             $("#form-item-row-restricted").removeClass('hidden');
         }
-        if (e.target.id == "ldap_mode") {
-            $("#div_ldap_configuration").show();
-        }
     } else {
         $("#"+e.target.id+"_input").val(0);
         if (e.target.id == "allow_print") {
@@ -66,57 +63,22 @@ $('.toggle').on('toggle', function(e, active) {
         if (e.target.id == "restricted_to") {
             $("#form-item-row-restricted").addClass('hidden');
         }
-        if (e.target.id == "ldap_mode") {
-            $("#div_ldap_configuration").hide();
-        }
     }
 
-    // store in DB
-    updateSetting(e.target.id, $("#"+e.target.id+"_input").val());
-});
-// .-> END. TOGGLES
-
-// <- PREPARE SELECT2
-$('.select2').select2({
-    language: '<?php echo $_SESSION['user_language_code']; ?>'
-});
-if ($('#allow_print_input').val() === '0') {
-    $("#roles_allowed_to_print_select").prop("disabled", true);
-}
-
-/**
- */
-$(document).on('change', '.form-control-sm', function() {
-    var field = $(this).attr('id'),
-        value = $(this).val();
-
-    console.log('> '+field+' -- '+value)
-    if (field === '') return false;
-
-    // prevent launch of similar query in case of doubleclick
-    if (requestRunning === true) {
-        return false;
+    var data = {
+        "field" : e.target.id,
+        "value" : $("#"+e.target.id+"_input").val(),
     }
-    requestRunning = true;
-    
+console.log(data)
     // Store in DB   
     $.post(
         "sources/admin.queries.php",
         {
             type    : "save_option_change",
-            data    : prepareExchangedData(
-                JSON.stringify({"field":field, "value":value}),
-                "encode",
-                "<?php echo $_SESSION['key']; ?>"
-            ),
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
             key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            // Force page reload in case of encryptClientServer
-            if (field === 'encryptClientServer') {
-                location.reload(true);
-                return false;
-            }
             // Handle server answer
             try {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
@@ -131,13 +93,87 @@ $(document).on('change', '.form-control-sm', function() {
                 );
                 return false;
             }
-            if (data.error == "") {
+            console.log(data)
+            if (data.error === false) {
                 showAlertify(
                     '<?php echo langHdl('saved'); ?>',
                     2,
                     'top-bottom',
                     'success'
                 );
+            }
+        }
+    );
+});
+// .-> END. TOGGLES
+
+// <- PREPARE SELECT2
+$('.select2').select2({
+    language: '<?php echo $_SESSION['user_language_code']; ?>'
+});
+
+/**
+ */
+$(document).on('change', '.form-control-sm', function() {
+    var field = $(this).attr('id'),
+        value = $(this).val();
+
+    if (field === '') return false;
+
+    // prevent launch of similar query in case of doubleclick
+    if (requestRunning === true) {
+        return false;
+    }
+    requestRunning = true;
+
+    var data = {
+        "field" : field,
+        "value" : value,
+    }
+    console.log(data)
+    
+    // Store in DB   
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type    : "save_option_change",
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            }
+            catch (e) {
+                // error
+                showAlertify(
+                    '<?php echo langHdl('server_answer_error').'<br />'.langHdl('server_returned_data').':<br />'; ?>' + data.error,
+                    0,
+                    'top-right',
+                    'error'
+                );
+                return false;
+            }
+            console.log(data)
+            if (data.error === false) {
+                showAlertify(
+                    '<?php echo langHdl('saved'); ?>',
+                    2,
+                    'top-bottom',
+                    'success'
+                );
+
+                // Force page reload in case of encryptClientServer
+                if (field === 'ldap_type') {
+                    $('.tr-ldap').each(function() {
+                        if ($(this).hasClass('tr-' + value) === false) {
+                            $(this).addClass('hidden');
+                        } else {
+                            $(this).removeClass('hidden');
+                        }
+                    });
+                }
             }
             requestRunning = false;
         }
@@ -146,14 +182,4 @@ $(document).on('change', '.form-control-sm', function() {
 
 
 
-/**
-* LDAP
-*/
-// On click on LDAP type
-$('#ldap_type').change(function() {
-    updateSetting($(this).attr("id"), $(this).val());
-    $(".setting-ldap").addClass('hidden');
-    $(".ldap-" + $(this).val()).removeClass('hidden');
-    console.log(".ldap-" + $(this).val())
-});
 </script>

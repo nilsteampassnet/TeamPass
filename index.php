@@ -483,19 +483,25 @@ if (($session_validite_pw === null
                         </a>
                         <ul class="nav-item nav-treeview">
                             <li class="nav-item">
-                                <a href="#" data-name="2fa" class="nav-link', $pageSel === ' 2fa' ? ' active' : '' ,'">
+                                <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
+                                    <i class="fas fa-check-double nav-icon"></i>
+                                    <p>'.langHdl('options').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="2fa" class="nav-link', $pageSel === '2fa' ? ' active' : '' ,'">
                                     <i class="fas fa-qrcode nav-icon"></i>
                                     <p>'.langHdl('mfa_short').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="api" class="nav-link', $pageSel === ' api' ? ' active' : '' ,'">
+                                <a href="#" data-name="api" class="nav-link', $pageSel === 'api' ? ' active' : '' ,'">
                                     <i class="fas fa-cubes nav-icon"></i>
                                     <p>'.langHdl('api').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="backups" class="nav-link', $pageSel === ' backups' ? ' active' : '' ,'">
+                                <a href="#" data-name="backups" class="nav-link', $pageSel === 'backups' ? ' active' : '' ,'">
                                     <i class="fas fa-database nav-icon"></i>
                                     <p>'.langHdl('backups').'</p>
                                 </a>
@@ -519,9 +525,9 @@ if (($session_validite_pw === null
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
-                                    <i class="fas fa-check-double nav-icon"></i>
-                                    <p>'.langHdl('options').'</p>
+                                <a href="#" data-name="uploads" class="nav-link', $pageSel === 'uploads' ? ' active' : '' ,'">
+                                    <i class="fas fa-file-upload nav-icon"></i>
+                                    <p>'.langHdl('uploads').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -531,6 +537,14 @@ if (($session_validite_pw === null
                                 </a>
                             </li>
                         </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-name="actions" class="nav-link', $pageSel === 'actions' ? ' active' : '' ,'">
+                        <i class="nav-icon fas fa-cogs"></i>
+                        <p>
+                            '.langHdl('actions').'
+                        </p>
+                        </a>
                     </li>';
     }
 
@@ -541,7 +555,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'">
-                        <i class="nav-icon fa fa-folder-open"></i>
+                        <i class="nav-icon fas fa-folder-open"></i>
                         <p>
                             '.langHdl('folders').'
                         </p>
@@ -549,7 +563,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="roles" class="nav-link', $pageSel === 'roles' ? ' active' : '' ,'">
-                        <i class="nav-icon fa fa-graduation-cap"></i>
+                        <i class="nav-icon fas fa-graduation-cap"></i>
                         <p>
                             '.langHdl('roles').'
                         </p>
@@ -557,7 +571,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="users" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'">
-                        <i class="nav-icon fa fa-users"></i>
+                        <i class="nav-icon fas fa-users"></i>
                         <p>
                             '.langHdl('users').'
                         </p>
@@ -565,7 +579,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                        <i class="nav-icon fa fa-cubes"></i>
+                        <i class="nav-icon fas fa-cubes"></i>
                         <p>
                             '.langHdl('admin_views').'
                             <i class="fas fa-angle-left right"></i>
@@ -866,6 +880,13 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
 <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
 <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
+<!-- InputMask -->
+<script src="./plugins/input-mask/jquery.inputmask.js"></script>
+<script src="./plugins/input-mask/jquery.inputmask.extensions.js"></script>
+<!-- Ion Slider -->
+<!--<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.css">
+<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.skinNice.css">
+<script src="./plugins/ionslider/ion.rangeSlider.min.js"></script>-->
     <?php
 } elseif ($pageSel === 'items') {
         ?>
@@ -948,6 +969,16 @@ if (isset($_SESSION['CPM']) === true
             include_once $SETTINGS['cpassman_dir'].'/pages/2fa.js.php';
         } elseif ($pageSel === 'api') {
             include_once $SETTINGS['cpassman_dir'].'/pages/api.js.php';
+        } elseif ($pageSel === 'backups') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/api.js.php';
+        } elseif ($pageSel === 'emails') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/emails.js.php';
+        } elseif ($pageSel === 'ldap') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/ldap.js.php';
+        } elseif ($pageSel === 'uploads') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/uploads.js.php';
+        } elseif ($pageSel === 'actions') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/actions.js.php';
         }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';

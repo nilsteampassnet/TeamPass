@@ -45,62 +45,65 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
 <script type='text/javascript'>
 //<![CDATA[
 
+    $('[data-mask]').inputmask();
+
+/**
+ * Adding a new KEY
+ */
 $(document).on('click', '#button-new-api-key', function() {
-    
-    alertify.prompt(
-        '<?php echo langHdl('adding_new_api_key'); ?>',
-        '<?php echo langHdl('label'); ?>',
-        '',
-        function(evt, value) {
-            if (value === '') {
-                return false;
-            }
+    // IS form field?
+    if ($('#new_api_key_label') === '') {
+        return false;
+    }
 
-            // Prepare data
-            var data = {
-                'label'     : value,
-                'action'    : 'add',
-            }
+    // Prepare data
+    var data = {
+        'label'     : $('#new_api_key_label').val(),
+        'action'    : 'add',
+    }
 
-            // Launch action
-            $.post(
-                'sources/admin.queries.php',
-                {
-                    type    : 'admin_action_api_save_key',
-                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key     : '<?php echo $_SESSION['key']; ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+    $('#table-api-keys').removeClass('hidden');
+    $('#api-no-keys').addClass('hidden');
 
-                    if (data.error === true) {
-                        // ERROR
-                        alertify
-                            .error(
-                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                                0
-                            )
-                            .dismissOthers();
-                    } else {
-                        $('#table-api-keys')
-                            .append(
-                                '<tr data-id("' + data.keyId + '")>' +                              
-                                '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
-                                '<td><span class="edit-api-key">' + value + '</span></td>' +
-                                '<td>' + data.key + '</td>' +
-                                '</tr>'
-                            );
-                    }
-                }
-            );
+    // Launch action
+    $.post(
+        'sources/admin.queries.php',
+        {
+            type    : 'admin_action_api_save_key',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : '<?php echo $_SESSION['key']; ?>'
         },
-        function() {
-            alertify.message('<?php echo langHdl('cancelled'); ?>', 2)
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error === true) {
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        0
+                    )
+                    .dismissOthers();
+            } else {
+                $('#table-api-keys')
+                    .append(
+                        '<tr data-id("' + data.keyId + '")>' +                              
+                        '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
+                        '<td><span class="edit-api-key">' + $('#new_api_key_label').val() + '</span></td>' +
+                        '<td>' + data.key + '</td>' +
+                        '</tr>'
+                    );
+
+                $('#new_api_key_label').val('');
+            }
         }
     );
 });
 
+/**
+ * DELETING AN EXISTING KEY
+ */
 $(document).on('click', '.delete-api-key', function() {
     var row = $(this).closest('tr'),
         keyId = row.data('id');
@@ -151,8 +154,10 @@ $(document).on('click', '.delete-api-key', function() {
     }
 });
 
+/**
+ * EDITING THE LABEL OF A KEY
+ */
 var oldLabel;
-
 $(document).on('click', '.edit-api-key', function() {
     var cell = $(this).closest('td');
     oldLabel = $(this).html();
@@ -218,61 +223,182 @@ $(document).on('click', '#new-api-key-cancel', function() {
 
 
 $(document).on('click', '#button-new-api-ip', function() {
-    
-    alertify.prompt(
-        '<?php echo langHdl('adding_new_api_ip'); ?>',
-        '<?php echo langHdl('label'); ?>',
-        '',
-        function(evt, value) {
-            if (value === '') {
-                return false;
-            }
+    if ($('#new_api_ip_value').val() === '' || $('#new_api_ip_label').val() === '') {
+        alertify
+            .error(
+                '<i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('fields_with_mandatory_information_are_missing'); ?>',
+                3
+            )
+            .dismissOthers();
+        return false;
+    }
 
-            $('#table-api-ip').removeClass('hidden');
+    // Prepare data
+    var data = {
+        'label'     : $('#new_api_ip_label').val(),
+        'ip'        : $('#new_api_ip_value').val(),
+        'action'    : 'add',
+    }
 
-            // Prepare data
-            var data = {
-                'label'     : value,
-                'action'    : 'add',
-            }
+    $('#table-api-ips').removeClass('hidden');
+    $('#api-no-ips').addClass('hidden');
 
-            // Launch action
-            $.post(
-                'sources/admin.queries.php',
-                {
-                    type    : 'admin_action_api_save_ip',
-                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key     : '<?php echo $_SESSION['key']; ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-
-                    if (data.error === true) {
-                        // ERROR
-                        alertify
-                            .error(
-                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                                0
-                            )
-                            .dismissOthers();
-                    } else {
-                        $('#table-api-keys')
-                            .append(
-                                '<tr data-id("' + data.keyId + '")>' +                              
-                                '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
-                                '<td><span class="edit-api-key">' + value + '</span></td>' +
-                                '<td>' + data.key + '</td>' +
-                                '</tr>'
-                            );
-                    }
-                }
-            );
+    // Launch action
+    $.post(
+        'sources/admin.queries.php',
+        {
+            type    : 'admin_action_api_save_ip',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : '<?php echo $_SESSION['key']; ?>'
         },
-        function() {
-            alertify.message('<?php echo langHdl('cancelled'); ?>', 2)
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error === true) {
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        0
+                    )
+                    .dismissOthers();
+            } else {
+                $('#table-api-ips')
+                    .append(
+                        '<tr data-id="' + data.ipId + '">' +                              
+                        '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
+                        '<td><span class="edit-api-ip pointer" data-field="label">' + $('#new_api_ip_label').val() + '</span></td>' +
+                        '<td><span class="edit-api-ip pointer" data-field="value">' + $('#new_api_ip_value').val() + '</span></td>' +
+                        '</tr>'
+                    );
+
+                $('#new_api_ip_label, #new_api_ip_value').val('');
+            }
         }
     );
+});
+
+/**
+ * DELETING AN EXISTING IP
+ */
+$(document).on('click', '.delete-api-ip', function() {
+    var row = $(this).closest('tr'),
+        ipId = row.data('id');
+
+    if (ipId !== '') {
+        // Confirm
+        alertify
+            .confirm(
+                '<?php echo langHdl('warning'); ?>',
+                '<?php echo langHdl('please_confirm_deletion'); ?>',
+                function() {
+                    // Prepare data
+                    var data = {
+                        'id'     : ipId,
+                        'action'    : 'delete',
+                    }
+
+                    // Launch action
+                    $.post(
+                        'sources/admin.queries.php',
+                        {
+                            type    : 'admin_action_api_save_ip',
+                            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key     : '<?php echo $_SESSION['key']; ?>'
+                        },
+                        function(data) {
+                            //decrypt data
+                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                            if (data.error === true) {
+                                // ERROR
+                                alertify
+                                    .error(
+                                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                                        0
+                                    )
+                                    .dismissOthers();
+                            } else {
+                                $(row).remove();
+                            }
+                        }
+                    );
+                },
+                function() {
+
+                }
+            );
+    }
+});
+
+
+
+/**
+ * EDITING THE LABEL OF AN IP
+ */
+$(document).on('click', '.edit-api-ip', function() {
+    var cell = $(this).closest('td'),
+        field = $(this).data('field');
+    oldLabel = $(this).html();
+
+    $(this).remove();
+
+    $(cell).html(
+        '<input type="text" class="form-control new-api-ip" data-field="' + field + '">' +
+        '<button class="btn btn-default" id="new-api-ip-save"><i class="fa fa-save"></i></button>' +
+        '<button class="btn btn-default ml-2" id="new-api-ip-cancel"><i class="fa fa-times"></i></button>'
+    );
+    $('.new-api-ip').val(oldLabel);
+});
+
+$(document).on('click', '#new-api-ip-save', function() {
+    var ipId = $(this).closest('tr').data('id'),
+        label = $(this).prev('input').val(),
+        field = $(this).prev('input').data('field'),
+        cell = $(this).closest('td');
+    
+    // Prepare data
+    var data = {
+        'id'     : ipId,
+        'value'  : label,
+        'field'  : field,   
+        'action' : 'update',
+    }
+
+    // Launch action
+    $.post(
+        'sources/admin.queries.php',
+        {
+            type    : 'admin_action_api_save_ip',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error === true) {
+                $(cell).html('<span class="edit-api-ip pointer">' + oldLabel + '</span>');
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        0
+                    )
+                    .dismissOthers();
+            } else {
+                $(cell).html('<span class="edit-api-ip pointer">' + label + '</span>');
+            }
+        }
+    );
+    
+});
+
+$(document).on('click', '#new-api-ip-cancel', function() {
+
+    $(this).closest('td').html('<span class="edit-api-ip pointer">' + oldLabel + '</span>');
+
 });
     
 //]]>

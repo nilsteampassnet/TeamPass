@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Emails.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+*
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -33,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], "emails", $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'emails', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -43,59 +44,172 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], "emails", $SETTINGS) === f
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>
-
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
         <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('emails'); ?></h1>
-          </div><!-- /.col -->
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">
+                <i class="fas fa-envelope mr-2"></i><?php echo langHdl('emails'); ?>
+                </h1>
+            </div><!-- /.col -->
         </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-    
+    </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
+<section class="content">
+    <div class="container-fluid">
         <div class="row">
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
+            <div class="col-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class='card-title'><?php echo langHdl('email_configuration'); ?></h3>
+                    </div>
 
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
+                    <div class="card-body">
 
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_smtp_server'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_smtp_server' value='<?php echo isset($SETTINGS['email_smtp_server']) === true ? $SETTINGS['email_smtp_server'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_auth'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <div class='toggle toggle-modern' id='email_smtp_auth' data-toggle-on='<?php echo isset($SETTINGS['email_smtp_auth']) === true && $SETTINGS['email_smtp_auth'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='email_smtp_auth_input' value='<?php echo isset($SETTINGS['email_smtp_auth']) && $SETTINGS['email_smtp_auth'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_auth_username'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_auth_username' value='<?php echo isset($SETTINGS['email_auth_username']) === true ? $SETTINGS['email_auth_username'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_auth_pwd'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='password' class='form-control form-control-sm' id='email_auth_pwd' value='<?php echo isset($SETTINGS['email_auth_pwd']) === true ? $SETTINGS['email_auth_pwd'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_server_url'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_server_url' value='<?php echo isset($SETTINGS['email_server_url']) === true ? $SETTINGS['email_server_url'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_port'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_port' value='<?php echo isset($SETTINGS['email_port']) === true ? $SETTINGS['email_port'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_security'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <select class='form-control form-control-sm' id='email_security'>
+                                    <option value="none"<?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] == 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
+                                    <option value="ssl"<?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'ssl' ? ' selected' : ''; ?>>SSL</option>
+                                    <option value="tls"<?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'tls' ? ' selected' : ''; ?>>TLS</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_from'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_from' value='<?php echo isset($SETTINGS['email_from']) === true ? $SETTINGS['email_from'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('admin_email_from_name'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <input type='text' class='form-control form-control-sm' id='email_from_name' value='<?php echo isset($SETTINGS['email_from_name']) === true ? $SETTINGS['email_from_name'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
             </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
-            </div><!-- /.card -->
-          </div>
-          <!-- /.col-md-6 -->
         </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content -->
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class='card-title'><?php echo langHdl('email_configuration_test'); ?></h3>
+                    </div>
 
+                    <div class="card-body">
+                        <button class="btn btn-primary button" data-action="send-test-email">
+                            <?php echo langHdl('send_a_test_email'); ?>
+                        </button>
+                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                            <?php echo langHdl('admin_email_test_configuration_tip'); ?>
+                        </small>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class='card-title'><?php echo langHdl('manage_emails_not_sent'); ?></h3>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="">
+                        <?php
+                        DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status = %s OR status = %s', 'not_sent', '');
+
+                        echo str_replace('#nb_emails#', DB::count(), langHdl('email_send_backlog'));
+                        ?>
+                        </div>
+
+                        <button class="btn btn-primary button mt-3" data-action="send-waiting-emails">
+                            <?php echo langHdl('send_waiting_emails'); ?>
+                        </button>
+                        <small id='passwordHelpBlock' class="form-text text-muted mt-2">
+                            <?php echo langHdl('admin_email_send_backlog_tip'); ?>
+                        </small>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
 
 
 

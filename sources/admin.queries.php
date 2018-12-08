@@ -158,6 +158,29 @@ switch ($post_type) {
     //##########################################################
     //CASE for refreshing all Personal Folders
     case 'admin_action_check_pf':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //get through all users
         $rows = DB::query(
             'SELECT id, login, email
@@ -227,12 +250,52 @@ switch ($post_type) {
             }
         }
 
-        echo '[{"result" : "pf_done"}]';
+        // Log
+        logEvents(
+            'system',
+            'admin_action_check_pf',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            'success'
+        );
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success ml-2"></i>',
+            ),
+            'encode'
+        );
         break;
 
     //##########################################################
     //CASE for deleting all items from DB that are linked to a folder that has been deleted
     case 'admin_action_db_clean_items':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //Libraries call
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
@@ -292,13 +355,55 @@ switch ($post_type) {
         //Update CACHE table
         updateCacheTable('reload', $SETTINGS, '');
 
+        // Log
+        logEvents(
+            'system',
+            'admin_action_db_clean_items',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            'success'
+        );
+
         //show some info
-        echo '[{"result" : "db_clean_items","nb_items_deleted":"'.$nbItemsDeleted.'"}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success ml-2 mr-3"></i>'.
+                '<i class="fas fa-chevron-right mr-2"></i>'.
+                $nbItemsDeleted.' '.langHdl('deleted_items'),
+            ),
+            'encode'
+        );
         break;
 
     //##########################################################
     //CASE for creating a DB backup
     case 'admin_action_db_backup':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $return = '';
 
@@ -397,6 +502,28 @@ switch ($post_type) {
     //##########################################################
     //CASE for restoring a DB backup
     case 'admin_action_db_restore':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $post_option);
@@ -467,11 +594,34 @@ switch ($post_type) {
     //##########################################################
     //CASE for optimizing the DB
     case 'admin_action_db_optimize':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //Get all tables
         $alltables = DB::query('SHOW TABLES');
         foreach ($alltables as $table) {
             foreach ($table as $i => $tablename) {
-                if (substr_count($tablename, $pre) > 0) {
+                if (substr_count($tablename, DB_PREFIX) > 0) {
                     // launch optimization quieries
                     DB::query('ANALYZE TABLE `'.$tablename.'`');
                     DB::query('OPTIMIZE TABLE `'.$tablename.'`');
@@ -511,13 +661,53 @@ switch ($post_type) {
             }
         }
 
+        // Log
+        logEvents(
+            'system',
+            'admin_action_db_optimize',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            'success'
+        );
+
         //Show done
-        echo '[{"result":"db_optimize" , "message":""}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success ml-2"></i>',
+            ),
+            'encode'
+        );
         break;
 
     //##########################################################
     //CASE for deleted old files in folder "files"
     case 'admin_action_purge_old_files':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         $nbFilesDeleted = 0;
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
@@ -556,41 +746,168 @@ switch ($post_type) {
             closedir($dir);
         }
 
+        // Log
+        logEvents(
+            'system',
+            'admin_action_purge_old_files',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            'success'
+        );
+
         //Show done
-        echo '[{"result":"purge_old_files","nb_files_deleted":"'.$nbFilesDeleted.'"}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success ml-2 mr-3"></i>'.
+                '<i class="fas fa-chevron-right mr-2"></i>'.
+                $nbItemsDeleted.' '.langHdl('deleted_items'),
+            ),
+            'encode'
+        );
         break;
 
     /*
     * Reload the Cache table
     */
     case 'admin_action_reload_cache_table':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         updateCacheTable('reload', $SETTINGS, '');
-        echo '[{"result":"cache_reload"}]';
+
+        // Log
+        logEvents(
+            'system',
+            'admin_action_reload_cache_table',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            'success'
+        );
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success mr-2"></i>',
+            ),
+            'encode'
+        );
         break;
 
     /*
        * REBUILD CONFIG FILE
     */
     case 'admin_action_rebuild_config_file':
-        $error = '';
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
+        // Perform
         include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $ret = handleConfigFile('rebuild');
 
+        // Log
+        logEvents(
+            'system',
+            'admin_action_rebuild_config_file',
+            $_SESSION['user_id'],
+            $_SESSION['login'],
+            $ret === true ? 'success' : $ret
+        );
+
         if ($ret !== true) {
-            $error = $ret;
-        } else {
-            $error = 'rebuild_config_file';
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $ret,
+                ),
+                'encode'
+            );
+            break;
         }
 
-        echo '[{"result":"'.$error.'"}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => langHdl('last_execution').' '.
+                    date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                    '<i class="fas fa-check text-success ml-2"></i>',
+            ),
+            'encode'
+        );
         break;
 
     /*
     * Decrypt a backup file
     */
     case 'admin_action_backup_decrypt':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         // Init
         $msg = '';
         $result = '';
@@ -669,9 +986,26 @@ switch ($post_type) {
     * Change SALT Key START
     */
     case 'admin_action_change_salt_key___start':
-        // Check KEY and rights
+        // Check KEY
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -761,9 +1095,28 @@ switch ($post_type) {
     * Change SALT Key - ENCRYPT
     */
     case 'admin_action_change_salt_key___encrypt':
-        // Check KEY and rights
+        // Check KEY
         if ($post_key !== $_SESSION['key']) {
-            echo '[{"nextAction":"" , "error":"Key is not correct" , "nbOfItems":""}]';
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                    'nextAction' => '',
+                    'nbOfItems' => '',
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -1096,12 +1449,28 @@ switch ($post_type) {
     * Change SALT Key - END
     */
     case 'admin_action_change_salt_key___end':
-        // Check KEY and rights
+        // Check KEY
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
-
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
         $error = '';
 
         // quit maintenance mode.
@@ -1122,9 +1491,26 @@ switch ($post_type) {
     * Change SALT Key - Restore BACKUP data
     */
     case 'admin_action_change_salt_key___restore_backup':
-        // Check KEY and rights
+        // Check KEY
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -1174,9 +1560,26 @@ switch ($post_type) {
     * Change SALT Key - Delete BACKUP data
     */
     case 'admin_action_change_salt_key___delete_backup':
-        // Check KEY and rights
+        // Check KEY
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -1202,22 +1605,49 @@ switch ($post_type) {
     * Test the email configuraiton
     */
     case 'admin_email_test_configuration':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // User has an email set?
         if (empty($_SESSION['user_email'])) {
-            echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('no_email_set'),
+                ),
+                'encode'
+            );
+            break;
         } else {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
             //send email
             $ret = json_decode(
                 sendEmail(
-                    $LANG['admin_email_test_subject'],
-                    $LANG['admin_email_test_body'],
+                    langHdl('admin_email_test_subject'),
+                    langHdl('admin_email_test_body'),
                     $_SESSION['user_email'],
                     $SETTINGS
                 ),
                 true
             );
-            echo '[{"result":"email_test_conf", "error":"'.$ret['error'].'"}]';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
         }
         break;
 
@@ -1225,6 +1655,18 @@ switch ($post_type) {
     * Send emails in backlog
     */
     case 'admin_email_send_backlog':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $rows = DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status = %s OR status = %s', 'not_sent', '');
@@ -1259,13 +1701,42 @@ switch ($post_type) {
         //update LOG
         logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
-        echo '[{"result":"admin_email_send_backlog", "error : ""}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*
     * Attachments encryption
     */
     case 'admin_action_attachments_cryption':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         // init
@@ -1313,6 +1784,29 @@ switch ($post_type) {
      * Attachments encryption - Treatment in several loops
      */
     case 'admin_action_attachments_cryption_continu':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
@@ -1417,6 +1911,17 @@ switch ($post_type) {
             );
             break;
         }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
@@ -1483,44 +1988,88 @@ switch ($post_type) {
        * API save key
     */
     case 'admin_action_api_save_ip':
-        // Check KEY and rights
-        if ($post_session_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($_SESSION['is_admin'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
             break;
         }
 
-        // Init
-        $error = '';
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+
+        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
 
         // add new key
         if (null !== $post_action && $post_action === 'add') {
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_ip = filter_var($dataReceived['ip'], FILTER_SANITIZE_STRING);
+
+            // Store in DB
             DB::insert(
                 prefixTable('api'),
                 array(
                     'id' => null,
                     'type' => 'ip',
                     'label' => $post_label,
-                    'value' => $post_key,
+                    'value' => $post_ip,
                     'timestamp' => time(),
                 )
             );
+
+            $post_id = DB::insertId();
         // Update existing key
         } elseif (null !== $post_action && $post_action === 'update') {
-            DB::update(
-                    prefixTable('api'),
-                    array(
-                        'label' => $post_label,
-                        'value' => $post_key,
-                        'timestamp' => time(),
-                    ),
-                    'id=%i',
-                    $post_id
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
+            $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
+            if ($post_field === 'value') {
+                $arr = array(
+                    'value' => $post_value,
+                    'timestamp' => time(),
                 );
+            } else {
+                $arr = array(
+                    'label' => $post_value,
+                    'timestamp' => time(),
+                );
+            }
+            DB::update(
+                prefixTable('api'),
+                $arr,
+                'id=%i',
+                $post_id
+            );
         // Delete existing key
         } elseif (null !== $post_action && $post_action === 'delete') {
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
             DB::query('DELETE FROM '.prefixTable('api').' WHERE id=%i', $post_id);
         }
-        echo '[{"error":"'.$error.'"}]';
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'ipId' => $post_id,
+            ),
+            'encode'
+        );
         break;
 
     case 'save_api_status':
@@ -2273,7 +2822,7 @@ switch ($post_type) {
             $json,
             array(
                 'id' => 0,
-                'title' => addslashes($LANG['god']),
+                'title' => langHdl('god'),
                 'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
                 'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
             )

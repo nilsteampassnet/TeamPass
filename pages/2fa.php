@@ -95,9 +95,13 @@ if ($skFile !== false) {
     <div class="container-fluid">
         <div class="row">
             <div class="col-12">
-                <div class="card">
+                <div class="card card-primary">
                     <div class="card-header">
-                        <ul class="nav nav-tabs">
+                        <h3 class='card-title'><?php echo langHdl('mfa_configuration'); ?></h3>
+                    </div>
+
+                    <div class="card-body">
+                        <ul class="nav nav-tabs mb-4">
                             <li class="nav-item">
                             <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>
                             </li>
@@ -111,16 +115,13 @@ if ($skFile !== false) {
                             <a class="nav-link" data-toggle="tab" href="#agses" role="tab" aria-controls="agses" aria-selected="false"><?php echo langHdl('agses'); ?></a>
                             </li>
                         </ul>
-                    </div>
-
-                    <div class="card-body">
                         <div class="tab-content">
 
                             <div class="tab-pane fade show active" id="google" role="tabpanel" aria-labelledby="google-tab">
                                 <div class="row mb-2">
                                     <div class="col-9">
                                         <?php echo langHdl('admin_2factors_authentication_setting'); ?>
-                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <small class='form-text text-muted'>
                                             <?php echo langHdl('admin_2factors_authentication_setting_tip'); ?>
                                         </small>
                                     </div>
@@ -132,7 +133,7 @@ if ($skFile !== false) {
                                 <div class="row mb-2">
                                     <div class="col-9">
                                         <?php echo langHdl('admin_ga_website_name'); ?>
-                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <small class='form-text text-muted'>
                                             <?php echo langHdl('admin_ga_website_name_tip'); ?>
                                         </small>
                                     </div>
@@ -144,7 +145,7 @@ if ($skFile !== false) {
                                 <div class="row mb-2">
                                     <div class="col-9">
                                         <?php echo langHdl('ga_reset_by_user'); ?>
-                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <small class='form-text text-muted'>
                                             <?php echo langHdl('ga_reset_by_user_tip'); ?>
                                         </small>
                                     </div>

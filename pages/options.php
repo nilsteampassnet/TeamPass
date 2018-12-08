@@ -359,7 +359,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                           <?php echo langHdl('settings_log_connections'); ?>
                       </div>
                       <div class='col-2'>
-                          <div class='toggle toggle-modern' id='enalog_connectionsble_sts' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1' ? '1' : '0'; ?>' />
+                          <div class='toggle toggle-modern' id='log_connections' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1' ? '1' : '0'; ?>' />
                       </div>
                   </div>
 
