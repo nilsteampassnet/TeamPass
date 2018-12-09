@@ -465,7 +465,7 @@ function mainQuery()
                     }
 
                     // send back
-                    echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".obfuscate_email($data['email'])."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
+                    echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".obfuscateEmail($data['email'])."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
                 }
             }
             break;

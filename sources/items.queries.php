@@ -134,6 +134,8 @@ if (null !== $post_type) {
             $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
             $tags = htmlspecialchars_decode($dataReceived['tags']);
             $post_template_id = filter_var(htmlspecialchars_decode($dataReceived['template_id']), FILTER_SANITIZE_NUMBER_INT);
+            $post_anyone_can_modify = isset($dataReceived['anyone_can_modify']) === true
+                && filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_STRING) === 'on' ? '1' : '0';
 
             // is author authorized to create in this folder
             if (count($_SESSION['list_folders_limited']) > 0) {
@@ -255,7 +257,7 @@ if (null !== $post_type) {
                         'inactif' => '0',
                         'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
                         'perso' => (isset($dataReceived['salt_key_set']) && $dataReceived['salt_key_set'] === '1' && isset($dataReceived['is_pf']) && $dataReceived['is_pf'] === '1') ? '1' : '0',
-                        'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
+                        'anyone_can_modify' => $post_anyone_can_modify,
                         'complexity_level' => $dataReceived['complexity_level'],
                         'encryption_type' => 'defuse'
                         )
@@ -554,6 +556,8 @@ if (null !== $post_type) {
                 $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
                 $post_category = filter_var(htmlspecialchars_decode($dataReceived['categorie']), FILTER_SANITIZE_NUMBER_INT);
                 $post_template_id = filter_var(htmlspecialchars_decode($dataReceived['template_id']), FILTER_SANITIZE_NUMBER_INT);
+                $post_anyone_can_modify = isset($dataReceived['anyone_can_modify']) === true
+                    && filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_STRING) === 'on' ? '1' : '0';
 
                 // perform a check in case of Read-Only user creating an item in his PF
                 if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== '1')) {
@@ -734,7 +738,7 @@ if (null !== $post_type) {
                             'url' => $url,
                             'id_tree' => (!isset($dataReceived['categorie']) || $dataReceived['categorie'] === "undefined") ? $dataItem['id_tree'] : $dataReceived['categorie'],
                             'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
-                            'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
+                            'anyone_can_modify' => $post_anyone_can_modify,
                             'complexity_level' => $dataReceived['complexity_level'],
                             'encryption_type' => 'defuse'
                             ),

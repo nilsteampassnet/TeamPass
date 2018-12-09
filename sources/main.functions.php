@@ -2363,9 +2363,12 @@ function uniqidReal($lenght = 13)
 
 /**
  * Obfuscate an email address
- * @email {string}  email address
+ *
+ * @param string $email Email address
+ *
+ * @return string
  */
-function obfuscate_email($email)
+function obfuscateEmail($email)
 {
     $prop = 2;
     $start = '';
@@ -2389,116 +2392,144 @@ function obfuscate_email($email)
 /**
  * Permits to get LDAP information about a user
  *
- * @param string $username  User name
- * @param string $password  User password
+ * @param string $username User name
+ * @param string $password User password
+ * @param array  $SETTINGS Settings
+ *
  * @return string
  */
 function connectLDAP($username, $password, $SETTINGS)
 {
+    $ldapInfo = '';
+
+    // Prepare LDAP connection if set up
+    
+    if ($SETTINGS['ldap_type'] === 'posix-search') {
+        $ldapInfo = ldapPosixSearch(
+            $username,
+            $password,
+            $SETTINGS
+        );
+    } else {
+        $ldapInfo = ldapPosixAndWindows(
+            $username,
+            $password,
+            $SETTINGS
+        );
+    }
+
+    return json_encode($ldapInfo);
+}
+
+
+/**
+ * Undocumented function
+ *
+ * @param string $username Username
+ * @param string $password Password
+ * @param array  $SETTINGS Settings
+ *
+ * @return array
+ */
+function ldapPosixSearch($username, $password, $SETTINGS)
+{
+    $ldapURIs = '';
     $user_email = '';
     $user_found = false;
     $user_lastname = '';
     $user_name = '';
     $ldapConnection = false;
 
-    // Prepare LDAP connection if set up
-    //Multiple Domain Names
-    if (strpos(html_entity_decode($username), '\\') === true) {
-        $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
-        $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
+    foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
+        if ($SETTINGS['ldap_ssl'] == 1) {
+            $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
+        } else {
+            $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
+        }
     }
-    if ($SETTINGS['ldap_type'] === 'posix-search') {
-        $ldapURIs = "";
-        foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
-            if ($SETTINGS['ldap_ssl'] == 1) {
-                $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
-            } else {
-                $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
-            }
+    $ldapconn = ldap_connect($ldapURIs);
+
+    if ($SETTINGS['ldap_tls']) {
+        ldap_start_tls($ldapconn);
+    }
+    ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+    ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+
+    // Is LDAP connection ready?
+    if ($ldapconn !== false) {
+        // Should we bind the connection?
+        if (empty($SETTINGS['ldap_bind_dn']) === false
+            && empty($SETTINGS['ldap_bind_passwd']) === false
+        ) {
+            $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+        } else {
+            $ldapbind = false;
         }
-        $ldapconn = ldap_connect($ldapURIs);
+        if ((empty($SETTINGS['ldap_bind_dn']) === true && empty($SETTINGS['ldap_bind_passwd']) === true)
+            || $ldapbind === true
+        ) {
+            $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+            $result = ldap_search(
+                $ldapconn,
+                $SETTINGS['ldap_search_base'],
+                $filter,
+                array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
+            );
 
-        if ($SETTINGS['ldap_tls']) {
-            ldap_start_tls($ldapconn);
-        }
-        ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
-        ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+            // Check if user was found in AD
+            if (ldap_count_entries($ldapconn, $result) > 0) {
+                // Get user's info and especially the DN
+                $result = ldap_get_entries($ldapconn, $result);
+                $user_dn = $result[0]['dn'];
+                $user_email = $result[0]['mail'][0];
+                $user_lastname = $result[0]['sn'][0];
+                $user_name = isset($result[0]['givenname'][0]) === true ? $result[0]['givenname'][0] : '';
+                $user_found = true;
 
-        // Is LDAP connection ready?
-        if ($ldapconn !== false) {
-            // Should we bind the connection?
-            if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
-                $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
-            } else {
-                $ldapbind = false;
-            }
-            if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
-                $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
-                $result = ldap_search(
-                    $ldapconn,
-                    $SETTINGS['ldap_search_base'],
-                    $filter,
-                    array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
-                );
+                // Should we restrain the search in specified user groups
+                $GroupRestrictionEnabled = false;
+                if (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === false
+                ) {
+                    // New way to check User's group membership
+                    $filter_group = "memberUid=".$username;
+                    $result_group = ldap_search(
+                        $ldapconn,
+                        $SETTINGS['ldap_search_base'],
+                        $filter_group,
+                        array('dn', 'samaccountname')
+                    );
 
-                // Check if user was found in AD
-                if (ldap_count_entries($ldapconn, $result) > 0) {
-                    // Get user's info and especially the DN
-                    $result = ldap_get_entries($ldapconn, $result);
-                    $user_dn = $result[0]['dn'];
-                    $user_email = $result[0]['mail'][0];
-                    $user_lastname = $result[0]['sn'][0];
-                    $user_name = isset($result[0]['givenname'][0]) === true ? $result[0]['givenname'][0] : '';
-                    $user_found = true;
+                    if ($result_group) {
+                        $entries = ldap_get_entries($ldapconn, $result_group);
 
-                    // Should we restrain the search in specified user groups
-                    $GroupRestrictionEnabled = false;
-                    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
-                        // New way to check User's group membership
-                        $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search(
-                            $ldapconn,
-                            $SETTINGS['ldap_search_base'],
-                            $filter_group,
-                            array('dn', 'samaccountname')
-                        );
-
-                        if ($result_group) {
-                            $entries = ldap_get_entries($ldapconn, $result_group);
-
-                            if ($entries['count'] > 0) {
-                                // Now check if group fits
-                                for ($i = 0; $i < $entries['count']; $i++) {
-                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
-                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                        $GroupRestrictionEnabled = true;
-                                        break;
-                                    }
+                        if ($entries['count'] > 0) {
+                            // Now check if group fits
+                            for ($i = 0; $i < $entries['count']; $i++) {
+                                $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                    $GroupRestrictionEnabled = true;
+                                    break;
                                 }
                             }
                         }
                     }
+                }
 
-                    // Is user in the LDAP?
-                    if ($GroupRestrictionEnabled === true
-                        || (
-                            $GroupRestrictionEnabled === false
-                            && (
-                                isset($SETTINGS['ldap_usergroup']) === false
-                                || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
-                            )
-                        )
-                    ) {
-                        // Try to auth inside LDAP
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
-                        if ($ldapbind === true) {
-                            $ldapConnection = true;
-                        } else {
-                            $ldapConnection = false;
-                        }
+                // Is user in the LDAP?
+                if ($GroupRestrictionEnabled === true
+                    || ($GroupRestrictionEnabled === false
+                    && (isset($SETTINGS['ldap_usergroup']) === false
+                    || (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === true)))
+                ) {
+                    // Try to auth inside LDAP
+                    $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
+                    if ($ldapbind === true) {
+                        $ldapConnection = true;
+                    } else {
+                        $ldapConnection = false;
                     }
-                } else {
-                    $ldapConnection = false;
                 }
             } else {
                 $ldapConnection = false;
@@ -2507,73 +2538,106 @@ function connectLDAP($username, $password, $SETTINGS)
             $ldapConnection = false;
         }
     } else {
-        $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
-        $adldap->register();
-
-        // Posix style LDAP handles user searches a bit differently
-        if ($SETTINGS['ldap_type'] === 'posix') {
-            $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-        } else {
-            // case where $SETTINGS['ldap_type'] equals 'windows'
-            //Multiple Domain Names
-            $ldap_suffix = $SETTINGS['ldap_suffix'];
-        }
-
-        // Ensure no double commas exist in ldap_suffix
-        $ldap_suffix = str_replace(',,', ',', $ldap_suffix);
-
-        // Create LDAP connection
-        $adldap = new adLDAP\adLDAP(
-            array(
-                'base_dn' => $SETTINGS['ldap_domain_dn'],
-                'account_suffix' => $ldap_suffix,
-                'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
-                'ad_port' => $SETTINGS['ldap_port'],
-                'use_ssl' => $SETTINGS['ldap_ssl'],
-                'use_tls' => $SETTINGS['ldap_tls']
-            )
-        );
-
-        // OpenLDAP expects an attribute=value pair
-        if ($SETTINGS['ldap_type'] === 'posix') {
-            $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
-        } else {
-            $auth_username = $username;
-        }
-
-        // Authenticate the user
-        if ($adldap->authenticate($auth_username, html_entity_decode($password))) {
-            // Get user info
-            $result = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
-            $user_email = $result[0]['mail'][0];
-            $user_lastname = $result[0]['sn'][0];
-            $user_name = $result[0]['givenname'][0];
-            $user_found = true;
-
-            // Is user in allowed group
-            if (isset($SETTINGS['ldap_allowed_usergroup']) === true
-                && empty($SETTINGS['ldap_allowed_usergroup']) === false
-            ) {
-                if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
-                    $ldapConnection = true;
-                } else {
-                    $ldapConnection = false;
-                }
-            } else {
-                $ldapConnection = true;
-            }
-        } else {
-            $ldapConnection = false;
-        }
+        $ldapConnection = false;
     }
 
-    return json_encode(
+    return array(
+        'lastname' => $user_lastname,
+        'name' => $user_name,
+        'email' => $user_email,
+        'auth_success' => $ldapConnection,
+        'user_found' => $user_found
+    );
+}
+
+/**
+ * Undocumented function
+ *
+ * @param string $username Username
+ * @param string $password Password
+ * @param array  $SETTINGS Settings
+ *
+ * @return array
+ */
+function ldapPosixAndWindows($username, $password, $SETTINGS)
+{
+    $user_email = '';
+    $user_found = false;
+    $user_lastname = '';
+    $user_name = '';
+    $ldapConnection = false;
+    $ldap_suffix = '';
+
+    //Multiple Domain Names
+    if (strpos(html_entity_decode($username), '\\') === true) {
+        $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+        $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
+    }
+    
+    $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
+    $adldap->register();
+
+    // Posix style LDAP handles user searches a bit differently
+    if ($SETTINGS['ldap_type'] === 'posix') {
+        $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
+    } else {
+        // case where $SETTINGS['ldap_type'] equals 'windows'
+        //Multiple Domain Names
+        $ldap_suffix = $SETTINGS['ldap_suffix'];
+    }
+
+    // Ensure no double commas exist in ldap_suffix
+    $ldap_suffix = str_replace(',,', ',', $ldap_suffix);
+
+    // Create LDAP connection
+    $adldap = new adLDAP\adLDAP(
         array(
-            'lastname' => $user_lastname,
-            'name' => $user_name,
-            'email' => $user_email,
-            'auth_success' => $ldapConnection,
-            'user_found' => $user_found
+            'base_dn' => $SETTINGS['ldap_domain_dn'],
+            'account_suffix' => $ldap_suffix,
+            'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
+            'ad_port' => $SETTINGS['ldap_port'],
+            'use_ssl' => $SETTINGS['ldap_ssl'],
+            'use_tls' => $SETTINGS['ldap_tls']
         )
+    );
+
+    // OpenLDAP expects an attribute=value pair
+    if ($SETTINGS['ldap_type'] === 'posix') {
+        $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
+    } else {
+        $auth_username = $username;
+    }
+
+    // Authenticate the user
+    if ($adldap->authenticate($auth_username, html_entity_decode($password))) {
+        // Get user info
+        $result = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
+        $user_email = $result[0]['mail'][0];
+        $user_lastname = $result[0]['sn'][0];
+        $user_name = $result[0]['givenname'][0];
+        $user_found = true;
+
+        // Is user in allowed group
+        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
+            && empty($SETTINGS['ldap_allowed_usergroup']) === false
+        ) {
+            if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
+                $ldapConnection = true;
+            } else {
+                $ldapConnection = false;
+            }
+        } else {
+            $ldapConnection = true;
+        }
+    } else {
+        $ldapConnection = false;
+    }
+
+    return array(
+        'lastname' => $user_lastname,
+        'name' => $user_name,
+        'email' => $user_email,
+        'auth_success' => $ldapConnection,
+        'user_found' => $user_found
     );
 }

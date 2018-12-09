@@ -1256,7 +1256,7 @@ $result = mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'adm
 while ($row = mysqli_fetch_assoc($result)) {
     // append new setting in config file
     $config_text .= "
-    '".$row['intitule']."' => '".$row['valeur']."',";
+    '".$row['intitule']."' => '".filter_var($row['valeur'], FILTER_SANITIZE_STRING)."',";
     if ($any_settings === false) {
         $any_settings = true;
     }

@@ -1,4 +1,7 @@
 2.1.27
+31/
+ #2494 Upgrade error on config key 'bck_script_key' with single quote character
+
 30/
  #2486 Editing roles on users wipes dissimilar roles
  #2458 Items folder automatically changes to the personal one
