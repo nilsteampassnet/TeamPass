@@ -15,6 +15,14 @@
  */
 
 return array(
+    'configuration' => 'Configuration',
+    'definition' => 'Definition',
+    'number_of_modified_attachments' => 'Number of modified attachments',
+    'please_confirm_attachments_encryption_change' => 'Please confirm the change of attachments encryption strategy. This operation can take several minutes depending on the number of existing attachments.',
+    'files_not_encrypted' => 'Files are currently not encrypted. You should perform this change for security reasons.',
+    'files_already_encrypted' => 'Files are already encrypted. You should not change this for security reasons.',
+    'action_to_be_performed' => 'Action to be performed',
+    'please_confirm_sk_change' => 'Please confirm changing the saltKey. This operation can take several minutes depending on the number of passwords the re-encrypt.',
     'last_execution' => 'Last execution',
     'never_performed' => 'Never performed',
     'launch' => 'Launch',
@@ -248,6 +256,7 @@ return array(
     'roles' => 'Roles',
     'filter' => 'Filter',
     '---' => '---',
+    'settings_upload_imageresize_options' => 'Image resize',
     'user_not_exists' => 'User does not exist',
     'auto_create_folder_role' => 'Create new folder and role called',
     'start_upload' => 'Start upload',
@@ -387,7 +396,6 @@ return array(
     'settings_upload_imagesext' => 'Image extensions allowed',
     'settings_upload_pkgext' => 'Archive extensions allowed',
     'settings_upload_otherext' => 'Other extensions allowed',
-    'settings_upload_imageresize_options' => 'Resize uploaded images',
     'settings_upload_imageresize_options_w' => 'Maximum image width',
     'settings_upload_imageresize_options_h' => 'Maximum image height',
     'settings_upload_imageresize_options_q' => 'JPEG image quality',
@@ -665,7 +673,6 @@ return array(
     'date' => 'Date',
     'date_format' => 'Date format',
     'days' => 'days',
-    'definition' => 'Details',
     'delete' => 'Delete',
     'deletion' => 'Deletions',
     'deletion_title' => 'List of password items removed by users',

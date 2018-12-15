@@ -31,6 +31,10 @@
     cursor: pointer;
 }
 
+.dragndrop {
+    cursor: move;
+}
+
 
 .invisible {
     visibility: hidden !important;

@@ -887,6 +887,9 @@ if ($menuAdmin === true) {
 <!--<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.css">
 <link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.skinNice.css">
 <script src="./plugins/ionslider/ion.rangeSlider.min.js"></script>-->
+<!-- ICHECK -->
+<link rel="stylesheet" href="./plugins/iCheck/all.css">
+<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
 } elseif ($pageSel === 'items') {
         ?>
@@ -979,6 +982,8 @@ if (isset($_SESSION['CPM']) === true
             include_once $SETTINGS['cpassman_dir'].'/pages/uploads.js.php';
         } elseif ($pageSel === 'actions') {
             include_once $SETTINGS['cpassman_dir'].'/pages/actions.js.php';
+        } elseif ($pageSel === 'fields') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/fields.js.php';
         }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';

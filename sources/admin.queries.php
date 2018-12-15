@@ -87,7 +87,6 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_session_key = filter_input(INPUT_POST, 'session_key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
 $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
 $post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
@@ -1088,7 +1087,16 @@ switch ($post_type) {
             }
         }
 
-        echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'"}]';
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => 'encrypt_items',
+                'nbOfItems' => $nb_of_items,
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -1126,7 +1134,15 @@ switch ($post_type) {
         // prepare SK
         if (empty($_SESSION['reencrypt_new_salt']) || empty($_SESSION['reencrypt_old_salt'])) {
             // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkeys are empty???" , "nbOfItems":""}]';
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'saltkeys are empty???',
+                    'nbOfItems' => '',
+                    'nextAction' => '',
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -1140,7 +1156,15 @@ switch ($post_type) {
 
             // Allowed values for $_POST['object'] : "items,logs,files,categories"
             if (in_array($objects[0], array('items', 'logs', 'files', 'categories')) === false) {
-                echo '[{"nextAction":"" , "error":"Input `'.$objects[0].'` is not allowed" , "nbOfItems":""}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Input `'.$objects[0].'` is not allowed',
+                        'nbOfItems' => '',
+                        'nextAction' => '',
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -1442,7 +1466,19 @@ switch ($post_type) {
             }
         }
 
-        echo '[{ "nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'" , "oldsk" : "'.$_SESSION['reencrypt_old_salt'].'" , "newsk" : "'.$_SESSION['reencrypt_new_salt'].'"}]';
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => $nextAction,
+                'nextStart' => $nextStart,
+                'nbOfItems' => $nb_of_items,
+                'oldsk' => $_SESSION['reencrypt_old_salt'],
+                'newsk' => $_SESSION['reencrypt_new_salt'],
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -1484,7 +1520,15 @@ switch ($post_type) {
             'admin'
         );
 
-        echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => 'done',
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -1553,7 +1597,15 @@ switch ($post_type) {
         // drop table
         DB::query('DROP TABLE IF EXISTS '.prefixTable('sk_reencrypt_backup'));
 
-        echo '[{"status":"done"}]';
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
         break;
 
     /*
@@ -1740,11 +1792,7 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         // init
-        $error = '';
-        $ret = '';
-        $cpt = 0;
-        $filesList = '';
-        $continu = true;
+        $filesList = array();
 
         // get through files
         if (null !== $post_option && empty($post_option) === false) {
@@ -1755,29 +1803,37 @@ switch ($post_type) {
             );
             foreach ($rows as $record) {
                 if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
-                    $addFile = 0;
-                    if ($post_option == 'decrypt' && $record['status'] === 'encrypted') {
-                        $addFile = 1;
-                    } elseif ($post_option == 'encrypt' && $record['status'] === 'clear') {
-                        $addFile = 1;
+                    $addFile = false;
+                    if (($post_option === 'attachments-decrypt' && $record['status'] === 'encrypted')
+                        || ($post_option === 'attachments-encrypt' && $record['status'] === 'clear')
+                    ) {
+                        $addFile = true;
                     }
 
-                    if ($addFile === 1) {
-                        if (empty($filesList) === true) {
-                            $filesList = $record['id'];
-                        } else {
-                            $filesList .= ';'.$record['id'];
-                        }
+                    if ($addFile === true) {
+                        array_push($filesList, $record['id']);
                     }
                 }
             }
         } else {
-            $error = 'No option';
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_not_allowed_to'),
+                ),
+                'encode'
+            );
         }
 
-        echo '[{"result":"attachments_cryption", "error":"'.$error.'", "continu":"'.
-            /* @scrutinizer ignore-type */
-            $continu.'", "list":"'.$filesList.'", "cpt":"0"}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'counter' => $filesList,
+                'cpt' => 0,
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -1807,13 +1863,19 @@ switch ($post_type) {
             break;
         }
 
+        // Get data
+
+        $post_list = filter_var_array('list', FILTER_SANITIZE_STRING);
+        $post_counter = filter_var_array('counter', FILTER_SANITIZE_NUMBER_INT);
+
         include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $cpt = 0;
-        $newFilesList = '';
         $continu = true;
         $error = '';
+        $newFilesList = array();
+        $message = '';
 
         // load PhpEncryption library
         require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1830,8 +1892,7 @@ switch ($post_type) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
 
         // treat 10 files
-        $filesList = explode(';', $post_list);
-        foreach ($filesList as $file) {
+        foreach ($post_list as $file) {
             if ($cpt < 5) {
                 // Get file name
                 $file_info = DB::queryfirstrow(
@@ -1869,31 +1930,50 @@ switch ($post_type) {
 
                     // store in DB
                     DB::update(
-                            prefixTable('files'),
-                            array(
-                                'status' => $post_option === 'decrypt' ? 'clear' : 'encrypted',
-                                ),
-                            'id = %i',
-                            $file
-                        );
+                        prefixTable('files'),
+                        array(
+                            'status' => $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted',
+                            ),
+                        'id = %i',
+                        $file
+                    );
 
                     ++$cpt;
                 }
             } else {
                 // build list
-                if (empty($newFilesList)) {
-                    $newFilesList = $file;
-                } else {
-                    $newFilesList .= ';'.$file;
-                }
+                array_push($newFilesList, $file);
             }
         }
 
-        if (empty($newFilesList)) {
+        // Should we stop
+        if (count($newFilesList) === 0) {
             $continu = false;
+
+            //update LOG
+            logEvents(
+                'admin_action',
+                'attachments_encryption_changed',
+                $_SESSION['user_id'],
+                $_SESSION['login'],
+                $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
+            );
+
+            $message = langHdl('last_execution').' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
+                '<i class="fas fa-check text-success ml-2 mr-3"></i>'
         }
 
-        echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($post_cpt + $cpt).'"}]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $message,
+                'counter' => $newFilesList,
+                'cpt' => $post_cpt + $cpt,
+                'continu' => $continu,
+            ),
+            'encode'
+        );
         break;
 
     /*

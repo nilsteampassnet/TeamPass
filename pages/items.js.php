@@ -1565,7 +1565,7 @@ var uploader_attachments = new plupload.Uploader({
                 type_upload     : 'item_attachments',
                 edit_item       : false,
                 //user_token      : teampassStorage('teampassApplication', 'get', ['attachmentToken']),
-                user_token      : store.get('teampass-applicataion').attachmentToken,
+                user_token      : store.get('teampassApplication').attachmentToken,
                 files_number    : $('#form-item-hidden-pickFilesNumber').val()
             });
         },
@@ -1614,7 +1614,7 @@ $("#form-item-upload-pickfiles").click(function(e) {
             },
             function(data) {
                 store.update(
-                    'teampass-applicataion',
+                    'teampassApplication',
                     {
                         'attachmentToken' : data[0].token
                     }
