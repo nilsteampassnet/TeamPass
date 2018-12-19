@@ -43,7 +43,12 @@ Teampass is a Collaborative Passwords Manager
 * Once uploaded, launch Teampass in a browser and follow instructions.
 
 ### With Docker
-The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
+The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. You should also mount `/var/php/session`, otherwise the installation will freeze during *Server checks* phase. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
+
+Sample docker run command: 
+```
+docker run --name teampass -d --restart always -v /var/teampass-data/www:/var/www/html -v /var/teampass-data/php_session:/var/php/session -p 9501:80 teampass/teampass
+```
 
 **Note:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
 
