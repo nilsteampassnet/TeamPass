@@ -96,6 +96,8 @@ $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 $post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
 $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
 $post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
+$post_counter = filter_input(INPUT_POST, 'counter', FILTER_SANITIZE_NUMBER_INT);
+$post_list = filter_input_array(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
 
 switch ($post_type) {
     //CASE for getting informations about the tool
@@ -1402,22 +1404,22 @@ switch ($post_type) {
                         // Treat the file
                         // STEP1 - Do decryption
                         prepareFileWithDefuse(
-                                'decrypt',
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'].'_encrypted',
-                                $SETTINGS
-                            );
+                            'decrypt',
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'].'_encrypted',
+                            $SETTINGS
+                        );
 
                         // Do cleanup of files
                         unlink($SETTINGS['path_to_upload_folder'].'/'.$record['file']);
 
                         // STEP2 - Do encryption
                         prepareFileWithDefuse(
-                                'encryp',
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'].'_encrypted',
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
-                                $SETTINGS
-                            );
+                            'encryp',
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'].'_encrypted',
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                            $SETTINGS
+                        );
 
                         // Do cleanup of files
                         unlink($SETTINGS['path_to_upload_folder'].'/'.$record['file'].'_encrypted');
@@ -1829,8 +1831,8 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => '',
-                'counter' => $filesList,
-                'cpt' => 0,
+                'list' => $filesList,
+                'counter' => 0,
             ),
             'encode'
         );
@@ -1863,13 +1865,12 @@ switch ($post_type) {
             break;
         }
 
-        // Get data
-
-        $post_list = filter_var_array('list', FILTER_SANITIZE_STRING);
-        $post_counter = filter_var_array('counter', FILTER_SANITIZE_NUMBER_INT);
+        // Prepare variables
+        $post_list = filter_var_array($post_list, FILTER_SANITIZE_STRING);
+        $post_counter = filter_var($post_counter, FILTER_SANITIZE_NUMBER_INT);
 
         include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $cpt = 0;
         $continu = true;
@@ -1878,15 +1879,15 @@ switch ($post_type) {
         $message = '';
 
         // load PhpEncryption library
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
         // Get KEY
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
@@ -1968,8 +1969,8 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => $message,
-                'counter' => $newFilesList,
-                'cpt' => $post_cpt + $cpt,
+                'list' => $newFilesList,
+                'counter' => $post_cpt + $cpt,
                 'continu' => $continu,
             ),
             'encode'

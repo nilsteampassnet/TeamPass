@@ -15,6 +15,7 @@
  */
 
 return array(
+    'restore_done_now_logout' => 'Database restore has been done. You now need to disconnect to refresh the session variables.',
     'browse' => 'Browse',
     'backup_and_restore' => 'Backup and Restore',
     'explanation_for_oneshot_backup' => '',

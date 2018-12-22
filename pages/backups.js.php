@@ -86,7 +86,11 @@ $(document).on('click', '.start', function() {
                         // SHOW LINK
                         $('#onthefly-backup-progress')
                             .removeClass('hidden')
-                            .html('<i class="fas fa-file-download mr-2"></i><a href="' + data[0].href + '"><?php echo langHdl('pdf_download'); ?></a>');
+                            .html('<div class="alert alert-success alert-dismissible ml-2">' +
+                                '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
+                                '<h5><i class="icon fa fa-check mr-2"></i><?php echo langHdl('done'); ?></h5>' +
+                                '<i class="fas fa-file-download mr-2"></i><a href="' + data.download + '"><?php echo langHdl('pdf_download'); ?></a>' +
+                                '</div>');
 
                         // Inform user
                         showAlertify(
@@ -103,14 +107,65 @@ $(document).on('click', '.start', function() {
     } else if (action === 'onthefly-restore') {
         // PERFORM A RESTORE
         if ($('#onthefly-restore-key').val() !== '') {
-            
+            // Show cog
+            alertify
+                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+                .dismissOthers();
+
+            // Prepare data
+            var data = {
+                'encryptionKey' : $('#onthefly-restore-key').val(),
+                'backupFile'    : $('#onthefly-restore-file').data('operation-id')
+            };
+            console.log(data); 
+            //send query
+            $.post(
+                "sources/backups.queries.php",
+                {
+                    type    : "onthefly_restore",
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key     : "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+
+                    if (data.error === true) {
+                        // ERROR
+                        alertify
+                            .error(
+                                '<i class="fa fa-warning fa-lg mr-2"></i>' + data.message,
+                                5
+                            )
+                            .dismissOthers();
+                    } else {
+                        // SHOW LINK
+                        $('#onthefly-restore-progress')
+                            .removeClass('hidden')
+                            .html('<div class="alert alert-success alert-dismissible ml-2">' +
+                                '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
+                                '<h5><i class="icon fa fa-check mr-2"></i><?php echo langHdl('done'); ?></h5>' +
+                                '<?php echo langHdl('restore_done_now_logout'); ?>' +
+                                '</div>');
+
+                        // Inform user
+                        showAlertify(
+                            '<?php echo langHdl('done'); ?>',
+                            2,
+                            'top-bottom',
+                            'success'
+                        );
+                    }
+                }
+            );
         }
     }
 });
 
 
 
-// SQL IMPORT FOR RESTORING
+// PREPARE UPLOADER with plupload
 var restoreOperationId = '',
     uploader_restoreDB = new plupload.Uploader({
         runtimes : "gears,html5,flash,silverlight,browserplus",
@@ -156,6 +211,11 @@ var restoreOperationId = '',
                 );
             },
             BeforeUpload: function (up, file) {
+                // Show cog
+                alertify
+                    .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+                    .dismissOthers();
+
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
                     "File":file.name,
@@ -171,13 +231,37 @@ var restoreOperationId = '',
                     }
                 );
                 $('#onthefly-restore-file').text(files[0].name);
+
+                // Inform user
+                showAlertify(
+                    '<?php echo langHdl('done'); ?>',
+                    2,
+                    'top-bottom',
+                    'success'
+                );
+            },
+            Error: function(up, args) {
+                console.log(args);
             }
         }
     });
 // Uploader options
-uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
+uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {console.log(object)
     var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
-    restoreOperationId = myData.operation_id;
+    console.log(myData);
+    $('#onthefly-restore-file').data('operation-id', myData.operation_id);
+});
+
+uploader_restoreDB.bind("Error", function(up, err) {console.log(err)
+    var myData = prepareExchangedData(err, "decode", "<?php echo $_SESSION['key']; ?>");
+    $("#onthefly-restore-progress")
+        .removeClass('hidden')
+        .html('<div class="alert alert-danger alert-dismissible ml-2">' +
+            '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
+            '<h5><i class="icon fas fa-ban mr-2"></i><?php echo langHdl('done'); ?></h5>' +
+            '' + err.message +
+            '</div>');
+    uploader_restoreDB.refresh(); // Reposition Flash/Silverlight
 });
 
 uploader_restoreDB.init();

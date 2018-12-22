@@ -130,7 +130,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                                                 </div>
                                                 <div class="col-9 input-group">
                                                     <button class="btn btn-default" id="onthefly-restore-file-select"><?php echo langHdl('choose_file'); ?></button>
-                                                    <span class="ml-2" id="onthefly-restore-file"></span>
+                                                    <span class="ml-2" id="onthefly-restore-file" data-operation-id=""></span>
                                                 </div>
                                             </div>
                                             <div class="row mt-3 hidden" id="onthefly-restore-progress">

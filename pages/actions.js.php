@@ -432,7 +432,10 @@ function confirmAttachmentsEncryption()
         );
 }
 
-
+/**
+ * performAttachmentsEncryption
+ * 
+ */
 function performAttachmentsEncryption(list, counter)
 {
     $.post(
@@ -440,7 +443,7 @@ function performAttachmentsEncryption(list, counter)
         {
             type    : "admin_action_attachments_cryption_continu",
             option  : $("input[name=encryption_type]:checked").val(),
-            cpt     : counter,
+            counter : counter,
             list    : list,
             key     : '<?php echo $_SESSION['key']; ?>'
         },

@@ -2302,10 +2302,13 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
     if (groupe_id !== undefined || groupe_id !== '') {
         //refreshTree(groupe_id);
-        if (query_in_progress != 0 && query_in_progress != groupe_id) {
+        if (query_in_progress !== 0
+            && query_in_progress !== groupe_id
+            && request !== undefined
+        ) {
             request.abort();    //kill previous query if needed
         }
-        query_in_progress = groupe_id;
+        query_in_progress = parseInt(groupe_id);
         //LoadingPage();
         //$('#items_list_loader').removeClass('hidden');
         if (start == 0) {

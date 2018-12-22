@@ -969,13 +969,39 @@ function identUser(
 }
 
 /**
- * updateCacheTable().
- *
  * Update the CACHE table
  *
- * @param string $action
+ * @param string $action   What to do
+ * @param array  $SETTINGS Teampass settings
+ * @param string $ident    Ident format
+ *
+ * @return void
  */
 function updateCacheTable($action, $SETTINGS, $ident = null)
+{
+    if ($action === 'reload') {
+        // Rebuild full cache table
+        cacheTableRefresh($SETTINGS);
+    } elseif ($action === 'update_value' && is_null($ident) === false) {
+        // UPDATE an item
+        cacheTableUpdate($SETTINGS, $ident);
+    } elseif ($action === 'add_value' && is_null($ident) === false) {
+        // ADD an item
+        cacheTableAdd($SETTINGS, $ident);
+    } elseif ($action === 'delete_value' && is_null($ident) === false) {
+        // DELETE an item
+        DB::delete(prefixTable('cache'), 'id = %i', $ident);
+    }
+}
+
+/**
+ * Cache table - refresh
+ *
+ * @param array  $SETTINGS Teampass settings
+ *
+ * @return void
+ */
+function cacheTableRefresh($SETTINGS)
 {
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -987,7 +1013,6 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
@@ -997,179 +1022,233 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-    // Rebuild full cache table
-    if ($action === 'reload') {
-        // truncate table
-        DB::query('TRUNCATE TABLE '.prefixTable('cache'));
+    // truncate table
+    DB::query('TRUNCATE TABLE '.prefixTable('cache'));
 
-        // reload date
-        $rows = DB::query(
-            'SELECT *
-            FROM '.prefixTable('items').' as i
-            INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
-            AND l.action = %s
-            AND i.inactif = %i',
-            'at_creation',
-            0
-        );
-        foreach ($rows as $record) {
-            if (empty($record['id_tree']) === false) {
-                // Get all TAGS
-                $tags = '';
-                $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $record['id']);
-                foreach ($itemTags as $itemTag) {
-                    if (!empty($itemTag['tag'])) {
-                        $tags .= $itemTag['tag'].' ';
-                    }
+    // reload date
+    $rows = DB::query(
+        'SELECT *
+        FROM '.prefixTable('items').' as i
+        INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+        AND l.action = %s
+        AND i.inactif = %i',
+        'at_creation',
+        0
+    );
+    foreach ($rows as $record) {
+        if (empty($record['id_tree']) === false) {
+            // Get all TAGS
+            $tags = '';
+            $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $record['id']);
+            foreach ($itemTags as $itemTag) {
+                if (!empty($itemTag['tag'])) {
+                    $tags .= $itemTag['tag'].' ';
                 }
-                // Get renewal period
-                $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
+            }
+            // Get renewal period
+            $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
 
-                // form id_tree to full foldername
-                $folder = '';
-                $arbo = $tree->getPath($record['id_tree'], true);
-                foreach ($arbo as $elem) {
-                    if ((int) $elem->title === $_SESSION['user_id']
-                        && (int) $elem->nlevel === 1
-                    ) {
-                        $elem->title = $_SESSION['login'];
-                    }
-                    if (empty($folder)) {
-                        $folder = stripslashes($elem->title);
-                    } else {
-                        $folder .= ' » '.stripslashes($elem->title);
-                    }
+            // form id_tree to full foldername
+            $folder = '';
+            $arbo = $tree->getPath($record['id_tree'], true);
+            foreach ($arbo as $elem) {
+                if ((int) $elem->title === $_SESSION['user_id']
+                    && (int) $elem->nlevel === 1
+                ) {
+                    $elem->title = $_SESSION['login'];
                 }
-                // store data
-                DB::insert(
-                    prefixTable('cache'),
-                    array(
-                        'id' => $record['id'],
-                        'label' => $record['label'],
-                        'description' => isset($record['description']) ? $record['description'] : '',
-                        'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : '0',
-                        'tags' => $tags,
-                        'id_tree' => $record['id_tree'],
-                        'perso' => $record['perso'],
-                        'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : '0',
-                        'login' => isset($record['login']) ? $record['login'] : '',
-                        'folder' => $folder,
-                        'author' => $record['id_user'],
-                        'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : '0',
-                        'timestamp' => $record['date'],
-                        )
-                );
+                if (empty($folder)) {
+                    $folder = stripslashes($elem->title);
+                } else {
+                    $folder .= ' » '.stripslashes($elem->title);
+                }
             }
+            // store data
+            DB::insert(
+                prefixTable('cache'),
+                array(
+                    'id' => $record['id'],
+                    'label' => $record['label'],
+                    'description' => isset($record['description']) ? $record['description'] : '',
+                    'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : '0',
+                    'tags' => $tags,
+                    'id_tree' => $record['id_tree'],
+                    'perso' => $record['perso'],
+                    'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : '0',
+                    'login' => isset($record['login']) ? $record['login'] : '',
+                    'folder' => $folder,
+                    'author' => $record['id_user'],
+                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : '0',
+                    'timestamp' => $record['date'],
+                )
+            );
         }
-        // UPDATE an item
-    } elseif ($action === 'update_value' && is_null($ident) === false) {
-        // get new value from db
-        $data = DB::queryfirstrow(
-            'SELECT label, description, id_tree, perso, restricted_to, login, url
-            FROM '.prefixTable('items').'
-            WHERE id=%i',
-            $ident
-        );
-        // Get all TAGS
-        $tags = '';
-        $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $ident);
-        foreach ($itemTags as $itemTag) {
-            if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag'].' ';
-            }
-        }
-        // form id_tree to full foldername
-        $folder = '';
-        $arbo = $tree->getPath($data['id_tree'], true);
-        foreach ($arbo as $elem) {
-            if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
-                $elem->title = $_SESSION['login'];
-            }
-            if (empty($folder)) {
-                $folder = stripslashes($elem->title);
-            } else {
-                $folder .= ' » '.stripslashes($elem->title);
-            }
-        }
-        // finaly update
-        DB::update(
-            prefixTable('cache'),
-            array(
-                'label' => $data['label'],
-                'description' => $data['description'],
-                'tags' => $tags,
-                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
-                'id_tree' => $data['id_tree'],
-                'perso' => $data['perso'],
-                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
-                'login' => isset($data['login']) ? $data['login'] : '',
-                'folder' => $folder,
-                'author' => $_SESSION['user_id'],
-                ),
-            'id = %i',
-            $ident
-        );
-    // ADD an item
-    } elseif ($action === 'add_value' && is_null($ident) === false) {
-        // get new value from db
-        $data = DB::queryFirstRow(
-            'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
-            FROM '.prefixTable('items').' as i
-            INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
-            WHERE i.id = %i
-            AND l.action = %s',
-            $ident,
-            'at_creation'
-        );
-        // Get all TAGS
-        $tags = '';
-        $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id = %i', $ident);
-        foreach ($itemTags as $itemTag) {
-            if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag'].' ';
-            }
-        }
-        // form id_tree to full foldername
-        $folder = '';
-        $arbo = $tree->getPath($data['id_tree'], true);
-        foreach ($arbo as $elem) {
-            if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
-                $elem->title = $_SESSION['login'];
-            }
-            if (empty($folder)) {
-                $folder = stripslashes($elem->title);
-            } else {
-                $folder .= ' » '.stripslashes($elem->title);
-            }
-        }
-        // finaly update
-        DB::insert(
-            prefixTable('cache'),
-            array(
-                'id' => $data['id'],
-                'label' => $data['label'],
-                'description' => $data['description'],
-                'tags' => (isset($tags) && !empty($tags)) ? $tags : 'None',
-                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
-                'id_tree' => $data['id_tree'],
-                'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== 'None') ? $data['perso'] : '0',
-                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
-                'login' => isset($data['login']) ? $data['login'] : '',
-                'folder' => $folder,
-                'author' => $_SESSION['user_id'],
-                'timestamp' => $data['date'],
-            )
-        );
-
-    // DELETE an item
-    } elseif ($action === 'delete_value' && is_null($ident) === false) {
-        DB::delete(prefixTable('cache'), 'id = %i', $ident);
     }
 }
 
-/*
-*
-*/
+/**
+ * Cache table - update existing value
+ *
+ * @param array  $SETTINGS Teampass settings
+ * @param string $ident    Ident format
+ *
+ * @return void
+ */
+function cacheTableUpdate($action, $SETTINGS, $ident = null)
+{
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
+    //Connect to DB
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
+
+    //Load Tree
+    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+    $tree->register();
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    // get new value from db
+    $data = DB::queryfirstrow(
+        'SELECT label, description, id_tree, perso, restricted_to, login, url
+        FROM '.prefixTable('items').'
+        WHERE id=%i',
+        $ident
+    );
+    // Get all TAGS
+    $tags = '';
+    $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $ident);
+    foreach ($itemTags as $itemTag) {
+        if (!empty($itemTag['tag'])) {
+            $tags .= $itemTag['tag'].' ';
+        }
+    }
+    // form id_tree to full foldername
+    $folder = '';
+    $arbo = $tree->getPath($data['id_tree'], true);
+    foreach ($arbo as $elem) {
+        if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
+            $elem->title = $_SESSION['login'];
+        }
+        if (empty($folder)) {
+            $folder = stripslashes($elem->title);
+        } else {
+            $folder .= ' » '.stripslashes($elem->title);
+        }
+    }
+    // finaly update
+    DB::update(
+        prefixTable('cache'),
+        array(
+            'label' => $data['label'],
+            'description' => $data['description'],
+            'tags' => $tags,
+            'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
+            'id_tree' => $data['id_tree'],
+            'perso' => $data['perso'],
+            'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
+            'login' => isset($data['login']) ? $data['login'] : '',
+            'folder' => $folder,
+            'author' => $_SESSION['user_id'],
+            ),
+        'id = %i',
+        $ident
+    );
+}
+
+/**
+ * Cache table - add new value
+ *
+ * @param array  $SETTINGS Teampass settings
+ * @param string $ident    Ident format
+ *
+ * @return void
+ */
+function cacheTableAdd($action, $SETTINGS, $ident = null)
+{
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
+    //Connect to DB
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
+
+    //Load Tree
+    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+    $tree->register();
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    // get new value from db
+    $data = DB::queryFirstRow(
+        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
+        FROM '.prefixTable('items').' as i
+        INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+        WHERE i.id = %i
+        AND l.action = %s',
+        $ident,
+        'at_creation'
+    );
+    // Get all TAGS
+    $tags = '';
+    $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id = %i', $ident);
+    foreach ($itemTags as $itemTag) {
+        if (!empty($itemTag['tag'])) {
+            $tags .= $itemTag['tag'].' ';
+        }
+    }
+    // form id_tree to full foldername
+    $folder = '';
+    $arbo = $tree->getPath($data['id_tree'], true);
+    foreach ($arbo as $elem) {
+        if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
+            $elem->title = $_SESSION['login'];
+        }
+        if (empty($folder)) {
+            $folder = stripslashes($elem->title);
+        } else {
+            $folder .= ' » '.stripslashes($elem->title);
+        }
+    }
+    // finaly update
+    DB::insert(
+        prefixTable('cache'),
+        array(
+            'id' => $data['id'],
+            'label' => $data['label'],
+            'description' => $data['description'],
+            'tags' => (isset($tags) && !empty($tags)) ? $tags : 'None',
+            'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
+            'id_tree' => $data['id_tree'],
+            'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== 'None') ? $data['perso'] : '0',
+            'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
+            'login' => isset($data['login']) ? $data['login'] : '',
+            'folder' => $folder,
+            'author' => $_SESSION['user_id'],
+            'timestamp' => $data['date'],
+        )
+    );
+}
+
+
+/**
+ * Do statistics
+ *
+ * @return array
+ */
 function getStatisticsData()
 {
     DB::query(
@@ -1317,76 +1396,47 @@ function sendEmail(
     $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
     $mail->register();
     $mail = new Email\PHPMailer\PHPMailer(true);
-    try {
-        // send to user
-        $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
-        $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
-        $mail->Port = $SETTINGS['email_port']; //COULD BE USED
-        $mail->CharSet = 'utf-8';
-        $mail->SMTPSecure = $SETTINGS['email_security'] === 'tls'
-        || $SETTINGS['email_security'] === 'ssl' ? $SETTINGS['email_security'] : '';
-        $mail->SMTPAutoTLS = $SETTINGS['email_security'] === 'tls'
-            || $SETTINGS['email_security'] === 'ssl' ? true : false;
-        $mail->isSmtp(); // send via SMTP
-        $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication
-        $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-        $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-        $mail->From = $SETTINGS['email_from'];
-        $mail->FromName = $SETTINGS['email_from_name'];
 
-        // Prepare for each person
-        foreach (array_filter(explode(',', $email)) as $dest) {
-            $mail->addAddress($dest);
-        }
+    // send to user
+    $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
+    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
+    $mail->Port = $SETTINGS['email_port']; //COULD BE USED
+    $mail->CharSet = 'utf-8';
+    $mail->SMTPSecure = ($SETTINGS['email_security'] === 'tls'
+    || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
+    $mail->SMTPAutoTLS = ($SETTINGS['email_security'] === 'tls'
+        || $SETTINGS['email_security'] === 'ssl') ? true : false;
+    $mail->isSmtp(); // send via SMTP
+    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
+    $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication
+    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
+    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
+    $mail->From = $SETTINGS['email_from'];
+    $mail->FromName = $SETTINGS['email_from_name'];
 
-        // Prepare HTML
-        $text_html = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
-        w3.org/TR/html4/loose.dtd"><html>
-        <head><title>Email Template</title>
-        <style type="text/css">
-        body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
-        </style></head>
-        <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
-        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
-        <tr><td style="border-collapse: collapse;"><br>
-            <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
-            <tr><td style="border-collapse: collapse; padding: 11px 20px;">
-                <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
-            </td></tr></table></td>
-        </tr>
-        <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
-            <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
-            <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-            <br><div style="float:right;">'.
-        $textMail.
-        '<br><br></td></tr></table>
-        </td></tr></table>
-        <br></body></html>';
+    // Prepare for each person
+    foreach (array_filter(explode(',', $email)) as $dest) {
+        $mail->addAddress($dest);
+    }
 
-        $mail->WordWrap = 80; // set word wrap
-        $mail->isHtml(true); // send as HTML
-        $mail->Subject = $subject;
-        $mail->Body = $text_html;
-        $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
+    // Prepare HTML
+    $text_html = emailBody($textMail);
 
-        // send email
-        if ($mail->send()) {
-            return json_encode(
-                array(
-                    'error' => '',
-                    'message' => langHdl('forgot_my_pw_email_sent'),
-                )
-            );
-        } else {
-            return json_encode(
-                array(
-                    'error' => 'error_mail_not_send',
-                    'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
-                )
-            );
-        }
-    } catch (Exception $e) {
+    $mail->WordWrap = 80; // set word wrap
+    $mail->isHtml(true); // send as HTML
+    $mail->Subject = $subject;
+    $mail->Body = $text_html;
+    $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
+
+    // send email
+    if ($mail->send()) {
+        return json_encode(
+            array(
+                'error' => '',
+                'message' => langHdl('forgot_my_pw_email_sent'),
+            )
+        );
+    } else {
         return json_encode(
             array(
                 'error' => 'error_mail_not_send',
@@ -1394,6 +1444,39 @@ function sendEmail(
             )
         );
     }
+}
+
+/**
+ * Returns the email body
+ *
+ * @param string $textMail Text for the email
+ *
+ * @return string
+ */
+function emailBody($textMail)
+{
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
+    w3.org/TR/html4/loose.dtd"><html>
+    <head><title>Email Template</title>
+    <style type="text/css">
+    body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
+    </style></head>
+    <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
+    <tr><td style="border-collapse: collapse;"><br>
+        <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
+        <tr><td style="border-collapse: collapse; padding: 11px 20px;">
+            <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
+        </td></tr></table></td>
+    </tr>
+    <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
+        <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
+        <br><div style="float:right;">'.
+    $textMail.
+    '<br><br></td></tr></table>
+    </td></tr></table>
+    <br></body></html>';
 }
 
 /**

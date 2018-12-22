@@ -62,6 +62,12 @@ $link->set_charset(DB_ENCODING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_data = filter_input(
+    INPUT_POST,
+    'data',
+    FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+    FILTER_FLAG_NO_ENCODE_QUOTES
+);
 
 // manage action required
 if (null !== $post_type) {
@@ -102,7 +108,7 @@ if (null !== $post_type) {
             $tables = array();
             $result = DB::query('SHOW TABLES');
             foreach ($result as $row) {
-                $tables[] = $row["Tables_in_".$database];
+                $tables[] = $row["Tables_in_".DB_NAME];
             }
 
             //cycle through
@@ -115,7 +121,7 @@ if (null !== $post_type) {
                         FROM INFORMATION_SCHEMA.COLUMNS
                         WHERE table_schema = %s
                         AND table_name = %s",
-                        $database,
+                        DB_NAME,
                         $table
                     );
                     $numFields = DB::count();
@@ -168,6 +174,7 @@ if (null !== $post_type) {
                         'encrypt',
                         $SETTINGS['path_to_files_folder']."/".$filename,
                         $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
+                        $SETTINGS,
                         $post_key
                     );
 
@@ -194,7 +201,9 @@ if (null !== $post_type) {
                     array(
                         'error' => false,
                         'message' => '',
-                        'download' => "sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1",
+                        'download' => 'sources/downloadFile.php?name='.urlencode($filename).
+                            '&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.
+                            $_SESSION['key_tmp'].'&pathIsFiles=1',
                     ),
                     'encode'
                 );
@@ -205,6 +214,106 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+
+        case 'onthefly_restore':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_STRING);
+            $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_STRING);
+
+            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+            // Get filename from database
+            $data = DB::queryFirstRow(
+                "SELECT valeur
+                FROM ".prefixTable('misc')."
+                WHERE increment_id = %i",
+                $post_backupFile
+            );
+
+            // Delete operation id
+            DB::delete(
+                prefixTable('misc'),
+                "increment_id = %i",
+                $post_backupFile
+            );
+            
+
+            $post_backupFile = $data['valeur'];
+
+            // Undecrypt the file
+            if (empty($post_key) === false) {
+                // Decrypt the file
+                $ret = prepareFileWithDefuse(
+                    'decrypt',
+                    $SETTINGS['path_to_files_folder']."/".$post_backupFile,
+                    $SETTINGS['path_to_files_folder']."/defuse_temp_".$post_backupFile,
+                    $SETTINGS,
+                    $post_key
+                );
+
+                if ($ret !== true) {
+                    echo '[{"result":"db_restore" , "message":"'.$ret.'"}]';
+                    break;
+                }
+
+                // Do clean
+                fileDelete($SETTINGS['path_to_files_folder']."/".$post_backupFile);
+                $post_backupFile = $SETTINGS['path_to_files_folder']."/defuse_temp_".$post_backupFile;
+            } else {
+                $post_backupFile = $SETTINGS['path_to_files_folder']."/".$post_backupFile;
+            }
+
+            //read sql file
+            if ($handle = fopen($post_backupFile, "r")) {
+                $query = "";
+                while (!feof($handle)) {
+                    $query .= fgets($handle, 4096);
+                    if (substr(rtrim($query), -1) == ';') {
+                        //launch query
+                        DB::queryRaw($query);
+                        $query = '';
+                    }
+                }
+                fclose($handle);
+            }
+
+            //delete file
+            unlink($post_backupFile);
+            
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
                     'message' => '',
                 ),
                 'encode'

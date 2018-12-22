@@ -474,7 +474,14 @@ if (null !== ($post_type_upload)
 /* Handles the error output. */
 function handleUploadError($message)
 {
-    echo htmlentities($message, ENT_QUOTES);
+    die('{"jsonrpc" : "2.0", "error" : {"code": 102, "message": "'.$message.'"}, "id" : "id"}');
+    /*echo prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => $message
+        ),
+        'encode'
+    );*/
 
     return;
 }

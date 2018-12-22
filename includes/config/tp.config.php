@@ -131,4 +131,7 @@ $SETTINGS = array(
     'yubico_authentication' => '1',
 	'ga_reset_by_user' => '1',
     'bck_script_passkey' => 'def50200447f9b99c7fbac965ae2c6f0f45c00f5b80984f38029bb90130ac1be49f6e9bafc26a71fb43496653d89521b116d4ce2db04e959055f5e7a69f3da729b6d8e49cfad4c6532a90a480db9ed363d899afec078545d9f5496c8b86aca935472a5adef65950abbc69f2011cc3c314df3be5a9197c09ec63cf2f7',
+    'item_creation_templates' => '1',
+    'onthefly-backup-key' => 'test',
+    'onthefly-restore-key' => 'test',
 );
