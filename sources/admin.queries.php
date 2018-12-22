@@ -1961,7 +1961,7 @@ switch ($post_type) {
 
             $message = langHdl('last_execution').' '.
                 date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time()).
-                '<i class="fas fa-check text-success ml-2 mr-3"></i>'
+                '<i class="fas fa-check text-success ml-2 mr-3"></i>';
         }
 
         echo prepareExchangedData(

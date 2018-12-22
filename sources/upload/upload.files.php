@@ -1,17 +1,18 @@
 <?php
 /**
- * @package       upload.files.php
  * @author        Nils Laumaillé <nils@teampass.net>
+ *
  * @version       2.1.27
+ *
  * @copyright     (c) 2009-2012 Nils Laumaillé
  * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ *
+ * @see          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
 require_once '../SecureHandler.php';
 session_start();
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
@@ -37,7 +38,7 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items", $SETTINGS)) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -62,9 +63,9 @@ $post_newFileName = filter_input(INPUT_POST, 'newFileName', FILTER_SANITIZE_STRI
 $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 
 // Get parameters
-$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
-$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
-$fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
+$chunk = isset($_REQUEST['chunk']) ? intval($_REQUEST['chunk']) : 0;
+$chunks = isset($_REQUEST['chunks']) ? intval($_REQUEST['chunks']) : 0;
+$fileName = isset($_REQUEST['name']) ? filter_var($_REQUEST['name'], FILTER_SANITIZE_STRING) : '';
 
 // token check
 if (null === $post_user_token) {
@@ -72,30 +73,30 @@ if (null === $post_user_token) {
     exit();
 } else {
     // delete expired tokens
-    DB::delete(prefixTable("tokens"), "end_timestamp < %i", time());
+    DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 
     if ($chunk < ($chunks - 1)) {
         // increase end_timestamp for token
         DB::update(
             prefixTable('tokens'),
             array(
-                'end_timestamp' => time() + 10
+                'end_timestamp' => time() + 10,
             ),
-            "user_id = %i AND token = %s",
+            'user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
-            "SELECT end_timestamp FROM ".prefixTable("tokens")." WHERE user_id = %i AND token = %s",
+            'SELECT end_timestamp FROM '.prefixTable('tokens').' WHERE user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
         // clear user token
         DB::delete(
-            prefixTable("tokens"),
-            "user_id = %i AND token = %s",
+            prefixTable('tokens'),
+            'user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
@@ -108,15 +109,13 @@ if (null === $post_user_token) {
     }
 }
 
-
 // HTTP headers for no cache etc
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
-header("Cache-Control: no-store, no-cache, must-revalidate");
-header("Cache-Control: post-check=0, pre-check=0", false);
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
 
-
-if (null !== $post_type_upload && $post_type_upload === "upload_profile_photo") {
+if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') {
     $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';
 } else {
     $targetDir = $SETTINGS['path_to_files_folder'];
@@ -152,7 +151,6 @@ if ($file_size <= 0) {
 // 5 minutes execution time
 set_time_limit(5 * 60);
 
-
 // Validate the upload
 if (isset($_FILES['file']) === false) {
     handleUploadError('No upload found in $_FILES for Filedata');
@@ -167,7 +165,6 @@ if (isset($_FILES['file']) === false) {
 } elseif (isset($_FILES['file']['name']) === false) {
     handleUploadError('File has no name.');
 }
-
 
 // Validate file name (for our purposes we'll just remove invalid characters)
 $file_name = preg_replace(
@@ -216,7 +213,7 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
 
     $count = 1;
     while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
-        $count++;
+        ++$count;
     }
 
     $fileName = $fileNameA.'_'.$count.$fileNameB;
@@ -253,22 +250,22 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
 }
 
 // Look for the content type header
-if (isset($_SERVER["HTTP_CONTENT_TYPE"])) {
-    $contentType = $_SERVER["HTTP_CONTENT_TYPE"];
+if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+    $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
 }
 
-if (isset($_SERVER["CONTENT_TYPE"])) {
-    $contentType = $_SERVER["CONTENT_TYPE"];
+if (isset($_SERVER['CONTENT_TYPE'])) {
+    $contentType = $_SERVER['CONTENT_TYPE'];
 }
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
-if (strpos($contentType, "multipart") !== false) {
+if (strpos($contentType, 'multipart') !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
         // Open temp file
-        $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
+        $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
         if ($out) {
             // Read binary input stream and append it to temp file
-            $in = fopen($_FILES['file']['tmp_name'], "rb");
+            $in = fopen($_FILES['file']['tmp_name'], 'rb');
 
             if ($in) {
                 while ($buff = fread($in, 4096)) {
@@ -296,10 +293,10 @@ if (strpos($contentType, "multipart") !== false) {
     }
 } else {
     // Open temp file
-    $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
+    $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
     if ($out) {
         // Read binary input stream and append it to temp file
-        $in = fopen("php://input", "rb");
+        $in = fopen('php://input', 'rb');
 
         if ($in) {
             while ($buff = fread($in, 4096)) {
@@ -335,45 +332,18 @@ $newFileName = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
 //Connect to mysql server
 require_once '../../includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-DB::$host         = DB_HOST;
-DB::$user         = DB_USER;
-DB::$password     = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-DB::$dbName       = DB_NAME;
-DB::$port         = DB_PORT;
-DB::$encoding     = DB_ENCODING;
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 if (null !== ($post_type_upload)
     && empty($post_type_upload) === false
-    && $post_type_upload === "import_items_from_csv"
-) {
-    rename(
-        $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName
-    );
-    
-    // Add in DB
-    DB::insert(
-        prefixTable("misc"),
-        array(
-            'type' => "temp_file",
-            'intitule' => time(),
-            'valeur' => $newFileName
-        )
-    );
-
-    // return info
-    echo prepareExchangedData(
-        array(
-            "operation_id" => DB::insertId()
-        ),
-        "encode"
-    );
-
-    exit();
-} elseif (null !== ($post_type_upload)
-    && $post_type_upload === "import_items_from_keypass"
+    && $post_type_upload === 'import_items_from_csv'
 ) {
     rename(
         $filePath,
@@ -382,25 +352,52 @@ if (null !== ($post_type_upload)
 
     // Add in DB
     DB::insert(
-        prefixTable("misc"),
+        prefixTable('misc'),
         array(
-            'type' => "temp_file",
+            'type' => 'temp_file',
             'intitule' => time(),
-            'valeur' => $newFileName
+            'valeur' => $newFileName,
         )
     );
 
     // return info
     echo prepareExchangedData(
         array(
-            "operation_id" => DB::insertId()
+            'operation_id' => DB::insertId(),
         ),
-        "encode"
+        'encode'
     );
 
     exit();
 } elseif (null !== ($post_type_upload)
-    && $post_type_upload === "upload_profile_photo"
+    && $post_type_upload === 'import_items_from_keypass'
+) {
+    rename(
+        $filePath,
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
+    );
+
+    // Add in DB
+    DB::insert(
+        prefixTable('misc'),
+        array(
+            'type' => 'temp_file',
+            'intitule' => time(),
+            'valeur' => $newFileName,
+        )
+    );
+
+    // return info
+    echo prepareExchangedData(
+        array(
+            'operation_id' => DB::insertId(),
+        ),
+        'encode'
+    );
+
+    exit();
+} elseif (null !== ($post_type_upload)
+    && $post_type_upload === 'upload_profile_photo'
 ) {
     // get file extension
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
@@ -414,39 +411,39 @@ if (null !== ($post_type_upload)
     // make thumbnail
     makeThumbnail(
         $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName."_thumb".'.'.$ext,
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'_thumb'.'.'.$ext,
         40
     );
 
     // get current avatar and delete it
-    $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefixTable('users')." WHERE id=%i", $_SESSION['user_id']);
+    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM '.prefixTable('users').' WHERE id=%i', $_SESSION['user_id']);
     fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar']);
     fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb']);
 
     // store in DB the new avatar
     DB::query(
-        "UPDATE ".prefixTable('users')."
-        SET avatar='".$newFileName.'.'.$ext."', avatar_thumb='".$newFileName."_thumb".'.'.$ext."'
+        'UPDATE '.prefixTable('users')."
+        SET avatar='".$newFileName.'.'.$ext."', avatar_thumb='".$newFileName.'_thumb'.'.'.$ext."'
         WHERE id=%i",
         $_SESSION['user_id']
     );
 
     // store in session
     $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
-    $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
+    $_SESSION['user_avatar_thumb'] = $newFileName.'_thumb'.'.'.$ext;
 
     // return info
     echo prepareExchangedData(
         array(
-            "filename" => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
-            "filename_thumb" => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES)
+            'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
+            'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
         ),
-        "encode"
+        'encode'
     );
 
     exit();
 } elseif (null !== ($post_type_upload)
-    && $post_type_upload === "restore_db"
+    && $post_type_upload === 'restore_db'
 ) {
     rename(
         $filePath,
@@ -455,30 +452,29 @@ if (null !== ($post_type_upload)
 
     // Add in DB
     DB::insert(
-        prefixTable("misc"),
+        prefixTable('misc'),
         array(
-            'type' => "temp_file",
+            'type' => 'temp_file',
             'intitule' => time(),
-            'valeur' => $newFileName
+            'valeur' => $newFileName,
         )
     );
 
     // return info
     echo prepareExchangedData(
         array(
-            "operation_id" => DB::insertId()
+            'operation_id' => DB::insertId(),
         ),
-        "encode"
+        'encode'
     );
 
     exit();
 }
 
-
-
 /* Handles the error output. */
 function handleUploadError($message)
 {
     echo htmlentities($message, ENT_QUOTES);
+
     return;
 }

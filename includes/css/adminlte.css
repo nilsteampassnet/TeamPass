@@ -10682,8 +10682,8 @@ label:not(.form-check-label):not(.custom-file-label) {
   border-radius: 0.25rem;
 }
 
-.card .overlay > .fa,
-.overlay-wrapper .overlay > .fa {
+.card .overlay > .fas,
+.overlay-wrapper .overlay > .fas {
   position: absolute;
   top: 50%;
   left: 50%;

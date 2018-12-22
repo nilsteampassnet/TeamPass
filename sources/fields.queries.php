@@ -119,6 +119,8 @@ if (null !== $post_type) {
                 // get associated folders
                 $foldersList = $foldersNumList = '';
                 $arrayFolders = array();
+                $arrayRoles = array();
+
                 $rowsF = DB::query(
                     'SELECT t.title AS title, c.id_folder as id_folder
                     FROM '.prefixTable('categories_folders').' AS c
@@ -166,11 +168,17 @@ if (null !== $post_type) {
                 );
                 if (count($rows) > 0) {
                     foreach ($rows as $field) {
+                        $arrayRoles = array();
                         // Get lsit of Roles
                         if ($field['role_visibility'] === 'all') {
-                            $roleVisibility = array($LANG['every_roles']);
+                            array_push(
+                                $arrayRoles,
+                                array(
+                                    'id' => 'all',
+                                    'title' => langHdl('every_roles'),
+                                )
+                            );
                         } else {
-                            $roleVisibility = array();
                             //echo $field['role_visibility'];
                             foreach (explode(',', $field['role_visibility']) as $role) {
                                 if (empty($role) === false && $role !== null) {
@@ -180,15 +188,14 @@ if (null !== $post_type) {
                                         WHERE id = %i',
                                         $role
                                     );
-                                    array_push($roleVisibility, $data['title']);
+                                    array_push(
+                                        $arrayRoles,
+                                        array(
+                                            'id' => $role,
+                                            'title' => $data['title'],
+                                        )
+                                    );
                                 }
-                                /*
-                                if (empty($roleVisibility) === true) {
-                                    $roleVisibility = $data['title'];
-                                } else {
-                                    $roleVisibility .= ', '.$data['title'];
-                                }
-                                */
                             }
                         }
                         // Store for exchange
@@ -202,8 +209,8 @@ if (null !== $post_type) {
                                 'encrypted' => (int) $field['encrypted_data'],
                                 'type' => $field['type'],
                                 'masked' => (int) $field['masked'],
-                                'groups' => $roleVisibility,
-                                'role' => $field['role_visibility'],
+                                'roles' => $arrayRoles,
+                                //'role' => $field['role_visibility'],
                                 'mandatory' => (int) $field['is_mandatory'],
                             )
                         );
@@ -220,7 +227,503 @@ if (null !== $post_type) {
                 'encode'
             );
             break;
+
+        // LOADING THE TABLE
+        case 'add_new_category':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_STRING);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
+
+            // Store in DB
+            DB::insert(
+                prefixTable('categories'),
+                array(
+                    'parent_id' => 0,
+                    'title' => $post_label,
+                    'level' => 0,
+                    'order' => 1,
+                )
+            );
+            $newCategoryId = DB::insertId();
+
+            // Order the new item
+            DB::update(
+                prefixTable('categories'),
+                array(
+                    'order' => calculateOrder($newCategoryId, $post_position),
+                    ),
+                'id = %i',
+                $newCategoryId
+            );
+
+            // Store the folders
+            foreach ($post_folders as $folder) {
+                //add CF Category to this subfolder
+                DB::insert(
+                    prefixTable('categories_folders'),
+                    array(
+                        'id_category' => $newCategoryId,
+                        'id_folder' => $folder,
+                    )
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        // LOADING THE TABLE
+        case 'edit_category':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_STRING);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
+            $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
+
+            // Update category
+            DB::update(
+                prefixTable('categories'),
+                array(
+                    'title' => $post_label,
+                    'order' => calculateOrder($post_categoryId, $post_position),
+                    ),
+                'id = %i',
+                $post_categoryId
+            );
+
+            // Delete all folders
+            DB::delete(
+                prefixTable('categories_folders'),
+                'id_category = %i',
+                $post_categoryId
+            );
+
+            // Store the folders
+            foreach ($post_folders as $folder) {
+                //add Category to this subfolder
+                DB::insert(
+                    prefixTable('categories_folders'),
+                    array(
+                        'id_category' => $post_categoryId,
+                        'id_folder' => $folder,
+                    )
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        // LOADING THE TABLE
+        case 'delete':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_idToRemove = filter_var($dataReceived['idToRemove'], FILTER_SANITIZE_NUMBER_INT);
+            $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+
+            if ($post_action === 'category') {
+                // DELETING A CATEGORY
+                // Delete ID
+                DB::delete(
+                    prefixTable('categories'),
+                    'id = %i',
+                    $post_idToRemove
+                );
+
+                // Remove data from fields
+                $rows = DB::query(
+                    'SELECT id
+                    FROM '.prefixTable('categories').'
+                    WHERE parent_id = %i',
+                    $post_idToRemove
+                );
+                foreach ($rows as $record) {
+                    DB::delete(
+                        prefixTable('categories_items'),
+                        'field_id = %i',
+                        $record['id']
+                    );
+                }
+
+                // Remove all fields of this category
+                DB::delete(
+                    prefixTable('categories'),
+                    'parent_id = %i',
+                    $post_idToRemove
+                );
+
+                // Remove all folders belonging to this category
+                DB::delete(
+                    prefixTable('categories_folders'),
+                    'id_category = %i',
+                    $post_idToRemove
+                );
+            } else {
+                // DELETING A FIELD
+                // Delete ID
+                DB::delete(
+                    prefixTable('categories'),
+                    'id = %i',
+                    $post_idToRemove
+                );
+
+                // Delete all data
+                DB::delete(
+                    prefixTable('categories_items'),
+                    'field_id = %i',
+                    $post_idToRemove
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        // EDIT FIELD
+        case 'edit_field':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_STRING);
+            $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_STRING);
+            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_STRING);
+            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING);
+            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING);
+            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_STRING);
+            $post_fieldId = isset($dataReceived['fieldId']) === false ? '' :
+                filter_var($dataReceived['fieldId'], FILTER_SANITIZE_NUMBER_INT);
+
+            if (empty($post_fieldId) === false) {
+                // UPDATE FIELD
+
+                // Perform update
+                DB::update(
+                    prefixTable('categories'),
+                    array(
+                        'title' => $post_label,
+                        'parent_id' => $post_categoryId,
+                        'type' => $post_type,
+                        'encrypted_data' => $post_encrypted,
+                        'is_mandatory' => $post_mandatory,
+                        'masked' => $post_masked,
+                        'role_visibility' => implode(',', $post_roles),
+                        'order' => calculateOrder($post_fieldId, $post_order),
+                    ),
+                    'id = %i',
+                    $post_fieldId
+                );
+
+                // encrypt/decrypt existing data
+                $rowsF = DB::query(
+                    'SELECT i.id, i.data, i.data_iv, i.encryption_type
+                    FROM '.$pre.'categories_items AS i
+                    INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id = c.id)
+                    WHERE c.id = %i',
+                    $post_fieldId
+                );
+                foreach ($rowsF as $recordF) {
+                    $encryption_type = '';
+                    // decrypt/encrypt
+                    if ($post_encrypted === '0' && $recordF['encryption_type'] === 'defuse') {
+                        $encrypt = cryption(
+                            $recordF['data'],
+                            '',
+                            'decrypt'
+                        );
+                        $encryption_type = 'none';
+                    } elseif ($recordF['encryption_type'] === 'none' || $recordF['encryption_type'] === '') {
+                        $encrypt = cryption(
+                            $recordF['data'],
+                            '',
+                            'encrypt'
+                        );
+                        $encryption_type = 'defuse';
+                    }
+
+                    // store in DB
+                    if ($encryption_type !== '') {
+                        DB::update(
+                            prefixTable('categories_items'),
+                            array(
+                                'data' => $encrypt['string'],
+                                'data_iv' => '',
+                                'encryption_type' => $encryption_type,
+                                ),
+                            'id = %i',
+                            $recordF['id']
+                        );
+                    }
+                }
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_could_not_update_the_field'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        // ADD NEW FIELD
+        case 'add_new_field':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['is_admin'] === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_STRING);
+            $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_STRING);
+            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_STRING);
+            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING);
+            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING);
+            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_STRING);
+            $post_fieldId = isset($dataReceived['fieldId']) === false ? '' :
+                filter_var($dataReceived['fieldId'], FILTER_SANITIZE_NUMBER_INT);
+
+            // NEW FIELD
+            DB::insert(
+                prefixTable('categories'),
+                array(
+                    'parent_id' => $post_categoryId,
+                    'title' => $post_label,
+                    'type' => $post_type,
+                    'masked' => $post_masked,
+                    'encrypted_data' => $post_encrypted,
+                    'is_mandatory' => $post_mandatory,
+                    'role_visibility' => implode(',', $post_roles),
+                    'level' => 1,
+                    'order' => 1,
+                )
+            );
+            $newFieldId = DB::insertId();
+
+            // Order the new item
+            DB::update(
+                prefixTable('categories'),
+                array(
+                    'order' => calculateOrder($newFieldId, $post_order),
+                    ),
+                'id = %i',
+                $newFieldId
+            );
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
     }
+}
+
+function calculateOrder($id, $position)
+{
+    if ($position === 'top') {
+        // Set this new category to the top
+        $orderNewCategory = 1;
+        $newOrder = 2;
+    } elseif ($position === 'bottom') {
+        // Set this new category to the bottom
+
+        // Get number of categories
+        $rows = DB::query(
+            'SELECT id
+            FROM '.prefixTable('categories').'
+            WHERE level = %i',
+            0
+        );
+        $orderNewCategory = DB::count() + 1;
+
+        return $orderNewCategory;
+    } else {
+        // Get position of selected folder
+        $data = DB::queryFirstRow(
+            'SELECT c.order AS position
+            FROM '.prefixTable('categories').' AS c
+            WHERE id = %i',
+            (int) $position
+        );
+
+        $orderNewCategory = (int) $data['position'] - 1;
+
+        // Manage case of top
+        if ($orderNewCategory === 0) {
+            $orderNewCategory = 1;
+            $newOrder = 2;
+        } else {
+            $newOrder = 1;
+        }
+    }
+
+    // Update all orders
+    $rows = DB::query(
+        'SELECT id, c.order AS position
+        FROM '.prefixTable('categories').' AS c
+        WHERE level = %i
+        ORDER BY c.order ASC, c.title ASC',
+        0
+    );
+    foreach ($rows as $record) {
+        if ($record['id'] !== $id) {
+            DB::update(
+                prefixTable('categories'),
+                array(
+                    'order' => $newOrder,
+                    ),
+                'id = %i',
+                $record['id']
+            );
+        }
+        ++$newOrder;
+    }
+
+    // update for the new item
+    return (int) $orderNewCategory;
 }
 
 /*

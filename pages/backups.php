@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Backups.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+*
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -33,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], "backups", $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'backups', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -44,59 +45,115 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>
 
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
         <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('backups'); ?></h1>
-          </div><!-- /.col -->
+            <div class="col-sm-12">
+                <h1 class="m-0 text-dark"><i class="fas fa-database mr-2"></i><?php echo langHdl('backups'); ?></h1>
+            </div><!-- /.col -->
         </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-    
+    </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
 
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
+<!-- Main content -->
+<div class='content'>
+    <div class='container-fluid'>
+        <div class='row'>
+            <div class='col-md-12'>
+                <div class='card card-primary'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
+                    </div>
+                    
+                    <div class='card-body'>
 
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo langHdl('on_the_fly'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled"><?php echo langHdl('scheduled'); ?></a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="oneshot" role="tabpanel" aria-labelledby="oneshot-tab">
+                                
+                                <div class="mt-4">
+                                    <div class="callout callout-info">
+                                        <h4><?php echo langHdl('admin_action_db_backup'); ?></h4>
+                                        <small class="form-text text-muted mt-4">
+                                            <?php echo langHdl('explanation_for_oneshot_backup'); ?>
+                                        </small>
+
+                                        <div class="form-group mt-4">
+                                            <div class="row mt-1">
+                                                <div class="col-3">
+                                                    <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
+                                                </div>
+                                                <div class="col-9">
+                                                    <input type="text" class="form-control form-control-sm" id="onthefly-backup-key">
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3 hidden" id="onthefly-backup-progress">
+
+                                            </div>
+                                            <div class="row mt-3">
+                                                <button class="btn btn-info ml-1 start" data-action="onthefly-backup"><?php echo langHdl('perform_backup'); ?></button>
+                                            </div>                               
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4">
+                                    <div class="callout callout-info">
+                                        <h4><?php echo langHdl('admin_action_db_restore'); ?></h4>
+                                        <small class="form-text text-muted mt-4">
+                                            <?php echo langHdl('explanation_for_oneshot_restore'); ?>
+                                        </small>
+
+                                        <div class="form-group mt-4">
+                                            <div class="row mt-1">
+                                                <div class="col-3">
+                                                    <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
+                                                </div>
+                                                <div class="col-9">
+                                                    <input type="text" class="form-control form-control-sm" id="onthefly-restore-key">
+                                                </div>
+                                            </div>
+                                            <div class="row mt-1">
+                                                <div class="col-3">
+                                                    <span class="text-bold"><?php echo langHdl('backup_select'); ?></span>
+                                                </div>
+                                                <div class="col-9 input-group">
+                                                    <button class="btn btn-default" id="onthefly-restore-file-select"><?php echo langHdl('choose_file'); ?></button>
+                                                    <span class="ml-2" id="onthefly-restore-file"></span>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3 hidden" id="onthefly-restore-progress">
+
+                                            </div>
+                                            <div class="row mt-3">
+                                                <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo langHdl('perform_restore'); ?></button>
+                                            </div>                               
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="tab-pane fade show active" id="scheduled" role="tabpanel" aria-labelledby="scheduled-tab">
+
+                            </div>
+                        </div>
+                    
+                    </div>
+                </div>
             </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
-            </div><!-- /.card -->
-          </div>
-          <!-- /.col-md-6 -->
         </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
+    
     </div>
-    <!-- /.content -->
-
-
-
-
-
+</div>

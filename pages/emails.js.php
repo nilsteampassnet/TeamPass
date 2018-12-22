@@ -111,8 +111,6 @@ $(document).on('click', '.button', function() {
 
 
 $(document).on('click', '#button-duo-save', function() {
-    var data = "{\"akey\":\""+sanitizeString($("#duo_akey").val())+"\", \"ikey\":\""+sanitizeString($("#duo_ikey").val())+"\", \"skey\":\""+sanitizeString($("#duo_skey").val())+"\", \"host\":\""+sanitizeString($("#duo_host").val())+"\"}";
-    
     // Prepare data
     var data = {
         'akey'  : $('#duo_akey').val(),

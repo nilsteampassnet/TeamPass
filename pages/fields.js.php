@@ -47,38 +47,572 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 
 loadFieldsList();
 
-$(document).on('click', '.edit', function() {
+$('input[type="checkbox"].flat-red').iCheck({
+    checkboxClass: 'icheckbox_flat-red',
+});
+$('input[type="checkbox"].flat-blue').iCheck({
+    checkboxClass: 'icheckbox_flat-blue',
+});
+
+/**
+ * NEW CATEGORY
+ */
+$('#button-new-category').click(function() {
+    // Hide table
+    $('#table-fields').addClass('hidden');
+
+    $('#form-category-folders, #form-category-list').val('').change();
+    $('#form-category-label').val('');
+
+    // Show form
+    $('#form-category').removeClass('hidden');
+});
+
+
+
+/**
+ * NEW FIELD
+ */
+$('#button-new-field').click(function() {
+    // Hide table
+    $('#table-fields').addClass('hidden');
+
+    // Clear form
+    $('#form-field input[type="checkbox"]').iCheck('uncheck');
+    $('#form-field-type, #form-field-roles').val('').change();
+    $('#form-field-order, #form-field-category').html('');
+    $('#form-field-label').val('');
+
+    // Show Category selection
+    var categoriesOptions = [];
+    categoriesOptions.push({
+            id: '',
+            text: '-- <?php echo langHdl('select'); ?> --'
+        });
+    $('.category').each(function() {
+        categoriesOptions.push({
+            id: $(this).data('category'),
+            text: $(this).find('td:eq(1)').text()
+        });
+    });
+    $('#form-field-category').select2({
+        tags: true,
+        data: categoriesOptions
+    });
+    $('#form-field-category-div').removeClass('hidden');
+
+    // Change button save attribute
+    $('#button-save-field').data('edit', false);
+
+    // Force empty position select
+    $('#form-field-order').val('').change();
+
+    // Show form
+    $('#form-field').removeClass('hidden');
+});
+
+// Update list of Field options in case of Category seleciton
+$('#form-field-category').change(function() {
+    var selectedCategory = $(this).val(),
+        fields = [];
+    
+    // Add top
+    fields.push({
+        id: 'top',
+        text: '<?php echo langHdl('top'); ?>'
+    });
+
+    // CLear existing list
+    $('#form-field-order').html('');
+    
+    
+    // Build list of fields in this category
+    $('.field[data-category]').each(function() {
+        if (parseInt($(this).data('category')) === parseInt(selectedCategory)) {
+            fields.push({
+                id: $(this).data('order'),
+                text: '<?php echo langHdl('before').' '; ?>' + $(this).find('td:eq(1)').text()
+            });
+        }
+    });
+    fields.push({
+        id: 'bottom',
+        text: '<?php echo langHdl('bottom'); ?>'
+    });
+    
+    // Update select of Roles
+    $('#form-field-order').select2({
+        tags: true,
+        data: fields
+    });
+
+    // Select order BOTTOM
+    $('#form-field-order').val('bottom').change();
+});
+
+/*
+$(document).on('click', '.save', function() {
+    var form = $(this).data('action');
+});
+*/
+
+/**
+ * CANCEL BUTTON
+ */
+$(document).on('click', '.cancel', function() {
+    $('#table-fields').removeClass('hidden');
+    $('#form-' + $(this).data('action')).addClass('hidden');
+});
+
+
+$(document).on('click', '.save', function() {
+    var button = $(this),
+        action = button.data('action'),
+        editionOngoing = button.data('edit');
+
+    if (action ==='category') {
+        // CATEGORY SAVE
+        if ($('#form-category-label').val() !== ''
+            && $('#form-category-folders').val() !== ''
+            && $('#form-category-list').val() !== ''
+        ) {
+            // Prepare data
+            var data = {
+                'label'     : $('#form-category-label').val(),
+                'folders'   : $('#form-category-folders').val(),
+                'position'  : $('#form-category-list').val(),
+                'edit'      : $('#button-save-category').data('edit') === true ? true : false,
+                'categoryId': $('#form-category-label').data('id'),
+            },
+            actionToPerform = '';
+            
+            if (editionOngoing === true) {
+                actionToPerform = 'edit_category';
+            } else {
+                actionToPerform = 'add_new_category';
+            }
+
+            // Launch action
+            $.post(
+                'sources/fields.queries.php',
+                {
+                    type    : actionToPerform,
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key     : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                    if (data.error === true) {
+                        // ERROR
+                        alertify
+                            .error(
+                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                                0
+                            )
+                            .dismissOthers();
+                    } else {
+                        // Reload list
+                        loadFieldsList()
+
+                        // Inform user
+                        alertify
+                            .success('<?php echo langHdl('done'); ?>', 1)
+                            .dismissOthers();
+
+                        // Show
+                        $('#table-fields').removeClass('hidden');
+                        $('#form-category').addClass('hidden');
+                    }
+
+                    $('#button-save-category').data('edit', false);
+                }
+            );
+        } else {
+            // ERROR
+            alertify
+                .error(
+                    '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('all_fields_are_required'); ?>',
+                    5
+                )
+                .dismissOthers();
+        }
+    } else if (action ==='field') {
+        // FIELD SAVE
+        if ($('#form-field-label').val() !== ''
+            && $('#form-field-type').val().length > 0
+            && $('#form-field-roles').val().length > 0
+            && $('#form-field-order').val() !== ''
+        ) {
+            // Prepare data
+            var data = {
+                    'label'     : $('#form-field-label').val(),
+                    'type'      : $('#form-field-type').val(),
+                    'roles'     : $('#form-field-roles').val(),
+                    'mandatory' : $('#form-field-mandatory').prop('checked') === true ? 1 : 0,
+                    'masked'    : $('#form-field-masked').prop('checked') === true ? 1 : 0,
+                    'encrypted' : $('#form-field-encrypted').prop('checked') === true ? 1 : 0,
+                    'order'     : $('#form-field-order').val(),
+                    'fieldId'   : $('#form-field-label').data('id'),
+                    'categoryId': $('#form-field-label').data('category'),
+                },
+                actionToPerform = '';
+                
+            if (editionOngoing === true) {
+                actionToPerform = 'edit_field';
+            } else {
+                actionToPerform = 'add_new_field';
+
+                // Check if category is selected
+                if ($('#form-field-category').val() === '') {
+                    alertify
+                        .error(
+                            '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('all_fields_are_required'); ?>',
+                            5
+                        )
+                        .dismissOthers();
+                    return false;
+                } else {
+                    data.categoryId = $('#form-field-category').val();
+                }
+            }
+
+            // Launch action
+            $.post(
+                'sources/fields.queries.php',
+                {
+                    type    : actionToPerform,
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key     : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+
+                    if (data.error === true) {
+                        // ERROR
+                        alertify
+                            .error(
+                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                                0
+                            )
+                            .dismissOthers();
+                    } else {
+                        // Reload list
+                        loadFieldsList()
+
+                        // Inform user
+                        alertify
+                            .success('<?php echo langHdl('done'); ?>', 1)
+                            .dismissOthers();
+
+                        // Show
+                        $('#table-fields').removeClass('hidden');
+                        $('#form-field').addClass('hidden');
+                    }
+
+                    $('#button-save-field').data('edit', false);
+                }
+            );
+        } else {
+            // ERROR
+            alertify
+                .error(
+                    '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('all_fields_are_required'); ?>',
+                    5
+                )
+                .dismissOthers();
+        }
+    }
+});
+
+
+$(document).on('click', '.action-category', function() {
     var action = $(this).data('action'),
         row = $(this).closest('tr');
 
-    if (action ==='category') {
-        var categoryId = row.data('category');
+    if (action ==='edit') {
+        var categoryId = row.data('category'),
+            categoryOrder = row.data('order') - 1,
+            categoryText = $(row).find('td:eq(1)').text(),
+            foldersHtml = $(row).find('td:eq(2)').html(),
+            categoryFolders = [];
+            
+        // This to manage Top and Bottom
+        if (categoryOrder === 0) {
+            categoryOrder = 'top';
+        } else if ($('#form-category-list').children('option').length - 2 === categoryOrder) {
+            categoryOrder = 'bottom';
+        }
+            
+        // Get folder
+        $(foldersHtml).find('span').each(function(i, element) {
+            categoryFolders.push($(element).data('folder'));
+        });
 
-        console.log(categoryId)
-    } else if (action ==='field') {
+        // Prefill the form
+        $('#form-category-label')
+            .val(categoryText)
+            .data('id', categoryId);
+        $('#form-category-list').val(categoryOrder).change();
+        $('#form-category-folders').val(categoryFolders).change();
+
+        // Show
+        $('#table-fields').addClass('hidden');
+        $('#form-category').removeClass('hidden');
+
+        // Set as edit
+        $('#button-save-category').data('edit', true);
+
+    } else if (action ==='delete') {
         var categoryId = row.data('category'),
             fieldId = row.data('field');
-            
-        console.log(categoryId + " -- "+fieldId)
+
+        $('.row-delete').remove();
+
+        // Add new row
+        $(row).after(
+            '<tr class="table-danger row-delete" data-category="' + categoryId + '">' +
+            '<td colspan="4">' +
+            '<div class="alert alert-danger">' +
+            '<p><i class="fas fa-warning mr-2"></i><?php echo langHdl('caution_while_deleting_category'); ?></p>' +
+            '<p><input type="checkbox" class="form-check-input form-control flat-red" id="delete-confirm">' +
+            '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo langHdl('please_confirm_by_clicking_checkbox'); ?></label></p>' +
+            '</div>' +
+            '<div>' +
+            '<button type="button" class="btn btn-warning" id="button-delete" data-type="category"><?php echo langHdl('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '</div></td></tr>'
+        );
+
+        // iCheck for checkbox and radio inputs
+        $('.flat-red').iCheck({
+            checkboxClass: 'icheckbox_flat-red'
+        });
+    }
+});
+
+/**
+ * SUBMIT DELETE
+ */
+$(document).on('click', '#button-delete', function() {
+    // If confirmed
+    if ($('#delete-confirm').prop("checked") === true) {
+        // Show cog
+        alertify
+            .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        var row = $(this).closest('tr'),
+            type = $(this).data('type'),
+            idToRemove = '';
+
+        // What to remove
+        if (type === 'category') {
+            idToRemove = row.data('category');
+        } else {
+            idToRemove = row.data('field');
+        }
+
+        // Prepare data
+        var data = {
+            'idToRemove': idToRemove,
+            'action'    : type,
+        };
+        
+        //send query
+        $.post(
+            "sources/fields.queries.php",
+            {
+                type    : "delete",
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fa fa-warning fa-lg mr-2"></i>' + data.message,
+                            5
+                        )
+                        .dismissOthers();
+                } else {
+                    // Delete rows
+                    if (type === 'category') {
+                    $('.field, .table-primary').each(function(i, row) {
+                        if ($(this).data('category') === idToRemove) {
+                            $(this).remove();
+                        }
+                    });
+                    } else {
+                        $('.field').each(function(i, row) {
+                        if ($(this).data('field') === idToRemove) {
+                            $(this).remove();
+                        }
+                    });
+                    }
+
+                    // Delete row
+                    $(row).remove();
+
+                    // Inform user
+                    showAlertify(
+                        '<?php echo langHdl('done'); ?>',
+                        2,
+                        'top-bottom',
+                        'success'
+                    );
+                }
+            }
+        );
+    }
+});
+
+/**
+ * CANCEL DELETE
+ */
+$(document).on('click', '#button-cancel', function() {
+    $(this).closest('tr').remove();
+});
+
+
+
+
+//------
+
+
+$(document).on('click', '.action-field', function() {
+    var action = $(this).data('action'),
+        row = $(this).closest('tr');
+
+    if (action ==='edit') {
+        var categoryId = row.data('category'),
+            fieldId = row.data('field'),
+            fieldPosition = row.data('position'),
+            fieldOrder = row.data('order'),
+            fieldText = $(row).find('td:eq(1)').text(),
+            characteristicsHtml = $(row).find('td:eq(2)').html(),
+            rolesHtml = $(row).find('td:eq(3)').html(),
+            roles = [],
+            fields = [{
+                id: 'top',
+                text: '<?php echo langHdl('top'); ?>'
+            }];
+
+        // Category already selected
+        $('#form-field-category-div').addClass('hidden');
+
+        // Clear
+        $('#form-field :input[type="checkbox"]').iCheck('uncheck');
+
+        // Build list of fields in this category
+        $("#form-field-order").html('');
+        $('.field[data-category]').each(function(){
+            if ($(this).data('category') === categoryId) {
+                fields.push({
+                    id: $(this).data('order'),
+                    text: '<?php echo langHdl('before').' '; ?>' + $(this).find('td:eq(1)').text()
+                });
+            }
+        });
+        fields.push({
+            id: 'bottom',
+            text: '<?php echo langHdl('bottom'); ?>'
+        });
+        
+        // Update select of Roles
+        $("#form-field-order").select2({
+            tags: true,
+            data: fields
+        });
+        
+        // This to manage Top and Bottom
+        if (fieldOrder === 1) {
+            fieldOrder = 'top';
+        } else if ($('#form-field-order').children('option').length - 2 === fieldOrder) {
+            fieldOrder = 'bottom';
+        }
+        
+        $('#form-field-order').val(fieldOrder).change();
+        
+        // Field characterics
+        $(characteristicsHtml).each(function(i, value) {
+            // Type
+            if ($(value).hasClass('text') === true) {
+                $('#form-field-type').val('text').change();
+            } else if ($(value).hasClass('textarea') === true) {
+                $('#form-field-type').val('textarea').change();
+            }
+            // Is mandatory
+            if ($(value).hasClass('mandatory') === true) {
+                $('#form-field-mandatory').iCheck('check');
+            }
+            // Is masked
+            if ($(value).hasClass('masked') === true) {
+                $('#form-field-masked').iCheck('check');
+            }
+            // Is encrypted
+            if ($(value).hasClass('encrypted') === true) {
+                $('#form-field-encrypted').iCheck('check');
+            }
+        });
+
+        // Get roles
+        $(rolesHtml).each(function(i, element) {
+            roles.push($(element).data('id'));
+        });
+
+        // Prepare form
+        $('#form-field-label')
+            .val(fieldText)
+            .data('id', fieldId)
+            .data('category', categoryId);
+        $('#form-field-roles').val(roles).change();
+
+        // Show
+        $('#table-fields').addClass('hidden');
+        $('#form-field').removeClass('hidden');
+
+        // Set as edit
+        $('#button-save-field').data('edit', true);
+    } else if (action ==='delete') {
+        var categoryId = row.data('category'),
+            fieldId = row.data('field');
+        
+        $('.row-delete').remove();
+
+        // Add new row
+        $(row).after(
+            '<tr class="table-danger row-delete" data-category="' + categoryId + '" data-field="' + fieldId + '">' +
+            '<td colspan="4">' +
+            '<div class="alert alert-danger">' +
+            '<p><i class="fas fa-warning mr-2"></i><?php echo langHdl('caution_while_deleting_field'); ?></p>' +
+            '<p><input type="checkbox" class="form-check-input form-control flat-red" id="delete-confirm">' +
+            '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo langHdl('please_confirm_by_clicking_checkbox'); ?></label></p>' +
+            '</div>' +
+            '<div>' +
+            '<button type="button" class="btn btn-warning" id="button-delete" data-type="field"><?php echo langHdl('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '</div></td></tr>'
+        );
+
+        // iCheck for checkbox and radio inputs
+        $('.flat-red').iCheck({
+            checkboxClass: 'icheckbox_flat-red'
+        });
     }
 });
 
 
-$(document).on('click', '.move', function() {
-    var direction = $(this).data('direction'),
-        row = $(this).closest('tr'),
-        categoryId = row.data('category'),
-        fieldId = row.data('field'),
-        currentOrder = $(row).data('order');
+//------
 
-    if (direction ==='up') {
-        if ()
-        console.log(categoryId)
-    } else if (direction ==='field') {
-            
-    }
-        console.log(categoryId + " -- "+fieldId+" -- "+currentOrder)
-});
 
 
 /**
@@ -91,6 +625,8 @@ function loadFieldsList() {
     alertify
         .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
+
+    $('#table-loading').removeClass('hidden');
     
     //send query
     $.post(
@@ -101,20 +637,8 @@ function loadFieldsList() {
             key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            // Handle server answer
-            try {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            }
-            catch (e) {
-                // error
-                showAlertify(
-                    '<?php echo langHdl('server_answer_error').'<br />'.langHdl('server_returned_data').':<br />'; ?>' + data.error,
-                    0,
-                    'top-right',
-                    'error'
-                );
-                return false;
-            }
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
             console.log(data);
 
             if (data.error === true) {
@@ -129,78 +653,110 @@ function loadFieldsList() {
                 if (data.array.length > 0) {
                     // Init
                     var html = '',
-                        categoryId = '';
+                        categoryId = '',
+                        positionCategory = 0,
+                        positionField = 0,
+                        categoriesList = '<option value="top"><?php echo langHdl('top'); ?></option>';
 
                     // Parse array and build table
                     $(data.array).each(function(i, val) {
-                        console.log(i+' -- '+val)
                         // Is CATEGORY or FIELD?
                         if (val.category === true) {
                             //--- This is a Category
                             categoryId = val.id;
+                            positionField = 0;
 
                             // Loop on associated folders
                             var foldersList = '';
                             $(val.folders).each(function(j, folder) {
-                                foldersList += '<span class="folder mr-2" data-folder="' + folder.id + '">' +
+                                foldersList += '<span class="badge badge-info folder mr-2" data-folder="' + folder.id + '">' +
                                     '<i class="far fa-folder mr-1"></i>' + folder.title + '</span>';
                             });
 
                             // Prepare html
-                            html += '<tr class="table-primary" data-category="' + categoryId + '" data-order="' + val.order + '">' +
-                                '<td class="text-left" width="80px"><i class="fas fa-caret-up move pointer mr-2" data-direction="up"></i>' +
-                                '<i class="fas fa-caret-down move pointer mr-2" data-direction="down"></i>' +
-                                '<i class="far fa-edit pointer edit" data-action="category"></i></td>' +
+                            html += '<tr class="table-primary category" data-category="' + categoryId + '" data-order="' + val.order + '" data-position="' + positionCategory + '">' +
+                                '<td class="text-left" width="80px">' +
+                                '<i class="far fa-edit pointer action-category mr-1" data-action="edit"></i>' +
+                                '<i class="far fa-trash-alt pointer action-category" data-action="delete"></i>' +
+                                '</td>' +
                                 '<td class="text-left" colspan="2"><strong>' + val.title + '</strong></td>' +
                                 '<td class="no-ellipsis" width="50%"><small>' + foldersList + '</small></td>' +
                                 '</tr>';
+
+                            // Prepare list of categories for Form
+                            categoriesList += '<option value="' + categoryId + '"><?php echo langHdl('before').' '; ?>' + val.title + '</option>';
+                            
+                            positionCategory += 1;
                         } else {
                             //--- This is a Field
                             // Init
                             var encrypted = '',
                                 masked = '',
                                 mandatory = '',
-                                type = '<i class="fas fa-paragraph ml-2 infotip" title="<?php echo langHdl('text'); ?>"></i>';
+                                type = '<i class="fas fa-paragraph ml-2 infotip text" title="<?php echo langHdl('text'); ?>"></i>',
+                                roles = '';
 
                             if (val.encrypted === 1) {
-                                encrypted = '<i class="fas fa-shield-alt ml-2 infotip" title="<?php echo langHdl('encrypted_data'); ?>"></i>';
+                                encrypted = '<i class="fas fa-shield-alt ml-2 infotip encrypted" title="<?php echo langHdl('encrypted_data'); ?>"></i>';
                             }
 
                             if (val.masked === 1) {
-                                masked = '<i class="fas fa-mask ml-2" infotip" title="<?php echo langHdl('data_is_masked'); ?>></i>';
+                                masked = '<i class="fas fa-mask ml-2" infotip masked" title="<?php echo langHdl('data_is_masked'); ?>></i>';
                             }
 
                             if (val.mandatory === 1) {
-                                mandatory = '<i class="fas fa-fire text-danger ml-2 infotip" title="<?php echo langHdl('is_mandatory'); ?>"></i>';
+                                mandatory = '<i class="fas fa-fire text-danger ml-2 infotip mandatory" title="<?php echo langHdl('is_mandatory'); ?>"></i>';
                             }
 
                             if (val.type === 'textarea') {
-                                type = '<i class="fas fa-align-justify ml-2 infotip" title="<?php echo langHdl('textarea'); ?>"></i>';
+                                type = '<i class="fas fa-align-justify ml-2 infotip textarea" title="<?php echo langHdl('textarea'); ?>"></i>';
+                            }
+
+                            if (val.roles.length > 0) {
+                                $(val.roles).each(function(k, role) {
+                                    roles += '<span class="badge badge-secondary mr-1" data-id="' + role.id +'">' + role.title + '</span>';
+                                });
                             }
 
                             // Prepare html
-                            html += '<tr class="field" data-category="' + categoryId + '" data-field="' + val.id + '" data-order="' + val.order + '">' +
-                                '<td class="text-left"><i class="fas fa-caret-up move pointer mr-2" data-direction="up"></i>' +
-                                '<i class="fas fa-caret-down move pointer mr-2" data-direction="down"></i>' +
-                                '<i class="far fa-edit pointer edit" data-action="field"></i></td>' +
+                            html += '<tr class="field" data-category="' + categoryId + '" data-field="' + val.id + '" data-order="' + val.order + '" data-position="' + positionField + '">' +
+                                '<td class="text-left">' +
+                                '<i class="far fa-edit pointer mr-1 action-field" data-action="edit"></i>' +
+                                '<i class="far fa-trash-alt pointer action-field" data-action="delete"></i>' +
+                                '</td>' +
                                 '<td class="text-left"><i class="fas fa-angle-right mr-2"></i>' + val.title + '</td>' +
                                 '<td class="text-center">' + mandatory + encrypted + masked +  type + '</td>' +
-                                '<td class="">' + val.groups + '</td>' +
+                                '<td class="">' + roles + '</td>' +
                                 '</tr>';
+
+                            positionField += 1;
                         }
                     });
 
-                    // Display
-                    $('#table-fields > tbody').html(html);
+                    /*// Store some values
+                    store.update(
+                        'teampassApplication',
+                        function(teampassApplication)
+                        {
+                            teampassApplication.numberOfCategories = positionCategory + 1;
+                        }
+                    );*/
 
-                    $('.no-ellipsis')
-                        .removeAttr('text-overflow')
-                        .removeAttr('overflow');
+                    $('.overlay').addClass('hidden');
+
+                    // Display
+                    $('#table-fields > tbody').html(html);                    
 
                     $('#table-fields').removeClass('hidden');
 
                     // Show tooltips
                     $('.infotip').tooltip();
+
+                    $('#form-category-list')
+                        .find('option')
+                        .remove()
+                        .end()
+                        .append(categoriesList + '<option value="bottom"><?php echo langHdl('bottom'); ?></option>');
                 } else {
                     // No fields is defined
                     $("#fields-message")
@@ -215,91 +771,9 @@ function loadFieldsList() {
                     'top-bottom',
                     'success'
                 );
+
+                $('#table-loading').addClass('hidden');
             }
-
-            
-            var newList = '<table id="tbl_categories" cellspacing="0" cellpadding="0" border="0px" width="100%">';
-            // parse json table and disaply
-            var json = $.parseJSON(data);
-
-            if ($(json).length > 0) {
-                var current_category = '';
-                $(json).each(function(i,val){
-                    if (val[0] === "1") {
-                        current_category = val[1];
-                        newList += '<tr id="t_cat_'+val[1]+'" style="background-color:#e1e1e1; margin-bottom:2px;" width="40%">'+
-                        '<td colspan="2" style="font-weight:bold; padding:2px;">'+
-                        '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                        '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
-                        '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'" class="pointer">'+val[2]+'</label>'+
-                        '</td><td style="padding:2px;" width="8%">'+
-                        '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category']; ?>" onclick="fieldAdd('+
-                        val[1]+')" style="cursor:pointer;">'+
-                        '<span class="fa fa-square fa-stack-2x"></span><span class="fa fa-plus fa-stack-1x fa-inverse"></span>'+
-                        '</span>&nbsp;'+
-                        '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
-                        '<span class="fa fa-square fa-stack-2x"></span><span class="fa fa-folder-o fa-stack-1x fa-inverse"></span>'+
-                        '</span>'+
-                        '</td><td style="padding:2px;" width="52%"><?php echo $LANG['category_in_folders_title']; ?>:'+
-                        '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+
-                        (val[4] === '' ? '<?php echo $LANG['none']; ?>' : val[4])+'</span>'+
-                        '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
-                    } else {
-                        newList += '<tr id="t_field_'+val[1]+'" class="drag">'+
-                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+','+val[10]+'" /></td>'+
-                        '<td colspan="1" style="border-bottom:1px solid #a0a0a0; padding:3px 0 1px 0;">'+
-                        '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                        '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
-                        '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'" width="100%" class="pointer">'+val[2]+'</label>'+
-                        '</td><td colspan="1" style="border-bottom:1px solid #a0a0a0;">';
-
-                        if (val[4] !== "") {
-                            newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
-                            if (val[4] === "1") {
-                                newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>"></i>';
-                            } else if (val[4] === "0") {
-                                newList += '<span class="fa-stack tip" title="<?php echo $LANG['not_encrypted_data']; ?>">'+
-                                    '<span class="fa fa-key fa-stack-1x"></span><span class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></span></span>';
-                            }
-                            newList += '</span>'
-                        }
-
-                        if (val[6] !== "") {
-                            newList += '<span style="margin-left:4px;">';
-                            if (val[6] === "text") {
-                                newList += '<span class="fa fa-paragraph tip" title="<?php echo $LANG['text']; ?>"></span>';
-                            } else if (val[6] === "textarea") {
-                                newList += '<span class="fa fa-align-justify tip" title="<?php echo $LANG['textarea']; ?>"></span>';
-                            }
-
-                            if (val[7] === "1") {
-                                newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked']; ?>"></ispan>';
-                            }
-
-                            if (val[10] === "1") {
-                                newList += '&nbsp;<span class="fa fa-fire tip mi-red" title="<?php echo $LANG['is_mandatory']; ?>"></ispan>';
-                            }
-                            newList += '</span>'
-                        }
-
-                        // Manage display Roles visibility
-                        newList += '<td colspan="1" style="border-bottom:1px solid #a0a0a0;">' +
-                            '<?php echo $LANG['visible_by']; ?>: <span style="font-family:italic;">' + val[8] +
-                            '</span><input type="hidden" id="roleVisibilityList_'+val[1]+'" value="' + val[9] + '" /></td></tr>';
-                    }
-                });
-
-                // display
-                newList += '</table>';
-                $("#new_item_title").val("");
-                $("#categories_list").html(newList);
-            } else {
-                $("#no_category")
-                    .html("<?php echo addslashes($LANG['no_category_defined']); ?>")
-                    .removeClass("hidden");
-            }
-            $('.tip').tooltipster({multiple: true});
-            $("#div_loading").hide();
         }
    );
 }

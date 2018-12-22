@@ -532,7 +532,7 @@ if (($session_validite_pw === null
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '' ,'">
-                                    <i class="fas fa-area-chart nav-icon"></i>
+                                    <i class="fas fa-chart-bar nav-icon"></i>
                                     <p>'.langHdl('statistics').'</p>
                                 </a>
                             </li>
@@ -890,6 +890,10 @@ if ($menuAdmin === true) {
 <!-- ICHECK -->
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
+<!-- Sortable -->
+<script src="./plugins/sortable/jquery.sortable.js"></script>
+<!-- PLUPLOAD -->
+<script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
     <?php
 } elseif ($pageSel === 'items') {
         ?>
@@ -973,7 +977,7 @@ if (isset($_SESSION['CPM']) === true
         } elseif ($pageSel === 'api') {
             include_once $SETTINGS['cpassman_dir'].'/pages/api.js.php';
         } elseif ($pageSel === 'backups') {
-            include_once $SETTINGS['cpassman_dir'].'/pages/api.js.php';
+            include_once $SETTINGS['cpassman_dir'].'/pages/backups.js.php';
         } elseif ($pageSel === 'emails') {
             include_once $SETTINGS['cpassman_dir'].'/pages/emails.js.php';
         } elseif ($pageSel === 'ldap') {
