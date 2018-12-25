@@ -122,7 +122,7 @@ if (twoFaMethods > 1) {
         if (twofaMethod === 'google') {
             $('#ga_code').focus();
         } else if (twofaMethod === 'yubico') {
-            $('#yubiko_key').focus();
+            $('#yubico_key').focus();
         } else if (twofaMethod === 'agses') {
             startAgsesAuth();
         }
@@ -149,7 +149,7 @@ $('.submit-button').keypress(function(event){
     }
 });
 
-$('#yubiko_key').change(function(event) {
+$('#yubico_key').change(function(event) {
     launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
     event.preventDefault();
 });
@@ -269,8 +269,8 @@ function launchIdentify(isDuo, redirect, psk)
             if ($("#login").val() === "") $("#login").addClass("ui-state-error");
 
             // Clear 2fa code
-            if ($("#yubiko_key").length > 0) {
-                $("#yubiko_key").val("");
+            if ($("#yubico_key").length > 0) {
+                $("#yubico_key").val("");
             }
             if ($("#ga_code").length > 0) {
                 $("#ga_code").val("");
@@ -283,7 +283,7 @@ function launchIdentify(isDuo, redirect, psk)
         var user2FaMethod = $("#2fa_user_selection").val();
 
         if (user2FaMethod !== "") {
-            if ((user2FaMethod === "yubico" && $("#yubiko_key").val() === "")
+            if ((user2FaMethod === "yubico" && $("#yubico_key").val() === "")
                 || (user2FaMethod === "google" && $("#ga_code").val() === "")
             ) {
                 return false;
@@ -308,72 +308,64 @@ function launchIdentify(isDuo, redirect, psk)
     var TimezoneOffset = d.getTimezoneOffset()*60;
 
     // get some info
-    var client_info = "";
+    var client_info = '';
 
-    $.when(
-        $.getJSON(
-            'https://ipapi.co/json',
-            null,
-            function (answered_data) {
-                if (answered_data.ip !== "") {
-                    client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
-                }
+    // Get 2fa
+    $.post(
+        'sources/identify.php',
+        {
+            type : 'get2FAMethods'
+        },
+        function(data) {
+            var data = JSON.parse(data),
+                mfaData = {};
+            console.log("get2FAMethods")
+            console.log(data)
+            console.log('>> '+user2FaMethod)
+
+            /*if (user2FaMethod === '' && data.nb === '1') {
+                user2FaMethod = data.method;
+            }*/
+
+            // Google 2FA
+            if (user2FaMethod === 'agses' && $('#agses_code').val() !== undefined) {
+                mfaData['agses_code'] = $('#agses_code').val();
             }
-        )
-        .fail(function() {
-            console.log('could not reach ipapi.co');
-        })
-        .always(function() {
-            console.log('Continue');
-
-            // Get 2fa
-            $.post(
-                "sources/identify.php",
-                {
-                    type : "get2FAMethods"
-                },
-                function(fa_methods) {
-                    var data = "";
-                    if (user2FaMethod === "" && fa_methods[0].nb === "1") {
-                        user2FaMethod = fa_methods[0].method;
-                    }
-
-                    // Google 2FA
-                    if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
-                        data = ', "agses_code":"' + $("#agses_code").val() + '"';
-                    }
+    
+            // Google 2FA
+            if (user2FaMethod === 'google' && $('#ga_code').val() !== undefined) {
+                mfaData['GACode'] = $('#ga_code').val();
+            }
             
-                    // Google 2FA
-                    if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
-                        data = ', "GACode":"' + $("#ga_code").val() + '"';
-                    }
-                    
-                    // Yubico
-                    if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
-                        data = ', "yubico_key":"' + $("#yubiko_key").val()+ '"'+
-                            ', "yubico_user_id":"' + ($("#yubico_user_id").val()) + '"'+
-                            ', "yubico_user_key":"' + ($("#yubico_user_key").val()) + '"';
-                    }
+            // Yubico
+            if (user2FaMethod === 'yubico' && $('#yubico_key').val() !== undefined) {
+                mfaData['yubico_key'] = $('#yubico_key').val();
+                mfaData['yubico_user_id'] = $('#yubico_user_id').val();
+                mfaData['yubico_user_key'] = $('#yubico_user_key').val();                
+            }
 
-                    data = '{"login":"'+sanitizeString($("#login").val())+'" , "pw":"'+sanitizeString($("#pw").val())+'" , "duree_session":"'+$("#session_duration").val()+'" , "screenHeight":"'+$("body").innerHeight()+'" , "randomstring":"'+randomstring+'" , "TimezoneOffset":"'+TimezoneOffset+'"'+data+' , "client":"'+client_info+'" , "user_2fa_selection":"'+user2FaMethod+'"}';
+            // Other values
+            mfaData['login'] = sanitizeString($('#login').val());
+            mfaData['pw'] = sanitizeString($('#pw').val());
+            mfaData['duree_session'] = sanitizeString($('#session_duration').val());
+            mfaData['screenHeight'] = $('body').innerHeight();
+            mfaData['randomstring'] = randomstring;
+            mfaData['TimezoneOffset'] = TimezoneOffset;
+            mfaData['client'] = client_info;
+            mfaData['user_2fa_selection'] = user2FaMethod;
 
-                    // Handle if DUOSecurity is enabled
-                    if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
-                        startAgsesAuth();
-                    } else if (user2FaMethod !== "duo" || $("#login").val() === "admin") {
-                        identifyUser(redirect, psk, data, randomstring);
-                    } else {
-                        // Handle if DUOSecurity is enabled
-                        $("#duo_data").val(window.btoa(data));
-                        loadDuoDialog();
-                    }
-                },
-                "json"
-            );
-        })
-    ).then(function() {
-        
-    });
+            // Handle if DUOSecurity is enabled
+            if (user2FaMethod === 'agses' && $('#agses_code').val() === '') {
+                startAgsesAuth();
+            } else if (user2FaMethod !== 'duo' || $('#login').val() === 'admin') {
+                identifyUser(redirect, psk, mfaData, randomstring);
+            } else {
+                // Handle if DUOSecurity is enabled
+                $('#duo_data').val(window.btoa(mfaData));
+                loadDuoDialog();
+            }
+        }
+    );
 }
 
 //Identify user
@@ -385,18 +377,18 @@ function identifyUser(redirect, psk, data, randomstring)
         {
             type : "checkSessionExists"
         },
-        function(check_data) {console.log(data);
-            if (check_data === "1") {
+        function(check_data) {
+            if (parseInt(check_data) === 1) {
+                console.log(data)
                 //send query
                 $.post(
                     "sources/identify.php",
                     {
                         type : "identify_user",
-                        data : prepareExchangedData(data, 'encode', '<?php echo $_SESSION['key']; ?>')
+                        data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
                     },
-                    function(data) {console.log(data)
-                        data = JSON.parse(data);
-                        console.log(data)
+                    function(receivedData) {
+                        var data = JSON.parse(receivedData);
 
                         if (data.value === randomstring) {
                             $("#connection_error").hide();
@@ -409,12 +401,12 @@ function identifyUser(redirect, psk, data, randomstring)
                                 alertify
                                     .message('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
                                     .dismissOthers(); 
-
-                                console.log('coucou')
+                                    
                                 return false;
                             }
+                            
                             //redirection for admin is specific
-                            if (data.user_admin === '1') {
+                            if (parseInt(data.user_admin) === 1) {
                                 window.location.href='index.php?page=admin';
                             } else if (data.initial_url !== '' && data.initial_url !== null) {
                                 window.location.href=data.initial_url;
@@ -431,8 +423,8 @@ function identifyUser(redirect, psk, data, randomstring)
                         }
 
                         // Clear Yubico
-                        if ($("#yubiko_key").length > 0) {
-                            $("#yubiko_key").val("");
+                        if ($("#yubico_key").length > 0) {
+                            $("#yubico_key").val("");
                         }
                     }
                 );

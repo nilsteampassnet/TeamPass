@@ -184,6 +184,7 @@ if (null !== $post_type) {
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
                 $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+                $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -422,8 +423,7 @@ if (null !== $post_type) {
                             'perso' => (isset($post_salt_key_set) === true && $post_salt_key_set === '1'
                                 && isset($post_folder_is_personal) === true && $post_folder_is_personal === '1') ?
                                 '1' : '0',
-                            'anyone_can_modify' => (isset($post_anyone_can_modify) === true
-                                && $post_anyone_can_modify === 'on') ? '1' : '0',
+                            'anyone_can_modify' => $post_anyone_can_modify,
                             'complexity_level' => $post_complexity_level,
                             'encryption_type' => 'defuse',
                             )

@@ -324,7 +324,7 @@ $('#profile-save-password-change').click(function() {
 
     var data = {
         'password'      : $('#profile-password').val(),
-        'complexity'  : $('#profile-password-complex').val(),
+        'complexity'    : $('#profile-password-complex').val(),
     };
 
     //Send query

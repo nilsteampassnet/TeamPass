@@ -32,6 +32,10 @@ if (file_exists('../includes/config/tp.config.php') === true) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+
+// Load template
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === false) {
@@ -39,9 +43,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
-
-// Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // get current statistics items
 $statistics_items = array();

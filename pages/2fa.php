@@ -60,17 +60,19 @@ if (file_exists($filename)) {
 
 // read SK.PHP file
 $duoAkey = $duoIkey = $duoSkey = $duoHost = '';
-$skFile = file($skfile);
-if ($skFile !== false) {
-    foreach ($skFile as $key => $val) {
-        if (substr_count($val, "@define('AKEY'") > 0) {
-            $duoAkey = substr($val, 21, strlen($val) - 26);
-        } elseif (substr_count($val, "@define('IKEY'") > 0) {
-            $duoIkey = substr($val, 21, strlen($val) - 26);
-        } elseif (substr_count($val, "@define('SKEY'") > 0) {
-            $duoSkey = substr($val, 21, strlen($val) - 26);
-        } elseif (substr_count($val, "@define('HOST'") > 0) {
-            $duoHost = substr($val, 21, strlen($val) - 26);
+if (isset($skfile) === true && is_file($skfile) === true) {
+    $skFile = file($skfile);
+    if ($skFile !== false) {
+        foreach ($skFile as $key => $val) {
+            if (substr_count($val, "@define('AKEY'") > 0) {
+                $duoAkey = substr($val, 21, strlen($val) - 26);
+            } elseif (substr_count($val, "@define('IKEY'") > 0) {
+                $duoIkey = substr($val, 21, strlen($val) - 26);
+            } elseif (substr_count($val, "@define('SKEY'") > 0) {
+                $duoSkey = substr($val, 21, strlen($val) - 26);
+            } elseif (substr_count($val, "@define('HOST'") > 0) {
+                $duoHost = substr($val, 21, strlen($val) - 26);
+            }
         }
     }
 }
@@ -101,6 +103,19 @@ if ($skFile !== false) {
                     </div>
 
                     <div class="card-body">
+
+                        <div class="row mb-4">
+                            <div class="col-9">
+                                <?php echo langHdl('2factors_expected_for_admin'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo langHdl('2factors_expected_for_admin_tip'); ?>
+                                </small>
+                            </div>
+                            <div class="col-3">
+                                <div class="toggle toggle-modern" id="admin_2fa_required" data-toggle-on="<?php echo isset($SETTINGS['admin_2fa_required']) && $SETTINGS['admin_2fa_required'] == 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="admin_2fa_required_input" value="<?php echo isset($SETTINGS['admin_2fa_required']) && $SETTINGS['admin_2fa_required'] == 1 ? '1' : '0'; ?>">
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs mb-4">
                             <li class="nav-item">
                             <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>

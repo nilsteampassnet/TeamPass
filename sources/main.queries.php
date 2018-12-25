@@ -164,9 +164,7 @@ function mainQuery($SETTINGS)
             $pwdlib = new PasswordLib\PasswordLib();
 
             // Prepare variables
-            $newPw = $pwdlib->createPasswordHash(
-                filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING)
-            );
+            $newPw = $pwdlib->createPasswordHash($dataReceived['new_pw']);
 
             // User has decided to change is PW
             if (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
@@ -267,7 +265,7 @@ function mainQuery($SETTINGS)
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                if ($pwdlib->verifyPasswordHash($dataReceived['new_pw'], $newPw) === true) {
                     // update DB
                     DB::update(
                         prefixTable('users'),
@@ -660,7 +658,7 @@ function mainQuery($SETTINGS)
                             'email' => $data['email'],
                             'email_result' => str_replace(
                                 '#email#',
-                                '<b>'.obfuscate_email($data['email']).'</b>',
+                                '<b>'.obfuscateEmail($data['email']).'</b>',
                                 addslashes($LANG['admin_email_result_ok'])
                             ),
                         ),

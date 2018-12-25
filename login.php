@@ -46,7 +46,7 @@ echo '
       <div>
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                <span class="input-group-text"><i class="fas fa-user"></i></span>
             </div>';
 
 if (isset($SETTINGS['enable_http_request_login']) === true
@@ -80,7 +80,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
     echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                <span class="input-group-text"><i class="fas fa-lock"></i></span>
             </div>
           <input type="password" id="pw" class="form-control submit-button" placeholder="'.langHdl('index_password').'">
         </div>';
@@ -89,7 +89,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
 echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fa fa-clock-o"></i></span>
+                <span class="input-group-text"><i class="fas fa-clock"></i></span>
             </div>
           <input type="text" id="session_duration" class="form-control submit-button" placeholder="'.langHdl('index_session_duration').'&nbsp;('.langHdl('minutes').')" value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
@@ -200,7 +200,7 @@ if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_auth
                     <label for="yubico_user_key">'.langHdl('yubico_user_key').'</label>
                     <input type="text" size="10" id="yubico_user_key" class="form-control" />
                 </div>
-                <input autocomplete="off" type="text" id="yubiko_key" class="form-control submit-button" placeholder="'.langHdl('press_your_yubico_key').'">
+                <input autocomplete="off" type="text" id="yubico_key" class="form-control submit-button" placeholder="'.langHdl('press_your_yubico_key').'">
                 <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">'.langHdl('show_yubico_info_form').'</a></div>
             </div>
         </div>';

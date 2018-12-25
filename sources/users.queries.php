@@ -1973,6 +1973,80 @@ if (null !== $post_type) {
             echo json_encode($return);
 
             break;
+
+        /**
+         * STORE USER LOCATION
+         */
+        case "save_user_location":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+
+            // Manage 1st step - is this needed?
+            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === "refresh") {
+                $record = DB::queryFirstRow(
+                    "SELECT user_ip_lastdate
+                    FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $_SESSION['user_id']
+                );
+
+                if (empty($record['user_ip_lastdate']) === true
+                    || (time() - $record['user_ip_lastdate']) > $SETTINGS_EXT['one_day_seconds']
+                ) {
+                    echo prepareExchangedData(
+                        array(
+                            'refresh' => true,
+                            'error' => ''
+                        ),
+                        "encode"
+                    );
+                    break;
+                }
+            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === "perform") {
+                $post_location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
+                if (empty($post_location) === false) {
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'user_ip' => $post_location,
+                            'user_ip_lastdate' => time()
+                            ),
+                        "id = %i",
+                        $_SESSION['user_id']
+                    );
+
+                    echo prepareExchangedData(
+                        array(
+                            'refresh' => false,
+                            'error' => ''
+                        ),
+                        "encode"
+                    );
+                    break;
+                }
+            } else {
+
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'refresh' => '',
+                    'error' => ''
+                ),
+                "encode"
+            );
+
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING))) {

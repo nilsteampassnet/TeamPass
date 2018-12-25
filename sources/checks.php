@@ -149,7 +149,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM '.prefixTable('users').' WHERE id = %i',
         $userId
     );
-
+    
     // check if user exists and tempo key is coherant
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;

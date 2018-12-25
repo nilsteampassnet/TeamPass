@@ -165,8 +165,8 @@ if (empty($sessionTreeStructure) === true
  *
  * @param int    $nodeId                            Id
  * @param array  $ret_json                          Array
- * @param string $listFoldersLimitedKeys            Limited
- * @param string $listRestrictedFoldersForItemsKeys Restricted
+ * @param array  $listFoldersLimitedKeys            Limited
+ * @param array  $listRestrictedFoldersForItemsKeys Restricted
  * @param string $tree                              The tree
  */
 function buildNodeTree(
@@ -228,7 +228,7 @@ function buildNodeTree(
                         $session_list_restricted_folders_for_items,
                         $listFoldersLimitedKeys,
                         $listRestrictedFoldersForItemsKeys,
-                        $session_no_access_folders
+                        $session_no_access_folders === null ? array() : $session_no_access_folders
                     )
                 ) === true
             ) {
