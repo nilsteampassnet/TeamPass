@@ -1995,7 +1995,7 @@ if (null !== $post_type) {
             if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === "refresh") {
                 $record = DB::queryFirstRow(
                     "SELECT user_ip_lastdate
-                    FROM ".prefix_table("users")."
+                    FROM ".prefixTable("users")."
                     WHERE id = %i",
                     $_SESSION['user_id']
                 );
@@ -2016,7 +2016,7 @@ if (null !== $post_type) {
                 $post_location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
                 if (empty($post_location) === false) {
                     DB::update(
-                        prefix_table("users"),
+                        prefixTable("users"),
                         array(
                             'user_ip' => $post_location,
                             'user_ip_lastdate' => time()

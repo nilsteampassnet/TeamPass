@@ -16,7 +16,7 @@
  *
  * @see      http://www.teampass.net
  */
-include_once 'SecureHandler.php';
+require_once 'SecureHandler.php';
 session_start();
 if (isset($_SESSION['CPM']) === false
     || $_SESSION['CPM'] != 1
@@ -40,7 +40,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 }
 
 // Include files
-include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare GET variables
@@ -62,7 +62,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     include_once 'main.functions.php';
 
     // connect to the server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
@@ -76,7 +76,8 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     $file_info = DB::queryfirstrow(
         "SELECT file, status 
         FROM ".prefixTable("files")."
-        WHERE id=%i", $get_fileid
+        WHERE id=%i",
+        $get_fileid
     );
 
     // should we encrypt/decrypt the file
@@ -122,21 +123,23 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
         }
 
         $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
+        if ($fp !== false) {
+            // Read the file contents
+            fpassthru($fp);
 
-        // Read the file contents
-        fpassthru($fp);
-
-        // Close the file
-        fclose($fp);
+            // Close the file
+            fclose($fp);
+        }
 
         unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete");
     } else {
         $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
+        if ($fp !== false) {
+            // Read the file contents
+            fpassthru($fp);
 
-        // Read the file contents
-        fpassthru($fp);
-
-        // Close the file
-        fclose($fp);
+            // Close the file
+            fclose($fp);
+        }
     }
 }

@@ -470,6 +470,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
         }
         $passwordClear = $_SERVER['PHP_AUTH_PW'];
+        $usernameSanitized = '';
     } else {
         $passwordClear = $dataReceived['pw'];
         $username = $dataReceived['login'];
@@ -551,7 +552,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     if ($counter === 0) {
         // Test
         $data = DB::queryFirstRow(
-            "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+            "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
             array(
                 'login' => $usernameSanitized
             )
@@ -560,7 +561,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         if ($counter === 1) {
             // Adapt in DB
             DB::update(
-                prefix_table('users'),
+                prefixTable('users'),
                 array(
                     'login' => $username
                 ),
@@ -607,6 +608,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 echo json_encode($ret['message']);
             } else {
                 $ldapConnection = true;
+                $user_info_from_ad = $ret['user_info_from_ad'];
+                $proceedIdentification = $ret['proceedIdentification'];
             }
         } else {
             $ret = identifyViaLDAPPosix(
@@ -620,6 +623,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             } else {
                 $auth_username = $ret['auth_username'];
                 $proceedIdentification = $ret['proceedIdentification'];
+                $user_info_from_ad = $ret['user_info_from_ad'];
             }
         }
     } elseif (isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 2) {
@@ -656,13 +660,13 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     ) {
         // If LDAP enabled, create user in TEAMPASS if doesn't exist
 
-        // Get user info from LDAP
+        /*// Get user info from LDAP
         if ($SETTINGS['ldap_type'] === 'posix-search') {
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
             $user_info_from_ad = $result;
         } else {
             $user_info_from_ad = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
-        }
+        }*/
 
         DB::insert(
             prefixTable('users'),
@@ -702,7 +706,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             // Rebuild tree
             $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
-            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+            $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
             $tree->rebuild();
         }
         $proceedIdentification = true;
@@ -972,7 +976,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                     // then the auth is correct but needs to be adapted in DB since change of encoding
                     $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
                     DB::update(
-                        prefix_table('users'),
+                        prefixTable('users'),
                         array(
                             'pw' => $data['pw']
                         ),
@@ -1412,13 +1416,25 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 /**
  * Undocumented function
  *
- * @param [type] $username
- * @param [type] $ldap_suffix
- * @param [type] $SETTINGS
- * @return void
+ * @param string $username     Username
+ * @param string $ldap_suffix  Suffix
+ * @param string $passwordClear Password
+ * @param array  $SETTINGS     Teampass settings
+ *
+ * @return array
  */
-function identifyViaLDAPPosixSearch($username, $ldap_suffix, $SETTINGS)
+function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SETTINGS)
 {
+    // Load AntiXSS
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+
+    $ldapConnection = false;
     $ldapURIs = '';
     foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
         if ($SETTINGS['ldap_ssl'] == 1) {
@@ -1589,13 +1605,33 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $SETTINGS)
 
     return array(
         'error' => false,
-        'message' => $ldapConnection
+        'message' => $ldapConnection,
+        'user_info_from_ad' => $result,
+        'proceedIdentification' => $proceedIdentification,
     );
 }
 
-
-function identifyViaLDAPPosix($username, $ldap_suffix, $SETTINGS)
+/**
+ * Undocumented function
+ *
+ * @param string $username      Username
+ * @param string $ldap_suffix   Suffix
+ * @param string $passwordClear Password
+ * @param array  $SETTINGS      Teampass settings
+ *
+ * @return array
+ */
+function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS)
 {
+    // Load AntiXSS
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+
     if ($debugLdap == 1) {
         fputs(
             $dbgLdap,
@@ -1611,6 +1647,7 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $SETTINGS)
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
     $ldap_suffix = '';
+    $ldapConnection = false;
 
     // Posix style LDAP handles user searches a bit differently
     if ($SETTINGS['ldap_type'] === 'posix') {
@@ -1713,17 +1750,20 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $SETTINGS)
         'message' => $ldapConnection,
         'auth_username' => $auth_username,
         'proceedIdentification' => $proceedIdentification,
+        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
     );
 }
 
 /**
  * Undocumented function
  *
- * @param [type] $username
- * @param [type] $ldap_suffix
- * @param [type] $dataReceived
- * @param [type] $SETTINGS
- * @return void
+ * @param string $username     Username
+ * @param string $ldap_suffix  Suffix
+ * @param string $dataReceived Received data
+ * @param string $data         Result of query
+ * @param array  $SETTINGS     Teampass settings
+ *
+ * @return array
  */
 function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS)
 {
