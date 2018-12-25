@@ -81,7 +81,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     );
 
     // should we encrypt/decrypt the file
-    encrypt_or_decrypt_file($file_info['file'], $file_info['status']);
+    encryptOrDecryptFile($file_info['file'], $file_info['status']);
 
     // should we decrypt the attachment?
     if (isset($file_info['status']) && $file_info['status'] === "encrypted") {

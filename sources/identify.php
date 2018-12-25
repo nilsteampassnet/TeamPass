@@ -510,13 +510,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         );
     }
 
-    /* LDAP connection */
-    if ($debugLdap == 1) {
-        // create temp file
-        $dbgLdap = fopen($SETTINGS['path_to_files_folder'].'/ldap.debug.txt', 'w');
-        fputs(
-            $dbgLdap,
-            "Get all LDAP params : \n".
+    // Debug
+    $dbgLdap = fopen($SETTINGS['path_to_files_folder'].'/ldap.debug.txt', 'w');
+    debugLdap(
+        $debugLdap,
+        $dbgLdap,
+        "Get all LDAP params : \n".
             'mode : '.$SETTINGS['ldap_mode']."\n".
             'type : '.$SETTINGS['ldap_type']."\n".
             'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
@@ -529,8 +528,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             'ad_port : '.$SETTINGS['ldap_port']."\n".
             'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
             'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
-        );
-    }
+    );
 
     if ($debugDuo == 1) {
         fputs(
@@ -586,6 +584,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     $userPasswordVerified = false;
     $ldapConnection = false;
     $logError = array();
+    $user_info_from_ad = '';
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
@@ -601,6 +600,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             $ret = identifyViaLDAPPosixSearch(
                 $username,
                 $ldap_suffix,
+                $passwordClear,
                 $SETTINGS
             );
 
@@ -615,6 +615,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             $ret = identifyViaLDAPPosix(
                 $username,
                 $ldap_suffix,
+                $passwordClear,
                 $SETTINGS
             );
 
@@ -626,8 +627,6 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 $user_info_from_ad = $ret['user_info_from_ad'];
             }
         }
-    } elseif (isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 2) {
-        // nothing
     }
 
     // Check Yubico
@@ -1455,9 +1454,12 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
         ldap_start_tls($ldapconn);
     }
 
-    if ($debugLdap == 1) {
-        fputs($dbgLdap, 'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n");
-    }
+    // Debug
+    debugLdap(
+        $debugLdap,
+        $dbgLdap,
+        'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n"
+    );
 
     // Set options
     ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -1468,9 +1470,13 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
         // Should we bind the connection?
         if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
             $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
-            if ($debugLdap == 1) {
-                fputs($dbgLdap, 'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n");
-            }
+            
+            // Debug
+            debugLdap(
+                $debugLdap,
+                $dbgLdap,
+                'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n"
+            );
         } else {
             $ldapbind = false;
         }
@@ -1482,13 +1488,14 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                 $filter,
                 array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
             );
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    'Search filter : '.$filter."\n".
+            
+            // Debug
+            debugLdap(
+                $debugLdap,
+                $dbgLdap,
+                'Search filter : '.$filter."\n".
                     'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
-                );
-            }
+            );
 
             // Check if user was found in AD
             if (ldap_count_entries($ldapconn, $result) > 0) {
@@ -1496,7 +1503,9 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                 $result = ldap_get_entries($ldapconn, $result);
                 $user_dn = $result[0]['dn'];
 
-                fputs(
+                // Debug
+                debugLdap(
+                    $debugLdap,
                     $dbgLdap,
                     'User was found. '.$user_dn.'\n'
                 );
@@ -1531,13 +1540,13 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                     if ($result_group) {
                         $entries = ldap_get_entries($ldapconn, $result_group);
 
-                        if ($debugLdap == 1) {
-                            fputs(
-                                $dbgLdap,
-                                'Search groups appartenance : '.$SETTINGS['ldap_search_base']."\n".
+                        // Debug
+                        debugLdap(
+                            $debugLdap,
+                            $dbgLdap,
+                            'Search groups appartenance : '.$SETTINGS['ldap_search_base']."\n".
                                 'Results : '.print_r($entries, true)."\n"
-                            );
-                        }
+                        );
 
                         if ($entries['count'] > 0) {
                             // Now check if group fits
@@ -1551,12 +1560,12 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                         }
                     }
 
-                    if ($debugLdap == 1) {
-                        fputs(
-                            $dbgLdap,
-                            'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
-                        );
-                    }
+                    // Debug
+                    debugLdap(
+                        $debugLdap,
+                        $dbgLdap,
+                        'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
+                    );
                 }
 
                 // Is user in the LDAP?
@@ -1632,18 +1641,19 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
     $pwdlib->register();
     $pwdlib = new PasswordLib\PasswordLib();
 
-    if ($debugLdap == 1) {
-        fputs(
-            $dbgLdap,
-            "Get all ldap params : \n".
-            'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
-            'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
-            'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
-            'ad_port : '.$SETTINGS['ldap_port']."\n".
-            'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
-            'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
-        );
-    }
+    // Debug
+    debugLdap(
+        $debugLdap,
+        $dbgLdap,
+        "Get all ldap params : \n".
+        'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
+        'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
+        'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
+        'ad_port : '.$SETTINGS['ldap_port']."\n".
+        'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
+        'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
+    );
+
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
     $ldap_suffix = '';
@@ -1672,9 +1682,12 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
         )
     );
 
-    if ($debugLdap == 1) {
-        fputs($dbgLdap, 'Create new adldap object : '.$adldap->getLastError()."\n\n\n"); //Debug
-    }
+    // Debug
+    debugLdap(
+        $debugLdap,
+        $dbgLdap,
+        'Create new adldap object : '.$adldap->getLastError()."\n\n\n"
+    );
 
     // OpenLDAP expects an attribute=value pair
     if ($SETTINGS['ldap_type'] === 'posix') {
@@ -1737,13 +1750,15 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
     } else {
         $ldapConnection = false;
     }
-    if ($debugLdap == 1) {
-        fputs(
-            $dbgLdap,
-            'After authenticate : '.$adldap->getLastError()."\n\n\n".
-            'ldap status : '.$ldapConnection."\n\n\n"
-        ); //Debug
-    }
+
+    // Debug
+    debugLdap(
+        $debugLdap,
+        $dbgLdap,
+        'After authenticate : '.$adldap->getLastError()."\n\n\n".
+        'ldap status : '.$ldapConnection."\n\n\n"
+    );
+    
 
     return array(
         'error' => false,
@@ -1834,4 +1849,22 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
         'message' => '',
         'proceedIdentification' => $proceedIdentification,
     );
+}
+
+/**
+ * Undocumented function
+ *
+ * @param string $debugLdap
+ * @param [type] $dbgLdap
+ * @param [type] $text
+ * @return void
+ */
+function debugLdap($debugLdap, $dbgLdap, $text)
+{
+    if ($debugLdap === 1) {
+        fputs(
+            $dbgLdap,
+            $text
+        );
+    }
 }
