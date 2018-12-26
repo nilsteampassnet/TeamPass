@@ -167,13 +167,13 @@ foreach ($tst as $t) {
                                     <label for="new-renewal"><?php echo langHdl('renewal_delay'); ?></label>
                                     <input type="number" class="form-control clear-me" id="new-renewal" value="0" min="0" data-bind="value:replyNumber">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-check">
                                     <input type="checkbox" class="form-check-input form-control" id="new-add-restriction">
-                                    <label for="new-add-restriction" class="ml-2"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
+                                    <label for="new-add-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-check">
                                     <input type="checkbox" class="form-check-input form-control" id="new-edit-restriction">
-                                    <label for="new-edit-restriction" class="ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
+                                    <label for="new-edit-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
                                 </div>
                             </div>
                             <!-- /.card-body -->

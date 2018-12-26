@@ -467,3 +467,35 @@ function teampassStorage1(storageName, type, fieldNames)
         
     }
 }
+
+/**
+ * 
+ * @param {string} action 
+ * @param {string} name 
+ * @param {array} data 
+ */
+function browserSession(action, name, data)
+{
+    // Initialize the session
+    if (action === 'init') {
+        if (store.get(name) === 'undefined'
+            || store.get(name) === undefined
+        ) {
+            store.set(
+                name,
+                data
+            );
+        } else {
+            // Ensure all entries exist
+            $(data).each(function(value, key) {
+                store.update(
+                    name,
+                    function(bSession)
+                    {
+                        bSession.key = value;
+                    }
+                )
+            });
+        }
+    }
+}

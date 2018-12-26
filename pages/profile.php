@@ -173,8 +173,12 @@ $userSeenPasswordsNumber = DB::count();
                 <div class="card">
                     <div class="card-header p-2">
                         <ul class="nav nav-pills" id="profile-tabs">
-                            <li class="nav-item"><a class="nav-link active" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a></li>
-                            <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Timeline</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link<?php echo isset($_GET['tab']) === false ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" href="#timeline" data-toggle="tab">Timeline</a>
+                            </li>
                             <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
@@ -182,7 +186,7 @@ $userSeenPasswordsNumber = DB::count();
                                 </a>
                                 <div class="dropdown-menu">
                                     <?php
-                                    if (isset($SETTINGS['duo']) ===false || (int) $SETTINGS['duo'] === 0) {
+                                    if (isset($SETTINGS['duo']) === false || (int) $SETTINGS['duo'] === 0) {
                                         echo '
                                     <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
                                     }
@@ -196,7 +200,7 @@ $userSeenPasswordsNumber = DB::count();
                     <div class="card-body">
                         <div class="tab-content">
                             <!-- INFO -->
-                            <div class="active tab-pane" id="tab_information">
+                            <div class="<?php echo isset($_GET['tab']) === false ? 'active ' : ''; ?> tab-pane" id="tab_information">
                                 <ul class="list-group list-group-unbordered mb-3">
                                     <li class="list-group-item">
                                         <b><i class="fas fa-child fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_seen'); ?></b>
@@ -280,30 +284,51 @@ $userSeenPasswordsNumber = DB::count();
                                 </ul>
                             </div>
 
-                            <!-- INFO -->
-                            <div class="tab-pane" id="timeline">
+                            <!-- TIMELINE -->
+                            <div class="tab-pane<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" id="timeline">
                                 <?php
                                 if (isset($_SESSION['unsuccessfull_login_attempts']) === true
                                     && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+                                    && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
                                 ) {
-                                    echo '
-                                    <div style="margin-bottom:6px;" class="',
-                                        $_SESSION['unsuccessfull_login_attempts']['shown'] === false ?
-                                        'ui-widget-content ui-state-error ui-corner-all'
-                                        :
-                                        ''
-                                        ,'">
-                                        <i class="fas fa-history fa-fw fa-lg"></i>&nbsp;
-                                        '.$LANG['login_attempts'].':
-                                        <div style="margin:1px 0 0 36px;">';
-                                    foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
-                                        echo '<span class="fas fa-caret-right"></span>&nbsp;'.$entry.'<br/>';
-                                    }
-                                    echo '
-                                        </div>
-                                    </div>';
+                                    ?>
+                                    <div class="alert alert-warning mt-4">
+                                        <span class="text-bold"><?php echo langHdl('last_login_attempts'); ?></span>
+                                        <ul class="">
+                                        <?php
+                                        foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
+                                            echo '<li class="">'.$entry.'</li>';
+                                        } ?>
+                                        </ul>
+                                    </div>
+                                    <?php
                                     $_SESSION['unsuccessfull_login_attempts']['shown'] = true;
                                 }
+                                ?>
+                                <div class="mt-4">
+                                    <ul class="list-group list-group-flush">
+                                        <?php
+                                        $rows = DB::query(
+                                            'SELECT label, date
+                                            FROM '.prefixTable('log_system').'
+                                            WHERE qui = %i
+                                            ORDER BY date DESC
+                                            LIMIT 0, 20',
+                                            $_SESSION['user_id']
+                                        );
+                                        foreach ($rows as $record) {
+                                            if (substr($record['label'], 0, 3) === 'at_') {
+                                                $text = langHdl(substr($record['label'], 3));
+                                            } else {
+                                                $text = langHdl($record['label']);
+                                            }
+                                            echo '<li class="list-group-item">'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).' - '.$text.'</li>';
+                                        }
+                                        ?>
+                                    </ul>
+                                </div>
+                                <?php
+
                                 ?>
                             </div>
 
@@ -390,7 +415,7 @@ $userSeenPasswordsNumber = DB::count();
                                                 } ?>">
                                             </div>
                                         </div>
-                                    <?php
+                                        <?php
                                     }
                                     ?>                                    
 

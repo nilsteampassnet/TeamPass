@@ -1,21 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Logout.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
-
 require_once 'sources/SecureHandler.php';
 session_start();
 
@@ -25,7 +25,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 } elseif (isset($_GET['user_id']) === true && empty($_GET['user_id']) === false) {
     $user_id = $_GET['user_id'];
 } else {
-    $user_id = "";
+    $user_id = '';
 }
 
 if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
@@ -44,17 +44,19 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
 
     // clear in db
     DB::update(
-        DB_PREFIX."users",
+        DB_PREFIX.'users',
         array(
             'key_tempo' => '',
             'timestamp' => '',
-            'session_end' => ''
+            'session_end' => '',
         ),
-        "id=%i",
+        'id=%i',
         $user_id
     );
     //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+    if (isset($SETTINGS['log_connections']) === true
+        && (int) $SETTINGS['log_connections'] === 1
+    ) {
         include_once 'sources/main.functions.php';
         logEvents('user_connection', 'disconnection', $user_id, @$_SESSION['login']);
     }

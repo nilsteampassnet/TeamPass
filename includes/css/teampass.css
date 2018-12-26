@@ -44,7 +44,7 @@
 	table-layout:fixed;
 }
 
-.table td {
+.table-truncated td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -67,10 +67,6 @@ $.fn.dataTable.ext.search.push( function ( settings, searchData ) {
 // Initialization
 var userDidAChange = false;
 
-store.each(function(value, key) {
-    console.log(key, '==', value)
-})
-
 // Prepare tooltips
 $('.infotip').tooltip();
 
@@ -153,9 +149,6 @@ var oTable = $('#table-users').DataTable({
     'autoWidth': true,
     'ajax': {
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
-        /*data: function(d) {
-            d.letter = _alphabetSearch
-        }*/
     },
     'language': {
         'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt'
@@ -164,7 +157,7 @@ var oTable = $('#table-users').DataTable({
         {
             'width': '80px',
             className: 'details-control',
-            'render': function(data, type, row, meta){
+            'render': function(data, type, row, meta) {
                 return '<span class="input-group-btn btn-user-action">' +
                    '<button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">' +
                    '<i class="fas fa-gear"></i>' +
@@ -174,7 +167,7 @@ var oTable = $('#table-users').DataTable({
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
-                   '</ul>'
+                   '</ul>' +
                    '</span>';
             }
         },
@@ -391,9 +384,9 @@ $(document).on('click', '.tp-action', function() {
         if (store.get('teampassSettings').enable_pf_feature === '0') {
             $('#form-create-personal-folder').iCheck('disable');
         }
-
+        
         // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
-        if (store.get('teampassApplication').user_admin === 1) {
+        if (store.get('teampassUser').user_admin === 1) {
             $('input[type=radio].only-admin').iCheck('enable');
         } else {
             $('input[type=radio].only-admin').iCheck('disable');
@@ -484,6 +477,11 @@ $(document).on('click', '.tp-action', function() {
                     } else {
                         $('#privilege-user').iCheck('check');
                     }
+
+                    $('input:radio[name=privilege]').on('ifChanged', function() {
+                        userDidAChange = true;
+                        $(this).data('change-ongoing', true);
+                    });
 
                     // Inform user
                     alertify
@@ -583,7 +581,7 @@ $(document).on('click', '.tp-action', function() {
             $("#form-forbid option:selected").each(function () {
                 forbidFld.push($(this).val())
             });
-
+            console.log('ici')
             // Mandatory?
             var validated = true;
             $('.required').each(function(i, obj) {
@@ -604,7 +602,7 @@ $(document).on('click', '.tp-action', function() {
                     .dismissOthers();
                 return false;
             }
-
+            
             // Passwords are ok?
             if ($('#form-password').val() !== $('#form-password').val()) {
                 alertify
@@ -702,6 +700,11 @@ $(document).on('click', '.tp-action', function() {
                     );
                 }
             )
+        } else {
+            // No change performed on form
+            alertify
+                .success('<?php echo langHdl('no_change_performed'); ?>', 1)
+                .dismissOthers();
         }
     }  else if ($(this).data('action') === 'cancel') {
         $('.clear-me').val('');
@@ -914,7 +917,6 @@ $('#form-user .track-change').on('change', function() {
         $(this).data('change-ongoing', false);
     }
 });
-
 
 //************************************************************* */
 

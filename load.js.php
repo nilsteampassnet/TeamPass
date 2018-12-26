@@ -46,6 +46,27 @@ $(function() {
     // Init
     // Countdown
     countdown();
+console.log(" LOGINs : " + ($('#user-login-attempts').length));
+    // If login attempts experimented
+    if ($('#user-login-attempts').length > 0) {
+        alertify.confirm(
+            '<?php echo langHdl('caution'); ?>',
+            '<i class="fas fa-warning mr-3"></i><?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
+            function() {
+                document.location.href="index.php?page=profile&tab=timeline";
+            },
+            function() {
+                // Nothing
+            }
+        )
+        .set(
+            'labels',
+            {
+                ok: '<?php echo langhdl('see_detail'); ?>',
+                cancel: '<?php echo langhdl('cancel'); ?>'
+            }
+        );
+    }
 
     // Show tooltips
     $('.infotip').tooltip();

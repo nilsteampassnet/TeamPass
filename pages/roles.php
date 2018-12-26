@@ -82,7 +82,7 @@ $link->set_charset(DB_ENCODING);
                         </button>
                     </div><!-- /.card-header -->
                     <div class="card-body">
-                        <div class="form-group">
+                        <div class="form-group" id="card-role-selection">
                             <select id="roles-list" class="form-control form-item-control select2" style="width:100%;">
                                 <option></option>
                             <?php
@@ -106,14 +106,14 @@ $link->set_charset(DB_ENCODING);
                             </select>
                         </div>
 
-                        <div class="card hidden card-info" id="card-folder-definition">
+                        <div class="card hidden card-info" id="card-role-definition">
                             <div class="card-header">
-                                <h5><?php echo langHdl('folder_definition'); ?></h5>
+                                <h5><?php echo langHdl('role_definition'); ?></h5>
                             </div><!-- /.card-header -->
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label for="form-folder-label"><?php echo langHdl('label'); ?></label>
-                                    <input type="text" class="form-control" id="form-folder-label" required>
+                                    <label for="form-role-label"><?php echo langHdl('label'); ?></label>
+                                    <input type="text" class="form-control" id="form-role-label" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="form-complexity-list"><?php echo langHdl('complexity'); ?></label>
@@ -127,8 +127,8 @@ $link->set_charset(DB_ENCODING);
                                     </select>
                                 </div>
                                 <div class="form-group mt-2">
-                                    <input type="checkbox" class="form-check-input form-item-control" id="form-folder-privilege">
-                                    <label class="form-check-label ml-2" for="form-folder-privilege">
+                                    <input type="checkbox" class="form-check-input form-item-control" id="form-role-privilege">
+                                    <label class="form-check-label ml-2" for="form-role-privilege">
                                         <?php echo langHdl('role_can_edit_any_visible_item'); ?>
                                         <i class="mr-2 fas fa-question-circle infotip" title="<?php echo langHdl('role_can_edit_any_visible_item_tip'); ?>"></i>
                                     </label>
@@ -140,15 +140,15 @@ $link->set_charset(DB_ENCODING);
                             </div>
                         </div>
 
-                        <div class="card hidden card-danger" id="card-folder-deletion">
+                        <div class="card hidden card-danger" id="card-role-deletion">
                             <div class="card-header">
                                 <h5><?php echo langHdl('caution'); ?></h5>
                             </div><!-- /.card-header -->
                             <div class="card-body">
                                 <div class="form-group mt-2">
-                                    <input type="checkbox" class="form-check-input form-item-control" id="form-folder-delete">
-                                    <label class="form-check-label ml-2" for="form-folder-delete">
-                                        <?php echo langHdl('please_confirm_deletion'); ?><span class="ml-2" id="span-folder-delete"></span>
+                                    <input type="checkbox" class="form-check-input form-item-control" id="form-role-delete">
+                                    <label class="form-check-label ml-2" for="form-role-delete">
+                                        <?php echo langHdl('please_confirm_deletion'); ?><span class="ml-2" id="span-role-delete"></span>
                                     </label>
                                 </div>
                             </div>

@@ -362,9 +362,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete user in database
                 DB::delete(
@@ -446,9 +446,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -486,9 +486,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -528,9 +528,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -572,9 +572,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -614,9 +614,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -656,9 +656,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -695,9 +695,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -970,9 +970,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // Do
                 DB::update(
@@ -1015,9 +1015,9 @@ if (null !== $post_type) {
                 );
 
                 // Is this user allowed to do this?
-                if ($_SESSION['is_admin'] === '1'
+                if ((int) $_SESSION['is_admin'] === 1
                     || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                    || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                    || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
                 ) {
                     DB::update(
                         prefixTable('users'),
@@ -1068,9 +1068,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']) === true)
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $rowUser['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && $rowUser['admin'] !== '1')
             ) {
                 $arrData = array();
                 $arrFunction = array();
@@ -1092,8 +1092,8 @@ if (null !== $post_type) {
 
                 $rows = DB::query('SELECT id,title,creator_id FROM '.prefixTable('roles_title'));
                 foreach ($rows as $record) {
-                    if ($_SESSION['is_admin'] === '1'
-                        || (($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1')
+                    if ((int) $_SESSION['is_admin'] === 1
+                        || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
                         && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
                     ) {
                         if (in_array($record['id'], $users_functions)) {
@@ -1237,9 +1237,9 @@ if (null !== $post_type) {
 
                 // get USER STATUS
                 if ($rowUser['disabled'] == 1) {
-                    $arrData['info'] = langHdl('user_info_locked').'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.langHdl('user_info_unlock_question').'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk" name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.langHdl('user_info_delete_question').'</label>';
+                    $arrData['info'] = langHdl('user_info_locked').'<br><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.langHdl('user_info_unlock_question').'</label><br><input type="checkbox"  value="delete" id="account_delete" class="chk mr-2" name="2" onclick="confirmDeletion()">label for="2">'.langHdl('user_info_delete_question').'</label>';
                 } else {
-                    $arrData['info'] = langHdl('user_info_active').'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.langHdl('user_info_lock_question');
+                    $arrData['info'] = langHdl('user_info_active').'<br><input type="checkbox" value="lock" class="chk">&nbsp;'.langHdl('user_info_lock_question');
                 }
 
                 $arrData['error'] = false;
@@ -1382,9 +1382,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete account
                 // delete user in database
@@ -1524,9 +1524,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -1806,9 +1806,9 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if ($_SESSION['is_admin'] === '1'
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // manage other rights
                 /* Possible values: gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin*/
@@ -1823,9 +1823,9 @@ if (null !== $post_type) {
                     );
 
                     // Is this user allowed to do this?
-                    if ($_SESSION['is_admin'] === '1'
+                    if ((int) $_SESSION['is_admin'] === 1
                         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                        || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+                        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
                     ) {
                         // update user
                         DB::update(
@@ -1974,10 +1974,10 @@ if (null !== $post_type) {
 
             break;
 
-        /**
+        /*
          * STORE USER LOCATION
          */
-        case "save_user_location":
+        case 'save_user_location':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
@@ -1990,13 +1990,12 @@ if (null !== $post_type) {
                 break;
             }
 
-
             // Manage 1st step - is this needed?
-            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === "refresh") {
+            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'refresh') {
                 $record = DB::queryFirstRow(
-                    "SELECT user_ip_lastdate
-                    FROM ".prefixTable("users")."
-                    WHERE id = %i",
+                    'SELECT user_ip_lastdate
+                    FROM '.prefixTable('users').'
+                    WHERE id = %i',
                     $_SESSION['user_id']
                 );
 
@@ -2006,44 +2005,43 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'refresh' => true,
-                            'error' => ''
+                            'error' => '',
                         ),
-                        "encode"
+                        'encode'
                     );
                     break;
                 }
-            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === "perform") {
+            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'perform') {
                 $post_location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
                 if (empty($post_location) === false) {
                     DB::update(
-                        prefixTable("users"),
+                        prefixTable('users'),
                         array(
                             'user_ip' => $post_location,
-                            'user_ip_lastdate' => time()
+                            'user_ip_lastdate' => time(),
                             ),
-                        "id = %i",
+                        'id = %i',
                         $_SESSION['user_id']
                     );
 
                     echo prepareExchangedData(
                         array(
                             'refresh' => false,
-                            'error' => ''
+                            'error' => '',
                         ),
-                        "encode"
+                        'encode'
                     );
                     break;
                 }
             } else {
-
             }
 
             echo prepareExchangedData(
                 array(
                     'refresh' => '',
-                    'error' => ''
+                    'error' => '',
                 ),
-                "encode"
+                'encode'
             );
 
             break;
@@ -2062,9 +2060,9 @@ if (null !== $post_type) {
     );
 
     // Is this user allowed to do this?
-    if ($_SESSION['is_admin'] === '1'
+    if ((int) $_SESSION['is_admin'] === 1
         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-        || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
         || ($_SESSION['user_id'] === $value[1])
     ) {
         if ($value[0] === 'userlanguage') {
@@ -2126,9 +2124,9 @@ if (null !== $post_type) {
     );
 
     // Is this user allowed to do this?
-    if ($_SESSION['is_admin'] === '1'
+    if ((int) $_SESSION['is_admin'] === 1
         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-        || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
+        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
         || ($_SESSION['user_id'] === $value[1])
     ) {
         DB::update(

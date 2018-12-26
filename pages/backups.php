@@ -63,13 +63,16 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     <div class='container-fluid'>
         <div class='row'>
             <div class='col-md-12'>
+                
+            <?php
+                if (null !== DEBUG && DEBUG === false) {
+                    ?>
                 <div class='card card-primary'>
                     <div class='card-header'>
                         <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
                     </div>
                     
                     <div class='card-body'>
-
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo langHdl('on_the_fly'); ?></a>
@@ -130,7 +133,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                                                 </div>
                                                 <div class="col-9 input-group">
                                                     <button class="btn btn-default" id="onthefly-restore-file-select"><?php echo langHdl('choose_file'); ?></button>
-                                                    <span class="ml-2" id="onthefly-restore-file" data-operation-id=""></span>
+                                                    <span class="ml-2" id="onthefly-restore-file"></span>
                                                 </div>
                                             </div>
                                             <div class="row mt-3 hidden" id="onthefly-restore-progress">
@@ -149,9 +152,22 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
                             </div>
                         </div>
-                    
+
                     </div>
                 </div>
+                    
+            <?php
+                } else {
+                    ?>
+                <div class="mt-4">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
+                    </div>
+                </div>
+
+                <?php
+                }
+            ?>
             </div>
         </div>
     

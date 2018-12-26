@@ -211,7 +211,7 @@ if (null !== $post_type) {
             echo json_encode($return);
             break;
 
-        case 'change_folder_definition':
+        case 'change_role_definition':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(

@@ -72,15 +72,14 @@ if ($post_type === 'identify_duo_user') {
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
-    if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'w');
-        fputs(
-            $dbgDuo,
-            "\n\n-----\n\n".
+    $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'w');
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        "\n\n-----\n\n".
             'sig request : '.$post_login."\n".
             'resp : '.$sig_request."\n"
-        );
-    }
+    );
 
     // load csrfprotector
     $csrfp_config = include_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
@@ -101,15 +100,13 @@ if ($post_type === 'identify_duo_user') {
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
-    if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
-        fputs(
-            $dbgDuo,
-            "\n\n-----\n\n".
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        "\n\n-----\n\n".
             'sig response : '.$post_sig_response."\n".
             'resp : '.$resp."\n"
-        );
-    }
+    );
 
     // return the response (which should be the user name)
     if ($resp === $post_login) {
@@ -423,14 +420,13 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     // Prepare GET variables
     $session_user_language = $superGlobal->get('user_language', 'SESSION');
 
-    if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
-
-        fputs(
-            $dbgDuo,
-            "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
-        );
-    }
+    // Debug
+    $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
+    );
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -450,7 +446,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
-    
+
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, 'decode', $_SESSION['key']);
     //print_r($dataReceived);
@@ -502,17 +498,15 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         return;
     }
 
-
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            "Starting authentication of '".$username."'\n"
-        );
-    }
-
     // Debug
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        "Starting authentication of '".$username."'\n".
+        'LDAP status: '.$SETTINGS['ldap_mode']."\n"
+    );
     $dbgLdap = fopen($SETTINGS['path_to_files_folder'].'/ldap.debug.txt', 'w');
-    debugLdap(
+    debugIdentify(
         $debugLdap,
         $dbgLdap,
         "Get all LDAP params : \n".
@@ -530,13 +524,6 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
     );
 
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            'LDAP status: '.$SETTINGS['ldap_mode']."\n"
-        );
-    }
-
     // Check if user exists
     $data = DB::queryFirstRow(
         'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
@@ -550,9 +537,9 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     if ($counter === 0) {
         // Test
         $data = DB::queryFirstRow(
-            "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
+            'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
             array(
-                'login' => $usernameSanitized
+                'login' => $usernameSanitized,
             )
         );
         $counter = DB::count();
@@ -561,9 +548,9 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             DB::update(
                 prefixTable('users'),
                 array(
-                    'login' => $username
+                    'login' => $username,
                 ),
-                "id=%i",
+                'id=%i',
                 $data['id']
             );
             $data['login'] = $username;
@@ -571,13 +558,11 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     }
 
     // Debug
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            'USer exists: '.$counter."\n"
-        );
-    }
-
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        'USer exists: '.$counter."\n"
+    );
 
     $user_initial_creation_through_ldap = false;
     $proceedIdentification = false;
@@ -666,50 +651,21 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         } else {
             $user_info_from_ad = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
         }*/
-
-        DB::insert(
-            prefixTable('users'),
-            array(
-                'login' => $username,
-                'pw' => $data['pw'],
-                'email' => (isset($user_info_from_ad[0]['mail'][0]) === false) ? '' : $user_info_from_ad[0]['mail'][0],
-                'name' => $user_info_from_ad[0]['givenname'][0],
-                'lastname' => $user_info_from_ad[0]['sn'][0],
-                'admin' => '0',
-                'gestionnaire' => '0',
-                'can_manage_all_users' => '0',
-                'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
-                'groupes_interdits' => '',
-                'groupes_visibles' => '',
-                'last_pw_change' => time(),
-                'user_language' => $SETTINGS['default_language'],
-                'encrypted_psk' => '',
-                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
-            )
+        $ret = ldapCreateUser(
+            $username,
+            $data,
+            $user_info_from_ad,
+            $SETTINGS
         );
-        $newUserId = DB::insertId();
-        // Create personnal folder
-        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
-            DB::insert(
-                prefixTable('nested_tree'),
-                array(
-                    'parent_id' => '0',
-                    'title' => $newUserId,
-                    'bloquer_creation' => '0',
-                    'bloquer_modification' => '0',
-                    'personal_folder' => '1',
-                )
-            );
 
-            // Rebuild tree
-            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
-            $tree->register();
-            $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
-            $tree->rebuild();
+        if ($ret['error'] === true) {
+            echo json_encode($ret['message']);
+
+            return;
+        } else {
+            $proceedIdentification = $ret['proceedIdentification'];
+            $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
         }
-        $proceedIdentification = true;
-        $user_initial_creation_through_ldap = true;
     }
 
     // Check if user exists (and has been created in case of new LDAP user)
@@ -725,10 +681,10 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         echo json_encode(
             array(
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                'error' => 'user_not_exists4',
+                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                'error' => 'user_not_exists',
                 'message' => langHdl('error_bad_credentials'),
             )
         );
@@ -742,87 +698,39 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $user_2fa_selection === 'google'
     ) {
-        if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
-            // load library
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
+        $ret = GoogleMFACheck(
+            $data,
+            $dataReceived,
+            $SETTINGS
+        );
 
-            // create new instance
-            $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
+        if ($ret['error'] === true) {
+            echo json_encode($ret['message']);
 
-            // now check if it is the 1st time the user is using 2FA
-            if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
-                if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
-                    $proceedIdentification = false;
-                    $logError = array(
-                        'error' => 'ga_temporary_code_wrong',
-                        'message' => langHdl('ga_bad_code'),
-                    );
-                } else {
-                    $proceedIdentification = false;
-                    $logError = array(
-                        'error' => 'ga_temporary_code_correct',
-                        'message' => langHdl('ga_flash_qr_and_login'),
-                    );
+            return;
+        } else {
+            $proceedIdentification = $ret['proceedIdentification'];
+            $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
 
-                    // generate new QR
-                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
-                        'Teampass - '.$username,
-                        $data['ga']
-                    );
-
-                    // clear temporary code from DB
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'ga_temporary_code' => 'done',
-                        ),
-                        'id=%i',
-                        $data['id']
-                    );
-                }
-
-                echo json_encode(
-                    array(
-                        'value' => '<img src="'.$new_2fa_qr.'">',
-                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                        'initial_url' => @$_SESSION['initial_url'],
-                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                        'error' => $logError['error'],
-                        'message' => $logError['message'],
-                    )
-                );
+            // Manage 1st usage of Google MFA
+            if (count($ret['firstTime']) > 0) {
+                echo json_encode($ret['firstTime']);
 
                 return;
-            } else {
-                // verify the user GA code
-                if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
-                    $proceedIdentification = true;
-                } else {
-                    $proceedIdentification = false;
-                    $logError = array(
-                        'error' => 'ga_code_wrong',
-                        'message' => langHdl('ga_bad_code'),
-                    );
-                }
             }
-        } else {
-            $proceedIdentification = false;
-            $logError = array(
-                'error' => 'ga_temporary_code_correct',
-                'message' => langHdl('ga_bad_code'),
-            );
         }
     } elseif ($counter > 0) {
         $proceedIdentification = true;
     }
 
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            'Proceed with Ident: '.$proceedIdentification."\n"
-        );
-    }
+    // Debug
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        'Proceed with Ident: '.$proceedIdentification."\n"
+    );
 
+    /*
     // check AGSES code
     if (isset($SETTINGS['agses_authentication_enabled']) === true
         && $SETTINGS['agses_authentication_enabled'] === '1'
@@ -890,17 +798,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                         'message' => 'Authentication successful, response code correct.<br /><br />Authentification Method for SecureBrowser updated!',
                     );
                 }
-                /*$return = 'agses_error';
-                echo '[{"value" : "'.$return.'", "user_admin":"',
-                isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
-                '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-                "error" : "'.$logError.'"}]';*/
                 echo json_encode(
                     array(
                         'value' => '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => @$_SESSION['initial_url'],
-                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                         'error' => $logError['error'],
                         'message' => $logError['message'],
                     )
@@ -909,17 +812,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 return;
             }
         } else {
-            // We have an error here
-            /*echo '[{"value" : "", "user_admin":"',
-            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
-            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "'.$logError.'"}]';*/
             echo json_encode(
                 array(
                     'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                     'error' => 'agses_error',
                     'message' => 'No response code given',
                 )
@@ -928,6 +826,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             return;
         }
     }
+    */
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
@@ -977,9 +876,9 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'pw' => $data['pw']
+                            'pw' => $data['pw'],
                         ),
-                        "id=%i",
+                        'id=%i',
                         $data['id']
                     );
                 } else {
@@ -987,20 +886,20 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                     logEvents(
                         'failed_auth',
                         'user_password_not_correct',
-                        "",
-                        "",
+                        '',
+                        '',
                         stripslashes($username)
                     );
                 }
             }
         }
 
-        if ($debugDuo == 1) {
-            fputs(
-                $dbgDuo,
-                "User's password verified: ".$userPasswordVerified."\n"
-            );
-        }
+        // Debug
+        debugIdentify(
+            $debugDuo,
+            $dbgDuo,
+            "User's password verified: ".$userPasswordVerified."\n"
+        );
 
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
@@ -1025,12 +924,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             // Generate a ramdom ID
             $key = GenerateCryptKey(50);
 
-            if ($debugDuo == 1) {
-                fputs(
-                    $dbgDuo,
-                    "User's token: ".$key."\n"
-                );
-            }
+            // Debug
+            debugIdentify(
+                $debugDuo,
+                $dbgDuo,
+                "User's token: ".$key."\n"
+            );
 
             // Check if any unsuccessfull login tries exist
             $arrAttempts = array();
@@ -1059,7 +958,9 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             $_SESSION['unsuccessfull_login_attempts'] = $arrAttempts;
 
             // Log into DB the user's connection
-            if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1') {
+            if (isset($SETTINGS['log_connections']) === true
+                && (int) $SETTINGS['log_connections'] === 1
+            ) {
                 logEvents('user_connection', 'connection', $data['id'], stripslashes($username));
             }
             // Save account in SESSION
@@ -1213,12 +1114,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 $data['id']
             );
 
-            if ($debugDuo == 1) {
-                fputs(
-                    $dbgDuo,
-                    "Preparing to identify the user rights\n"
-                );
-            }
+            // Debug
+            debugIdentify(
+                $debugDuo,
+                $dbgDuo,
+                "Preparing to identify the user rights\n"
+            );
 
             // Get user's rights
             if ($user_initial_creation_through_ldap === false) {
@@ -1364,13 +1265,13 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         }
     }
 
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            "\n\n----\n".
-            'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
-        );
-    }
+    // Debug
+    debugIdentify(
+        $debugDuo,
+        $dbgDuo,
+        "\n\n----\n".
+        'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
+    );
 
     // manage bruteforce
     if ($_SESSION['pwd_attempts'] > 2) {
@@ -1413,12 +1314,12 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
- * @param string $username     Username
- * @param string $ldap_suffix  Suffix
+ * @param string $username      Username
+ * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
- * @param array  $SETTINGS     Teampass settings
+ * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
@@ -1442,9 +1343,13 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
             $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
         }
     }
-    if ($debugLdap == 1) {
-        fputs($dbgLdap, 'LDAP URIs : '.$ldapURIs."\n");
-    }
+
+    // Debug
+    debugIdentify(
+        $debugLdap,
+        $dbgLdap,
+        'LDAP URIs : '.$ldapURIs."\n"
+    );
 
     // Connect
     $ldapconn = ldap_connect($ldapURIs);
@@ -1455,7 +1360,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
     }
 
     // Debug
-    debugLdap(
+    debugIdentify(
         $debugLdap,
         $dbgLdap,
         'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n"
@@ -1470,9 +1375,9 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
         // Should we bind the connection?
         if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
             $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
-            
+
             // Debug
-            debugLdap(
+            debugIdentify(
                 $debugLdap,
                 $dbgLdap,
                 'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n"
@@ -1488,9 +1393,9 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                 $filter,
                 array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
             );
-            
+
             // Debug
-            debugLdap(
+            debugIdentify(
                 $debugLdap,
                 $dbgLdap,
                 'Search filter : '.$filter."\n".
@@ -1504,7 +1409,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                 $user_dn = $result[0]['dn'];
 
                 // Debug
-                debugLdap(
+                debugIdentify(
                     $debugLdap,
                     $dbgLdap,
                     'User was found. '.$user_dn.'\n'
@@ -1521,7 +1426,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                             'error' => 'user_not_exists',
                             'message' => langHdl('error_bad_credentials'),
-                        )
+                        ),
                     );
                 }
 
@@ -1541,7 +1446,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                         $entries = ldap_get_entries($ldapconn, $result_group);
 
                         // Debug
-                        debugLdap(
+                        debugIdentify(
                             $debugLdap,
                             $dbgLdap,
                             'Search groups appartenance : '.$SETTINGS['ldap_search_base']."\n".
@@ -1561,7 +1466,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                     }
 
                     // Debug
-                    debugLdap(
+                    debugIdentify(
                         $debugLdap,
                         $dbgLdap,
                         'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
@@ -1615,13 +1520,14 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
     return array(
         'error' => false,
         'message' => $ldapConnection,
+        'auth_username' => $username,
         'user_info_from_ad' => $result,
         'proceedIdentification' => $proceedIdentification,
     );
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string $username      Username
  * @param string $ldap_suffix   Suffix
@@ -1642,7 +1548,7 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
     $pwdlib = new PasswordLib\PasswordLib();
 
     // Debug
-    debugLdap(
+    debugIdentify(
         $debugLdap,
         $dbgLdap,
         "Get all ldap params : \n".
@@ -1683,7 +1589,7 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
     );
 
     // Debug
-    debugLdap(
+    debugIdentify(
         $debugLdap,
         $dbgLdap,
         'Create new adldap object : '.$adldap->getLastError()."\n\n\n"
@@ -1722,7 +1628,7 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
                     'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                     'error' => 'user_not_exists',
                     'message' => langHdl('error_bad_credentials'),
-                )
+                ),
             );
         }
 
@@ -1752,25 +1658,24 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
     }
 
     // Debug
-    debugLdap(
+    debugIdentify(
         $debugLdap,
         $dbgLdap,
         'After authenticate : '.$adldap->getLastError()."\n\n\n".
         'ldap status : '.$ldapConnection."\n\n\n"
     );
-    
 
     return array(
         'error' => false,
         'message' => $ldapConnection,
         'auth_username' => $auth_username,
         'proceedIdentification' => $proceedIdentification,
-        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
+        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn')),
     );
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string $username     Username
  * @param string $ldap_suffix  Suffix
@@ -1813,7 +1718,7 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
                     'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                     'error' => 'no_user_yubico_credentials',
                     'message' => '',
-                )
+                ),
             );
         } else {
             $yubico_user_key = $data['yubico_user_key'];
@@ -1838,7 +1743,7 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => 'bad_user_yubico_credentials',
                 'message' => langHdl('yubico_bad_code'),
-            )
+            ),
         );
     } else {
         $proceedIdentification = true;
@@ -1852,18 +1757,167 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
- * @param string $debugLdap
- * @param [type] $dbgLdap
- * @param [type] $text
- * @return void
+ * @param string $username          Username
+ * @param string $data              Result of query
+ * @param string $user_info_from_ad Received data
+ * @param array  $SETTINGS          Teampass settings
+ *
+ * @return array
  */
-function debugLdap($debugLdap, $dbgLdap, $text)
+function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
 {
-    if ($debugLdap === 1) {
+    DB::insert(
+        prefixTable('users'),
+        array(
+            'login' => $username,
+            'pw' => $data['pw'],
+            'email' => (isset($user_info_from_ad[0]['mail'][0]) === false) ? '' : $user_info_from_ad[0]['mail'][0],
+            'name' => $user_info_from_ad[0]['givenname'][0],
+            'lastname' => $user_info_from_ad[0]['sn'][0],
+            'admin' => '0',
+            'gestionnaire' => '0',
+            'can_manage_all_users' => '0',
+            'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
+            'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
+            'groupes_interdits' => '',
+            'groupes_visibles' => '',
+            'last_pw_change' => time(),
+            'user_language' => $SETTINGS['default_language'],
+            'encrypted_psk' => '',
+            'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+        )
+    );
+    $newUserId = DB::insertId();
+    // Create personnal folder
+    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
+        DB::insert(
+            prefixTable('nested_tree'),
+            array(
+                'parent_id' => '0',
+                'title' => $newUserId,
+                'bloquer_creation' => '0',
+                'bloquer_modification' => '0',
+                'personal_folder' => '1',
+            )
+        );
+
+        // Rebuild tree
+        $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+        $tree->register();
+        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree->rebuild();
+    }
+
+    return array(
+        'error' => false,
+        'message' => '',
+        'proceedIdentification' => $proceedIdentification,
+        'user_initial_creation_through_ldap' => true,
+    );
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param string $data         Result of query
+ * @param string $dataReceived DataReceived
+ * @param array  $SETTINGS     Teampass settings
+ *
+ * @return array
+ */
+function GoogleMFACheck($data, $dataReceived, $SETTINGS)
+{
+    if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
+        $firstTime = array();
+
+        // load library
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
+
+        // create new instance
+        $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
+
+        // now check if it is the 1st time the user is using 2FA
+        if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
+            if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
+                return array(
+                    'error' => true,
+                    'message' => langHdl('ga_bad_code'),
+                    'proceedIdentification' => false,
+                );
+            } else {
+                $proceedIdentification = false;
+                $logError = array(
+                    'error' => 'ga_temporary_code_correct',
+                    'message' => langHdl('ga_flash_qr_and_login'),
+                );
+
+                // generate new QR
+                $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
+                    'Teampass - '.$username,
+                    $data['ga']
+                );
+
+                // clear temporary code from DB
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'ga_temporary_code' => 'done',
+                    ),
+                    'id=%i',
+                    $data['id']
+                );
+            }
+
+            $firstTime = array(
+                'value' => '<img src="'.$new_2fa_qr.'">',
+                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : 0,
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                'error' => $logError['error'],
+                'message' => $logError['message'],
+            );
+        } else {
+            // verify the user GA code
+            if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
+                $proceedIdentification = true;
+            } else {
+                return array(
+                    'error' => true,
+                    'message' => langHdl('ga_bad_code'),
+                    'proceedIdentification' => false,
+                );
+            }
+        }
+    } else {
+        return array(
+            'error' => true,
+            'message' => langHdl('ga_bad_code'),
+            'proceedIdentification' => false,
+        );
+    }
+
+    return array(
+        'error' => false,
+        'message' => '',
+        'proceedIdentification' => $proceedIdentification,
+        'firstTime' => $firstTime,
+    );
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param string $enabled text1
+ * @param string $dbgFile text2
+ * @param string $text    text3
+ */
+function debugIdentify($enabled, $dbgFile, $text)
+{
+    if ($enabled === 1) {
         fputs(
-            $dbgLdap,
+            $dbgFile,
             $text
         );
     }

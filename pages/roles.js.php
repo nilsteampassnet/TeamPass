@@ -50,13 +50,14 @@ $('#roles-list.select2').select2({
     placeholder : '<?php echo langHdl('select_a_role'); ?>',
     allowClear: true
 });
+$('#roles-list').val('').change();
 
 $('#form-complexity-list.select2').select2({
     language    : '<?php echo $_SESSION['user_language_code']; ?>'
 });
 
 //iCheck for checkbox and radio inputs
-$('#card-folder-definition, #card-folder-deletion input[type="checkbox"]').iCheck({
+$('#card-role-definition, #card-role-deletion input[type="checkbox"]').iCheck({
     checkboxClass: 'icheckbox_flat-blue'
 })
 
@@ -358,12 +359,13 @@ $(document).on('click', 'button', function() {
     var selectedFolderText = $('#roles-list').find(':selected').text();
 
     if ($(this).data('action') === 'cancel-edition') {
-        $('#card-folder-definition').addClass('hidden');
-        $('#form-folder-label').val('');
+        $('#card-role-definition').addClass('hidden');
+        $('#card-role-details, #card-role-selection').removeClass('hidden');
+        $('#form-role-label').val('');
     } else if ($(this).data('action') === 'cancel-deletion') {
-        $('#card-role-details').removeClass('hidden');
-        $('#card-folder-deletion').addClass('hidden');
-        $('#form-folder-delete').iCheck('uncheck');
+        $('#card-role-details, #card-role-selection').removeClass('hidden');
+        $('#card-role-deletion').addClass('hidden');
+        $('#form-role-delete').iCheck('uncheck');
     } else if ($(this).data('action') === 'submit-edition') {
         // STORE ROLE CHANGES
 
@@ -374,10 +376,10 @@ $(document).on('click', 'button', function() {
 
         // Prepare data
         var data = {
-            'label'         : $('#form-folder-label').val(),
+            'label'         : $('#form-role-label').val(),
             'complexity'    : $('#form-complexity-list').val(),
             'folderId'      : $('#roles-list').find(':selected').val(),
-            'allowEdit'     : $('#form-folder-privilege').prop("checked") === true ? 1 : 0,
+            'allowEdit'     : $('#form-role-privilege').prop("checked") === true ? 1 : 0,
             'action'        : store.get('teampassApplication').formUserAction
         }
         var oldLabel = selectedFolderText;
@@ -386,7 +388,7 @@ $(document).on('click', 'button', function() {
         $.post(
             'sources/roles.queries.php',
             {
-                type    : 'change_folder_definition',
+                type    : 'change_role_definition',
                 data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
@@ -403,10 +405,10 @@ $(document).on('click', 'button', function() {
                         )
                         .dismissOthers();
                 } else {
-                    if (store.get('teampassApplication').formUserAction === 'edit_folder') {
+                    if (store.get('teampassApplication').formUserAction === 'edit_role') {
                         // Adapt card header
                         $('#role-detail-header').html(
-                            $('#form-folder-label').val() +
+                            $('#form-role-label').val() +
                             '<i class="' + data.icon + ' infotip ml-3" ' +
                             'title="<?php echo langHdl('complexity'); ?>: ' +
                             $('#form-complexity-list').find(':selected').text() + '"></i>' +
@@ -419,7 +421,7 @@ $(document).on('click', 'button', function() {
                     } else {
                         // Add new folder to roles listbox
                         var newOption = new Option(
-                            $('#form-folder-label').val(),
+                            $('#form-role-label').val(),
                             data.new_role_id,
                             false,
                             true
@@ -430,7 +432,7 @@ $(document).on('click', 'button', function() {
                     // Manage change in select
                     $("#roles-list").select2("destroy");
                     var selectedOption = $('#roles-list option[value=' + $('#roles-list').find(':selected').val() + ']');
-                    selectedOption.text($('#form-folder-label').val());
+                    selectedOption.text($('#form-role-label').val());
                     selectedOption.data('allow-edit-all', data.allow_pw_change);
                     selectedOption.data('complexity-text', data.text);
                     selectedOption.data('complexity-icon', data.icon);
@@ -438,8 +440,9 @@ $(document).on('click', 'button', function() {
                     $("#roles-list").select2();
 
                     // Misc
-                    $('#card-folder-definition').addClass('hidden');
-                    $('#form-folder-label').val('');
+                    $('#card-role-definition').addClass('hidden');
+                    $('#card-role-details, #card-role-selection').removeClass('hidden');
+                    $('#form-role-label').val('');
 
                     // OK
                     alertify
@@ -452,13 +455,13 @@ $(document).on('click', 'button', function() {
     } else if ($(this).data('action') === 'edit') {
         // SHOW ROLE EDITION FORM
         if ($('#card-role-details').hasClass('hidden') === false) {
-            $('#form-folder-label').val(selectedFolderText);
+            $('#form-role-label').val(selectedFolderText);
             $('#form-complexity-list').val($('#roles-list').find(':selected').data('complexity')).trigger('change');
             
             if (parseInt($('#roles-list').find(':selected').data('allow-edit-all')) === 1) {
-                $('#form-folder-privilege').iCheck('check');
+                $('#form-role-privilege').iCheck('check');
             } else {
-                $('#form-folder-privilege').iCheck('uncheck');
+                $('#form-role-privilege').iCheck('uncheck');
             }
 
             // What type of form? Edit or new user
@@ -466,26 +469,27 @@ $(document).on('click', 'button', function() {
                 'teampassApplication',
                 function (teampassApplication)
                 {
-                    teampassApplication.formUserAction = 'edit_folder';
+                    teampassApplication.formUserAction = 'edit_role';
                 }
             );
 
             // Show form
-            $('#card-folder-definition').removeClass('hidden');
+            $('#card-role-definition').removeClass('hidden');
+            $('#card-role-deletion, #card-role-details, #card-role-selection').addClass('hidden');
         }
         //---
     } else if ($(this).data('action') === 'delete') {
         // SHOW ROLE DELETION FORM
         if ($('#card-role-details').hasClass('hidden') === false) {
-            $('#span-folder-delete').text('- <?php echo langHdl('folder'); ?> ' + selectedFolderText);
+            $('#span-role-delete').html('- <?php echo langHdl('role'); ?> <b>' + selectedFolderText + '</b>');
 
-            $('#card-folder-deletion').removeClass('hidden');
-            $('#card-folder-definition, #card-role-details').addClass('hidden');
+            $('#card-role-deletion').removeClass('hidden');
+            $('#card-role-definition, #card-role-details, #card-role-selection').addClass('hidden');
         }
     } else if ($(this).data('action') === 'new') {
         // SHOW NEW FOLDER DEFINITION
-        $('#form-folder-label').val('');
-        $('#form-folder-privilege').iCheck('uncheck');
+        $('#form-role-label').val('');
+        $('#form-role-privilege').iCheck('uncheck');
         $("#form-complexity-list").val('').trigger('change');
 
         // What type of form? Edit or new user
@@ -497,7 +501,8 @@ $(document).on('click', 'button', function() {
             }
         );
         
-        $('#card-folder-definition').removeClass('hidden');
+        $('#card-role-definition').removeClass('hidden');
+        $('#card-role-deletion, #card-role-details, #card-role-selection').addClass('hidden');
         //---
     } else if ($(this).data('action') === 'cancel') {
         $('.temp-row').remove();
@@ -574,7 +579,7 @@ $(document).on('click', 'button', function() {
     } else if ($(this).data('action') === 'submit-deletion') {
         // DELETE SELECTED ROLE
 
-        if ($('#form-folder-delete').prop('checked') === false) {
+        if ($('#form-role-delete').prop('checked') === false) {
             return false;
         }
 
@@ -620,8 +625,9 @@ $(document).on('click', 'button', function() {
                     });
 
                     // Misc
-                    $('#card-folder-deletion').addClass('hidden');
-                    $('#form-folder-delete').iCheck('uncheck');
+                    $('#card-role-deletion').addClass('hidden');
+                    $('#card-role-selection, #card-role-details').removeClass('hidden');
+                    $('#form-role-delete').iCheck('uncheck');
 
                     // OK
                     alertify

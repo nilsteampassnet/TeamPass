@@ -35,6 +35,7 @@ define('OTV_USER_ID', '9999991');
 define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
+define('DEBUG', true);
 
 // Management Pages
 $mngPages = array(

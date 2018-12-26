@@ -15,6 +15,15 @@
  */
 
 return array(
+    'import' => 'Import',
+    'export' => 'Export',
+    'offline' => 'Offline',
+    'user_initial_pwd_changed' => 'Initial password change',
+    'login_attempts_identified_since_last_connection' => 'Your attention is required. At least one login attempt with your account has been identified since last successful connection. Please check and report to your local administrator if you are not the author.',
+    'last_login_attempts' => 'Last login attempts',
+    'see_detail' => 'See detail',
+    'role_definition' => 'Role definition',
+    'not_yet_implemented' => 'Not yet implemented',
     '2factors_expected_for_admin' => 'Administrator requires MFA to get logged',
     '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a MFA method to get logged. If not enabled, Administrator will not require it to get logged even if MFA is enabled for any other user.',
     'restore_done_now_logout' => 'Database restore has been done. You now need to disconnect to refresh the session variables.',

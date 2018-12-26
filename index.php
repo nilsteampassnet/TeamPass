@@ -399,7 +399,7 @@ if (($session_validite_pw === null
                         echo '
                     <li class="nav-item">
                         <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'"">
-                        <i class="nav-icon fa fa-key"></i>
+                        <i class="nav-icon fas fa-key"></i>
                         <p>
                             '.langHdl('pw').'
                         </p>
@@ -407,7 +407,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
-                        <i class="nav-icon fa fa-search"></i>
+                        <i class="nav-icon fas fa-search"></i>
                         <p>
                             '.langHdl('find').'
                         </p>
@@ -425,7 +425,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
-                        <i class="nav-icon fa fa-star"></i>
+                        <i class="nav-icon fas fa-star"></i>
                         <p>
                             '.langHdl('favorites').'
                         </p>
@@ -439,7 +439,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
-                        <i class="nav-icon fa fa-map-signs"></i>
+                        <i class="nav-icon fas fa-map-signs"></i>
                         <p>
                             '.langHdl('kb_menu').'
                         </p>
@@ -454,7 +454,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
-                        <i class="nav-icon fa fa-lightbulb-o"></i>
+                        <i class="nav-icon fas fa-lightbulb"></i>
                         <p>
                             '.langHdl('suggestion_menu').'
                         </p>
@@ -687,7 +687,7 @@ if (($session_validite_pw === null
                 <div class="row">
                     <div class="col-sm-12 col-md-12">
                         <div class="mb-2 alert alert-info">
-                            <i class="icon fa fa-info mr-2"></i>
+                            <i class="icon fas fa-info mr-2"></i>
                             <?php echo langHdl('bug_report_to_github'); ?>
                         </div>
                         <textarea class="form-control" style="min-height:300px;" id="dialog-bug-report-text" placeholder="<?php echo langHdl('please_wait_while_loading'); ?>"></textarea>
@@ -737,7 +737,18 @@ if (($session_validite_pw === null
     } else {
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         //include $SETTINGS['cpassman_dir'].'/error.php';
+    }
+
+    // Case where login attempts have been identified
+    if (isset($_SESSION['unsuccessfull_login_attempts']) === true
+        && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+        && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+    ) {
+        ?>
+        <input type="hidden" id="user-login-attempts" value="">
+        <?php
     } ?>
+
     </div>
     <!-- /.content-wrapper -->
 

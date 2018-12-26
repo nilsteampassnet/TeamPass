@@ -593,7 +593,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] == 'errors') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'errors') {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname');
 
@@ -660,7 +660,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(chr(10), chr(13)), array('<br>', '<br>'), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(chr(10), chr(13)), array('<br>', '<br>'), addslashes($record['label'])).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';

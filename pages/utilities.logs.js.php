@@ -59,6 +59,13 @@ var oTableItems,
 $('.infotip').tooltip();
 
 // What type of form? Edit or new user
+browserSession(
+    'init',
+    'teampassApplication',
+    {
+        logData : '',
+    }
+);
 store.update(
     'teampassApplication',
     function (teampassApplication)

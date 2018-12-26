@@ -47,6 +47,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 buildTable();
 
+browserSession(
+    'init',
+    'teampassApplication',
+    {
+        foldersSelect : '',
+        complexityOptions : '',
+    }
+);
+
 // Prepare iCheck format for checkboxes
 $('input[type="checkbox"].form-check-input').iCheck({
     checkboxClass   : 'icheckbox_flat-blue',
@@ -147,7 +156,8 @@ $('.tp-action').click(function() {
         $('#folder-delete').removeClass('hidden');
         $('#folders-list').addClass('hidden');
 
-    } else if ($(this).data('action') === 'delete-submit') {console.log('ici')
+    } else if ($(this).data('action') === 'delete-submit') {
+        console.log('delete-submit')
         //--- DELETE FOLDERS
         // Show spinner
         alertify
@@ -261,7 +271,7 @@ function buildTable()
                     columns = '',
                     rowCounter = 0,
                     path = '',
-                    foldersSelect = '';
+                    foldersSelect = '<option value="0"><?php echo langHdl('root'); ?></option>';
 
                 $(data.matrix).each(function(i, value) {
                     // Row
@@ -349,6 +359,7 @@ function buildTable()
                 $('.infotip').tooltip();
 
                 // store list of folders
+
                 store.update(
                     'teampassApplication',
                     function (teampassApplication)

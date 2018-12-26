@@ -68,37 +68,37 @@ var requestRunning = false,
     initialPageLoad = true;
 
 
+
 // Manage memory
-if (store.get('teampassApplication') === 'undefined' || store.get('teampassApplication') === undefined) {
-    store.set(
-        'teampassApplication',
-        {
-            lastItemSeen : '',
-            selectedFolder : '',
-            itemsListStop : '',
-            itemsListStart : '',
-            selectedFolder : '',
-            itemsListFolderId : '',
-            itemsListRestricted : '',
-            itemsShownByQuery : '',
-            foldersList : [],
-            personalSaltkeyRequired : 0,
-            personalSaltkeyIsSet : 0
-        }
-    );
-}
-if (store.get('teampassItem') === 'undefined' || store.get('teampassItem') === undefined) {
-    store.set(
-        'teampassItem',
-        {
-            IsPersonalFolder : '',
-            hasAccessLevel : '',
-            hasCustomCategories : '',
-            id : '',
-            timestamp : ''
-        }
-    );
-}
+browserSession(
+    'init',
+    'teampassApplication',
+    {
+        lastItemSeen : '',
+        selectedFolder : '',
+        itemsListStop : '',
+        itemsListStart : '',
+        selectedFolder : '',
+        itemsListFolderId : '',
+        itemsListRestricted : '',
+        itemsShownByQuery : '',
+        foldersList : [],
+        personalSaltkeyRequired : 0,
+        personalSaltkeyIsSet : 0
+    }
+);
+
+browserSession(
+    'init',
+    'teampassItem',
+    {
+        IsPersonalFolder : '',
+        hasAccessLevel : '',
+        hasCustomCategories : '',
+        id : '',
+        timestamp : ''
+    }
+);
 
 
 // Build tree
@@ -1935,7 +1935,7 @@ $("#form-item-tags")
         }
     })
     .autocomplete({
-        source: function( request, response ) {
+        source: function(request, response) {
             $.getJSON( "sources/items.queries.php?type=autocomplete_tags&t=1", {
                 term: extractLast( request.term )
             }, response );
@@ -2302,18 +2302,12 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
     if (groupe_id !== undefined || groupe_id !== '') {
         //refreshTree(groupe_id);
-        if (query_in_progress !== 0
-            && query_in_progress !== groupe_id
-            && request !== undefined
-        ) {
+        if (query_in_progress != 0 && query_in_progress != groupe_id && request !== undefined) {
             request.abort();    //kill previous query if needed
         }
-        query_in_progress = parseInt(groupe_id);
-        //LoadingPage();
-        //$('#items_list_loader').removeClass('hidden');
+        query_in_progress = groupe_id;
         if (start == 0) {
             //clean form
-            //$('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, //#item_viewed_x_times').html('');
             $('#teampass_items_list, #items_folder_path').html('');
         }
 
@@ -2328,9 +2322,6 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
         if ($('.tr_fields') !== undefined) {
             $('.tr_fields, .newItemCat, .editItemCat').addClass('hidden');
         }
-
-        //Disable menu buttons
-        //$('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
 
         // Inform user
         alertify
@@ -3864,47 +3855,4 @@ $('#item-button-password-generate').click(function() {
 $('#item-button-password-copy').click(function() {
     $('#form-item-password-confirmation').val($('#form-item-password').val());
 });
-
-
-
-/*** SETTIMEOUT */
-
-//Simulate a CRON activity (only 5 secs after page loading)
-setTimeout(
-    function() {
-        $.post(
-            "sources/users.queries.php",
-            {
-                type    : "save_user_location",
-                step    : "refresh",
-                key     : "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                if (data.refresh === true) {
-                    // Get user location
-                    var client_info = "";
-                    $.getJSON("https://ipapi.co/json", function() {
-                        // nothing to do
-                    })
-                    .always(function(answered_data) {
-                        if (answered_data.ip !== "") {
-                            $.post(
-                                "sources/users.queries.php",
-                                {
-                                    type        : "save_user_location",
-                                    step        : "perform",
-                                    location    : answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone,
-                                    key         : "<?php echo $_SESSION['key']; ?>"
-                                }
-                            );
-                        }
-                    });
-                }
-            }
-        );
-    },
-    5000
-);
-
 </script>

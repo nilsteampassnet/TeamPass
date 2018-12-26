@@ -45,59 +45,52 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>
 
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
         <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('backups'); ?></h1>
-          </div><!-- /.col -->
+            <div class="col-sm-12">
+                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo langHdl('renewal'); ?></h1>
+            </div><!-- /.col -->
         </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-    
+    </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
 
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
+<!-- Main content -->
+<div class='content'>
+    <div class='container-fluid'>
+        <div class='row'>
+            <div class='col-md-12'>
+                
+            <?php
+            if (null !== DEBUG && DEBUG === false) {
+                ?>
+                <div class='card card-primary'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
+                    </div>
+                    
+                    <div class='card-body'>
 
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
+                    </div>
+                </div>
+                    
+            <?php
+            } else {
+                ?>
+                <div class="mt-4">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
+                    </div>
+                </div>
+
+                <?php
+            }
+            ?>
             </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
-            </div><!-- /.card -->
-          </div>
-          <!-- /.col-md-6 -->
         </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
+    
     </div>
-    <!-- /.content -->
-
-
-
-
-
+</div>
