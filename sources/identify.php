@@ -477,7 +477,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
 
     // User's agses code
-    $user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
+    //$user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
 
     // Check 2FA
     if ((($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
@@ -698,7 +698,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $user_2fa_selection === 'google'
     ) {
-        $ret = GoogleMFACheck(
+        $ret = googleMFACheck(
+            $username,
             $data,
             $dataReceived,
             $SETTINGS
@@ -1813,7 +1814,7 @@ function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
     return array(
         'error' => false,
         'message' => '',
-        'proceedIdentification' => $proceedIdentification,
+        'proceedIdentification' => true,
         'user_initial_creation_through_ldap' => true,
     );
 }
@@ -1821,13 +1822,14 @@ function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
 /**
  * Undocumented function.
  *
+ * @param string $username     Username
  * @param string $data         Result of query
  * @param string $dataReceived DataReceived
  * @param array  $SETTINGS     Teampass settings
  *
  * @return array
  */
-function GoogleMFACheck($data, $dataReceived, $SETTINGS)
+function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 {
     if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
         $firstTime = array();
@@ -1909,9 +1911,11 @@ function GoogleMFACheck($data, $dataReceived, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param string $enabled text1
- * @param string $dbgFile text2
- * @param string $text    text3
+ * @param string    $enabled text1
+ * @param ressource $dbgFile text2
+ * @param string    $text    text3
+ *
+ * @return void
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {

@@ -1698,8 +1698,8 @@ $('#form-item-button-save').click(function() {
     
     // Loop on all changed fields
     $('.form-item-control').each(function(i, obj) {
-        console.log($(this).data('field-name'))
-        console.log($(this))
+        //console.log($(this).data('field-name'))
+        //console.log($(this))
         if ($(this).data('change-ongoing') === true) {
             //Complete url format
             if ($(this).data('field-name') === 'url') {
@@ -1800,8 +1800,9 @@ $('#form-item-button-save').click(function() {
                 // Mandatory?
                 if ($(this).data('field-mandatory') === 1
                     && $(this).val() === ''
-                    && $(this).hasClass('hidden') === false
+                    && $(this).is('visible') === true
                 ) {
+                    console.log($(this))
                     errorExit = true;
                     return false;
                 }
