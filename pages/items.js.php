@@ -148,7 +148,6 @@ $('#jstree').jstree({
                 teampassApplication.selectedFolder = selectedFolderId;
             }
         )
-    
 
         // Prepare list of items
         if (startedItemsListQuery === false) {
@@ -1561,7 +1560,7 @@ var uploader_attachments = new plupload.Uploader({
 
             up.setOption('multipart_params', {
                 PHPSESSID       : '<?php echo $_SESSION['user_id']; ?>',
-                itemId          : store.get('teampass-uploaded-file-id'),
+                itemId          : store.get('teampassItem').id,
                 type_upload     : 'item_attachments',
                 edit_item       : false,
                 //user_token      : teampassStorage('teampassApplication', 'get', ['attachmentToken']),
@@ -1570,6 +1569,8 @@ var uploader_attachments = new plupload.Uploader({
             });
         },
         UploadComplete: function(up, files) {
+            console.log(files)
+            console.log('----')
             alertify
                 .success('<?php echo langHdl('success'); ?>', 1)
                 .dismissOthers();
@@ -1615,17 +1616,10 @@ $("#form-item-upload-pickfiles").click(function(e) {
             function(data) {
                 store.update(
                     'teampassApplication',
-                    {
-                        'attachmentToken' : data[0].token
+                    function (teampassApplication) {
+                        teampassApplication.attachmentToken = data[0].token;
                     }
                 );
-                /*teampassStorage(
-                    'teampassApplication',
-                    'update',
-                    {
-                        'attachmentToken' : data[0].token
-                    }
-                )*/
                 uploader_attachments.start();
             },
             "json"
@@ -1643,6 +1637,7 @@ $("#form-item-upload-pickfiles").click(function(e) {
 uploader_attachments.init();
 uploader_attachments.bind('FilesAdded', function(up, files) {
     $('#form-item-upload-pickfilesList').removeClass('hidden');
+    var addedFiles = '';
     $.each(files, function(i, file) {
         $('#form-item-upload-pickfilesList').append(
             '<div id="upload-file_' + file.id + '">' +
@@ -1653,6 +1648,7 @@ uploader_attachments.bind('FilesAdded', function(up, files) {
         $("#form-item-hidden-pickFilesNumber").val(
             parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1
         );
+        console.log(file);
     });
     up.refresh(); // Reposition Flash/Silverlight
 });
@@ -2356,11 +2352,18 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                 requestRunning = false;
 
                 // manage not allowed
-                if (data.error == 'not_allowed') {
+                if (data.error === 'not_allowed') {
                     alertify
                         .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.error_text, 0)
                         .dismissOthers();
                    return false;
+                }
+
+                // Hide New button if restricted folder
+                if (data.access_level === 1) {
+                    $('#btn-new-item').addClass('hidden');
+                } else {
+                    $('#btn-new-item').removeClass('hidden');
                 }
                 
                 // to be done only in 1st list load

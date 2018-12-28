@@ -1072,7 +1072,7 @@ echo '
                     <div class="card-title">
                         <div class="row justify-content-start">
                             <div class="col">
-                                <div class="btn-group">
+                                <div class="btn-group" id="btn-new-item">
                                     <button type="button" class="btn btn-primary btn-sm tp-action"
                                         data-item-action="new">
                                         <i class="fas fa-plus mr-2"></i><?php echo langHdl('new_item'); ?>

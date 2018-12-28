@@ -706,6 +706,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         );
 
         if ($ret['error'] === true) {
+            logEvents('failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             echo json_encode($ret['message']);
 
             return;
@@ -831,13 +832,13 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
-    if ($data['admin'] === '1' && is_dir('../install')) {
+    if ((int) $data['admin'] === 1 && is_dir('../install') === true) {
         echo json_encode(
             array(
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                 'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                 'error' => 'install_error',
                 'message' => 'Install folder has to be removed!',
             )
@@ -847,52 +848,22 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     }
 
     if ($proceedIdentification === true) {
-        // User exists in the DB
-        if (crypt($passwordClear, $data['pw']) === $data['pw']
-            && empty($data['pw']) === false
-        ) {
-            //update user's password
-            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
-            DB::update(
-                prefixTable('users'),
+        // Check user and password
+        if (checkCredentials($passwordClear, $data, $dataReceived, $username, $SETTINGS) !== true) {
+            echo json_encode(
                 array(
-                    'pw' => $data['pw'],
-                ),
-                'id=%i',
-                $data['id']
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'error' => 'user_not_exists',
+                    'message' => langHdl('error_bad_credentials'),
+                )
             );
-        }
 
-        // check the given password
-        if ($userPasswordVerified !== true) {
-            if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
-                $userPasswordVerified = true;
-            } else {
-                // 2.1.27.24 - manage passwords
-                $passwordClearSanitized = htmlspecialchars_decode($dataReceived['pw_sanitized']);
-
-                if ($pwdlib->verifyPasswordHash($passwordClearSanitized, $data['pw']) === true) {
-                    // then the auth is correct but needs to be adapted in DB since change of encoding
-                    $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'pw' => $data['pw'],
-                        ),
-                        'id=%i',
-                        $data['id']
-                    );
-                } else {
-                    $userPasswordVerified = false;
-                    logEvents(
-                        'failed_auth',
-                        'user_password_not_correct',
-                        '',
-                        '',
-                        stripslashes($username)
-                    );
-                }
-            }
+            return;
+        } else {
+            $userPasswordVerified = true;
         }
 
         // Debug
@@ -1205,24 +1176,57 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                     )
                 );
             }
+
+            // Ensure Complexity levels are translated
+            if (defined('TP_PW_COMPLEXITY') === false) {
+                define(
+                    'TP_PW_COMPLEXITY',
+                    array(
+                        0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+                        25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                        50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                        60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                        70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                        80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                        90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+                    )
+                );
+            }
+
+            /*
+            $_SESSION['initial_url'] = '';
+            if ($SETTINGS['cpassman_dir'] === '..') {
+                $SETTINGS['cpassman_dir'] = '.';
+            }
+            */
         } elseif ($data['disabled'] == 1) {
             // User and password is okay but account is locked
-            $logError = array(
-                'error' => 'user_is_locked',
-                'message' => langHdl('account_is_locked'),
+            echo json_encode(
+                array(
+                    'value' => $return,
+                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'error' => 'user_is_locked',
+                    'message' => langHdl('account_is_locked'),
+                    'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+                    'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                )
             );
+
+            return;
         } else {
             // User exists in the DB but Password is false
             // check if user is locked
-            $userIsLocked = 0;
+            $userIsLocked = false;
             $nbAttempts = intval($data['no_bad_attempts'] + 1);
             if ($SETTINGS['nb_bad_authentication'] > 0
                 && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
             ) {
-                $userIsLocked = 1;
+                $userIsLocked = true;
                 // log it
-                if (isset($SETTINGS['log_connections'])
-                        && $SETTINGS['log_connections'] === '1'
+                if (isset($SETTINGS['log_connections']) === true
+                    && (int) $SETTINGS['log_connections'] === 1
                 ) {
                     logEvents('user_locked', 'connection', $data['id'], stripslashes($username));
                 }
@@ -1238,31 +1242,74 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 $data['id']
             );
             // What return shoulb we do
-            if ($userIsLocked == 1) {
-                $logError = array(
-                    'error' => 'user_is_locked',
-                    'message' => langHdl('account_is_locked'),
+            if ($userIsLocked === true) {
+                echo json_encode(
+                    array(
+                        'value' => $return,
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'error' => 'user_is_locked',
+                        'message' => langHdl('account_is_locked'),
+                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    )
                 );
-            } elseif ($SETTINGS['nb_bad_authentication'] === '0') {
-                $logError = array(
-                    'error' => 'user_not_exists1',
-                    'message' => langHdl('error_bad_credentials'),
-                );
+
+                return;
+            /*} elseif ($SETTINGS['nb_bad_authentication'] === '0') {
+                return json_encode(
+                    array(
+                        'value' => $return,
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'error' => 'user_not_exists',
+                        'message' => langHdl('error_bad_credentials'),
+                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    )
+                );*/
             } else {
-                $logError = array(
-                    'error' => 'user_not_exists2',
-                    'message' => langHdl('error_bad_credentials'),
+                echo json_encode(
+                    array(
+                        'value' => $return,
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'error' => 'user_not_exists',
+                        'message' => langHdl('error_bad_credentials'),
+                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    )
                 );
+
+                return;
             }
         }
     } else {
+        // manage bruteforce
+        if ($_SESSION['pwd_attempts'] > 2) {
+            $_SESSION['next_possible_pwd_attempts'] = time() + 10;
+        }
+
         if ($user_initial_creation_through_ldap === true) {
             $return = 'new_ldap_account_created';
         } else {
-            $logError = array(
-                'error' => 'user_not_exists3',
-                'message' => langHdl('error_bad_credentials'),
+            echo json_encode(
+                array(
+                    'value' => $return,
+                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'error' => 'user_not_exists',
+                    'message' => langHdl('error_bad_credentials'),
+                    'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+                    'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                )
             );
+
+            return;
         }
     }
 
@@ -1273,27 +1320,6 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         "\n\n----\n".
         'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
     );
-
-    // manage bruteforce
-    if ($_SESSION['pwd_attempts'] > 2) {
-        $_SESSION['next_possible_pwd_attempts'] = time() + 10;
-    }
-
-    // Ensure Complexity levels are translated
-    if (defined('TP_PW_COMPLEXITY') === false) {
-        define(
-            'TP_PW_COMPLEXITY',
-            array(
-                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-            )
-        );
-    }
 
     echo json_encode(
         array(
@@ -1307,11 +1333,6 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
             'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
         )
     );
-
-    $_SESSION['initial_url'] = '';
-    if ($SETTINGS['cpassman_dir'] === '..') {
-        $SETTINGS['cpassman_dir'] = '.';
-    }
 }
 
 /**
@@ -1911,11 +1932,84 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 /**
  * Undocumented function.
  *
+ * @param string $passwordClear Password in clear
+ * @param array  $data          Array of user data
+ * @param bool   $dataReceived  Received data
+ * @param string $username      User name
+ * @param array  $SETTINGS      Teampass settings
+ *
+ * @return bool
+ */
+function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETTINGS)
+{
+    // Set to false
+    $userPasswordVerified = false;
+
+    // load passwordLib library
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+
+    // Check if old encryption used
+    if (crypt($passwordClear, $data['pw']) === $data['pw']
+        && empty($data['pw']) === false
+    ) {
+        $userPasswordVerified = true;
+
+        //update user's password
+        $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+        DB::update(
+            prefixTable('users'),
+            array(
+                'pw' => $data['pw'],
+            ),
+            'id=%i',
+            $data['id']
+        );
+    }
+
+    // check the given password
+    if ($userPasswordVerified !== true) {
+        if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
+            $userPasswordVerified = true;
+        } else {
+            // 2.1.27.24 - manage passwords
+            if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['pw']), $data['pw']) === true) {
+                // then the auth is correct but needs to be adapted in DB since change of encoding
+                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'pw' => $data['pw'],
+                    ),
+                    'id=%i',
+                    $data['id']
+                );
+                $userPasswordVerified = true;
+            } else {
+                $userPasswordVerified = false;
+
+                logEvents(
+                    'failed_auth',
+                    'user_password_not_correct',
+                    '',
+                    '',
+                    stripslashes($username)
+                );
+            }
+        }
+    }
+
+    return $userPasswordVerified;
+}
+
+/**
+ * Undocumented function.
+ *
  * @param string    $enabled text1
  * @param ressource $dbgFile text2
  * @param string    $text    text3
- *
- * @return void
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {

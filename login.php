@@ -46,7 +46,7 @@ echo '
       <div>
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
             </div>';
 
 if (isset($SETTINGS['enable_http_request_login']) === true
@@ -80,7 +80,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
     echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                <span class="input-group-text"><i class="fas fa-lock fa-fw"></i></span>
             </div>
           <input type="password" id="pw" class="form-control submit-button" placeholder="'.langHdl('index_password').'">
         </div>';
@@ -89,7 +89,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
 echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                <span class="input-group-text"><i class="fas fa-clock fa-fw"></i></span>
             </div>
           <input type="text" id="session_duration" class="form-control submit-button" placeholder="'.langHdl('index_session_duration').'&nbsp;('.langHdl('minutes').')" value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';

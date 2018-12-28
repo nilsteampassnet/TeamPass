@@ -184,7 +184,6 @@ if (null !== $post_type) {
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
                 $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-                $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -417,13 +416,14 @@ if (null !== $post_type) {
                             'url' => $post_url,
                             'id_tree' => $post_folder_id,
                             'login' => $post_login,
-                            'inactif' => '0',
+                            'inactif' => 0,
                             'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ?
                                 '' : implode(';', $post_restricted_to),
                             'perso' => (isset($post_salt_key_set) === true && $post_salt_key_set === '1'
                                 && isset($post_folder_is_personal) === true && $post_folder_is_personal === '1') ?
-                                '1' : '0',
-                            'anyone_can_modify' => $post_anyone_can_modify,
+                                1 : 0,
+                            'anyone_can_modify' => (isset($post_anyone_can_modify) === true
+                                && $post_anyone_can_modify === 'on') ? 1 : 0,
                             'complexity_level' => $post_complexity_level,
                             'encryption_type' => 'defuse',
                             )
@@ -1023,8 +1023,8 @@ if (null !== $post_type) {
                             'url' => $post_url,
                             'id_tree' => $post_folder_id === 'undefined' ? $dataItem['id_tree'] : $post_folder_id,
                             'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
-                            'anyone_can_modify' => $post_anyone_can_modify,
-                            'complexity_level' => $post_complexity_level,
+                            'anyone_can_modify' => (int) $post_anyone_can_modify,
+                            'complexity_level' => (int) $post_complexity_level,
                             'encryption_type' => 'defuse',
                             ),
                         'id=%i',
@@ -2207,9 +2207,9 @@ if (null !== $post_type) {
 
                 // Display menu icon for deleting if user is allowed
                 if ($dataItem['id_user'] == $_SESSION['user_id']
-                    || $_SESSION['is_admin'] === '1'
-                    || ($_SESSION['user_manager'] === '1' && $SETTINGS['manager_edit'] === '1')
-                    || $dataItem['anyone_can_modify'] === '1'
+                    || (int) $_SESSION['is_admin'] === 1
+                    || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
+                    || (int) $dataItem['anyone_can_modify'] === 1
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
                     || in_array($_SESSION['user_id'], $restrictedTo) === true
                     //|| count($restrictedTo) === 0
@@ -2291,7 +2291,7 @@ if (null !== $post_type) {
                     $arrData['auto_update_pwd_frequency'] = '0';
                 }
 
-                $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                $arrData['anyone_can_modify'] = (int) $dataItem['anyone_can_modify'];
 
                 // Add the fact that item has been viewed in logs
                 if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
@@ -2552,9 +2552,9 @@ if (null !== $post_type) {
                 $returnArray['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
-                (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
+                (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
                 ||
                 (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
@@ -3463,7 +3463,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['restricted'] = $restrictedTo;
 
                         // Can user modify it?
-                        if (($record['anyone_can_modify'] === '1' && $_SESSION['user_read_only'] !== '1')
+                        if (((int) $record['anyone_can_modify'] === 1 && (int) $_SESSION['user_read_only'] !== 1)
                             || $_SESSION['user_id'] === $record['log_user']
                             || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false) // force if readonly for his own items
                             || (isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1' && $_SESSION['user_manager'] === '1') // force draggable if user is manager
@@ -3647,7 +3647,7 @@ if (null !== $post_type) {
                         */
                         $html_json[$record['id']]['login'] = $record['login'];
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify'])
-                            ? intval($SETTINGS['anyone_can_modify']) : 0;
+                            ? (int) $SETTINGS['anyone_can_modify'] : 0;
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? intval($SETTINGS['copy_to_clipboard_small_icons']) : 0;
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
                         $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? intval($SETTINGS['enable_favourites']) : 0;
