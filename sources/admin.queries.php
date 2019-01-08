@@ -97,7 +97,7 @@ $post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
 $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
 $post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
 $post_counter = filter_input(INPUT_POST, 'counter', FILTER_SANITIZE_NUMBER_INT);
-$post_list = filter_input_array(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
+$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
 
 switch ($post_type) {
     //CASE for getting informations about the tool
@@ -565,7 +565,7 @@ switch ($post_type) {
             }
 
             // Do clean
-            fileDelete($SETTINGS['path_to_files_folder'].'/'.$file);
+            fileDelete($SETTINGS['path_to_files_folder'].'/'.$file, $SETTINGS);
             $file = $SETTINGS['path_to_files_folder'].'/defuse_temp_'.$file;
         } else {
             $file = $SETTINGS['path_to_files_folder'].'/'.$file;
@@ -720,7 +720,7 @@ switch ($post_type) {
             while (false !== ($f = readdir($dir))) {
                 if ($f != '.' && $f !== '..' && $f !== '.htaccess') {
                     if ((time() - filectime($dir.$f)) > 604800) {
-                        fileDelete($SETTINGS['path_to_files_folder'].'/'.$f);
+                        fileDelete($SETTINGS['path_to_files_folder'].'/'.$f, $SETTINGS);
                         ++$nbFilesDeleted;
                     }
                 }
@@ -738,7 +738,7 @@ switch ($post_type) {
             while (false !== ($f = readdir($dir))) {
                 if ($f != '.' && $f !== '..') {
                     if (strpos($f, '_delete.') > 0) {
-                        fileDelete($SETTINGS['path_to_upload_folder'].'/'.$f);
+                        fileDelete($SETTINGS['path_to_upload_folder'].'/'.$f, $SETTINGS);
                         ++$nbFilesDeleted;
                     }
                 }
@@ -2011,7 +2011,7 @@ switch ($post_type) {
                         );
                     }
                     // Do file cleanup
-                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']);
+                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'], $SETTINGS);
                     rename(
                         $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file'],
                         $SETTINGS['path_to_upload_folder'].'/'.$file_info['file']
@@ -2346,7 +2346,7 @@ switch ($post_type) {
                     );
                     break;
                 } else {
-                    fileDelete($tmp_skfile);
+                    fileDelete($tmp_skfile, $SETTINGS);
                 }
             } else {
                 // send back an error

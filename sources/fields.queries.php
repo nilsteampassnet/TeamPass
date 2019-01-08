@@ -539,14 +539,16 @@ if (null !== $post_type) {
                         $encrypt = cryption(
                             $recordF['data'],
                             '',
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                         $encryption_type = 'none';
                     } elseif ($recordF['encryption_type'] === 'none' || $recordF['encryption_type'] === '') {
                         $encrypt = cryption(
                             $recordF['data'],
                             '',
-                            'encrypt'
+                            'encrypt',
+                            $SETTINGS
                         );
                         $encryption_type = 'defuse';
                     }

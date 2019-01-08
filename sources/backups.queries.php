@@ -287,7 +287,7 @@ if (null !== $post_type) {
                 }
 
                 // Do clean
-                fileDelete($SETTINGS['path_to_files_folder']."/".$post_backupFile);
+                fileDelete($SETTINGS['path_to_files_folder']."/".$post_backupFile, $SETTINGS);
                 $post_backupFile = $SETTINGS['path_to_files_folder']."/defuse_temp_".$post_backupFile;
             } else {
                 $post_backupFile = $SETTINGS['path_to_files_folder']."/".$post_backupFile;

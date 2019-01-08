@@ -4079,7 +4079,7 @@ if (null !== $post_type) {
                     'at_del_file : '.$data['name']
                 );
                 // Delete file from server
-                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
+                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$data['file'], $SETTINGS);
             }
 
             echo prepareExchangedData(
@@ -4907,7 +4907,7 @@ if (null !== $post_type) {
             // should we decrypt the attachment?
             if (isset($file_info['status']) && $file_info['status'] === 'encrypted') {
                 // Delete the file as viewed
-                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension);
+                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension, $SETTINGS);
 
                 // Open the file
                 if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$image_code)) {
@@ -4957,7 +4957,7 @@ if (null !== $post_type) {
                 intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_STRING), 1))
             );
 
-            fileDelete($SETTINGS['path_to_upload_folder'].'/'.$result['file'].filter_input(INPUT_POST, 'file_suffix', FILTER_SANITIZE_STRING));
+            fileDelete($SETTINGS['path_to_upload_folder'].'/'.$result['file'].filter_input(INPUT_POST, 'file_suffix', FILTER_SANITIZE_STRING), $SETTINGS);
 
             break;
 

@@ -262,7 +262,7 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
-            fileDelete($tmpfilePath);
+            fileDelete($tmpfilePath, $SETTINGS);
         }
     }
 
@@ -304,7 +304,7 @@ if (strpos($contentType, 'multipart') !== false) {
             fclose($in);
             fclose($out);
 
-            fileDelete($_FILES['file']['tmp_name']);
+            fileDelete($_FILES['file']['tmp_name'], $SETTINGS);
         } else {
             die('{"jsonrpc" : "2.0", "error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}');
         }

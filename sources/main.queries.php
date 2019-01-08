@@ -1669,7 +1669,7 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING));
+            fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING), $SETTINGS);
 
             break;
 

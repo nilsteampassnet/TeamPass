@@ -163,11 +163,14 @@ if (empty($sessionTreeStructure) === true
 /**
  * Get through asked folders.
  *
- * @param int    $nodeId                            Id
- * @param array  $ret_json                          Array
- * @param string $listFoldersLimitedKeys            Limited
- * @param string $listRestrictedFoldersForItemsKeys Restricted
- * @param string $tree                              The tree
+ * @param int   $nodeId                            Id
+ * @param array $ret_json                          Array
+ * @param array $listFoldersLimitedKeys            Limited
+ * @param array $listRestrictedFoldersForItemsKeys Restricted
+ * @param array $tree                              The tree
+ * @param array $SETTINGS                          Teampass settings
+ *
+ * @return void
  */
 function buildNodeTree(
     $nodeId,

@@ -208,8 +208,8 @@ $fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basenam
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
-    $fileNameA = substr($fileName, 0, $ext);
-    $fileNameB = substr($fileName, $ext);
+    $fileNameA = substr($fileName, 0, strlen($ext));
+    $fileNameB = substr($fileName, strlen($ext));
 
     $count = 1;
     while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
@@ -240,7 +240,7 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
-            fileDelete($tmpfilePath);
+            fileDelete($tmpfilePath, $SETTINGS);
         }
     }
 
@@ -280,7 +280,7 @@ if (strpos($contentType, 'multipart') !== false) {
             }
             fclose($in);
             fclose($out);
-            fileDelete($_FILES['file']['tmp_name']);
+            fileDelete($_FILES['file']['tmp_name'], $SETTINGS);
         } else {
             die(
                 '{"jsonrpc" : "2.0",
@@ -417,8 +417,8 @@ if (null !== ($post_type_upload)
 
     // get current avatar and delete it
     $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM '.prefixTable('users').' WHERE id=%i', $_SESSION['user_id']);
-    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar']);
-    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb']);
+    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar'], $SETTINGS);
+    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb'], $SETTINGS);
 
     // store in DB the new avatar
     DB::query(

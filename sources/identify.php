@@ -1960,7 +1960,7 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
             // If first time with MFA code
             $proceedIdentification = false;
             $mfaStatus = 'ga_temporary_code_correct';
-            $$mfaMessage = langHdl('ga_flash_qr_and_login');
+            $mfaMessage = langHdl('ga_flash_qr_and_login');
 
             // generate new QR
             $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
@@ -2093,9 +2093,11 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
 /**
  * Undocumented function.
  *
- * @param string    $enabled text1
- * @param ressource $dbgFile text2
- * @param string    $text    text3
+ * @param bool   $enabled text1
+ * @param string $dbgFile text2
+ * @param string $text    text3
+ *
+ * @return void
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {

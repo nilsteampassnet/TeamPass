@@ -50,7 +50,9 @@ use Defuse\Crypto\Crypto;
 /**
  * Undocumented function.
  *
- * @param [type] $string
+ * @param string $string String to get
+ *
+ * @return array
  */
 function langHdl($string)
 {
@@ -67,7 +69,11 @@ function langHdl($string)
 
 //Generate N# of random bits for use as salt
 /**
- * @param int $size
+ * Undocumented function.
+ *
+ * @param int $size Length
+ *
+ * @return array
  */
 function getBits($size)
 {
@@ -656,10 +662,11 @@ function identifyUserRights(
 /**
  * Identify administrator.
  *
- * @param string     $idFonctions Roles of user
- * @param array      $SETTINGS    Teampass settings
- * @param mysqli     $link        DB connection
- * @param NestedTree $tree        Tree of folders
+ * @param string $idFonctions Roles of user
+ * @param array  $SETTINGS    Teampass settings
+ * @param array  $tree        Tree of folders
+ *
+ * @return void
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
@@ -737,12 +744,13 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 /**
  * Undocumented function.
  *
- * @param string     $groupesVisiblesUser  Allowed folders
- * @param string     $groupesInterditsUser Not allowed folders
- * @param string     $idFonctions          Roles of user
- * @param array      $SETTINGS             Teampass settings
- * @param mysqli     $link                 DB connection
- * @param NestedTree $tree                 Tree of folders
+ * @param string $groupesVisiblesUser  Allowed folders
+ * @param string $groupesInterditsUser Not allowed folders
+ * @param string $idFonctions          Roles of user
+ * @param array  $SETTINGS             Teampass settings
+ * @param array  $tree                 Tree of folders
+ *
+ * @return void
  */
 function identUser(
     $groupesVisiblesUser,
@@ -999,7 +1007,7 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
 /**
  * Cache table - refresh
  *
- * @param array  $SETTINGS Teampass settings
+ * @param array $SETTINGS Teampass settings
  *
  * @return void
  */
@@ -1578,10 +1586,11 @@ function utf8Converter($array)
 /**
  * Permits to prepare data to be exchanged.
  *
- * @param array  $data Text
+ * @param string $data Text
  * @param string $type Parameter
+ * @param string $key  Optional key
  *
- * @return string
+ * @return string|array
  */
 function prepareExchangedData($data, $type, $key = null)
 {
@@ -1654,7 +1663,9 @@ function prepareExchangedData($data, $type, $key = null)
  *
  * @param string $src           Source
  * @param string $dest          Destination
- * @param int    $desired_width Size of width
+ * @param double $desired_width Size of width
+ *
+ * @return void
  */
 function makeThumbnail($src, $dest, $desired_width)
 {
@@ -2422,6 +2433,13 @@ function prepareFileWithDefuse(
 /*
 * NOT TO BE USED
 */
+/**
+ * Undocumented function
+ *
+ * @param string $text Text to debug
+ *
+ * @return void
+ */
 function debugTeampass($text)
 {
     $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
@@ -2432,14 +2450,13 @@ function debugTeampass($text)
 /**
  * DELETE the file with expected command depending on server type.
  *
- * @param string $file Path to file
+ * @param string $file     Path to file
+ * @param array  $SETTINGS Teampass settings
  *
- * @return Nothing
+ * @return void
  */
-function fileDelete($file)
+function fileDelete($file, $SETTINGS)
 {
-    global $SETTINGS;
-
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
@@ -2466,30 +2483,6 @@ function getFileExtension($file)
     return substr($file, strrpos($file, '.') + 1);
 }
 
-/**
- * Permits to clean and sanitize text to be displayed.
- *
- * @param string $text Text to clean
- * @param string $type What clean to perform
- *
- * @return string
- */
-function cleanText($string, $type = null)
-{
-    global $SETTINGS;
-
-    // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
-
-    if ($type === 'css') {
-        // Escape text and quotes in UTF8 format
-        return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    } elseif (empty($type) === true || is_null($type) === true || $type === 'html') {
-        // Html cleaner
-        return $antiXss->xss_clean($string);
-    }
-}
 
 /**
  * Performs chmod operation on subfolders.
@@ -2504,7 +2497,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
     $pointer_dir = opendir($dir);
     $res = true;
-    while ($file = readdir($pointer_dir)) {
+    while (false !== ($file = readdir($pointer_dir))) {
         if (($file === '.') || ($file === '..')) {
             continue;
         }
@@ -2541,7 +2534,7 @@ function accessToItemIsGranted($item_id)
 {
     global $SETTINGS;
 
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare superGlobal variables
@@ -2574,7 +2567,7 @@ function accessToItemIsGranted($item_id)
 /**
  * Creates a unique key.
  *
- * @lenght  integer $lenght Key lenght
+ * @param double $lenght Key lenght
  *
  * @return string
  */
