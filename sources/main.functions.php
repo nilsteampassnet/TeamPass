@@ -1586,7 +1586,7 @@ function utf8Converter($array)
 /**
  * Permits to prepare data to be exchanged.
  *
- * @param string $data Text
+ * @param array  $data Text
  * @param string $type Parameter
  * @param string $key  Optional key
  *

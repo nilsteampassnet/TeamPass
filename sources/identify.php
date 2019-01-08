@@ -41,6 +41,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/Anti
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 // init
