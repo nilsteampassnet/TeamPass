@@ -426,7 +426,7 @@ function identifyUser(redirect, psk, data, randomstring)
                             alertify
                                 .message('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
                                 .dismissOthers(); 
-                        } else if (data.error !== '') {
+                        } else if (data.error === true) {
                             alertify.set('notifier','position', 'top-center');
                             alertify
                                 .error('<i class="fas fa-ban fa-lg mr-3"></i>' + data.message, 5)

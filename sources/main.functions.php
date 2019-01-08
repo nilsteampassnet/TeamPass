@@ -1616,7 +1616,7 @@ function prepareExchangedData($data, $type, $key = null)
         $_SESSION['key'] = $key;
     }
 
-    if ($type === 'encode') {
+    if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
@@ -1637,7 +1637,7 @@ function prepareExchangedData($data, $type, $key = null)
                 256
             );
         }
-    } elseif ($type === 'decode') {
+    } elseif ($type === 'decode' && is_array($data) === false) {
         if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {

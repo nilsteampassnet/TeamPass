@@ -693,7 +693,9 @@ function identifyUser($sentData, $SETTINGS)
 
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(
-        'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
+        'SELECT *
+        FROM '.prefixTable('users').'
+        WHERE login=%s_login',
         array(
             'login' => $username,
         )
@@ -730,7 +732,7 @@ function identifyUser($sentData, $SETTINGS)
 
         if ($ret['error'] === true) {
             logEvents('failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
-            echo json_encode($ret['message']);
+            echo json_encode($ret);
 
             return;
         } else {
@@ -1946,7 +1948,7 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 
         // Init
         $firstTime = array();
-
+        
         // now check if it is the 1st time the user is using 2FA
         if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
             if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
