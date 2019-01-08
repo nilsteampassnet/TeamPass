@@ -16,8 +16,8 @@
  *
  * @see      http://www.teampass.net
  */
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
-$debugDuo = 0; //Can be used in order to debug DUO authentication
+DEFINE('DEBUGLDAP', true); //Can be used in order to debug LDAP authentication
+DEFINE('DEBUGDUO', false); //Can be used in order to debug LDAP authentication
 
 require_once 'SecureHandler.php';
 session_start();
@@ -45,11 +45,21 @@ $antiXss = new protect\AntiXSS\AntiXSS();
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // init
-$dbgDuo = '';
-$dbgLdap = '';
 $ldap_suffix = '';
 $result = '';
 $adldap = '';
+
+// If Debug then clean the files
+if (DEBUGLDAP === true) {
+    DEFINE('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'].'/ldap.debug.txt');
+    $fp = fopen(DEBUGLDAPFILE, "w");
+    fclose($fp);
+}
+if (DEBUGDUO === true) {
+    DEFINE('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'].'/duo.debug.txt');
+    $fp = fopen(DEBUGDUOFILE, "w");
+    fclose($fp);
+}
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -72,10 +82,9 @@ if ($post_type === 'identify_duo_user') {
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
-    $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'w');
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         "\n\n-----\n\n".
             'sig request : '.$post_login."\n".
             'resp : '.$sig_request."\n"
@@ -101,8 +110,8 @@ if ($post_type === 'identify_duo_user') {
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         "\n\n-----\n\n".
             'sig response : '.$post_sig_response."\n".
             'resp : '.$resp."\n"
@@ -299,8 +308,6 @@ if ($post_type === 'identify_duo_user') {
         // identify the user through Teampass process
         identifyUser(
             $post_data,
-            $debugLdap,
-            $debugDuo,
             $SETTINGS
         );
     } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $_SESSION['pwd_attempts'] > 3) {
@@ -308,8 +315,6 @@ if ($post_type === 'identify_duo_user') {
         // identify the user through Teampass process
         identifyUser(
             $post_data,
-            $debugLdap,
-            $debugDuo,
             $SETTINGS
         );
     } else {
@@ -388,11 +393,9 @@ if ($post_type === 'identify_duo_user') {
  * Complete authentication of user through Teampass.
  *
  * @param [type] $sentData
- * @param [type] $debugLdap
- * @param [type] $debugDuo
  * @param [type] $SETTINGS
  */
-function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
+function identifyUser($sentData, $SETTINGS)
 {
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
@@ -421,10 +424,9 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
     $session_user_language = $superGlobal->get('user_language', 'SESSION');
 
     // Debug
-    $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
     );
 
@@ -500,15 +502,14 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // Debug
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         "Starting authentication of '".$username."'\n".
         'LDAP status: '.$SETTINGS['ldap_mode']."\n"
     );
-    $dbgLdap = fopen($SETTINGS['path_to_files_folder'].'/ldap.debug.txt', 'w');
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
         "Get all LDAP params : \n".
             'mode : '.$SETTINGS['ldap_mode']."\n".
             'type : '.$SETTINGS['ldap_type']."\n".
@@ -559,8 +560,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // Debug
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         'USer exists: '.$counter."\n"
     );
 
@@ -583,14 +584,28 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
         }
         if ($SETTINGS['ldap_type'] === 'posix-search') {
             $ret = identifyViaLDAPPosixSearch(
-                $username,
+                $data,
                 $ldap_suffix,
                 $passwordClear,
+                $counter,
                 $SETTINGS
             );
 
             if ($ret['error'] === true) {
                 echo json_encode($ret['message']);
+            } elseif ($ret['proceedIdentification'] !== true && $ret['userInLDAP'] === true) {
+                logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+                echo json_encode(
+                    array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'error' => 'user_not_exists',
+                        'message' => langHdl('error_bad_credentials'),
+                    )
+                );
+                return;
             } else {
                 $ldapConnection = true;
                 $user_info_from_ad = $ret['user_info_from_ad'];
@@ -601,11 +616,25 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
                 $username,
                 $ldap_suffix,
                 $passwordClear,
+                $counter,
                 $SETTINGS
             );
 
             if ($ret['error'] === true) {
                 echo json_encode($ret['message']);
+            } elseif ($ret['proceedIdentification'] !== true) {
+                logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+                echo json_encode(
+                    array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
+                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'error' => 'user_not_exists',
+                        'message' => langHdl('error_bad_credentials'),
+                    )
+                );
+                return;
             } else {
                 $auth_username = $ret['auth_username'];
                 $proceedIdentification = $ret['proceedIdentification'];
@@ -639,8 +668,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // Create new LDAP user if not existing in Teampass
     // Don't create it if option "only localy declared users" is enabled
-    if ($counter == 0 && $ldapConnection === true && isset($SETTINGS['ldap_elusers'])
-        && ($SETTINGS['ldap_elusers'] == 0)
+    if ($counter === 0 && $ldapConnection === true
+        && isset($SETTINGS['ldap_elusers']) === true && ($SETTINGS['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in TEAMPASS if doesn't exist
 
@@ -694,7 +723,7 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // check GA code
     if (isset($SETTINGS['google_authentication']) === true
-        && $SETTINGS['google_authentication'] === '1'
+        && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $user_2fa_selection === 'google'
     ) {
@@ -727,8 +756,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // Debug
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         'Proceed with Ident: '.$proceedIdentification."\n"
     );
 
@@ -868,8 +897,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
         // Debug
         debugIdentify(
-            $debugDuo,
-            $dbgDuo,
+            DEBUGDUO,
+            DEBUGDUOFILE,
             "User's password verified: ".$userPasswordVerified."\n"
         );
 
@@ -898,8 +927,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
             // Debug
             debugIdentify(
-                $debugDuo,
-                $dbgDuo,
+                DEBUGDUO,
+                DEBUGDUOFILE,
                 "User's token: ".$key."\n"
             );
 
@@ -1088,8 +1117,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
             // Debug
             debugIdentify(
-                $debugDuo,
-                $dbgDuo,
+                DEBUGDUO,
+                DEBUGDUOFILE,
                 "Preparing to identify the user rights\n"
             );
 
@@ -1315,8 +1344,8 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 
     // Debug
     debugIdentify(
-        $debugDuo,
-        $dbgDuo,
+        DEBUGDUO,
+        DEBUGDUOFILE,
         "\n\n----\n".
         'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
     );
@@ -1338,14 +1367,15 @@ function identifyUser($sentData, $debugLdap, $debugDuo, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param string $username      Username
+ * @param array  $data          Username
  * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
+ * @param int    $counter       User exists in teampass
  * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
-function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SETTINGS)
+function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
@@ -1368,9 +1398,9 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
     // Debug
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
-        'LDAP URIs : '.$ldapURIs."\n"
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
+        'LDAP URIs : '.$ldapURIs."\n\n"
     );
 
     // Connect
@@ -1383,9 +1413,9 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
     // Debug
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
-        'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n"
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
+        'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n\n"
     );
 
     // Set options
@@ -1400,15 +1430,15 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
             // Debug
             debugIdentify(
-                $debugLdap,
-                $dbgLdap,
-                'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n"
+                DEBUGLDAP,
+                DEBUGLDAPFILE,
+                'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n\n"
             );
         } else {
             $ldapbind = false;
         }
         if (($SETTINGS['ldap_bind_dn'] === '' && $SETTINGS['ldap_bind_passwd'] === '') || $ldapbind === true) {
-            $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$username.')(objectClass='.$SETTINGS['ldap_object_class'].'))';
+            $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$data['login'].')(objectClass='.$SETTINGS['ldap_object_class'].'))';
             $result = ldap_search(
                 $ldapconn,
                 $SETTINGS['ldap_search_base'],
@@ -1418,10 +1448,10 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
             // Debug
             debugIdentify(
-                $debugLdap,
-                $dbgLdap,
+                DEBUGLDAP,
+                DEBUGLDAPFILE,
                 'Search filter : '.$filter."\n".
-                    'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
+                'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n\n"
             );
 
             // Check if user was found in AD
@@ -1432,8 +1462,8 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
                 // Debug
                 debugIdentify(
-                    $debugLdap,
-                    $dbgLdap,
+                    DEBUGLDAP,
+                    DEBUGLDAPFILE,
                     'User was found. '.$user_dn.'\n'
                 );
 
@@ -1456,7 +1486,7 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                 $GroupRestrictionEnabled = false;
                 if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
                     // New way to check User's group membership
-                    $filter_group = 'memberUid='.$username;
+                    $filter_group = 'memberUid='.$data['login'];
                     $result_group = ldap_search(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
@@ -1469,8 +1499,8 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
                         // Debug
                         debugIdentify(
-                            $debugLdap,
-                            $dbgLdap,
+                            DEBUGLDAP,
+                            DEBUGLDAPFILE,
                             'Search groups appartenance : '.$SETTINGS['ldap_search_base']."\n".
                                 'Results : '.print_r($entries, true)."\n"
                         );
@@ -1489,8 +1519,8 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
 
                     // Debug
                     debugIdentify(
-                        $debugLdap,
-                        $dbgLdap,
+                        DEBUGLDAP,
+                        DEBUGLDAPFILE,
                         'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
                     );
                 }
@@ -1523,20 +1553,59 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
                                 $data['id']
                             );
 
+                            debugIdentify(
+                                DEBUGLDAP,
+                                DEBUGLDAPFILE,
+                                'User password was updated\n\n'
+                            );
+
                             $proceedIdentification = true;
+                            $userInLDAP = true;
                         }
                     } else {
+                        // Debug
+                        debugIdentify(
+                            DEBUGLDAP,
+                            DEBUGLDAPFILE,
+                            'User not granted - bad password?\n\n'
+                        );
+
+                        // CLear the password in database with random token
+                        DB::update(
+                            prefixTable('users'),
+                            array(
+                                'pw' => $pwdlib->createPasswordHash($pwdlib->getRandomToken(12)),
+                                'login' => $data['login'],
+                            ),
+                            'id = %i',
+                            $data['id']
+                        );
+
                         $ldapConnection = false;
+                        $userInLDAP = false;
                     }
+                } else {
+                    $ldapConnection = false;
+                    $userInLDAP = false;
                 }
             } else {
+                // Debug
+                debugIdentify(
+                    DEBUGLDAP,
+                    DEBUGLDAPFILE,
+                    'No Group is defined\n\n'
+                );
+
                 $ldapConnection = false;
+                $userInLDAP = false;
             }
         } else {
             $ldapConnection = false;
+            $userInLDAP = false;
         }
     } else {
         $ldapConnection = false;
+        $userInLDAP = false;
     }
 
     return array(
@@ -1545,20 +1614,22 @@ function identifyViaLDAPPosixSearch($username, $ldap_suffix, $passwordClear, $SE
         'auth_username' => $username,
         'user_info_from_ad' => $result,
         'proceedIdentification' => $proceedIdentification,
+        'userInLDAP' => $userInLDAP,
     );
 }
 
 /**
  * Undocumented function.
  *
- * @param string $username      Username
+ * @param array  $data          Username
  * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
+ * @param int    $counter       User exists in teampass
  * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
-function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS)
+function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
@@ -1571,8 +1642,8 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
 
     // Debug
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
         "Get all ldap params : \n".
         'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
         'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
@@ -1612,16 +1683,16 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
 
     // Debug
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
         'Create new adldap object : '.$adldap->getLastError()."\n\n\n"
     );
 
     // OpenLDAP expects an attribute=value pair
     if ($SETTINGS['ldap_type'] === 'posix') {
-        $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
+        $auth_username = $SETTINGS['ldap_user_attribute'].'='.$data['login'];
     } else {
-        $auth_username = $username;
+        $auth_username = $data['login'];
     }
 
     // Authenticate the user
@@ -1676,13 +1747,31 @@ function identifyViaLDAPPosix($username, $ldap_suffix, $passwordClear, $SETTINGS
             }
         }
     } else {
+        // Debug
+        debugIdentify(
+            DEBUGLDAP,
+            DEBUGLDAPFILE,
+            'User not granted - bad password?\n\n'
+        );
+
+        // CLear the password in database with random token
+        DB::update(
+            prefixTable('users'),
+            array(
+                'pw' => $pwdlib->createPasswordHash($pwdlib->getRandomToken(12)),
+                'login' => $data['login'],
+            ),
+            'id = %i',
+            $data['id']
+        );
+
         $ldapConnection = false;
     }
 
     // Debug
     debugIdentify(
-        $debugLdap,
-        $dbgLdap,
+        DEBUGLDAP,
+        DEBUGLDAPFILE,
         'After authenticate : '.$adldap->getLastError()."\n\n\n".
         'ldap status : '.$ldapConnection."\n\n\n"
     );
@@ -1852,8 +1941,11 @@ function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
  */
 function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 {
-    if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
+    if (isset($dataReceived['GACode']) === true && empty($dataReceived['GACode']) === false) {
         $firstTime = array();
+        $mfaStatus = '';
+        $mfaError = false;
+        $mfaMessage = '';
 
         // load library
         include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
@@ -1868,13 +1960,12 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
                     'error' => true,
                     'message' => langHdl('ga_bad_code'),
                     'proceedIdentification' => false,
+                    'mfaStatus' => '',
                 );
             } else {
                 $proceedIdentification = false;
-                $logError = array(
-                    'error' => 'ga_temporary_code_correct',
-                    'message' => langHdl('ga_flash_qr_and_login'),
-                );
+                $mfaStatus = 'ga_temporary_code_correct';
+                $$mfaMessage = langHdl('ga_flash_qr_and_login');
 
                 // generate new QR
                 $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
@@ -1898,8 +1989,9 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : 0,
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'error' => $logError['error'],
-                'message' => $logError['message'],
+                'error' => $mfaError,
+                'message' => $mfaMessage,
+                'mfaStatus' => $mfaStatus,
             );
         } else {
             // verify the user GA code
@@ -2013,9 +2105,10 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {
-    if ($enabled === 1) {
-        fputs(
-            $dbgFile,
+    if ($enabled === true) {
+        $fp = fopen($dbgFile, "a");
+        fwrite(
+            $fp,
             $text
         );
     }

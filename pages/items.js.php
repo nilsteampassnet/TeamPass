@@ -6,13 +6,13 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @category  Teampass
+ * @category Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
- * @version   GIT: <git_id>
+ * @version GIT: <git_id>
  *
  * @see      http://www.teampass.net
  */
@@ -59,6 +59,7 @@ var requestRunning = false,
     itemEditor,
     itemEditorSuggestion,
     userDidAChange = false,
+    userUploadedFile = false,
     selectedFolder = '',
     selectedFolderId = '',
     itemClipboard,
@@ -667,6 +668,7 @@ $('#form-item-delete-perform').click(function() {
     
     // Force user did a change to false
     userDidAChange = false;
+    userUploadedFile = false;
 
     var data = {
         'item_id'   : store.get('teampassItem').id,
@@ -764,6 +766,7 @@ $('#form-item-copy-perform').click(function() {
 
     // Force user did a change to false
     userDidAChange = false;
+    userUploadedFile= false;
 
     var data = {
         'item_id'   : store.get('teampassItem').id,
@@ -823,6 +826,7 @@ $('#form-item-suggestion-perform').click(function() {
 
     // Force user did a change to false
     userDidAChange = false;
+    userUploadedFile= false;
 
     var data = {
         'label'         : $('#form-item-suggestion-label').val(),
@@ -904,6 +908,7 @@ $('#form-folder-add-perform').click(function() {
 
     // Force user did a change to false
     userDidAChange = false;
+    userUploadedFile= false;
 
     var data = {
         'label'         : $('#form-folder-add-label').val(),
@@ -1563,7 +1568,6 @@ var uploader_attachments = new plupload.Uploader({
                 itemId          : store.get('teampassItem').id,
                 type_upload     : 'item_attachments',
                 edit_item       : false,
-                //user_token      : teampassStorage('teampassApplication', 'get', ['attachmentToken']),
                 user_token      : store.get('teampassApplication').attachmentToken,
                 files_number    : $('#form-item-hidden-pickFilesNumber').val()
             });
@@ -1571,6 +1575,7 @@ var uploader_attachments = new plupload.Uploader({
         UploadComplete: function(up, files) {
             console.log(files)
             console.log('----')
+            userUploadedFile = true;
             alertify
                 .success('<?php echo langHdl('success'); ?>', 1)
                 .dismissOthers();
@@ -1672,7 +1677,7 @@ $('#form-item-button-save').click(function() {
     }
 
     // Don't save if no change
-    if (userDidAChange === false) {
+    if (userDidAChange === false && userUploadedFile === false) {
         alertify
             .warning('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('no_change_performed'); ?>', 3)
             .dismissOthers();
@@ -1907,11 +1912,21 @@ console.log(data)
 
                         // Close
                         userDidAChange = false;
+                        userUploadedFile = false;
                         closeItemDetailsCard();
                     }
                 }
             );
         }
+    } else if (userUploadedFile === true) {
+        // Inform user
+        alertify
+            .success('<?php echo langHdl('success'); ?>', 1)
+            .dismissOthers();
+
+        // Close
+        userUploadedFile = false;
+        closeItemDetailsCard();
     } else {
         console.info('NOTHING TO SAVE');
         alertify
@@ -3151,7 +3166,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                         $('#form-item-description').val(editor.getData());
 
                         // On change
-                        editor.model.document.on( 'change', () => {
+                        editor.model.document.on('change', () => {
                             if (userDidAChange === false) {
                                 userDidAChange = true;
                                 $('#form-item-description').data('change-ongoing', true);
@@ -3159,7 +3174,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                                 // SHow button in sticky footer
                                 $('#form-item-buttons').addClass('sticky-footer');
                             }
-                        } );
+                        });
 
                         // Define variable name
                         itemEditor = editor;

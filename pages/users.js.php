@@ -567,7 +567,9 @@ $(document).on('click', '.tp-action', function() {
         // Loop on all changed fields
         var arrayQuery = [];
         $('.form-control').each(function(i, obj) {
-            if ($(this).data('change-ongoing') === true) {
+            if ($(this).data('change-ongoing') === true
+                || $('#form-password').val() !== 'do_not_change'
+            ) {
                 arrayQuery.push({
                     'field' : $(this).prop('id'),
                     'value' : $(this).val(),
@@ -590,7 +592,7 @@ $(document).on('click', '.tp-action', function() {
             $("#form-forbid option:selected").each(function () {
                 forbidFld.push($(this).val())
             });
-            console.log('ici')
+            
             // Mandatory?
             var validated = true;
             $('.required').each(function(i, obj) {
@@ -736,11 +738,15 @@ $(document).on('click', '.tp-action', function() {
             }
         );
     } else if ($(this).data('action') === 'qrcode') {
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
         // This sends a GA Code by email to user
         data = {
-            'user_id'            : $(this).data('id'),
+            'user_id'       : $(this).data('id'),
             'demand_origin' : 'users_management_list',
-            'send_email'    : '1'
+            'send_email'    : 1
         }
         
         $.post(
@@ -921,7 +927,7 @@ $('#button-password-generate').click(function() {
 $('#form-user .track-change').on('change', function() {
     if ($(this).val() !== null && $(this).val().length > 0) {
         userDidAChange = true;
-        $(this).data('change-ongoing', true);
+        console.log('>> ICI2 ')
     } else {
         $(this).data('change-ongoing', false);
     }

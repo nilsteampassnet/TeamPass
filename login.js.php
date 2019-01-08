@@ -413,6 +413,17 @@ function identifyUser(redirect, psk, data, randomstring)
                             } else {
                                 window.location.href = 'index.php?page=items';
                             }
+                        } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
+                            $('#div-2fa-google-qr').removeClass('hidden');
+                            $('#div-2fa-google-qr')
+                                .first()
+                                .html('<p class="text-center"><?php echo langHdl('mfa_flash'); ?><br>' + data.value + '</p>');
+                            $('#ga_code')
+                                .val('')
+                                .focus();
+                            alertify
+                                .message('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
+                                .dismissOthers(); 
                         } else if (data.error !== '') {
                             alertify.set('notifier','position', 'top-center');
                             alertify

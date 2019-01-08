@@ -142,15 +142,18 @@ if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agse
 if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
     echo '
         <div id="div-2fa-google" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : 'hidden', '">
-          <div class="col-3">
-            <img src="includes/images/2fa_google_auth.png">
-          </div>
-          <div class="col-8">
-            <input type="text" id="ga_code" class="form-control submit-button" placeholder="'.langHdl('ga_identification_code').'" />
+            <div class="col-3">
+                <img src="includes/images/2fa_google_auth.png">
+            </div>
+            <div class="col-8">
+                <input type="text" id="ga_code" class="form-control submit-button" placeholder="'.langHdl('ga_identification_code').'" />
+            </div>
+            <div class="col-1">
+                <span class="fa fa-envelope-o form-control-feedback pointer infotip" title="'.langHdl('i_need_to_generate_new_ga_code').'" onclick="send_user_new_temporary_ga_code()"></span>
+            </div>
         </div>
-        <div class="col-1">
-            <span class="fa fa-envelope-o form-control-feedback pointer infotip" title="'.langHdl('i_need_to_generate_new_ga_code').'" onclick="send_user_new_temporary_ga_code()"></span>
-          </div>
+        <div id="div-2fa-google-qr" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : 'hidden', '">
+            <div class="col-12"></div>
         </div>';
 }
 

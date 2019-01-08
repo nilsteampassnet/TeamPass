@@ -167,7 +167,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_usergroup' value='<?php echo isset($SETTINGS['ldap_usergroup']) ? $SETTINGS['ldap_usergroup'] : ''; ?>' onchange='updateSetting($(this).attr("id"), $(this).val());' />
+                                    <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_usergroup' value='<?php echo isset($SETTINGS['ldap_usergroup']) ? $SETTINGS['ldap_usergroup'] : ''; ?>'>
                                 </div>
                             </div>
 
@@ -179,7 +179,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_bind_dn' value='<?php echo isset($SETTINGS['ldap_bind_dn']) ? $SETTINGS['ldap_bind_dn'] : ''; ?>' onchange='updateSetting($(this).attr("id"), $(this).val());' />
+                                    <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_bind_dn' value='<?php echo isset($SETTINGS['ldap_bind_dn']) ? $SETTINGS['ldap_bind_dn'] : ''; ?>'>
                                 </div>
                             </div>
 

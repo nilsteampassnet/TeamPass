@@ -359,11 +359,11 @@ function mainQuery($SETTINGS)
                             && (int) $SETTINGS['enable_email_notification_on_user_pw_change'] === 1
                         ) {
                             sendEmail(
-                                $LANG['forgot_pw_email_subject'],
-                                $LANG['forgot_pw_email_body'].' '.htmlspecialchars_decode($dataReceived['new_pw']),
+                                langHdl('forgot_pw_email_subject'),
+                                langHdl('forgot_pw_email_body').' '.htmlspecialchars_decode($dataReceived['new_pw']),
                                 $row[0],
                                 $SETTINGS,
-                                $LANG['forgot_pw_email_altbody_1'].' '.htmlspecialchars_decode($dataReceived['new_pw'])
+                                langHdl('forgot_pw_email_altbody_1').' '.htmlspecialchars_decode($dataReceived['new_pw'])
                             );
                         }
                     }
@@ -467,8 +467,8 @@ function mainQuery($SETTINGS)
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING);
-            $post_send_mail = filter_var($dataReceived['send_mail'], FILTER_SANITIZE_STRING);
+            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_NUMBER_INT);
+            $post_send_mail = filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
             $post_pwd = filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING);
 
@@ -635,35 +635,51 @@ function mainQuery($SETTINGS)
                     logEvents('user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($login));
 
                     // send mail?
-                    if (null !== filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING)
-                        && filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING) === '1'
-                    ) {
-                        sendEmail(
-                            $LANG['email_ga_subject'],
-                            str_replace(
-                                '#2FACode#',
-                                $gaTemporaryCode,
-                                $LANG['email_ga_text']
+                    if ((int) $post_send_mail === 1) {
+                        $ret = json_decode(
+                            sendEmail(
+                                langHdl('email_ga_subject'),
+                                str_replace(
+                                    '#2FACode#',
+                                    $gaTemporaryCode,
+                                    langHdl('email_ga_text')
+                                ),
+                                $data['email'],
+                                $SETTINGS
                             ),
-                            $data['email'],
-                            $SETTINGS
+                            true
+                        );
+
+                        // send back
+                        echo prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => '',
+                                'email' => $data['email'],
+                                'email_result' => str_replace(
+                                    '#email#',
+                                    '<b>'.obfuscateEmail($data['email']).'</b>',
+                                    addslashes(langHdl('admin_email_result_ok'))
+                                ),
+                            ),
+                            'encode'
+                        );
+                    } else {
+                        // send back
+                        echo prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => '',
+                                'email' => $data['email'],
+                                'email_result' => str_replace(
+                                    '#email#',
+                                    '<b>'.obfuscateEmail($data['email']).'</b>',
+                                    addslashes(langHdl('admin_email_result_ok'))
+                                ),
+                            ),
+                            'encode'
                         );
                     }
-
-                    // send back
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'email' => $data['email'],
-                            'email_result' => str_replace(
-                                '#email#',
-                                '<b>'.obfuscateEmail($data['email']).'</b>',
-                                addslashes($LANG['admin_email_result_ok'])
-                            ),
-                        ),
-                        'encode'
-                    );
                 }
             }
             break;
@@ -718,12 +734,12 @@ function mainQuery($SETTINGS)
                     'SELECT login,pw FROM '.prefixTable('users').' WHERE email = %s',
                     $post_email
                 );
-                $textMail = $LANG['forgot_pw_email_body_1'].' <a href="'.
+                $textMail = langHdl('forgot_pw_email_body_1').' <a href="'.
                     $SETTINGS['cpassman_url'].'/index.php?action=password_recovery&key='.$key.
                     '&login='.$post_login.'">'.$SETTINGS['cpassman_url'].
-                    '/index.php?action=password_recovery&key='.$key.'&login='.$post_login.'</a>.<br><br>'.$LANG['thku'];
-                $textMailAlt = $LANG['forgot_pw_email_altbody_1'].' '.$LANG['at_login'].' : '.$post_login.' - '.
-                    $LANG['index_password'].' : '.md5($data['pw']);
+                    '/index.php?action=password_recovery&key='.$key.'&login='.$post_login.'</a>.<br><br>'.langHdl('thku');
+                $textMailAlt = langHdl('forgot_pw_email_altbody_1').' '.langHdl('at_login').' : '.$post_login.' - '.
+                    langHdl('index_password').' : '.md5($data['pw']);
 
                 // Check if email has already a key in DB
                 DB::query(
@@ -756,7 +772,7 @@ function mainQuery($SETTINGS)
 
                 $ret = json_decode(
                     sendEmail(
-                        $LANG['forgot_pw_email_subject'],
+                        langHdl('forgot_pw_email_subject'),
                         $textMail,
                         $post_email,
                         $SETTINGS,
@@ -829,11 +845,11 @@ function mainQuery($SETTINGS)
                 // send to user
                 $ret = json_decode(
                     sendEmail(
-                        $LANG['forgot_pw_email_subject_confirm'],
-                        $LANG['forgot_pw_email_body'].' '.$newPwNotCrypted,
+                        langHdl('forgot_pw_email_subject_confirm'),
+                        langHdl('forgot_pw_email_body').' '.$newPwNotCrypted,
                         $dataUser['email'],
                         $SETTINGS,
-                        strip_tags($LANG['forgot_pw_email_body']).' '.$newPwNotCrypted
+                        strip_tags(langHdl('forgot_pw_email_body')).' '.$newPwNotCrypted
                     ),
                     true
                 );

@@ -235,7 +235,6 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     </script>
 
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="plugins/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="plugins/fontawesome5/css/all.css">
     <!-- IonIcons -->
     <link rel="stylesheet" href="includes/css/ionicons.min.css">

@@ -15,6 +15,7 @@
  */
 
 return array(
+    'mfa_flash' => 'Flash the QR code with your mobile device',
     'import' => 'Import',
     'export' => 'Export',
     'offline' => 'Offline',

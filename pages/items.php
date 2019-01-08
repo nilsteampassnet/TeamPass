@@ -413,7 +413,7 @@ echo '
                                                 , $field['is_mandatory'] === '1' ?
                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
                                                 , '</label>
-                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
+                                                <textarea class="form-control form-item-control   track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
                                             </div>';
                                         } else {
                                             echo '
