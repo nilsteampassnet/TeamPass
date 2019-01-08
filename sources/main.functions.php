@@ -52,7 +52,7 @@ use Defuse\Crypto\Crypto;
  *
  * @param string $string String to get
  *
- * @return array
+ * @return string
  */
 function langHdl($string)
 {
@@ -1590,7 +1590,7 @@ function utf8Converter($array)
  * @param string $type Parameter
  * @param string $key  Optional key
  *
- * @return string|array
+ * @return string
  */
 function prepareExchangedData($data, $type, $key = null)
 {
