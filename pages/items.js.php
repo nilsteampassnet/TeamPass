@@ -3490,19 +3490,19 @@ function showDetailsStep2(id, actionType)
                     counter = 1;
                 $.each(data.attachments, function(i, value) {
                     if (value.is_image === 1) {
-                        html += '<div class=""><i class="fas ' + value.icon + ' mr-2" /></i><a class="" href="#' + value.id + '" title="' + value.filename + '">' + value.filename + '</a></div>';
+                        html += '<div class=""><i class="' + value.icon + ' mr-2" /></i><a class="" href="#' + value.id + '" title="' + value.filename + '">' + value.filename + '</a></div>';
                     } else {
-                        html += '<div class=""><i class="fas ' + value.icon + ' mr-2" /></i><a class="" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '">' + value.filename + '</a></div>';
+                        html += '<div class=""><i class="' + value.icon + ' mr-2" /></i><a class="" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '">' + value.filename + '</a></div>';
                     }
                     
                     if (counter === 1) {
                         htmlFull += '<div class="row">';
                     }
 
-                    htmlFull += '<div class="col-6"><div class="info-box bg-secondary-gradient">' +                            
-                        '<span class="info-box-icon bg-info"><i class="fas fa-' + value.icon + '"></i></span>' +
+                    htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +                            
+                        '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
                         '<div class="info-box-content"><span class="info-box-text">' + value.filename + '</span>' +
-                        '<span class="info-box-text"><i class="fas fa-trash pointer"></i></span></div>' +
+                        '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
                         '</div></div>';
 
                     
@@ -3618,18 +3618,7 @@ function showDetailsStep2(id, actionType)
                     },
                     function(data) {
                         //decrypt data
-                        try {
-                            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-                        } catch (e) {
-                            // error
-                            alertify.alert()
-                                .setting({
-                                    'label' : '<?php echo langHdl('ok'); ?>',
-                                    'message' : '<i class="fas fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
-                                })
-                                .show(); 
-                            return false;
-                        }
+                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
                         console.info('History:');
                         console.log(data);
                         if (data.error === '') {
@@ -3670,6 +3659,52 @@ function showDetailsStep2(id, actionType)
          }
      );
 };
+
+// When click on Trash attachment icon
+$(document).on('click', '.delete-file', function() {
+    var thisButton = $(this),
+        thisFileId = thisButton.data('file-id');
+    
+    if (thisFileId !== undefined && thisFileId !== '') {
+        // Delete the file
+        var data = {
+            'file_id' : thisFileId,
+        };
+        
+        $.post(
+            'sources/items.queries.php',
+            {
+                type    : 'delete_attached_file',
+                data    :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                //check if format error
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                            3
+                        )
+                        .dismissOthers();
+                } else {
+                    // Remove the file in UI
+                    thisButton.closest('.edit-attachment-div').remove();
+
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
+    }
+});
 
 /**
  */

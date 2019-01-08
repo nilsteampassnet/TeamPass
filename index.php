@@ -901,7 +901,7 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
 <!-- Sortable -->
-<script src="./plugins/sortable/jquery.sortable.js"></script>
+<!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
     <?php
@@ -922,8 +922,11 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
-    } elseif ($pageSel === 'search' || $pageSel === 'folders' || $pageSel === 'users' || $pageSel === 'roles'
-    || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs' || $pageSel === 'utilities.database') {
+    } elseif ($pageSel === 'search' || $pageSel === 'folders'
+        || $pageSel === 'users' ||$pageSel === 'roles'
+        || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs'
+        || $pageSel === 'utilities.database'
+    ) {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">

@@ -187,7 +187,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
 
                     <div class="card-body">
-                        <div class="">
+                        <div id="unsent-emails">
                         <?php
                         DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status = %s OR status = %s', 'not_sent', '');
 

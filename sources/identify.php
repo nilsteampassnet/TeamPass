@@ -16,8 +16,6 @@
  *
  * @see      http://www.teampass.net
  */
-DEFINE('DEBUGLDAP', true); //Can be used in order to debug LDAP authentication
-DEFINE('DEBUGDUO', false); //Can be used in order to debug LDAP authentication
 
 require_once 'SecureHandler.php';
 session_start();
@@ -43,6 +41,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/Anti
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 // init
 $ldap_suffix = '';
@@ -51,12 +50,12 @@ $adldap = '';
 
 // If Debug then clean the files
 if (DEBUGLDAP === true) {
-    DEFINE('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'].'/ldap.debug.txt');
+    define('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'].'/ldap.debug.txt');
     $fp = fopen(DEBUGLDAPFILE, "w");
     fclose($fp);
 }
 if (DEBUGDUO === true) {
-    DEFINE('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'].'/duo.debug.txt');
+    define('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'].'/duo.debug.txt');
     $fp = fopen(DEBUGDUOFILE, "w");
     fclose($fp);
 }
@@ -75,7 +74,6 @@ if ($post_type === 'identify_duo_user') {
     //--------
     // This step creates the DUO request encrypted key
 
-    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once SECUREPATH.'/sk.php';
 
     // load library
@@ -102,7 +100,6 @@ if ($post_type === 'identify_duo_user') {
     // this step is verifying the response received from the server
     //--------
 
-    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once SECUREPATH.'/sk.php';
 
     // load library
@@ -121,8 +118,6 @@ if ($post_type === 'identify_duo_user') {
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
-            include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             // connect to the server
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
             $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
@@ -195,9 +190,7 @@ if ($post_type === 'identify_duo_user') {
     //--------
     //-- AUTHENTICATION WITH AGSES
     //--------
-
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
@@ -1941,17 +1934,17 @@ function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
  */
 function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 {
-    if (isset($dataReceived['GACode']) === true && empty($dataReceived['GACode']) === false) {
-        $firstTime = array();
-        $mfaStatus = '';
-        $mfaError = false;
-        $mfaMessage = '';
-
+    if (isset($dataReceived['GACode']) === true
+        && empty($dataReceived['GACode']) === false
+    ) {
         // load library
         include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
 
         // create new instance
         $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
+
+        // Init
+        $firstTime = array();
 
         // now check if it is the 1st time the user is using 2FA
         if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
@@ -1962,34 +1955,35 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
                     'proceedIdentification' => false,
                     'mfaStatus' => '',
                 );
-            } else {
-                $proceedIdentification = false;
-                $mfaStatus = 'ga_temporary_code_correct';
-                $$mfaMessage = langHdl('ga_flash_qr_and_login');
-
-                // generate new QR
-                $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
-                    'Teampass - '.$username,
-                    $data['ga']
-                );
-
-                // clear temporary code from DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'ga_temporary_code' => 'done',
-                    ),
-                    'id=%i',
-                    $data['id']
-                );
             }
+            
+            // If first time with MFA code
+            $proceedIdentification = false;
+            $mfaStatus = 'ga_temporary_code_correct';
+            $$mfaMessage = langHdl('ga_flash_qr_and_login');
+
+            // generate new QR
+            $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
+                'Teampass - '.$username,
+                $data['ga']
+            );
+
+            // clear temporary code from DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'ga_temporary_code' => 'done',
+                ),
+                'id=%i',
+                $data['id']
+            );
 
             $firstTime = array(
                 'value' => '<img src="'.$new_2fa_qr.'">',
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : 0,
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'error' => $mfaError,
+                'error' => false,
                 'message' => $mfaMessage,
                 'mfaStatus' => $mfaStatus,
             );

@@ -636,7 +636,7 @@ function mainQuery($SETTINGS)
 
                     // send mail?
                     if ((int) $post_send_mail === 1) {
-                        $ret = json_decode(
+                        json_decode(
                             sendEmail(
                                 langHdl('email_ga_subject'),
                                 str_replace(

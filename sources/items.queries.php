@@ -4020,12 +4020,31 @@ if (null !== $post_type) {
         * DELETE attached file from an item
         */
         case 'delete_attached_file':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+            $fileId = filter_var($dataReceived['file_id'], FILTER_SANITIZE_NUMBER_INT);
+
             // Get some info before deleting
             $data = DB::queryFirstRow(
                 'SELECT name, id_item, file
                 FROM '.prefixTable('files').'
                 WHERE id = %i',
-                filter_input(INPUT_POST, 'file_id', FILTER_SANITIZE_NUMBER_INT)
+                $fileId
             );
 
             // Load item data
@@ -4037,7 +4056,7 @@ if (null !== $post_type) {
             );
 
             // Check that user can access this folder
-            if (!in_array($data_item['id_tree'], $_SESSION['groupes_visibles'])) {
+            if (in_array($data_item['id_tree'], $_SESSION['groupes_visibles']) === false) {
                 echo prepareExchangedData(array('error' => 'ERR_FOLDER_NOT_ALLOWED'), 'encode');
                 break;
             }
@@ -4047,7 +4066,7 @@ if (null !== $post_type) {
                 DB::delete(
                     prefixTable('files'),
                     'id = %i',
-                    filter_input(INPUT_POST, 'file_id', FILTER_SANITIZE_NUMBER_INT)
+                    $fileId
                 );
                 // Update the log
                 logItems(
@@ -4062,6 +4081,14 @@ if (null !== $post_type) {
                 // Delete file from server
                 fileDelete($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
             }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
             break;
 
         /*
@@ -5649,15 +5676,15 @@ function recupDroitCreationSansComplexite($groupe)
 function fileFormatImage($ext)
 {
     if (in_array($ext, TP_OFFICE_FILE_EXT)) {
-        $image = 'file-word-o';
+        $image = 'far fa-file-word';
     } elseif ($ext === 'pdf') {
-        $image = 'file-pdf-o';
+        $image = 'far fa-file-pdf';
     } elseif (in_array($ext, TP_IMAGE_FILE_EXT)) {
-        $image = 'file-image-o';
+        $image = 'far fa-file-image';
     } elseif ($ext === 'txt') {
-        $image = 'file-text-o';
+        $image = 'far fa-file-alt';
     } else {
-        $image = 'file-o';
+        $image = 'far fa-file';
     }
 
     return $image;

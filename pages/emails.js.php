@@ -80,34 +80,52 @@ $(document).on('click', '.button', function() {
             }
         );
     } else if (action === 'send-waiting-emails') {
-        $.post(
-            'sources/admin.queries.php',
-            {
-                type    : 'admin_email_send_backlog',
-                key     : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+        $('#unsent-emails')
+            .append('<span id="unsent-emails-progress" class="ml-3"></span>');
+        sendEmailsBacklog();
+    }
+});
 
-                if (data.error === true) {
-                    // ERROR
-                    alertify
-                        .error(
-                            '<i class="fa fa-warning fa-lg mr-2"></i>' + data.message,
-                            3
-                        )
-                        .dismissOthers();
+
+function sendEmailsBacklog(counter = "")
+{
+    $('#unsent-emails-progress')
+        .html('<i class="fas fa-cog fa-spin ml-2"></i>' +
+            '<?php echo langHdl('remaining_emails_to_send'); ?> ' + counter);
+    $.post(
+        'sources/admin.queries.php',
+        {
+            type    : 'admin_email_send_backlog',
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error === true) {
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fa fa-warning fa-lg mr-2"></i>' + data.message,
+                        3
+                    )
+                    .dismissOthers();
+            } else {
+                if (data.counter > 0) {
+                    sendEmailsBacklog(data.counter);
                 } else {
+                    $('#unsent-emails-progress')
+                        .html('<i class="fas fa-check ml-2 text-success mr-2"></i>' +
+                            '<?php echo langHdl('done'); ?>');
                     // Inform user
                     alertify
                         .success('<?php echo langHdl('done'); ?>', 1)
                         .dismissOthers();
                 }
             }
-        );
-    }
-})
+        }
+    );
+}
 
 
 $(document).on('click', '#button-duo-save', function() {

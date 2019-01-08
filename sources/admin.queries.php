@@ -1721,7 +1721,95 @@ switch ($post_type) {
             break;
         }
 
-        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+        $rows = DB::query(
+            "SELECT *
+            FROM ".prefixTable('emails')."
+            WHERE status = %s OR status = %s",
+            "not_sent",
+            ""
+        );
+        $counter = DB::count();
+        $error = false;
+        $message = '';
+
+        if ($counter > 0) {
+            // Only treat first email
+            foreach ($rows as $record) {
+                //send email
+                $ret = json_decode(
+                    sendEmail(
+                        $record['subject'],
+                        $record['body'],
+                        $record['receivers'],
+                        $SETTINGS
+                    ),
+                    true
+                );
+
+                if (empty($ret['error']) === false) {
+                    //update item_id in files table
+                    DB::update(
+                        prefixTable('emails'),
+                        array(
+                            'status' => 'not_sent',
+                        ),
+                        'timestamp = %s',
+                        $record['timestamp']
+                    );
+
+                    $error = true;
+                    $message = $ret['message'];
+                } else {
+                    //delete from DB
+                    DB::delete(
+                        prefixTable('emails'),
+                        'timestamp = %s',
+                        $record['timestamp']
+                    );
+
+                    //update LOG
+                    logEvents(
+                        'admin_action',
+                        'Emails backlog',
+                        $_SESSION['user_id'],
+                        $_SESSION['login']
+                    );
+                }
+
+                // Exit loop
+                break;
+            }
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => $error,
+                'message' => $message,
+                'counter' => $counter,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * Send emails in backlog
+    */
+    case 'admin_email_send_backlog_old':
+        // Check KEY
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $rows = DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status = %s OR status = %s', 'not_sent', '');
         foreach ($rows as $record) {

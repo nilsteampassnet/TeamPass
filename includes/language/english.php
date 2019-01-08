@@ -15,7 +15,8 @@
  */
 
 return array(
-    'mfa_flash' => 'Flash the QR code with your mobile device',
+    'remaining_emails_to_send' => 'Remaining emails to send',
+    'mfa_flash' => 'Flash with your mobile device',
     'import' => 'Import',
     'export' => 'Export',
     'offline' => 'Offline',

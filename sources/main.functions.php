@@ -1408,6 +1408,13 @@ function sendEmail(
     || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
     $mail->SMTPAutoTLS = ($SETTINGS['email_security'] === 'tls'
         || $SETTINGS['email_security'] === 'ssl') ? true : false;
+    $mail->SMTPOptions = array(
+        'ssl' => array(
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        )
+    );
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
     $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication

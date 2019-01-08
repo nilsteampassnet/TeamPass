@@ -399,7 +399,7 @@ function identifyUser(redirect, psk, data, randomstring)
                                 $('#confirm-password-level').html(data.password_complexity);
 
                                 alertify
-                                    .message('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
+                                    .message('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
                                     .dismissOthers(); 
                                     
                                 return false;
@@ -414,20 +414,22 @@ function identifyUser(redirect, psk, data, randomstring)
                                 window.location.href = 'index.php?page=items';
                             }
                         } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
-                            $('#div-2fa-google-qr').removeClass('hidden');
                             $('#div-2fa-google-qr')
-                                .first()
-                                .html('<p class="text-center"><?php echo langHdl('mfa_flash'); ?><br>' + data.value + '</p>');
+                                .removeClass('hidden')
+                                .html('<div class="col-12 alert alert-info">' +
+                                '<p class="text-center">' + data.value + '</p>' +
+                                '<p class="text-center"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
+                                '<?php echo langHdl('mfa_flash'); ?></p></div>');
                             $('#ga_code')
                                 .val('')
                                 .focus();
                             alertify
-                                .message('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
+                                .message('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
                                 .dismissOthers(); 
                         } else if (data.error !== '') {
                             alertify.set('notifier','position', 'top-center');
                             alertify
-                                .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
+                                .error('<i class="fas fa-ban fa-lg mr-3"></i>' + data.message, 5)
                                 .dismissOthers(); 
                         } else {
                             showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right');
