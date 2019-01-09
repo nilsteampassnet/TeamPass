@@ -473,9 +473,7 @@ if (null !== $post_type) {
                 $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
                 // mini icon for collab
                 if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
-                    if ($dataReceived['anyone_can_modify'] === '1') {
-                        $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 pointer tip" title="'.$LANG['item_menu_collab_enable'].'" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')"></i>&nbsp;&nbsp;';
-                    }
+                    $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 pointer tip" title="'.$LANG['item_menu_collab_enable'].'" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')"></i>&nbsp;&nbsp;';
                 }
                 // display quick icon shortcuts ?
                 if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
