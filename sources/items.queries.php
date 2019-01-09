@@ -4301,81 +4301,86 @@ if (null !== $post_type) {
             $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-            $tree->rebuild();
-            $folders = $tree->getDescendants();
-            $inc = 0;
+            try {
+                $tree->rebuild();
+                $folders = $tree->getDescendants();
+                $inc = 0;
 
-            foreach ($folders as $folder) {
-                // Be sure that user can only see folders he/she is allowed to
-                if (in_array($folder->id, $_SESSION['forbiden_pfs']) === false
-                    || in_array($folder->id, $_SESSION['groupes_visibles']) === true
-                    || in_array($folder->id, $listFoldersLimitedKeys) === true
-                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
-                ) {
-                    // Init
-                    $displayThisNode = false;
-                    $hide_node = false;
-                    $nbChildrenItems = 0;
+                foreach ($folders as $folder) {
+                    // Be sure that user can only see folders he/she is allowed to
+                    if (in_array($folder->id, $_SESSION['forbiden_pfs']) === false
+                        || in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                        || in_array($folder->id, $listFoldersLimitedKeys) === true
+                        || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
+                    ) {
+                        // Init
+                        $displayThisNode = false;
+                        $hide_node = false;
+                        $nbChildrenItems = 0;
 
-                    // Check if any allowed folder is part of the descendants of this node
-                    $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
-                    foreach ($nodeDescendants as $node) {
-                        // manage tree counters
-                        /*if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
-                            DB::query(
-                                "SELECT * FROM ".prefix_table("items")."
-                                WHERE inactif=%i AND id_tree = %i",
-                                0,
-                                $node
-                            );
-                            $nbChildrenItems += DB::count();
-                        }*/
-                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
-                            || @in_array($node, $listFoldersLimitedKeys)
-                            || @in_array($node, $listRestrictedFoldersForItemsKeys)
-                        ) {
-                            $displayThisNode = true;
-                            //break;
-                        }
-                    }
-
-                    if ($displayThisNode === true) {
-                        // resize title if necessary
-                        $fldTitle = str_replace("&", "&amp;", $folder->title);
-
-                        // rename personal folder with user login
-                        if ($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1') {
-                            $fldTitle = $_SESSION['login'];
+                        // Check if any allowed folder is part of the descendants of this node
+                        $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
+                        foreach ($nodeDescendants as $node) {
+                            // manage tree counters
+                            /*if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
+                                DB::query(
+                                    "SELECT * FROM ".prefix_table("items")."
+                                    WHERE inactif=%i AND id_tree = %i",
+                                    0,
+                                    $node
+                                );
+                                $nbChildrenItems += DB::count();
+                            }*/
+                            if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
+                                || @in_array($node, $listFoldersLimitedKeys)
+                                || @in_array($node, $listRestrictedFoldersForItemsKeys)
+                            ) {
+                                $displayThisNode = true;
+                                //break;
+                            }
                         }
 
-                        // ALL FOLDERS
-                        // Is this folder disabled?
-                        $disabled = 0;
-                        if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
-                            || in_array($folder->id, $_SESSION['read_only_folders']) === true
-                            || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
-                        ) {
-                            $disabled = 1;
+                        if ($displayThisNode === true) {
+                            // resize title if necessary
+                            $fldTitle = str_replace("&", "&amp;", $folder->title);
+
+                            // rename personal folder with user login
+                            if ($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1') {
+                                $fldTitle = $_SESSION['login'];
+                            }
+
+                            // ALL FOLDERS
+                            // Is this folder disabled?
+                            $disabled = 0;
+                            if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
+                                || in_array($folder->id, $_SESSION['read_only_folders']) === true
+                                || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
+                            ) {
+                                $disabled = 1;
+                            }
+                            // Build array
+                            $arr_data['folders'][$inc]['id'] = $folder->id;
+                            $arr_data['folders'][$inc]['level'] = $folder->nlevel;
+                            $arr_data['folders'][$inc]['title'] = htmlspecialchars_decode($fldTitle, ENT_QUOTES);
+                            $arr_data['folders'][$inc]['disabled'] = $disabled;
+
+
+                            // Is this folder an active folders? (where user can do something)
+                            $is_visible_active = 0;
+                            if (isset($_SESSION['read_only_folders']) === true
+                                && in_array($folder->id, $_SESSION['read_only_folders']) === true) {
+                                $is_visible_active = 1;
+                            }
+                            $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
+
+                            $inc++;
                         }
-                        // Build array
-                        $arr_data['folders'][$inc]['id'] = $folder->id;
-                        $arr_data['folders'][$inc]['level'] = $folder->nlevel;
-                        $arr_data['folders'][$inc]['title'] = htmlspecialchars_decode($fldTitle, ENT_QUOTES);
-                        $arr_data['folders'][$inc]['disabled'] = $disabled;
-
-
-                        // Is this folder an active folders? (where user can do something)
-                        $is_visible_active = 0;
-                        if (isset($_SESSION['read_only_folders']) === true
-                            && in_array($folder->id, $_SESSION['read_only_folders']) === true) {
-                            $is_visible_active = 1;
-                        }
-                        $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
-
-                        $inc++;
                     }
                 }
+            } catch (Exception $e) {
+                // Nothing done
             }
+            
 
             $data = array(
                 'error' => "",

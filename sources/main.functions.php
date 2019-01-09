@@ -790,8 +790,8 @@ function identifyUserRights(
             array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
         }
         // Get IDs of personal folders
-        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
-            && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
+        if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+            && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
         ) {
             $persoFld = DB::queryfirstrow(
                 "SELECT id
@@ -801,7 +801,7 @@ function identifyUserRights(
                 1
             );
             
-            if (empty($persoFld['id']) === false) {
+            if (empty($persoFld['id']) === false && DB::count() > 0) {
                 if (in_array($persoFld['id'], $listAllowedFolders) === false) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     array_push($listAllowedFolders, $persoFld['id']);

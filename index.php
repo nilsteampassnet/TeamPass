@@ -229,7 +229,7 @@ if (isset($_SESSION['CPM']) === true) {
 
 <body>
     <?php
-
+    
 /* HEADER */
 echo '
     <div id="top">

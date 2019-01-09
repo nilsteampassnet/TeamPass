@@ -410,7 +410,7 @@ class NestedTree
 
         foreach ($data as $folder_id => $row) {
             // skip the root node
-            if ($folder_id == 0) {
+            if ($folder_id == 0 || isset($row->nlevel) === false) {
                 continue;
             }
 

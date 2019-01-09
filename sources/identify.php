@@ -947,8 +947,9 @@ function identifyUser(
             )
         );
         $newUserId = DB::insertId();
+        $_SESSION['user_id'] = $newUserId;
         // Create personnal folder
-        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+        if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1) {
             DB::insert(
                 prefix_table("nested_tree"),
                 array(
