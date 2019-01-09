@@ -128,7 +128,7 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $label = filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING);
+            $label = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
             $url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_STRING);
             $pw = htmlspecialchars_decode($dataReceived['pw']);
             $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
@@ -740,7 +740,8 @@ if (null !== $post_type) {
                             'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
                             'anyone_can_modify' => $post_anyone_can_modify,
                             'complexity_level' => $dataReceived['complexity_level'],
-                            'encryption_type' => 'defuse'
+                            'encryption_type' => 'defuse',
+                            'perso' => in_array($post_category, $_SESSION['personal_folders']) === true ? 1 : 0,
                             ),
                         "id=%i",
                         $dataReceived['id']

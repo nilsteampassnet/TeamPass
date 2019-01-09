@@ -1144,7 +1144,7 @@ function EditerItem()
                 "complexity_level": parseInt($("#edit_mypassword_complex").val()),
                 "template_id": mandatoryTemplateId
             };
-            
+            console.log(data);
             //send query
             $.post(
                 "sources/items.queries.php",

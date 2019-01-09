@@ -1,5 +1,7 @@
 2.1.27
 31/
+ #2511 LDAP Password change: old PW still valid
+ #2507 On user password change (from Users management page), email is not sent
  #2494 Upgrade error on config key 'bck_script_key' with single quote character
 
 30/

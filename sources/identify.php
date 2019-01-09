@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
+$debugLdap = 1; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'SecureHandler.php';
@@ -721,6 +721,17 @@ function identifyUser(
                                     $proceedIdentification = true;
                                 }
                             } else {
+                                // CLear the password in database with random token
+                                DB::update(
+                                    prefix_table('users'),
+                                    array(
+                                        'pw' => $pwdlib->createPasswordHash($pwdlib->getRandomToken(12)),
+                                        'login' => $data['login'],
+                                    ),
+                                    'id = %i',
+                                    $data['id']
+                                );
+
                                 $ldapConnection = false;
                             }
                         }
