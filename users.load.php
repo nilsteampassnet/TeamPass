@@ -391,7 +391,8 @@ $(function() {
                 // check if empty
                     $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields']; ?>").show(1).delay(1000).fadeOut(1000);
                 } else if ($("#change_user_pw_newpw").val() === $("#change_user_pw_newpw_confirm").val()) {
-                // check if egual
+                    $("#change_user_pw_wait").show();
+                    // check if egual
                     var data = {
                         new_pw  : $("#change_user_pw_newpw").val(),
                         user_id : $("#change_user_pw_id").val(),
@@ -406,6 +407,7 @@ $(function() {
                         },
                         function(data) {
                             if (data[0].error == "none") {
+                                $("#change_user_pw_wait").hide();
                                 $("#change_user_pw_error").html("").hide();
                                 $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
                                 $("#change_user_pw").dialog("close");

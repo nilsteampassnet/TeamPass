@@ -910,7 +910,7 @@ $LANG = array (
     'error_only_numbers_in_folder_name' => 'A mappa neve nem lehet csak egy szám. Adjon meg olyan nevet, ami tartalmaz betűket is.',
     'folder_will_be_moved_below' => 'A(z) <b><span id=\\\'move_folder_title\\\'></span></b> mappa az alábbi alá kerül:',
     'error_upload_runtime_not_found' => 'Feltöltés: nincs "runtime".',
-    'runtime_upload' => 'Feltöltés: "runtime"',
+    'runtime_upload' => 'Feltöltés: runtime',
     'encrypted_data' => 'Az adatbázis adatai titkosítottak',
     'not_encrypted_data' => 'Az adatbázis adatai nincsenek titkosítva',
     'error_custom_fields_not_similar_in_source_and_target_folders' => 'A mappa mozgatására nincs mód, mivel az egyedi mezők nem egyeznek.',

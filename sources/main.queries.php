@@ -254,21 +254,23 @@ function mainQuery()
                     logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
 
                     //Send email to user
-                    if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== "admin_change") {
+                    if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "admin_change") {
                         $row = DB::queryFirstRow(
                             "SELECT email FROM ".prefix_table("users")."
                             WHERE id = %i",
                             $dataReceived['user_id']
                         );
-                        if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] == 1) {
-                            sendEmail(
+                        if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && (int) $SETTINGS['enable_email_notification_on_user_pw_change'] === 1) {
+                            $ret = sendEmail(
                                 $LANG['forgot_pw_email_subject'],
                                 $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
-                                $row[0],
+                                $row['email'],
                                 $LANG,
                                 $SETTINGS,
                                 $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
                             );
+
+                            //print_r($ret);
                         }
                     }
 
