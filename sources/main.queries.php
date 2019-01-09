@@ -269,6 +269,8 @@ function mainQuery()
                                 $SETTINGS,
                                 $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
                             );
+
+                            //print_r($ret);
                         }
                     }
 
