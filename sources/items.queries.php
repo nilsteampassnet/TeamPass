@@ -2615,7 +2615,12 @@ if (null !== $post_type) {
                     } elseif ($access['type'] === "ND") {
                         array_push($arrTmp, 2);
                     } else {
-                        array_push($arrTmp, 3);
+                        // Ensure to give access Right if allowed folder
+                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                            array_push($arrTmp, 0);
+                        } else {
+                            array_push($arrTmp, 3);
+                        }
                     }
                 }
                 $accessLevel = min($arrTmp);
@@ -2735,7 +2740,7 @@ if (null !== $post_type) {
             } else {
                 $where->add('i.id_tree=%i', $post_id);
             }
-
+            
             // build the HTML for this set of Items
             if ($counter > 0 && empty($showError) === true) {
                 // init variables
@@ -3094,7 +3099,7 @@ if (null !== $post_type) {
             } else {
                 $listToBeContinued = "end";
             }
-
+            
             // Prepare returned values
             $returnValues = array(
                 "html_json" => $html_json,
