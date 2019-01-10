@@ -262,7 +262,7 @@ $htmlHeaders .= '
                     identifyUser(redirect, psk, data, randomstring);
                 } else {
                     // Handle if DUOSecurity is enabled
-                    $("#duo_data").val(window.btoa(data));
+                    $("#duo_data").val(window.btoa(JSON.stringify(data)));
                     loadDuoDialog();
                 }
             },
@@ -913,12 +913,12 @@ $htmlHeaders .= '
                     } else {
                         // finally launch identification process inside Teampass.
                         loadDuoDialogWait();
-
+                        
                         $.post(
                             "sources/identify.php",
                             {
                                 type :     "identify_user",
-                                data :     prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION['key'].'")
+                                data :     prepareExchangedData(window.atob($("#duo_data").val()), "encode", "'.$_SESSION['key'].'")
                             },
                             function(data) {
                                 $("#connection_error").hide();
@@ -938,7 +938,6 @@ $htmlHeaders .= '
                                         1
                                     );
                                 }
-
                             },
                             "json"
                         );

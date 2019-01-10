@@ -1,4 +1,7 @@
 2.1.27
+32/
+ #2513 Error for login with DUOSecurity
+
 31/
  #2511 LDAP Password change: old PW still valid
  #2507 On user password change (from Users management page), email is not sent

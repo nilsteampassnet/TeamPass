@@ -45,7 +45,7 @@ $(function() {
         "sources/identify.php",
         {
             type : "identify_duo_user",
-            login: sanitizeString($("#login").val())
+            login: sanitizeString($("#login").val()),
         },
         function(data) {
             var ret = data[0].sig_request.split('|');

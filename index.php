@@ -986,7 +986,7 @@ echo '
     <form method="post" id="duo_form" action="">
         <input type="hidden" id="duo_login" name="duo_login" value="', null !== $post_duo_login ? $post_duo_login : '', '" />
         <input type="hidden" id="duo_pwd" name="duo_pwd" value="', null !== $post_duo_pwd ? $post_duo_pwd : '', '" />
-        <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? htmlentities(base64_decode($post_duo_data)) : '', '" />
+        <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? $post_duo_data : '', '" />
     </form>
 </div>';
 
