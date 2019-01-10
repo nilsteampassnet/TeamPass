@@ -151,9 +151,17 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
                     store.update(
                         'teampassUser',
                         function (teampassUser) {
-                            teampassUser.personalSaltkeyIsSet = 1;
+                            teampassUser.pskDefinedInDatabase = 1;
                         }
                     )
+
+                    store.update(
+                        'teampassUser',
+                        function (teampassUser) {
+                            teampassUser.pskSetForSession = data.encrypted_psk;
+                        }
+                    )
+                    
                     alertify
                         .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
                         .dismissOthers();
@@ -291,17 +299,17 @@ function loadSettings()
             store.update(
                 'teampassUser',
                 {},
-                function(teampassSettings) {
-                    teampassSettings['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
-                    teampassSettings['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
-                    teampassSettings['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
-                    teampassSettings['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
-                    teampassSettings['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
-                    teampassSettings['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
-                    teampassSettings['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
-                    teampassSettings['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
-                    teampassSettings['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
-                    teampassSettings['personalSaltkeyIsSet'] = "<?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>";
+                function(teampassUser) {
+                    teampassUser['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
+                    teampassUser['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
+                    teampassUser['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
+                    teampassUser['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
+                    teampassUser['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
+                    teampassUser['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
+                    teampassUser['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
+                    teampassUser['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
+                    teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
+                    teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>;
                 }
             );
         }

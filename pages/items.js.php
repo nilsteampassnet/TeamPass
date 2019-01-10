@@ -85,7 +85,6 @@ browserSession(
         itemsShownByQuery : '',
         foldersList : [],
         personalSaltkeyRequired : 0,
-        personalSaltkeyIsSet : 0
     }
 );
 
@@ -369,83 +368,90 @@ $('.tp-action').click(function() {
         
         // Get some info
         $.when(
-            getPrivilegesOnItem(selectedFolderId, 0)
+            getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
         ).then(function() {
-            // Now read 
-            itemStorageInformation = store.get("teampassItem");
-
-            if (itemStorageInformation.error !== '') {
-                alertify
-                    .error('<i class="fas fa-ban mr-2"></i>' + itemStorageInformation.message, 3)
-                    .dismissOthers();
-            } else {
-                // Check if personal SK is needed and set
-                if (store.get('teampassApplication').personalSaltkeyRequired === 1
-                    && store.get('teampassUser').personalSaltkeyIsSet !== 1
-                    && itemStorageInformation.folderIsPersonal === 1
-                ) {
-                    /*$('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
-                    $('#div_set_personal_saltkey').dialog('open');*/
-
-                    showPersonalSKDialog();
-
-                    // Clear ongoing request status
-                    requestRunning = false;
-
-                    // Finished
-                    return false;
+            // If previous item was seen then clean session
+            store.update(
+                'teampassItem',
+                function (teampassItem)
+                {
+                    teampassItem.isNewItem = 1,
+                    teampassItem.id = ''
                 }
+            );
+            
+            // Check if personal SK is needed and set
+            if (store.get('teampassApplication').personalSaltkeyRequired === 1
+                && (store.get('teampassUser').pskDefinedInDatabase !== 1
+                || store.get('teampassUser').pskSetForSession === ''
+                || store.get('teampassUser').pskSetForSession === undefined)
+                && store.get('teampassItem').folderIsPersonal === 1
+            ) {
+                // SHow PSK form
+                showPersonalSKDialog();
 
-                // Show Visibility and minimum complexity
-                $('#card-item-visibility').html(itemStorageInformation.itemVisibility);
-                $('#card-item-minimum-complexity').html(itemStorageInformation.itemMinimumComplexity);
-                
-                // HIde
-                $('#items-list-card, .form-item-copy, #folders-tree-card, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
-                    .addClass('hidden');
-                // Destroy editor
-                if (itemEditor) itemEditor.destroy();
-                // Clean select2 lists
-                $('.select2').val('').change();
-                // Do some form cleaning
-                $('.clear-me-val').val('');
-                $('.item-details-card').find('.form-control').val('');
-                $('.clear-me-html').html('');
-                $('.form-item-control').val('');
-                // Show edition form
-                $('.form-item').removeClass('hidden');
-                $('.item-details-card').addClass('hidden');
-                // Force update of simplepassmeter
-                $('#form-item-password').focus();
-                $('#form-item-label').focus();
-                // Prepare editor
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-description'), {
-                            toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
-                        }
-                    )
-                    .then( editor => {
-                        itemEditor = editor;
-                    } )
-                    .catch( error => {
-                        console.log( error );
-                    });
-                // Set folder
-                $('#form-item-folder').val(selectedFolderId).change();
-                // Select tab#1
-                $('#form-item-nav-pills li:first-child a').tab('show');
-                // Preselect
-                $('#pwd-definition-size').val(12);
-                // Set type of action
-                $('#form-item-button-save').data('action', 'new_item');
-                // Update variable
-                userDidAChange = false;
+                // Clear ongoing request status
+                requestRunning = false;
+
+                // Finished
+                return false;
             }
+
+            // Show Visibility and minimum complexity
+            $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+            $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+            
+            // HIde
+            $('#items-list-card, .form-item-copy, #folders-tree-card, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+                .addClass('hidden');
+            // Destroy editor
+            if (itemEditor) itemEditor.destroy();
+            // Clean select2 lists
+            $('.select2').val('');
+            /*if ($('.select2') !== null) {console.log($('.select2').length)
+                $('.select2').change();
+            }*/
+            // Do some form cleaning
+            $('.clear-me-val').val('');
+            $('.item-details-card').find('.form-control').val('');
+            $('.clear-me-html').html('');
+            $('.form-item-control').val('');
+            // Show edition form
+            $('.form-item').removeClass('hidden');
+            $('.item-details-card').addClass('hidden');
+            // Force update of simplepassmeter
+            $('#form-item-password').focus();
+            $('#form-item-label').focus();
+            // Prepare editor
+            ClassicEditor
+                .create(
+                    document.querySelector('#form-item-description'), {
+                        toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
+                    }
+                )
+                .then( editor => {
+                    itemEditor = editor;
+                } )
+                .catch( error => {
+                    console.log( error );
+                });
+            // Set folder
+            $('#form-item-folder').val(selectedFolderId).change();
+            // Select tab#1
+            $('#form-item-nav-pills li:first-child a').tab('show');
+            // Preselect
+            $('#pwd-definition-size').val(12);
+            // Set type of action
+            $('#form-item-button-save').data('action', 'new_item');
+            // Update variable
+            userDidAChange = false;
         });
         // ---
     } else if ($(this).data('item-action') === 'edit') {
-        console.info('SHOW EDIT ITEM');      
+        console.info('SHOW EDIT ITEM');  
+        
+        // Store not a new item
+        store.update('teampassItem').isNewItem = 0;
 
         // Remove validated class
         $('#form-item').removeClass('was-validated');
@@ -1330,7 +1336,7 @@ var showPwdContinuous = function(){
         // Prepare data to show
         // Is data crypted?
         var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $_SESSION['key']; ?>');
-        if (data !== false) {
+        if (data !== false && data !== undefined) {
             $('#hidden-item-pwd').val(
                 data.password
             );
@@ -1339,10 +1345,12 @@ var showPwdContinuous = function(){
         $('#card-item-pwd')
             .html(
                 '<span style="cursor:none;">' +
-                $('#hidden-item-pwd').val().replace(/\n/g,"<br>") +
+                $('#hidden-item-pwd').val()
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;') +
                 '</span>'
             );
-        
+            
         setTimeout('showPwdContinuous("card-item-pwd")', 50);
         // log password is shown
         if ($("#pw_shown").val() === "0") {
@@ -1567,14 +1575,16 @@ var uploader_attachments = new plupload.Uploader({
                 PHPSESSID       : '<?php echo $_SESSION['user_id']; ?>',
                 itemId          : store.get('teampassItem').id,
                 type_upload     : 'item_attachments',
+                isNewItem       : store.get('teampassItem').isNewItem,
                 edit_item       : false,
                 user_token      : store.get('teampassApplication').attachmentToken,
+                randomId        : store.get('teampassApplication').uploadedFileId,
                 files_number    : $('#form-item-hidden-pickFilesNumber').val()
             });
         },
         UploadComplete: function(up, files) {
-            console.log(files)
-            console.log('----')
+            //console.log(files)
+            //console.log('----')
             userUploadedFile = true;
             alertify
                 .success('<?php echo langHdl('success'); ?>', 1)
@@ -1751,7 +1761,7 @@ $('#form-item-button-save').click(function() {
                 .dismissOthers();
             return false;
         } else if (store.get('teampassApplication').personalSaltkeyRequired === 1
-            && store.get('teampassUser').personalSaltkeyIsSet !== 1
+            && store.get('teampassUser').pskDefinedInDatabase !== 1
         ) {
             // No folder selected
             alertify
@@ -1825,7 +1835,7 @@ $('#form-item-button-save').click(function() {
                 'email': $('#form-item-email').val(),
                 'fields': fields,
                 'folder_is_personal': (store.get('teampassApplication').personalSaltkeyRequired === 1
-                    && store.get('teampassUser').personalSaltkeyIsSet === 1) ? 1 : 0,
+                    && store.get('teampassUser').pskDefinedInDatabase === 1) ? 1 : 0,
                 'id'   : store.get('teampassItem').id,
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
@@ -2255,7 +2265,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || '0';
-console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
+    console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
     // case where we should stop listing the items
     if (store.get('teampassApplication') !== undefined && store.get('teampassApplication') .itemsListStop === 1) {
@@ -2392,6 +2402,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                         {
                             teampassItem.IsPersonalFolder = parseInt(data.IsPersonalFolder),
                             teampassItem.hasAccessLevel = parseInt(data.access_level),
+                            teampassItem.folderComplexity = parseInt(data.folderComplexity),
                             teampassItem.hasCustomCategories = data.categoriesStructure
                         }
                     );
@@ -2413,9 +2424,19 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                         console.log(data.categoriesStructure)
                     }*/
 
+                    /*
                     // warn about a required change of personal SK
                     if ($('#personal_upgrade_needed').val() === 1 && data.folder_requests_psk === 1) {
                         $('#dialog_upgrade_personal_passwords').dialog('open');
+                    }
+                    */
+
+                    // PSK is requested but not set
+                    if (data.folder_requests_psk === 1
+                        && (store.get('teampassUser').pskSetForSession === ''
+                        || store.get('teampassUser').pskSetForSession === undefined)
+                    ) {
+                        showPersonalSKDialog();
                     }
 
                     // show correct fodler in Tree
@@ -2451,11 +2472,25 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                             // Send query and get password
                             var result = '',
                                 error = false;
+                            
+                            if (store.get('teampassUser').pskSetForSession === '') {
+                                // ERROR
+                                alertify
+                                    .error(
+                                        '<i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('empty_psk'); ?>',
+                                        3
+                                    )
+                                    .dismissOthers();
+                                return;
+                            }
+
                             $.ajax({
                                 type: "POST",
                                 async: false,
                                 url: 'sources/items.queries.php',
-                                data: 'type=show_item_password&item_id=' + trigger.getAttribute('data-item-id') + '&key=<?php echo $_SESSION['key']; ?>',
+                                data: 'type=show_item_password&item_id=' + trigger.getAttribute('data-item-id') +
+                                    //'&psk=' + store.get('teampassUser').pskSetForSession +
+                                    '&key=<?php echo $_SESSION['key']; ?>',
                                 dataType: "",
                                 success: function (data) {
                                     //decrypt data
@@ -2466,7 +2501,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                                         alertify.alert()
                                             .setting({
                                                 'label' : '<?php echo langHdl('ok'); ?>',
-                                                'message' : '<i class="fas fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
+                                                'message' : '<i class="fas fa-info-circle text-error mr-2"></i><?php echo langHdl('no_item_to_display'); ?>'
                                             })
                                             .show(); 
                                         return false;
@@ -3011,7 +3046,7 @@ function Details(itemDefinition, actionType, hotlink = false)
     
     // Check if personal SK is needed and set
     if ((store.get('teampassApplication').personalSaltkeyRequired === 1
-        && store.get('teampassUser').personalSaltkeyIsSet !== 1)
+        && store.get('teampassUser').pskDefinedInDatabase !== 1)
         && itemSk === 1
     ) {
         $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
@@ -3025,8 +3060,13 @@ function Details(itemDefinition, actionType, hotlink = false)
         // Finished
         return false;
     } else if ((store.get('teampassApplication').personalSaltkeyRequired === 0 || store.get('teampassApplication').personalSaltkeyRequired === undefined)
-        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassUser').personalSaltkeyIsSet === 1)
+        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassUser').pskDefinedInDatabase === 1)
     ) {
+        // Clear
+        $('#card-item-history')
+            .html('<div class="overlay"><i class="fa fa-refresh fa-spin"></i></div>');
+        
+
         // Prepare data to be sent
         var data = {
             'id'                    : itemId,
@@ -3150,6 +3190,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                 $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                 $('#form-item-folder').val(data.folder);
+                $('#form-item-tags').val(data.tags.join(' '));
                 
                 $('#form-item-password').focus();
                 $('#form-item-label').focus();
@@ -3489,17 +3530,34 @@ function showDetailsStep2(id, actionType)
                     htmlFull = '',
                     counter = 1;
                 $.each(data.attachments, function(i, value) {
-                    if (value.is_image === 1) {
-                        html += '<div class=""><i class="' + value.icon + ' mr-2" /></i><a class="" href="#' + value.id + '" title="' + value.filename + '">' + value.filename + '</a></div>';
-                    } else {
-                        html += '<div class=""><i class="' + value.icon + ' mr-2" /></i><a class="" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '">' + value.filename + '</a></div>';
-                    }
-                    
+                    // Manage new row
                     if (counter === 1) {
                         htmlFull += '<div class="row">';
+                        html += '<div class="row">';
                     }
 
-                    htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +                            
+                    html += '<div class="col-6">' +
+                        '<div class="callout callout-info">' +
+                        '<i class="' + value.icon + ' mr-2 text-info"></i>';
+
+                    if (value.is_image === 1) {
+                        html += 
+                        '<i class="fas fa-eye infotip preview-image pointer mr-2" ' +
+                        'title="<?php echo langHdl('see'); ?>" ' +
+                        'data-file-id="' + value.id + '" data-file-title="' + value.title + '"></i>';
+                    } else {
+                        html += 
+                        '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' + 
+                        '<i class="fas fa-file-download"></i></a>';
+                    }
+
+                    html += 
+                        '<span class="font-weight-bold mr-3">' + value.filename + '</span>' +
+                        '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
+                        '<span class="font-italic">' + value.size + '</span>' +
+                        '</div></div>';
+
+                    htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +  
                         '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
                         '<div class="info-box-content"><span class="info-box-text">' + value.filename + '</span>' +
                         '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
@@ -3508,6 +3566,7 @@ function showDetailsStep2(id, actionType)
                     
                     if (counter === 2) {
                         htmlFull += '</div>';
+                        html += '</div>';
                         counter = 1;
                     } else {
                         counter += 1;
@@ -3706,6 +3765,76 @@ $(document).on('click', '.delete-file', function() {
     }
 });
 
+//calling image lightbox when clicking on link
+$(document).on('click', '.preview-image', function(event) {
+    event.preventDefault();
+    PreviewImage($(this).data('file-id'));
+});
+
+
+
+PreviewImage = function(fileId) {
+    alertify
+        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+    
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "image_preview_preparation",
+            id      : fileId,
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
+
+            $("#card-item-preview").html('<img id="image_files" src="">');
+            //Get the HTML Elements
+            imageDialog = $("#card-item-preview");
+            imageTag = $('#image_files');
+
+            //Set the image src
+            if (data.image_secure === '1') {
+                imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
+            } else {
+                imageTag.attr("src", data.file_path);
+            }
+
+            alertify
+                .success('<?php echo langHdl('done'); ?>', 1)
+                .dismissOthers();
+
+            //When the image has loaded, display the dialog
+            var pre = document.createElement('pre');
+            pre.style.textAlign = "center";
+            $(pre).append($(imageDialog).html());
+            alertify
+                .confirm(pre)
+                .set({
+                    labels:{
+                        cancel: '<?php echo langHdl('close'); ?>'
+                    },
+                    closable: false,
+                    padding: false,
+                    title: data.filename,
+                    onclose: function() {
+                        // delete file
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type    : "file_deletion",
+                                filename: data.file_path,
+                                key     : "<?php echo $_SESSION['key']; ?>"
+                            }
+                        );
+                    }
+                });
+        }
+    );
+};
+
 /**
  */
 function itemLog(logCase, itemId, itemLabel)
@@ -3784,6 +3913,7 @@ function getPrivilegesOnItem(val, edit, context)
 
     // Clear memory
     //localStorage.setItem("teampassItem", '');
+    console.log('Get privilege for folder '+val)
 
     return $.post(
         "sources/items.queries.php",
@@ -3798,7 +3928,7 @@ function getPrivilegesOnItem(val, edit, context)
             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
             console.info('GET COMPLEXITY LEVEL');
-            //console.log(data);
+            console.log(data);
             var executionStatus = true;
             
             if (data.error == undefined
@@ -3841,6 +3971,7 @@ function getPrivilegesOnItem(val, edit, context)
                 'teampassItem',
                 function (teampassItem)
                 {
+                    teampassItem.folderId = val,
                     teampassItem.error = data.error === undefined ? '' : data.error,
                     teampassItem.message = data.message === undefined ? '' : data.message,
                     teampassItem.folderComplexity = data.val === undefined ? '' : parseInt(data.val),
@@ -3909,4 +4040,5 @@ $('#item-button-password-generate').click(function() {
 $('#item-button-password-copy').click(function() {
     $('#form-item-password-confirmation').val($('#form-item-password').val());
 });
+
 </script>

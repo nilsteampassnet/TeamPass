@@ -471,7 +471,13 @@ if (null !== ($post_type_upload)
     exit();
 }
 
-/* Handles the error output. */
+/**
+ * Handles the error output
+ *
+ * @param string $message Message to protect
+ *
+ * @return string
+ */
 function handleUploadError($message)
 {
     echo htmlentities($message, ENT_QUOTES);

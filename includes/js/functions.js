@@ -387,7 +387,7 @@ function unCryptData(data, key)
             'decode',
             key
         )
-
+        
         if (uncryptedData.password.length > 0)
             return uncryptedData.password;
         else

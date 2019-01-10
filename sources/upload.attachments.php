@@ -55,6 +55,9 @@ $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRI
 $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
 $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
 $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
+$post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
+$post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
+
 
 // load functions
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
@@ -370,6 +373,14 @@ if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attach
 $newID = '';
 // Case ITEM ATTACHMENTS - Store to database
 if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
+    // Check case of new item
+    if (isset($post_isNewItem) === true
+        && (int) $post_isNewItem === 1
+        && empty($post_randomId) === false
+    ) {
+        $post_itemId = $post_randomId;
+    }
+
     DB::insert(
         prefixTable('files'),
         array(
@@ -385,16 +396,21 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     $newID = DB::insertId();
 
     // Log upload into databse
-    DB::insert(
-        prefixTable('log_items'),
-        array(
-            'id_item' => $post_itemId,
-            'date' => time(),
-            'id_user' => $_SESSION['user_id'],
-            'action' => 'at_modification',
-            'raison' => 'at_add_file : '.addslashes($fileName),
-        )
-    );
+    if (isset($post_isNewItem) === false
+        || (isset($post_isNewItem) === true
+        && ($post_isNewItem === false || (int) $post_isNewItem !== 1))
+    ) {
+        DB::insert(
+            prefixTable('log_items'),
+            array(
+                'id_item' => $post_itemId,
+                'date' => time(),
+                'id_user' => $_SESSION['user_id'],
+                'action' => 'at_modification',
+                'raison' => 'at_add_file : '.addslashes($fileName),
+            )
+        );
+    }
 }
 
 // Return JSON-RPC response

@@ -91,24 +91,6 @@ foreach ($rows as $reccord) {
     }
 }
 
-/*// Hidden objects for Item search
-if ($get_group !== null && $get_id !== null) {
-    echo '
-    <input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />
-    <input type="hidden" name="open_id" id="open_id" value="'.$get_id.'" />
-    <input type="hidden" name="folder_requests_psk" id="folder_requests_psk" value="', in_array($get_group, $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
-    <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
-} elseif ($get_group !== null && $get_id === null) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="folder_requests_psk" id="folder_requests_psk" value="', in_array($get_group, $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
-    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
-} else {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
-}
-*/
 // Is personal SK available
 echo '
 <input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? 1 : 0, '" />';
@@ -208,7 +190,7 @@ echo '
                                     <input id="form-item-password" type="password" class="form-control form-item-control track-change" placeholder="<?php echo langHdl('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo langHdl('options'); ?>"><i class="fas fa-sliders"></i></button>
+                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo langHdl('options'); ?>"><i class="fas fa-sliders-h"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo langHdl('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>
                                     </div>
                                 </div>
@@ -263,7 +245,7 @@ echo '
                                 <!-- FOLDERS -->
                                 <div class="form-group mb-3">
                                     <label><?php echo langHdl('folder'); ?></label>
-                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root" style="width:100%;"></select>
+                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root track-change" style="width:100%;"></select>
                                 </div>
 
                                 <!-- RESTRICTED TO -->
@@ -515,6 +497,8 @@ echo '
                 </div>
             </div>
         </div>
+
+        <div id="card-item-preview" class="hidden"></div>
         
         <div class="row hidden item-details-card">
             <div class="col-md-7">
@@ -528,8 +512,8 @@ echo '
                                 </button>
                                 <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
                                 <input id="hidden-item-pwd" type="hidden">
-                                <input type="hidden" id="hid_pw_old" value="" />
-                                <input type="hidden" id="pw_shown" value="0" />
+                                <input type="hidden" id="hid_pw_old" value="">
+                                <input type="hidden" id="pw_shown" value="0">
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('index_login'); ?></b>

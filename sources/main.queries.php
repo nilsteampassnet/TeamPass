@@ -978,6 +978,7 @@ function mainQuery($SETTINGS)
                 array(
                     'error' => false,
                     'message' => '',
+                    'encrypted_psk' => $user_key_encoded,
                 ),
                 'encode'
             );

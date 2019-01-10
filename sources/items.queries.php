@@ -271,7 +271,7 @@ if (null !== $post_type) {
                 }
 
                 // Check PSK is set
-                if ($post_folder_is_personal === 1
+                if ((int) $post_folder_is_personal === 1
                     && (isset($_SESSION['user_settings']['session_psk']) === false
                     || empty($post_password) === true)
                 ) {
@@ -355,7 +355,7 @@ if (null !== $post_type) {
 
                 if ((isset($SETTINGS['duplicate_item']) === true
                     && $SETTINGS['duplicate_item'] === '0'
-                    && $itemExists === 0)
+                    && (int) $itemExists === 0)
                     ||
                     (isset($SETTINGS['duplicate_item']) === true
                         && $SETTINGS['duplicate_item'] === '1')
@@ -826,7 +826,7 @@ if (null !== $post_type) {
                 }
 
                 // Check PSK is set
-                if ($post_folder_is_personal === 1
+                if ((int) $post_folder_is_personal === 1
                     && (isset($_SESSION['user_settings']['session_psk']) === false
                     || empty($pw) === true)
                 ) {
@@ -951,7 +951,7 @@ if (null !== $post_type) {
                         && $_SESSION['user_settings']['create_item_without_password'] !== '1')
                         || empty($pw) === false
                     ) {
-                        if ($post_folder_is_personal === 1
+                        if ((int) $post_folder_is_personal === 1
                             && empty($_SESSION['user_settings']['session_psk']) === false
                             && isset($_SESSION['user_settings']['session_psk']) === true
                             && in_array($post_folder_id, $_SESSION['personal_folders']) === true
@@ -1026,6 +1026,7 @@ if (null !== $post_type) {
                             'anyone_can_modify' => (int) $post_anyone_can_modify,
                             'complexity_level' => (int) $post_complexity_level,
                             'encryption_type' => 'defuse',
+                            'perso' => in_array($post_folder_id, $_SESSION['personal_folders']) === true ? 1 : 0,
                             ),
                         'id=%i',
                         $post_item_id
@@ -1443,9 +1444,9 @@ if (null !== $post_type) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if ($post_salt_key_set === 1
+                    if ((int) $post_salt_key_set === 1
                         && isset($post_salt_key_set) === true
-                        && $post_folder_is_personal === 1
+                        && (int) $post_folder_is_personal === 1
                         && isset($post_folder_is_personal) === true
                     ) {
                         $oldPw = $data['pw'];
@@ -2129,7 +2130,7 @@ if (null !== $post_type) {
 
             // Uncrypt PW
             if (null !== $post_salt_key_required
-                && $post_salt_key_required === 1
+                && (int) $post_salt_key_required === 1
                 && isset($_SESSION['user_settings']['session_psk']) === true
                 && empty($_SESSION['user_settings']['session_psk']) === false
             ) {
@@ -2566,6 +2567,7 @@ if (null !== $post_type) {
                     && $restrictionActive === false
                 )
             ) {
+                /*
                 // GET Audit trail
                 $history = array();
                 $historyOfPws = array();
@@ -2582,8 +2584,8 @@ if (null !== $post_type) {
                     $reason = explode(':', $record['raison']);
                     if ($record['action'] === 'at_modification' && $reason[0] === 'at_pw ') {
                         // check if item is PF
-                        if ($dataItem['perso'] != 1) {
-                            $reason[1] = cryption(
+                        if ($dataItem['perso'] !== 1) {
+                            $pw = cryption(
                                 $reason[1],
                                 '',
                                 'decrypt',
@@ -2591,19 +2593,20 @@ if (null !== $post_type) {
                             );
                         } else {
                             if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                                $reason[1] = cryption(
+                                $pw = cryption(
                                     $reason[1],
                                     $_SESSION['user_settings']['session_psk'],
                                     'decrypt',
                                     $SETTINGS
                                 );
                             } else {
-                                $reason[1] = '';
+                                $pw['string'] = '';
                             }
                         }
-                        $reason[1] = @$reason[1]['string'];
+                        
+                        $reason[1] = $pw['string'];
                         // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                        if (!isUTF8($reason[1]) || is_array($reason[1])) {
+                        if (isUTF8($reason[1]) === false || is_array($reason[1]) === true) {
                             $reason[1] = '';
                         }
                     }
@@ -2612,13 +2615,14 @@ if (null !== $post_type) {
                         $record['login'] = langHdl('imported_via_api');
                     }
 
-                    if (empty($reason[1]) === false || $record['action'] === 'at_copy' || $record['action'] === 'at_creation' || $record['action'] === 'at_manual' || $record['action'] === 'at_modification' || $record['action'] === 'at_delete' || $record['action'] === 'at_restored') {
+                    if (empty($reason[1]) === false && in_array($record['action'], array('at_copy', 'at_creation', 'at_manual', 'at_modification', 'at_delete', 'at_restored')) === true) {
                         if (trim($reason[0]) === 'at_pw' && empty($reason[1]) === false) {
                             array_push($historyOfPws, $reason[1]);
                         }
                     }
                 }
                 $returnArray['historyOfPassword'] = $historyOfPws;
+                */
 
                 // generate 2d key
                 $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
@@ -2628,7 +2632,7 @@ if (null !== $post_type) {
                 $files = $filesEdit = '';
                 // launch query
                 $rows = DB::query(
-                    'SELECT id, name, file, extension
+                    'SELECT id, name, file, extension, size
                     FROM '.prefixTable('files').'
                     WHERE id_item=%i',
                     $post_id
@@ -2638,7 +2642,9 @@ if (null !== $post_type) {
                         $attachments,
                         array(
                             'icon' => fileFormatImage($record['extension']),
-                            'filename' => $record['name'],
+                            'filename' => basename($record['name'], ".".$record['extension']),
+                            'extension' => $record['extension'],
+                            'size' => formatSizeUnits($record['size']),
                             'is_image' => in_array($record['extension'], TP_IMAGE_FILE_EXT) === true ? 1 : 0,
                             'id' => $record['id'],
                             'key' => $_SESSION['key_tmp'],
@@ -3111,7 +3117,7 @@ if (null !== $post_type) {
             }
 
             // to do only on 1st iteration
-            if (intval($start) === 0) {
+            if ((int) $start === 0) {
                 // Prepare tree
                 $arbo = $tree->getPath($post_id, true);
                 foreach ($arbo as $elem) {
@@ -3155,7 +3161,12 @@ if (null !== $post_type) {
                     } elseif ($access['type'] === 'ND') {
                         array_push($arrTmp, 2);
                     } else {
-                        array_push($arrTmp, 3);
+                        // Ensure to give access Right if allowed folder
+                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                            array_push($arrTmp, 0);
+                        } else {
+                            array_push($arrTmp, 3);
+                        }
                     }
                 }
                 $accessLevel = min($arrTmp);
@@ -3169,7 +3180,7 @@ if (null !== $post_type) {
 
                 // check if items exist
                 $where = new WhereClause('and');
-                if (null !== $post_restricted && $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
+                if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
                     $counter = count($_SESSION['list_folders_limited'][$post_id]);
                     $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
@@ -3326,7 +3337,7 @@ if (null !== $post_type) {
 
             // prepare query WHere conditions
             $where = new WhereClause('and');
-            if (null !== $post_restricted && $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
+            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$post_id]);
             } else {
                 $where->add('i.id_tree=%i', $post_id);
@@ -3614,7 +3625,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = '';
                             $html_json[$record['id']]['accessLevel'] = $item_limited_access === true ? 0 : $accessLevel;
-                            $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
+                            $html_json[$record['id']]['canMove'] = (int) $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
                             $html_json[$record['id']]['debug'] .= 'CASE6 - ';
                         }
 
@@ -3667,7 +3678,7 @@ if (null !== $post_type) {
 
             // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // count
-            if (intval($start) === 0) {
+            if ((int) $start === 0) {
                 DB::query(
                     'SELECT i.id
                     FROM '.prefixTable('items').' as i
@@ -3736,6 +3747,7 @@ if (null !== $post_type) {
 
             // Prepare POST variables
             $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
+            //$post_psk = filter_input(INPUT_POST, 'psk', FILTER_SANITIZE_STRING);
 
             // Run query
             db::debugmode(false);
@@ -3745,8 +3757,7 @@ if (null !== $post_type) {
                 WHERE id = %i',
                 $post_item_id
             );
-
-            if ($dataItem['perso'] !== 1) {
+            if ((int) $dataItem['perso'] !== 1) {
                 $pw = cryption(
                     $dataItem['pw'],
                     '',
@@ -3776,7 +3787,7 @@ if (null !== $post_type) {
                 'password' => $pw['string'],
                 'password_error' => $pw['error'],
             );
-
+            
             // Encrypt data to return
             echo prepareExchangedData($returnValues, 'encode');
             break;
@@ -3791,20 +3802,31 @@ if (null !== $post_type) {
             $post_context = filter_input(INPUT_POST, 'context', FILTER_SANITIZE_STRING);
 
             // get some info about ITEM
-            $dataItem = DB::queryfirstrow(
-                'SELECT perso, anyone_can_modify
-                FROM '.prefixTable('items').'
-                WHERE id=%i',
-                $post_item_id
-            );
-            // is user allowed to access this folder - readonly
-            if (null !== $post_groupe && empty($post_groupe) === false) {
-                if (in_array($post_groupe, $_SESSION['read_only_folders']) === true
-                    || in_array($post_groupe, $_SESSION['groupes_visibles']) === false
-                ) {
-                    // check if this item can be modified by anyone
-                    if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
-                        if ($dataItem['anyone_can_modify'] != 1) {
+            if (null !== $post_item_id && empty($post_item_id) === false) {
+                $dataItem = DB::queryfirstrow(
+                    'SELECT perso, anyone_can_modify
+                    FROM '.prefixTable('items').'
+                    WHERE id=%i',
+                    $post_item_id
+                );
+                
+                // is user allowed to access this folder - readonly
+                if (null !== $post_groupe && empty($post_groupe) === false) {
+                    if (in_array($post_groupe, $_SESSION['read_only_folders']) === true
+                        || in_array($post_groupe, $_SESSION['groupes_visibles']) === false
+                    ) {
+                        // check if this item can be modified by anyone
+                        if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
+                            if ($dataItem['anyone_can_modify'] != 1) {
+                                // else return not authorized
+                                $returnValues = array(
+                                    'error' => 'user_is_readonly',
+                                    'message' => langHdl('error_not_allowed_to'),
+                                );
+                                echo prepareExchangedData($returnValues, 'encode');
+                                break;
+                            }
+                        } else {
                             // else return not authorized
                             $returnValues = array(
                                 'error' => 'user_is_readonly',
@@ -3813,19 +3835,10 @@ if (null !== $post_type) {
                             echo prepareExchangedData($returnValues, 'encode');
                             break;
                         }
-                    } else {
-                        // else return not authorized
-                        $returnValues = array(
-                            'error' => 'user_is_readonly',
-                            'message' => langHdl('error_not_allowed_to'),
-                        );
-                        echo prepareExchangedData($returnValues, 'encode');
-                        break;
                     }
                 }
-            }
 
-            if (null !== $post_item_id && empty($post_item_id) === false) {
+            
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM '.prefixTable('items_edition').' WHERE item_id = %i', $post_item_id);
 
@@ -4002,6 +4015,7 @@ if (null !== $post_type) {
             }
 
             $returnValues = array(
+                'folderId' => $post_groupe,
                 'error' => '',
                 'val' => $data['valeur'],
                 'visibility' => $visibilite,
@@ -4142,7 +4156,7 @@ if (null !== $post_type) {
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$post_item_id,
                     );
-            } elseif (intval(filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT)) === 1) {
+            } elseif ((int) filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT) === 1) {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
                     if ($_SESSION['favourites'][$key] === $post_item_id) {
@@ -4217,6 +4231,13 @@ if (null !== $post_type) {
                 && ($dataSource['personal_folder'] === '1' || $dataDestination['personal_folder'] === '1')
             ) {
                 echo '[{"error" : "ERR_PSK_REQUIRED"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -4880,20 +4901,28 @@ if (null !== $post_type) {
         case 'image_preview_preparation':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
             // get file info
             $file_info = DB::queryfirstrow(
-                'SELECT file, status, type, content FROM '.prefixTable('files').' WHERE id=%i',
-                intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_STRING), 1))
+                'SELECT file, status, type, content, extension, name
+                FROM '.prefixTable('files').'
+                WHERE id=%i',
+                $post_id
             );
-
+            
             // prepare image info
             $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
             $image_code = $file_info['file'];
-            $extension = substr($post_title, strrpos($post_title, '.') + 1);
+            $extension = $file_info['extension'];
             $file_to_display = $SETTINGS['url_to_upload_folder'].'/'.$image_code;
             $file_suffix = '';
 
@@ -4905,12 +4934,14 @@ if (null !== $post_type) {
             );
 
             // should we decrypt the attachment?
-            if (isset($file_info['status']) && $file_info['status'] === 'encrypted') {
+            if (isset($file_info['status']) === true
+                && $file_info['status'] === 'encrypted'
+            ) {
                 // Delete the file as viewed
                 fileDelete($SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension, $SETTINGS);
 
                 // Open the file
-                if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$image_code)) {
+                if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$image_code) === true) {
                     // Should we encrypt or decrypt?
                     prepareFileWithDefuse(
                         'decrypt',
@@ -4924,12 +4955,13 @@ if (null !== $post_type) {
                     $file_suffix = '_delete.'.$extension;
                 }
             }
-
+            
             // Encrypt data to return
             echo prepareExchangedData(
                 array(
                     'error' => '',
                     'new_file' => $file_to_display,
+                    'filename' => $file_info['name'],
                     'file_type' => $file_info['type'],
                     'file_suffix' => $file_suffix,
                     'file_path' => $SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension,
@@ -5312,10 +5344,10 @@ if (null !== $post_type) {
             );
             foreach ($rows as $record) {
                 $reason = explode(':', $record['raison']);
-                if ($record['action'] === 'at_modification' && $reason[0] === 'at_pw ') {
+                if ($reason[0] === 'at_pw ') {
                     // check if item is PF
-                    if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption(
+                    if ($dataItem['perso'] !== 1) {
+                        $pw = cryption(
                             $reason[1],
                             '',
                             'decrypt',
@@ -5323,17 +5355,17 @@ if (null !== $post_type) {
                         );
                     } else {
                         if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                            $reason[1] = cryption(
+                            $pw = cryption(
                                 $reason[1],
                                 $_SESSION['user_settings']['session_psk'],
                                 'decrypt',
                                 $SETTINGS
                             );
                         } else {
-                            $reason[1] = '';
+                            $pw['string'] = '';
                         }
                     }
-                    $reason[1] = @$reason[1]['string'];
+                    $reason[1] = $pw['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
                     if (!isUTF8($reason[1]) || is_array($reason[1])) {
                         $reason[1] = '';
@@ -5344,13 +5376,11 @@ if (null !== $post_type) {
                     $record['login'] = langHdl('imported_via_api').' ['.$record['raison'].']';
                 }
 
-                if (empty($reason[1]) === false
-                    || $record['action'] === 'at_copy'
-                    || $record['action'] === 'at_creation'
-                    || $record['action'] === 'at_manual'
-                    || $record['action'] === 'at_modification'
-                    || $record['action'] === 'at_delete'
-                    || $record['action'] === 'at_restored') {
+                if (in_array(
+                        $record['action'],
+                        array('at_password_copied', 'at_shown', 'at_password_shown')
+                    ) === false
+                ) {
                     // Prepare avatar
                     if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
                         if (file_exists($SETTINGS['cpassman_dir'].'/includes/avatars/'.$record['avatar_thumb'])) {
@@ -5676,15 +5706,15 @@ function recupDroitCreationSansComplexite($groupe)
 function fileFormatImage($ext)
 {
     if (in_array($ext, TP_OFFICE_FILE_EXT)) {
-        $image = 'far fa-file-word';
+        $image = 'fas fa-file-word';
     } elseif ($ext === 'pdf') {
-        $image = 'far fa-file-pdf';
+        $image = 'fas fa-file-pdf';
     } elseif (in_array($ext, TP_IMAGE_FILE_EXT)) {
-        $image = 'far fa-file-image';
+        $image = 'fas fa-file-image';
     } elseif ($ext === 'txt') {
-        $image = 'far fa-file-alt';
+        $image = 'fas fa-file-alt';
     } else {
-        $image = 'far fa-file';
+        $image = 'fas fa-file';
     }
 
     return $image;

@@ -298,6 +298,7 @@ function launchIdentify(isDuo, redirect, psk)
     // Clear localstorage
     store.remove('teampassApplication');
     store.remove('teampassSettings');
+    store.remove('teampassUser');
     store.remove('teampassItem');
 
     //create random string
