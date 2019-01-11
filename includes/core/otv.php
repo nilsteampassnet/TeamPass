@@ -109,8 +109,8 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
                 $data['item_id']
             );
             if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] == 1) {
-                if ($dataDelete['del_enabled'] == 1) {
-                    if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
+                if ((int) $dataDelete['del_enabled'] === 1) {
+                    if ((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] >= 1) {
                         // decrease counter
                         DB::update(
                             $pre."automatic_del",
@@ -120,8 +120,8 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
                             "item_id = %i",
                             $data['item_id']
                         );
-                    } elseif ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] <= 1
-                        || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
+                    } elseif (((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] <= 1)
+                        || ((int) $dataDelete['del_type'] === 2 && (int) $dataDelete['del_value'] < time())
                     ) {
                         // delete item
                         DB::delete($pre."automatic_del", "item_id = %i", $data['item_id']);
@@ -136,6 +136,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
                         );
                         // log
                         logItems(
+                            $SETTIGNS,
                             $data['item_id'],
                             $dataItem['label'],
                             OTV_USER_ID,

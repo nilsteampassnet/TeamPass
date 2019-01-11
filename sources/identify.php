@@ -488,9 +488,6 @@ function identifyUser($sentData, $SETTINGS)
 
     // User's 2FA method
     $user_2fa_selection = filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING);
-//echo ">>".$user_2fa_selection;
-    // User's agses code
-    //$user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
 
     // Check 2FA
     if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)

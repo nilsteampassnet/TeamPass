@@ -38,7 +38,7 @@ define('DEFUSE_ENCRYPTION', true);
 
 define('DEBUG', true);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
-define('DEBUGDUO', true); //Can be used in order to debug DUO authentication
+define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
 
 // Management Pages
 $mngPages = array(
