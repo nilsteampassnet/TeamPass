@@ -16,7 +16,7 @@
  *
  * @see      http://www.teampass.net
  */
-require_once 'sources/SecureHandler.php';
+require_once '../../sources/SecureHandler.php';
 session_start();
 
 // Update table by deleting ID
@@ -30,9 +30,9 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 
 if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     // connect to the server
-    include_once './sources/main.functions.php';
-    include_once './includes/config/settings.php';
-    include_once './includes/libraries/Database/Meekrodb/db.class.php';
+    include_once '../../sources/main.functions.php';
+    include_once '../../includes/config/settings.php';
+    include_once '../../includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
@@ -57,7 +57,7 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     if (isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
     ) {
-        include_once 'sources/main.functions.php';
+        include_once '../../sources/main.functions.php';
         logEvents('user_connection', 'disconnection', $user_id, @$_SESSION['login']);
     }
 }
@@ -71,6 +71,6 @@ echo '
     <script language="javascript" type="text/javascript">
     <!--
         sessionStorage.clear();
-        setTimeout(function(){document.location.href="index.php"}, 1);
+        setTimeout(function(){document.location.href="../../index.php"}, 1);
     -->
     </script>';

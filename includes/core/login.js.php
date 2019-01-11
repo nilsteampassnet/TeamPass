@@ -27,6 +27,82 @@ $(function() {
     // Set focus on login input
     $('#login').focus();
 
+    // Manage DUO SEC login
+    if ($("#2fa_user_selection").val() === "duo" && $("#duo_sig_response").val() !== "") {
+        $("#login").val($("#duo_login").val());
+        $("#pw").val($("#duo_pwd").val());
+
+        // checking that response is corresponding to user credentials
+        $.post(
+            "sources/identify.php",
+            {
+                type :            "identify_duo_user_check",
+                login:            sanitizeString($("#login").val()),
+                pwd:              sanitizeString($("#duo_pwd").val()),
+                sig_response:     $("#duo_sig_response").val()
+            },
+            function(data) {
+                console.log("After identify_duo_user_check:");
+                console.log(data);
+                var ret = data[0].resp.split("|");
+                if (ret[0] === "ERR") {
+                    $("#div-2fa-duo-progress")
+                        .addClass('alert alert-info ')
+                        .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + ret[1]);
+                } else {
+                    // finally launch identification process inside Teampass.
+                    alertify
+                        .message(
+                            '<i class="fas fa-cog fa-spin fa-lg mr-2"></i><?php echo langHdl('please_wait'); ?>',
+                            0
+                        )
+                        .dismissOthers();
+                    
+
+                    console.log(window.atob($("#duo_data").val()));
+                    $.post(
+                        "sources/identify.php",
+                        {
+                            type :     "identify_user",
+                            data :     prepareExchangedData(window.atob($("#duo_data").val()), "encode", "<?php echo $_SESSION['key']; ?>")
+                        },
+                        function(receivedData) {
+                            var data = JSON.parse(receivedData);
+                            
+                            $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
+
+                            if (data.error !== false) {
+                                alertify.message('<?php echo langHdl('done');?>', 1).dismissOthers();
+                                $("#div-2fa-duo-progress")
+                                    .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + data.message);
+                            } else {
+                                //redirection for admin is specific
+                                $("#div-2fa-duo-progress")
+                                    .html('<i class="fas fa-info-circle text-info mr-2"></i><?php echo langHdl('please_wait'); ?>');
+                                if (data.user_admin !== 1) {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=items";
+                                        },
+                                        1
+                                    );
+                                } else {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=manage_main";
+                                        },
+                                        1
+                                    );
+                                }
+                            }
+                        }
+                    );
+                }
+            },
+            "json"
+        );
+    }
+
     // Click on log in button
     $('#but_identify_user').click(function() {
         launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
@@ -41,7 +117,7 @@ $(function() {
             , function(evt, value) {
                 alertify
                     .message(
-                        '<?php echo '<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;'.langHdl('please_wait'); ?>',
+                        '<?php echo '<span class="fas fa-cog fa-spin fa-lg"></span>&nbsp;'.langHdl('please_wait'); ?>',
                         0
                     )
                     .dismissOthers();
@@ -280,7 +356,7 @@ function launchIdentify(isDuo, redirect, psk)
         }
 
         // 2FA method
-        var user2FaMethod = $("#2fa_user_selection").val();
+        var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
 
         if (user2FaMethod !== "") {
             if ((user2FaMethod === "yubico" && $("#yubico_key").val() === "")
@@ -321,12 +397,8 @@ function launchIdentify(isDuo, redirect, psk)
             var data = JSON.parse(data),
                 mfaData = {};
             console.log("get2FAMethods")
-            console.log(data)
+            //console.log(data)
             console.log('>> '+user2FaMethod)
-
-            /*if (user2FaMethod === '' && data.nb === '1') {
-                user2FaMethod = data.method;
-            }*/
 
             // Google 2FA
             if (user2FaMethod === 'agses' && $('#agses_code').val() !== undefined) {
@@ -362,12 +434,29 @@ function launchIdentify(isDuo, redirect, psk)
                 identifyUser(redirect, psk, mfaData, randomstring);
             } else {
                 // Handle if DUOSecurity is enabled
-                $('#duo_data').val(window.btoa(mfaData));
+                $('#duo_data').val(window.btoa(JSON.stringify(mfaData)));
                 loadDuoDialog();
             }
         }
     );
 }
+
+// DUO box - identification
+function loadDuoDialog()
+{
+    $('#div-2fa-duo').removeClass('hidden');
+    $('#div-2fa-duo-progress')
+        .load(
+            '<?php echo $SETTINGS['cpassman_url'];?>/includes/core/duo.load.php',
+            null,
+            function(responseText, textStatus, xhr) {
+                if (textStatus === "error") {
+                    alert("Error while loading " + url + "\n\n"+responseText);
+                }
+            }
+        );
+}
+
 
 //Identify user
 function identifyUser(redirect, psk, data, randomstring)

@@ -2322,8 +2322,8 @@ switch ($post_type) {
             // get sk.php file path
             $settingsFile = file($filename);
             foreach ($settingsFile as $key => $val) {
-                if (substr_count($val, "@define('SECUREPATH'")) {
-                    $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
+                if (substr_count($val, "define('SECUREPATH'")) {
+                    $tmp_skfile = substr($val, 26, strpos($val, "');") - 26).'/sk.php';
                 }
             }
 
@@ -2340,7 +2340,7 @@ switch ($post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => "Could NOT perform a copy of file: '.$tmp_skfile.'",
+                            'message' => "Could NOT perform a copy of file: $tmp_skfile",
                         ),
                         'encode'
                     );
@@ -2353,7 +2353,7 @@ switch ($post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => "Could NOT access file: '.$tmp_skfile.'",
+                        'message' => "Could NOT access file: $tmp_skfile",
                     ),
                     'encode'
                 );
@@ -2368,13 +2368,13 @@ switch ($post_type) {
                 $fh,
                 utf8_encode(
                     "<?php
-    @define('COST', '13'); // Don't change this.
-    // DUOSecurity credentials
-    @define('AKEY', '".(string) $post_akey."');
-    @define('IKEY', '".(string) $post_ikey."');
-    @define('SKEY', '".(string) $post_skey."');
-    @define('HOST', '".(string) $post_host."');
-    ?>"
+@define('COST', '13'); // Don't change this.
+// DUOSecurity credentials
+\$_GLOBALS['AKEY'] = '".(string) $post_akey."';
+\$_GLOBALS['IKEY'] = '".(string) $post_ikey."';
+\$_GLOBALS['SKEY'] = '".(string) $post_skey."';
+\$_GLOBALS['HOST'] = '".(string) $post_host."';
+?>"
                 )
             );
             fclose($fh);

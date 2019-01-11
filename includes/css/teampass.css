@@ -22,6 +22,17 @@
     background-size: cover; 
 }
 
+.otv-page {
+    background: url("../images/login_wall_1.jpg") no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-size: cover;
+    -o-background-size: cover;
+    height: 100%;
+    background-position: center center;
+    background-size: cover; 
+}
+
 .hidden {
     display: none !important;
     visibility: hidden !important;

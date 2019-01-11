@@ -25,4 +25,7 @@ if (defined('SECUREPATH') === false) {
 }
 if (file_exists("D:/wamp64/tmp/3.0/sk.php")) {
     include_once "D:/wamp64/tmp/3.0/sk.php";
+	if (defined('IKEY')) {
+    echo IKEY;
+}
 }

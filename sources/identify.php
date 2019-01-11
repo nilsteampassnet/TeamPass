@@ -75,19 +75,24 @@ if ($post_type === 'identify_duo_user') {
     //--------
     // This step creates the DUO request encrypted key
 
-    include_once SECUREPATH.'/sk.php';
-
     // load library
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
-
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "\n\n-----\n\n".
-            'sig request : '.$post_login."\n".
-            'resp : '.$sig_request."\n"
+    $sig_request = Duo::signRequest(
+        $_GLOBALS['IKEY'],
+        $_GLOBALS['SKEY'],
+        $_GLOBALS['AKEY'],
+        $post_login
     );
+
+    if (DEBUGDUO === true) {
+        debugIdentify(
+            DEBUGDUO,
+            DEBUGDUOFILE,
+            "\n\n-----\n\n".
+                'sig request : '.$post_login."\n".
+                'resp : '.$sig_request."\n"
+        );
+    }
 
     // load csrfprotector
     $csrfp_config = include_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
@@ -101,11 +106,14 @@ if ($post_type === 'identify_duo_user') {
     // this step is verifying the response received from the server
     //--------
 
-    include_once SECUREPATH.'/sk.php';
-
     // load library
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
+    $resp = Duo::verifyResponse(
+        $_GLOBALS['IKEY'],
+        $_GLOBALS['SKEY'],
+        $_GLOBALS['AKEY'],
+        $post_sig_response
+    );
 
     debugIdentify(
         DEBUGDUO,
@@ -121,6 +129,12 @@ if ($post_type === 'identify_duo_user') {
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
             // connect to the server
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+            DB::$host = DB_HOST;
+            DB::$user = DB_USER;
+            DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+            DB::$dbName = DB_NAME;
+            DB::$port = DB_PORT;
+            DB::$encoding = DB_ENCODING;
             $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
             $link->set_charset(DB_ENCODING);
 
@@ -386,8 +400,8 @@ if ($post_type === 'identify_duo_user') {
 /**
  * Complete authentication of user through Teampass.
  *
- * @param [type] $sentData
- * @param [type] $SETTINGS
+ * @param string $sentData Credentials
+ * @param array  $SETTINGS Teamapss settings
  */
 function identifyUser($sentData, $SETTINGS)
 {
@@ -445,7 +459,10 @@ function identifyUser($sentData, $SETTINGS)
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, 'decode', $_SESSION['key']);
-    //print_r($dataReceived);
+    /*echo $sentData;
+    echo " ;; ";
+    echo $dataReceived;
+    print_r($dataReceived);*/
 
     // prepare variables
     if (isset($SETTINGS['enable_http_request_login']) === true
@@ -466,18 +483,19 @@ function identifyUser($sentData, $SETTINGS)
     } else {
         $passwordClear = $dataReceived['pw'];
         $username = $dataReceived['login'];
-        $usernameSanitized = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login_sanitized']));
+        $usernameSanitized = filter_var($dataReceived['login_sanitized'], FILTER_SANITIZE_STRING);
     }
 
     // User's 2FA method
-    $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
-
+    $user_2fa_selection = filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING);
+//echo ">>".$user_2fa_selection;
     // User's agses code
     //$user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
 
     // Check 2FA
-    if ((($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
-        || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true))
+    if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
         echo json_encode(
@@ -595,7 +613,7 @@ function identifyUser($sentData, $SETTINGS)
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                        'error' => 'user_not_exists',
+                        'error' => 'user_not_exists7',
                         'message' => langHdl('error_bad_credentials'),
                     )
                 );
@@ -624,7 +642,7 @@ function identifyUser($sentData, $SETTINGS)
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                        'error' => 'user_not_exists',
+                        'error' => 'user_not_exists8',
                         'message' => langHdl('error_bad_credentials'),
                     )
                 );
@@ -709,7 +727,7 @@ function identifyUser($sentData, $SETTINGS)
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                 'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'error' => 'user_not_exists',
+                'error' => 'user_not_exists1',
                 'message' => langHdl('error_bad_credentials'),
             )
         );
@@ -881,7 +899,7 @@ function identifyUser($sentData, $SETTINGS)
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                    'error' => 'user_not_exists',
+                    'error' => 'user_not_exists2',
                     'message' => langHdl('error_bad_credentials'),
                 )
             );
@@ -1302,7 +1320,7 @@ function identifyUser($sentData, $SETTINGS)
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                        'error' => 'user_not_exists',
+                        'error' => 'user_not_exists3',
                         'message' => langHdl('error_bad_credentials'),
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
@@ -1327,7 +1345,7 @@ function identifyUser($sentData, $SETTINGS)
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                    'error' => 'user_not_exists',
+                    'error' => 'user_not_exists4',
                     'message' => langHdl('error_bad_credentials'),
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
@@ -1352,8 +1370,8 @@ function identifyUser($sentData, $SETTINGS)
             'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
             'initial_url' => @$_SESSION['initial_url'],
             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-            'error' => $logError['error'],
-            'message' => $logError['message'],
+            'error' => false,
+            'message' => '',
             'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
         )
@@ -1472,7 +1490,7 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
                             'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
                             'initial_url' => @$_SESSION['initial_url'],
                             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                            'error' => 'user_not_exists',
+                            'error' => 'user_not_exists5',
                             'message' => langHdl('error_bad_credentials'),
                         ),
                     );
@@ -1715,7 +1733,7 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
                     'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
                     'initial_url' => @$_SESSION['initial_url'],
                     'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'user_not_exists',
+                    'error' => 'user_not_exists6',
                     'message' => langHdl('error_bad_credentials'),
                 ),
             );

@@ -4657,8 +4657,18 @@ if (null !== $post_type) {
                     sendEmail(
                         langHdl('email_share_item_subject'),
                         str_replace(
-                            array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
+                            array(
+                                '#tp_link#',
+                                '#tp_user#',
+                                '#tp_item#'
+                            ),
+                            array(
+                                empty($SETTINGS['email_server_url']) === false ?
+                                $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id :
+                                $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id,
+                                addslashes($_SESSION['login']),
+                                addslashes($path)
+                            ),
                             langHdl('email_share_item_mail')
                         ),
                         $post_receipt,
@@ -4670,7 +4680,7 @@ if (null !== $post_type) {
 
             echo prepareExchangedData(
                 array(
-                    'error' => $ret['error'],
+                    'error' => empty($ret['error']) === true ? false : true,
                     'message' => $ret['message'],
                 ),
                 'encode'

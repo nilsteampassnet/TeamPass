@@ -200,7 +200,7 @@ if ((isset($_GET['session']) === true
     <script language="javascript" type="text/javascript">
     <!--
         sessionStorage.clear();
-        window.location.href = "logout.php";
+        window.location.href = "./includes/core/logout.php";
     -->
     </script>';
     exit;

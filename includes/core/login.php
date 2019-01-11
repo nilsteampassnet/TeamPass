@@ -26,6 +26,13 @@ if (strpos($server_request_uri, '?') > 0) {
     );
 }
 
+$post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
+$post_duo_login = filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
+$post_duo_pwd = filter_input(INPUT_POST, 'duo_pwd', FILTER_SANITIZE_STRING);
+$post_duo_data = filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_pw = filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
+
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
@@ -103,22 +110,23 @@ echo '
         <input type="hidden" id="2fa_user_selection" value="',
             (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : '')
         , '" />
+        <input type="hidden" id="duo_sig_response" value="', null !== $post_sig_response ? $post_sig_response : '', '" />
         <div class="row mb-3" id="2fa_methods_selector">
           <div class="col-12">
             <h8 class="login-box-msg">'.langHdl('2fa_authentication_selector').'</h8>
             <div class="2fa-methods" style="padding:3px; text-align:center;">
             ', isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1' ?
                 '<label for="select2fa-google">Google</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google">' : '', '
+                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google" data-mfa="google">' : '', '
                 ', isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' ?
                 '<label for="select2fa-agses">Agses</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-agses">' : '', '
+                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-agses" data-mfa="agses">' : '', '
                 ', isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1' ?
                 '<label for="select2fa-duo">Duo Security</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo">' : '', '
+                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo">' : '', '
                 ', isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1' ?
                 '<label for="select2fa-yubico">Yubico</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico">' : '', '
+                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico">' : '', '
             </div>
           </div>
         </div>';
@@ -135,6 +143,19 @@ if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agse
                 <canvas id="axs_canvas"></canvas>
             </div>
             <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="'.langHdl('index_agses_key').'" />
+        </div>';
+}
+
+// DUO box
+if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
+    echo '
+        <div id="div-2fa-duo" class="row mb-3 div-2fa-method hidden">
+            <div id="div-2fa-duo-progress" class="text-center hidden"></div>
+            <form method="post" id="duo_form" action="">
+                <input type="hidden" id="duo_login" name="duo_login" value="', null !== $post_duo_login ? $post_duo_login : '', '" />
+                <input type="hidden" id="duo_pwd" name="duo_pwd" value="', null !== $post_duo_pwd ? $post_duo_pwd : '', '" />
+                <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? $post_duo_data : '', '" />
+            </form>
         </div>';
 }
 

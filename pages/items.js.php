@@ -126,11 +126,11 @@ $('#jstree').jstree({
 })
 // On node select
 .bind('select_node.jstree', function (e, data) {
-    if (initialPageLoad === true
+    /*if (initialPageLoad === true
         || store.get('teampassApplication') === undefined
         || store.get('teampassApplication').selectedFolder === undefined
-        | store.get('teampassApplication').selectedFolder === ''
-    ) {
+        || store.get('teampassApplication').selectedFolder === ''
+    ) {*/
         console.log('JSTREE BIND')
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
         selectedFolderId = selectedFolder.id.split('_')[1];
@@ -145,7 +145,10 @@ $('#jstree').jstree({
             'teampassApplication',
             function (teampassApplication)
             {
-                teampassApplication.selectedFolder = selectedFolderId;
+                teampassApplication.selectedFolder = selectedFolderId,
+                teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
+                teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
+                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title']
             }
         )
 
@@ -156,7 +159,7 @@ $('#jstree').jstree({
         }
 
         initialPageLoad = false;
-    }
+    //}
 })
 // Search in tree
 .bind('search.jstree', function (e, data) {
@@ -334,12 +337,13 @@ $('.tp-action').click(function() {
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
         // Prepare some data in the form
-        $("#form-folder-add-parent option[value='"+selectedFolder.id.split('_')[1]+"']")
+        $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolder + "']")
             .prop('disabled', true);
-        $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
+        $('#form-folder-add-parent').val(store.get('teampassApplication').selectedFolderParentId).change();
         $('#form-folder-add-label')
-            .val(selectedFolder.a_attr['data-title'])
+            .val(store.get('teampassApplication').selectedFolderParentTitle)
             .focus();
+        $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
         // Set type of action for the form
         $('#form-folder-add').data('action', 'update');
         // ---
@@ -349,17 +353,21 @@ $('.tp-action').click(function() {
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-copy').removeClass('hidden');
         // Prepare some data in the form
-        $('#form-folder-copy-source').val(selectedFolder.id.split('_')[1]).change();
-        $("#form-folder-copy-destination option[value='"+selectedFolder.id.split('_')[1]+"']")
-            .prop('disabled', true);
+        $('#form-folder-copy-source').val(store.get('teampassApplication').selectedFolder).change();
+        //$("#form-folder-copy-destination option[value='"+selectedFolder.id.split('_')[1]+"']")
+            //.prop('disabled', true);
         $('#form-folder-copy-destination').val(0).change();
+        $('#form-folder-copy-label')
+            .val(store.get('teampassApplication').selectedFolderTitle + ' <?php echo strtolower(langHdl('copy')); ?>')
+            .focus();
     } else if ($(this).data('folder-action') === 'delete') {
         console.info('SHOW DELETE FOLDER');
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-delete').removeClass('hidden');
         // Prepare some data in the form
-        $('#form-folder-delete-selection').val(selectedFolder.parent.split('_')[1]).change();
+        $('#form-folder-delete-selection').val(store.get('teampassApplication').selectedFolder).change();
+        $('#form-folder-confirm-delete').iCheck('uncheck');
     } else if ($(this).data('item-action') === 'new') {
         console.info('SHOW NEW ITEM');
 
@@ -451,7 +459,13 @@ $('.tp-action').click(function() {
         console.info('SHOW EDIT ITEM');  
         
         // Store not a new item
-        store.update('teampassItem').isNewItem = 0;
+        store.update(
+            'teampassItem',
+            function (teampassItem)
+            {
+                teampassItem.isNewItem = 0
+            }
+        );
 
         // Remove validated class
         $('#form-item').removeClass('was-validated');
@@ -647,8 +661,8 @@ $('#form-item-share-perform').click(function() {
                     .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
             } else {
-                $('.form-item, .item-details-card, .form-item-action').removeClass('hidden');
-                $('.form-item-share, .item-details-card-menu').addClass('hidden');
+                $('.item-details-card').removeClass('hidden');
+                $('.form-item-share').addClass('hidden');
 
                 // Inform user
                 alertify
@@ -917,11 +931,12 @@ $('#form-folder-add-perform').click(function() {
     userUploadedFile= false;
 
     var data = {
-        'label'         : $('#form-folder-add-label').val(),
-        'parent_id'     : $('#form-folder-add-parent option:selected').val(),
-        'complexicity'  : $('#form-folder-add-complexicity option:selected').val(),
-        'folder_id'     : selectedFolderId,
+        'title'       : $('#form-folder-add-label').val(),
+        'parentId'    : $('#form-folder-add-parent option:selected').val(),
+        'complexity'  : $('#form-folder-add-complexicity option:selected').val(),
+        'id'          : selectedFolderId,
     }
+    console.log(data);
 
     // Launch action
     $.post(
@@ -1008,15 +1023,18 @@ $('#form-folder-delete-perform').click(function() {
         .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
-    var data = {
-        'folder_id' : $('#form-folder-delete-selection option:selected').val()
-    }
+
+    var selectedFolders = [],
+        data = {
+            'selectedFolders' : [$('#form-folder-delete-selection option:selected').val()]
+        }
+    console.log(data)
     
     // Launch action
     $.post(
         'sources/folders.queries.php',
         {
-            type    : 'delete_folder',
+            type    : 'delete_folders',
             data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
             key     : '<?php echo $_SESSION['key']; ?>'
         },
@@ -1046,6 +1064,8 @@ $('#form-folder-delete-perform').click(function() {
                     .success('<?php echo langHdl('success'); ?>', 1)
                     .dismissOthers();
             }
+
+            $('#form-folder-confirm-delete').iCheck('uncheck');
         }
     );
 });
@@ -1074,8 +1094,9 @@ $('#form-folder-copy-perform').click(function() {
         .dismissOthers();
 
     var data = {
-        'source_folder_id' : $('#form-folder-copy-source option:selected').val(),
-        'target_folder_id' : $('#form-folder-copy-destination option:selected').val()
+        'source_folder_id'  : $('#form-folder-copy-source option:selected').val(),
+        'target_folder_id'  : $('#form-folder-copy-destination option:selected').val(),
+        'folder_label'      : $('#form-folder-copy-label').val(),
     }
     
     // Launch action
@@ -1114,6 +1135,13 @@ $('#form-folder-copy-perform').click(function() {
             }
         }
     );
+});
+
+$(document).on('change', '#form-folder-copy-source', function() {
+    $('#form-folder-copy-label')
+        .val($('#form-folder-copy-source option:selected').text()
+        .substring(0, $('#form-folder-copy-source option:selected').text().lastIndexOf('[')).trim() +
+        ' <?php echo strtolower(langHdl('copy')); ?>');
 });
 
 
@@ -2402,7 +2430,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         {
                             teampassItem.IsPersonalFolder = parseInt(data.IsPersonalFolder),
                             teampassItem.hasAccessLevel = parseInt(data.access_level),
-                            teampassItem.folderComplexity = parseInt(data.folderComplexity),
+                            teampassItem.folderComplexity = parseInt(data.folder_complexity),
                             teampassItem.hasCustomCategories = data.categoriesStructure
                         }
                     );

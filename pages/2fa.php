@@ -51,8 +51,8 @@ if (file_exists($filename)) {
     $settingsFile = file($filename);
     if ($settingsFile !== false) {
         foreach ($settingsFile as $key => $val) {
-            if (substr_count($val, "@define('SECUREPATH'")) {
-                $skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
+            if (substr_count($val, "define('SECUREPATH'")) {
+                $skfile = substr($val, 26, strpos($val, "');") - 26).'/sk.php';
             }
         }
     }
@@ -64,14 +64,14 @@ if (isset($skfile) === true && is_file($skfile) === true) {
     $skFile = file($skfile);
     if ($skFile !== false) {
         foreach ($skFile as $key => $val) {
-            if (substr_count($val, "@define('AKEY'") > 0) {
-                $duoAkey = substr($val, 21, strlen($val) - 26);
-            } elseif (substr_count($val, "@define('IKEY'") > 0) {
-                $duoIkey = substr($val, 21, strlen($val) - 26);
-            } elseif (substr_count($val, "@define('SKEY'") > 0) {
-                $duoSkey = substr($val, 21, strlen($val) - 26);
-            } elseif (substr_count($val, "@define('HOST'") > 0) {
-                $duoHost = substr($val, 21, strlen($val) - 26);
+            if (substr_count($val, "_GLOBALS['AKEY']") > 0) {
+                $duoAkey = substr($val, 21, strlen($val) - 24);
+            } elseif (substr_count($val, "_GLOBALS['IKEY']") > 0) {
+                $duoIkey = substr($val, 21, strlen($val) - 24);
+            } elseif (substr_count($val, "_GLOBALS['SKEY']") > 0) {
+                $duoSkey = substr($val, 21, strlen($val) - 24);
+            } elseif (substr_count($val, "_GLOBALS['HOST']") > 0) {
+                $duoHost = substr($val, 21, strlen($val) - 24);
             }
         }
     }

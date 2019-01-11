@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -256,7 +255,7 @@ $userSeenPasswordsNumber = DB::count();
                                         </a>
                                     </li>
                                     <li class="list-group-item">
-                                        <b><i class="fas fa-code-fork fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
+                                        <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
                                         <a class="float-right">
                                             <span id="profile-plupload-runtime"><?php echo $_SESSION['user_settings']['treeloadstrategy']; ?></span>
                                         </a>

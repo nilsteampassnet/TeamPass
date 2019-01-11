@@ -299,9 +299,9 @@ if (null !== $post_type) {
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_renewal_period = filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_STRING);
-            $post_add_restriction = filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT);
-            $post_edit_restriction = filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT);
+            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_STRING) : '';
+            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
+            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
 
             // Init
             $error = false;
@@ -347,7 +347,7 @@ if (null !== $post_type) {
             }
 
             // Is the parent folder changed?
-            if ($dataFolder['parent_id'] === $post_parent_id) {
+            if ((int) $dataFolder['parent_id'] === (int) $post_parent_id) {
                 $parentChanged = false;
             } else {
                 $parentChanged = true;
@@ -389,7 +389,8 @@ if (null !== $post_type) {
                         $post_parent_id,
                         'complex'
                     );
-                    if (intval($post_complexicity) < intval($data['valeur'])) {
+                    
+                    if ((int) $post_complexicity < (int) $data['valeur']) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
@@ -409,13 +410,19 @@ if (null !== $post_type) {
                 'title' => $post_title,
                 'personal_folder' => $isPersonal,
             );
-            if ($dataFolder['renewal_period'] !== $post_renewal_period) {
+            if ($dataFolder['renewal_period'] !== $post_renewal_period
+                && empty($post_renewal_period) === false
+            ) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if ($dataFolder['bloquer_creation'] !== $post_add_restriction) {
+            if ($dataFolder['bloquer_creation'] !== $post_add_restriction
+                && empty($post_add_restriction) === false
+            ) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if ($dataFolder['bloquer_modification'] !== $post_edit_restriction) {
+            if ($dataFolder['bloquer_modification'] !== $post_edit_restriction
+                && empty($post_edit_restriction) === false
+            ) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
             }
 
@@ -749,9 +756,8 @@ if (null !== $post_type) {
                 $dataReceived['selectedFolders'],
                 FILTER_SANITIZE_STRING
             );
-
+            
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), 'decode');
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $folderForDel = array();
 
@@ -800,6 +806,15 @@ if (null !== $post_type) {
                                         'action' => 'at_delete',
                                     )
                                 );
+                                // log
+                                logItems(
+                                    $SETTINGS,
+                                    $item['id'],
+                                    '',
+                                    $_SESSION['user_id'],
+                                    'at_delete',
+                                    $_SESSION['login']
+                                );
 
                                 // delete folder from SESSION
                                 if (($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
@@ -827,6 +842,10 @@ if (null !== $post_type) {
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
+            // reload cache table
+            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            updateCacheTable("reload", $SETTINGS, "");
+
             echo prepareExchangedData(
                 array(
                     'error' => false,
@@ -834,6 +853,348 @@ if (null !== $post_type) {
                 ),
                 'encode'
             );
+
+            break;
+
+        case "copy_folder":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Init post variables
+            $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_STRING);
+
+            //Load Tree
+            $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+            // Test if target folder is Read-only
+            // If it is then stop
+            if (in_array($post_target_folder_id, $_SESSION['read_only_folders']) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Get all allowed folders
+            $array_all_visible_folders = array_merge(
+                $_SESSION['groupes_visibles'],
+                $_SESSION['read_only_folders'],
+                $_SESSION['personal_visible_groups']
+            );
+
+            // get list of all folders
+            $nodeDescendants = $tree->getDescendants($post_source_folder_id, true, false, false);
+            $parentId = "";
+            $tabNodes = [];
+            foreach ($nodeDescendants as $node) {
+                // step1 - copy folder
+
+                // Can user access this subfolder?
+                if (in_array($node->id, $array_all_visible_folders) === false) {
+                    continue;
+                }
+
+                // get info about current node
+                $nodeInfo = $tree->getNode($node->id);
+
+                // get complexity of current node
+                $nodeComplexity = DB::queryfirstrow(
+                    "SELECT valeur
+                    FROM ".prefixTable("misc")."
+                    WHERE intitule = %i AND type= %s",
+                    $nodeInfo->id,
+                    'complex'
+                );
+
+                // prepare parent Id
+                if (empty($parentId) === true) {
+                    $parentId = $post_target_folder_id;
+                } else {
+                    $parentId = $tabNodes[$nodeInfo->parent_id];
+                }
+
+                //create folder
+                DB::insert(
+                    prefixTable("nested_tree"),
+                    array(
+                        'parent_id' => $parentId,
+                        'title' => count($tabNodes) === 0 ? $post_folder_label : $nodeInfo->title,
+                        'personal_folder' => $nodeInfo->personal_folder,
+                        'renewal_period' => $nodeInfo->renewal_period,
+                        'bloquer_creation' => $nodeInfo->bloquer_creation,
+                        'bloquer_modification' => $nodeInfo->bloquer_modification
+                    )
+                );
+                $newFolderId = DB::insertId();
+
+                // add to correspondance matrix
+                $tabNodes[$nodeInfo->id] = $newFolderId;
+
+                //Add complexity
+                DB::insert(
+                    prefixTable("misc"),
+                    array(
+                        'type' => 'complex',
+                        'intitule' => $newFolderId,
+                        'valeur' => $nodeComplexity['valeur']
+                    )
+                );
+
+                // add new folder id in SESSION
+                array_push($_SESSION['groupes_visibles'], $newFolderId);
+                $_SESSION['groupes_visibles_list'] .= ','.$newFolderId;
+                if ((int) $nodeInfo->personal_folder === 1) {
+                    array_push($_SESSION['personal_folders'], $newFolderId);
+                    array_push($_SESSION['personal_visible_groups'], $newFolderId);
+                    $_SESSION['personal_visible_groups_list'] .= ','.$newFolderId;
+                } else {
+                    array_push($_SESSION['all_non_personal_folders'], $newFolderId);
+                }
+
+                //Get user's rights
+                identifyUserRights(
+                    is_array($_SESSION['groupes_visibles']) === true ?
+                        array_push($_SESSION['groupes_visibles'], $newFolderId) :
+                        $_SESSION['groupes_visibles'].';'.$newFolderId,
+                    $_SESSION['groupes_interdits'],
+                    $_SESSION['is_admin'],
+                    $_SESSION['fonction_id'],
+                    $SETTINGS
+                );
+
+                // If new folder should not heritate of parent rights
+                // Then use the creator ones
+                if ((int) $nodeInfo->personal_folder !== 1
+                    && isset($SETTINGS['subfolder_rights_as_parent']) === true
+                    && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
+                    && (int) $_SESSION['is_admin'] !== 0
+                ) {
+                    //add access to this new folder
+                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                        if (empty($role) === false) {
+                            DB::insert(
+                                prefixTable("roles_values"),
+                                array(
+                                    'role_id' => $role,
+                                    'folder_id' => $newFolderId,
+                                    'type' => "W"
+                                )
+                            );
+                        }
+                    }
+                }
+
+                // If it is a subfolder, then give access to it for all roles that allows the parent folder
+                $rows = DB::query(
+                    "SELECT role_id, type
+                    FROM ".prefixTable("roles_values")."
+                    WHERE folder_id = %i",
+                    $parentId
+                );
+                foreach ($rows as $record) {
+                    // Add access to this subfolder after checking that it is not already set
+                    DB::query(
+                        "SELECT *
+                        FROM ".prefixTable("roles_values")."
+                        WHERE folder_id = %i AND role_id = %i",
+                        $newFolderId,
+                        $record['role_id']
+                    );
+                    if (DB::count() === 0) {
+                        DB::insert(
+                            prefixTable("roles_values"),
+                            array(
+                                'role_id' => $record['role_id'],
+                                'folder_id' => $newFolderId,
+                                'type' => $record['type']
+                            )
+                        );
+                    }
+                }
+
+                // if parent folder has Custom Fields Categories then add to this child one too
+                $rows = DB::query(
+                    "SELECT id_category
+                    FROM ".prefixTable("categories_folders")."
+                    WHERE id_folder = %i",
+                    $nodeInfo->id
+                );
+                foreach ($rows as $record) {
+                    //add CF Category to this subfolder
+                    DB::insert(
+                        prefixTable("categories_folders"),
+                        array(
+                            'id_category' => $record['id_category'],
+                            'id_folder' => $newFolderId
+                        )
+                    );
+                }
+
+
+                // step2 - copy items
+
+                $rows = DB::query(
+                    "SELECT *
+                    FROM ".prefixTable("items")."
+                    WHERE id_tree = %i",
+                    $nodeInfo->id
+                );
+                foreach ($rows as $record) {
+                    // check if item is deleted
+                    // if it is then don't copy it
+                    $item_deleted = DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefixTable("log_items")."
+                        WHERE id_item = %i AND action = %s
+                        ORDER BY date DESC
+                        LIMIT 0, 1",
+                        $record['id'],
+                        "at_delete"
+                    );
+                    $dataDeleted = DB::count();
+
+                    $item_restored = DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefixTable("log_items")."
+                        WHERE id_item = %i AND action = %s
+                        ORDER BY date DESC
+                        LIMIT 0, 1",
+                        $record['id'],
+                        "at_restored"
+                    );
+
+                    if ((int) $dataDeleted !== 1
+                        || (int) $item_deleted['date'] < (int) $item_restored['date']
+                    ) {
+                        // Decrypt and re-encrypt password
+                        $decrypt = cryption(
+                            $record['pw'],
+                            "",
+                            "decrypt",
+                            $SETTINGS
+                        );
+                        $originalRecord = cryption(
+                            $decrypt['string'],
+                            "",
+                            "encrypt",
+                            $SETTINGS
+                        );
+
+                        // Insert the new record and get the new auto_increment id
+                        DB::insert(
+                            prefixTable("items"),
+                            array(
+                                'label' => "duplicate",
+                                'id_tree' => $newFolderId,
+                                'pw' => $originalRecord['string'],
+                                'pw_iv' => '',
+                                'perso' => 0,
+                                'viewed_no' => 0
+                            )
+                        );
+                        $newItemId = DB::insertId();
+
+                        // Generate the query to update the new record with the previous values
+                        $aSet = array();
+                        foreach ($record as $key => $value) {
+                            if ($key !== "id" && $key !== "key" && $key !== "id_tree"
+                                && $key !== "viewed_no" && $key !== "pw" && $key !== "pw_iv"
+                                && $key !== "perso"
+                            ) {
+                                array_push($aSet, array($key => $value));
+                            }
+                        }
+                        DB::update(
+                            prefixTable("items"),
+                            $aSet,
+                            "id = %i",
+                            $newItemId
+                        );
+
+                        // Add attached itms
+                        $rows2 = DB::query(
+                            "SELECT * FROM ".prefixTable("files")." WHERE id_item=%i",
+                            $newItemId
+                        );
+                        foreach ($rows2 as $record2) {
+                            DB::insert(
+                                prefixTable('files'),
+                                array(
+                                    'id_item' => $newID,
+                                    'name' => $record2['name'],
+                                    'size' => $record2['size'],
+                                    'extension' => $record2['extension'],
+                                    'type' => $record2['type'],
+                                    'file' => $record2['file']
+                                    )
+                            );
+                        }
+                        // Add this duplicate in logs
+                        logItems(
+                            $SETTINGS,
+                            $newItemId,
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_creation',
+                            $_SESSION['login']
+                        );
+                        // Add the fact that item has been copied in logs
+                        logItems(
+                            $SETTINGS,
+                            $newItemId,
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_copy',
+                            $_SESSION['login']
+                        );
+                    }
+                }
+            }
+
+
+            // rebuild tree
+            $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
+            $tree->rebuild();
+
+            // reload cache table
+            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            updateCacheTable("reload", $SETTINGS, "");
+
+            $data = array(
+                'error' => ""
+            );
+
+            // send data
+            echo prepareExchangedData($data, "encode");
 
             break;
     }

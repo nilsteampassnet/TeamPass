@@ -2899,7 +2899,7 @@ function performDBQuery($SETTINGS, $fields, $table)
  *
  * @param integer $bytes Size of file
  *
- * @return void
+ * @return string
  */
 function formatSizeUnits($bytes)
 {

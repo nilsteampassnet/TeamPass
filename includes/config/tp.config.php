@@ -139,4 +139,7 @@ $SETTINGS = array(
     'ldap_bind_dn' => 'uid=root,cn=users,dc=ldap,dc=test,dc=local',
     'ldap_usergroup' => 'teampass',
     'ldap_new_user_role' => '4',
+    'duo_ikey' => 'DIL5CCV2M2JZBSMKNBOP',
+    'duo_skey' => 'ZD5TYThe8PbvOBveTUH0p0PgzRXtkBX5brCWOXsa',
+    'duo_host' => 'api-d62bd6d2.duosecurity.com',
 );

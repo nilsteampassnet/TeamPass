@@ -224,6 +224,7 @@ if (null !== $post_type) {
                             'renewal_period' => $folderData[9],
                         )
                     );
+
                     //delete log
                     DB::delete(
                         prefixTable('misc'),
@@ -231,6 +232,36 @@ if (null !== $post_type) {
                         'folder_deleted',
                         'f'.$folderId
                     );
+
+                    // Restore all items in this folder
+                    DB::update(
+                        prefixTable('items'),
+                        array(
+                            'inactif' => '0',
+                        ),
+                        'id_tree = %s',
+                        (int) $folderId
+                    );
+
+                    // Get list of all items in thos folder
+                    $items = DB::query(
+                        'SELECT id
+                        FROM '.prefixTable('items').'
+                        WHERE id_tree = %i',
+                        $folderId
+                    );
+
+                    // log
+                    foreach ($items as $item) {
+                        logItems(
+                            $SETTINGS,
+                            $item['id'],
+                            '',
+                            $_SESSION['user_id'],
+                            'at_restored',
+                            $_SESSION['login']
+                        );
+                    }
                 }
             }
 
@@ -245,14 +276,13 @@ if (null !== $post_type) {
                     $itemId
                 );
                 //log
-                DB::insert(
-                    prefixTable('log_items'),
-                    array(
-                        'id_item' => $itemId,
-                        'date' => time(),
-                        'id_user' => $_SESSION['user_id'],
-                        'action' => 'at_restored',
-                    )
+                logItems(
+                    $SETTINGS,
+                    $itemId,
+                    '',
+                    $_SESSION['user_id'],
+                    'at_restored',
+                    $_SESSION['login']
                 );
             }
 

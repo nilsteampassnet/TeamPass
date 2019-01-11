@@ -834,7 +834,7 @@ echo '
         <!-- SHARE ITEM FORM -->
         <div class="row hidden form-item-share form-item-action">
             <div class="col-12">
-                <form id="form-item-share needs-validation" novalidate onsubmit="return false;">
+                <form id="form-item-share" class="needs-validation" novalidate onsubmit="return false;">
                     <div class="card card-primary">
                         <div class="card-header">
                             <h5><i class="fas fa-share-alt mr-2"></i><?php echo langHdl('share_item'); ?></h5>
@@ -958,6 +958,10 @@ echo '
                         <h5><i class="fas fa-copy mr-2"></i><?php echo langHdl('copy_folder'); ?></h5>
                     </div>
                     <div class="card-body">
+                        <div class="form-group">
+                            <label><?php echo langHdl('label'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-copy-label"></select>
+                        </div>
                         <div class="form-group">
                             <label><?php echo langHdl('select_source_folder'); ?></label>
                             <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-source"></select>

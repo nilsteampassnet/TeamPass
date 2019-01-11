@@ -100,7 +100,7 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
                     '<?php echo langHdl('logout_confirm'); ?>',
                     function(){
                         alertify.success('<?php echo langHdl('ok'); ?>');
-                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                        window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
                     },
                     function(){
                         alertify.error('<?php echo langHdl('cancel'); ?>');

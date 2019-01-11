@@ -218,8 +218,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
 <head>
     <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta http-equiv="x-ua-compatible" content="ie=edge"/>
     <title>Teampass</title>
     <script type='text/javascript'>
         //<![CDATA[
@@ -228,14 +228,12 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
             && window.location.href.indexOf('action=') === -1)
         ) {
             if (window.location.href.indexOf('session_over=true') !== -1) {
-                location.replace('./logout.php');
+                location.replace('./includes/core/logout.php');
             }
         }
         //]]>
     </script>
 
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="plugins/fontawesome5/css/all.css">
     <!-- IonIcons -->
     <link rel="stylesheet" href="includes/css/ionicons.min.css">
     <!-- Theme style -->
@@ -267,10 +265,10 @@ if (($session_validite_pw === null
     && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === 'true'
 ) {
     // case where one-shot viewer
-    if (isset($_GET['code']) && !empty($_GET['code'])
-        && isset($_GET['stamp']) && !empty($_GET['stamp'])
+    if (isset($_GET['code']) && empty($_GET['code']) === false
+        && isset($_GET['stamp']) && empty($_GET['stamp']) === false
     ) {
-        include 'otv.php';
+        include './includes/core/otv.php';
     } else {
         $_SESSION['error']['code'] = ERR_VALID_SESSION;
         $superGlobal->put(
@@ -840,7 +838,7 @@ if (($session_validite_pw === null
     }
 
     // LOGIN form
-    include $SETTINGS['cpassman_dir'].'/login.php';
+    include $SETTINGS['cpassman_dir'].'/includes/core/login.php';
 }
 
 ?>
@@ -850,6 +848,8 @@ if (($session_validite_pw === null
 
 <!-- REQUIRED SCRIPTS -->
 
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="plugins/fontawesome5/css/all.css">
 <!-- jQuery -->
 <script src="plugins/jquery/jquery.min.js"></script>
 <!-- jQuery -->
@@ -981,7 +981,7 @@ alertify.defaults.theme.input = "form-control";
 if (isset($_SESSION['CPM']) === true
     && isset($SETTINGS['cpassman_dir']) === true
 ) {
-    include_once $SETTINGS['cpassman_dir'].'/load.js.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/core/load.js.php';
 
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'].'/pages/admin.js.php';
@@ -1023,6 +1023,6 @@ if (isset($_SESSION['CPM']) === true
     } elseif ($pageSel === 'utilities.database') {
         include_once $SETTINGS['cpassman_dir'].'/pages/utilities.database.js.php';
     } else {
-        include_once $SETTINGS['cpassman_dir'].'/login.js.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/core/login.js.php';
     }
 }
