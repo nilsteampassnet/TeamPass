@@ -178,13 +178,13 @@ if (null !== $post_type) {
                                 prefix_table("export"),
                                 array(
                                     'id' => $record['id'],
-                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true),
-                                    'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'label' => $record['label'],//cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true),
+                                    'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'path' => $path,
-                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'kbs' => $arr_kbs,
                                     'tags' => $arr_tags
                                 )
@@ -216,96 +216,163 @@ if (null !== $post_type) {
             if ($counter > 0) {
                 // print
                 //Some variables
-                $table_full_width = 300;
-                $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
-                $table = array('label', 'login', 'pw', 'description', 'email', 'url', 'kbs', 'tags');
                 $prev_path = "";
 
                 //Prepare the PDF file
-                include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
+                include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tcpdf.php';
 
-                $pdf = new FPDF_Protection("P", "mm", "A4", "ma page");
+                $pdf = new TCPDF("L", "mm", "A4", true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $post_pdf_password);
 
-                //Add font for regular text
-                $pdf->AddFont('helvetica', '');
-                //Add monospace font for passwords
-                $pdf->AddFont('LiberationMono', '');
+                $pdf->SetCreator('TCPDF');
+                $pdf->SetAuthor('Teampass');
+                $pdf->SetTitle('Export');
 
-                $pdf->aliasNbPages();
-                $pdf->addPage(L);
+                $pdf->SetHeaderData(
+                    '',
+                    '',
+                    'Teampass export',
+                    $LANG['pdf_del_date'].' '.
+                    date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time())
+                    .' '.$LANG['by'].' '.$_SESSION['name'].' '.$_SESSION['lastname']
+                    .' ('.$_SESSION['login'].')'
+                );
 
+                // set header and footer fonts
+                $pdf->setHeaderFont(array('helvetica', '', 10));
+                $pdf->setFooterFont(array('helvetica', '', 8));
+
+                // set default monospaced font
+                $pdf->SetDefaultMonospacedFont('courier');
+
+                // set margins
+                $pdf->SetMargins(15, 27, 15);
+                $pdf->SetHeaderMargin(5);
+                $pdf->SetFooterMargin(10);
+
+                // set auto page breaks
+                $pdf->SetAutoPageBreak(true, 25);
+
+                // set default font subsetting mode
+                $pdf->setFontSubsetting(true);
+
+                // Set page format
+                $pdf->addPage('L');
+
+                // Set Font
+                $pdf->SetFont('freeserif', '', 8);
+
+                // Init
                 $prev_path = "";
+                $firstTable = true;
+                $tbl = '';
+                $labelHeader = $LANG['label'];
+                $loginHeader = $LANG['login'];
+                $pwHeader = $LANG['pw'];
+                $descriptionHeader = $LANG['description'];
+                $emailHeader = $LANG['email'];
+                $urlHeader = $LANG['url'];
+                $kbsHeader = $LANG['kbs'];
+                $tagsHeader = $LANG['tags'];
+
                 foreach ($rows as $record) {
-                    // decode
-                    $record['label'] = utf8_decode($record['label']);
-                    $record['login'] = utf8_decode($record['login']);
-                    $record['pw'] = utf8_decode($record['pw']);
-                    $record['description'] = utf8_decode($record['description']);
-                    $record['email'] = utf8_decode($record['email']);
-                    $record['url'] = utf8_decode($record['url']);
-                    $record['kbs'] = utf8_decode($record['kbs']);
-                    $record['tags'] = utf8_decode($record['tags']);
 
                     $printed_ids[] = $record['id'];
                     if ($prev_path != $record['path']) {
-                        $pdf->SetFont('helvetica', '', 10);
-                        $pdf->SetFillColor(192, 192, 192);
-                        //error_log('key: '.$key.' - paths: '.$record['path']);
-                        $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", true);
-                        $pdf->SetFillColor(222, 222, 222);
-                        $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", true);
-                        $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", true);
+                        $path = $record['path'];
+
+                        if ($firstTable === false) {
+                            $tbl .= <<<EOD
+</table>
+EOD;
+
+                            $pdf->writeHTML($tbl, true, false, false, false, '');
+                        }
+
+                        $tbl = <<<EOD
+<table border="1" cellpadding="2" cellspacing="0">
+<tr style="background-color:#2b446b;color:#e8ebef;">
+    <td width="100%" align="left" colspan="8"><b>{$path}</b></td>
+</tr>
+<tr style="background-color:#f7f7f7;color:#666666;">
+    <td width="15%" align="center"><b>{$labelHeader}</b></td>
+    <td width="11%" align="center"><b>{$loginHeader}</b></td>
+    <td width="11%" align="center"><b>{$pwHeader}</b></td>
+    <td width="22%" align="center"><b>{$descriptionHeader}</b></td>
+    <td width="10%" align="center"><b>{$emailHeader}</b></td>
+    <td width="15%" align="center"><b>{$urlHeader}</b></td>
+    <td width="8%" align="center"><b>{$kbsHeader}</b></td>
+    <td width="8%" align="center"><b>{$tagsHeader}</b></td>
+</tr>
+EOD;
+                        $firstTable = false;
                     }
+
                     $prev_path = $record['path'];
-                    if (!isutf8($record['pw'])) {
+                    if (isutf8($record['pw']) === false) {
                         $record['pw'] = "";
                     }
-                    //row height calculation
-                    $nb = 0;
-                    $nb = max($nb, nbLines($table_col_width[0], $record['label']));
-                    $nb = max($nb, nbLines($table_col_width[1], $record['login']));
-                    $nb = max($nb, nbLines($table_col_width[3], $record['description']));
-                    $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
-                    $nb = max($nb, nbLines($table_col_width[5], $record['url']));
-                    $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
-                    $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
+                    
+                    $label = htmlspecialchars($record['label']);
+                    $login = htmlspecialchars($record['login']);
+                    $pw = htmlspecialchars(($record['pw']));
+                    $description = htmlspecialchars($record['description']);
+                    $email = htmlspecialchars($record['email']);
+                    $url = htmlspecialchars($record['url']);
+                    $kbs = htmlspecialchars($record['kbs']);
+                    $tags = htmlspecialchars($record['tags']);
 
-                    $h = 5 * $nb;
-                    //Page break needed?
-                    checkPageBreak($h);
-                    //Draw cells
-                    $pdf->SetFont('helvetica', '', 8);
-                    for ($i = 0; $i < count($table); $i++) {
-                        $w = $table_col_width[$i];
-                        $a = 'L';
-                        //actual position
-                        $x = $pdf->GetX();
-                        $y = $pdf->GetY();
-                        //Draw
-                        $pdf->Rect($x, $y, $w, $h);
-                        //Write
-                        $pdf->MultiCell($w, 5, iconv('UTF-8', 'windows-1252', html_entity_decode($record[$table[$i]])), 0, $a);
-                        //go to right
-                        $pdf->SetXY($x + $w, $y);
-                    }
-                    //return to line
-                    $pdf->Ln($h);
+                    $tbl .= <<<EOD
+<tr>
+    <td width="15%" align="center"><b>{$label}</b></td>
+    <td width="11%" align="center"><b>{$login}</b></td>
+    <td width="11%" align="center"><b>{$pw}</b></td>
+    <td width="22%" align="center"><b>{$description}</b></td>
+    <td width="10%" align="center"><b>{$email}</b></td>
+    <td width="15%" align="center"><b>{$url}</b></td>
+    <td width="8%" align="center"><b>{$kbs}</b></td>
+    <td width="8%" align="center"><b>{$tags}</b></td>
+</tr>
+EOD;
                 }
 
+                // Finalize with last table
+                $tbl .= <<<EOD
+</table>
+EOD;
+                $pdf->writeHTML($tbl, true, false, false, false, '');
+                
+/*
+                $pdfContent = <<<EOD
+<table border="1" cellpadding="2" cellspacing="0" nobr="true">
+{$tbl}
+</table>
+EOD;
+
+                $pdf->writeHTML(
+                    $tbl,
+                    true,
+                    false,
+                    false,
+                    false,
+                    ''
+                );
+        */        
                 $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')))."_".generateKey().".pdf";
+                
+                // Clean any content of the output buffer
+                ob_end_clean();
 
                 //send the file
-                $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdf_file);
+                $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdf_file, 'F');
 
                 //log
-                logEvents('pdf_export', "", $_SESSION['user_id'], $_SESSION['login']);
+                logEvents(
+                    'pdf_export',
+                    "",
+                    $_SESSION['user_id'],
+                    $_SESSION['login']
+                );
 
                 //clean table
                 DB::query("TRUNCATE TABLE ".prefix_table("export"));
@@ -407,10 +474,10 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
-                                    'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes($record['description']))))),
+                                    'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === "0" ? "False" : "True",
                                     'url' => $record['url'] !== "none" ? htmlspecialchars_decode($record['url']) : "",
@@ -438,10 +505,10 @@ if (null !== $post_type) {
             // Save the file
             $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
             $outstream = fopen($SETTINGS['path_to_files_folder'].$csv_file, "w");
+            fputs($outstream, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM
 
             // Loop on Results, decode to UTF8 and write in CSV file
             foreach ($full_listing as $value) {
-                $value = array_map("utf8_decode", $value);
                 fputcsv($outstream, $value, ";");
             }
 
@@ -876,7 +943,7 @@ function nbLines($width, $txt)
     if ($width == 0) {
         $width = $pdf->w - $this->rMargin - $pdf->x;
     }
-    $wmax = ($width - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
+    $wmax = ($width - 2 * $pdf->cMargin) * 1000 / 12;
     $s_text = str_replace("\r", '', $txt);
     $nb_char = strlen($s_text);
     if ($nb_char > 0 and $s_text[$nb_char - 1] == "\n") {

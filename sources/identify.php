@@ -376,7 +376,15 @@ if ($post_type === "identify_duo_user") {
         $fa_method = 'duo';
         $nb++;
     }
-    echo '[{"agses" : "'.$agses.'" , "google" : "'.$google.'" , "yubico" : "'.$yubico.'" , "duo" : "'.$duo.'" , "nb" : "'.$nb.'" , "method" : "'.$fa_method.'"}]';
+    echo '[{
+        "agses" : "'.$agses.'",
+        "google" : "'.$google.'",
+        "yubico" : "'.$yubico.'",
+        "duo" : "'.$duo.'",
+        "nb" : "'.$nb.'",
+        "method" : "'.$fa_method.'",
+        "admin_2fa_required" : "'.$SETTINGS['admin_2fa_required'].'"
+    }]';
     return false;
 }
 

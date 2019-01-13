@@ -2050,7 +2050,7 @@ if (null !== $post_type) {
 
             // Set temporary session variable to allow step2
             $_SESSION['user_settings']['show_step2'] = true;
-
+            
             // Encrypt data to return
             echo prepareExchangedData($arrData, "encode");
             break;

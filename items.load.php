@@ -2817,10 +2817,25 @@ function refreshVisibleFolders()
                     html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
                 });
 
+                // Handle current folder selection - step1
+                var selectionFolderId = -1;
+                if ($('#div_formulaire_edition_item').is(':visible') === true) {
+                    selectionFolderId = $("#edit_categorie option:selected").val();
+                } else if ($('#div_formulaire_saisi').is(':visible') === true) {
+                    selectionFolderId = $("#categorie option:selected").val();
+                }
+                
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
                 $("#move_folder_id").find('option').remove().end().append(html_full_visible);
                 $("#copy_in_folder").find('option').remove().end().append(html_active_visible);
+
+                // Handle current folder selection - step2
+                if ($('#div_formulaire_edition_item').is(':visible') === true && selectionFolderId !== -1) {
+                    $("#edit_categorie").val(selectionFolderId).change();
+                } else if ($('#div_formulaire_saisi').is(':visible') === true && selectionFolderId !== -1) {
+                    $("#categorie").val(selectionFolderId).change();
+                }
 
                 // remove ROOT option if exists
                 $('#edit_folder_folder option[value="0"]').remove();

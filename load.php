@@ -258,7 +258,7 @@ $htmlHeaders .= '
                 // Handle if DUOSecurity is enabled
                 if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
                     startAgsesAuth();
-                } else if (user2FaMethod !== "duo") {// || $("#login").val() === "admin"
+                } else if (user2FaMethod !== "duo" || ($("#login").val() === "admin" && fa_methods[0].admin_2fa_required === "0")) {
                     identifyUser(redirect, psk, data, randomstring);
                 } else {
                     // Handle if DUOSecurity is enabled
