@@ -76,24 +76,63 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_date = filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING);
 
             //Prepare the PDF file
-            include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
-            $pdf = new TFPDF();
+            include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tcpdf.php';
 
-            //Add font for utf-8
-            $pdf->AddFont('helvetica', '');
-            $pdf->aliasNbPages();
-            $pdf->addPage();
-            $pdf->SetFont('helvetica', '', 16);
-            $pdf->Cell(0, 10, $LANG['pdf_del_title'], 0, 1, 'C', false);
-            $pdf->SetFont('helvetica', '', 12);
-            $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time()), 0, 1, 'C', false);
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->SetFillColor(15, 86, 145);
-            $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", true);
-            $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", true);
-            $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", true);
-            $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", true);
-            $pdf->SetFont('helvetica', '', 10);
+            $pdf = new TCPDF("P", "mm", "A4", true, 'UTF-8', false);
+
+            $pdf->SetCreator($_SESSION['name'].' '.$_SESSION['lastname']);
+            $pdf->SetAuthor('Teampass');
+            $pdf->SetTitle('Passwords renewal');
+
+            $pdf->SetHeaderData(
+                '',
+                '',
+                'Teampass - Passwords renewal',
+                $LANG['pdf_del_date'].' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time())
+                .' '.$LANG['by'].' '.$_SESSION['name'].' '.$_SESSION['lastname']
+                .' ('.$_SESSION['login'].')'
+            );
+
+            // set header and footer fonts
+            $pdf->setHeaderFont(array('helvetica', '', 10));
+            $pdf->setFooterFont(array('helvetica', '', 8));
+
+            // set default monospaced font
+            $pdf->SetDefaultMonospacedFont('courier');
+
+            // set margins
+            $pdf->SetMargins(15, 27, 15);
+            $pdf->SetHeaderMargin(5);
+            $pdf->SetFooterMargin(10);
+
+            // set auto page breaks
+            $pdf->SetAutoPageBreak(true, 25);
+
+            // set default font subsetting mode
+            $pdf->setFontSubsetting(true);
+
+            // Set page format
+            @$pdf->addPage();
+
+            // Set Font
+            $pdf->SetFont('freeserif', '', 8);
+
+            $labelHeader = $LANG['label'];
+            $groupHeader = $LANG['group'];
+            $dateHeader = $LANG['date'];
+            $authorHeader = $LANG['author'];
+
+            // Prepare table
+            $tbl = <<<EOD
+<table border="1" cellpadding="2" cellspacing="0" width="100%">
+    <tr style="background-color:#2b446b;color:#e8ebef;">
+        <td width="40%" align="center"><b>{$labelHeader}</b></td>
+        <td width="35%" align="center"><b>{$groupHeader}</b></td>
+        <td width="10%" align="center"><b>{$dateHeader}</b></td>
+        <td width="15%" align="center"><b>{$authorHeader}</b></td>
+    </tr>
+EOD;
 
             $rows = DB::query(
                 "SELECT u.login as login, i.label as label, i.id_tree as id_tree, l.date
@@ -116,18 +155,37 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             $arboTxt .= " > ".$elem->title;
                         }
                     }
-                    $pdf->cell(80, 6, $record['label'], 1, 0, "L");
-                    $pdf->cell(75, 6, $arboTxt, 1, 0, "L");
-                    $pdf->cell(21, 6, $post_date, 1, 0, "C");
-                    $pdf->cell(15, 6, $record['login'], 1, 1, "C");
+                    $label = htmlspecialchars($record['label']);
+                    $folder = htmlspecialchars($arboTxt);
+                    $login = htmlspecialchars(($record['login']));
+                    $date = htmlspecialchars($post_date);
+                    $tbl .= <<<EOD
+<tr>
+    <td width="40%" align="center">{$label}</td>
+    <td width="35%" align="center">{$folder}</td>
+    <td width="10%" align="center">{$date}</td>
+    <td width="15%" align="center">{$login}</td>
+</tr>
+EOD;
                 }
             }
-            list($d, $m, $y) = explode('/', filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING));
-            $nomFichier = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y)).".pdf";
-            //send the file
-            $pdf->Output($SETTINGS['path_to_files_folder'].'/'.$nomFichier);
+            // Finalize with last table
+            $tbl .= <<<EOD
+</table>
+EOD;
+            $pdf->writeHTML($tbl, true, false, false, false, '');
 
-            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+            // Prepare file name
+            list($d, $m, $y) = explode('/', filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING));
+            $pdf_file = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y))."_".generateKey().".pdf";
+
+            // Clean any content of the output buffer
+            ob_end_clean();
+
+            //send the file
+            $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdf_file, 'F');
+
+            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
             break;
 
         /**

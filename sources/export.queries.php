@@ -224,7 +224,7 @@ if (null !== $post_type) {
                 $pdf = new TCPDF("L", "mm", "A4", true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $post_pdf_password);
 
-                $pdf->SetCreator('TCPDF');
+                $pdf->SetCreator($_SESSION['name'].' '.$_SESSION['lastname']);
                 $pdf->SetAuthor('Teampass');
                 $pdf->SetTitle('Export');
 
@@ -290,7 +290,7 @@ EOD;
                         }
 
                         $tbl = <<<EOD
-<table border="1" cellpadding="2" cellspacing="0">
+<table border="1" cellpadding="2" cellspacing="0" width="100%">
 <tr style="background-color:#2b446b;color:#e8ebef;">
     <td width="100%" align="left" colspan="8"><b>{$path}</b></td>
 </tr>
@@ -324,14 +324,14 @@ EOD;
 
                     $tbl .= <<<EOD
 <tr>
-    <td width="15%" align="center"><b>{$label}</b></td>
-    <td width="11%" align="center"><b>{$login}</b></td>
-    <td width="11%" align="center"><b>{$pw}</b></td>
-    <td width="22%" align="center"><b>{$description}</b></td>
-    <td width="10%" align="center"><b>{$email}</b></td>
-    <td width="15%" align="center"><b>{$url}</b></td>
-    <td width="8%" align="center"><b>{$kbs}</b></td>
-    <td width="8%" align="center"><b>{$tags}</b></td>
+    <td width="15%" align="center">{$label}</td>
+    <td width="11%" align="center">{$login}</td>
+    <td width="11%" align="center">{$pw}</td>
+    <td width="22%" align="center">{$description}</td>
+    <td width="10%" align="center">{$email}</td>
+    <td width="15%" align="center">{$url}</td>
+    <td width="8%" align="center">{$kbs}</td>
+    <td width="8%" align="center">{$tags}</td>
 </tr>
 EOD;
                 }
@@ -341,23 +341,7 @@ EOD;
 </table>
 EOD;
                 $pdf->writeHTML($tbl, true, false, false, false, '');
-                
-/*
-                $pdfContent = <<<EOD
-<table border="1" cellpadding="2" cellspacing="0" nobr="true">
-{$tbl}
-</table>
-EOD;
 
-                $pdf->writeHTML(
-                    $tbl,
-                    true,
-                    false,
-                    false,
-                    false,
-                    ''
-                );
-        */        
                 $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')))."_".generateKey().".pdf";
                 
                 // Clean any content of the output buffer
