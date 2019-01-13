@@ -91,7 +91,7 @@ function loadTable(table_id, extra)
                 $("#t_errors_page input").focus();
             }
         });
-    } else if (table_id == "t_access") {
+    /*} else if (table_id == "t_access") {
         $("#type_log_displayed").val("access_logs");
         oTable2 = $("#t_access").dataTable({
             "aaSorting": [[ 0, "desc" ]],
@@ -107,7 +107,7 @@ function loadTable(table_id, extra)
             "fnInitComplete": function() {
                 $("#t_access_page input").focus();
             }
-        });
+        });*/
     } else if (table_id == "t_copy") {
         $("#type_log_displayed").val("copy_logs");
         oTable3 = $("#t_copy").dataTable({
@@ -208,7 +208,7 @@ $(function() {
         dateFormat : 'dd/mm/yy'
     });
 
-    $("#div_dialog_message").dialog({
+    /*$("#div_dialog_message").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
@@ -233,7 +233,7 @@ $(function() {
                 $(this).dialog("close");
             }
         }
-    });
+    });*/
 
     /*
     * PURGE
@@ -311,7 +311,7 @@ $(function() {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-
+console.log(data);
             $('#users_table_selection').append(data.users_list_from);
         }
     );

@@ -384,41 +384,107 @@ EOD;
             $post_text = explode(';', filter_input(INPUT_POST, 'text', FILTER_SANITIZE_STRING));
 
             //Prepare the PDF file
-            include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
-            $pdf = new tFPDF();
+            include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tcpdf.php';
 
-            //Add font for utf-8
-            $pdf->AddFont('helvetica', '');
+            $pdf = new TCPDF("P", "mm", "A4", true, 'UTF-8', false);
 
-            $pdf->aliasNbPages();
-            $pdf->addPage();
-            $pdf->SetFont('helvetica', '', 16);
-            $pdf->Cell(0, 10, $LANG['renewal_needed_pdf_title'], 0, 1, 'C', false);
-            $pdf->SetFont('helvetica', '', 12);
-            $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time()), 0, 1, 'C', false);
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->SetFillColor(192, 192, 192);
-            $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", true);
-            $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", true);
-            $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", true);
-            $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", true);
-            $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", true);
-            $pdf->SetFont('helvetica', '', 9);
+            $pdf->SetCreator($_SESSION['name'].' '.$_SESSION['lastname']);
+            $pdf->SetAuthor('Teampass');
+            $pdf->SetTitle('Passwords renewal');
+
+            $pdf->SetHeaderData(
+                '',
+                '',
+                'Teampass - ' . $LANG['renewal_needed_pdf_title'],
+                $LANG['pdf_del_date'].' '.
+                date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time())
+                .' '.$LANG['by'].' '.$_SESSION['name'].' '.$_SESSION['lastname']
+                .' ('.$_SESSION['login'].')'
+            );
+
+            // set header and footer fonts
+            $pdf->setHeaderFont(array('helvetica', '', 10));
+            $pdf->setFooterFont(array('helvetica', '', 8));
+
+            // set default monospaced font
+            $pdf->SetDefaultMonospacedFont('courier');
+
+            // set margins
+            $pdf->SetMargins(15, 27, 15);
+            $pdf->SetHeaderMargin(5);
+            $pdf->SetFooterMargin(10);
+
+            // set auto page breaks
+            $pdf->SetAutoPageBreak(true, 25);
+
+            // set default font subsetting mode
+            $pdf->setFontSubsetting(true);
+
+            // Set page format
+            @$pdf->addPage();
+
+            // Set Font
+            $pdf->SetFont('freeserif', '', 8);
+
+            $labelHeader = $LANG['label'];
+            $creationHeader = $LANG['creation_date'];
+            $expirationHeader = $LANG['expiration_date'];
+            $groupHeader = $LANG['group'];
+            $authorHeader = $LANG['author'];
+
+            // Prepare table
+            $tbl = <<<EOD
+<table border="1" cellpadding="2" cellspacing="0" width="100%">
+    <tr style="background-color:#2b446b;color:#e8ebef;">
+        <td width="30%" align="center"><b>{$labelHeader}</b></td>
+        <td width="15%" align="center"><b>{$creationHeader}</b></td>
+        <td width="15%" align="center"><b>{$expirationHeader}</b></td>
+        <td width="25%" align="center"><b>{$groupHeader}</b></td>
+        <td width="15%" align="center"><b>{$authorHeader}</b></td>
+    </tr>
+EOD;
 
             foreach (explode('@|@', addslashes($post_text)) as $line) {
                 $elem = explode('@;@', $line);
-                if (!empty($elem[0])) {
+                if (empty($elem[0]) === false) {
                     $pdf->cell(70, 6, $elem[0], 1, 0, "L");
                     $pdf->cell(25, 6, $elem[1], 1, 0, "C");
                     $pdf->cell(25, 6, $elem[2], 1, 0, "C");
                     $pdf->cell(45, 6, $elem[3], 1, 0, "C");
                     $pdf->cell(25, 6, $elem[4], 1, 1, "C");
+
+                    $label = htmlspecialchars($elem[0]);
+                    $creation = htmlspecialchars($elem[1]);
+                    $expiration = htmlspecialchars($elem[2]);
+                    $folder = htmlspecialchars($elem[3]);
+                    $author = htmlspecialchars($elem[4]);
+                    $tbl .= <<<EOD
+<tr>
+    <td width="30%" align="center">{$label}</td>
+    <td width="15%" align="center">{$creation}</td>
+    <td width="15%" align="center">{$expiration}</td>
+    <td width="25%" align="center">{$folder}</td>
+    <td width="15%" align="center">{$author}</td>
+</tr>
+EOD;
                 }
             }
+            
+            // Finalize with last table
+            $tbl .= <<<EOD
+</table>
+EOD;
+            $pdf->writeHTML($tbl, true, false, false, false, '');
 
-            $pdfFile = "renewal_pdf_".date("Y-m-d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).".pdf";
+            // Prepare file name
+            list($d, $m, $y) = explode('/', filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING));
+            $pdf_file = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y))."_".generateKey().".pdf";
+
+            // Clean any content of the output buffer
+            ob_end_clean();
+
             //send the file
-            $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdfFile);
+            $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdf_file, 'F');
 
             echo '[{"file" : "'.$SETTINGS['url_to_files_folder'].'/'.$pdfFile.'"}]';
             break;

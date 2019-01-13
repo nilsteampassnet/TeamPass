@@ -622,7 +622,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
     $iTotal = DB::count();
@@ -641,7 +642,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
     $iFilteredTotal = DB::count();

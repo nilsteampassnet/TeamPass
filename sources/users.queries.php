@@ -1551,16 +1551,15 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $list_users_from .= '<option id="share_from-'.$record['id'].'" data-id="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
                 $list_users_to .= '<option id="share_to-'.$record['id'].'" data-id="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
             }
-
-            $return_values = prepareExchangedData(
+            
+            echo prepareExchangedData(
                 array(
-                    'users_list_from' => $list_users_from,
-                    'users_list_to' => $list_users_to,
+                    'users_list_from' => utf8_decode($list_users_from),
+                    'users_list_to' => utf8_decode($list_users_to),
                     'error' => ''
                 ),
                 "encode"
             );
-            echo $return_values;
 
             break;
 
