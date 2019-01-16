@@ -12,7 +12,7 @@
 global $SETTINGS, $languagesList, $SETTINGS_EXT;
 
 $SETTINGS_EXT['version'] = "2.1.27";
-$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".33";
+$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".34";
 $SETTINGS_EXT['tool_name'] = "TeamPass";
 $SETTINGS_EXT['one_day_seconds'] = 86400;
 $SETTINGS_EXT['one_week_seconds'] = 604800;
