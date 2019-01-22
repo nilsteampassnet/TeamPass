@@ -139,7 +139,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
                             $SETTIGNS,
                             $data['item_id'],
                             $dataItem['label'],
-                            OTV_USER_ID,
+                            (int) OTV_USER_ID,
                             'at_delete',
                             'otv',
                             'at_automatically_deleted'
