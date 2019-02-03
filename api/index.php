@@ -4,7 +4,7 @@
  * @package       (api)index.php
  * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.0
- * @copyright     2009-2018 Nils Laumaillé
+ * @copyright     2009-2019 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link		   * @package       
  *

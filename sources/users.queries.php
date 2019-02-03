@@ -4,7 +4,7 @@
  * @package       users.queries.php
  * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
+ * @copyright     2009-2019 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link         * @package       
  *
@@ -1554,8 +1554,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             
             echo prepareExchangedData(
                 array(
-                    'users_list_from' => utf8_decode($list_users_from),
-                    'users_list_to' => utf8_decode($list_users_to),
+                    'users_list_from' => cleanText($list_users_from),
+                    'users_list_to' => cleanText($list_users_to),
                     'error' => ''
                 ),
                 "encode"
