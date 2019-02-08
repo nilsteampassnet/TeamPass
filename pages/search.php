@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -85,7 +85,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title" id="search-select">&nbsp;</h3>
+                    <h3 class="card-title mr-2" id="search-select"></h3>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">

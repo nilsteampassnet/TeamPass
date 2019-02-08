@@ -9,14 +9,13 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
 *
  * @version   GIT: <git_id>
  *
  * @see      http://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] !== 1) {
@@ -52,12 +51,12 @@ $adldap = '';
 // If Debug then clean the files
 if (DEBUGLDAP === true) {
     define('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'].'/ldap.debug.txt');
-    $fp = fopen(DEBUGLDAPFILE, "w");
+    $fp = fopen(DEBUGLDAPFILE, 'w');
     fclose($fp);
 }
 if (DEBUGDUO === true) {
     define('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'].'/duo.debug.txt');
-    $fp = fopen(DEBUGDUOFILE, "w");
+    $fp = fopen(DEBUGDUOFILE, 'w');
     fclose($fp);
 }
 
@@ -157,6 +156,9 @@ if ($post_type === 'identify_duo_user') {
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
 
+                    // Generate user keys pair
+                    $userKeys = generateUserKeys();
+
                     // save an account in database
                     DB::insert(
                         prefixTable('users'),
@@ -177,6 +179,8 @@ if ($post_type === 'identify_duo_user') {
                             'user_language' => $SETTINGS['default_language'],
                             'encrypted_psk' => '',
                             'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                            'public_key' => $userKeys['public_key'],
+                            'private_key' => $userKeys['private_key'],
                         )
                     );
                     $newUserId = DB::insertId();
@@ -205,7 +209,7 @@ if ($post_type === 'identify_duo_user') {
     //--------
     //-- AUTHENTICATION WITH AGSES
     //--------
-    
+
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
@@ -614,6 +618,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('error_bad_credentials'),
                     )
                 );
+
                 return;
             } else {
                 $ldapConnection = true;
@@ -643,6 +648,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('error_bad_credentials'),
                     )
                 );
+
                 return;
             } else {
                 $auth_username = $ret['auth_username'];
@@ -1009,7 +1015,7 @@ function identifyUser($sentData, $SETTINGS)
             $_SESSION['user_settings']['api-key'] = $data['user_api_key'];
 
             // manage session expiration
-            $_SESSION['fin_session'] = (int) (time() + $_SESSION['user_settings']['session_duration']);
+            $_SESSION['sessionDuration'] = (int) (time() + $_SESSION['user_settings']['session_duration']);
 
             /*
             * CHECK PASSWORD VALIDITY
@@ -1110,17 +1116,39 @@ function identifyUser($sentData, $SETTINGS)
             // Set some settings
             $_SESSION['user']['find_cookie'] = false;
             $SETTINGS['update_needed'] = '';
+
+            // User signature keys
+            $_SESSION['user']['public_key'] = $data['public_key'];
+            if (is_null($data['private_key']) === true || empty($data['private_key']) === true) {
+                // No keys have been generated yet
+                // Create them
+                $userKeys = generateUserKeys($passwordClear);
+                $_SESSION['user']['public_key'] = $userKeys['public_key'];
+                $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
+                $arrayUserKeys = array(
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                );
+            } else {
+                // Uncrypt private key
+                $_SESSION['user']['private_key'] = decryptPrivateKey($passwordClear, $data['private_key']);
+                $arrayUserKeys = [];
+            }
+
             // Update table
             DB::update(
                 prefixTable('users'),
-                array(
-                    'key_tempo' => $_SESSION['key'],
-                    'last_connexion' => time(),
-                    'timestamp' => time(),
-                    'disabled' => 0,
-                    'no_bad_attempts' => 0,
-                    'session_end' => $_SESSION['fin_session'],
-                    'user_ip' => $dataReceived['client'],
+                array_merge(
+                    array(
+                        'key_tempo' => $_SESSION['key'],
+                        'last_connexion' => time(),
+                        'timestamp' => time(),
+                        'disabled' => 0,
+                        'no_bad_attempts' => 0,
+                        'session_end' => $_SESSION['sessionDuration'],
+                        'user_ip' => $dataReceived['client'],
+                    ),
+                    $arrayUserKeys
                 ),
                 'id=%i',
                 $data['id']
@@ -1890,6 +1918,10 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
  */
 function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
 {
+    // Generate user keys pair
+    $userKeys = generateUserKeys();
+
+    // Insert user in DB
     DB::insert(
         prefixTable('users'),
         array(
@@ -1909,6 +1941,8 @@ function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
             'user_language' => $SETTINGS['default_language'],
             'encrypted_psk' => '',
             'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+            'public_key' => $userKeys['public_key'],
+            'private_key' => $userKeys['private_key'],
         )
     );
     $newUserId = DB::insertId();
@@ -1963,7 +1997,7 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 
         // Init
         $firstTime = array();
-        
+
         // now check if it is the 1st time the user is using 2FA
         if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
             if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
@@ -1974,7 +2008,7 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
                     'mfaStatus' => '',
                 );
             }
-            
+
             // If first time with MFA code
             $proceedIdentification = false;
             $mfaStatus = 'ga_temporary_code_correct';
@@ -2114,13 +2148,11 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
  * @param bool   $enabled text1
  * @param string $dbgFile text2
  * @param string $text    text3
- *
- * @return void
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {
     if ($enabled === true) {
-        $fp = fopen($dbgFile, "a");
+        $fp = fopen($dbgFile, 'a');
         fwrite(
             $fp,
             $text

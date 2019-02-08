@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>

@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -169,8 +169,6 @@ if (empty($sessionTreeStructure) === true
  * @param array $listRestrictedFoldersForItemsKeys Restricted
  * @param array $tree                              The tree
  * @param array $SETTINGS                          Teampass settings
- *
- * @return void
  */
 function buildNodeTree(
     $nodeId,
@@ -272,12 +270,12 @@ function buildNodeTree(
 
                 if (in_array($node->id, $session_groupes_visibles)) {
                     if (in_array($node->id, $session_read_only_folders)) {
-                        $text = "<i class='far fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
                         $title = langHdl('read_only_account');
                         $restricted = 1;
                         $folderClass = 'folder_not_droppable';
                     } elseif ($_SESSION['user_read_only'] === true && !in_array($node->id, $session_personal_visible_groups)) {
-                        $text = "<i class='far fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.$itemsNb.'</span>';
                     // display tree counters
@@ -288,13 +286,13 @@ function buildNodeTree(
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='far fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_folders_limited[$node->id]).'</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='far fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_restricted_folders_for_items[$node->id]).'</span>';
                 } else {
@@ -475,14 +473,14 @@ function recursiveTree(
 
             if (in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true) {
                 if (in_array($completTree[$nodeId]->id, $session_read_only_folders) === true) {
-                    $text = "<i class='far fa-eye mr-1'></i>".$text;
+                    $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                     $title = langHdl('read_only_account');
                     $restricted = 1;
                     $folderClass = 'folder_not_droppable';
                 } elseif ($session_user_read_only === true
                     && in_array($completTree[$nodeId]->id, $_SESSION['personal_visible_groups']) === false
                 ) {
-                    $text = "<i class='far fa-eye mr-1'></i>".$text;
+                    $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.$itemsNb.'</span>';
                 // display tree counters
@@ -495,13 +493,13 @@ function recursiveTree(
             } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true) {
                 $restricted = '1';
                 if ($session_user_read_only === true) {
-                    $text = "<i class='far fa-eye mr-1'></i>".$text;
+                    $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($session_list_folders_limited[$completTree[$nodeId]->id]).'</span>)';
             } elseif (in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true) {
                 $restricted = '1';
                 if ($_SESSION['user_read_only'] === true) {
-                    $text = "<i class='far fa-eye mr-1'></i>".$text;
+                    $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($_SESSION['list_restricted_folders_for_items'][$completTree[$nodeId]->id]).'</span>)';
             } else {
@@ -577,13 +575,6 @@ function recursiveTree(
                         ),
                     )
                 );
-            /*$ret_json .= (!empty($ret_json) ? ', ' : '').'{'.
-                '"id":"li_'.$completTree[$nodeId]->id.'"'.
-                ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.
-                ', "text":"'.str_replace('"', '&quot;', $text).'"'.
-                ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
-                ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0, 1)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')", "data-title":"'.str_replace('"', '&quot;', $completTree[$nodeId]->title).'"}'.
-            '}';*/
             } elseif ($show_but_block === true) {
                 array_push(
                     $ret_json,
@@ -597,12 +588,6 @@ function recursiveTree(
                         ),
                     )
                 );
-                /*$ret_json .= (!empty($ret_json) ? ', ' : '').'{'.
-                    '"id":"li_'.$completTree[$nodeId]->id.'"'.
-                    ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.
-                    ', "text":"<i class=\'fa fa-close mi-red\'></i>&nbsp;'.str_replace('"', '&quot;', $text).'"'.
-                    ', "li_attr":{"class":"", "title":"ID ['.$completTree[$nodeId]->id.'] '.langHdl('no_access').'"}'.
-                '}';*/
             }
             foreach ($completTree[$nodeId]->children as $child) {
                 recursiveTree(

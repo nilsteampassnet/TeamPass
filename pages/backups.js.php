@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -178,7 +178,7 @@ var restoreOperationId = '',
         multiple_queues : false,
         multi_selection : false,
         max_file_count : 1,
-        url : "sources/upload/upload.files.php",
+        url : "sources/upload.files.php",
         flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
         silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
         filters : [

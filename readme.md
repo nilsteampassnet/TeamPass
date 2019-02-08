@@ -6,7 +6,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2018, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2019, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -91,11 +91,9 @@ Languages strings are managed at [POEditor.com](https://poeditor.com/projects/vi
 
 ## Licence Agreement
 
-Before installing and using TeamPass, you must accept its licence defined as GNU AFFERO GPL.
+Licence defined as GNU General Public License v3.0 only.
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 [Read Licence](license.md)
 
@@ -105,7 +103,7 @@ Visit [Teampass.net]( * @package       /)
 
 ## Bugs
 
-If you discover bugs, please report them in [GitHub Issues](https://github.com/nilsteampassnet/TeamPass/issues).
+If you discover bugs, please report them in [Gitlab Issues](https://gitlab.com/NilsLaumaille/teampass-v3/issues).
 
 ## Requests
 

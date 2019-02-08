@@ -253,12 +253,16 @@ if (isset($_GET['type']) === false) {
                     $role,
                     $record['id_tree']
                 );
-                if ($access['type'] == 'R') {
+                if ($access['type'] === 'R') {
                     array_push($arrTmp, 1);
-                } elseif ($access['type'] == 'W') {
+                } elseif ($access['type'] === 'W') {
                     array_push($arrTmp, 0);
-                } else {
+                } elseif ($access['type'] === 'ND') {
                     array_push($arrTmp, 2);
+                } elseif ($access['type'] === 'NE') {
+                    array_push($arrTmp, 1);
+                } elseif ($access['type'] === 'NDNE') {
+                    array_push($arrTmp, 1);
                 }
             }
             $accessLevel = min($arrTmp);
@@ -382,21 +386,34 @@ if (isset($_GET['type']) === false) {
     foreach ($rows as $record) {
         $displayItem = false;
 
-        $arr_data[$record['id']]['item_id'] = $record['id'];
-        $arr_data[$record['id']]['tree_id'] = $record['id_tree'];
+        $arr_data[$record['id']]['item_id'] = (int) $record['id'];
+        $arr_data[$record['id']]['tree_id'] = (int) $record['id_tree'];
         $arr_data[$record['id']]['label'] = $record['label'];
         $arr_data[$record['id']]['desc'] = strip_tags(explode('<br>', $record['description'])[0]);
         $arr_data[$record['id']]['folder'] = $record['folder'];
         $arr_data[$record['id']]['login'] = strtr($record['login'], '"', '&quot;');
-        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons'])
-            ? intval($SETTINGS['copy_to_clipboard_small_icons']) : 0;
-        $arr_data[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites'])
-            ? intval($SETTINGS['enable_favourites']) : 0;
-        $arr_data[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify'])
-            ? intval($SETTINGS['anyone_can_modify']) : 0;
+
+        // Is favorite?
+        if (in_array($record['id'], $_SESSION['favourites']) === true) {
+            $arr_data[$record['id']]['enable_favourites'] = 1;
+        } else {
+            $arr_data[$record['id']]['enable_favourites'] = 0;
+        }
+
+        // Anyone can modify?
+        $tmp = DB::queryfirstrow(
+            'SELECT anyone_can_modify FROM '.prefixTable('items').' WHERE id = %i',
+            $record['id']
+        );
+        if (count($tmp) > 0) {
+            $arr_data[$record['id']]['anyone_can_modify'] = (int) $tmp['anyone_can_modify'];
+        } else {
+            $arr_data[$record['id']]['anyone_can_modify'] = 0;
+        }
+
         $arr_data[$record['id']]['is_result_of_search'] = 1;
 
-        if ($SETTINGS['activate_expiration'] === '1') {
+        if ((int) $SETTINGS['activate_expiration'] === 1) {
             if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
@@ -447,85 +464,152 @@ if (isset($_GET['type']) === false) {
 
         $arr_data[$record['id']]['restricted'] = $restrictedTo;
 
-        // CASE where item is restricted to a role to which the user is not associated
-        if (isset($user_is_included_in_role) === true
-            && $user_is_included_in_role == 0
-            && isset($item_is_restricted_to_role) === true
-            && $item_is_restricted_to_role == 1
-            && in_array($_SESSION['user_id'], $restricted_users_array) === false
-        ) {
-            // $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
-            $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
-            $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = 'no_display';
-            $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = '';
+        /*************** */
+        $right = 0;
+        // Possible values:
+        // 0 -> no access to item
+        // 10 -> appears in list but no view
+        // 20 -> can view without edit (no copy) or move
+        // 30 -> can view without edit (no copy) but can move
+        // 40 -> can edit but not move
+        // 50 -> can edit and move
+        $itemIsPersonal = false;
 
-        // Case where item is in own personal folder
-        } elseif (in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
-            && $record['perso'] == 1
+        // Let's identify the rights belonging to this ITEM
+        if ((int) $record['perso'] === 1
+            && $record('log_action') === 'at_creation'
+            && $record('log_user') === $_SESSION['user_id']
+            && (int) $folder_is_in_personal === 1
+            && (int) $folder_is_personal === 1
         ) {
-            $arr_data[$record['id']]['perso'] = 'fa-warning mi-red';
-            $arr_data[$record['id']]['sk'] = 1;
-            $arr_data[$record['id']]['display'] = '';
-            $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = '';
+            // Case 1 - Is this item personal and user its owner?
+            // If yes then allow
+            // If no then continue
+            $itemIsPersonal = true;
+            $right = 70;
 
-        // CAse where item is restricted to a group of users included user
+        // ----- END CASE 1 -----
+        } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
+            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+            && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
+            && $record['perso'] !== 1
+        ) {
+            // Case 2 - Is user manager and option "manager_edit" set to true?
+            // Allow all rights
+            $right = 70;
+
+        // ----- END CASE 3 -----
         } elseif (empty($record['restricted_to']) === false
-            && in_array($_SESSION['user_id'], $restricted_users_array) === true
-            || (isset($_SESSION['list_folders_editable_by_role']) === true
-            && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']) === true)
-            && in_array($_SESSION['user_id'], $restricted_users_array) === true
+            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
+            && $record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] !== 1
         ) {
-            $arr_data[$record['id']]['perso'] = 'fa-tag mi-yellow';
-            $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = '';
-            $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = '';
+            // Case 4 - Is this item limited to Users? Is current user in this list?
+            // Allow all rights
+            $right = 70;
 
-        // CAse where item is restricted to a group of users not including user
-        } elseif ($record['perso'] == 1
-            ||
-            (
-                empty($record['restricted_to']) === false
-                && in_array($_SESSION['user_id'], $restricted_users_array) === false
-            )
-            ||
-            (
-                isset($user_is_included_in_role) === true
-                && isset($item_is_restricted_to_role) === true
-                && $user_is_included_in_role == 0
-                && $item_is_restricted_to_role == 1
-            )
+        // ----- END CASE 4 -----
+        } elseif ($user_is_included_in_role === true
+            && $record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] !== 1
         ) {
-            if (isset($user_is_included_in_role)
-                && isset($item_is_restricted_to_role)
-                && $user_is_included_in_role == 0
-                && $item_is_restricted_to_role == 1
-            ) {
-                $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
-                $arr_data[$record['id']]['sk'] = 0;
-                $arr_data[$record['id']]['display'] = 'no_display';
-                $arr_data[$record['id']]['open_edit'] = 1;
-                $arr_data[$record['id']]['reload'] = '';
-                $displayItem = true;
-            } else {
-                $arr_data[$record['id']]['perso'] = 'fa-tag mi-yellow';
-                $arr_data[$record['id']]['sk'] = 0;
-                $arr_data[$record['id']]['display'] = '';
-                $arr_data[$record['id']]['open_edit'] = 1;
-                $arr_data[$record['id']]['reload'] = '';
-                $displayItem = true;
-            }
+            // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
+            // Allow all rights
+            $right = 60;
+
+        // ----- END CASE 5 -----
+        } elseif ($record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] === 1
+        ) {
+            // Case 6 - Is user readonly?
+            // Allow limited rights
+            $right = 10;
+
+        // ----- END CASE 6 -----
+        } elseif ($record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] === 1
+        ) {
+            // Case 7 - Is user readonly?
+            // Allow limited rights
+            $right = 10;
+
+        // ----- END CASE 7 -----
+        } elseif ($record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] === 1
+        ) {
+            // Case 8 - Is user allowed to access?
+            // Allow rights
+            $right = 10;
+
+        // ----- END CASE 8 -----
+        } elseif (((empty($record['restricted_to']) === false
+            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
+            && $record['perso'] !== 1
+            && (int) $_SESSION['user_read_only'] !== 1
+        ) {
+            // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
+            // If no then Allow none
+            $right = 10;
+
+        // ----- END CASE 9 -----
         } else {
-            $arr_data[$record['id']]['perso'] = 'fa-tag mi-green';
-            $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = '';
-            $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = '';
-            $displayItem = true;
+            // Define the access based upon setting on folder
+            // 0 -> no access to item
+            // 10 -> appears in list but no view
+            // 20 -> can view without edit (no copy) or move or delete
+            // 30 -> can view without edit (no copy) or delete but can move
+            // 40 -> can edit but not move and not delete
+            // 50 -> can edit and delete but not move
+            // 60 -> can edit and move but not delete
+            // 70 -> can edit and move
+
+            // check role access on this folder (get the most restrictive) (2.1.23)
+            $accessLevel = 2;
+            $arrTmp = [];
+
+            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                $access = DB::queryFirstRow(
+                    'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
+                    $role,
+                    $record['id_tree']
+                );
+                if ($access['type'] === 'R') {
+                    array_push($arrTmp, 1);
+                } elseif ($access['type'] === 'W') {
+                    array_push($arrTmp, 0);
+                } elseif ($access['type'] === 'ND') {
+                    array_push($arrTmp, 2);
+                } elseif ($access['type'] === 'NE') {
+                    array_push($arrTmp, 1);
+                } elseif ($access['type'] === 'NDNE') {
+                    array_push($arrTmp, 1);
+                }
+            }
+            $accessLevel = min($arrTmp);
+
+            if ($accessLevel === 0) {
+                $right = 70;
+            } elseif ($accessLevel === 1) {
+                $right = 20;
+            } elseif ($accessLevel === 2) {
+                $right = 60;
+            } elseif ($accessLevel === 3) {
+                $right = 70;
+            } else {
+                $right = 10;
+            }
         }
+
+        // Now finalize the data to send back
+        $arr_data[$record['id']]['rights'] = $right;
+        $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
+        $arr_data[$record['id']]['sk'] = $itemIsPersonal === true ? 1 : 0;
+        $arr_data[$record['id']]['display'] = $right > 0 ? 1 : 0;
+        $arr_data[$record['id']]['open_edit'] = in_array($right, array(40, 50, 60, 70)) === true ? 1 : 0;
+        $arr_data[$record['id']]['canMove'] = in_array($right, array(30, 60, 70)) === true ? 1 : 0;
+
+        //*************** */
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
@@ -553,15 +637,13 @@ if (isset($_GET['type']) === false) {
             }
 
             // test charset => may cause a json error if is not utf8
-            $pw = $pw['string'];
-            if (isUTF8($pw) === false) {
-                $pw = '';
+            if (empty($pw['string']) === true) {
+                $arr_data[$record['id']]['pw_status'] = 'pw_is_empty';
+            } elseif (isUTF8($pw['string']) === false) {
                 $arr_data[$record['id']]['pw_status'] = 'encryption_error';
             }
-        } else {
-            $pw = '';
         }
-        $arr_data[$record['id']]['pw'] = strtr($pw, '"', '&quot;');
+        //$arr_data[$record['id']]['pw'] = strtr($pw, '"', '&quot;');
         if (in_array($record['id'], $_SESSION['favourites'])) {
             $arr_data[$record['id']]['is_favorite'] = 1;
         } else {

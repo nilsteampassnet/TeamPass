@@ -88,20 +88,6 @@ function countdown()
     });
 }
 
-/**
-*   Open a dialog
-**/
-function OpenDialog(id){
-    $("#"+id).dialog("open");
-}
-
-
-/**
-*   Checks if value is an integer
-**/
-function isInteger(s) {
-  return (s.toString().search(/^-?[0-9]+$/) === 0);
-}
 
 /**
 *   Generate a random string
@@ -197,30 +183,6 @@ function extractLast( term ) {
 }
 
 
-function storeError(messageError, dialogDiv, textDiv)
-{
-    //Store error in DB
-    $.post(
-        "sources/main.queries.php",
-        {
-            type    : "store_error",
-            error   : escape(messageError)
-        }
-    );
-    //Display    
-    var pre = document.createElement('pre');
-    //custom style.
-    pre.style.maxHeight = "400px";
-    pre.style.margin = "0";
-    pre.style.padding = "24px";
-    pre.style.whiteSpace = "pre-wrap";
-    pre.style.textAlign = "justify";
-    pre.appendChild(document.createTextNode(
-        "An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+messageError
-    ));
-    //show as confirm
-    alertify.alert().set({labels:{ok:'Accept', cancel: 'Decline'}, padding: false});
-}
 
 /**
  * [aesEncrypt description]

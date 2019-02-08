@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -109,7 +109,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'id' : $(item).data('id'),
             'folder_id' : $(item).data('tree-id'),
             'salt_key_required' : $(item).data('perso'),
-            'salt_key_set' : $('#personal_saltkey_set').val(),
+            'salt_key_set' : store.get('teampassUser').pskSetForSession,
             'expired_item' : $(item).data('expired'),
             'restricted' : $(item).data('restricted-to'),
             'page' : 'find'

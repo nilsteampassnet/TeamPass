@@ -125,9 +125,8 @@ if (isset($_GET['letter']) === true
 }
 
 // enlarge the query in case of Manager
-
-if (isset($_SESSION['is_admin']) === false
-    && isset($_SESSION['user_can_manage_all_users']) === false
+if ((int) $_SESSION['is_admin'] === 0
+    && (int) $_SESSION['user_can_manage_all_users'] === 0
 ) {
     if (empty($sWhere) === true) {
         $sWhere = ' WHERE ';
@@ -154,11 +153,10 @@ $rows = DB::query(
 $iFilteredTotal = DB::count();
 
 // Output
-if ($iTotal == '') {
-    $iTotal = 0;
-}
-$iTotal = 0;
 $sOutput = '{';
+$sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+$sOutput .= '"iTotalRecords": '.$iTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';
 
 if (DB::count() > 0) {
@@ -169,10 +167,9 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
-    if ((int) $_SESSION['is_admin'] === 1 ||
-        ($record['isAdministratedByRole'] > 0 &&
-        in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
-        ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] !== 1 && (int) $record['id'] !== (int) $_SESSION['user_id'])
+    if ((int) $_SESSION['is_admin'] === 1
+        || ($record['isAdministratedByRole'] === 1 && in_array($record['isAdministratedByRole'], $_SESSION['user_roles']))
+        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $_SESSION['user_id'])
     ) {
         $showUserFolders = true;
     } else {
@@ -239,10 +236,10 @@ foreach ($rows as $record) {
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>" , ';
 
         //col3
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['name'])).'</span>", ';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name']).'</span>", ';
 
         //col4
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'</span>", ';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes($record['lastname']).'</span>", ';
 
         //col5 - MANAGED BY
         $txt = '<span id=\"managedby-'.$record['id'].'\" data-id=\"'.$record['id'].'\" data-field=\"isAdministratedByRole\" data-html=\"true\">';
@@ -307,7 +304,4 @@ if (count($rows) > 0) {
     $sOutput .= '[]';
 }
 
-echo $sOutput.', '.
-    '"sEcho": '.intval($_GET['draw']).', '.
-    '"iTotalRecords": '.$iFilteredTotal.', '.
-    '"iTotalDisplayRecords": '.$iTotal.'}';
+echo $sOutput.'}';

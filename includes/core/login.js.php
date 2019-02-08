@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -228,6 +228,11 @@ $('.submit-button').keypress(function(event){
 $('#yubico_key').change(function(event) {
     launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
     event.preventDefault();
+});
+
+
+$(document).on('click', '#register-yubiko-key', function () {
+    $('#yubiko-new-key').removeClass('hidden');
 });
 
 
@@ -494,6 +499,14 @@ function identifyUser(redirect, psk, data, randomstring)
                                     
                                 return false;
                             }
+
+                            store.update(
+                                'teampassUser',
+                                {},
+                                function(teampassUser) {
+                                    teampassUser.sessionDuration = 3600;
+                                }
+                            );
                             
                             //redirection for admin is specific
                             if (parseInt(data.user_admin) === 1) {

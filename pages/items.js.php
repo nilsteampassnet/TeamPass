@@ -112,7 +112,8 @@ $('#jstree').jstree({
             'data' : function (node) {
                 return {
                     'id' : node.id.split('_')[1] ,
-                    'force_refresh' : store.get('teampassApplication') !== undefined ? store.get('teampassApplication').jstreeForceRefresh : 0
+                    'force_refresh' : store.get('teampassApplication') !== undefined ?
+                        store.get('teampassApplication').jstreeForceRefresh : 0
                 };
             }
         },
@@ -199,6 +200,9 @@ location.search.substr(1).split("&").forEach(function(item) {queryDict[item.spli
 if (queryDict['group'] !== undefined && queryDict['group'] !== ''
     && queryDict['id'] !== undefined && queryDict['id'] !== ''
 ) {
+    // Store current view
+    savePreviousView();
+
     // Store the folder to open
     store.set(
         'teampassApplication',
@@ -211,7 +215,7 @@ if (queryDict['group'] !== undefined && queryDict['group'] !== ''
     itemIdToShow = queryDict['id'];
 
     $('.item-details-card').removeClass('hidden');
-    $('#folders-tree-card, #items-list-card').addClass('hidden');
+    $('#folders-tree-card').addClass('hidden');
     
     Details(itemIdToShow, 'show', true);
 
@@ -289,7 +293,7 @@ $('#jstree').height(screenHeight - 200);
 $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
     checkboxClass: 'icheckbox_flat-blue',
     radioClass   : 'iradio_flat-blue'
-})
+});
 
 
 // Manage folders action
@@ -299,7 +303,7 @@ $('.tp-action').click(function() {
         store.update(
             'teampassApplication',
             function (teampassApplication) {
-                teampassApplication.jstreeForceRefresh = 1;
+                teampassApplication.jstreeForceRefresh = 1
             }
         );
         if (selectedFolderId !== '') {
@@ -311,15 +315,32 @@ $('.tp-action').click(function() {
             'teampassApplication',
             function(teampassApplication)
             {
-                teampassApplication.jstreeForceRefresh = 0;
+                teampassApplication.jstreeForceRefresh = 0
             }
         );
+            
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'expand') {
         $('#jstree').jstree('open_all');
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'collapse') {
         $('#jstree').jstree('close_all');
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'add') {
         console.info('SHOW ADD FOLDER');
+
+        // Store current view
+        savePreviousView();
+
+        // Store last
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
@@ -330,9 +351,15 @@ $('.tp-action').click(function() {
             .focus();
         // Set type of action for the form
         $('#form-folder-add').data('action', 'add');
-        // ---
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'edit') {
         console.info('SHOW EDIT FOLDER');
+        // Store current view
+        savePreviousView();
+
         // Show edit form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
@@ -346,9 +373,16 @@ $('.tp-action').click(function() {
         $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
         // Set type of action for the form
         $('#form-folder-add').data('action', 'update');
-        // ---
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'copy') {
         console.info('SHOW COPY FOLDER');
+
+        // Store current view
+        savePreviousView();
+
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-copy').removeClass('hidden');
@@ -360,16 +394,47 @@ $('.tp-action').click(function() {
         $('#form-folder-copy-label')
             .val(store.get('teampassApplication').selectedFolderTitle + ' <?php echo strtolower(langHdl('copy')); ?>')
             .focus();
+
+        //
+        // > END <
+        //
     } else if ($(this).data('folder-action') === 'delete') {
         console.info('SHOW DELETE FOLDER');
+
+        // Store current view
+        savePreviousView();
+
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-delete').removeClass('hidden');
+
         // Prepare some data in the form
         $('#form-folder-delete-selection').val(store.get('teampassApplication').selectedFolder).change();
         $('#form-folder-confirm-delete').iCheck('uncheck');
+
+        //
+        // > END <
+        //
+    } else if ($(this).data('folder-action') === 'import') {
+        // IMPORT ITEMS
+        console.info('SHOW IMPORT ITEMS');
+
+        // Store current view
+        savePreviousView();
+
+        
+        // Show import form
+        $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+        $('.form-folder-import').removeClass('hidden');
+
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'new') {
         console.info('SHOW NEW ITEM');
+
+        // Store current view
+        savePreviousView();
 
         // Remove validated class
         $('#form-item').removeClass('was-validated');
@@ -410,7 +475,7 @@ $('.tp-action').click(function() {
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
             
             // HIde
-            $('#items-list-card, .form-item-copy, #folders-tree-card, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+            $('.form-item-copy, #folders-tree-card, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
                 .addClass('hidden');
             // Destroy editor
             if (itemEditor) itemEditor.destroy();
@@ -451,12 +516,27 @@ $('.tp-action').click(function() {
             $('#pwd-definition-size').val(12);
             // Set type of action
             $('#form-item-button-save').data('action', 'new_item');
+            // Does this folder contain Custom Fields
+            if (store.get('teampassItem').hasCustomCategories.length > 0) {
+                $('#form-item-field').removeClass('hidden');
+                $.each(store.get('teampassItem').hasCustomCategories, function(i, category) {
+                    $('#form-item-category-' + category).removeClass('hidden');
+                })
+            } else {
+                $('#form-item-field, .form-item-category').addClass('hidden');
+            }
             // Update variable
             userDidAChange = false;
         });
-        // ---
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'edit') {
-        console.info('SHOW EDIT ITEM');  
+        console.info('SHOW EDIT ITEM');
+
+        // Store current view
+        savePreviousView();
         
         // Store not a new item
         store.update(
@@ -472,8 +552,16 @@ $('.tp-action').click(function() {
 
         // Now manage edtion
         showItemEditForm(selectedFolderId);
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'copy') {
         console.info('SHOW COPY ITEM');
+
+        // Store current view
+        savePreviousView();
+
         if (store.get('teampassItem').user_can_modify === 1) {
             // Show copy form
             $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
@@ -489,8 +577,14 @@ $('.tp-action').click(function() {
                 )
                 .dismissOthers();
         }
-        // ---
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'delete') {
+        // Store current view
+        savePreviousView();
+
         console.info('SHOW DELETE ITEM');
         if (store.get('teampassItem').user_can_modify === 1) {
             // Show delete form
@@ -504,29 +598,86 @@ $('.tp-action').click(function() {
                 )
                 .dismissOthers();
         }
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'share') {
         console.info('SHOW SHARE ITEM');
+
+        // Store current view
+        savePreviousView();
+
         // Show share form
         $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
         $('.form-item-share, .item-details-card-menu').removeClass('hidden');
+        
+        //
+        // > END <
+        //
     } else if ($(this).data('item-action') === 'notify') {
         console.info('SHOW NOTIFY ITEM');
+
+        // Store current view
+        savePreviousView();
+
         $('#form-item-notify-checkbox').iCheck('uncheck');
         // Show notify form
         $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
         $('.form-item-notify, .item-details-card-menu').removeClass('hidden');
+        
+        //
+        // > END <
+        //
     }
 });
+
+
+
+function savePreviousView()
+{
+    var element = '';
+    if ($('#folders-tree-card').hasClass('hidden') === false) {
+        element = '#folders-tree-card';
+    } else if ($('.form-item').hasClass('hidden') === false) {
+        element = '.form-item';
+    } else if ($('.item-details-card-menu').hasClass('hidden') === false) {
+        element = '.item-details-card';
+    }
+    
+    store.update(
+        'teampassUser',
+        function (teampassUser)
+        {
+            teampassUser.previousView = element;
+        }
+    );
+}
+$('.but-back').click(function() {
+    // Hide all
+    $('.form-item, .form-item-action,.form-folder-action, .item-details-card, #folders-tree-card').addClass('hidden');
+
+    // Show expected one
+    $(store.get('teampassUser').previousView).removeClass('hidden');
+
+    // Destroy editor
+    if (itemEditor) itemEditor.destroy();
+
+/*
+    #folders-tree-card
+    .form-item-action
+    .form-folder-action
+    .item-details-card
+    .form-item
+*/
+});
+
 
 // Quit item details card back to items list
 $('.but-back-to-list').click(function() {
     closeItemDetailsCard();
 });
 
-// BAck to item details card 
-$('.but-back-to-item').click(function() {
-    showItemDetailsCard();
-});
 
 
 // Manage if change is performed by user
@@ -540,6 +691,89 @@ $('#form-item .track-change').on('change', function() {
     }
 });
 
+/**
+ * Click on perform IMPORT
+ */
+$(document).on('click', '#form-item-import-perform', function() {
+    console.log('START IMPORT');
+});
+
+
+/**
+ * Click on ITEM REQUEST ACCESS
+ */
+$(document).on('click', '.fa-clickable-access-request', function() {
+    // Store current view
+    savePreviousView();
+
+    // Adapt the form
+    $('#form-item-request-access-label')
+        .html($(this).closest('.list-item-description').find('.list-item-row-description').text());
+        
+    // Store current item ID
+    var selectedItemId = $(this).closest('.list-item-row').data('item-id');
+    store.update(
+        'teampassItem',
+        function (teampassItem)
+        {
+            teampassItem.id = selectedItemId;
+        }
+    );
+    
+    // Show user
+    $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+    $('.form-item-request-access').removeClass('hidden');
+});
+
+/**
+ * Send an access request to author
+ */
+$(document).on('click', '#form-item-request-access-perform', function() {
+    // No reason is provided
+    if ($('#form-item-request-access-reason').val() === '') {
+        alertify
+            .error(
+                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('error_provide_reason'); ?>',
+                5
+            )
+            .dismissOthers();
+        return false;
+    }
+    
+    var data = {
+        'id'     : store.get('teampassItem').id,
+        'email'  : $('#form-item-request-access-reason').val(),
+    }
+    // NOw send the email
+    $.post(
+        "sources/items.queries.php",
+        {
+            type : 'send_request_access',
+            data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+            key  : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
+
+            if (data.error !== false) {
+                // Show error
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                    .dismissOthers();
+            } else {
+                // Change view
+                $('.form-item-request-access').addClass('hidden');
+                $('#folders-tree-card').removeClass('hidden');
+
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        }
+    );
+});
 
 
 /**
@@ -575,48 +809,58 @@ $('#form-item-folder').change(function() {
 $('#form-item-notify-perform').click(function() {
     var form = $('#form-item-notify');
 
-    alertify
-        .message(
-            '<i class="fas fa-warning fa-lg mr-2"></i>Not yet implemented.',
-            5
-        )
-        .dismissOthers();
-
-    /*// Show cog
+    // Show cog
     alertify
         .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
+    var data = {
+        'notification_status' : $('#form-item-notify-checkbox').is(':checked') === true ? 1 : 0,
+        'item_id' : store.get('teampassItem').id,
+    }
+    
     // Launch action
     $.post(
         'sources/items.queries.php',
         {
-            type    : 'send_email',
-            id      : store.get('teampassItem').id,
-            receipt : $('#form-item-share-email').val(),
-            cat     : 'share_this_item',
+            type    : 'save_notification_status',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
             key     : '<?php echo $_SESSION['key']; ?>'
         },
         function(data) {
-            if (data[0].error === '') {
-                $('.form-item, .item-details-card, .form-item-action').removeClass('hidden');
-                $('.form-item-share, .item-details-card-menu').addClass('hidden');
-                // Warn user
-                alertify.success('<?php echo langHdl('success'); ?>', 1);
-                // Clear
-                $('#form-item-share-email').val('');
-            } else {
-                // ERROR
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error !== false) {
+                // Show error
                 alertify
-                    .error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[0].message,
-                        0
-                    )
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
+            } else {
+                // Change the icon for Notification
+                if ($('#form-item-notify-checkbox').is(':checked') === true) {
+                    $('#card-item-misc-notification')
+                        .html('<span class="far fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span>');
+                } else {
+                    $('#card-item-misc-notification')
+                        .html('<span class="far fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span>');
+                }
+
+                // Show/hide forms
+                $('.item-details-card').removeClass('hidden');
+                $('.form-item-notify').addClass('hidden');
+
+                $('.infotip').tooltip();
+
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+
+                // Clear
+                $('#form-item-notify-checkbox').iCheck('uncheck');
             }
-        },
-        'json'
-    );*/
+        }
+    );
 });
 
 
@@ -1167,9 +1411,18 @@ function closeItemDetailsCard()
             }
         );
     } else {
+        if (store.get('teampassUser').previousView === '.item-details-card') {
+            $('#folders-tree-card').removeClass('hidden');
+            $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
+        } else {
+            // Hide all
+            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card').addClass('hidden');
+
+            // Show expected one
+            $(store.get('teampassUser').previousView).removeClass('hidden');
+        }
+
         // Do some form cleaning
-        $('#items-list-card, #folders-tree-card').removeClass('hidden');
-        $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
         $('.clear-me-val').val('');
         $('.item-details-card').find('.form-control').val('');
         $('.clear-me-html').html('');
@@ -1186,10 +1439,16 @@ function closeItemDetailsCard()
         // SHow save button in card
         $('#form-item-buttons').removeClass('sticky-footer');
         
-        // Destroy editor
+        // Destroy editors
         if (itemEditor) {
             itemEditor.destroy();
         }
+        if (itemEditorSuggestion) {
+            itemEditorSuggestion.destroy();
+        }
+
+        // Collapse accordion
+        $('.collapseme').addClass('collapsed-card');
 
         // Restore scroll position
         $(window).scrollTop(userScrollPosition);
@@ -1203,20 +1462,6 @@ function closeItemDetailsCard()
         console.log('Edit for closed');
     }
 }
-
-/**
- * Undocumented function
- *
- * @return void
- */
-function showItemDetailsCard()
-{
-    $('.item-details-card').removeClass('hidden');
-    $('.form-item-action').addClass('hidden');
-}
-
-
-
 
 
  
@@ -1697,6 +1942,8 @@ uploader_attachments.bind('FilesAdded', function(up, files) {
 });
 //->
 
+
+
 /**
  * Save item changes
  */
@@ -1761,7 +2008,7 @@ $('#form-item-button-save').click(function() {
     });
 
 
-
+    // Do checks
     if (arrayQuery.length > 0) {
         var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
@@ -1951,6 +2198,7 @@ console.log(data)
                         // Close
                         userDidAChange = false;
                         userUploadedFile = false;
+                        
                         closeItemDetailsCard();
                     }
                 }
@@ -2039,6 +2287,15 @@ function showItemEditForm(selectedFolderId)
             $('#form-item-label').focus();
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
+            // Does this folder contain Custom Fields
+            if (store.get('teampassItem').hasCustomCategories.length > 0) {
+                $('#form-item-field').removeClass('hidden');
+                $.each(store.get('teampassItem').hasCustomCategories, function(i, category) {
+                    $('#form-item-category-' + category).removeClass('hidden');
+                })
+            } else {
+                $('#form-item-field, .form-item-category').addClass('hidden');
+            }
             // ---
         }
     });
@@ -2086,6 +2343,10 @@ console.log(store.get('teampassApplication'))
                     icon_favorite;
 
                 data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                // Ensure correct div is not hidden
+                $('#info_teampass_items_list').addClass('hidden');
+                $('#table_teampass_items_list').removeClass('hidden');
 
                 // Show Items list
                 sList(data.html_json);
@@ -2157,6 +2418,14 @@ function refreshVisibleFolders()
                     .end()
                     .append(html_visible);
                 $(".no-root option[value='0']").remove();
+
+                // Store in teampassUser
+                store.update(
+                    'teampassUser',
+                    function (teampassUser) {
+                        teampassUser.folders = html_visible;
+                    }
+                );
                 
 
                 // remove ROOT option if exists
@@ -2349,7 +2618,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
     // Hide any info
     $('#info_teampass_items_list').addClass('hidden');
-
+    
     if (groupe_id !== undefined || groupe_id !== '') {
         //refreshTree(groupe_id);
         if (query_in_progress != 0 && query_in_progress != groupe_id && request !== undefined) {
@@ -2444,21 +2713,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#form-folder-path').html('');
                     }
 
-                    /*// store the categories to be displayed
-                    if (data.categoriesStructure !== undefined) {
-                        $('#form-item-hidden-hasCustomCategories').val(data.categoriesStructure);
-
-                        // Show categories
-                        console.log(data.categoriesStructure)
-                    }*/
-
-                    /*
-                    // warn about a required change of personal SK
-                    if ($('#personal_upgrade_needed').val() === 1 && data.folder_requests_psk === 1) {
-                        $('#dialog_upgrade_personal_passwords').dialog('open');
-                    }
-                    */
-
                     // PSK is requested but not set
                     if (data.folder_requests_psk === 1
                         && (store.get('teampassUser').pskSetForSession === ''
@@ -2495,6 +2749,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         e.clearSelection();
                     });
 
+                    // Prepare clipboard for PAssword
+                    // This will request a query to server to get the pwd
                     clipboardForPassword = new Clipboard('.fa-clickable-password', {
                         text: function(trigger) {
                             // Send query and get password
@@ -2601,9 +2857,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     return false;
                 } else if (data.error === 'not_authorized' || data.access_level === '') {
-                    //warn user                   
-                    $('#item_details_no_personal_saltkey').addClass('hidden');
-
                     // Show warning to user
                     $('#info_teampass_items_list')
                         .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
@@ -2617,7 +2870,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     //readonly user
                     $('#item_details_no_personal_saltkey, #item_details_nok').addClass('hidden');
                     $('#item_details_ok, #items_list').removeClass('hidden');
-                    $('#more_items').remove();
+                    //$('#more_items').remove();
 
                     store.update(
                         'teampassApplication',
@@ -2639,7 +2892,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                 teampassApplication.itemsListStart = parseInt(data.next_start);
                             }
                         );
-                        //$('#query_next_start').val(data.next_start);
                     } else {
                         store.update(
                             'teampassApplication',
@@ -2647,7 +2899,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                 teampassApplication.itemsListStart = data.list_to_be_continued;
                             }
                         );
-                        //$('#query_next_start').val(data.list_to_be_continued);
                         $('.card-item-category').addClass('hidden');
                     }
                     
@@ -2672,7 +2923,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     // Prepare next iteration if needed
                     if (data.list_to_be_continued === 'yes') {
                         //set next start for query
-                        //$('#query_next_start').val(data.next_start);
                         store.update(
                             'teampassApplication',
                             function (teampassApplication) {
@@ -2686,7 +2936,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                 teampassApplication.itemsListStart = data.list_to_be_continued;
                             }
                         );
-                        //$('#query_next_start').val(data.list_to_be_continued);
                         $('.card-item-category').addClass('hidden');
                     }
 
@@ -2701,10 +2950,11 @@ function sList(data)
 {
     console.log(data);
     var counter = 0;
-    $.each((data), function(i, value) {
+    $.each(data, function(i, value) {
         var new_line = '',
             pwd_error = '',
             icon_all_can_modify = '',
+            icon_cannot_see = '',
             icon_login = '',
             icon_pwd = '',
             icon_favorite = '',
@@ -2715,42 +2965,35 @@ function sList(data)
         counter += 1;
 
         // Check access restriction
-        // Restricted : -1 -> Access ; 0 -> no access ; 1 -> access (even if limited)
-        if (value.restricted !== 0) {
-            // Prepare item icon
-            if (value.canMove === 1 && value.accessLevel === 0) {
-                item_grippy = '<i class="fas fa-ellipsis-v mr-2 pointer"></i>';
-            }
-
-            // Prepare error message
-            if (value.pw_status === 'encryption_error') {
-                pwd_error = '<i class="fas fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
-            }
-
+        if (value.rights > 0) {
             // Prepare anyone can modify icon
             if (value.anyone_can_modify === 1 || value.open_edit === 1) {
                 icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('edit'); ?>"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-pen fa-stack-1x fa-inverse"></i></span>';
             }
             
             // Prepare mini icons
-            if (value.copy_to_clipboard_small_icons === 1 && value.display_item === 1) {
+            if (parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1
+                && value.rights > 10
+            ) {
                 // Login icon
                 if (value.login !== '') {
                     icon_login = '<span class="fa-stack fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-user fa-stack-1x fa-inverse"></i></span>';
                 }
                 // Pwd icon
-                if (value.pw !== '') {
+                if (value.pw_status !== 'pw_is_empty' && value.pw_status !== 'encryption_error') {
                     icon_pwd = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-key fa-stack-1x fa-inverse"></i></span>';
                 }
 
                 // Now check if pwd is empty. If it is then warn user
-                if (value.pw === '') {
-                    pwd_error = '<i class="fas fa-exclamation-circle fa-lg text-warning infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"></i>';
+                if (value.pw_status === 'pw_is_empty') {
+                    pwd_error = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-exclamation-triangle text-warning fa-stack-1x fa-inverse"></i></span>';
                 }
             }
 
             // Prepare Favorite icon
-            if (value.display_item === 1 && value.enable_favourites === 1) {
+            if (parseInt(store.get('teampassSettings').enable_favourites) === 1
+                && value.rights > 10
+            ) {
                 if (value.is_favourited === 1) {
                     icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('unfavorite'); ?>" data-item-id="' + value.item_id + '" data-item-favourited="1"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-star fa-stack-1x fa-inverse text-warning"></i></span>';
                 } else {
@@ -2769,36 +3012,34 @@ function sList(data)
             }
             
             $('#teampass_items_list').append(
-                '<tr class="list-item-row' + (item_grippy === '' ? '' : ' is-draggable') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
-                (value.is_result_of_search === 0 ?
-                    '<td class="list-item-description" style="width: 100%;">' + item_grippy + 
-                    '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
-                    '<span class="list-item-row-description">' + value.label + '</span>' + value.desc + '</span>' +
+                '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-rights="'+value.rights+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
+                    '<td class="list-item-description" style="width: 100%;">' +
+                    // Show user a grippy bar to move item
+                    (value.canMove === 1 && value.is_result_of_search === 0 ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') +
+                    // Show user that Item is not accessible
+                    (value.rights === 10 ? '<i class="far fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo langHdl('item_with_restricted_access'); ?>"></i>' : '') +
+                    // Show user that password is badly encrypted
+                    (value.pw_status === 'encryption_error' ? '<i class="fas fa-exclamation-triangle  fa-xs text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>' : '') +
+                    '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '">' +
+                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
                     '<span class="list-item-actions hidden">' +
-                    pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite +
+                    (value.rights === 10 ?
+                    '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fas fa-circle fa-stack-2x text-danger"></i><i class="far fa-handshake fa-stack-1x fa-inverse"></i></span>' : 
+                    pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite) +
                     '</span>' +
                     '</td>'
-                    :
-                    '<td class="col-md-7 list-item-description" id="">' +
-                    '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
-                    value.label + value.desc + '</span>' +
-                    '</td>' +
-                    '<td class="col-md-5 list-item-folder"><span class="small">' + value.folder + '</span>' +
-                    '<div class="list-item-actions hidden text-right">' +
-                    '<span style="vertical-align:middle;">' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite + '</span>' +
-                    '</div>' +
-                    '</td>'
-                )
                 + '</tr>'
             );
+
+//---------------------
         }
     });
     
     // Sort entries
     var $tbody = $('#teampass_items_list');
     $tbody.find('tr').sort(function (a, b) {
-        var tda = $(a).find('td:eq(1)').text();
-        var tdb = $(b).find('td:eq(1)').text();
+        var tda = $(a).find('.list-item-row-description').text();
+        var tdb = $(b).find('.list-item-row-description').text();
         // if a < b return 1
         return tda > tdb ? 1
             : tda < tdb ? -1   
@@ -2807,7 +3048,8 @@ function sList(data)
 
     // Trick for list with only one entry
     if (counter === 1) {
-        $('#teampass_items_list').append('<tr class="row"><td class="">&nbsp;</td></tr>');
+        $('#teampass_items_list')
+            .append('<tr class="row"><td class="">&nbsp;</td></tr>');
     }
     adjustElemsSize();    
 }
@@ -3004,6 +3246,9 @@ function Details(itemDefinition, actionType, hotlink = false)
 {
     console.info('EXPECTED ACTION '+actionType+' -- ')
 
+    // Store current view
+    savePreviousView();
+
     store.each(function(value, key) {
         console.log(key, '==', value)
     })
@@ -3172,18 +3417,20 @@ function Details(itemDefinition, actionType, hotlink = false)
                     function (teampassItem)
                     {
                         teampassItem.id = parseInt(data.id),
-                        teampassItem.timestamp = data.timestamp
-                        teampassItem.user_can_modify = data.user_can_modify;
-                        teampassItem.anyone_can_modify = data.anyone_can_modify;
-                        teampassItem.edit_item_salt_key = data.edit_item_salt_key;
+                        teampassItem.timestamp = data.timestamp,
+                        teampassItem.user_can_modify = data.user_can_modify,
+                        teampassItem.anyone_can_modify = data.anyone_can_modify,
+                        teampassItem.edit_item_salt_key = data.edit_item_salt_key
                     }
-                )
+                );
                 
                 // Prepare forms
-                $('#items-list-card, #folders-tree-card').addClass('hidden');
+                $('#folders-tree-card').addClass('hidden');
                 if (actionType === 'show') {
+                    // Prepare Views
                     $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                     $('.form-item').addClass('hidden');
+
                     $('#form-item-suggestion-password').focus();
                     // If Description empty then remove it
                     if (data.description === '<p>&nbsp;</p>') {
@@ -3198,13 +3445,18 @@ function Details(itemDefinition, actionType, hotlink = false)
                 } else {
                     $('.form-item').removeClass('hidden');
                     $('.item-details-card, #item-details-card-categories').addClass('hidden');
-                    $('#pwd-definition-size').val(data.pw.length);
                 }
+                $('#pwd-definition-size').val(data.pw.length);
                 
                 // Prepare card
                 $('#card-item-label, #form-item-title').html(data.label);
                 $('#form-item-label, #form-item-suggestion-label').val(data.label);
                 $('#card-item-description, #form-item-suggestion-description').html(data.description);
+                if (data.description === '') {
+                    $('#card-item-description').addClass('hidden');
+                } else {
+                    $('#card-item-description').removeClass('hidden');
+                }
                 $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
                 $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
                 $('#form-item-password, #form-item-password-confirmation').val(data.pw);
@@ -3481,12 +3733,12 @@ function Details(itemDefinition, actionType, hotlink = false)
                 // Show Notification engaged
                 if (data.notification_status === true) {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="far fa-bell infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php
                             echo langHdl('notification_engaged');
                         ?>"></span></span>');
                 } else {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="far fa-bell-slash infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php
                             echo langHdl('notification_not_engaged');
                         ?>"></span></span>');
                 }
@@ -3716,8 +3968,8 @@ function showDetailsStep2(id, actionType)
                                 '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
                                 '</div>' +
                                 '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
-                                '<div class="direct-chat-text">' + value.action +
-                                ' | ' + value.detail + '</div></div>';
+                                '<div class="direct-chat-text">' + (value.action === '' ? '' : (value.action +
+                                ' | ')) + value.detail + '</div></div>';
                             });
                             // Display
                             $('#card-item-history').html(html);

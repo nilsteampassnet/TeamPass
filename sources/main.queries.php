@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -688,20 +688,20 @@ function mainQuery($SETTINGS)
          */
         case 'increase_session_time':
             // check if session is not already expired.
-            if ($_SESSION['fin_session'] > time()) {
+            if ($_SESSION['sessionDuration'] > time()) {
                 // Calculate end of session
-                $_SESSION['fin_session'] = (int) ($_SESSION['fin_session'] + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT));
+                $_SESSION['sessionDuration'] = (int) ($_SESSION['sessionDuration'] + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT));
                 // Update table
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'session_end' => $_SESSION['fin_session'],
+                        'session_end' => $_SESSION['sessionDuration'],
                     ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
                 // Return data
-                echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
+                echo '[{"new_value":"'.$_SESSION['sessionDuration'].'"}]';
             } else {
                 echo '[{"new_value":"expired"}]';
             }

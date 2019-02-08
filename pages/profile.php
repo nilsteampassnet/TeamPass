@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -41,17 +41,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTI
 
 // Load template
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-
-// prepare avatar
-if (isset($_SESSION['user_avatar']) === true) {
-    if (file_exists('includes/avatars/'.$_SESSION['user_avatar'])) {
-        $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar'];
-    } else {
-        $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
-    }
-} else {
-    $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
-}
 
 // user type
 if ($_SESSION['user_admin'] === '1') {
@@ -97,6 +86,30 @@ $userSeenItemsNumber = DB::count();
 
 DB::query('SELECT id_item FROM '.prefixTable('log_items').' WHERE action = "at_password_shown" AND  id_user = "'.$_SESSION['user_id'].'"');
 $userSeenPasswordsNumber = DB::count();
+
+$userInfo = DB::queryFirstRow(
+    'SELECT avatar 
+    FROM '.prefixTable('users').' 
+    WHERE id = "'.$_SESSION['user_id'].'"'
+);
+if (empty($userInfo['avatar']) === true) {
+    $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+} else {
+    $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$userInfo['avatar'];
+}
+
+// Get Groups name
+$userParOfGroups = array();
+foreach($_SESSION['user_roles'] as $role) {
+    $tmp = DB::queryFirstRow(
+        'SELECT title 
+        FROM '.prefixTable('roles_title').' 
+        WHERE id = "'.$role.'"'
+    );
+    array_push($userParOfGroups, $tmp['title']);
+}
+
+
 
 ?>
 
@@ -201,6 +214,12 @@ $userSeenPasswordsNumber = DB::count();
                             <!-- INFO -->
                             <div class="<?php echo isset($_GET['tab']) === false ? 'active ' : ''; ?> tab-pane" id="tab_information">
                                 <ul class="list-group list-group-unbordered mb-3">
+                                    <li class="list-group-item">
+                                        <b><i class="fas fa-users fa-fw fa-lg mr-2"></i><?php echo langHdl('part_of_groups'); ?></b>
+                                        <a class="float-right">
+                                            <span id="profile-groups" class=""><?php echo implode(', ', $userParOfGroups); ?></span>
+                                        </a>
+                                    </li>
                                     <li class="list-group-item">
                                         <b><i class="fas fa-child fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_seen'); ?></b>
                                         <a class="float-right">
@@ -308,18 +327,27 @@ $userSeenPasswordsNumber = DB::count();
                                     <ul class="list-group list-group-flush">
                                         <?php
                                         $rows = DB::query(
-                                            'SELECT label, date
+                                            'SELECT label AS labelAction, date, null
                                             FROM '.prefixTable('log_system').'
                                             WHERE qui = %i
+                                            UNION
+                                            SELECT l.action, l.date, i.label AS itemLabel
+                                            FROM '.prefixTable('log_items').' AS l
+                                            INNER JOIN '.prefixTable('items').' AS i ON (l.id_item = i.id)
+                                            WHERE l.id_user = %i AND l.action IN ("at_access")
                                             ORDER BY date DESC
-                                            LIMIT 0, 20',
+                                            LIMIT 0, 40',
+                                            $_SESSION['user_id'],
                                             $_SESSION['user_id']
                                         );
                                         foreach ($rows as $record) {
-                                            if (substr($record['label'], 0, 3) === 'at_') {
-                                                $text = langHdl(substr($record['label'], 3));
+                                            if (substr($record['labelAction'], 0, 3) === 'at_') {
+                                                $text = langHdl(substr($record['labelAction'], 3));
                                             } else {
-                                                $text = langHdl($record['label']);
+                                                $text = langHdl($record['labelAction']);
+                                            }
+                                            if (empty($record['NULL']) === false) {
+                                                $text .= ' '.langHdl('for').' <span class="font-weight-light">'.addslashes($record['NULL']).'</span>';
                                             }
                                             echo '<li class="list-group-item">'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).' - '.$text.'</li>';
                                         }

@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -218,9 +218,8 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
         });
 
     // Start real time
-
     // get list of last items
-    if ($('#form_user_id').length > 0 && $('#form_user_id').val() !== '') {
+    if (store.get('teampassUser') !== undefined && store.get('teampassUser').user_id !== '') {
         $.when(
             // Load teampass settings
             loadSettings()
@@ -454,4 +453,5 @@ function generateBugReport()
         }
     );
 }
+
 </script>

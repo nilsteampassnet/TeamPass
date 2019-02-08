@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -92,18 +92,21 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     // Definition
     $pagesRights = array(
         'user' => array(
-            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile',
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'folders', 'offline',
         ),
         'manager' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
+            'import', 'export', 'offline',
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
         'human_resources' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
+            'import', 'export', 'offline',
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
         'admin' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+            'import', 'export', 'offline',
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
             'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
             'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
@@ -149,7 +152,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM '.prefixTable('users').' WHERE id = %i',
         $userId
     );
-    
+
     // check if user exists and tempo key is coherant
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;

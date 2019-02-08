@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -119,6 +119,9 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="new">
                             <i class="fas fa-plus mr-2"></i><?php echo langHdl('new'); ?>
                         </button>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="propagate">
+                            <i class="fas fa-share-alt mr-2"></i><?php echo langHdl('propagate'); ?>
+                        </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fas fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button>
@@ -136,9 +139,9 @@ foreach ($treeDesc as $t) {
                             <th><?php echo langHdl('lastname'); ?></th>
                             <th><?php echo langHdl('managed_by'); ?></th>
                             <th><?php echo langHdl('functions'); ?></th>
-                            <th><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
-                            <th><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
-                            <th><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -306,24 +309,87 @@ foreach ($treeDesc as $t) {
         </div>
     </div>
 
-<!-- USER VISIBLE FOLDERS -->
-<div class="row hidden extra-form" id="row-folders">
-    <div class="col-12">
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title"><?php echo langHdl('access_rights_for_user'); ?> <span id="row-folders-title"></span></h3>
-            </div>
-            
-            <!-- /.card-header -->
-            <!-- table start -->
-            <div class="card-body" id="row-folders-results">
+    <!-- USER VISIBLE FOLDERS -->
+    <div class="row hidden extra-form" id="row-folders">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('access_rights_for_user'); ?> <span id="row-folders-title"></span></h3>
+                </div>
                 
-            </div>
-                
-            <div class="card-footer">
-                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                <!-- /.card-header -->
+                <!-- table start -->
+                <div class="card-body" id="row-folders-results">
+                    
+                </div>
+                    
+                <div class="card-footer">
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- PROPAGATE USER RIGHTS -->
+    <div class="row hidden extra-form" id="row-propagate">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('propagate_user_rights'); ?></h3>
+                </div>
+                
+                <!-- /.card-header -->
+                <div class="card-body">
+                    <div class="row">
+                        <div class="callout callout-info col-12">
+                            <i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('share_rights_info');?>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propagate-from"><?php echo langHdl('share_rights_source'); ?></label>
+                        <select id="propagate-from" class="form-control form-item-control select2" style="width:100%;">
+                            <?php echo $optionsRoles; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group ml-5">
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('functions');?></label>
+                        <span id="propagate-user-roles"></span>
+                    </div>
+
+                    <div class="form-group ml-5">
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('managed_by');?></label>
+                        <span id="propagate-user-managedby"></span>
+                    </div>
+
+                    <div class="form-group ml-5">
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('authorized_groups');?></label>
+                        <span id="propagate-user-allowed"></span>
+                    </div>
+
+                    <div class="form-group ml-5">
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('forbidden_groups');?></label>
+                        <span id="propagate-user-fordidden"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propagate-to"><?php echo langHdl('share_rights_destination'); ?></label>
+                        <select id="propagate-to" class="form-control form-item-control select2" style="width:100%;" multiple="multiple">
+                            <?php echo $optionsRoles; ?>
+                        </select>
+                    </div>
+                    
+                </div>
+
+
+                <div class="card-footer">
+                    <button type="button" class="btn btn-primary tp-action" data-action="do-propagate"><?php echo langHdl('perform'); ?></button>
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 </section>

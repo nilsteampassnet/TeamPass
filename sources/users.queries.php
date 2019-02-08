@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -1734,17 +1734,31 @@ if (null !== $post_type) {
          */
         case 'get_list_of_users_for_sharing':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            $list_users_from = '';
-            $list_users_to = '';
+            $arrUsers = [];
 
             if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
                 $rows = DB::query(
-                    'SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    'SELECT *
                     FROM '.prefixTable('users').'
                     WHERE admin = %i AND isAdministratedByRole IN %ls',
                     '0',
@@ -1752,7 +1766,7 @@ if (null !== $post_type) {
                 );
             } else {
                 $rows = DB::query(
-                    'SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    'SELECT *
                     FROM '.prefixTable('users').'
                     WHERE admin = %i',
                     '0'
@@ -1760,19 +1774,86 @@ if (null !== $post_type) {
             }
 
             foreach ($rows as $record) {
-                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
-                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+                // Get roles
+                $groups = [];
+                $groupIds = [];
+                foreach(explode(';', $record['fonction_id']) as $group) {
+                    $tmp = DB::queryfirstrow(
+                        'SELECT id, title FROM '.prefixTable('roles_title').'
+                        WHERE id = %i',
+                        $group
+                    );
+                    array_push($groups, $tmp['title']);
+                    array_push($groupIds, $tmp['id']);
+                }
+
+                // Get managed_by
+                $managedBy = DB::queryfirstrow(
+                    'SELECT id, title FROM '.prefixTable('roles_title').'
+                    WHERE id = %i',
+                    $record['isAdministratedByRole']
+                );
+
+                // Get Allowed folders
+                $foldersAllowed = [];
+                $foldersAllowedIds = [];
+                foreach(explode(';', $record['groupes_visibles']) as $role) {
+                    $tmp = DB::queryfirstrow(
+                        'SELECT id, title FROM '.prefixTable('nested_tree').'
+                        WHERE id = %i',
+                        $role
+                    );
+                    array_push($foldersAllowed, $tmp['title']);
+                    array_push($foldersAllowedIds, $tmp['id']);
+                }
+
+                // Get denied folders
+                $foldersForbidden = [];
+                $foldersForbiddenIds = [];
+                foreach(explode(';', $record['groupes_interdits']) as $role) {
+                    $tmp = DB::queryfirstrow(
+                        'SELECT id, title FROM '.prefixTable('nested_tree').'
+                        WHERE id = %i',
+                        $role
+                    );
+                    array_push($foldersForbidden, $tmp['title']);
+                    array_push($foldersForbiddenIds, $tmp['id']);
+                }
+
+
+                // Store
+                array_push(
+                    $arrUsers,
+                    array(
+                        'id' => $record['id'],
+                        'name' => $record['name'],
+                        'lastname' => $record['lastname'],
+                        'login' => $record['login'],
+                        'groups' => implode(', ', $groups),
+                        'groupIds' => $groupIds,
+                        'managedBy' => $managedBy['title'] === null ? langHdl('administrator') : $managedBy['title'],
+                        'managedById' => $managedBy['id'] === null ? 0 : $managedBy['id'],
+                        'foldersAllowed' => implode(', ', $foldersAllowed),
+                        'foldersAllowedIds' => $foldersAllowedIds,
+                        'foldersForbidden' => implode(', ', $foldersForbidden),
+                        'foldersForbiddenIds' => $foldersForbiddenIds,
+                        'admin' => $record['admin'],
+                        'manager' => $record['gestionnaire'],
+                        'hr' => $record['can_manage_all_users'],
+                        'readOnly' => $record['read_only'],
+                        'personalFolder' => $record['personal_folder'],
+                        'rootFolder' => $record['can_create_root_folder'],
+                    )
+                );
             }
 
-            $return_values = prepareExchangedData(
+            echo prepareExchangedData(
                 array(
-                    'users_list_from' => $list_users_from,
-                    'users_list_to' => $list_users_to,
-                    'error' => '',
+                    'error' => false,
+                    'values' => $arrUsers,
                 ),
                 'encode'
             );
-            echo $return_values;
 
             break;
 
@@ -1781,18 +1862,46 @@ if (null !== $post_type) {
          */
         case 'update_users_rights_sharing':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            $post_source_id = filter_input(INPUT_POST, 'source_id', FILTER_SANITIZE_NUMBER_INT);
-            $post_destination_ids = filter_input(INPUT_POST, 'destination_ids', FILTER_SANITIZE_STRING);
-            $post_user_otherrights = filter_input(INPUT_POST, 'user_otherrights', FILTER_SANITIZE_STRING);
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            $post_source_id = filter_var(htmlspecialchars_decode($dataReceived['source_id']), FILTER_SANITIZE_NUMBER_INT);
+            $post_destination_ids = filter_var_array($dataReceived['destination_ids'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_functions = filter_var(htmlspecialchars_decode($dataReceived['user_functions']), FILTER_SANITIZE_STRING);
+            $post_user_managedby = filter_var(htmlspecialchars_decode($dataReceived['user_managedby']), FILTER_SANITIZE_STRING);
+            $post_user_fldallowed = filter_var(htmlspecialchars_decode($dataReceived['user_fldallowed']), FILTER_SANITIZE_STRING);
+            $post_user_fldforbid = filter_var(htmlspecialchars_decode($dataReceived['user_fldforbid']), FILTER_SANITIZE_STRING);
+            $post_user_admin = filter_var(htmlspecialchars_decode($dataReceived['user_admin']), FILTER_SANITIZE_NUMBER_INT);
+            $post_user_manager = filter_var(htmlspecialchars_decode($dataReceived['user_manager']), FILTER_SANITIZE_NUMBER_INT);
+            $post_user_hr = filter_var(htmlspecialchars_decode($dataReceived['user_hr']), FILTER_SANITIZE_NUMBER_INT);
+            $post_user_readonly = filter_var(htmlspecialchars_decode($dataReceived['user_readonly']), FILTER_SANITIZE_NUMBER_INT);
+            $post_user_personalfolder = filter_var(htmlspecialchars_decode($dataReceived['user_personalfolder']), FILTER_SANITIZE_NUMBER_INT);
+            $post_user_rootfolder = filter_var(htmlspecialchars_decode($dataReceived['user_rootfolder']), FILTER_SANITIZE_NUMBER_INT);
+
 
             // Check send values
             if (empty($post_source_id) === true
-                || empty($post_destination_ids) === true
+                || $post_destination_ids === 0
             ) {
                 // error
                 exit();
@@ -1810,18 +1919,7 @@ if (null !== $post_type) {
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
-                // manage other rights
-                /* Possible values: gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin*/
-                $user_other_rights = explode(';', $post_user_otherrights);
-
-                foreach (explode(';', $post_destination_ids) as $dest_user_id) {
-                    // get info about the user to update
-                    $data_user = DB::queryfirstrow(
-                        'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
-                        WHERE id = %i',
-                        $dest_user_id
-                    );
-
+                foreach ($post_destination_ids as $dest_user_id) {
                     // Is this user allowed to do this?
                     if ((int) $_SESSION['is_admin'] === 1
                         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
@@ -1831,16 +1929,16 @@ if (null !== $post_type) {
                         DB::update(
                             prefixTable('users'),
                             array(
-                                'fonction_id' => filter_input(INPUT_POST, 'user_functions', FILTER_SANITIZE_NUMBER_INT),
-                                'isAdministratedByRole' => filter_input(INPUT_POST, 'user_managedby', FILTER_SANITIZE_STRING),
-                                'groupes_visibles' => filter_input(INPUT_POST, 'user_fldallowed', FILTER_SANITIZE_STRING),
-                                'groupes_interdits' => filter_input(INPUT_POST, 'user_fldforbid', FILTER_SANITIZE_STRING),
-                                'gestionnaire' => $user_other_rights[0],
-                                'read_only' => $user_other_rights[1],
-                                'can_create_root_folder' => $user_other_rights[2],
-                                'personal_folder' => $user_other_rights[3],
-                                'can_manage_all_users' => $user_other_rights[4],
-                                'admin' => $user_other_rights[5],
+                                'fonction_id' => $post_user_functions,
+                                'isAdministratedByRole' => $post_user_managedby,
+                                'groupes_visibles' => $post_user_fldallowed,
+                                'groupes_interdits' => $post_user_fldforbid,
+                                'gestionnaire' => $post_user_manager,
+                                'read_only' => $post_user_readonly,
+                                'can_create_root_folder' => $post_user_rootfolder,
+                                'personal_folder' => $post_user_personalfolder,
+                                'can_manage_all_users' => $post_user_hr,
+                                'admin' => $post_user_admin,
                                 ),
                             'id = %i',
                             $dest_user_id

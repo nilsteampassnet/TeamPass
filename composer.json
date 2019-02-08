@@ -1,7 +1,15 @@
 {
-    "name": "nilsteampassnet/TeamPass",
-    "type": "project",
-    "description": "TeamPass is a Passwords Manager dedicated for managing passwords in a collaborative way",
+    "name": "NilsLaumaille/teampass-v3",
+    "description": "Teampass",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "apcu-autoloader": true,
+        "discard-changes": true,
+        "gitlab-domains": [ "gitlab.com" ],
+        "gitlab-token": {"gitlab.com": "myToken"},
+        "gitlab-oauth": {"gitlab.com": "mySecret"}
+    },
     "version": "3.0.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
@@ -11,12 +19,18 @@
     ],
     "support": {
         "email": "nils@teampass.net",
-        "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
-        "source": "https://github.com/nilsteampassnet/TeamPass",
+        "issues": "https://gitlab.com/NilsLaumaille/teampass-v3/issues",
+        "source": "https://gitlab.com/NilsLaumaille/teampass-v3/tree/master",
         "wiki": "https://www.teampass.net",
         "docs": "https://teampass.readthedocs.io/en/latest/",
         "forum": "https://www.reddit.com/r/TeamPass/"
     },
+    "repositories": [
+      {
+        "type" : "composer",
+        "url"  : "https://wpackagist.org"
+      }
+    ],
     "require": {
         "php": ">=7.0",
         "ext-mysqli": ">=5.1.0",
@@ -28,4 +42,4 @@
         "ext-xml": "*",
         "ext-gd": "*"
     }
-}
+  }

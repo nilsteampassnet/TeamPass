@@ -123,7 +123,7 @@ echo '
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="card-tools-left">
-                            <button type="button" class="btn btn-gray but-back-to-list">
+                            <button type="button" class="btn btn-gray but-back">
                                 <i class="fas fa-arrow-left"></i>
                             </button>
                         </div>
@@ -131,7 +131,7 @@ echo '
                         <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
                         
                         <div class="card-tools">
-                            <button type="button" class="btn btn-tool btn-sm but-back-to-list">
+                            <button type="button" class="btn btn-tool btn-sm but-back">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -216,7 +216,7 @@ echo '
                                             </div>
                                             <select class="form-control form-control-sm w-10" id="pwd-definition-size">
                                             <?php
-                                            for ($i = 0; $i <= $SETTINGS['pwd_maximum_length']; ++$i) {
+                                            for ($i = 4; $i <= $SETTINGS['pwd_maximum_length']; ++$i) {
                                                 echo '
                                                 <option>'.$i.'</option>';
                                             }
@@ -395,7 +395,7 @@ echo '
                                                 , $field['is_mandatory'] === '1' ?
                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
                                                 , '</label>
-                                                <textarea class="form-control form-item-control   track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
+                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
                                             </div>';
                                         } else {
                                             echo '
@@ -435,7 +435,7 @@ echo '
                     </div>
                     <div class="card-footer" id="form-item-buttons">
                         <button type="button" class="btn btn-info" id="form-item-button-save" data-action=""><?php echo langHdl('save'); ?></button>
-                        <button type="button" class="btn btn-default  but-back-to-list"><?php echo langHdl('cancel'); ?></button>
+                        <button type="button" class="btn btn-default but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                     <!-- /.card-footer -->
                 </div>
@@ -618,7 +618,7 @@ echo '
 
         <div class="row hidden item-details-card item-card-attachments">
             <div class="col-12">
-                <div class="card card-default">
+                <div class="card card-default collapsed-card collapseme">
                     <div class="card-header bg-gray">
                         <h3 class="card-title pointer" data-widget="collapse">
                             <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
@@ -638,7 +638,7 @@ echo '
 
         <div class="row hidden item-details-card">
             <div class="col-12">
-                <div class="card card-default collapsed-card">
+                <div class="card card-default collapsed-card collapseme">
                     <div class="card-header bg-gray">
                         <h3 class="card-title pointer" data-widget="collapse">
                             <i class="fas fa-history mr-2"></i><?php echo langHdl('history'); ?>
@@ -663,10 +663,11 @@ echo '
         if (isset($SETTINGS['enable_suggestion']) === true
             && $SETTINGS['enable_suggestion'] === '1'
         ) {
-            ?>
+            /*
+            // TODO: NOT YET PORTED ?>
         <div class="row hidden item-details-card">
             <div class="col-12">
-                <div class="card card-default collapsed-card card-item-extra">
+                <div class="card card-default collapsed-card card-item-extra collapseme">
                     <div class="card-header bg-gray">
                         <h3 class="card-title pointer" data-widget="collapse">
                             <i class="fas fa-random mr-2"></i><?php echo langHdl('suggest_password_change'); ?>
@@ -738,6 +739,7 @@ echo '
             </div>
         </div>
         <?php
+        */
         }
 
         if (isset($SETTINGS['enable_server_password_change']) === true
@@ -790,17 +792,17 @@ echo '
                     </div>
                     <div class="card-body">
                         <div class="form-group">
-                            <label><?php echo langHdl('select_destination_folder'); ?></label>
-                            <select class="form-control form-item-control select2 no-root" style="width:100%;" id="form-item-copy-destination"></select>
-                        </div>
-                        <div class="form-group">
                             <label><?php echo langHdl('new_label'); ?></label>
                             <input type="text" class="form-control form-item-control" id="form-item-copy-new-label">
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('select_destination_folder'); ?></label>
+                            <select class="form-control form-item-control select2 no-root" style="width:100%;" id="form-item-copy-destination"></select>
                         </div>
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-item-copy-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back-to-item"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
             </div>
@@ -823,7 +825,7 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-warning" id="form-item-delete-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back-to-item"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
                 
@@ -851,7 +853,7 @@ echo '
                         </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary" id="form-item-share-perform"><?php echo langHdl('perform'); ?></button>
-                            <button type="submit" class="btn btn-default float-right but-back-to-item"><?php echo langHdl('cancel'); ?></button>
+                            <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                         </div>
                     </div>
                 </form>
@@ -878,10 +880,36 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back-to-item"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
                 
+            </div>
+        </div>
+
+
+        <!-- REQUEST ACCESS TO ITEM FORM -->
+        <div class="row hidden form-item-request-access form-item-action">
+            <div class="col-12">
+                <form id="form-item-request-access" class="needs-validation" novalidate onsubmit="return false;">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h5><i class="fas fa-handshake mr-2"></i><?php echo langHdl('request_access'); ?></h5>
+                        </div>
+                        <div class="card-body">
+                            <h3 id="form-item-request-access-label" class="mb-5"></h3>
+                            <div class="callout callout-info">
+                                <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                                <p><?php echo langHdl('request_access_message'); ?></p>
+                            </div>
+                            <textarea class="form-control mt-4" rows="3" placeholder="<?php echo langHdl('request_access_reason'); ?>" id="form-item-request-access-reason"></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary" id="form-item-request-access-perform"><?php echo langHdl('confirm'); ?></button>
+                            <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -916,7 +944,7 @@ echo '
                         </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary" id="form-folder-add-perform"><?php echo langHdl('perform'); ?></button>
-                            <button type="submit" class="btn btn-default float-right but-back-to-list"><?php echo langHdl('cancel'); ?></button>
+                            <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                         </div>
                     </div>
                 </form>
@@ -943,7 +971,7 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-folder-delete-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back-to-list"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
             </div>
@@ -974,17 +1002,9 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-folder-copy-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back-to-list"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-
-        <!-- IMPORT FORM -->
-        <div class="row hidden form-item-import form-item-action">
-            <div class="col-12">
-                
             </div>
         </div>
 
@@ -1027,10 +1047,6 @@ echo '
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="far fa-edit fa-fw mr-2"></i><?php echo langHdl('edit'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="far fa-copy fa-fw mr-2"></i><?php echo langHdl('copy'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="far fa-trash-alt fa-fw mr-2"></i><?php echo langHdl('delete'); ?></a>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="import"><i class="fas fa-file-import fa-fw mr-2"></i><?php echo langHdl('import'); ?><span class="text-danger ml-1">*</span></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="export"><i class="fas fa-file-export fa-fw mr-2"></i><?php echo langHdl('export'); ?><span class="text-danger ml-1">*</span></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="offline"><i class="fas fa-plug fa-fw mr-2"></i><?php echo langHdl('offline'); ?><span class="text-danger ml-1">*</span></a>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="">
                                             <div class="input-group input-group-sm">
@@ -1112,8 +1128,6 @@ echo '
         
     </section>
     <!-- /.content -->
-
-
-
-
-
+<?php
+echo base64_encode(randomStr(32));
+?>

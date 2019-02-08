@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
 *
  * @version   GIT: <git_id>
@@ -43,7 +43,7 @@ echo '
     <img src="'.(string) $SETTINGS['custom_logo'].'" alt="" style="margin-bottom:40px;" />' :
   '',
     '
-    <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>
+    <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>Gitlab
   </div>
   <!-- /.login-logo -->
   <div class="card">
@@ -216,16 +216,18 @@ if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_auth
             </div>
 
             <div class="col-8">
-                <div id="yubico_credentials_div" class="hidden">
-                    <h4>'.langHdl('provide_yubico_identifiers').'</h4>
-                    <label for="yubico_user_id">'.langHdl('yubico_user_id').'</label>
-                    <input type="text" size="10" id="yubico_user_id" class="form-control" />
-
-                    <label for="yubico_user_key">'.langHdl('yubico_user_key').'</label>
-                    <input type="text" size="10" id="yubico_user_key" class="form-control" />
+                <div id="yubiko-new-key" class="alert alert-info hidden">
+                    <p>
+                        <input type="text" size="10" id="yubico_user_id" class="form-control" placeholder="'.langHdl('yubico_user_id').'">
+                    </p>
+                    <p>
+                    <input type="text" size="10" id="yubico_user_key" class="form-control" placeholder="'.langHdl('yubico_user_key').'">
+                    </p>
                 </div>
                 <input autocomplete="off" type="text" id="yubico_key" class="form-control submit-button" placeholder="'.langHdl('press_your_yubico_key').'">
-                <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">'.langHdl('show_yubico_info_form').'</a></div>
+                <div class="row">
+                    <span class="ml-2 mt-1 font-weight-light small pointer" id="register-yubiko-key">'.langHdl('register_new_yubiko_key').'</span>
+                </div>
             </div>
         </div>';
 }

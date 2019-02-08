@@ -1,6 +1,3 @@
 **/*.min.js
 **/plugins/*
-**/dist/*
-**/build/npm
-ad.js
 **/includes/libraries/*

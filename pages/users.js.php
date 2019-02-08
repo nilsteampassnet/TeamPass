@@ -304,38 +304,6 @@ $('.build-login').change(function() {
     );
 })
 
-/**
-* PREPARE THE ACTION BUTTON BY USER
-*//*
-$('#table-users tbody').on( 'click', '.btn-action', function () {
-    var tr = $(this).closest('tr');
-    var row = oTable.row( tr );
-
-    if ( row.child.isShown() ) {
-    row.child.remove();
-    $(this)
-        .removeClass('text-warning gear-selected');
-    }
-    else {
-    $('.new-row').remove();
-    $('.gear-selected').removeClass('text-warning gear-selected');
-
-    $(this)
-        .addClass('text-warning gear-selected');        
-
-    // Prepare
-    row.child(
-        '<button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></button>' +
-        '<button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="password"><i class="fas fa-key mr-2"></i><?php echo langHdl('change_password'); ?></button>' +
-        '<button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></button>' +
-        '<button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></button>' +
-        '<button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="sitemap"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></button>' +
-        'new-row'
-    ).show();
-    }
-} );
-*/
- 
 
 /**
  * TOP MENU BUTTONS ACTIONS
@@ -872,7 +840,9 @@ $(document).on('click', '.tp-action', function() {
                 }
             }
         );
-
+        //
+        // --- END
+        //
     } else if ($(this).data('action') === 'refresh') {
         $('.form').addClass('hidden');
         $('#users-list')
@@ -881,9 +851,151 @@ $(document).on('click', '.tp-action', function() {
             .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
             .dismissOthers();
         oTable.ajax.reload();
+        //
+        // --- END
+        //
+    } else if ($(this).data('action') === 'propagate') {
+        $('#row-list, #row-folders').addClass('hidden');
+        $('#row-propagate').removeClass('hidden');
+
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        // Load list of users
+        $.post(
+            'sources/users.queries.php',
+            {
+                type    : 'get_list_of_users_for_sharing',
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                        .dismissOthers();
+                } else {
+                    // Build select
+                    var html = '';
+                    $.each(data.values, function(i, value) {
+                        html += '<option value="' + value.id + '" data-groups="' + value.groups + '" data-managed-by="' + value.managedBy + '" data-folders-allowed="' + value.foldersAllowed + '" data-folders-forbidden="' + value.foldersForbidden + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + value.name + ' ' + value.lastname + ' [' + value.login + ']</option>';
+                    });
+
+                    $('#propagate-from, #propagate-to')
+                        .find('option')
+                        .remove()
+                        .end()
+                        .append(html)
+                        .change();
+
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
+        //
+        // --- END
+        //
+    } else if ($(this).data('action') === 'do-propagate') {
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+
+        // destination users
+        var userIds = $('#propagate-to').val();
+                
+        if (userIds.length === 0) return false;
+
+        // Prepare data
+        var data = {
+            source_id       : $("#propagate-from option:selected").val(),
+            destination_ids : userIds,
+            user_functions  : $("#propagate-from option:selected").data('groups-id'),
+            user_managedby  : $("#propagate-from option:selected").data('managed-by-id'),
+            user_fldallowed : $("#propagate-from option:selected").data('folders-allowed-id'),
+            user_fldforbid  : $("#propagate-from option:selected").data('folders-forbidden-id'),
+            user_admin      : $("#propagate-from option:selected").data('admin'),
+            user_manager    : $("#propagate-from option:selected").data('manager'),
+            user_hr         : $("#propagate-from option:selected").data('hr'),
+            user_readonly   : $("#propagate-from option:selected").data('read-only'),
+            user_personalfolder : $("#propagate-from option:selected").data('personal-folder'),
+            user_rootfolder : $("#propagate-from option:selected").data('root-folder'),
+        };
+        console.log(data);
+        $.post(
+            "sources/users.queries.php",
+            {
+                type    : "update_users_rights_sharing",
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    $('.clear-me').val('');
+                    $('.select2').val('').change();
+                    $('.extra-form, #row-folders').addClass('hidden');
+                    $('#row-list').removeClass('hidden');
+
+                    // Prepare checks
+                    $('.form-check-input')
+                        .iCheck('disable')
+                        .iCheck('uncheck');
+
+                    // Remove action from store
+                    store.update(
+                        'teampassApplication',
+                        function (teampassApplication)
+                        {
+                            teampassApplication.formUserAction = '',
+                            teampassApplication.formUserId = '';
+                        }
+                    );
+
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
+        
+        //
+        // --- END
+        //
     }
 });
 
+
+/**
+ * Permit to show some info while selecting a  User
+ */
+$(document).on('change', '#propagate-from', function() {
+    var selectedOption = $(this).find('option:selected');
+    $('#propagate-user-roles').html($(selectedOption).data('groups'));
+    $('#propagate-user-managedby').html($(selectedOption).data('managed-by'));
+    $('#propagate-user-allowed').html($(selectedOption).data('folders-allowed'));
+    $('#propagate-user-fordidden').html($(selectedOption).data('folders-forbidden'));
+});
 
 
 /**
@@ -927,7 +1039,7 @@ $('#button-password-generate').click(function() {
 $('#form-user .track-change').on('change', function() {
     if ($(this).val() !== null && $(this).val().length > 0) {
         userDidAChange = true;
-        console.log('>> ICI2 ')
+        $(this).data('change-ongoing', true);
     } else {
         $(this).data('change-ongoing', false);
     }

@@ -279,6 +279,8 @@ $(document).on('click', '.modify', function() {
     if (currentFolderEdited !== '' && currentFolderEdited !== $(this).data('id')) {
         $('.temp-row').remove();
     } else if (currentFolderEdited === $(this).data('id')) {
+        $('.temp-row').remove();
+        currentFolderEdited = '';
         return false;
     }
 
@@ -345,9 +347,9 @@ $(document).on('click', '.modify', function() {
     } else if (folderAccess === 'NE') {
         $('#right-write').iCheck('check');
         $('#right-no-edit').iCheck('check');
-    } else if (folderAccess === 'WNDNE') {
+    } else if (folderAccess === 'NDNE') {
         $('#right-write').iCheck('check');
-        $('#right-no-edit').iCheck('check');
+        $('#right-no-edit, #right-no-delete').iCheck('check');
     }
 });
 

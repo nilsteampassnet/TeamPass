@@ -432,7 +432,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $sWhere = substr_replace($sWhere, '', -3).') ';
         }
     }
-
+    
     DB::query(
         'SELECT *
         FROM '.prefixTable('log_items').' AS l
@@ -660,7 +660,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(chr(10), chr(13)), array('<br>', '<br>'), addslashes($record['label'])).'", ';
+        $sOutput .= '"'.addslashes(str_replace(array(chr(10), chr(13), "`", "<br />@", "'"), array('<br>', '<br>', "'", "", "&#39;"), ($record['label']))).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';

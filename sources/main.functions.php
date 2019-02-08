@@ -413,7 +413,7 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
     if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-    
+
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -665,8 +665,6 @@ function identifyUserRights(
  * @param string $idFonctions Roles of user
  * @param array  $SETTINGS    Teampass settings
  * @param array  $tree        Tree of folders
- *
- * @return void
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
@@ -749,8 +747,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
  * @param string $idFonctions          Roles of user
  * @param array  $SETTINGS             Teampass settings
  * @param array  $tree                 Tree of folders
- *
- * @return void
  */
 function identUser(
     $groupesVisiblesUser,
@@ -979,13 +975,11 @@ function identUser(
 }
 
 /**
- * Update the CACHE table
+ * Update the CACHE table.
  *
  * @param string $action   What to do
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
- *
- * @return void
  */
 function updateCacheTable($action, $SETTINGS, $ident = null)
 {
@@ -1005,11 +999,9 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
 }
 
 /**
- * Cache table - refresh
+ * Cache table - refresh.
  *
  * @param array $SETTINGS Teampass settings
- *
- * @return void
  */
 function cacheTableRefresh($SETTINGS)
 {
@@ -1097,14 +1089,12 @@ function cacheTableRefresh($SETTINGS)
 }
 
 /**
- * Cache table - update existing value
+ * Cache table - update existing value.
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
- *
- * @return void
  */
-function cacheTableUpdate($action, $SETTINGS, $ident = null)
+function cacheTableUpdate($SETTINGS, $ident = null)
 {
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -1174,12 +1164,10 @@ function cacheTableUpdate($action, $SETTINGS, $ident = null)
 }
 
 /**
- * Cache table - add new value
+ * Cache table - add new value.
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
- *
- * @return void
  */
 function cacheTableAdd($action, $SETTINGS, $ident = null)
 {
@@ -1253,9 +1241,8 @@ function cacheTableAdd($action, $SETTINGS, $ident = null)
     );
 }
 
-
 /**
- * Do statistics
+ * Do statistics.
  *
  * @return array
  */
@@ -1420,8 +1407,8 @@ function sendEmail(
         'ssl' => array(
             'verify_peer' => false,
             'verify_peer_name' => false,
-            'allow_self_signed' => true
-        )
+            'allow_self_signed' => true,
+        ),
     );
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
@@ -1464,7 +1451,7 @@ function sendEmail(
 }
 
 /**
- * Returns the email body
+ * Returns the email body.
  *
  * @param string $textMail Text for the email
  *
@@ -1663,9 +1650,7 @@ function prepareExchangedData($data, $type, $key = null)
  *
  * @param string $src           Source
  * @param string $dest          Destination
- * @param double $desired_width Size of width
- *
- * @return void
+ * @param float  $desired_width Size of width
  */
 function makeThumbnail($src, $dest, $desired_width)
 {
@@ -1712,7 +1697,7 @@ function prefixTable($table)
 function GenerateCryptKey($size = null, $secure = false, $numerals = false, $capitalize = false, $symbols = false)
 {
     global $SETTINGS;
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     if ($secure === true) {
         $numerals = true;
@@ -1726,10 +1711,10 @@ function GenerateCryptKey($size = null, $secure = false, $numerals = false, $cap
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
     // Can we use PHP7 random_int function?
-    if (version_compare(phpversion(), '7.0', '>=')) {
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
+    /*if (version_compare(phpversion(), '7.0', '>=')) {
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
-    }
+    }*/
 
     // init
     if (empty($size) === false && is_null($size) === false) {
@@ -2434,11 +2419,9 @@ function prepareFileWithDefuse(
 * NOT TO BE USED
 */
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string $text Text to debug
- *
- * @return void
  */
 function debugTeampass($text)
 {
@@ -2452,8 +2435,6 @@ function debugTeampass($text)
  *
  * @param string $file     Path to file
  * @param array  $SETTINGS Teampass settings
- *
- * @return void
  */
 function fileDelete($file, $SETTINGS)
 {
@@ -2482,7 +2463,6 @@ function getFileExtension($file)
 
     return substr($file, strrpos($file, '.') + 1);
 }
-
 
 /**
  * Performs chmod operation on subfolders.
@@ -2567,7 +2547,7 @@ function accessToItemIsGranted($item_id)
 /**
  * Creates a unique key.
  *
- * @param double $lenght Key lenght
+ * @param float $lenght Key lenght
  *
  * @return string
  */
@@ -2585,9 +2565,8 @@ function uniqidReal($lenght = 13)
     return substr(bin2hex($bytes), 0, $lenght);
 }
 
-
 /**
- * Obfuscate an email
+ * Obfuscate an email.
  *
  * @param string $email Email address
  *
@@ -2614,9 +2593,8 @@ function obfuscateEmail($email)
         .substr_replace($domain, $end, 2, $domain_l / $prop);
 }
 
-
 /**
- * Permits to get LDAP information about a user
+ * Permits to get LDAP information about a user.
  *
  * @param string $username User name
  * @param string $password User password
@@ -2629,7 +2607,7 @@ function connectLDAP($username, $password, $SETTINGS)
     $ldapInfo = '';
 
     // Prepare LDAP connection if set up
-    
+
     if ($SETTINGS['ldap_type'] === 'posix-search') {
         $ldapInfo = ldapPosixSearch(
             $username,
@@ -2647,9 +2625,8 @@ function connectLDAP($username, $password, $SETTINGS)
     return json_encode($ldapInfo);
 }
 
-
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string $username Username
  * @param string $password Password
@@ -2666,11 +2643,11 @@ function ldapPosixSearch($username, $password, $SETTINGS)
     $user_name = '';
     $ldapConnection = false;
 
-    foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
+    foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
         if ($SETTINGS['ldap_ssl'] == 1) {
-            $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
+            $ldapURIs .= 'ldaps://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
         } else {
-            $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
+            $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
         }
     }
     $ldapconn = ldap_connect($ldapURIs);
@@ -2694,7 +2671,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
         if ((empty($SETTINGS['ldap_bind_dn']) === true && empty($SETTINGS['ldap_bind_passwd']) === true)
             || $ldapbind === true
         ) {
-            $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+            $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$username.')(objectClass='.$SETTINGS['ldap_object_class'].'))';
             $result = ldap_search(
                 $ldapconn,
                 $SETTINGS['ldap_search_base'],
@@ -2718,7 +2695,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                     && empty($SETTINGS['ldap_usergroup']) === false
                 ) {
                     // New way to check User's group membership
-                    $filter_group = "memberUid=".$username;
+                    $filter_group = 'memberUid='.$username;
                     $result_group = ldap_search(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
@@ -2731,7 +2708,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
 
                         if ($entries['count'] > 0) {
                             // Now check if group fits
-                            for ($i = 0; $i < $entries['count']; $i++) {
+                            for ($i = 0; $i < $entries['count']; ++$i) {
                                 $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
                                 if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                     $GroupRestrictionEnabled = true;
@@ -2772,12 +2749,12 @@ function ldapPosixSearch($username, $password, $SETTINGS)
         'name' => $user_name,
         'email' => $user_email,
         'auth_success' => $ldapConnection,
-        'user_found' => $user_found
+        'user_found' => $user_found,
     );
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string $username Username
  * @param string $password Password
@@ -2796,10 +2773,10 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
 
     //Multiple Domain Names
     if (strpos(html_entity_decode($username), '\\') === true) {
-        $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+        $ldap_suffix = '@'.substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
-    
+
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
 
@@ -2820,10 +2797,10 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         array(
             'base_dn' => $SETTINGS['ldap_domain_dn'],
             'account_suffix' => $ldap_suffix,
-            'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
+            'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
             'ad_port' => $SETTINGS['ldap_port'],
             'use_ssl' => $SETTINGS['ldap_ssl'],
-            'use_tls' => $SETTINGS['ldap_tls']
+            'use_tls' => $SETTINGS['ldap_tls'],
         )
     );
 
@@ -2864,7 +2841,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         'name' => $user_name,
         'email' => $user_email,
         'auth_success' => $ldapConnection,
-        'user_found' => $user_found
+        'user_found' => $user_found,
     );
 }
 
@@ -2895,27 +2872,219 @@ function performDBQuery($SETTINGS, $fields, $table)
 }
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
- * @param integer $bytes Size of file
+ * @param int $bytes Size of file
  *
  * @return string
  */
 function formatSizeUnits($bytes)
 {
     if ($bytes >= 1073741824) {
-        $bytes = number_format($bytes / 1073741824, 2) . ' GB';
+        $bytes = number_format($bytes / 1073741824, 2).' GB';
     } elseif ($bytes >= 1048576) {
-        $bytes = number_format($bytes / 1048576, 2) . ' MB';
+        $bytes = number_format($bytes / 1048576, 2).' MB';
     } elseif ($bytes >= 1024) {
-        $bytes = number_format($bytes / 1024, 2) . ' KB';
+        $bytes = number_format($bytes / 1024, 2).' KB';
     } elseif ($bytes > 1) {
-        $bytes = $bytes . ' bytes';
+        $bytes = $bytes.' bytes';
     } elseif ($bytes == 1) {
-        $bytes = $bytes . ' byte';
+        $bytes = $bytes.' byte';
     } else {
         $bytes = '0 bytes';
     }
 
     return $bytes;
+}
+
+/**
+ * Generate user pair of keys.
+ *
+ * @param string $userPwd User password
+ * @param int    $userId  User id to change
+ *
+ * @return array
+ */
+function generateUserKeys($userPwd, $userId = 0)
+{
+    // include library
+    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+    // Load classes
+    $rsa = new Crypt_RSA();
+    $cipher = new Crypt_AES();
+
+    // Create the private and public key
+    $res = $rsa->createKey(4096);
+
+    // Encrypt the privatekey
+    $cipher->setPassword($userPwd);
+    $privatekey = $cipher->encrypt($res['privatekey']);
+
+    return array(
+        'private_key' => $privatekey,
+        'public_key' => $res['publickey'],
+        'private_key_clear' => $res['privatekey'],
+    );
+}
+
+/**
+ * Permits to decrypt the user's privatekey.
+ *
+ * @param string $userPwd        User password
+ * @param string $userPrivateKey User provate key
+ *
+ * @return string
+ */
+function decryptPrivateKey($userPwd, $userPrivateKey)
+{
+    if (empty($userPwd) === false) {
+        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+        // Load classes
+        $cipher = new Crypt_AES();
+
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+
+        return $cipher->decrypt($userPrivateKey);
+    }
+}
+
+/**
+ * Performs an AES encryption of the.
+ *
+ * @param string $userPwd        User password
+ * @param string $userPrivateKey User private key
+ *
+ * @return string
+ */
+function encryptData($userPwd, $userPrivateKey)
+{
+    if (empty($userPwd) === false) {
+        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+        // Load classes
+        $cipher = new Crypt_AES();
+
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+
+        return $cipher->decrypt($userPrivateKey);
+    }
+}
+
+/**
+ * Generate a key.
+ *
+ * @param int $length Length of the key to generate
+ *
+ * @return string
+ */
+function randomStr($length)
+{
+    $keyspace = str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    $pieces = [];
+    $max = mb_strlen($keyspace, '8bit') - 1;
+    for ($i = 0; $i < $length; ++$i) {
+        $pieces[] = $keyspace[random_int(0, $max)];
+    }
+
+    return implode('', $pieces);
+}
+
+/**
+ * Encrypts a string using AES.
+ *
+ * @param string $data String to encrypt
+ *
+ * @return array
+ */
+function doDataEncryption($data)
+{
+    // Includes
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+    // Load classes
+    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+
+    // Generate an object key
+    // It will be used to encrypt the object
+    $objectKey = base64_encode(randomStr(32));
+    $cipher->setPassword($objectKey);
+
+    return array(
+        'encrypted' => $cipher->encrypt($data),
+        'objectKey' => $objectKey,
+    );
+}
+
+/**
+ * Decrypts a string using AES.
+ *
+ * @param string $data Encrypted data
+ * @param string $key  Key to uncrypt
+ *
+ * @return string
+ */
+function doDataDecryption($data, $key)
+{
+    // Includes
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+    // Load classes
+    $cipher = new Crypt_AES();
+
+    // Set the object key
+    $cipher->setPassword($key);
+
+    return $cipher->decrypt($data);
+}
+
+/**
+ * Encrypts using RSA a string using a public key 
+ *
+ * @param string $key       Key to be encrypted
+ * @param string $publicKey User public key
+ *
+ * @return string
+ */
+function encryptUserObjectKey($key, $publicKey)
+{
+    // Includes
+    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+
+    // Load classes
+    $rsa = new Crypt_RSA();
+    $rsa->loadKey($publicKey);
+
+    // Encrypt
+    $rsa->setEncryptionMode(CRYPT_RSA_ENCRYPTION_OAEP);
+
+    return $rsa->encrypt($key);
+}
+
+/**
+ * Decrypts using RSA an encrypted string using a private key
+ *
+ * @param string $key        Encrypted key
+ * @param string $privateKey User private key
+ *
+ * @return string
+ */
+function decryptUserObjectKey($key, $privateKey)
+{
+    // Includes
+    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+
+    // Load classes
+    $rsa = new Crypt_RSA();
+    $rsa->loadKey($privateKey);
+
+    // Encrypt
+    return $rsa->decrypt($key);
 }

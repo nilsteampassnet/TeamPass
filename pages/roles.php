@@ -130,8 +130,10 @@ $link->set_charset(DB_ENCODING);
                                     <input type="checkbox" class="form-check-input form-item-control" id="form-role-privilege">
                                     <label class="form-check-label ml-2" for="form-role-privilege">
                                         <?php echo langHdl('role_can_edit_any_visible_item'); ?>
-                                        <i class="mr-2 fas fa-question-circle infotip" title="<?php echo langHdl('role_can_edit_any_visible_item_tip'); ?>"></i>
                                     </label>
+                                    <small class='form-text text-muted'>
+                                        <?php echo langHdl('role_can_edit_any_visible_item_tip'); ?>
+                                    </small>
                                 </div>
                             </div>
                             <div class="card-footer">

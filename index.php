@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -401,7 +401,53 @@ if (($session_validite_pw === null
                             '.langHdl('pw').'
                         </p>
                         </a>
-                    </li>
+                    </li>';
+                    }
+
+    // IMPORT menu
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="import" class="nav-link', $pageSel === 'import' ? ' active' : '' ,'"">
+                        <i class="nav-icon fas fa-file-import"></i>
+                        <p>
+                            '.langHdl('import').'
+                        </p>
+                        </a>
+                    </li>';
+    }
+
+    /*
+    // EXPORT menu
+    if (isset($SETTINGS['roles_allowed_to_print']) === true && (int) $SETTINGS['roles_allowed_to_print'] === 1) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="export" class="nav-link', $pageSel === 'export' ? ' active' : '' ,'"">
+                        <i class="nav-icon fas fa-file-export"></i>
+                        <p>
+                            '.langHdl('import').'
+                        </p>
+                        </a>
+                    </li>';
+    }
+    */
+
+    /*
+    // OFFLINE MODE menu
+    if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="offline" class="nav-link', $pageSel === 'offline' ? ' active' : '' ,'"">
+                        <i class="nav-icon fas fa-plug"></i>
+                        <p>
+                            '.langHdl('offline').'
+                        </p>
+                        </a>
+                    </li>';
+    }
+    */
+
+    echo '
                     <li class="nav-item">
                         <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
                         <i class="nav-icon fas fa-search"></i>
@@ -410,15 +456,12 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
-                    }
 
     // Favourites menu
-    if (isset($SETTINGS['enable_favourites'])
-        && $SETTINGS['enable_favourites'] === '1'
-        && ($session_user_admin === 0
-        || ($session_user_admin === 1
-        && TP_ADMIN_FULL_RIGHT === false))
-    ) {
+    if (isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
+                        && ($session_user_admin === 0 || ($session_user_admin === 1
+                        && TP_ADMIN_FULL_RIGHT === false))
+                    ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
@@ -429,10 +472,10 @@ if (($session_validite_pw === null
                         </a>
                     </li>';
     }
-
+/*
     // KB menu
-    if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] === '1'
-                    ) {
+    if (isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1'
+                                ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
@@ -443,11 +486,11 @@ if (($session_validite_pw === null
                         </a>
                     </li>';
     }
-
+*/
     // SUGGESTION menu
     if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
-                        && ($session_user_admin === 1 || $session_user_manager === 1)
-                    ) {
+                                    && ($session_user_admin === 1 || $session_user_manager === 1)
+                                ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
@@ -776,6 +819,7 @@ if (($session_validite_pw === null
 <!-- ./wrapper -->
 
     <?php
+    /*
     // SENDING STATISTICS?
     if (isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === '1'
         && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== '1')
@@ -786,29 +830,11 @@ if (($session_validite_pw === null
         echo '
 <input type="hidden" name="send_statistics" id="send_statistics" value="0" />';
     }
-
-    if ($session_autoriser !== null && $session_autoriser === true) {
-        // Show menu
-        echo '
-<form method="post" name="main_form" action="">
-    <input type="hidden" name="menu_action" id="menu_action" value="" />
-    <input type="hidden" name="changer_pw" id="changer_pw" value="" />
-    <input type="hidden" name="form_user_id" id="form_user_id" value="', $session_user_id !== null ? $session_user_id : '', '" />
-    <input type="hidden" name="is_admin" id="is_admin" value="', $session_is_admin !== null ? $session_is_admin : '', '" />
-    <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['user_settings']['clear_psk']) ? 1 : 0, '" />
-</form>';
-    }
+    */
 
     /* MAIN PAGE */
     echo '
-<input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
-<input type="hidden" name="language" id="language" value="" />
-<input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
-<input type="hidden" id="user_session" value=""/>
-<input type="hidden" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
-<input type="hidden" id="please_login" value="" />
-<input type="hidden" id="disabled_action_on_going" value="" />
-<input type="hidden" id="duo_sig_response" value="', null !== $post_sig_response ? $post_sig_response : '', '" />';
+<input type="text" id="temps_restant" value="', isset($_SESSION['sessionDuration']) ? $_SESSION['sessionDuration'] : '', '" />';
 } elseif ((empty($session_user_id) === false
     && $session_user_id !== null)
     || empty($session_user_id) === true
@@ -861,12 +887,12 @@ if (($session_validite_pw === null
 <!-- AdminLTE -->
 <script src="dist/js/adminlte.js"></script>
 <!-- Altertify -->
-<script src="plugins/alertifyjs/alertify.min.js"></script>
+<script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>
+<!-- STORE.JS -->
+<script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
 <!-- aes -->
 <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.js"></script>
 <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes-ctr.js"></script>
-<!-- functions -->
-<script type="text/javascript" src="includes/js/functions.js"></script>
 <!-- nprogress -->
 <script type="text/javascript" src="plugins/nprogress/nprogress.js"></script>
 <!-- clipboardjs -->
@@ -878,8 +904,6 @@ if (($session_validite_pw === null
 <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js"></script>
 <!-- platform -->
 <script type="text/javascript" src="plugins/platform/platform.js"></script>
-<!-- STORE.JS -->
-<script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
 <!-- radiobuttons -->
 <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
 <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
@@ -905,7 +929,7 @@ if ($menuAdmin === true) {
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
     <?php
-} elseif ($pageSel === 'items') {
+} elseif ($pageSel === 'items' || $pageSel === 'import') {
         ?>
 <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
 <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
@@ -923,7 +947,7 @@ if ($menuAdmin === true) {
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
     } elseif ($pageSel === 'search' || $pageSel === 'folders'
-        || $pageSel === 'users' ||$pageSel === 'roles'
+        || $pageSel === 'users' || $pageSel === 'roles'
         || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs'
         || $pageSel === 'utilities.database'
     ) {
@@ -961,6 +985,8 @@ if ($menuAdmin === true) {
         <?php
     }
 ?>
+<!-- functions -->
+<script type="text/javascript" src="includes/js/functions.js"></script>
 
 </body>
 </html>
@@ -1004,6 +1030,12 @@ if (isset($_SESSION['CPM']) === true
         }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';
+    } elseif ($pageSel === 'import') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/import.js.php';
+    } elseif ($pageSel === 'export') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/export.js.php';
+    } elseif ($pageSel === 'offline') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/offline.js.php';
     } elseif ($pageSel === 'search') {
         include_once $SETTINGS['cpassman_dir'].'/pages/search.js.php';
     } elseif ($pageSel === 'profile') {

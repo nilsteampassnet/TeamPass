@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
 *
  * @version   GIT: <git_id>
@@ -207,7 +207,7 @@ if ((isset($_GET['session']) === true
 }
 
 // CHECK IF SESSION EXISTS AND IF SESSION IS VALID
-if (empty($_SESSION['fin_session']) === false) {
+if (empty($_SESSION['sessionDuration']) === false) {
     $dataSession = DB::queryFirstRow(
         'SELECT key_tempo FROM '.prefixTable('users').' WHERE id=%i',
         $_SESSION['user_id']
@@ -227,8 +227,8 @@ if (isset($_SESSION['user_id']) === true
     && isset($_GET['type']) === false
     && isset($_GET['action']) === false
     && $_SESSION['user_id'] !== '0'
-    && (empty($_SESSION['fin_session']) === true
-    || $_SESSION['fin_session'] < time()
+    && (empty($_SESSION['sessionDuration']) === true
+    || $_SESSION['sessionDuration'] < time()
     || empty($_SESSION['key']) === true
     || empty($dataSession['key_tempo']) === true)
 ) {
@@ -412,7 +412,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $_SESSION['groupes_interdits'] = @implode(';', $data['groupes_interdits']);
         }
 
-        if (isset($_SESSION['fin_session']) === false) {
+        if (isset($_SESSION['sessionDuration']) === false) {
             DB::update(
                 prefixTable('users'),
                 array(

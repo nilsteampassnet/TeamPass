@@ -9,7 +9,7 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @copyright 2009-2019 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @version   GIT: <git_id>
@@ -81,7 +81,7 @@ var uploader_photo = new plupload.Uploader({
         height : '90',
         quality : '90'
     },
-    url : '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload/upload.files.php',
+    url : '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
     flash_swf_url : '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
     silverlight_xap_url : '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
     init: {
