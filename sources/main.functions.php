@@ -2573,6 +2573,9 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
+
+    //load ClassLoader
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
