@@ -20,7 +20,8 @@ $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
 if (isset($_SESSION) === false) {
     include_once 'SecureHandler.php';
-    session_start();
+    session_name('teampass_session');
+session_start();
 }
 
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {

@@ -149,7 +149,8 @@ if (!function_exists('crypt_random_string')) {
             session_id(1);
             ini_set('session.use_cookies', 0);
             session_cache_limiter('');
-            session_start();
+            session_name('teampass_session');
+session_start();
 
             $v = $seed = $_SESSION['seed'] = pack('H*', sha1(
                 (isset($_SERVER) ? phpseclib_safe_serialize($_SERVER) : '') .
@@ -170,7 +171,8 @@ if (!function_exists('crypt_random_string')) {
             // restore old session data
             if ($old_session_id != '') {
                 session_id($old_session_id);
-                session_start();
+                session_name('teampass_session');
+session_start();
                 ini_set('session.use_cookies', $old_use_cookies);
                 session_cache_limiter($old_session_cache_limiter);
             } else {

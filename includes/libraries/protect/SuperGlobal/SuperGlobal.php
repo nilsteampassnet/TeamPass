@@ -20,7 +20,8 @@ namespace protect\SuperGlobal;
 // Start session in case its not
 if (session_id() === '') {
     include_once __DIR__.'/../../../../sources/SecureHandler.php';
-    session_start();
+    session_name('teampass_session');
+session_start();
 }
 
 /**

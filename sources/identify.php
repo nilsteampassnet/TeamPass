@@ -10,13 +10,14 @@
  *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
  *
  * @see      http://www.teampass.net
  */
 require_once 'SecureHandler.php';
+session_name('teampass_session');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
@@ -157,7 +158,7 @@ if ($post_type === 'identify_duo_user') {
                     $pwdlib = new PasswordLib\PasswordLib();
 
                     // Generate user keys pair
-                    $userKeys = generateUserKeys();
+                    $userKeys = generateUserKeys($post_pwd);
 
                     // save an account in database
                     DB::insert(
@@ -697,6 +698,7 @@ function identifyUser($sentData, $SETTINGS)
         }*/
         $ret = ldapCreateUser(
             $username,
+            $passwordClear,
             $data,
             $user_info_from_ad,
             $SETTINGS
@@ -1119,7 +1121,7 @@ function identifyUser($sentData, $SETTINGS)
 
             // User signature keys
             $_SESSION['user']['public_key'] = $data['public_key'];
-            if (is_null($data['private_key']) === true || empty($data['private_key']) === true) {
+            if (is_null($data['private_key']) === true || empty($data['private_key']) === true || $data['private_key'] === 'none') {
                 // No keys have been generated yet
                 // Create them
                 $userKeys = generateUserKeys($passwordClear);
@@ -1910,16 +1912,17 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
  * Undocumented function.
  *
  * @param string $username          Username
+ * @param string $passwordClear     User password in clear
  * @param string $data              Result of query
  * @param string $user_info_from_ad Received data
  * @param array  $SETTINGS          Teampass settings
  *
  * @return array
  */
-function ldapCreateUser($username, $data, $user_info_from_ad, $SETTINGS)
+function ldapCreateUser($username, $passwordClear, $data, $user_info_from_ad, $SETTINGS)
 {
     // Generate user keys pair
-    $userKeys = generateUserKeys();
+    $userKeys = generateUserKeys($passwordClear);
 
     // Insert user in DB
     DB::insert(

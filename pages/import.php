@@ -81,7 +81,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <div class="tab-pane fade show active" id="csv" role="tabpanel" aria-labelledby="csv-tab">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
-                                <a href="<?php echo READTHEDOC; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
+                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
                             </div>
                             
                             <div class="row mt-3">
@@ -149,7 +149,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <div class="tab-pane fade" id="keepass" role="tabpanel" aria-labelledby="keepass-tab">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
-                                <a href="<?php echo READTHEDOC; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
+                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
                             </div>
 
                             <div class="row mt-3">

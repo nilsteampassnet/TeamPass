@@ -14,6 +14,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 require_once './SecureHandler.php';
+session_name('teampass_session');
 session_start();
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])

@@ -1,14 +1,11 @@
 {
-    "name": "NilsLaumaille/teampass-v3",
+    "name": "nilsteampassnet/TeamPass",
     "description": "Teampass",
     "prefer-stable": true,
     "config": {
         "optimize-autoloader": true,
         "apcu-autoloader": true,
         "discard-changes": true,
-        "gitlab-domains": [ "gitlab.com" ],
-        "gitlab-token": {"gitlab.com": "myToken"},
-        "gitlab-oauth": {"gitlab.com": "mySecret"}
     },
     "version": "3.0.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
@@ -19,8 +16,8 @@
     ],
     "support": {
         "email": "nils@teampass.net",
-        "issues": "https://gitlab.com/NilsLaumaille/teampass-v3/issues",
-        "source": "https://gitlab.com/NilsLaumaille/teampass-v3/tree/master",
+        "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
+        "source": "https://github.com/nilsteampassnet/TeamPass",
         "wiki": "https://www.teampass.net",
         "docs": "https://teampass.readthedocs.io/en/latest/",
         "forum": "https://www.reddit.com/r/TeamPass/"
@@ -32,7 +29,7 @@
       }
     ],
     "require": {
-        "php": ">=7.0",
+        "php": ">=7.2",
         "ext-mysqli": ">=5.1.0",
         "ext-mcrypt": "*",
         "ext-mbstring": "*",

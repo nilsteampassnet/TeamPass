@@ -17,6 +17,7 @@
  * @see      http://www.teampass.net
  */
 require_once '../../sources/SecureHandler.php';
+session_name('teampass_session');
 session_start();
 
 // Update table by deleting ID

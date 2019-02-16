@@ -1,17 +1,21 @@
 <?php
 /**
- * @file          include.php
+ * Teampass - a collaborative passwords manager.
  *
- * @author        Nils Laumaillé
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @version       2.1.27
+ * @category  Teampass
  *
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2019 Nils Laumaillé
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
- * @see
+ * @version   GIT: <git_id>
+ *
+ * @see      http://www.teampass.net
  */
-// DONT'T CHANGE BELOW THIS LINE
 
 define('TP_VERSION', '3.0.0');
 define('TP_VERSION_FULL', TP_VERSION.'.0');
@@ -35,6 +39,10 @@ define('OTV_USER_ID', '9999991');
 define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
+
+define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
+define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
+define('TEAMPASS_URL', 'https://teampass.net');
 
 define('DEBUG', true);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication

@@ -9,10 +9,6 @@
  *
  * @see
  */
-
-//define pbkdf2 iteration count
-define('ITCOUNT', '2072');
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -2776,6 +2772,8 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $ldap_suffix = '@'.substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
+    //load ClassLoader
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
@@ -2924,9 +2922,9 @@ function generateUserKeys($userPwd, $userId = 0)
     $privatekey = $cipher->encrypt($res['privatekey']);
 
     return array(
-        'private_key' => $privatekey,
-        'public_key' => $res['publickey'],
-        'private_key_clear' => $res['privatekey'],
+        'private_key' => base64_encode($privatekey),
+        'public_key' => base64_encode($res['publickey']),
+        'private_key_clear' => base64_encode($res['privatekey']),
     );
 }
 
@@ -2949,7 +2947,7 @@ function decryptPrivateKey($userPwd, $userPrivateKey)
         // Encrypt the privatekey
         $cipher->setPassword($userPwd);
 
-        return $cipher->decrypt($userPrivateKey);
+        return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
     }
 }
 
@@ -2961,7 +2959,7 @@ function decryptPrivateKey($userPwd, $userPrivateKey)
  *
  * @return string
  */
-function encryptData($userPwd, $userPrivateKey)
+/*function encryptData($userPwd, $userPrivateKey)
 {
     if (empty($userPwd) === false) {
         include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
@@ -2972,9 +2970,10 @@ function encryptData($userPwd, $userPrivateKey)
         // Encrypt the privatekey
         $cipher->setPassword($userPwd);
 
-        return $cipher->decrypt($userPrivateKey);
+        return $cipher->decrypt(base64_decode($userPrivateKey));
     }
 }
+*/
 
 /**
  * Generate a key.
@@ -2983,6 +2982,7 @@ function encryptData($userPwd, $userPrivateKey)
  *
  * @return string
  */
+/*
 function randomStr($length)
 {
     $keyspace = str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -2994,6 +2994,7 @@ function randomStr($length)
 
     return implode('', $pieces);
 }
+*/
 
 /**
  * Encrypts a string using AES.
@@ -3011,13 +3012,14 @@ function doDataEncryption($data)
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
 
     // Generate an object key
-    // It will be used to encrypt the object
-    $objectKey = base64_encode(randomStr(32));
+    $objectKey = uniqidReal(32);
+
+    // Set it as password
     $cipher->setPassword($objectKey);
 
     return array(
-        'encrypted' => $cipher->encrypt($data),
-        'objectKey' => $objectKey,
+        'encrypted' => base64_encode($cipher->encrypt($data)),
+        'objectKey' => base64_encode($objectKey),
     );
 }
 
@@ -3038,13 +3040,13 @@ function doDataDecryption($data, $key)
     $cipher = new Crypt_AES();
 
     // Set the object key
-    $cipher->setPassword($key);
+    $cipher->setPassword(base64_decode($key));
 
-    return $cipher->decrypt($data);
+    return base64_decode($cipher->decrypt(base64_decode($data)));
 }
 
 /**
- * Encrypts using RSA a string using a public key 
+ * Encrypts using RSA a string using a public key.
  *
  * @param string $key       Key to be encrypted
  * @param string $publicKey User public key
@@ -3059,16 +3061,16 @@ function encryptUserObjectKey($key, $publicKey)
 
     // Load classes
     $rsa = new Crypt_RSA();
-    $rsa->loadKey($publicKey);
+    $rsa->loadKey(base64_decode($publicKey));
 
     // Encrypt
     $rsa->setEncryptionMode(CRYPT_RSA_ENCRYPTION_OAEP);
 
-    return $rsa->encrypt($key);
+    return base64_encode($rsa->encrypt(base64_decode($key)));
 }
 
 /**
- * Decrypts using RSA an encrypted string using a private key
+ * Decrypts using RSA an encrypted string using a private key.
  *
  * @param string $key        Encrypted key
  * @param string $privateKey User private key
@@ -3083,8 +3085,35 @@ function decryptUserObjectKey($key, $privateKey)
 
     // Load classes
     $rsa = new Crypt_RSA();
-    $rsa->loadKey($privateKey);
+    $rsa->loadKey(base64_decode($privateKey));
 
     // Encrypt
-    return $rsa->decrypt($key);
+    return base64_encode($rsa->decrypt(base64_decode($key)));
 }
+
+function decryptFile()
+{
+     $aes = new \phpseclib\Crypt\AES();
+     $aes->setKey($this->key);
+     $ciphertext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
+     $plaintext = $aes->decrypt($ciphertext);
+     $hash = md5($plaintext);
+     $this->save_name = "DecryptedFile_" . $hash;
+     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $plaintext);
+     unlink($this->file->getPathname());
+     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
+ }
+
+ function encryptFile()
+ {
+     $aes = new \phpseclib\Crypt\AES();
+     $aes->setKey($this->key);
+     $plaintext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
+     $ciphertext = $aes->encrypt($plaintext);
+     $hash = md5($plaintext);
+     $this->save_name = "EncryptedFile_" . $hash;
+     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $ciphertext);
+     unlink($this->file->getPathname());
+     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
+ }
+

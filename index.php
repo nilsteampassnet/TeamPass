@@ -664,8 +664,8 @@ if (($session_validite_pw === null
                     @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']).' - '.
                     @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
                 <i class="fas fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
-                <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
-                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fab fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
+                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
+                <a href="<?php echo REDDIT_URL; ?>" target="_blank" class="text-info"><i class="fab fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
                 <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
             </div>
         </div>
@@ -813,7 +813,7 @@ if (($session_validite_pw === null
             <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION_FULL; ?>
         </div>
         <!-- Default to the left -->
-        <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="https://teampass.net"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
+        <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
     </footer>
 </div>
 <!-- ./wrapper -->

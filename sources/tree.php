@@ -17,6 +17,7 @@
  * @see      http://www.teampass.net
  */
 require_once 'SecureHandler.php';
+session_name('teampass_session');
 session_start();
 if (isset($_SESSION['CPM']) === false
     || $_SESSION['CPM'] !== 1

@@ -24,7 +24,8 @@ if (file_exists('../sources/SecureHandler.php')) {
     throw new Exception("Error file '/sources/SecureHandler.php' not exists", 1);
 }
 if (isset($_SESSION) === false) {
-    session_start();
+    session_name('teampass_session');
+session_start();
 }
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');

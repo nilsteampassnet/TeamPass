@@ -18,6 +18,7 @@
  */
 
 require_once '../../sources/SecureHandler.php';
+session_name('teampass_session');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');

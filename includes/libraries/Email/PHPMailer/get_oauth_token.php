@@ -58,6 +58,7 @@ exit;
 
 require 'vendor/autoload.php';
 
+session_name('teampass_session');
 session_start();
 
 $providerName = '';
