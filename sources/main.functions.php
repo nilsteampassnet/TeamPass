@@ -3104,16 +3104,48 @@ function decryptFile()
      return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
  }
 
- function encryptFile()
- {
-     $aes = new \phpseclib\Crypt\AES();
-     $aes->setKey($this->key);
-     $plaintext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
-     $ciphertext = $aes->encrypt($plaintext);
-     $hash = md5($plaintext);
-     $this->save_name = "EncryptedFile_" . $hash;
-     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $ciphertext);
-     unlink($this->file->getPathname());
-     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
- }
+ /**
+  * Encrypts a file
+  *
+  * @param string $fileInName File name
+  * @param string $fileInPath Path to file
+  *
+  * @return array
+  */
+function encryptFile($fileInName, $fileInPath)
+{
+    define('FILE_BUFFER_SIZE', 128 * 1024);
 
+    // Includes
+    include_once '../includes/config/include.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+
+    // Load classes
+    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+
+    // Generate an object key
+    $objectKey = uniqidReal(32);
+
+    // Set it as password
+    $cipher->setPassword($objectKey);
+
+    // Prevent against out of memory
+    $cipher->enableContinuousBuffer();
+    $cipher->disablePadding();
+
+    // Encrypt the file content
+    $plaintext = file_get_contents($fileInPath . '/' . $fileInName);
+    $ciphertext = $cipher->encrypt($plaintext);
+
+    // Save new file
+    $hash = md5($plaintext);
+    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
+    file_put_contents($fileOut, $ciphertext);
+    unlink($fileInPath . '/' . $fileInName);
+
+    return array(
+        'fileHash' => base64_encode($hash),
+        'objectKey' => base64_encode($objectKey),
+    );
+}

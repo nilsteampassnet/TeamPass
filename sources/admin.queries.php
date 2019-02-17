@@ -942,7 +942,7 @@ switch ($post_type) {
                     \Defuse\Crypto\File::decryptFileWithPassword(
                         $SETTINGS['bck_script_path'].'/'.$post_option.'.sql',
                         $SETTINGS['bck_script_path'].'/'.str_replace('encrypted', 'clear', $filename).'.sql',
-                        $SETTINGS['bck_script_key']
+                        base64_decode($SETTINGS['bck_script_key'])
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
@@ -964,7 +964,7 @@ switch ($post_type) {
 
                 $return = Encryption\Crypt\aesctr::decrypt(
                     /* @scrutinizer ignore-type */ $return,
-                    $tp_settings['bck_script_key'],
+                    base64_decode($tp_settings['bck_script_key']),
                     256
                 );
 
