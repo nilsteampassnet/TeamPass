@@ -5,14 +5,17 @@
     "config": {
         "optimize-autoloader": true,
         "apcu-autoloader": true,
-        "discard-changes": true,
+        "discard-changes": true
     },
     "version": "3.0.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": "GPL-3.0-only",
     "authors": [
-        {"name": "Nils Laumaillé", "email": "nils@teampass.net"}
+        {
+            "name": "Nils Laumaillé",
+            "email": "nils@teampass.net"
+        }
     ],
     "support": {
         "email": "nils@teampass.net",
@@ -23,10 +26,10 @@
         "forum": "https://www.reddit.com/r/TeamPass/"
     },
     "repositories": [
-      {
-        "type" : "composer",
-        "url"  : "https://wpackagist.org"
-      }
+        {
+          "type" : "composer",
+          "url"  : "https://wpackagist.org"
+        }
     ],
     "require": {
         "php": ">=7.2",
@@ -39,4 +42,4 @@
         "ext-xml": "*",
         "ext-gd": "*"
     }
-  }
+}
