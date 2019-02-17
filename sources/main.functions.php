@@ -2932,7 +2932,7 @@ function generateUserKeys($userPwd, $userId = 0)
  * Permits to decrypt the user's privatekey.
  *
  * @param string $userPwd        User password
- * @param string $userPrivateKey User provate key
+ * @param string $userPrivateKey User private key
  *
  * @return string
  */
@@ -2948,6 +2948,29 @@ function decryptPrivateKey($userPwd, $userPrivateKey)
         $cipher->setPassword($userPwd);
 
         return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
+    }
+}
+
+/**
+ * Permits to encrypt the user's privatekey.
+ *
+ * @param string $userPwd        User password
+ * @param string $userPrivateKey User private key
+ *
+ * @return string
+ */
+function encryptPrivateKey($userPwd, $userPrivateKey)
+{
+    if (empty($userPwd) === false) {
+        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+        // Load classes
+        $cipher = new Crypt_AES();
+
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+
+        return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
     }
 }
 
@@ -3091,18 +3114,6 @@ function decryptUserObjectKey($key, $privateKey)
     return base64_encode($rsa->decrypt(base64_decode($key)));
 }
 
-function decryptFile()
-{
-     $aes = new \phpseclib\Crypt\AES();
-     $aes->setKey($this->key);
-     $ciphertext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
-     $plaintext = $aes->decrypt($ciphertext);
-     $hash = md5($plaintext);
-     $this->save_name = "DecryptedFile_" . $hash;
-     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $plaintext);
-     unlink($this->file->getPathname());
-     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
- }
 
  /**
   * Encrypts a file
@@ -3149,3 +3160,17 @@ function encryptFile($fileInName, $fileInPath)
         'objectKey' => base64_encode($objectKey),
     );
 }
+
+function decryptFile()
+{
+     $aes = new \phpseclib\Crypt\AES();
+     $aes->setKey($this->key);
+     $ciphertext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
+     $plaintext = $aes->decrypt($ciphertext);
+     $hash = md5($plaintext);
+     $this->save_name = "DecryptedFile_" . $hash;
+     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $plaintext);
+     unlink($this->file->getPathname());
+     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
+ }
+

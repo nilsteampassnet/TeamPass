@@ -15,6 +15,8 @@
  */
 
 return array(
+    'objects_encryption_explanation' => 'By changing password, all objects keys need to be regenerated. Those keys guarantee your access to the encrypted objects stored in Teampass. Please wait until the process reached the final step. This could take several minutes depending on the number of objects.',
+    'objects_encryption_progress' => 'Objects encryption keys progress',
     'description_has_changed' => 'Description has changed',
     'number_of_folders_imported' => 'Number of Folders imported',
     'number_of_items_imported' => 'Number of Items imported',

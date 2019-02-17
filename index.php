@@ -743,6 +743,31 @@ if (($session_validite_pw === null
         <!-- /.DEFECT REPORT -->
 
 
+        <!-- ENCRYPTION KEYS GENERATION -->
+        <div class="card card-warning m-2 hidden" id="dialog-encryption-keys">
+            <div class="card-header">
+                <h3 class="card-title">
+                <i class="fas fa-bug mr-2"></i>
+                <?php echo langHdl('Objects key generation'); ?>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-12 col-md-12">
+                        <div class="mb-2 alert alert-info">
+                            <i class="icon fas fa-info mr-2"></i>
+                            <?php echo langHdl('objects_encryption_explanation'); ?>
+                        </div>
+                        <div class="form-control" id="dialog-encryption-keys-progress"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-default float-right close-element" disabled><?php echo langHdl('close'); ?></button>
+            </div>
+        </div>
+        <!-- /.DEFECT REPORT -->
+
     <?php
     if ($session_initial_url !== null && empty($session_initial_url) === false) {
         include $session_initial_url;

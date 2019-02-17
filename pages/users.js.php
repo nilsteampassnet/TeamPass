@@ -379,7 +379,6 @@ $(document).on('click', '.tp-action', function() {
                 teampassApplication.formUserId = userID; // Store user ID
             }
         );
-
         $.post(
             "sources/users.queries.php",
             {

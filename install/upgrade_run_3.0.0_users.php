@@ -640,6 +640,29 @@ if (null !== $post_step) {
 
             exit();
         break;
+
+        /*
+        * CASE
+        * Sending email to user
+        */
+        case 'send_pwd_by_email':
+            // Prepare post variables
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+
+            // Get POST with user info
+            $userInfo = json_decode($post_user_info, true);
+
+
+            // Loop on users list
+            foreach ($userInfo as $user) {
+
+            }
+
+            
+            echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+
+            exit();
+        break;
     }
 }
 

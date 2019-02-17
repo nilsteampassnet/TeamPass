@@ -404,6 +404,10 @@ if (null !== $post_type) {
                     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                     $tree->rebuild();
                 }
+
+                // Delete objects keys
+                deleteUserObjetsKeys($post_id, $SETTINGS)
+
                 // update LOG
                 logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
 
@@ -1361,6 +1365,9 @@ if (null !== $post_type) {
 
                 $changeArray['pw'] = $pwdlib->createPasswordHash($post_password);
                 $changeArray['key_tempo'] = '';
+
+                // We need to adapt the private key with new password
+                $changeArray['private_key'] = encryptPrivateKey($post_password, $_SESSION['user']['private_key']);
             }
 
             // Empty user

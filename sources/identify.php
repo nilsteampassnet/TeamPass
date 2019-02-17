@@ -887,7 +887,7 @@ function identifyUser($sentData, $SETTINGS)
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'error' => 'install_error',
+                'error' => true,
                 'message' => 'Install folder has to be removed!',
             )
         );
