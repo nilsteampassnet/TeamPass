@@ -21,7 +21,7 @@ $debugLdap = 0; //Can be used in order to debug LDAP authentication
 if (isset($_SESSION) === false) {
     include_once 'SecureHandler.php';
     session_name('teampass_session');
-session_start();
+    session_start();
 }
 
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
@@ -274,6 +274,8 @@ function mainQuery($SETTINGS)
                             'pw' => $newPw,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw,
+                            'change_password_expected' => '',
+                            'private_key' => encryptPrivateKey($dataReceived['new_pw'], $_SESSION['user']['private_key']),
                             ),
                         'id = %i',
                         $_SESSION['user_id']
@@ -394,17 +396,16 @@ function mainQuery($SETTINGS)
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) == 'first_change'
             ) {
-                // Get sent complexity level
-                $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-
                 // Check complexity level
-                if ($post_complexicity >= TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
+                if ((int) $dataReceived['complexity'] >= (int) TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
                     // update DB
                     DB::update(
                         prefixTable('users'),
                         array(
                             'pw' => $newPw,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
+                            'change_password_expected' => '',
+                            'private_key' => encryptPrivateKey($dataReceived['new_pw'], $_SESSION['user']['private_key']),
                             ),
                         'id = %i',
                         $_SESSION['user_id']

@@ -1128,6 +1128,3 @@ echo '
         
     </section>
     <!-- /.content -->
-<?php
-echo base64_encode(randomStr(32));
-?>

@@ -140,7 +140,7 @@ if (isset($SETTINGS['cpassman_dir']) === true
 
         // Delete tag
         DB::delete(
-            $pre.'misc',
+            prefixTable('misc'),
             'type=%s AND intitule=%s',
             'install',
             'clear_install_folder'

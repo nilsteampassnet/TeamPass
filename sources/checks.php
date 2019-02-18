@@ -38,7 +38,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     case 'checkSessionExists':
         // Case permit to check if SESSION is still valid
         session_name('teampass_session');
-session_start();
+        session_start();
         if (isset($_SESSION['CPM']) === true) {
             echo '1';
         } else {

@@ -15,6 +15,7 @@
  */
 
 return array(
+    'current_password' => 'Current password',
     'objects_encryption_explanation' => 'By changing password, all objects keys need to be regenerated. Those keys guarantee your access to the encrypted objects stored in Teampass. Please wait until the process reached the final step. This could take several minutes depending on the number of objects.',
     'objects_encryption_progress' => 'Objects encryption keys progress',
     'description_has_changed' => 'Description has changed',
@@ -323,6 +324,8 @@ return array(
     'folders' => 'Folders',
     'roles' => 'Roles',
     'filter' => 'Filter',
+    'email_new_user_password' => '[Teampass] Login credential update',
+    'email_new_user_password_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has decided to reset your current password. Next time you will connect to Teampass, please use:<br><br><b>#tp_password#</b><br><br>We highly encourage you to change this password once connected.<br><br>Cheers',
     '---' => '---',
     'email_subject_item_updated' => '[Teampass] One item you are following has been updated',
     'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You have asked to be notified on changes performed on item `#item_label#` in folder `#folder_name#`.<br><br>User <b>#name# #lastname#</b> did some changes you can evalue by follwing newt <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>LINK</a>.<br><br>Cheers',

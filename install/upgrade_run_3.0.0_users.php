@@ -145,8 +145,9 @@ if (null !== $post_step) {
                     // Store
                     mysqli_query(
                         $db_link,
-                        "UPDATE ".$pre."users
-                        SET public_key = '".$userKeys['public_key']."', private_key = '".$userKeys['private_key']."'
+                        'UPDATE '.$pre."users
+                        SET public_key = '".$userKeys['public_key']."', private_key = '".$userKeys['private_key']."',
+                        last_connexion = '', upgrade_needed = 1
                         WHERE id = ".$post_number
                     );
 
@@ -280,8 +281,8 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,".(int) $item['id'].",".(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `'.$pre.'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
 
                     //$objKey = decryptUserObjectKey($share_key_for_item, $$userInfo['private_key']);
@@ -373,8 +374,8 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,".(int) $item['id'].",".(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `'.$pre.'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
                 }
 
@@ -436,8 +437,8 @@ if (null !== $post_step) {
                     $adminItem = mysqli_fetch_array(
                         mysqli_query(
                             $db_link,
-                            "SELECT share_key
-                            FROM ".$pre.'sharekeys_fields
+                            'SELECT share_key
+                            FROM '.$pre.'sharekeys_fields
                             WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
                         )
                     );
@@ -457,8 +458,8 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,".(int) $item['id'].",".(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `'.$pre.'sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
                 }
 
@@ -543,8 +544,8 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,".(int) $item['id'].",".(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `'.$pre.'sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
                 }
 
@@ -587,8 +588,8 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    "SELECT id
-                    FROM ".$pre."files"
+                    'SELECT id
+                    FROM '.$pre.'files'
                 )
             );
 
@@ -596,10 +597,10 @@ if (null !== $post_step) {
                 // Get items
                 $rows = mysqli_query(
                     $db_link,
-                    "SELECT id
-                    FROM ".$pre."files
+                    'SELECT id
+                    FROM '.$pre."files
                     WHERE status = 'aes_encryption'
-                    LIMIT ".$post_start.", ".$post_count_in_loop
+                    LIMIT ".$post_start.', '.$post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -607,9 +608,9 @@ if (null !== $post_step) {
                     $adminItem = mysqli_fetch_array(
                         mysqli_query(
                             $db_link,
-                            "SELECT share_key
-                            FROM ".$pre."sharekeys_files
-                            WHERE object_id = ".(int) $item['id']." AND user_id = ".(int) $adminId
+                            'SELECT share_key
+                            FROM '.$pre.'sharekeys_files
+                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
                         )
                     );
 
@@ -628,8 +629,8 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,".(int) $item['id'].",".(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `'.$pre.'sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
                 }
 
@@ -652,13 +653,36 @@ if (null !== $post_step) {
             // Get POST with user info
             $userInfo = json_decode($post_user_info, true);
 
+            // Get language
+            $_SESSION['teampass']['lang'] = include_once '../includes/language/english.php';
 
             // Loop on users list
             foreach ($userInfo as $user) {
-
+                // Find user's email
+                $userEmail = mysqli_fetch_array(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT email
+                        FROM '.$pre.'users
+                        WHERE id = '.(int) $user['id']
+                    )
+                );
+                if (empty($userEmail['email']) === false) {
+                    // Send email
+                    sendEmail(
+                        langHdl('email_new_user_password'),
+                        str_replace(
+                            array('#tp_password#'),
+                            array($user['pwd']),
+                            langHdl('email_new_user_password_body')
+                        ),
+                        $userEmail['email'],
+                        $SETTINGS,
+                        ''
+                    );
+                }
             }
 
-            
             echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
 
             exit();

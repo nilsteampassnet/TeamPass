@@ -72,7 +72,7 @@ $(function() {
                             $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
 
                             if (data.error !== false) {
-                                alertify.message('<?php echo langHdl('done');?>', 1).dismissOthers();
+                                alertify.message('<?php echo langHdl('done'); ?>', 1).dismissOthers();
                                 $("#div-2fa-duo-progress")
                                     .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + data.message);
                             } else {
@@ -291,16 +291,22 @@ $("#new-user-password")
 $('#but_confirm_new_password').click(function() {
     if ($('#new-user-password').val() !== ''
         && $('#new-user-password').val() === $('#new-user-password-confirm').val()
+        && $('#current-user-password').val() !== ''
     ) {
-        var data = '{"new_pw":"' + sanitizeString($('#new-user-password').val()) + '"}';
+        // Prepare data
+        var data = {
+            "new_pw" : sanitizeString($("#new-user-password").val()),
+            "complexity" : $('#new-user-password-complexity-level').val(),
+        };
+
+        // Send query
         $.post(
             'sources/main.queries.php',
             {
                 type                : 'change_pw',
                 change_pw_origine   : 'first_change',
-                complexity          : $('#new-user-password-complexity-level').val(),
                 key                 : '<?php echo $_SESSION['key']; ?>',
-                data                : prepareExchangedData(data, 'encode', '<?php echo $_SESSION['key']; ?>')
+                data                : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
             },
             function(data) {
                 data = JSON.parse(data);
@@ -452,7 +458,7 @@ function loadDuoDialog()
     $('#div-2fa-duo').removeClass('hidden');
     $('#div-2fa-duo-progress')
         .load(
-            '<?php echo $SETTINGS['cpassman_url'];?>/includes/core/duo.load.php',
+            '<?php echo $SETTINGS['cpassman_url']; ?>/includes/core/duo.load.php',
             null,
             function(responseText, textStatus, xhr) {
                 if (textStatus === "error") {
@@ -474,7 +480,6 @@ function identifyUser(redirect, psk, data, randomstring)
         },
         function(check_data) {
             if (parseInt(check_data) === 1) {
-                console.log(data)
                 //send query
                 $.post(
                     "sources/identify.php",
@@ -484,11 +489,12 @@ function identifyUser(redirect, psk, data, randomstring)
                     },
                     function(receivedData) {
                         var data = JSON.parse(receivedData);
+                        console.log(data);return;
 
                         if (data.value === randomstring) {
                             $("#connection_error").hide();
                             // Check if 1st connection
-                            if (data.first_connection === true) {
+                            if (data.first_connection === true || data.password_change_expected === true) {
                                 $('.confirm-password-card-body').removeClass('hidden');
                                 $('.login-card-body').addClass('hidden');
                                 $('#confirm-password-level').html(data.password_complexity);

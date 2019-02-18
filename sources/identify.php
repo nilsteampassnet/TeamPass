@@ -1063,9 +1063,9 @@ function identifyUser($sentData, $SETTINGS)
             }
 
             if (empty($data['last_connexion'])) {
-                $_SESSION['derniere_connexion'] = time();
+                $_SESSION['last_connection'] = time();
             } else {
-                $_SESSION['derniere_connexion'] = $data['last_connexion'];
+                $_SESSION['last_connection'] = $data['last_connexion'];
             }
 
             if (!empty($data['latest_items'])) {
@@ -1236,8 +1236,8 @@ function identifyUser($sentData, $SETTINGS)
                             ),
                             array(
                                 ' '.$_SESSION['login'].' (IP: '.getClientIpServer().')',
-                                date($SETTINGS['date_format'], $_SESSION['derniere_connexion']),
-                                date($SETTINGS['time_format'], $_SESSION['derniere_connexion']),
+                                date($SETTINGS['date_format'], $_SESSION['last_connection']),
+                                date($SETTINGS['time_format'], $_SESSION['last_connection']),
                             ),
                             $LANG['email_body_on_user_login']
                         ),
@@ -1281,6 +1281,7 @@ function identifyUser($sentData, $SETTINGS)
                     'message' => langHdl('account_is_locked'),
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    'password_change_expected' => false,
                 )
             );
 
@@ -1323,6 +1324,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('account_is_locked'),
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                        'password_change_expected' => false,
                     )
                 );
 
@@ -1351,6 +1353,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('error_bad_credentials'),
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                        'password_change_expected' => false,
                     )
                 );
 
@@ -1376,6 +1379,7 @@ function identifyUser($sentData, $SETTINGS)
                     'message' => langHdl('error_bad_credentials'),
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    'password_change_expected' => false,
                 )
             );
 
@@ -1401,6 +1405,7 @@ function identifyUser($sentData, $SETTINGS)
             'message' => '',
             'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+            'password_change_expected' => false,
         )
     );
 }

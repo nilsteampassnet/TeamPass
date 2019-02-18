@@ -100,7 +100,7 @@ if (empty($userInfo['avatar']) === true) {
 
 // Get Groups name
 $userParOfGroups = array();
-foreach($_SESSION['user_roles'] as $role) {
+foreach ($_SESSION['user_roles'] as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
         FROM '.prefixTable('roles_title').' 
@@ -108,8 +108,6 @@ foreach($_SESSION['user_roles'] as $role) {
     );
     array_push($userParOfGroups, $tmp['title']);
 }
-
-
 
 ?>
 
@@ -225,15 +223,15 @@ foreach($_SESSION['user_roles'] as $role) {
                                         <a class="float-right">
                                         <?php
                                         if (isset($SETTINGS['date_format']) === true) {
-                                            echo date($SETTINGS['date_format'], $_SESSION['derniere_connexion']);
+                                            echo date($SETTINGS['date_format'], $_SESSION['last_connection']);
                                         } else {
-                                            echo date('d/m/Y', $_SESSION['derniere_connexion']);
+                                            echo date('d/m/Y', $_SESSION['last_connection']);
                                         }
                                         echo ' '.langHdl('at').' ';
                                         if (isset($SETTINGS['time_format']) === true) {
-                                            echo date($SETTINGS['time_format'], $_SESSION['derniere_connexion']);
+                                            echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
                                         } else {
-                                            echo date('H:i:s', $_SESSION['derniere_connexion']);
+                                            echo date('H:i:s', $_SESSION['last_connection']);
                                         }
                                         ?>
                                         </a>

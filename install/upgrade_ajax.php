@@ -383,8 +383,8 @@ if (isset($post_type)) {
                 $db_sk = mysqli_fetch_row(
                     mysqli_query(
                         $db_link,
-                        "SELECT count(*)
-                        FROM ".$pre."misc
+                        'SELECT count(*)
+                        FROM '.$pre."misc
                         WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
                     )
                 );
@@ -400,14 +400,14 @@ if (isset($post_type)) {
                     if (!empty($db_sk[0])) {
                         mysqli_query(
                             $db_link,
-                            "UPDATE `".$pre."misc`
+                            'UPDATE `'.$pre."misc`
                             SET `valeur` = '".$sk_val."'
                             WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                         );
                     } else {
                         mysqli_query(
                             $db_link,
-                            "INSERT INTO `".$pre."misc`
+                            'INSERT INTO `'.$pre."misc`
                             (`valeur`, `type`, `intitule`)
                             VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
                         );
@@ -424,20 +424,20 @@ if (isset($post_type)) {
                 // no old sk is available
                 $tmp = mysqli_num_rows(mysqli_query(
                     $db_link,
-                    "SELECT * FROM `".$pre."misc`
+                    'SELECT * FROM `'.$pre."misc`
                     WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                 ));
                 if ($tmp == 0) {
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."misc`
+                        'INSERT INTO `'.$pre."misc`
                         (`valeur`, `type`, `intitule`)
                         VALUES ('none', 'admin', 'saltkey_ante_2127')"
                     );
                 } else {
                     mysqli_query(
                         $db_link,
-                        "INSERT INTO `".$pre."misc`
+                        'INSERT INTO `'.$pre."misc`
                         (`valeur`, `type`, `intitule`)
                         VALUES ('none', 'admin', 'saltkey_ante_2127')"
                     );
@@ -489,7 +489,7 @@ if (isset($post_type)) {
             // put TP in maintenance mode or not
             @mysqli_query(
                 $db_link,
-                "UPDATE `".$pre."misc`
+                'UPDATE `'.$pre."misc`
                 SET `valeur` = 'maintenance_mode'
                 WHERE type = 'admin' AND intitule = '".$post_no_maintenance_mode."'"
             );
@@ -680,7 +680,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
                 mysqli_query(
                     $db_link,
-                    "INSERT INTO `".$pre.'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
+                    'INSERT INTO `'.$pre.'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
                 );
 
                 echo '$("#step5_csrfpFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");
