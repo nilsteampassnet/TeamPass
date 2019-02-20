@@ -1389,57 +1389,65 @@ function sendEmail(
     $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
     $mail->register();
     $mail = new Email\PHPMailer\PHPMailer(true);
-
-    // send to user
-    $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
-    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
-    $mail->Port = $SETTINGS['email_port']; //COULD BE USED
-    $mail->CharSet = 'utf-8';
-    $mail->SMTPSecure = ($SETTINGS['email_security'] === 'tls'
-    || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
-    $mail->SMTPAutoTLS = ($SETTINGS['email_security'] === 'tls'
-        || $SETTINGS['email_security'] === 'ssl') ? true : false;
-    $mail->SMTPOptions = array(
-        'ssl' => array(
-            'verify_peer' => false,
-            'verify_peer_name' => false,
-            'allow_self_signed' => true,
-        ),
-    );
-    $mail->isSmtp(); // send via SMTP
-    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication
-    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-    $mail->From = $SETTINGS['email_from'];
-    $mail->FromName = $SETTINGS['email_from_name'];
-
-    // Prepare for each person
-    foreach (array_filter(explode(',', $email)) as $dest) {
-        $mail->addAddress($dest);
-    }
-
-    // Prepare HTML
-    $text_html = emailBody($textMail);
-
-    $mail->WordWrap = 80; // set word wrap
-    $mail->isHtml(true); // send as HTML
-    $mail->Subject = $subject;
-    $mail->Body = $text_html;
-    $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-
-    // send email
-    if ($mail->send()) {
-        return json_encode(
-            array(
-                'error' => '',
-                'message' => langHdl('forgot_my_pw_email_sent'),
-            )
+    try {
+        // send to user
+        $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
+        $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
+        $mail->Port = $SETTINGS['email_port']; //COULD BE USED
+        $mail->CharSet = 'utf-8';
+        $mail->SMTPSecure = ($SETTINGS['email_security'] === 'tls'
+        || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
+        $mail->SMTPAutoTLS = ($SETTINGS['email_security'] === 'tls'
+            || $SETTINGS['email_security'] === 'ssl') ? true : false;
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true,
+            ),
         );
-    } else {
+        $mail->isSmtp(); // send via SMTP
+        $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
+        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication
+        $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
+        $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
+        $mail->From = $SETTINGS['email_from'];
+        $mail->FromName = $SETTINGS['email_from_name'];
+
+        // Prepare for each person
+        foreach (array_filter(explode(',', $email)) as $dest) {
+            $mail->addAddress($dest);
+        }
+
+        // Prepare HTML
+        $text_html = emailBody($textMail);
+
+        $mail->WordWrap = 80; // set word wrap
+        $mail->isHtml(true); // send as HTML
+        $mail->Subject = $subject;
+        $mail->Body = $text_html;
+        $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
+
+        // send email
+        if ($mail->send()) {
+            return json_encode(
+                array(
+                    'error' => false,
+                    'message' => langHdl('forgot_my_pw_email_sent'),
+                )
+            );
+        } else {
+            return json_encode(
+                array(
+                    'error' => true,
+                    'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
+                )
+            );
+        }
+    } catch (Exception $e) {
         return json_encode(
             array(
-                'error' => 'error_mail_not_send',
+                'error' => true,
                 'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
             )
         );
@@ -3114,15 +3122,14 @@ function decryptUserObjectKey($key, $privateKey)
     return base64_encode($rsa->decrypt(base64_decode($key)));
 }
 
-
- /**
-  * Encrypts a file
-  *
-  * @param string $fileInName File name
-  * @param string $fileInPath Path to file
-  *
-  * @return array
-  */
+/**
+ * Encrypts a file.
+ *
+ * @param string $fileInName File name
+ * @param string $fileInPath Path to file
+ *
+ * @return array
+ */
 function encryptFile($fileInName, $fileInPath)
 {
     define('FILE_BUFFER_SIZE', 128 * 1024);
@@ -3146,14 +3153,14 @@ function encryptFile($fileInName, $fileInPath)
     $cipher->disablePadding();
 
     // Encrypt the file content
-    $plaintext = file_get_contents($fileInPath . '/' . $fileInName);
+    $plaintext = file_get_contents($fileInPath.'/'.$fileInName);
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
     $hash = md5($plaintext);
-    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
+    $fileOut = $fileInPath.'/'.TP_FILE_PREFIX.$hash;
     file_put_contents($fileOut, $ciphertext);
-    unlink($fileInPath . '/' . $fileInName);
+    unlink($fileInPath.'/'.$fileInName);
 
     return array(
         'fileHash' => base64_encode($hash),
@@ -3163,14 +3170,41 @@ function encryptFile($fileInName, $fileInPath)
 
 function decryptFile()
 {
-     $aes = new \phpseclib\Crypt\AES();
-     $aes->setKey($this->key);
-     $ciphertext = file_get_contents($this->getFileUploadDir() . '/' . $this->file_name);
-     $plaintext = $aes->decrypt($ciphertext);
-     $hash = md5($plaintext);
-     $this->save_name = "DecryptedFile_" . $hash;
-     file_put_contents($this->getFileRootDir() . '/' . $this->save_name, $plaintext);
-     unlink($this->file->getPathname());
-     return new CryptoFile($hash, $this->getWebPath() . '/' . $this->save_name);
- }
+    $aes = new \phpseclib\Crypt\AES();
+    $aes->setKey($this->key);
+    $ciphertext = file_get_contents($this->getFileUploadDir().'/'.$this->file_name);
+    $plaintext = $aes->decrypt($ciphertext);
+    $hash = md5($plaintext);
+    $this->save_name = 'DecryptedFile_'.$hash;
+    file_put_contents($this->getFileRootDir().'/'.$this->save_name, $plaintext);
+    unlink($this->file->getPathname());
 
+    return new CryptoFile($hash, $this->getWebPath().'/'.$this->save_name);
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param int $length Length of password
+ *
+ * @return string
+ */
+function generateQuickPassword($length = 16)
+{
+    // Generate new user password
+    $small_letters = range('a', 'z');
+    $big_letters = range('A', 'Z');
+    $digits = range(0, 9);
+    $symbols = array('#', '_', '-', '@', '$', '+', '&');
+
+    $res = array_merge($small_letters, $big_letters, $digits, $symbols);
+    $c = count($res);
+    // first variant
+
+    $random_string = '';
+    for ($i = 0; $i < $length; ++$i) {
+        $random_string .= $res[random_int(0, $c - 1)];
+    }
+
+    return $random_string;
+}

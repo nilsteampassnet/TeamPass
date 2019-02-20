@@ -15,6 +15,9 @@
  */
 
 return array(
+    'your_login' => 'Your login',
+    'send_new_password_to_user' => 'Send a password to user',
+    'current_password_mandatory' => 'Current password is mandatory',
     'current_password' => 'Current password',
     'objects_encryption_explanation' => 'By changing password, all objects keys need to be regenerated. Those keys guarantee your access to the encrypted objects stored in Teampass. Please wait until the process reached the final step. This could take several minutes depending on the number of objects.',
     'objects_encryption_progress' => 'Objects encryption keys progress',

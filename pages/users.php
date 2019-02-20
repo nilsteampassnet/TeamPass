@@ -180,7 +180,12 @@ foreach ($treeDesc as $t) {
                                     <input type="text" class="form-control clear-me required build-login track-change" id="form-login">
                                     <input type="hidden" id="form-login-conform" value="0">
                                 </div>
+                                <div class="form-group">
+                                    <label for="form-login"><?php echo langHdl('email'); ?></label>
+                                    <input type="email" class="form-control clear-me required track-change" id="form-email">
+                                </div>
                             </div>
+                            <!--
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="form-email"><?php echo langHdl('email'); ?></label>
@@ -202,6 +207,7 @@ foreach ($treeDesc as $t) {
                                     <input type="password" class="form-control clear-me required" id="form-confirm">
                                 </div>
                             </div>
+                            -->
                         </div>
                         <div class="form-group">
                             <label for="form-login" class="mr-2"><?php echo langHdl('privileges'); ?></label>
@@ -342,7 +348,7 @@ foreach ($treeDesc as $t) {
                 <div class="card-body">
                     <div class="row">
                         <div class="callout callout-info col-12">
-                            <i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('share_rights_info');?>
+                            <i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('share_rights_info'); ?>
                         </div>
                     </div>
 
@@ -354,22 +360,22 @@ foreach ($treeDesc as $t) {
                     </div>
 
                     <div class="form-group ml-5">
-                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('functions');?></label>
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('functions'); ?></label>
                         <span id="propagate-user-roles"></span>
                     </div>
 
                     <div class="form-group ml-5">
-                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('managed_by');?></label>
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('managed_by'); ?></label>
                         <span id="propagate-user-managedby"></span>
                     </div>
 
                     <div class="form-group ml-5">
-                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('authorized_groups');?></label>
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('authorized_groups'); ?></label>
                         <span id="propagate-user-allowed"></span>
                     </div>
 
                     <div class="form-group ml-5">
-                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('forbidden_groups');?></label>
+                        <label><i class="far fa-hand-point-right fa-xs mr-2"></i><?php echo langHdl('forbidden_groups'); ?></label>
                         <span id="propagate-user-fordidden"></span>
                     </div>
 

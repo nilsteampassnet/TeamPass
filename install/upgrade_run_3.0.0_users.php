@@ -140,14 +140,24 @@ if (null !== $post_step) {
                     }
 
                     // Generate keys
-                    $userKeys = generateUserKeys($post_user_pwd);
+                    $userKeys = generateUserKeys($random_string);
+
+                    // load passwordLib library
+                    include_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
 
                     // Store
                     mysqli_query(
                         $db_link,
                         'UPDATE '.$pre."users
-                        SET public_key = '".$userKeys['public_key']."', private_key = '".$userKeys['private_key']."',
-                        last_connexion = '', upgrade_needed = 1
+                        SET public_key = '".$userKeys['public_key']."',
+                        private_key = '".$userKeys['private_key']."',
+                        last_connexion = '',
+                        upgrade_needed = 1,
+                        pw = '".$pwdlib->createPasswordHash($random_string)."',
+                        special = 'password_change_expected'
                         WHERE id = ".$post_number
                     );
 

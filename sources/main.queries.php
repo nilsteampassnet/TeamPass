@@ -45,8 +45,8 @@ require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 if (isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
-    || $post_type === 'send_pw_by_email'
-    || $post_type === 'generate_new_password')
+    || $post_type === 'recovery_send_pw_by_email'
+    || $post_type === 'recovery_generate_new_password')
 ) {
     // continue
     mainQuery($SETTINGS);
@@ -274,7 +274,7 @@ function mainQuery($SETTINGS)
                             'pw' => $newPw,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw,
-                            'change_password_expected' => '',
+                            'password_change_expected' => '',
                             'private_key' => encryptPrivateKey($dataReceived['new_pw'], $_SESSION['user']['private_key']),
                             ),
                         'id = %i',
@@ -351,6 +351,7 @@ function mainQuery($SETTINGS)
                     // update LOG
                     logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
 
+                    /*
                     //Send email to user
                     if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== 'admin_change') {
                         $row = DB::queryFirstRow(
@@ -370,6 +371,7 @@ function mainQuery($SETTINGS)
                             );
                         }
                     }
+                    */
 
                     // Send back
                     echo prepareExchangedData(
@@ -393,49 +395,6 @@ function mainQuery($SETTINGS)
                 }
 
                 // ADMIN first login
-            } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) == 'first_change'
-            ) {
-                // Check complexity level
-                if ((int) $dataReceived['complexity'] >= (int) TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
-                    // update DB
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                            'change_password_expected' => '',
-                            'private_key' => encryptPrivateKey($dataReceived['new_pw'], $_SESSION['user']['private_key']),
-                            ),
-                        'id = %i',
-                        $_SESSION['user_id']
-                    );
-
-                    // update sessions
-                    $_SESSION['last_pw'] = '';
-                    $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
-                    $_SESSION['validite_pw'] = true;
-
-                    // update LOG
-                    logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                        ),
-                        'encode'
-                    );
-                } else {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_complex_not_enought'),
-                        ),
-                        'encode'
-                    );
-                }
-                break;
             } else {
                 // DEFAULT case
                 echo prepareExchangedData(
@@ -714,27 +673,29 @@ function mainQuery($SETTINGS)
         case 'hide_maintenance':
             $_SESSION['hide_maintenance'] = 1;
             break;
+
         /*
          * Used in order to send the password to the user by email
          */
-        case 'send_pw_by_email':
+        case 'recovery_send_pw_by_email':
             // generate key
             $key = GenerateCryptKey(50);
 
             // Prepare post variables
-            $post_email = mysqli_escape_string($link, stripslashes(filter_input(INPUT_POST, 'email', FILTER_SANITIZE_STRING)));
             $post_login = mysqli_escape_string($link, filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING));
 
             // Get account and pw associated to email
             DB::query(
-                'SELECT * FROM '.prefixTable('users').' WHERE email = %s',
-                $post_email
+                'SELECT *
+                FROM '.prefixTable('users').'
+                WHERE login = %s',
+                $post_login
             );
             $counter = DB::count();
             if ($counter != 0) {
                 $data = DB::query(
-                    'SELECT login,pw FROM '.prefixTable('users').' WHERE email = %s',
-                    $post_email
+                    'SELECT login,pw FROM '.prefixTable('users').' WHERE login = %s',
+                    $post_login
                 );
                 $textMail = langHdl('forgot_pw_email_body_1').' <a href="'.
                     $SETTINGS['cpassman_url'].'/index.php?action=password_recovery&key='.$key.
@@ -791,7 +752,7 @@ function mainQuery($SETTINGS)
             break;
 
         // Send to user his new pw if key is conform
-        case 'generate_new_password':
+        case 'recovery_generate_new_password':
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
@@ -1138,6 +1099,7 @@ function mainQuery($SETTINGS)
                 'encode'
             );
             break;
+
         /*
          * Reset the personal saltkey
          */
@@ -1840,24 +1802,141 @@ Insert the log here and especially the answer of the query that failed.
                 }
             break;
 
-            /*
-             * get_teampass_settings
-             */
-            case 'get_teampass_settings':
-                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        /*
+            * get_teampass_settings
+            */
+        case 'get_teampass_settings':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Encrypt data to return
+            echo prepareExchangedData($SETTINGS, 'encode');
+
+            break;
+
+        /*
+         * User's password has to be initialized
+         */
+        case 'initialize_user_password':
+            // Allowed?
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            // Variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
+
+            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                // Get user info
+                $userData = DB::queryFirstRow(
+                    'SELECT email
+                    FROM '.prefixTable('users').'
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (empty($userData['email']) === false) {
+                    // Generate new password
+                    $newPassword = generateQuickPassword();
+
+                    // load passwordLib library
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    // Send email to user
+                    $emailStatus = json_decode(
+                        sendEmail(
+                            langHdl('email_new_user_password'),
+                            str_replace(
+                                array('#tp_password#'),
+                                array($newPassword),
+                                langHdl('email_new_user_password_body')
+                            ),
+                            $userData['email'],
+                            $SETTINGS,
+                            ''
+                        ),
+                        true
+                    );
+
+                    if ($emailStatus['error'] === false) {
+                        // Only change if email is successfull
+                        // Update user account
+                        DB::update(
+                            prefixTable('users'),
+                            array(
+                                'special' => 'password_change_expected',
+                                'pw' => $pwdlib->createPasswordHash($newPassword),
+                            ),
+                            'id = %i',
+                            $post_user_id
+                        );
+
+                        // Return
+                        echo prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => '',
+                                'debug' => $newPassword,
+                            ),
+                            'encode'
+                        );
+                    } else {
+                        // Return error
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => $emailStatus['message'],
+                                'debug' => $newPassword,
+                            ),
+                            'encode'
+                        );
+                    }
+                    break;
+                } else {
+                    // Error
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('key_is_not_correct'),
+                            'message' => langHdl('no_email_set'),
                         ),
                         'encode'
                     );
                     break;
                 }
-
-                // Encrypt data to return
-                echo prepareExchangedData($SETTINGS, 'encode');
-
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_user'),
+                    ),
+                    'encode'
+                );
                 break;
+            }
+
+            break;
     }
 }

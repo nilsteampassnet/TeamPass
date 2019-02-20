@@ -406,7 +406,7 @@ if (null !== $post_type) {
                 }
 
                 // Delete objects keys
-                deleteUserObjetsKeys($post_id, $SETTINGS)
+                deleteUserObjetsKeys($post_id, $SETTINGS);
 
                 // update LOG
                 logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
@@ -1317,7 +1317,7 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $post_password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
+            //$post_password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
             $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
             $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
             $post_is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
@@ -1357,7 +1357,13 @@ if (null !== $post_type) {
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
             );
 
-            if ($post_password !== $password_do_not_change) {
+            // Manage user password change
+            // This can occur only if user changes his own password
+            // In other case, next condition must be wrong
+            if (isset($post_password) === true
+                && $post_password !== $password_do_not_change
+                && $post_id === $_SESSION['user_id']
+            ) {
                 // load passwordLib library
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                 $pwdlib->register();
@@ -1785,7 +1791,7 @@ if (null !== $post_type) {
                 // Get roles
                 $groups = [];
                 $groupIds = [];
-                foreach(explode(';', $record['fonction_id']) as $group) {
+                foreach (explode(';', $record['fonction_id']) as $group) {
                     $tmp = DB::queryfirstrow(
                         'SELECT id, title FROM '.prefixTable('roles_title').'
                         WHERE id = %i',
@@ -1805,7 +1811,7 @@ if (null !== $post_type) {
                 // Get Allowed folders
                 $foldersAllowed = [];
                 $foldersAllowedIds = [];
-                foreach(explode(';', $record['groupes_visibles']) as $role) {
+                foreach (explode(';', $record['groupes_visibles']) as $role) {
                     $tmp = DB::queryfirstrow(
                         'SELECT id, title FROM '.prefixTable('nested_tree').'
                         WHERE id = %i',
@@ -1818,7 +1824,7 @@ if (null !== $post_type) {
                 // Get denied folders
                 $foldersForbidden = [];
                 $foldersForbiddenIds = [];
-                foreach(explode(';', $record['groupes_interdits']) as $role) {
+                foreach (explode(';', $record['groupes_interdits']) as $role) {
                     $tmp = DB::queryfirstrow(
                         'SELECT id, title FROM '.prefixTable('nested_tree').'
                         WHERE id = %i',
@@ -1827,7 +1833,6 @@ if (null !== $post_type) {
                     array_push($foldersForbidden, $tmp['title']);
                     array_push($foldersForbiddenIds, $tmp['id']);
                 }
-
 
                 // Store
                 array_push(
@@ -1905,7 +1910,6 @@ if (null !== $post_type) {
             $post_user_readonly = filter_var(htmlspecialchars_decode($dataReceived['user_readonly']), FILTER_SANITIZE_NUMBER_INT);
             $post_user_personalfolder = filter_var(htmlspecialchars_decode($dataReceived['user_personalfolder']), FILTER_SANITIZE_NUMBER_INT);
             $post_user_rootfolder = filter_var(htmlspecialchars_decode($dataReceived['user_rootfolder']), FILTER_SANITIZE_NUMBER_INT);
-
 
             // Check send values
             if (empty($post_source_id) === true

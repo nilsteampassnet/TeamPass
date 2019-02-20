@@ -43,7 +43,7 @@ echo '
     <img src="'.(string) $SETTINGS['custom_logo'].'" alt="" style="margin-bottom:40px;" />' :
   '',
     '
-    <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>Gitlab
+    <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>
   </div>
   <!-- /.login-logo -->
   <div class="card">
@@ -262,6 +262,12 @@ echo '
         </div>
 
         <div>
+            <div class="input-group has-feedback mb-2 hidden" id="current-user-password-div">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-key"></i></span>
+                </div>
+                <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
+            </div>
             <div class="input-group has-feedback mb-2">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fa fa-key"></i></span>

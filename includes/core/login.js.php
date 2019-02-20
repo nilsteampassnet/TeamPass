@@ -113,7 +113,7 @@ $(function() {
         alertify.prompt(
             '<?php echo langHdl('forgot_my_pw'); ?>',
             '<?php echo langHdl('forgot_my_pw_text'); ?>',
-            '<?php echo langHdl('email'); ?>'
+            '<?php echo langHdl('your_login'); ?>'
             , function(evt, value) {
                 alertify
                     .message(
@@ -124,9 +124,8 @@ $(function() {
                 $.post(
                     "sources/main.queries.php",
                     {
-                        type  : "send_pw_by_email",
-                        email : value,
-                        login : $("#login").val()
+                        type  : "recovery_send_pw_by_email",
+                        login : value
                     },
                     function(data) {
                         if (data[0].error !== '') {
@@ -291,11 +290,21 @@ $("#new-user-password")
 $('#but_confirm_new_password').click(function() {
     if ($('#new-user-password').val() !== ''
         && $('#new-user-password').val() === $('#new-user-password-confirm').val()
-        && $('#current-user-password').val() !== ''
     ) {
+        // Check if current pwd expected
+        if ($('#current-user-password').val() === '' && $('#current-user-password-div').hasClass('hidden') === false) {
+            // Alert
+            alertify.set('notifier','position', 'top-center');
+            alertify
+                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('current_password_mandatory'); ?>', 5)
+                .dismissOthers(); 
+            return false;
+        }
+
         // Prepare data
         var data = {
             "new_pw" : sanitizeString($("#new-user-password").val()),
+            "current_pw" : sanitizeString($("#current-user-password").val()),
             "complexity" : $('#new-user-password-complexity-level').val(),
         };
 
@@ -304,7 +313,7 @@ $('#but_confirm_new_password').click(function() {
             'sources/main.queries.php',
             {
                 type                : 'change_pw',
-                change_pw_origine   : 'first_change',
+                change_pw_origine   : 'user_change',
                 key                 : '<?php echo $_SESSION['key']; ?>',
                 data                : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
             },
@@ -489,12 +498,16 @@ function identifyUser(redirect, psk, data, randomstring)
                     },
                     function(receivedData) {
                         var data = JSON.parse(receivedData);
-                        console.log(data);return;
+                        console.log(data);
 
                         if (data.value === randomstring) {
                             $("#connection_error").hide();
                             // Check if 1st connection
                             if (data.first_connection === true || data.password_change_expected === true) {
+                                // Show field for current password
+                                if (data.password_change_expected === true) {
+                                    $('#current-user-password-div').removeClass('hidden');
+                                }
                                 $('.confirm-password-card-body').removeClass('hidden');
                                 $('.login-card-body').addClass('hidden');
                                 $('#confirm-password-level').html(data.password_complexity);

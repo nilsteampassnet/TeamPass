@@ -799,6 +799,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 $("#user_"+rand_number).parent()
                 .prepend('<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
 
+                console.log(usersList);
                 // Now send passwords
                 sendPwdToUsers(usersList);
 

@@ -112,11 +112,23 @@ if ($res === false) {
     exit();
 }
 
+// Add field special to USERS table
+$res = addColumnIfNotExist(
+    $pre.'users',
+    'special',
+    "VARCHAR(250) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field public_key to table USERS! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Add field encryption_type to SUGGESTION table
 $res = addColumnIfNotExist(
     $pre.'suggestion',
     'encryption_type',
-    "VARCHAR(20) NOT NULL DEFAULT 'not_set '"
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table SUGGESTION! '.mysqli_error($db_link).'!"}]';
@@ -195,7 +207,6 @@ mysqli_query(
         PRIMARY KEY (`increment_id`)
     ) CHARSET=utf8;'
 );
-
 
 // Copy all items passwords
 $db_count = mysqli_fetch_row(

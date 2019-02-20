@@ -1281,7 +1281,7 @@ function identifyUser($sentData, $SETTINGS)
                     'message' => langHdl('account_is_locked'),
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-                    'password_change_expected' => false,
+                    'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
                 )
             );
 
@@ -1324,7 +1324,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('account_is_locked'),
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-                        'password_change_expected' => false,
+                        'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
                     )
                 );
 
@@ -1353,7 +1353,7 @@ function identifyUser($sentData, $SETTINGS)
                         'message' => langHdl('error_bad_credentials'),
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-                        'password_change_expected' => false,
+                        'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
                     )
                 );
 
@@ -1379,7 +1379,7 @@ function identifyUser($sentData, $SETTINGS)
                     'message' => langHdl('error_bad_credentials'),
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-                    'password_change_expected' => false,
+                    'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
                 )
             );
 
@@ -1405,7 +1405,7 @@ function identifyUser($sentData, $SETTINGS)
             'message' => '',
             'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-            'password_change_expected' => false,
+            'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
         )
     );
 }

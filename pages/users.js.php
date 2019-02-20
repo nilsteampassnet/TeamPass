@@ -97,6 +97,7 @@ $('.btn-no-click')
         e.preventDefault();
     });
 
+/*
 // For Personal Saltkey
 $("#form-password").simplePassMeter({
     "requirements": {},
@@ -142,7 +143,7 @@ $("#form-password").bind({
         $("#form-password-complex").val(score);
     }
 });
-
+*/
 
 //Launch the datatables pluggin
 var oTable = $('#table-users').DataTable({
@@ -172,6 +173,7 @@ var oTable = $('#table-users').DataTable({
                    '<i class="fas fa-gear"></i>' +
                    '</button>' +
                    '<ul class="dropdown-menu" role="menu">' +
+                   '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-pen mr-2"></i><?php echo langHdl('send_new_password_to_user'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
@@ -310,7 +312,7 @@ $('.build-login').change(function() {
  */
 $(document).on('click', '.tp-action', function() {
     // Ensure that password strength indicator is reseted
-    $('#form-password').focus();
+    //$('#form-password').focus();
 
     // Hide if user is not admin
     if (store.get('teampassUser').user_admin === 1 || store.get('teampassUser').user_can_manage_all_users === 1){
@@ -436,7 +438,7 @@ $(document).on('click', '.tp-action', function() {
                     $('#form-roles').append(tmp);
 
                     // Prepare default password
-                    $('#form-password, #form-confirm').val(data.password);
+                    //$('#form-password, #form-confirm').val(data.password);
 
                     // Generate select2
                     $('#form-roles, #form-managedby, #form-auth, #form-forbid').select2();
@@ -535,7 +537,7 @@ $(document).on('click', '.tp-action', function() {
         var arrayQuery = [];
         $('.form-control').each(function(i, obj) {
             if ($(this).data('change-ongoing') === true
-                || $('#form-password').val() !== 'do_not_change'
+                //|| $('#form-password').val() !== 'do_not_change'
             ) {
                 arrayQuery.push({
                     'field' : $(this).prop('id'),
@@ -581,6 +583,7 @@ $(document).on('click', '.tp-action', function() {
                 return false;
             }
             
+            /*
             // Passwords are ok?
             if ($('#form-password').val() !== $('#form-password').val()) {
                 alertify
@@ -598,6 +601,7 @@ $(document).on('click', '.tp-action', function() {
                     .dismissOthers();
                 return false;
             }
+            */
 
             // SHow user
             alertify
@@ -610,7 +614,7 @@ $(document).on('click', '.tp-action', function() {
                 'login' : $('#form-login').val(),
                 'name' : $('#form-name').val(),
                 'lastname' : $('#form-lastname').val(),
-                'pw' : $('#form-password').val(),
+                //'pw' : $('#form-password').val(),
                 'email' : $('#form-email').val(),
                 'admin' : $('#privilege-admin').prop('checked'),
                 'manager' : $('#privilege-manager').prop('checked'),
@@ -740,7 +744,43 @@ $(document).on('click', '.tp-action', function() {
                 }
             }
         );
+        // ---
+    } else if ($(this).data('action') === 'new-password') {
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
 
+        // This sends a new password by email to user
+        data = {
+            'user_id' : $(this).data('id'),
+            'special' : 'change_password_expected',
+        }
+        
+        $.post(
+            'sources/main.queries.php',
+            {
+                type    : 'initialize_user_password',
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                        .dismissOthers();
+                } else {
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
+        // ---
     } else if ($(this).data('action') === 'logs') {
         $('#row-list, #row-folders').addClass('hidden');
         $('#row-logs').removeClass('hidden');
@@ -1000,6 +1040,7 @@ $(document).on('change', '#propagate-from', function() {
 /**
  * GENERATE PASSWORD
  */
+/*
 $('#button-password-generate').click(function() {
     $.post(
         'sources/main.queries.php',
@@ -1030,6 +1071,7 @@ $('#button-password-generate').click(function() {
         }
    );
 });
+*/
 
 
 /**
