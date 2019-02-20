@@ -15,6 +15,9 @@
  */
 
 return array(
+    'reloading_page' => 'Reloading page ...',
+    'no_current_password' => 'No current password',
+    'no_current_password_info' => 'With no current password, Teampass will have to regenerate the encryption keys.',
     'your_login' => 'Your login',
     'send_new_password_to_user' => 'Send a password to user',
     'current_password_mandatory' => 'Current password is mandatory',

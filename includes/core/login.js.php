@@ -27,6 +27,11 @@ $(function() {
     // Set focus on login input
     $('#login').focus();
 
+    // Prepare iCheck format for checkboxes
+    $('input[type="checkbox"].flat-blue').iCheck({
+        checkboxClass: 'icheckbox_flat-blue'
+    });
+
     // Manage DUO SEC login
     if ($("#2fa_user_selection").val() === "duo" && $("#duo_sig_response").val() !== "") {
         $("#login").val($("#duo_login").val());
@@ -272,11 +277,11 @@ $("#new-user-password")
         ]
     })
     .bind({
-        "score.simplePassMeter" : function(jQEvent, scorescore) {
+        "score.simplePassMeter" : function(jQEvent, score) {
             $("#new-user-password-complexity-level").val(score);
         }
     }).change({
-        "score.simplePassMeter" : function(jQEvent, scorescore) {
+        "score.simplePassMeter" : function(jQEvent, score) {
             $("#new-user-password-complexity-level").val(score);
         }
     });
@@ -292,7 +297,10 @@ $('#but_confirm_new_password').click(function() {
         && $('#new-user-password').val() === $('#new-user-password-confirm').val()
     ) {
         // Check if current pwd expected
-        if ($('#current-user-password').val() === '' && $('#current-user-password-div').hasClass('hidden') === false) {
+        if ($('#current-user-password').val() === ''
+            && $('#current-user-password-div').hasClass('hidden') === false
+            && $('#confirm-password-current-password').is(':checked') === false
+        ) {
             // Alert
             alertify.set('notifier','position', 'top-center');
             alertify
@@ -303,39 +311,37 @@ $('#but_confirm_new_password').click(function() {
 
         // Prepare data
         var data = {
-            "new_pw" : sanitizeString($("#new-user-password").val()),
-            "current_pw" : sanitizeString($("#current-user-password").val()),
-            "complexity" : $('#new-user-password-complexity-level').val(),
+            "new_pw"            : sanitizeString($("#new-user-password").val()),
+            "current_pw"        : sanitizeString($("#current-user-password").val()),
+            "complexity"        : $('#new-user-password-complexity-level').val(),
+            "reset_private_key" : $('#confirm-password-current-password').is(':checked') === false ? false : true,
+            "change_pw_origine" : 'user_change',
         };
+
+        console.log('SessionKey : '+store.get('teampassUser').sessionKey);
 
         // Send query
         $.post(
             'sources/main.queries.php',
             {
-                type                : 'change_pw',
-                change_pw_origine   : 'user_change',
-                key                 : '<?php echo $_SESSION['key']; ?>',
-                data                : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
+                type : 'change_pw',
+                key  : store.get('teampassUser').sessionKey,
+                data : prepareExchangedData(JSON.stringify(data), 'encode', store.get('teampassUser').sessionKey)
             },
             function(data) {
-                data = JSON.parse(data);
-                if (data.error == 'complexity_too_low') {
-                    // Alert
-                    alertify.set('notifier','position', 'top-center');
+                data = prepareExchangedData(data , 'decode', store.get('teampassUser').sessionKey);
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
                     alertify
-                        .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
-                        .dismissOthers(); 
-                    // Clear
-                    $('#new-user-password, #new-user-password-confirm').val('');
-                } else if (data.error == 'pwd_hash_not_correct') {
-                    // Alert
-                    alertify.set('notifier','position', 'top-center');
-                    alertify
-                        .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
                         .dismissOthers();
-                    // Clear
-                    $('#new-user-password, #new-user-password-confirm').val('');
                 } else {
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('share_sent_ok'); ?>', 0)
+                        .dismissOthers();
                     location.reload(true);
                 }
             }
@@ -505,9 +511,18 @@ function identifyUser(redirect, psk, data, randomstring)
                             // Check if 1st connection
                             if (data.first_connection === true || data.password_change_expected === true) {
                                 // Show field for current password
-                                if (data.password_change_expected === true) {
+                                if (data.password_change_expected === true && data.private_key_conform === false) {
                                     $('#current-user-password-div').removeClass('hidden');
                                 }
+
+                                // Store the session key as this page is not reloaded
+                                store.update(
+                                    'teampassUser',
+                                    {},
+                                    function(teampassUser) {
+                                        teampassUser.sessionKey = data.session_key;
+                                    }
+                                );
                                 $('.confirm-password-card-body').removeClass('hidden');
                                 $('.login-card-body').addClass('hidden');
                                 $('#confirm-password-level').html(data.password_complexity);

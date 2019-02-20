@@ -257,18 +257,27 @@ echo '
         <h5 class="login-box-msg">'.langHdl('new_password_required').'</h5>
 
         <div class="alert alert-info">
-            <p class="text-center"><i class="icon fa fa-info"></i>'.langHdl('password_strength').'
-            <span id="confirm-password-level" class="ml-2 font-weight-bold"></span></p>
+            <div class="text-center"><i class="icon fa fa-info"></i>'.langHdl('password_strength').'
+            <span id="confirm-password-level" class="ml-2 font-weight-bold"></span></div>
         </div>
 
         <div>
-            <div class="input-group has-feedback mb-2 hidden" id="current-user-password-div">
-                <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fa fa-key"></i></span>
+            <div id="current-user-password-div" class="hidden">
+                <div class="input-group has-feedback mb-2">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-key"></i></span>
+                    </div>
+                    <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
+                </div>            
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="confirm-password-current-password">
+                    <label class="form-check-label ml-3" for="confirm-password-current-password">'.langHdl('no_current_password').'</label>
+                    <small class="form-text text-muted">
+                        '.langHdl('no_current_password_info').'
+                    </small>
                 </div>
-                <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
             </div>
-            <div class="input-group has-feedback mb-2">
+            <div class="input-group has-feedback mb-2 mt-4">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fa fa-key"></i></span>
                 </div>

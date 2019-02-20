@@ -472,21 +472,21 @@ if (($session_validite_pw === null
                         </a>
                     </li>';
     }
-/*
-    // KB menu
-    if (isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1'
-                                ) {
-        echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
-                        <i class="nav-icon fas fa-map-signs"></i>
-                        <p>
-                            '.langHdl('kb_menu').'
-                        </p>
-                        </a>
-                    </li>';
-    }
-*/
+    /*
+        // KB menu
+        if (isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1'
+                                    ) {
+            echo '
+                        <li class="nav-item">
+                            <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
+                            <i class="nav-icon fas fa-map-signs"></i>
+                            <p>
+                                '.langHdl('kb_menu').'
+                            </p>
+                            </a>
+                        </li>';
+        }
+    */
     // SUGGESTION menu
     if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
                                     && ($session_user_admin === 1 || $session_user_manager === 1)
@@ -932,6 +932,9 @@ if (($session_validite_pw === null
 <!-- radiobuttons -->
 <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
 <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
+<!-- ICHECK -->
+<link rel="stylesheet" href="./plugins/iCheck/all.css">
+<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
 
 <?php
 if ($menuAdmin === true) {
@@ -946,9 +949,6 @@ if ($menuAdmin === true) {
 <!--<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.css">
 <link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.skinNice.css">
 <script src="./plugins/ionslider/ion.rangeSlider.min.js"></script>-->
-<!-- ICHECK -->
-<link rel="stylesheet" href="./plugins/iCheck/all.css">
-<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
 <!-- Sortable -->
 <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
 <!-- PLUPLOAD -->
@@ -967,9 +967,6 @@ if ($menuAdmin === true) {
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
 <!-- VALIDATE -->
 <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
-<!-- ICHECK -->
-<link rel="stylesheet" href="./plugins/iCheck/all.css">
-<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
     } elseif ($pageSel === 'search' || $pageSel === 'folders'
         || $pageSel === 'users' || $pageSel === 'roles'
@@ -996,17 +993,11 @@ if ($menuAdmin === true) {
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
 <script src="./plugins/fastclick/fastclick.js"></script>
-<!-- ICHECK -->
-<link rel="stylesheet" href="./plugins/iCheck/all.css">
-<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
     } elseif ($pageSel === 'profile') {
         ?>
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
-<!-- ICHECK -->
-<link rel="stylesheet" href="./plugins/iCheck/all.css">
-<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
         <?php
     }
 ?>

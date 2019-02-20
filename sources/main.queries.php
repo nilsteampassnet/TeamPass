@@ -142,7 +142,7 @@ function mainQuery($SETTINGS)
     switch ($post_type) {
         case 'change_pw':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if (isset($post_key) === false || empty($post_key) === true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -153,28 +153,33 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
+            $post_key = $_SESSION['key'];
 
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
 
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+print_r($dataReceived); break;
+            $post_request_origin = filter_var($dataReceived['change_pw_origine'], FILTER_SANITIZE_STRING);
+            $post_new_password = filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING);
+            $post_current_password = isset($dataReceived['current_pw']) === true ?
+                filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '';
+            $post_password_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+            $post_password_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+
             // Prepare variables
-            $newPw = $pwdlib->createPasswordHash($dataReceived['new_pw']);
+            $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
 
             // User has decided to change is PW
-            if (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === 'user_change'
+            if ($post_request_origin === 'user_change'
                 && $_SESSION['user_admin'] !== '1'
             ) {
-                // Get sent complexity level
-                $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-
                 // check if expected security level is reached
                 $data_roles = DB::queryfirstrow(
                     'SELECT fonction_id
@@ -184,7 +189,9 @@ function mainQuery($SETTINGS)
                 );
 
                 // check if badly written
-                $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
+                $data_roles['fonction_id'] = array_filter(
+                    explode(',', str_replace(';', ',', $data_roles['fonction_id']))
+                );
                 $data_roles['fonction_id'] = implode(',', $data_roles['fonction_id']);
                 DB::update(
                     prefixTable('users'),
@@ -266,7 +273,7 @@ function mainQuery($SETTINGS)
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash($dataReceived['new_pw'], $newPw) === true) {
+                if ($pwdlib->verifyPasswordHash($post_new_password, $newPw) === true) {
                     // update DB
                     DB::update(
                         prefixTable('users'),
@@ -275,7 +282,7 @@ function mainQuery($SETTINGS)
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw,
                             'password_change_expected' => '',
-                            'private_key' => encryptPrivateKey($dataReceived['new_pw'], $_SESSION['user']['private_key']),
+                            'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
                             ),
                         'id = %i',
                         $_SESSION['user_id']

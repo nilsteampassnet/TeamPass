@@ -337,7 +337,7 @@ if ($post_type === 'identify_duo_user') {
         echo json_encode(
             array(
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => 'bruteforce_wait',
@@ -503,7 +503,7 @@ function identifyUser($sentData, $SETTINGS)
         echo json_encode(
             array(
                 'value' => '2fa_not_set',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => '2fa_not_set',
@@ -585,6 +585,7 @@ function identifyUser($sentData, $SETTINGS)
     $ldapConnection = false;
     $logError = array();
     $user_info_from_ad = '';
+    $return = '';
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
@@ -926,17 +927,17 @@ function identifyUser($sentData, $SETTINGS)
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
-        if ((isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
-            && $userPasswordVerified === true && $data['disabled'] === '0')
-            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== 'admin')
-            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== 'admin')
-            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $username == 'admin' && $userPasswordVerified === true && $data['disabled'] === '0')
+        if ((isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 0
+            && $userPasswordVerified === true && (int) $data['disabled'] === 0)
+            || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
+            && $ldapConnection === true && (int) $data['disabled'] === 0 && $username !== 'admin')
+            || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 2
+            && $ldapConnection === true && (int) $data['disabled'] === 0 && $username !== 'admin')
+            || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
+            && $username == 'admin' && $userPasswordVerified === true && (int) $data['disabled'] === 0)
             || (isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
-            && $userPasswordVerified === true && $data['disabled'] === '0')
+            && $userPasswordVerified === true && (int) $data['disabled'] === 0)
         ) {
             $_SESSION['autoriser'] = true;
             $_SESSION['pwd_attempts'] = 0;
@@ -1282,6 +1283,10 @@ function identifyUser($sentData, $SETTINGS)
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
                     'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
+                    'private_key_conform' => isset($_SESSION['user']['private_key']) === true
+                        && empty($_SESSION['user']['private_key']) === false
+                        && $_SESSION['user']['private_key'] !== 'none' ? true : false,
+                    'session_key' => $_SESSION['key'],
                 )
             );
 
@@ -1325,6 +1330,10 @@ function identifyUser($sentData, $SETTINGS)
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
                         'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
+                        'private_key_conform' => (isset($_SESSION['user']['private_key']) === true
+                            && empty($_SESSION['user']['private_key']) === false
+                            && $_SESSION['user']['private_key'] !== 'none') ? true : false,
+                        'session_key' => $_SESSION['key'],
                     )
                 );
 
@@ -1354,6 +1363,10 @@ function identifyUser($sentData, $SETTINGS)
                         'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                         'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
                         'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
+                        'private_key_conform' => isset($_SESSION['user']['private_key']) === true
+                            && empty($_SESSION['user']['private_key']) === false
+                            && $_SESSION['user']['private_key'] !== 'none' ? true : false,
+                        'session_key' => $_SESSION['key'],
                     )
                 );
 
@@ -1380,6 +1393,10 @@ function identifyUser($sentData, $SETTINGS)
                     'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
                     'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
                     'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
+                    'private_key_conform' => isset($_SESSION['user']['private_key']) === true
+                        && empty($_SESSION['user']['private_key']) === false
+                        && $_SESSION['user']['private_key'] !== 'none' ? true : false,
+                    'session_key' => $_SESSION['key'],
                 )
             );
 
@@ -1398,7 +1415,7 @@ function identifyUser($sentData, $SETTINGS)
     echo json_encode(
         array(
             'value' => $return,
-            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
             'initial_url' => @$_SESSION['initial_url'],
             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
             'error' => false,
@@ -1406,6 +1423,10 @@ function identifyUser($sentData, $SETTINGS)
             'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
             'password_change_expected' => $data['special'] === 'password_change_expected' ? true : false,
+            'private_key_conform' => isset($_SESSION['user']['private_key']) === true
+                && empty($_SESSION['user']['private_key']) === false
+                && $_SESSION['user']['private_key'] !== 'none' ? true : false,
+            'session_key' => $_SESSION['key'],
         )
     );
 }
@@ -1519,7 +1540,7 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
                         'error' => true,
                         'message' => array(
                             'value' => '',
-                            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                             'initial_url' => @$_SESSION['initial_url'],
                             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                             'error' => 'user_not_exists5',
@@ -1762,7 +1783,7 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
                 'error' => true,
                 'message' => array(
                     'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                     'initial_url' => @$_SESSION['initial_url'],
                     'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                     'error' => 'user_not_exists6',
@@ -1870,7 +1891,7 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
                 'error' => true,
                 'message' => array(
                     'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                     'initial_url' => @$_SESSION['initial_url'],
                     'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                     'error' => 'no_user_yubico_credentials',
@@ -1895,7 +1916,7 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
             'error' => true,
             'message' => array(
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => 'bad_user_yubico_credentials',
