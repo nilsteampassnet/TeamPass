@@ -693,8 +693,8 @@ function mainQuery($SETTINGS)
             );
             $counter = DB::count();
             if ($counter != 0) {
-                $data = DB::query(
-                    'SELECT login,pw FROM '.prefixTable('users').' WHERE login = %s',
+                $data = DB::queryFirstRow(
+                    'SELECT login, pw, email FROM '.prefixTable('users').' WHERE login = %s',
                     $post_login
                 );
                 $textMail = langHdl('forgot_pw_email_body_1').' <a href="'.
@@ -737,7 +737,7 @@ function mainQuery($SETTINGS)
                     sendEmail(
                         langHdl('forgot_pw_email_subject'),
                         $textMail,
-                        $post_email,
+                        $data['email'],
                         $SETTINGS,
                         $textMailAlt
                     ),
@@ -1887,7 +1887,7 @@ Insert the log here and especially the answer of the query that failed.
                         DB::update(
                             prefixTable('users'),
                             array(
-                                'special' => 'password_change_expected',
+                                'special' => $post_special,
                                 'pw' => $pwdlib->createPasswordHash($newPassword),
                             ),
                             'id = %i',
