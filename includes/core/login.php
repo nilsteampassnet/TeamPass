@@ -270,8 +270,8 @@ echo '
                     <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
                 </div>            
                 <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="confirm-password-current-password">
-                    <label class="form-check-label ml-3" for="confirm-password-current-password">'.langHdl('no_current_password').'</label>
+                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="confirm-no-current-password">
+                    <label class="form-check-label ml-3" for="confirm-no-current-password">'.langHdl('no_current_password').'</label>
                     <small class="form-text text-muted">
                         '.langHdl('no_current_password_info').'
                     </small>

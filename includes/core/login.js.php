@@ -314,7 +314,7 @@ $('#but_confirm_new_password').click(function() {
             "new_pw"            : sanitizeString($("#new-user-password").val()),
             "current_pw"        : sanitizeString($("#current-user-password").val()),
             "complexity"        : $('#new-user-password-complexity-level').val(),
-            "reset_private_key" : $('#confirm-password-current-password').is(':checked') === false ? false : true,
+            "reset_private_key" : $('#confirm-no-current-password').is(':checked') === false ? false : true,
             "change_pw_origine" : 'user_change',
         };
 
@@ -340,8 +340,9 @@ $('#but_confirm_new_password').click(function() {
                 } else {
                     // Inform user
                     alertify
-                        .success('<?php echo langHdl('share_sent_ok'); ?>', 0)
+                        .success('<?php echo langHdl('password_changed'); ?>', 0)
                         .dismissOthers();
+
                     location.reload(true);
                 }
             }
@@ -444,9 +445,9 @@ function launchIdentify(isDuo, redirect, psk)
             }
 
             // Other values
-            mfaData['login'] = sanitizeString($('#login').val());
-            mfaData['pw'] = sanitizeString($('#pw').val());
-            mfaData['duree_session'] = sanitizeString($('#session_duration').val());
+            mfaData['login'] = ($('#login').val());
+            mfaData['pw'] = ($('#pw').val());
+            mfaData['duree_session'] = ($('#session_duration').val());
             mfaData['screenHeight'] = $('body').innerHeight();
             mfaData['randomstring'] = randomstring;
             mfaData['TimezoneOffset'] = TimezoneOffset;
@@ -495,6 +496,7 @@ function identifyUser(redirect, psk, data, randomstring)
         },
         function(check_data) {
             if (parseInt(check_data) === 1) {
+                console.log(data);
                 //send query
                 $.post(
                     "sources/identify.php",

@@ -165,13 +165,13 @@ function mainQuery($SETTINGS)
                 $post_data,
                 'decode'
             );
-print_r($dataReceived); break;
+
             $post_request_origin = filter_var($dataReceived['change_pw_origine'], FILTER_SANITIZE_STRING);
             $post_new_password = filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING);
             $post_current_password = isset($dataReceived['current_pw']) === true ?
                 filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '';
             $post_password_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_password_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+            $post_reset_private_key = filter_var($dataReceived['reset_private_key'], FILTER_SANITIZE_NUMBER_INT);
 
             // Prepare variables
             $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
@@ -202,18 +202,19 @@ print_r($dataReceived); break;
                     $_SESSION['user_id']
                 );
 
-                $data = DB::query(
+                $data = DB::queryFirstRow(
                     'SELECT complexity
                     FROM '.prefixTable('roles_title').'
                     WHERE id IN ('.$data_roles['fonction_id'].')
                     ORDER BY complexity DESC'
                 );
-                if (intval($post_complexicity) < intval($data[0]['complexity'])) {
+
+                if (intval($post_password_complexity) < intval($data['complexity'])) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('complexity_level_not_reached').'.<br>'.
-                                langHdl('expected_complexity_level').': <b>'.TP_PW_COMPLEXITY[$data[0]['complexity']][1].'</b>',
+                                langHdl('expected_complexity_level').': <b>'.TP_PW_COMPLEXITY[$data['complexity']][1].'</b>',
                         ),
                         'encode'
                     );
@@ -238,11 +239,11 @@ print_r($dataReceived); break;
                 }
 
                 // check if new pw is different that old ones
-                if (in_array($newPw, $lastPw)) {
+                if (in_array($post_new_password_hashed, $lastPw) && count($lastPw) > 0) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('already_used'),
+                            'message' => langHdl('password_already_used'),
                         ),
                         'encode'
                     );
@@ -273,15 +274,25 @@ print_r($dataReceived); break;
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash($post_new_password, $newPw) === true) {
+                if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true) {
+                    // Should we reset the privateKey?
+                    if ((int) $post_reset_private_key === 1) {
+                        $userKeys = generateUserKeys($post_new_password);
+                        $_SESSION['user']['public_key'] = $userKeys['public_key'];
+                        $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
+                        $special_action = 'reset_private_key';
+                    } else {
+                        $special_action = 'none';
+                    }
+
                     // update DB
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'pw' => $newPw,
+                            'pw' => $post_new_password_hashed,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw,
-                            'password_change_expected' => '',
+                            'special' => $special_action,
                             'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
                             ),
                         'id = %i',

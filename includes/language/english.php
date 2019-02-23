@@ -15,6 +15,8 @@
  */
 
 return array(
+    'password_changed' => 'Password updated',
+    'password_already_used' => 'Password already used',
     'reloading_page' => 'Reloading page ...',
     'no_current_password' => 'No current password',
     'no_current_password_info' => 'With no current password, Teampass will have to regenerate the encryption keys.',

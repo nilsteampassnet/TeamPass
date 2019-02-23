@@ -486,8 +486,8 @@ function identifyUser($sentData, $SETTINGS)
         $passwordClear = $_SERVER['PHP_AUTH_PW'];
         $usernameSanitized = '';
     } else {
-        $passwordClear = $dataReceived['pw'];
-        $username = $dataReceived['login'];
+        $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
+        $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
         $usernameSanitized = filter_var($dataReceived['login_sanitized'], FILTER_SANITIZE_STRING);
     }
 
@@ -541,21 +541,21 @@ function identifyUser($sentData, $SETTINGS)
 
     // Check if user exists
     $data = DB::queryFirstRow(
-        'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
-        array(
-            'login' => $username,
-        )
+        'SELECT *
+        FROM '.prefixTable('users').'
+        WHERE login=%s',
+        $username
     );
     $counter = DB::count();
 
     // 2.1.27.24 - in case of login encoding error
-    if ($counter === 0) {
+    /*if ($counter === 0) {
         // Test
         $data = DB::queryFirstRow(
-            'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
-            array(
-                'login' => $usernameSanitized,
-            )
+            'SELECT *
+            FROM '.prefixTable('users').'
+            WHERE login=%s',
+            $usernameSanitized
         );
         $counter = DB::count();
         if ($counter === 1) {
@@ -570,7 +570,7 @@ function identifyUser($sentData, $SETTINGS)
             );
             $data['login'] = $username;
         }
-    }
+    }*/
 
     // Debug
     debugIdentify(
@@ -719,21 +719,23 @@ function identifyUser($sentData, $SETTINGS)
     $data = DB::queryFirstRow(
         'SELECT *
         FROM '.prefixTable('users').'
-        WHERE login=%s_login',
-        array(
-            'login' => $username,
-        )
+        WHERE login = %s',
+        $username
     );
-    $counter = DB::count();
-    if ($counter === 0) {
-        logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+
+    echo '> '.$username.' - '.DB::count().' ; ';
+
+    return;
+
+    if (DB::count() === 0) {
+        logEvents('failed_auth', 'user_not_exists', '', $username, $username);
         echo json_encode(
             array(
                 'value' => '',
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                 'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'error' => 'user_not_exists1',
+                'error' => 'user_not_exists1 '.$username,
                 'message' => langHdl('error_bad_credentials'),
             )
         );
