@@ -25,12 +25,14 @@ function defuseCryption($message, $ascii_key, $type)
     include_once $path.'KeyProtectedByPassword.php';
     include_once $path.'Core.php';
 
+    include_once '../includes/config/settings.php';
+
     // init
     $err = '';
     if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-
+    
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 

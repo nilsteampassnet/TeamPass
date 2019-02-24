@@ -3079,7 +3079,7 @@ function doDataDecryption($data, $key)
     // Set the object key
     $cipher->setPassword(base64_decode($key));
 
-    return base64_decode($cipher->decrypt(base64_decode($data)));
+    return base64_encode($cipher->decrypt(base64_decode($data)));
 }
 
 /**
@@ -3100,9 +3100,8 @@ function encryptUserObjectKey($key, $publicKey)
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($publicKey));
 
-    // Encrypt
-    $rsa->setEncryptionMode(CRYPT_RSA_ENCRYPTION_OAEP);
-
+    // Encrypt with compliance with PKCS1.5 (used by openssl)
+    define('CRYPT_RSA_PKCS15_COMPAT', true);
     return base64_encode($rsa->encrypt(base64_decode($key)));
 }
 
@@ -3124,7 +3123,7 @@ function decryptUserObjectKey($key, $privateKey)
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($privateKey));
 
-    // Encrypt
+    // Decrypt
     return base64_encode($rsa->decrypt(base64_decode($key)));
 }
 

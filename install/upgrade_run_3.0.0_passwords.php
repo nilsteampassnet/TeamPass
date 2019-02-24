@@ -148,7 +148,9 @@ while ($data = mysqli_fetch_array($rows)) {
         // Encrypt with Object Key
         $cryptedStuff = doDataEncryption($passwd['string']);
 
-        /*
+/*
+        echo 'Pwd to encrypt is : '.$passwd['string']."\n\n";
+        
         echo 'Item key: '.base64_decode($cryptedStuff['objectKey'])."\n\n";
         $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userPublicKey);
 
@@ -158,7 +160,7 @@ while ($data = mysqli_fetch_array($rows)) {
         $my_pwd = doDataDecryption($cryptedStuff['encrypted'], $shareKey_for_decrypt);
         echo 'Password: '.base64_decode($my_pwd)."\n\n";
 
-        echo '[{"finish":"1" , "error":">>>'.$my_pwd.'"}]';
+        echo '[{"finish":"1" , "error":">>>'.base64_decode($my_pwd).'  --  '.$data['id'].'"}]';
         exit();
         */
 

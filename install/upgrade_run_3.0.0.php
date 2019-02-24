@@ -208,6 +208,18 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
+
+// Add new table Notifications
+mysqli_query(
+    $db_link,
+    'CREATE TABLE `'.$pre.'notification` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `item_id` INT(12) NOT NULL,
+        `user_id` INT(12) NOT NULL,
+        PRIMARY KEY (`increment_id`)
+    ) CHARSET=utf8;'
+);
+
 // Copy all items passwords
 $db_count = mysqli_fetch_row(
     mysqli_query(

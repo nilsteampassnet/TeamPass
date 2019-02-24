@@ -596,6 +596,7 @@ define("DB_NAME", "'.DB_NAME.'");
 define("DB_PREFIX", "'.DB_PREFIX.'");
 define("DB_PORT", "'.DB_PORT.'");
 define("DB_ENCODING", "'.DB_ENCODING.'");
+define("SECUREPATH", "'.SECUREPATH.'");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -619,7 +620,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     unlink($filename);
                     echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i>");';
                 } else {
-                    echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i>");';
+                    echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
                 }
             } else {
                 echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
@@ -627,6 +628,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
             // Manage saltkey.txt file
             if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+                /*
                 $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH).'/teampass-seckey.txt';
                 if (file_exists($filename)) {
                     $newfile = str_replace('teampass-seckey.txt', time());
@@ -636,6 +638,8 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 } else {
                     echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
                 }
+                */
+                echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
             } else {
                 echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
             }

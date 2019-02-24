@@ -278,15 +278,15 @@ if (null !== $post_step) {
                     //echo '> '.base64_decode($itemKey)." \n\n ";
 
                     // Decrypt password
-                    $itemPwd = doDataDecryption($item['pw'], $itemKey);
+                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
                     //echo '>>> '.base64_decode($itemPwd)." \n\n ";
 
                     // Encrypt with Password
-                    $cryptedStuff = doDataEncryption($itemPwd);
+                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']);
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                     // Save the key in DB
                     mysqli_query(
@@ -373,13 +373,13 @@ if (null !== $post_step) {
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
                     // Decrypt password
-                    $itemPwd = doDataDecryption($item['pw'], $itemKey);
+                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
                     // Encrypt with Password
-                    $cryptedStuff = doDataEncryption($itemPwd);
+                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']);
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                     // Save the key in DB
                     mysqli_query(
@@ -457,13 +457,13 @@ if (null !== $post_step) {
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
                     // Decrypt password
-                    $itemPwd = doDataDecryption($item['pw'], $itemKey);
+                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
                     // Encrypt with Password
-                    $cryptedStuff = doDataEncryption($itemPwd);
+                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']);
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                     // Save the key in DB
                     mysqli_query(
@@ -543,13 +543,13 @@ if (null !== $post_step) {
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
                     // Decrypt password
-                    $itemPwd = doDataDecryption($item['pw'], $itemKey);
+                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
                     // Encrypt with Password
-                    $cryptedStuff = doDataEncryption($itemPwd);
+                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']);
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                     // Save the key in DB
                     mysqli_query(
@@ -628,13 +628,13 @@ if (null !== $post_step) {
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
                     // Decrypt password
-                    $itemPwd = doDataDecryption($item['pw'], $itemKey);
+                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
                     // Encrypt with Password
-                    $cryptedStuff = doDataEncryption($itemPwd);
+                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']);
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                     // Save the key in DB
                     mysqli_query(
@@ -679,21 +679,26 @@ if (null !== $post_step) {
                 );
                 if (empty($userEmail['email']) === false) {
                     // Send email
-                    sendEmail(
-                        langHdl('email_new_user_password'),
-                        str_replace(
-                            array('#tp_password#'),
-                            array($user['pwd']),
-                            langHdl('email_new_user_password_body')
-                        ),
-                        $userEmail['email'],
-                        $SETTINGS,
-                        ''
-                    );
+                    try {
+                        sendEmail(
+                            '[Teampass] Login credential change',
+                            str_replace(
+                                array('#tp_password#'),
+                                array($user['pwd']),
+                                'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has decided to reset your current password. Next time you will connect to Teampass, please use:<br><br><b>#tp_password#</b><br><br>We highly encourage you to change this password once connected.<br><br>Cheers'
+                            ),
+                            $userEmail['email'],
+                            $SETTINGS,
+                            '',
+                            true
+                        );
+                    } catch (Exception $e) {
+                        console.log(e);
+                    }
                 }
             }
 
-            echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+            echo '[{"finish":"1" , "next":"", "error":"" , "data" : "" , "number":"" , "loop_finished" : "true"}]';
 
             exit();
         break;

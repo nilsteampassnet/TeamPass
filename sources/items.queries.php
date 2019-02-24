@@ -2178,7 +2178,7 @@ if (null !== $post_type) {
 
                 $key = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
 
-
+echo base64_decode($dataItem['pw'])." || ";
 
                 $pw = doDataDecryption($dataItem['pw'], $key);
                 echo $pw." ;;;; ";
