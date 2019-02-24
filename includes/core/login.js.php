@@ -511,9 +511,14 @@ function identifyUser(redirect, psk, data, randomstring)
                         if (data.value === randomstring) {
                             $("#connection_error").hide();
                             // Check if 1st connection
-                            if (data.first_connection === true || data.password_change_expected === true) {
+                            if (data.first_connection === true
+                                || data.password_change_expected === true
+                                || data.private_key_conform === false
+                            ) {
                                 // Show field for current password
-                                if (data.password_change_expected === true && data.private_key_conform === false) {
+                                if (data.password_change_expected === true
+                                    || data.private_key_conform === false
+                                ) {
                                     $('#current-user-password-div').removeClass('hidden');
                                 }
 
@@ -535,7 +540,7 @@ function identifyUser(redirect, psk, data, randomstring)
                                     
                                 return false;
                             }
-
+                            
                             store.update(
                                 'teampassUser',
                                 {},

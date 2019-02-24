@@ -154,7 +154,7 @@ foreach ($treeDesc as $t) {
         // If filter on letter
         if (empty($searchCriteria) === true
             || strpos(strtolower($t->title), strtolower($searchCriteria)) !== false
-            ) {
+        ) {
             // start the line
             $sOutput .= '[';
 
@@ -167,9 +167,9 @@ foreach ($treeDesc as $t) {
             );
 
             //col1
-            if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
-                ||
-                $t->parent_id != 0
+            if (($t->parent_id == 0
+                && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
+                || $t->parent_id != 0
             ) {
                 $sOutput .= '"<input type=\"checkbox\" class=\"cb_selected_folder\" data-id=\"'.$t->id.'\" id=\"checkbox-'.$t->id.'\" data-row=\"'.$x.'\" />';
 

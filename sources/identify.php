@@ -454,11 +454,6 @@ function identifyUser($sentData, $SETTINGS)
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
-    // load passwordLib library
-    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
-    $pwdlib->register();
-    $pwdlib = new PasswordLib\PasswordLib();
-
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
 
@@ -484,11 +479,11 @@ function identifyUser($sentData, $SETTINGS)
             $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
         }
         $passwordClear = $_SERVER['PHP_AUTH_PW'];
-        $usernameSanitized = '';
+        //$usernameSanitized = '';
     } else {
         $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
         $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
-        $usernameSanitized = filter_var($dataReceived['login_sanitized'], FILTER_SANITIZE_STRING);
+        //$usernameSanitized = filter_var($dataReceived['login_sanitized'], FILTER_SANITIZE_STRING);
     }
 
     // User's 2FA method
@@ -723,9 +718,9 @@ function identifyUser($sentData, $SETTINGS)
         $username
     );
 
-    echo '> '.$username.' - '.DB::count().' ; ';
+   /* echo '> '.$username.' - '.DB::count().' ; ';
 
-    return;
+    return;*/
 
     if (DB::count() === 0) {
         logEvents('failed_auth', 'user_not_exists', '', $username, $username);
@@ -1200,11 +1195,16 @@ function identifyUser($sentData, $SETTINGS)
             $_SESSION['latest_items_tab'][] = '';
             foreach ($_SESSION['latest_items'] as $item) {
                 if (!empty($item)) {
-                    $data = DB::queryFirstRow('SELECT id,label,id_tree FROM '.prefixTable('items').' WHERE id=%i', $item);
+                    $dataLastItems = DB::queryFirstRow(
+                        'SELECT id,label,id_tree
+                        FROM '.prefixTable('items').'
+                        WHERE id=%i',
+                        $item
+                    );
                     $_SESSION['latest_items_tab'][$item] = array(
                         'id' => $item,
-                        'label' => $data['label'],
-                        'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item,
+                        'label' => $dataLastItems['label'],
+                        'url' => 'index.php?page=items&amp;group='.$dataLastItems['id_tree'].'&amp;id='.$item,
                     );
                 }
             }
@@ -1413,6 +1413,7 @@ function identifyUser($sentData, $SETTINGS)
         "\n\n----\n".
         'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
     );
+
 
     echo json_encode(
         array(
@@ -1690,7 +1691,7 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
 /**
  * Undocumented function.
  *
- * @param array  $data          Username
+ * @param string $data          Username
  * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
  * @param int    $counter       User exists in teampass

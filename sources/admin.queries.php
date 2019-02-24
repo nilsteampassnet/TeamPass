@@ -963,8 +963,8 @@ switch ($post_type) {
                 }
 
                 $return = Encryption\Crypt\aesctr::decrypt(
-                    /* @scrutinizer ignore-type */ $return,
-                    base64_decode($tp_settings['bck_script_key']),
+                    /** @scrutinizer ignore-type */ $return,
+                    /** @scrutinizer ignore-type */ base64_decode($tp_settings['bck_script_key']),
                     256
                 );
 

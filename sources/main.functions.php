@@ -1355,6 +1355,7 @@ function getStatisticsData()
  * @param string $email       email
  * @param array  $SETTINGS    settings
  * @param string $textMailAlt email message alt
+ * @param bool   $silent      no errors
  *
  * @return string some json info
  */
@@ -1363,7 +1364,8 @@ function sendEmail(
     $textMail,
     $email,
     $SETTINGS,
-    $textMailAlt = null
+    $textMailAlt = null,
+    $silent = false
 ) {
     // CAse where email not defined
     if ($email === 'none') {
@@ -1430,13 +1432,15 @@ function sendEmail(
 
         // send email
         if ($mail->send()) {
-            return json_encode(
-                array(
-                    'error' => false,
-                    'message' => langHdl('forgot_my_pw_email_sent'),
-                )
-            );
-        } else {
+            if ($silent === true) {
+                return json_encode(
+                    array(
+                        'error' => false,
+                        'message' => langHdl('forgot_my_pw_email_sent'),
+                    )
+                );
+            }
+        } elseif ($silent === true) {
             return json_encode(
                 array(
                     'error' => true,
@@ -1445,12 +1449,14 @@ function sendEmail(
             );
         }
     } catch (Exception $e) {
-        return json_encode(
-            array(
-                'error' => true,
-                'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
-            )
-        );
+        if ($silent === true) {
+            return json_encode(
+                array(
+                    'error' => true,
+                    'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
+                )
+            );
+        }
     }
 }
 

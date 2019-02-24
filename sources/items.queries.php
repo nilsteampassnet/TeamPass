@@ -2165,17 +2165,23 @@ if (null !== $post_type) {
             // Get the object key for the user
             $userKey = DB::queryFirstRow(
                 'SELECT share_key
-                FROM '.prefixTable('sharekeys').'
-                WHERE user_id = %i AND object_id = %i AND type = %s',
+                FROM '.prefixTable('sharekeys_items').'
+                WHERE user_id = %i AND object_id = %i',
                 $_SESSION['user_id'],
-                $post_id,
-                'item'
+                $post_id
             );
-            if (count($userKey) === 0) {
+            if (DB::count() === 0) {
                 // No share key found
             } else {
-                $pw = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
-                $pw = doDataDecryption($dataItem['pw'], $pw);
+
+
+
+                $key = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+
+
+
+                $pw = doDataDecryption($dataItem['pw'], $key);
+                echo $pw." ;;;; ";
             }
             /*
             if (null !== $post_salt_key_required
@@ -2323,7 +2329,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
-                $arrData['pw'] = 'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
+                $arrData['pw'] = $pw;//'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
                 $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
                 $arrData['folder'] = $dataItem['id_tree'];

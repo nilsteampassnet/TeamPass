@@ -674,7 +674,7 @@ function calculateOrder($id, $position)
         // Set this new category to the bottom
 
         // Get number of categories
-        $rows = DB::query(
+        DB::query(
             'SELECT id
             FROM '.prefixTable('categories').'
             WHERE level = %i',

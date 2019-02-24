@@ -186,7 +186,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
                 $SETTINGS,
                 $data['item_id'],
                 $dataItem['label'],
-                OTV_USER_ID,
+                (int) OTV_USER_ID,
                 'at_shown',
                 'otv'
             );

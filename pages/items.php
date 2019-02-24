@@ -57,7 +57,7 @@ $session_user_upgrade_needed = $superGlobal->get('user_upgrade_needed', 'SESSION
 // Prepare COOKIE variables
 $cookie_jstree_select = $superGlobal->get('jstree_select', 'COOKIE');
 
-if ($session_user_admin === '1'
+if ((int) $session_user_admin === 1
     && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
     || null === TP_ADMIN_FULL_RIGHT
 ) {
