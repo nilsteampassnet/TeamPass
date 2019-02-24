@@ -254,7 +254,7 @@ if (null !== $post_step) {
                 // Get items
                 $rows = mysqli_query(
                     $db_link,
-                    'SELECT id, pw, encryption_type
+                    'SELECT id, pw, encryption_type 
                     FROM '.$pre.'items
                     WHERE perso = 0
                     LIMIT '.$post_start.', '.$post_count_in_loop
