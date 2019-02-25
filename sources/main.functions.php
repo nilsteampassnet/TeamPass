@@ -3100,8 +3100,7 @@ function encryptUserObjectKey($key, $publicKey)
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($publicKey));
 
-    // Encrypt with compliance with PKCS1.5 (used by openssl)
-    define('CRYPT_RSA_PKCS15_COMPAT', true);
+    // Encrypt
     return base64_encode($rsa->encrypt(base64_decode($key)));
 }
 

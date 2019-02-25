@@ -553,11 +553,11 @@ function identifyUser(redirect, psk, data, randomstring)
                             if (parseInt(data.user_admin) === 1) {
                                 window.location.href='index.php?page=admin';
                             } else if (data.initial_url !== '' && data.initial_url !== null) {
-                                window.location.href=data.initial_url +
-                                    (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
+                                window.location.href=data.initial_url
+                                    //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             } else {
-                                window.location.href = 'index.php?page=items' +
-                                    (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
+                                window.location.href = 'index.php?page=items'
+                                    //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             }
                         } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
                             $('#div-2fa-google-qr')

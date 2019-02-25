@@ -151,6 +151,7 @@ function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTI
 function deleteUserObjetsKeys($user_id, $SETTINGS)
 {
     // Its goal is to adapt all user Items object key
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
     // Remove all existing object keys
     DB::delete(

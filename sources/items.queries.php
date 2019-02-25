@@ -2161,6 +2161,7 @@ if (null !== $post_type) {
                 }
             }
 
+            /*
             // Uncrypt PW
             // Get the object key for the user
             $userKey = DB::queryFirstRow(
@@ -2179,6 +2180,7 @@ if (null !== $post_type) {
                     decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key'])
                 );
             }
+            */
 
             // check if item is expired
             if (null !== $post_expired_item
@@ -2297,7 +2299,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
-                $arrData['pw'] = $pw; //'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
+                //$arrData['pw'] = $pw; //'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
                 $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
                 $arrData['folder'] = $dataItem['id_tree'];

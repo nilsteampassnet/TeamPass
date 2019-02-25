@@ -258,40 +258,7 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
 
     // User hits the LAUNCH button for sharekeys re-encryption
     $(document).on('click', '#button_do_sharekeys_reencryption', function() {
-        console.log('USER SHAREKEYS RE-ENCRYPTION START');
-
-        $.post(
-            "sources/main.queries.php",
-            {
-                type : "user_sharekeys_reencryption_start",
-                key  : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data)
-                if (data.error === true) {
-                    // error
-                    alertify
-                        .alert()
-                        .setting({
-                            'label' : '<?php echo langHdl('error'); ?>',
-                            'message' : '<i class="fas fa-info-circle mr-2"></i>' + data.message
-                        })
-                        .show(); 
-                    return false;
-                } else {
-                    $("#dialog-encryption-keys-progress").val(data.message);
-                    
-                    // Reload the page
-                    NProgress.start();
-                    alertify
-                        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
-                        .dismissOthers();
-                    document.location.href="index.php?page=items";
-                }
-            }
-            }
-        );
+        userShareKeysReencryption();
     });
 
     // Progress bar
@@ -498,5 +465,96 @@ function generateBugReport()
         }
     );
 }
+
+
+/*
+function userShareKeysReencryption(userId = null)
+{
+    console.log('USER SHAREKEYS RE-ENCRYPTION START');
+
+    $("#dialog-encryption-keys-progress").text(<?php echo langHdl('clearing_old_sharekeys'); ?>);
+
+    alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
+
+    $.post(
+        "sources/main.queries.php",
+        {
+            type   : "user_sharekeys_reencryption_start",
+            userId : userId,
+            key    : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            console.log(data)
+            if (data.error === true) {
+                // error
+                alertify
+                    .alert()
+                    .setting({
+                        'label' : '<?php echo langHdl('error'); ?>',
+                        'message' : '<i class="fas fa-info-circle mr-2"></i>' + data.message
+                    })
+                    .show(); 
+                return false;
+            } else {
+                // Start looping on all steps of re-encryption
+                userShareKeysReencryptionNext(userId);
+            }
+        }
+    );
+}
+
+function userShareKeysReencryptionNext(userId = null)
+{
+    var steps = {
+        'step1' : '<?php echo langHdl('items'); ?>',
+        'step2' : '<?php echo langHdl('logs'); ?>',
+        'step3' : '<?php echo langHdl('suggestions'); ?>',
+        'step4' : '<?php echo langHdl('fields'); ?>',
+        'step5' : '<?php echo langHdl('files'); ?>',
+    },
+    sending = '';
+
+    if (data.action !== 'finished') {
+        sending = {
+            'action' : data.action === undefined ? 'step1' : data.action,
+            'start' : data.start === undefined ? 0 : data.start,
+            'length' : 200,
+        }
+
+        // Inform user
+        $("#dialog-encryption-keys-progress").text('<?php echo langHdl('encryption_keys'); ?> - ' + steps[data.action]);
+
+        // Do query
+        $.post(
+            "sources/main.queries.php",
+            {
+                type   : "user_sharekeys_reencryption_next",
+                userId : userId,
+                key    : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                console.log(data)
+
+
+                userShareKeysReencryptionNext(userId);
+            }
+        );
+    } else {
+        // Finished
+
+    }
+
+    
+    
+    // Reload the page
+    NProgress.start();
+    alertify
+        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+        .dismissOthers();
+    document.location.href="index.php?page=items";
+}
+*/
 
 </script>

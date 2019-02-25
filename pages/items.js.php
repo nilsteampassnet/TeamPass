@@ -2972,7 +2972,7 @@ function sList(data)
             }
             
             // Prepare mini icons
-            if (parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1
                 && value.rights > 10
             ) {
                 // Login icon
@@ -3409,7 +3409,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
                 
                 // Uncrypt the pwd
-                data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
+                //data.pw = atob(data.pw);
 
                 // Update hidden variables
                 store.update(
@@ -3446,7 +3446,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                     $('.form-item').removeClass('hidden');
                     $('.item-details-card, #item-details-card-categories').addClass('hidden');
                 }
-                $('#pwd-definition-size').val(data.pw.length);
+                //$('#pwd-definition-size').val(data.pw.length);
                 
                 // Prepare card
                 $('#card-item-label, #form-item-title').html(data.label);
@@ -3458,8 +3458,8 @@ function Details(itemDefinition, actionType, hotlink = false)
                     $('#card-item-description').removeClass('hidden');
                 }
                 $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                $('#form-item-password, #form-item-password-confirmation').val(data.pw);
+                //$('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
+                //$('#form-item-password, #form-item-password-confirmation').val(data.pw);
                 $('#card-item-login').html(data.login);
                 $('#form-item-login, #form-item-suggestion-login').val(data.login);
                 
@@ -4322,7 +4322,7 @@ $('#item-button-password-copy').click(function() {
 });
 
 
-
+/*
 // Get parameters from url
 var currentTeampassUrl = new URL(window.location.href);
 var actionFromUrl = currentTeampassUrl.searchParams.get('action');
@@ -4337,5 +4337,6 @@ if (actionFromUrl !== undefined && atob(actionFromUrl) === 'reset_private_key') 
 
     alertify.dismissAll();
 }
+*/
 
 </script>

@@ -15,6 +15,11 @@
  */
 
 return array(
+    'files' => 'Files',
+    'logs' => 'Logs',
+    'suggestions' => 'Suggestions',
+    'encryption_keys' => 'Encrypting keys',
+    'clearing_old_sharekeys' => 'Clearing old sharekeys',
     'hit_launch_to_start' => 'Please click Launch button to start',
     'password_changed' => 'Password updated',
     'password_already_used' => 'Password already used',

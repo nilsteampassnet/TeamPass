@@ -340,7 +340,7 @@ if ($post_type === 'identify_duo_user') {
                 'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                'error' => 'bruteforce_wait',
+                'error' => true,
                 'message' => langHdl('error_bad_credentials_more_than_3_times'),
             )
         );
@@ -1289,7 +1289,7 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
-                    'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
+                    //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
 
@@ -1337,7 +1337,7 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none') ? true : false,
                         'session_key' => $_SESSION['key'],
-                        'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
+                        //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
 
@@ -1371,7 +1371,7 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                         'session_key' => $_SESSION['key'],
-                        'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
+                        //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
 
@@ -1402,7 +1402,7 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
-                    'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
+                    //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
 
@@ -1433,7 +1433,7 @@ function identifyUser($sentData, $SETTINGS)
                 && empty($_SESSION['user']['private_key']) === false
                 && $_SESSION['user']['private_key'] !== 'none' ? true : false,
             'session_key' => $_SESSION['key'],
-            'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
+            //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
         )
     );
 }

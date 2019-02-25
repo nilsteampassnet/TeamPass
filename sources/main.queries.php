@@ -1973,11 +1973,123 @@ Insert the log here and especially the answer of the query that failed.
                 break;
             }
 
-            // Check 
+            $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
 
-            // Encrypt data to return
-            echo prepareExchangedData($SETTINGS, 'encode');
+            // Check if user has to reencrpt
+            $userData = DB::queryFirstRow(
+                'SELECT special
+                FROM '.prefixTable('users').'
+                WHERE id = %i',
+                $post_user_id
+            );
+            if (empty($userData['special']) === false && $userData['special'] === 'reset_private_key') {
+                // Include 
+                include_once $SETTINGS['cpassman_dir'].'/sources/aes.functions.php';
+
+                // CLear old sharekeys
+                deleteUserObjetsKeys($post_user_id, $SETTINGS);
+
+                // Continu with next step
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'action' => 'step_1',
+                    ),
+                    'encode'
+                );
+                break;
+            } else {
+                // Nothing to do
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_user'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             break;
+
+
+            /*
+            * user_sharekeys_reencryption_next
+            */
+            case 'user_sharekeys_reencryption_next':
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('key_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+    
+                $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
+                $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
+                $post_start = filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT);
+                $post_length = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
+                $post_action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
+    
+                // Check if user has to reencrpt
+                $userData = DB::queryFirstRow(
+                    'SELECT special
+                    FROM '.prefixTable('users').'
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (empty($userData['special']) === false && $userData['special'] === 'reset_private_key') {
+                    // Include 
+                    include_once $SETTINGS['cpassman_dir'].'/sources/aes.functions.php';
+    
+                    // STEP 1 - ITEMS
+                    if ($post_action === 'step1') {
+                        // Loop on items
+                        $rows = DB::query(
+                            'SELECT id, pw, encryption_type
+                            FROM '.prefixTable('items').'
+                            WHERE perso = 0
+                            LIMIT '.$post_start.', '.$post_length
+                        );
+                        foreach ($rows as $record) {
+
+                        }
+
+                        // SHould we change step?
+                        $next_start = (int) $post_start + (int) $post_length;
+                        if ($next_start > DB::count()) {
+                            $post_action = 'step2';
+                        }
+                    }
+    
+                    // Continu with next step
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'action' => $post_action,
+                            'start' => $next_start,
+                        ),
+                        'encode'
+                    );
+                    break;
+                } else {
+                    // Nothing to do
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_no_user'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+    
+                break;
     }
 }

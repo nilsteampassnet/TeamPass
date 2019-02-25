@@ -233,14 +233,14 @@ if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_auth
 }
 
 echo '
-          <div class="row mb-3">
+        <div class="row mb-3 mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">'.langHdl('log_in').'</button>
             </div>
-            <!-- /.col -->
-          </div>
         </div>';
 
+/*
+// No forgot link any more - not secure - must go through Admin or Managers
 // Forgot link
 if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true) {
     echo '
@@ -248,6 +248,7 @@ if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true) {
             <a href="#" id="link_forgot_user_pwd">'.langHdl('forgot_my_pw').'</a>
         </div>';
 }
+*/
 
 echo '
     </div>
@@ -269,13 +270,13 @@ echo '
                     </div>
                     <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
                 </div>            
-                <div class="form-check mb-2">
+                <!-- <div class="form-check mb-2">
                     <input type="checkbox" class="form-check-input form-item-control flat-blue" id="confirm-no-current-password">
                     <label class="form-check-label ml-3" for="confirm-no-current-password">'.langHdl('no_current_password').'</label>
                     <small class="form-text text-muted">
                         '.langHdl('no_current_password_info').'
                     </small>
-                </div>
+                </div> -->
             </div>
             <div class="input-group has-feedback mb-2 mt-4">
                 <div class="input-group-prepend">
