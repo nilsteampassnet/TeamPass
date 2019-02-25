@@ -15,6 +15,7 @@
  */
 
 return array(
+    'hit_launch_to_start' => 'Please click Launch button to start',
     'password_changed' => 'Password updated',
     'password_already_used' => 'Password already used',
     'reloading_page' => 'Reloading page ...',

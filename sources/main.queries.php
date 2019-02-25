@@ -1956,5 +1956,28 @@ Insert the log here and especially the answer of the query that failed.
             }
 
             break;
+
+
+        /*
+        * user_sharekeys_reencryption_start
+        */
+        case 'user_sharekeys_reencryption_start':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check 
+
+            // Encrypt data to return
+            echo prepareExchangedData($SETTINGS, 'encode');
+
+            break;
     }
 }

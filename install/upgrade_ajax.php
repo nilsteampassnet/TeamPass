@@ -591,12 +591,18 @@ if (isset($post_type)) {
 // DATABASE connexion parameters
 define("DB_HOST", "'.DB_HOST.'");
 define("DB_USER", "'.DB_USER.'");
-define("DB_PASSWD", "'.defuse_return_decrypted(DB_PASSWD).'");
+//define("DB_PASSWD", "'.defuse_return_decrypted(DB_PASSWD).'");
+define("DB_PASSWD", "'.DB_PASSWD.'");
 define("DB_NAME", "'.DB_NAME.'");
 define("DB_PREFIX", "'.DB_PREFIX.'");
 define("DB_PORT", "'.DB_PORT.'");
 define("DB_ENCODING", "'.DB_ENCODING.'");
 define("SECUREPATH", "'.SECUREPATH.'");
+define("SALT", "");
+define("IKEY", "");
+define("SKEY", "");
+define("AKEY", "");
+define("COST", "");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);

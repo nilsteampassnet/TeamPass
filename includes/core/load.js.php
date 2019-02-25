@@ -255,8 +255,53 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
         );
     });
 
+
+    // User hits the LAUNCH button for sharekeys re-encryption
+    $(document).on('click', '#button_do_sharekeys_reencryption', function() {
+        console.log('USER SHAREKEYS RE-ENCRYPTION START');
+
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "user_sharekeys_reencryption_start",
+                key  : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                console.log(data)
+                if (data.error === true) {
+                    // error
+                    alertify
+                        .alert()
+                        .setting({
+                            'label' : '<?php echo langHdl('error'); ?>',
+                            'message' : '<i class="fas fa-info-circle mr-2"></i>' + data.message
+                        })
+                        .show(); 
+                    return false;
+                } else {
+                    $("#dialog-encryption-keys-progress").val(data.message);
+                    
+                    // Reload the page
+                    NProgress.start();
+                    alertify
+                        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+                        .dismissOthers();
+                    document.location.href="index.php?page=items";
+                }
+            }
+            }
+        );
+    });
+
     // Progress bar
-    setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
+    setTimeout(
+        function() {
+            NProgress.done();
+            $(".fade").removeClass("out");
+        },
+        1000
+    );
 });
 
 

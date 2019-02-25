@@ -747,8 +747,8 @@ if (($session_validite_pw === null
         <div class="card card-warning m-2 hidden" id="dialog-encryption-keys">
             <div class="card-header">
                 <h3 class="card-title">
-                <i class="fas fa-bug mr-2"></i>
-                <?php echo langHdl('Objects key generation'); ?>
+                <i class="fas fa-bullhorn mr-2"></i>
+                <?php echo langHdl('your_attention_is_required'); ?>
                 </h3>
             </div>
             <div class="card-body">
@@ -758,15 +758,17 @@ if (($session_validite_pw === null
                             <i class="icon fas fa-info mr-2"></i>
                             <?php echo langHdl('objects_encryption_explanation'); ?>
                         </div>
-                        <div class="form-control" id="dialog-encryption-keys-progress"></div>
+                        <div class="form-control mt-3 font-weight-light grey" id="dialog-encryption-keys-progress">
+                            <?php echo langHdl('hit_launch_to_start'); ?>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="card-footer">
-                <button class="btn btn-default float-right close-element" disabled><?php echo langHdl('close'); ?></button>
+                <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo langHdl('launch'); ?></button>
             </div>
         </div>
-        <!-- /.DEFECT REPORT -->
+        <!-- /.ENCRYPTION KEYS GENERATION -->
 
     <?php
     if ($session_initial_url !== null && empty($session_initial_url) === false) {

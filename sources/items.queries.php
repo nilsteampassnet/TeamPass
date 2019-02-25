@@ -2172,45 +2172,13 @@ if (null !== $post_type) {
             );
             if (DB::count() === 0) {
                 // No share key found
-            } else {
-
-
-
-                $key = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
-
-echo base64_decode($dataItem['pw'])." || ";
-
-                $pw = doDataDecryption($dataItem['pw'], $key);
-                echo $pw." ;;;; ";
-            }
-            /*
-            if (null !== $post_salt_key_required
-                && (int) $post_salt_key_required === 1
-                && isset($_SESSION['user_settings']['session_psk']) === true
-                && empty($_SESSION['user_settings']['session_psk']) === false
-            ) {
-                $pw = cryption(
-                    $dataItem['pw'],
-                    $_SESSION['user_settings']['session_psk'],
-                    'decrypt',
-                    $SETTINGS
-                );
-                $arrData['edit_item_salt_key'] = 1;
-            } else {
-                $pw = cryption(
-                    $dataItem['pw'],
-                    '',
-                    'decrypt',
-                    $SETTINGS
-                );
-                $arrData['edit_item_salt_key'] = 0;
-            }
-
-            $pw = @$pw['string'];
-            if (!isUTF8($pw)) {
                 $pw = '';
+            } else {
+                $pw = doDataDecryption(
+                    $dataItem['pw'],
+                    decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key'])
+                );
             }
-            */
 
             // check if item is expired
             if (null !== $post_expired_item
@@ -2329,7 +2297,7 @@ echo base64_decode($dataItem['pw'])." || ";
                 }
 
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
-                $arrData['pw'] = $pw;//'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
+                $arrData['pw'] = $pw; //'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
                 $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
                 $arrData['folder'] = $dataItem['id_tree'];

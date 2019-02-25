@@ -250,7 +250,33 @@ if (null !== $post_type) {
                 'message' => '',
             );
 
-            if ($post_action === 'edit_folder') {
+            if ($post_action === 'edit_role') {
+                //Check if role already exist : No similar roles
+                DB::query(
+                    'SELECT *
+                    FROM '.prefixTable('roles_title').'
+                    WHERE id = %i',
+                    $post_folderId
+                );
+                $counter = DB::count();
+
+                if ($counter > 0) {
+                    DB::update(
+                        prefixTable('roles_title'),
+                        array(
+                            'title' => $post_label,
+                            'complexity' => $post_complexity,
+                            'allow_pw_change' => $post_allowEdit,
+                        ),
+                        'id = %i',
+                        $post_folderId
+                    );
+                } else {
+                    // Adding new folder not possible as it exists
+                    $return['error'] = true;
+                    $return['message'] = langHdl('error_role_exist');
+                }
+            } elseif ($post_action === 'edit_folder') {
                 //Check if role already exist : No similar roles
                 DB::query(
                     'SELECT *

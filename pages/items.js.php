@@ -4321,4 +4321,21 @@ $('#item-button-password-copy').click(function() {
     $('#form-item-password-confirmation').val($('#form-item-password').val());
 });
 
+
+
+// Get parameters from url
+var currentTeampassUrl = new URL(window.location.href);
+var actionFromUrl = currentTeampassUrl.searchParams.get('action');
+if (actionFromUrl !== undefined && atob(actionFromUrl) === 'reset_private_key') {
+    // Case where we need to re-encrypt all share keys
+    console.log("ACTION RE-ENCRYPTION OF SHAREKEYS");
+
+    $('#dialog-encryption-keys').removeClass('hidden');    
+
+    // Hide other
+    $('.content-header, .content').addClass('hidden');
+
+    alertify.dismissAll();
+}
+
 </script>

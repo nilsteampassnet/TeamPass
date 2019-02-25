@@ -479,7 +479,7 @@ function identifyUser($sentData, $SETTINGS)
             $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
         }
         $passwordClear = $_SERVER['PHP_AUTH_PW'];
-        //$usernameSanitized = '';
+    //$usernameSanitized = '';
     } else {
         $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
         $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
@@ -718,9 +718,9 @@ function identifyUser($sentData, $SETTINGS)
         $username
     );
 
-   /* echo '> '.$username.' - '.DB::count().' ; ';
+    /* echo '> '.$username.' - '.DB::count().' ; ';
 
-    return;*/
+     return;*/
 
     if (DB::count() === 0) {
         logEvents('failed_auth', 'user_not_exists', '', $username, $username);
@@ -1212,8 +1212,8 @@ function identifyUser($sentData, $SETTINGS)
             $return = $dataReceived['randomstring'];
             // Send email
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                && $SETTINGS['enable_send_email_on_user_login'] === '1'
-                && $_SESSION['user_admin'] != 1
+                && (int) $SETTINGS['enable_send_email_on_user_login'] === 1
+                && (int) $_SESSION['user_admin'] !== 1
             ) {
                 // get all Admin users
                 $receivers = '';
@@ -1272,7 +1272,7 @@ function identifyUser($sentData, $SETTINGS)
                 $SETTINGS['cpassman_dir'] = '.';
             }
             */
-        } elseif ($data['disabled'] == 1) {
+        } elseif ((int) $data['disabled'] === 1) {
             // User and password is okay but account is locked
             echo json_encode(
                 array(
@@ -1289,6 +1289,7 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
+                    'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
 
@@ -1336,6 +1337,7 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none') ? true : false,
                         'session_key' => $_SESSION['key'],
+                        'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
 
@@ -1369,6 +1371,7 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                         'session_key' => $_SESSION['key'],
+                        'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
 
@@ -1399,6 +1402,7 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
+                    'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
 
@@ -1413,7 +1417,6 @@ function identifyUser($sentData, $SETTINGS)
         "\n\n----\n".
         'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
     );
-
 
     echo json_encode(
         array(
@@ -1430,6 +1433,7 @@ function identifyUser($sentData, $SETTINGS)
                 && empty($_SESSION['user']['private_key']) === false
                 && $_SESSION['user']['private_key'] !== 'none' ? true : false,
             'session_key' => $_SESSION['key'],
+            'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
         )
     );
 }
