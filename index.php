@@ -763,9 +763,11 @@ if (($session_validite_pw === null
                         </div>
                     </div>
                 </div>
+                <input type="hidden" id="sharekeys_reencryption_target_user" value="">
             </div>
             <div class="card-footer">
                 <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo langHdl('launch'); ?></button>
+                <button class="btn btn-default float-right" id="button_close_sharekeys_reencryption"><?php echo langHdl('close'); ?></button>
             </div>
         </div>
         <!-- /.ENCRYPTION KEYS GENERATION -->

@@ -15,6 +15,7 @@
  */
 
 return array(
+    'user_has_psk_info' => 'We have identified that you have some personal items encoded with an old personal saltkey. This step aim consists in re-encrypting them with your new private key. Please provide us your personal saltkey.',
     'files' => 'Files',
     'logs' => 'Logs',
     'suggestions' => 'Suggestions',
@@ -27,7 +28,7 @@ return array(
     'no_current_password' => 'No current password',
     'no_current_password_info' => 'With no current password, Teampass will have to regenerate the encryption keys.',
     'your_login' => 'Your login',
-    'send_new_password_to_user' => 'Send a password to user',
+    'change_login_password' => 'Change login password',
     'current_password_mandatory' => 'Current password is mandatory',
     'current_password' => 'Current password',
     'objects_encryption_explanation' => 'By changing password, all objects keys need to be regenerated. Those keys guarantee your access to the encrypted objects stored in Teampass. Please wait until the process reached the final step. This could take several minutes depending on the number of objects.',

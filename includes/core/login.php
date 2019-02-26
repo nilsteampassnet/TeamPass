@@ -46,15 +46,15 @@ echo '
     <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>
   </div>
   <!-- /.login-logo -->
-  <div class="card">
+<div class="card">
     <div class="card-body login-card-body">
-      <p class="login-box-msg">'.langHdl('index_get_identified').'</p>
+        <p class="login-box-msg">'.langHdl('index_get_identified').'</p>
 
-      <div>
-        <div class="input-group has-feedback mb-2">
-            <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
-            </div>';
+        <div>
+            <div class="input-group has-feedback mb-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
+                </div>';
 
 if (isset($SETTINGS['enable_http_request_login']) === true
     && $SETTINGS['enable_http_request_login'] === '1'
@@ -237,7 +237,8 @@ echo '
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">'.langHdl('log_in').'</button>
             </div>
-        </div>';
+        </div>
+    </div>';
 
 /*
 // No forgot link any more - not secure - must go through Admin or Managers
@@ -269,14 +270,7 @@ echo '
                         <span class="input-group-text"><i class="fa fa-key"></i></span>
                     </div>
                     <input type="password" id="current-user-password" class="form-control" placeholder="'.langHdl('current_password').'">
-                </div>            
-                <!-- <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="confirm-no-current-password">
-                    <label class="form-check-label ml-3" for="confirm-no-current-password">'.langHdl('no_current_password').'</label>
-                    <small class="form-text text-muted">
-                        '.langHdl('no_current_password_info').'
-                    </small>
-                </div> -->
+                </div>
             </div>
             <div class="input-group has-feedback mb-2 mt-4">
                 <div class="input-group-prepend">
@@ -301,9 +295,26 @@ echo '
                 <div class="col-12">
                     <button id="but_confirm_new_password" class="btn btn-primary btn-block">'.langHdl('confirm').'</button>
                 </div>
-                <!-- /.col -->
             </div>
         </div>
-  </div>
+    </div>
+
+    <div class="card-body hidden" id="card-user-treat-psk">
+        <div class="alert alert-info">
+            <div class="text-center"><i class="icon fa fa-info"></i>'.langHdl('user_has_psk_info').'</div>
+        </div>
+        <div class="input-group has-feedback mb-2">
+            <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fa fa-key"></i></span>
+            </div>
+            <input type="password" id="user-old-defuse-psk" class="form-control" placeholder="'.langHdl('home_personal_saltkey').'">
+        </div>
+        <div class="row mb-3">
+            <div class="col-12">
+                <button id="but_confirm_defule_psk" class="btn btn-primary btn-block">'.langHdl('launch').'</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 <!-- /.login-box -->';

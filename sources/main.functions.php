@@ -40,8 +40,8 @@ header('Cache-Control: no-cache, must-revalidate');
 
 // Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
+
 // Prepare Encryption class calls
-use Defuse\Crypto\Crypto;
 
 /**
  * Undocumented function.
@@ -2913,11 +2913,10 @@ function formatSizeUnits($bytes)
  * Generate user pair of keys.
  *
  * @param string $userPwd User password
- * @param int    $userId  User id to change
  *
  * @return array
  */
-function generateUserKeys($userPwd, $userId = 0)
+function generateUserKeys($userPwd)
 {
     // include library
     include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';

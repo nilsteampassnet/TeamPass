@@ -2768,6 +2768,12 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                 return;
                             }
 
+                            // Notify user to wait
+                            alertify.set('notifier','position', 'top-right');
+                            alertify
+                                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+                                .dismissOthers();
+
                             $.ajax({
                                 type: "POST",
                                 async: false,
@@ -2813,7 +2819,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         
                         showAlertify(
                             '<?php echo langHdl('copy_to_clipboard'); ?>',
-                            1,
+                            2,
                             'top-right',
                             'message'
                         );
@@ -3409,7 +3415,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
                 
                 // Uncrypt the pwd
-                //data.pw = atob(data.pw);
+                data.pw = atob(data.pw);
 
                 // Update hidden variables
                 store.update(
@@ -3446,7 +3452,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                     $('.form-item').removeClass('hidden');
                     $('.item-details-card, #item-details-card-categories').addClass('hidden');
                 }
-                //$('#pwd-definition-size').val(data.pw.length);
+                $('#pwd-definition-size').val(data.pw.length);
                 
                 // Prepare card
                 $('#card-item-label, #form-item-title').html(data.label);
@@ -3458,8 +3464,8 @@ function Details(itemDefinition, actionType, hotlink = false)
                     $('#card-item-description').removeClass('hidden');
                 }
                 $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                //$('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                //$('#form-item-password, #form-item-password-confirmation').val(data.pw);
+                $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
+                $('#form-item-password, #form-item-password-confirmation').val(data.pw);
                 $('#card-item-login').html(data.login);
                 $('#form-item-login, #form-item-suggestion-login').val(data.login);
                 

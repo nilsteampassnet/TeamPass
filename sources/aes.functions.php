@@ -59,12 +59,9 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
-
-
 // Protect POST
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -83,12 +80,12 @@ if (null !== $post_type) {
 
             // Get user info
             $userInfo = DB::queryFirstRow(
-                "SELECT id, public_key, private_key
-                FROM ".prefixTable('users')."
-                WHERE id = %i",
+                'SELECT id, public_key, private_key
+                FROM '.prefixTable('users').'
+                WHERE id = %i',
                 $post_user_id
             );
-            
+
             // Generate keys
             $userKeys = generateUserKeys($post_user_pwd);
 
@@ -106,15 +103,14 @@ if (null !== $post_type) {
     }
 }
 
-
-
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param [type] $user_id
  * @param [type] $private_key
  * @param [type] $public_key
  * @param [type] $SETTINGS
+ *
  * @return void
  */
 function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTINGS)
@@ -136,12 +132,11 @@ function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTI
         $post_item_id
     );
     foreach ($rows as $record) {
-
     }
 }
 
 /**
- * Delete all objects keys for one user
+ * Delete all objects keys for one user.
  *
  * @param string $user_id  User id
  * @param string $SETTINGS Teampass settings
@@ -183,7 +178,7 @@ function deleteUserObjetsKeys($user_id, $SETTINGS)
 
     // Remove all existing object keys
     DB::delete(
-        prefixTable('sharekeys_filess'),
+        prefixTable('sharekeys_files'),
         'user_id = %i',
         $user_id
     );

@@ -1089,21 +1089,28 @@ function identifyUser($sentData, $SETTINGS)
             }
             // User's roles
             $_SESSION['fonction_id'] = $data['fonction_id'];
-            $_SESSION['user_roles'] = explode(';', $data['fonction_id']);
+            $_SESSION['user_roles'] = array_filter(explode(',', $data['fonction_id']));
+
             // build array of roles
             $_SESSION['user_pw_complexity'] = 0;
             $_SESSION['arr_roles'] = array();
-            foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                $resRoles = DB::queryFirstRow('SELECT title, complexity FROM '.prefixTable('roles_title').' WHERE id=%i', $role);
+            foreach ($_SESSION['user_roles'] as $role) {
+                $resRoles = DB::queryFirstRow(
+                    'SELECT title, complexity
+                    FROM '.prefixTable('roles_title').'
+                    WHERE id=%i',
+                    $role
+                );
                 $_SESSION['arr_roles'][$role] = array(
-                        'id' => $role,
-                        'title' => $resRoles['title'],
+                    'id' => $role,
+                    'title' => $resRoles['title'],
                 );
                 // get highest complexity
-                if ($_SESSION['user_pw_complexity'] < $resRoles['complexity']) {
+                if (intval($_SESSION['user_pw_complexity']) < intval($resRoles['complexity'])) {
                     $_SESSION['user_pw_complexity'] = $resRoles['complexity'];
                 }
             }
+
             // build complete array of roles
             $_SESSION['arr_roles_full'] = array();
             $rows = DB::query('SELECT id, title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
@@ -1277,6 +1284,7 @@ function identifyUser($sentData, $SETTINGS)
             echo json_encode(
                 array(
                     'value' => $return,
+                    'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
@@ -1289,6 +1297,8 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
+                    'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
+                    //'debug' => $_SESSION['user']['private_key'],
                     //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
@@ -1325,6 +1335,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo json_encode(
                     array(
                         'value' => $return,
+                        'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
@@ -1337,6 +1348,8 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none') ? true : false,
                         'session_key' => $_SESSION['key'],
+                        'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
+                        //'debug' => $_SESSION['user']['private_key'],
                         //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
@@ -1359,6 +1372,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo json_encode(
                     array(
                         'value' => $return,
+                        'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                         'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
@@ -1371,6 +1385,8 @@ function identifyUser($sentData, $SETTINGS)
                             && empty($_SESSION['user']['private_key']) === false
                             && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                         'session_key' => $_SESSION['key'],
+                        'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
+                        //'debug' => $_SESSION['user']['private_key'],
                         //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                     )
                 );
@@ -1390,6 +1406,7 @@ function identifyUser($sentData, $SETTINGS)
             echo json_encode(
                 array(
                     'value' => $return,
+                    'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
@@ -1402,6 +1419,8 @@ function identifyUser($sentData, $SETTINGS)
                         && empty($_SESSION['user']['private_key']) === false
                         && $_SESSION['user']['private_key'] !== 'none' ? true : false,
                     'session_key' => $_SESSION['key'],
+                    'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
+                    //'debug' => $_SESSION['user']['private_key'],
                     //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
                 )
             );
@@ -1421,6 +1440,7 @@ function identifyUser($sentData, $SETTINGS)
     echo json_encode(
         array(
             'value' => $return,
+            'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
             'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
             'initial_url' => @$_SESSION['initial_url'],
             'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
@@ -1433,6 +1453,7 @@ function identifyUser($sentData, $SETTINGS)
                 && empty($_SESSION['user']['private_key']) === false
                 && $_SESSION['user']['private_key'] !== 'none' ? true : false,
             'session_key' => $_SESSION['key'],
+            'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
             //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
         )
     );

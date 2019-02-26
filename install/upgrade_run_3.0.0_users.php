@@ -271,19 +271,8 @@ if (null !== $post_step) {
                         )
                     );
 
-                    //echo $adminItem['share_key'].'   ***   '.base64_decode($adminQuery['private_key']);
                     // Decrypt itemkey with admin key
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
-
-                    //echo '> '.base64_decode($itemKey)." \n\n ";
-
-                    // Decrypt password
-                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
-
-                    //echo '>>> '.base64_decode($itemPwd)." \n\n ";
-
-                    // Encrypt with Password
-                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
                     $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
@@ -294,11 +283,6 @@ if (null !== $post_step) {
                         'INSERT INTO `'.$pre.'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
                         VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
                     );
-
-                    //$objKey = decryptUserObjectKey($share_key_for_item, $$userInfo['private_key']);
-                    //$decPwd = doDataDecryption($cryptedStuff['encrypted'], $objKey);
-
-                    //echo $item['pw'].' ;; '.$share_key_for_item.' ;; '.$decPwd.' || ';
                 }
 
                 echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
@@ -372,12 +356,6 @@ if (null !== $post_step) {
                     // Decrypt itemkey with admin key
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Decrypt password
-                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
-
-                    // Encrypt with Password
-                    //$cryptedStuff = doDataEncryption($itemPwd);
-
                     // Encrypt Item key
                     $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
@@ -439,6 +417,7 @@ if (null !== $post_step) {
                     $db_link,
                     'SELECT id, data, encryption_type
                     FROM '.$pre.'categories_items
+                    //TODO WHERE encryption_type = "teampass_aes"
                     LIMIT '.$post_start.', '.$post_count_in_loop
                 );
 
@@ -523,7 +502,7 @@ if (null !== $post_step) {
                 // Get items
                 $rows = mysqli_query(
                     $db_link,
-                    'SELECT id, data, encryption_type
+                    'SELECT id
                     FROM '.$pre.'suggestion
                     LIMIT '.$post_start.', '.$post_count_in_loop
                 );

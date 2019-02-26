@@ -311,11 +311,11 @@ $('#but_confirm_new_password').click(function() {
 
         // Prepare data
         var data = {
-            "new_pw"            : sanitizeString($("#new-user-password").val()),
-            "current_pw"        : sanitizeString($("#current-user-password").val()),
-            "complexity"        : $('#new-user-password-complexity-level').val(),
-            "reset_private_key" : $('#confirm-no-current-password').is(':checked') === false ? false : true,
-            "change_pw_origine" : 'user_change',
+            "new_pw"         : sanitizeString($("#new-user-password").val()),
+            "current_pw"     : sanitizeString($("#current-user-password").val()),
+            "complexity"     : $('#new-user-password-complexity-level').val(),
+            "change_request" : 'reset_user_password_expected',
+            "user_id"        : store.get('teampassUser').user_id,
         };
 
         console.log('SessionKey : '+store.get('teampassUser').sessionKey);
@@ -343,7 +343,14 @@ $('#but_confirm_new_password').click(function() {
                         .success('<?php echo langHdl('password_changed'); ?>', 0)
                         .dismissOthers();
 
-                    location.reload(true);
+                    // Check if user has a old DEFUSE PSK
+                    if (store.get('teampassUser').user_has_psk === true) {
+                        $('#card-user-treat-psk').removeClass('hidden');
+                        $('.confirm-password-card-body').addClass('hidden');
+                    } else {
+                        // Reload the current page
+                        location.reload(true);
+                    }
                 }
             }
         );
@@ -354,6 +361,13 @@ $('#but_confirm_new_password').click(function() {
             .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('index_pw_error_identical'); ?>', 5)
             .dismissOthers(); 
     }
+});
+
+
+$(document).on('click', '#but_confirm_defule_psk', function() {
+    console.log("START RE-ENCRYPTING PERSONAL ITEMS");
+
+    
 });
 
 /**
@@ -528,6 +542,8 @@ function identifyUser(redirect, psk, data, randomstring)
                                     {},
                                     function(teampassUser) {
                                         teampassUser.sessionKey = data.session_key;
+                                        teampassUser.user_id = data.user_id;
+                                        teampassUser.user_has_psk = data.has_psk;
                                     }
                                 );
                                 $('.confirm-password-card-body').removeClass('hidden');
@@ -553,10 +569,10 @@ function identifyUser(redirect, psk, data, randomstring)
                             if (parseInt(data.user_admin) === 1) {
                                 window.location.href='index.php?page=admin';
                             } else if (data.initial_url !== '' && data.initial_url !== null) {
-                                window.location.href=data.initial_url
+                                window.location.href=data.initial_url;
                                     //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             } else {
-                                window.location.href = 'index.php?page=items'
+                                window.location.href = 'index.php?page=items';
                                     //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             }
                         } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {

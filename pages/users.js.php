@@ -173,7 +173,7 @@ var oTable = $('#table-users').DataTable({
                    '<i class="fas fa-gear"></i>' +
                    '</button>' +
                    '<ul class="dropdown-menu" role="menu">' +
-                   '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-pen mr-2"></i><?php echo langHdl('send_new_password_to_user'); ?></li>' +
+                   '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-lock mr-2"></i><?php echo langHdl('change_login_password'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
@@ -746,40 +746,13 @@ $(document).on('click', '.tp-action', function() {
         );
         // ---
     } else if ($(this).data('action') === 'new-password') {
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-            .dismissOthers();
+        // HIde
+        $('.content-header, .content').addClass('hidden');
 
-        // This sends a new password by email to user
-        data = {
-            'user_id' : $(this).data('id'),
-            'special' : 'change_password_expected',
-        }
-        
-        $.post(
-            'sources/main.queries.php',
-            {
-                type    : 'initialize_user_password',
-                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key     : "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+        // SHow form
+        $('#dialog-encryption-keys').removeClass('hidden');
 
-                if (data.error !== false) {
-                    // Show error
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                        .dismissOthers();
-                } else {
-                    // Inform user
-                    alertify
-                        .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
-                        .dismissOthers();
-                }
-            }
-        );
+        $('#sharekeys_reencryption_target_user').val($(this).data('id'));
         // ---
     } else if ($(this).data('action') === 'logs') {
         $('#row-list, #row-folders').addClass('hidden');

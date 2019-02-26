@@ -323,36 +323,23 @@ $('#profile-save-password-change').click(function() {
         .dismissOthers();
 
     var data = {
-        'password'      : $('#profile-password').val(),
-        'complexity'    : $('#profile-password-complex').val(),
+        'new_pw'         : $('#profile-password').val(),
+        'complexity'     : $('#profile-password-complex').val(),
+        "change_request" : 'user_decides_to_change_password',
+        "user_id"        : store.get('teampassUser').user_id,
     };
 
     //Send query
     $.post(
         "sources/main.queries.php",
         {
-            type                : "change_pw",
-            change_pw_origine   : "user_change",
-            data                : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-            key                 : "<?php echo $_SESSION['key']; ?>"
+            type : "change_pw",
+            data : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key  : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            //decrypt data
-            try {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            } catch (e) {
-                // error
-                $("#div_loading").addClass("hidden");
-                $("#request_ongoing").val("");
-                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
-                $("#div_dialog_message").dialog("open");
-
-                alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
-                    .dismissOthers();
-                return false;
-            }
-            console.log(data)
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
 
             if (data.error === true) {
                 $('#profile-password').focus();
@@ -367,6 +354,8 @@ $('#profile-save-password-change').click(function() {
                 alertify
                     .success('<?php echo langHdl('done'); ?>', 3)
                     .dismissOthers();
+                
+                window.location.href = "index.php";
             }
 
         }

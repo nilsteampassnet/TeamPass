@@ -2161,7 +2161,6 @@ if (null !== $post_type) {
                 }
             }
 
-            /*
             // Uncrypt PW
             // Get the object key for the user
             $userKey = DB::queryFirstRow(
@@ -2180,7 +2179,6 @@ if (null !== $post_type) {
                     decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key'])
                 );
             }
-            */
 
             // check if item is expired
             if (null !== $post_expired_item
@@ -2299,7 +2297,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
-                //$arrData['pw'] = $pw; //'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
+                $arrData['pw'] = $pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
                 $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
                 $arrData['folder'] = $dataItem['id_tree'];
@@ -3731,45 +3729,35 @@ if (null !== $post_type) {
 
             // Prepare POST variables
             $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
-            //$post_psk = filter_input(INPUT_POST, 'psk', FILTER_SANITIZE_STRING);
 
             // Run query
-            db::debugmode(false);
             $dataItem = DB::queryfirstrow(
-                'SELECT pw, perso
-                FROM '.prefixTable('items').'
-                WHERE id = %i',
+                'SELECT i.pw AS pw, s.share_key AS share_key
+                FROM '.prefixTable('items').' AS i
+                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                WHERE user_id = %i AND i.id = %i',
+                $_SESSION['user_id'],
                 $post_item_id
             );
-            if ((int) $dataItem['perso'] !== 1) {
-                $pw = cryption(
-                    $dataItem['pw'],
-                    '',
-                    'decrypt',
-                    $SETTINGS
-                );
-            } else {
-                if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                    $pw = cryption(
-                        $dataItem['pw'],
-                        $_SESSION['user_settings']['session_psk'],
-                        'decrypt',
-                        $SETTINGS
-                    );
-                } else {
-                    $pw = '';
-                }
-            }
 
-            // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-            if (isUTF8($pw['string']) === false) {
-                $pw['string'] = '';
+            // Uncrypt PW
+            if (DB::count() === 0) {
+                // No share key found
+                $pw = '';
+            } else {
+                $pw = doDataDecryption(
+                    $dataItem['pw'],
+                    decryptUserObjectKey(
+                        $dataItem['share_key'],
+                        $_SESSION['user']['private_key']
+                    )
+                );
             }
 
             $returnValues = array(
                 'error' => false,
-                'password' => $pw['string'],
-                'password_error' => $pw['error'],
+                'password' => $pw,
+                'password_error' => '',
             );
 
             // Encrypt data to return
