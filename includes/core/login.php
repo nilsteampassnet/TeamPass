@@ -309,9 +309,12 @@ echo '
             </div>
             <input type="password" id="user-old-defuse-psk" class="form-control" placeholder="'.langHdl('home_personal_saltkey').'">
         </div>
-        <div class="row mb-3">
+        <div class="row mb-3 mt-4">
             <div class="col-12">
-                <button id="but_confirm_defule_psk" class="btn btn-primary btn-block">'.langHdl('launch').'</button>
+                <button id="but_confirm_defuse_psk" class="btn btn-primary btn-block">'.langHdl('launch').'</button>
+            </div>
+            <div class="col-12 mt-3">
+                <button id="but_confirm_forgot_defuse_psk" class="btn btn-danger btn-block text-bold">'.langHdl('i_cannot_remember').'</button>
             </div>
         </div>
     </div>

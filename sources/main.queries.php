@@ -226,6 +226,19 @@ function mainQuery($SETTINGS)
                     break;
                 }
 
+                // Check that the 2 passwords are differents
+                if ($post_current_password === $post_new_password) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('password_already_used'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                /*
                 // Get a string with the old pw array
                 $lastPw = explode(';', $_SESSION['last_pw']);
                 // if size is bigger then clean the array
@@ -272,9 +285,10 @@ function mainQuery($SETTINGS)
                         }
                     }
                 }
+                */
 
                 // update sessions
-                $_SESSION['last_pw'] = $oldPw;
+                //$_SESSION['last_pw'] = $oldPw;
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
@@ -2346,6 +2360,284 @@ Insert the log here and especially the answer of the query that failed.
                 );
                 break;
             }
+
+            break;
+
+        /*
+         * Remove personal saltkey
+         * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
+         */
+        case 'convert_items_with_personal_saltkey_start':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
+
+            // Check if we have a publick key
+            if (isset($_SESSION['user']['public_key']) === false || empty($_SESSION['user']['public_key']) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('public_key_is_missing'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // manage store
+            if ($filter_psk !== '') {
+                // store in session the cleartext for psk
+                $_SESSION['user_settings']['clear_psk'] = $filter_psk;
+
+                // check if encrypted_psk is in database. If not, add it
+                if (isset($_SESSION['user_settings']['encrypted_psk']) === false
+                    || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
+                ) {
+                    // generate it based upon clear psk
+                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
+                }
+
+                // check if psk is correct.
+                $user_key_encoded = defuse_validate_personal_key(
+                    $filter_psk,
+                    $_SESSION['user_settings']['encrypted_psk']
+                );
+                echo $filter_psk." -- ".$_SESSION['user_settings']['encrypted_psk']." -- ".$user_key_encoded." ;; ";break;
+
+                if (strpos($user_key_encoded, 'Error ') !== false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('bad_psk'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                } else {
+                    // Build the list of items to convert
+                    $itemsToTreat = array();
+                    $filesToTreat = array();
+                    foreach ($_SESSION['personal_visible_groups'] as $folder) {
+                        // Get each item in this folder
+                        $items = DB::query(
+                            'SELECT id FROM '.prefixTable('items').'
+                            WHERE id_tree = %i',
+                            $folder['id']
+                        );
+                        foreach ($items as $item) {
+                            if (in_array($item['id'], $itemsToTreat) === false) {
+                                array_push($itemsToTreat, $item['id']);
+
+                                // Check if this item has a file attached
+                                $files = DB::query(
+                                    'SELECT id, file FROM '.prefixTable('files').'
+                                    WHERE id_item = %i',
+                                    $item['id']
+                                );
+                                foreach ($files as $file) {
+                                    if (in_array($file['file'], $filesToTreat) === false) {
+                                        array_push($filesToTreat, 'EncryptedFile_'.$file['file']);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Now perform the personal items password convertion
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'psk' => $user_key_encoded,
+                            'items_list' => $itemsToTreat,
+                            'files_list' => $filesToTreat,
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('psk_required'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            break;
+
+        /*
+            * Remove personal saltkey
+            * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
+            */
+        case 'convert_items_with_personal_saltkey_start':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
+            $filter_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_STRING);
+            $filter_files = filter_var_array($dataReceived['files'], FILTER_SANITIZE_STRING);
+
+            // Treat Objects conversion
+            if (count($filter_items) > 0) {
+                // Treat Items
+                $item = DB::queryFirstRow(
+                    'SELECT pw
+                    FROM '.prefixTable('items').'
+                    WHERE id = %i',
+                    $filter_items[0]
+                );
+
+                // Decrypt with Defuse
+                $passwd = cryption(
+                    $item['pw'],
+                    $filter_psk,
+                    'decrypt',
+                    $SETTINGS
+                );
+
+                // Encrypt with Object Key
+                $cryptedStuff = doDataEncryption($passwd['string']);
+
+                // Store new password in DB
+                DB::update(
+                    prefixTable('items'),
+                    array(
+                        'pw' => $cryptedStuff['encrypted'],
+                        'encryption_type' => 'teampass_aes',
+                    ),
+                    'id = %i',
+                    $filter_items[0]
+                );
+
+                // Store the sharekey
+                DB::insert(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'object_id' => $filter_items[0],
+                        'user_id' => $_SESSION['user_id'],
+                        'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $_SESSION['user']['public_key']),
+                    )
+                );
+
+                // Shift array
+                array_shift($filter_items);
+            // ---
+            } elseif (count($filter_files) > 0) {
+                // Treat Files
+                $itemId = $filter_files[0];
+
+                // Shift array
+                array_shift($filter_files);
+            }
+
+            // If conversion is finished
+            if (count($filter_items) === 0 && count($filter_files) === 0) {
+                // Clear psk field for the user in DB
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'encrypted_psk' => '',
+                    ),
+                    'id = %i',
+                    $_SESSION['user_id']
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'items_list' => $filter_items,
+                    'files_list' => $filter_files,
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+            * Remove personal saltkey
+            * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
+            */
+        case 'user_forgot_his_personal_saltkey':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Clear psk field for the user in DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'encrypted_psk' => '',
+                ),
+                'id = %i',
+                $_SESSION['user_id']
+            );
+            $_SESSION['user_settings']['encrypted_psk'] = '';
+
+            // Clear all password personal items
+            foreach ($_SESSION['personal_visible_groups'] as $folder) {
+                // Get each item in this folder
+                $items = DB::query(
+                    'SELECT id FROM '.prefixTable('items').'
+                    WHERE id_tree = %i',
+                    $folder['id']
+                );
+                foreach ($items as $item) {
+                    DB::update(
+                        prefixTable('items'),
+                        array(
+                            'pw' => '',
+                            'complexity_level' => -1,
+                        ),
+                        'id = %i',
+                        $item['id']
+                    );
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
 
             break;
     }

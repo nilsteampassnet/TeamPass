@@ -616,31 +616,32 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['pw_status'] = '';
         if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
             $data_item = DB::queryFirstRow(
-                'SELECT pw
-                from '.prefixTable('items').' WHERE id=%i',
-                $record['id']
+                'SELECT i.pw AS pw, s.share_key AS share_key
+                FROM '.prefixTable('items').' AS i
+                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                WHERE i.id = %i AND s.user_id = %i',
+                $record['id'],
+                $_SESSION['user_id']
             );
 
-            if ($record['perso'] === '1' && isset($_SESSION['user_settings']['session_psk']) === true) {
-                $pw = cryption(
-                    $data_item['pw'],
-                    $_SESSION['user_settings']['session_psk'],
-                    'decrypt',
-                    $SETTINGS
-                );
+            // Uncrypt PW
+            if (DB::count() === 0) {
+                // No share key found
+                $pw = '';
             } else {
-                $pw = cryption(
+                $pw = doDataDecryption(
                     $data_item['pw'],
-                    '',
-                    'decrypt',
-                    $SETTINGS
+                    decryptUserObjectKey(
+                        $data_item['share_key'],
+                        $_SESSION['user']['private_key']
+                    )
                 );
             }
 
             // test charset => may cause a json error if is not utf8
-            if (empty($pw['string']) === true) {
+            if (empty($pw) === true) {
                 $arr_data[$record['id']]['pw_status'] = 'pw_is_empty';
-            } elseif (isUTF8($pw['string']) === false) {
+            } elseif (isUTF8($pw) === false) {
                 $arr_data[$record['id']]['pw_status'] = 'encryption_error';
             }
         }

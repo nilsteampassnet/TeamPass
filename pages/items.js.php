@@ -2713,6 +2713,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#form-folder-path').html('');
                     }
 
+                    /*
                     // PSK is requested but not set
                     if (data.folder_requests_psk === 1
                         && (store.get('teampassUser').pskSetForSession === ''
@@ -2720,6 +2721,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     ) {
                         showPersonalSKDialog();
                     }
+                    */
 
                     // show correct fodler in Tree
                     if ($('#jstree').jstree('get_selected', true)[0] !== undefined
@@ -2802,7 +2804,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                         if (data.password_error !== '') {
                                             error = true;
                                         } else {
-                                            result = data.password;
+                                            result = atob(data.password);
                                         }
                                     }
                                 }
@@ -2870,7 +2872,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             '</div>')
                         .removeClass('hidden');
 
-                } else if ((store.get('teampassApplication').userIsReadObly === 1 && data.folder_requests_psk == 0)
+                } else if ((store.get('teampassApplication').userIsReadObly === 1) //&& data.folder_requests_psk == 0
                     || data.access_level == 1
                 ) {
                     //readonly user
@@ -2883,7 +2885,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         function (teampassApplication) {
                             teampassApplication.bypassComplexityOnCreation = parseInt(data.bloquer_creation_complexite);
                             teampassApplication.bypassComplexityOnEdition = parseInt(data.bloquer_modification_complexite);
-                            teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
+                            //teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
                         }
                     );
 
@@ -2919,7 +2921,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         function (teampassApplication) {
                             teampassApplication.bypassComplexityOnCreation = parseInt(data.bloquer_creation_complexite);
                             teampassApplication.bypassComplexityOnEdition = parseInt(data.bloquer_modification_complexite);
-                            teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
+                            //teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
                         }
                     );
 
@@ -3597,7 +3599,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                                     .children(".card-item-field-value")
                                     .html(
                                         '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + field.value + '">'
+                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + atob(field.value) + '">'
                                     )
                                 $('#card-item-field-' + field.id)
                                     .children(".btn-copy-clipboard-clear")

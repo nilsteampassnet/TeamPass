@@ -1365,7 +1365,7 @@ function sendEmail(
     $email,
     $SETTINGS,
     $textMailAlt = null,
-    $silent = false
+    $silent = true
 ) {
     // CAse where email not defined
     if ($email === 'none') {
@@ -1432,7 +1432,7 @@ function sendEmail(
 
         // send email
         if ($mail->send()) {
-            if ($silent === true) {
+            if ($silent === false) {
                 return json_encode(
                     array(
                         'error' => false,
@@ -1440,7 +1440,7 @@ function sendEmail(
                     )
                 );
             }
-        } elseif ($silent === true) {
+        } elseif ($silent === false) {
             return json_encode(
                 array(
                     'error' => true,
@@ -1449,7 +1449,7 @@ function sendEmail(
             );
         }
     } catch (Exception $e) {
-        if ($silent === true) {
+        if ($silent === false) {
             return json_encode(
                 array(
                     'error' => true,

@@ -2163,7 +2163,7 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
             $data['id']
         );
     }
-
+    
     // check the given password
     if ($userPasswordVerified !== true) {
         if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {

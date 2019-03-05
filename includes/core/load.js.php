@@ -137,7 +137,7 @@ console.log(" LOGINs : " + ($('#user-login-attempts').length));
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, '<?php echo $_SESSION['key']; ?>');
 
                 // Is there an error?
                 if (data.error === true) {

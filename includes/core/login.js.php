@@ -318,8 +318,6 @@ $('#but_confirm_new_password').click(function() {
             "user_id"        : store.get('teampassUser').user_id,
         };
 
-        console.log('SessionKey : '+store.get('teampassUser').sessionKey);
-
         // Send query
         $.post(
             'sources/main.queries.php',
@@ -358,16 +356,167 @@ $('#but_confirm_new_password').click(function() {
         // Alert
         alertify.set('notifier','position', 'top-center');
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('index_pw_error_identical'); ?>', 5)
+            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('confirmation_seems_wrong'); ?>', 5)
             .dismissOthers(); 
     }
 });
 
 
-$(document).on('click', '#but_confirm_defule_psk', function() {
-    console.log("START RE-ENCRYPTING PERSONAL ITEMS");
+$(document).on('click', '#but_confirm_defuse_psk', function() {
+    console.log("START RE-ENCRYPTING PERSONAL ITEMS --> "+$('#user-old-defuse-psk').val());
 
-    
+    if ($('#user-old-defuse-psk').val() !== '') {
+        alertify
+            .message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0)
+            .dismissOthers();
+
+        // Prepare data
+        var data = {
+            "psk" : $("#user-old-defuse-psk").val(),
+        };
+        
+        //
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "convert_items_with_personal_saltkey_start",
+                data : prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
+                key  : store.get('teampassUser').sessionKey
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', store.get('teampassUser').sessionKey);
+                console.log(data);
+
+                // Is there an error?
+                if (data.error === true) {
+                    alertify.dismissAll();
+                    alertify
+                        .alert(
+                            '<?php echo langHdl('warning'); ?>',
+                            '<div style="margin:10px 0 10px 15px;">' + data.message + '</div>'
+                        );
+                } else {
+                    if (data.items_list.length > 0 || data.files_list.length > 0) {
+                        encryptPersonalItems(data.items_list, data.files_list, data.psk);
+                    } else {
+                        // Finished
+                        alertify
+                            .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+                            .dismissOthers();
+                        location.reload();
+                    }
+
+                    /**
+                     *
+                     */
+                    function encryptPersonalItems(items, files, psk)
+                    {
+                        console.log('----\n'+psk);
+                        console.log(items);
+                        if (items.length > 0 || files.length > 0) {
+                            // Manage files & items
+                            // Prepare data
+                            var data = {
+                                "psk"   : psk,
+                                'files' : files,
+                                'items' : items,
+                            };
+                            
+                            // Launch query
+                            $.post(
+                                "sources/main.queries.php",
+                                {
+                                    type    : "convert_items_with_personal_saltkey_progress",
+                                    data    : prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
+                                    key     : '<?php echo $_SESSION['key']; ?>'
+                                },
+                                function(data) {
+                                    data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
+
+                                    // Is there an error?
+                                    if (data.error === true) {
+                                        alertify.dismissAll();
+                                        alertify
+                                            .alert(
+                                                '<?php echo langHdl('warning'); ?>',
+                                                data.message
+                                            );
+                                    } else {
+                                        // Loop on items / files
+                                        encryptPersonalItems(data.items_list, data.files_list);
+                                    }
+                                }
+                            );
+                        } else {
+                            // Finisehd
+                            alertify
+                                .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+                                .dismissOthers();
+                            location.reload();
+                        }
+                    }
+                }
+            }
+        );        
+    } else {
+        // Alert
+        alertify.set('notifier','position', 'top-center');
+        alertify
+            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('empty_psk'); ?>', 5)
+            .dismissOthers(); 
+    }
+});
+
+$(document).on('click', '#but_confirm_forgot_defuse_psk', function() {
+    // Is the user sure?
+    alertify
+        .confirm(
+            '<?php echo langHdl('your_attention_is_required'); ?>',
+            '<?php echo langHdl('i_cannot_remember_info'); ?>',
+            function() {
+                alertify
+                    .message(
+                        '<i class="fas fa-cog fa-spin fa-lg mr-2"></i><?php echo langHdl('please_wait'); ?>',
+                        0
+                    )
+                    .dismissOthers();
+                
+                // Disable buttons && field
+                $('.btn-block, #user-old-defuse-psk').attr("disabled", "disabled");
+
+                // Now launch query
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type    : "user_forgot_his_personal_saltkey",
+                        key     : store.get('teampassUser').sessionKey
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
+
+                        // Is there an error?
+                        if (data.error === true) {
+                            alertify.dismissAll();
+                            alertify
+                                .alert(
+                                    '<?php echo langHdl('warning'); ?>',
+                                    data.message
+                                );
+                        } else {
+                            // Inform user
+                            alertify
+                                .success('<?php echo langHdl('done'); ?>. <?php echo langHdl('alert_page_will_reload'); ?>', 10)
+                                .dismissOthers();
+
+                            location.reload();
+                        }
+                    }
+                );
+            },
+            function() {
+                alertify.error('<?php echo langHdl('cancel'); ?>')
+            }
+        );
 });
 
 /**

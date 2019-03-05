@@ -15,6 +15,11 @@
  */
 
 return array(
+    'confirmation_seems_wrong' => 'Confirmation seems wrong, please correct',
+    'i_cannot_remember' => 'I cannot remember',
+    'i_cannot_remember_info' => 'This action is without rollback. It will clear the passwords stored inside your personal items. Items will not be deleted but only their passwords. If you cannot remember your personal saltkey then it is the only option.',
+    'public_key_is_missing' => 'User public key is missing',
+    'private_key_is_missing' => 'User private key is missing',
     'user_has_psk_info' => 'We have identified that you have some personal items encoded with an old personal saltkey. This step aim consists in re-encrypting them with your new private key. Please provide us your personal saltkey.',
     'files' => 'Files',
     'logs' => 'Logs',

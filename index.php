@@ -350,18 +350,13 @@ if (($session_validite_pw === null
                         <a class="dropdown-item user-menu" href="#" data-name="increase_session">
                             <i class="far fa-clock fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
                         <div class="dropdown-divider"></div>
-                        <?php
-                        echo ($session_user_admin === 1 && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
-                        <a class="dropdown-item user-menu" href="#" data-name="set_psk">
-                            <i class="fas fa-key fa-fw mr-2"></i>'.langHdl('home_personal_saltkey_button').'
-                        </a>' : '', '
                         <a class="dropdown-item user-menu" href="#" data-name="profile">
-                            <i class="fas fa-user-circle fa-fw mr-2"></i>'.langHdl('my_profile').'
+                            <i class="fas fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
                         </a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item user-menu" href="#" data-name="logout">
-                            <i class="fas fa-sign-out-alt fa-fw mr-2"></i>'.langHdl('disconnect').'
-                        </a>'; ?>
+                            <i class="fas fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
+                        </a>
                     </div>
                 </div>
             </li>

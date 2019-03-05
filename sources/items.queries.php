@@ -394,19 +394,9 @@ if (null !== $post_type) {
                     }
                     */
                     } else {
-                        $passwd['string'] = '';
+                        $cryptedStuff['encrypted'] = '';
                     }
-
-                    if (empty($passwd['error']) === false) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('an_error_occurred').$passwd['error'],
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
+                    
                     $post_password = $cryptedStuff['encrypted'];
 
                     // ADD item
@@ -793,7 +783,7 @@ if (null !== $post_type) {
                 $itemInfos = array();
                 $post_label = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
-                $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
+                $post_password = $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
                 $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
@@ -865,6 +855,7 @@ if (null !== $post_type) {
                 }
 
                 // Check PSK is set
+                /*
                 if ((int) $post_folder_is_personal === 1
                     && (isset($_SESSION['user_settings']['session_psk']) === false
                     || empty($pw) === true)
@@ -878,6 +869,7 @@ if (null !== $post_type) {
                     );
                     break;
                 }
+                */
 
                 // Need info in DB
                 // About special settings
@@ -990,40 +982,13 @@ if (null !== $post_type) {
                         && $_SESSION['user_settings']['create_item_without_password'] !== '1')
                         || empty($pw) === false
                     ) {
-                        if ((int) $post_folder_is_personal === 1
-                            && empty($_SESSION['user_settings']['session_psk']) === false
-                            && isset($_SESSION['user_settings']['session_psk']) === true
-                            && in_array($post_folder_id, $_SESSION['personal_folders']) === true
-                        ) {
-                            $sentPw = $pw;
-                            $passwd = cryption(
-                                $pw,
-                                $_SESSION['user_settings']['session_psk'],
-                                'encrypt',
-                                $SETTINGS
-                            );
-                            $restictedTo = $_SESSION['user_id'];
-                        } else {
-                            $passwd = cryption(
-                                $pw,
-                                '',
-                                'encrypt',
-                                $SETTINGS
-                            );
-                        }
+                        //-----
+                        // NEW ENCRYPTION
+                        $cryptedStuff = doDataEncryption($post_password);
 
-                        if (empty($passwd['error']) === false) {
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => $passwd['error'],
-                                ),
-                                'encode'
-                            );
-                            break;
-                        }
+                        $post_password = $cryptedStuff['encrypted'];
                     } else {
-                        $passwd['string'] = '';
+                        $post_password = '';
                     }
 
                     // ---Manage tags
@@ -1056,7 +1021,7 @@ if (null !== $post_type) {
                         array(
                             'label' => $post_label,
                             'description' => $post_description,
-                            'pw' => $passwd['string'],
+                            'pw' => $post_password,
                             'email' => $post_email,
                             'login' => $post_login,
                             'url' => $post_url,
@@ -1070,6 +1035,42 @@ if (null !== $post_type) {
                         'id=%i',
                         $post_item_id
                     );
+
+                    // Create sharekeys for users
+                    if ((int) $post_folder_is_personal === 1
+                        && in_array($post_folder_id, $_SESSION['personal_folders']) === true
+                    ) {
+                        // If this is a personal object
+                        DB::insert(
+                            prefixTable('sharekeys'),
+                            array(
+                                'type' => 'item',
+                                'object_id' => $post_item_id,
+                                'user_id' => $_SESSION['user_id'],
+                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
+                            )
+                        );
+                    } else {
+                        // This is a public object
+                        $users = DB::query(
+                            'SELECT id, public_key
+                            FROM '.prefixTable('users').'
+                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+                            AND public_key != ""'
+                        );
+                        foreach ($users as $user) {
+                            // Insert in DB the new object key for this item by user
+                            DB::insert(
+                                prefixTable('sharekeys'),
+                                array(
+                                    'type' => 'item',
+                                    'object_id' => $post_item_id,
+                                    'user_id' => $user['id'],
+                                    'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
+                                )
+                            );
+                        }
+                    }
 
                     // update fields
                     if (isset($SETTINGS['item_extra_fields']) === true
@@ -2132,7 +2133,12 @@ if (null !== $post_type) {
 
             // Get all tags for this item
             $tags = array();
-            $rows = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $post_id);
+            $rows = DB::query(
+                'SELECT tag
+                FROM '.prefixTable('tags').'
+                WHERE item_id = %i',
+                $post_id
+            );
             foreach ($rows as $record) {
                 array_push($tags, $record['tag']);
             }
@@ -2360,7 +2366,7 @@ if (null !== $post_type) {
 
                         // get fields for this Item
                         $rows_tmp = DB::query(
-                            'SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
+                            'SELECT i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
                             i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
                             c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                             FROM '.prefixTable('categories_items').' AS i
@@ -2370,6 +2376,29 @@ if (null !== $post_type) {
                             $arrCatList
                         );
                         foreach ($rows_tmp as $row) {
+                            // Uncrypt data
+                            // Get the object key for the user
+                            $userKey = DB::queryFirstRow(
+                                'SELECT share_key
+                                FROM '.prefixTable('sharekeys_fields').'
+                                WHERE user_id = %i AND object_id = %i',
+                                $_SESSION['user_id'],
+                                $row['item_id']
+                            );
+                            if (DB::count() === 0) {
+                                // Not encrypted
+                                $fieldText = $fieldText['string'];
+                            } else {
+                                $fieldText = doDataDecryption(
+                                    $row['data'],
+                                    decryptUserObjectKey(
+                                        $userKey['share_key'],
+                                        $_SESSION['user']['private_key']
+                                    )
+                                );
+                                echo $fieldText.' ;; ';
+                            }
+                            /*
                             // Uncrypt data
                             if ($row['encryption_type'] === 'defuse') {
                                 $fieldText = cryption(
@@ -2382,6 +2411,7 @@ if (null !== $post_type) {
                             } else {
                                 $fieldText = $row['data'];
                             }
+                            */
 
                             // Manage textarea string
                             if ($row['field_type'] === 'textarea') {
@@ -3217,10 +3247,12 @@ if (null !== $post_type) {
                 $accessLevel = min($arrTmp);
                 $uniqueLoadData['accessLevel'] = $accessLevel;
 
+                /*
                 // check if this folder is a PF. If yes check if saltket is set
                 if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
                     $showError = 'is_pf_but_no_saltkey';
                 }
+                */
                 $uniqueLoadData['showError'] = $showError;
 
                 // check if items exist
@@ -3246,11 +3278,17 @@ if (null !== $post_type) {
                     );
                     break;
                 } else {
-                    DB::query('SELECT * FROM '.prefixTable('items').' WHERE inactif = %i', 0);
+                    DB::query(
+                        'SELECT *
+                        FROM '.prefixTable('items').'
+                        WHERE inactif = %i',
+                        0
+                    );
                     $counter = DB::count();
                     $uniqueLoadData['counter'] = $counter;
                 }
 
+                /*
                 // Identify if it is a personal folder
                 if (in_array($post_id, $_SESSION['personal_visible_groups'])) {
                     $findPfGroup = 1;
@@ -3258,6 +3296,7 @@ if (null !== $post_type) {
                     $findPfGroup = '';
                 }
                 $uniqueLoadData['findPfGroup'] = $findPfGroup;
+                */
 
                 // Get folder complexity
                 $folderComplexity = DB::queryFirstRow(
@@ -3352,6 +3391,7 @@ if (null !== $post_type) {
 
                 $folder_is_in_personal = in_array($post_id, array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
                 $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
+                
 
                 if (isset($_SESSION['list_folders_editable_by_role'])) {
                     $list_folders_editable_by_role = in_array($post_id, $_SESSION['list_folders_editable_by_role']);
@@ -3370,7 +3410,7 @@ if (null !== $post_type) {
                 $showError = $uniqueLoadData['showError'];
                 $accessLevel = $uniqueLoadData['accessLevel'];
                 $counter = $uniqueLoadData['counter'];
-                $findPfGroup = $uniqueLoadData['findPfGroup'];
+                //$findPfGroup = $uniqueLoadData['findPfGroup'];
                 $counter_full = $uniqueLoadData['counter_full'];
                 $categoriesStructure = $uniqueLoadData['categoriesStructure'];
                 $folderComplexity = $uniqueLoadData['folderComplexity'];
@@ -3522,8 +3562,8 @@ if (null !== $post_type) {
 
                         // Let's identify the rights belonging to this ITEM
                         if ((int) $record['perso'] === 1
-                            && $record('log_action') === 'at_creation'
-                            && $record('log_user') === $_SESSION['user_id']
+                            && $record['log_action'] === 'at_creation'
+                            && $record['log_user'] === $_SESSION['user_id']
                             && (int) $folder_is_in_personal === 1
                             && (int) $folder_is_personal === 1
                         ) {
@@ -3684,11 +3724,11 @@ if (null !== $post_type) {
             // Prepare returned values
             $returnValues = array(
                 'html_json' => $html_json,
-                'folder_requests_psk' => $findPfGroup,
+                //'folder_requests_psk' => $findPfGroup,
                 'arborescence' => $arr_arbo,
                 'array_items' => $itemsIDList,
                 'error' => $showError,
-                'saltkey_is_required' => $folderIsPf === true ? 1 : 0,
+                //'saltkey_is_required' => $folderIsPf === true ? 1 : 0,
                 'show_clipboard_small_icons' => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
                 'next_start' => intval($post_nb_items_to_display_once) + intval($start),
                 'list_to_be_continued' => $listToBeContinued,
