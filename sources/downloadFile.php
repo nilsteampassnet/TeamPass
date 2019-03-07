@@ -45,13 +45,11 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare GET variables
-$get_filename = $superGlobal->get("name", "GET");
-$get_fileid = $superGlobal->get("fileid", "GET");
+$get_filename = $superGlobal->get('name', 'GET');
+$get_fileid = $superGlobal->get('fileid', 'GET');
 
 // prepare Encryption class calls
-use \Defuse\Crypto\Crypto;
-use \Defuse\Crypto\File;
-use \Defuse\Crypto\Exception as Ex;
+use Defuse\Crypto\File;
 
 header('Content-disposition: attachment; filename='.rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
@@ -75,76 +73,34 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 
     // get file key
     $file_info = DB::queryfirstrow(
-        "SELECT file, status 
-        FROM ".prefixTable("files")."
-        WHERE id=%i",
+        'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
+        s.share_key AS share_key
+        FROM '.prefixTable('files').' AS f
+        INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+        WHERE s.user_id = %i AND s.object_id = %i',
+        $_SESSION['user_id'],
         $get_fileid
     );
 
-    // should we encrypt/decrypt the file
-    encryptOrDecryptFile(
+    // Decrypt the file
+    $fileContent = decryptFile(
         $file_info['file'],
-        $file_info['status'],
-        $SETTINGS
+        $SETTINGS['path_to_upload_folder'],
+        decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
     );
 
-    // should we decrypt the attachment?
-    if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
-        // load PhpEncryption library
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+    // Set the filename of the download
+    $filename = $file_info['name'];
 
-        // get KEY
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    // Output CSV-specific headers
+    header('Pragma: public');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+    header('Cache-Control: private', false);
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="'.$filename.'";');
+    header('Content-Transfer-Encoding: binary');
 
-        // Now encrypt the file with new saltkey
-        $err = '';
-        try {
-            \Defuse\Crypto\File::decryptFile(
-                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
-                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete",
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-            );
-        } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-            $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
-        } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\CryptoException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\IOException $ex) {
-            $err = $ex;
-        }
-        if (empty($err) === false) {
-            echo $err;
-        }
-
-        $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
-        if ($fp !== false) {
-            // Read the file contents
-            fpassthru($fp);
-
-            // Close the file
-            fclose($fp);
-        }
-
-        unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete");
-    } else {
-        $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
-        if ($fp !== false) {
-            // Read the file contents
-            fpassthru($fp);
-
-            // Close the file
-            fclose($fp);
-        }
-    }
+    // Stream the CSV data
+    exit(base64_decode($fileContent));
 }

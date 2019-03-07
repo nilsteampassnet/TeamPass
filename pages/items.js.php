@@ -3716,7 +3716,8 @@ function Details(itemDefinition, actionType, hotlink = false)
                     ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
 
                 //Anyone can modify button
-                if (data.anyone_can_modify === '1') {console.log($('#form-item-anyoneCanModify'))
+                if (data.anyone_can_modify === '1') {
+                    console.log($('#form-item-anyoneCanModify'))
                     $('#form-item-anyoneCanModify').iCheck('check');
                 } else {
                     $('#form-item-anyoneCanModify').iCheck('uncheck');

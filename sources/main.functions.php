@@ -1165,7 +1165,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
  */
-function cacheTableAdd($action, $SETTINGS, $ident = null)
+function cacheTableAdd($SETTINGS, $ident = null)
 {
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -3141,6 +3141,7 @@ function encryptFile($fileInName, $fileInPath)
     include_once '../includes/config/include.php';
     include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
     include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
 
     // Load classes
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
@@ -3171,18 +3172,34 @@ function encryptFile($fileInName, $fileInPath)
     );
 }
 
-function decryptFile()
+function decryptFile($fileName, $filePath, $key)
 {
-    $aes = new \phpseclib\Crypt\AES();
-    $aes->setKey($this->key);
-    $ciphertext = file_get_contents($this->getFileUploadDir().'/'.$this->file_name);
-    $plaintext = $aes->decrypt($ciphertext);
-    $hash = md5($plaintext);
-    $this->save_name = 'DecryptedFile_'.$hash;
-    file_put_contents($this->getFileRootDir().'/'.$this->save_name, $plaintext);
-    unlink($this->file->getPathname());
+    define('FILE_BUFFER_SIZE', 128 * 1024);
 
-    return new CryptoFile($hash, $this->getWebPath().'/'.$this->save_name);
+    // Includes
+    include_once '../includes/config/include.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+
+    // Get file name
+    $fileName = base64_decode($fileName);
+
+    // Load classes
+    $cipher = new Crypt_AES();
+
+    // Set the object key
+    $cipher->setPassword(base64_decode($key));
+
+    // Prevent against out of memory
+    $cipher->enableContinuousBuffer();
+    $cipher->disablePadding();
+
+    // Get file content
+    $ciphertext = file_get_contents($filePath.'/'.TP_FILE_PREFIX.$fileName);
+
+    // Decrypt file content and return
+    return base64_encode($cipher->decrypt($ciphertext));
 }
 
 /**

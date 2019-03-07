@@ -59,7 +59,6 @@ $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 $post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
 $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
 
-
 // load functions
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
@@ -346,32 +345,9 @@ if (!$chunks || $chunk == $chunks - 1) {
     die();
 }
 
-// Get some variables
-$fileRandomId = md5($fileName.time());
-rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
-
 // Encrypt the file if requested
-if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1') {
-    // Do encryption
-    prepareFileWithDefuse(
-        'encrypt',
-        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId,
-        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId.'_encrypted',
-        $SETTINGS
-    );
+$newFile = encryptFile($fileName, $targetDir);
 
-    // Do cleanup of files
-    unlink($targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
-    rename(
-        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId.'_encrypted',
-        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId
-    );
-
-    $file_status = 'encrypted';
-} else {
-    $file_status = 'clear';
-}
-$newID = '';
 // Case ITEM ATTACHMENTS - Store to database
 if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     // Check case of new item
@@ -390,11 +366,50 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             'size' => $_FILES['file']['size'],
             'extension' => getFileExtension($fileName),
             'type' => $_FILES['file']['type'],
-            'file' => $fileRandomId,
-            'status' => $file_status,
+            'file' => $newFile['fileHash'],
+            'status' => 'aes_encryption',
         )
     );
     $newID = DB::insertId();
+
+    // Store the key for users
+    // Is this item a personal one?
+    $dataItem = DB::queryFirstRow(
+        'SELECT perso
+        FROM '.prefixTable('items').'
+        WHERE id = %i',
+        $post_itemId
+    );
+    if ((int) $dataItem['perso'] === 0) {
+        // It is not a personal item objectKey
+        // This is a public object
+        $users = DB::query(
+            'SELECT id, public_key
+            FROM '.prefixTable('users').'
+            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+            AND public_key != ""'
+        );
+        foreach ($users as $user) {
+            // Insert in DB the new object key for this item by user
+            DB::insert(
+                prefixTable('sharekeys_files'),
+                array(
+                    'object_id' => $newID,
+                    'user_id' => $user['id'],
+                    'share_key' => encryptUserObjectKey($newFile['objectKey'], $user['public_key']),
+                )
+            );
+        }
+    } else {
+        DB::insert(
+            prefixTable('sharekeys_files'),
+            array(
+                'object_id' => $newID,
+                'user_id' => $_SESSION['user_id'],
+                'share_key' => encryptUserObjectKey($newFile['objectKey'], $_SESSION['user']['public_key']),
+            )
+        );
+    }
 
     // Log upload into databse
     if (isset($post_isNewItem) === false

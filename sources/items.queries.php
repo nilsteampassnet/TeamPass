@@ -163,8 +163,8 @@ if (null !== $post_type) {
                 );
                 $post_folder_id = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
-                $post_label = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
-                $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
+                $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+                $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
                 $post_password = htmlspecialchars_decode($dataReceived['pw']);
                 $post_restricted_to = json_decode(
                     filter_var(
@@ -185,6 +185,8 @@ if (null !== $post_type) {
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
                 $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+                $post_to_be_deleted_after_date = filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_STRING);
+                $post_to_be_deleted_after_x_views = filter_var($dataReceived['to_be_deleted_after_x_views'], FILTER_SANITIZE_NUMBER_INT);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -396,7 +398,7 @@ if (null !== $post_type) {
                     } else {
                         $cryptedStuff['encrypted'] = '';
                     }
-                    
+
                     $post_password = $cryptedStuff['encrypted'];
 
                     // ADD item
@@ -414,27 +416,25 @@ if (null !== $post_type) {
                             'inactif' => 0,
                             'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ?
                                 '' : implode(';', $post_restricted_to),
-                            'perso' => (isset($post_salt_key_set) === true && $post_salt_key_set === '1'
-                                && isset($post_folder_is_personal) === true && $post_folder_is_personal === '1') ?
+                            'perso' => (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) ?
                                 1 : 0,
                             'anyone_can_modify' => (isset($post_anyone_can_modify) === true
                                 && $post_anyone_can_modify === 'on') ? 1 : 0,
                             'complexity_level' => $post_complexity_level,
-                            'encryption_type' => 'defuse',
+                            'encryption_type' => 'teampass_aes',
                             )
                     );
                     $newID = DB::insertId();
 
                     // Prepare shareKey for users
-                    if ($post_folder_is_personal === '1' && isset($post_folder_is_personal) === true) {
+                    if ((int) $post_folder_is_personal === 1 && isset($post_folder_is_personal) === true) {
                         // If this is a personal object
                         DB::insert(
-                            prefixTable('sharekeys'),
+                            prefixTable('sharekeys_items'),
                             array(
-                                'type' => 'item',
                                 'object_id' => $newID,
                                 'user_id' => $_SESSION['user_id'],
-                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
+                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $_SESSION['user']['public_key']),
                             )
                         );
                     } else {
@@ -448,9 +448,8 @@ if (null !== $post_type) {
                         foreach ($users as $user) {
                             // Insert in DB the new object key for this item by user
                             DB::insert(
-                                prefixTable('sharekeys'),
+                                prefixTable('sharekeys_items'),
                                 array(
-                                    'type' => 'item',
                                     'object_id' => $newID,
                                     'user_id' => $user['id'],
                                     'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
@@ -546,6 +545,8 @@ if (null !== $post_type) {
                     // If automatic deletion asked
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
                         && $SETTINGS['enable_delete_after_consultation'] === '1'
+                        && null !== $post_to_be_deleted_after_x_views
+                        && null !== $post_to_be_deleted_after_date
                     ) {
                         if (empty($post_to_be_deleted_after_date) === false
                             || $post_to_be_deleted_after_x_views > 0
@@ -722,7 +723,11 @@ if (null !== $post_type) {
 
                 // Add item to CACHE table if new item has been created
                 if (isset($newID) === true) {
-                    updateCacheTable('add_value', $SETTINGS, $newID);
+                    updateCacheTable(
+                        'add_value',
+                        $SETTINGS,
+                        $newID
+                    );
                 }
 
                 $arrData = array(
@@ -854,23 +859,6 @@ if (null !== $post_type) {
                     break;
                 }
 
-                // Check PSK is set
-                /*
-                if ((int) $post_folder_is_personal === 1
-                    && (isset($_SESSION['user_settings']['session_psk']) === false
-                    || empty($pw) === true)
-                ) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('provide_your_personal_saltkey'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-                */
-
                 // Need info in DB
                 // About special settings
                 $dataFolderSettings = DB::queryFirstRow(
@@ -942,7 +930,6 @@ if (null !== $post_type) {
                     $restrictionActive = false;
                 }
 
-                //echo $post_item_id.' - icic  ';
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
                     && ((int) $dataItem['perso'] === 0
                     || ((int) $dataItem['perso'] === 1
@@ -2366,7 +2353,7 @@ if (null !== $post_type) {
 
                         // get fields for this Item
                         $rows_tmp = DB::query(
-                            'SELECT i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
+                            'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
                             i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
                             c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                             FROM '.prefixTable('categories_items').' AS i
@@ -2383,7 +2370,7 @@ if (null !== $post_type) {
                                 FROM '.prefixTable('sharekeys_fields').'
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
-                                $row['item_id']
+                                $row['id']
                             );
                             if (DB::count() === 0) {
                                 // Not encrypted
@@ -2396,22 +2383,7 @@ if (null !== $post_type) {
                                         $_SESSION['user']['private_key']
                                     )
                                 );
-                                echo $fieldText.' ;; ';
                             }
-                            /*
-                            // Uncrypt data
-                            if ($row['encryption_type'] === 'defuse') {
-                                $fieldText = cryption(
-                                    $row['data'],
-                                    '',
-                                    'decrypt',
-                                    $SETTINGS
-                                );
-                                $fieldText = $fieldText['string'];
-                            } else {
-                                $fieldText = $row['data'];
-                            }
-                            */
 
                             // Manage textarea string
                             if ($row['field_type'] === 'textarea') {
@@ -3391,7 +3363,6 @@ if (null !== $post_type) {
 
                 $folder_is_in_personal = in_array($post_id, array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
                 $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
-                
 
                 if (isset($_SESSION['list_folders_editable_by_role'])) {
                     $list_folders_editable_by_role = in_array($post_id, $_SESSION['list_folders_editable_by_role']);
@@ -4093,6 +4064,7 @@ if (null !== $post_type) {
                     'id = %i',
                     $fileId
                 );
+
                 // Update the log
                 logItems(
                     $SETTINGS,
@@ -4103,8 +4075,16 @@ if (null !== $post_type) {
                     $_SESSION['login'],
                     'at_del_file : '.$data['name']
                 );
+
+                // DElete sharekeys
+                DB::delete(
+                    prefixTable('sharekeys_files'),
+                    'object_id = %i',
+                    $fileId
+                );
+
                 // Delete file from server
-                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$data['file'], $SETTINGS);
+                fileDelete($SETTINGS['path_to_upload_folder'].'/'.TP_FILE_PREFIX.base64_decode($data['file']), $SETTINGS);
             }
 
             echo prepareExchangedData(
@@ -4233,15 +4213,16 @@ if (null !== $post_type) {
 
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
-                'SELECT personal_folder, title FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                'SELECT personal_folder, title
+                FROM '.prefixTable('nested_tree').'
+                WHERE id = %i',
                 $post_folder_id
             );
 
-            // Do quick check if psh is required
-            if ((isset($_SESSION['user_settings']['session_psk']) === false || empty($_SESSION['user_settings']['session_psk']) === true)
-                && ($dataSource['personal_folder'] === '1' || $dataDestination['personal_folder'] === '1')
+            // Check that user can access this folder
+            if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
             ) {
-                echo '[{"error" : "ERR_PSK_REQUIRED"}]';
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -4252,17 +4233,10 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Check that user can access this folder
-            if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
-                || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
-            ) {
-                echo '[{"error" : "ERR_FOLDER_NOT_ALLOWED"}]';
-                break;
-            }
-
-            // previous is non personal folder and new too
+            // Manage possible cases
             if ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '0') {
-                // just update is needed. Item key is the same
+                // Previous is non personal folder and new too
+                // Just update is needed. Item key is the same
                 DB::update(
                     prefixTable('items'),
                     array(
@@ -4271,33 +4245,69 @@ if (null !== $post_type) {
                     'id=%i',
                     $post_item_id
                 );
+            // ---
+                // ---
             } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
-                $decrypt = cryption(
-                    $dataSource['pw'],
-                    '',
-                    'decrypt',
-                    $SETTINGS
+                // Source is public and destination is personal
+                // Decrypt and remove all sharekeys (items, fields, files)
+                // Encrypt only for the user
+
+                // Remove all item sharekeys items
+                DB::delete(
+                    prefixTable('sharekeys_items'),
+                    'object_id = %i AND user_id != %i',
+                    $post_item_id,
+                    $_SESSION['user_id']
                 );
-                $encrypt = cryption(
-                    $decrypt['string'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    'encrypt',
-                    $SETTINGS
+
+                // Remove all item sharekeys fields
+                // Get fields for this Item
+                $rows = DB::query(
+                    'SELECT id
+                    FROM '.prefixTable('categories_items').'
+                    WHERE item_id = %i',
+                    $post_item_id
                 );
+                foreach ($rows as $field) {
+                    DB::delete(
+                        prefixTable('sharekeys_fields'),
+                        'object_id = %i AND user_id != %i',
+                        $field['id'],
+                        $_SESSION['user_id']
+                    );
+                }
+
+                // Remove all item sharekeys files
+                // Get FILES for this Item
+                $rows = DB::query(
+                    'SELECT id
+                    FROM '.prefixTable('files').'
+                    WHERE id_item = %i',
+                    $post_item_id
+                );
+                foreach ($rows as $attachment) {
+                    DB::delete(
+                        prefixTable('sharekeys_files'),
+                        'object_id = %i AND user_id != %i',
+                        $attachment['id'],
+                        $_SESSION['user_id']
+                    );
+                }
+
                 // update pw
                 DB::update(
                     prefixTable('items'),
                     array(
                         'id_tree' => $post_folder_id,
-                        'pw' => $encrypt['string'],
-                        'pw_iv' => '',
                         'perso' => 1,
                     ),
                     'id=%i',
                     $post_item_id
                 );
-            // If previous is personal folder and new is personal folder too => no key exist on item
+            // ---
+                // ---
             } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '1') {
+                // If previous is personal folder and new is personal folder too => no key exist on item
                 // just update is needed. Item key is the same
                 DB::update(
                     prefixTable('items'),
@@ -4307,34 +4317,135 @@ if (null !== $post_type) {
                     'id=%i',
                     $post_item_id
                 );
-            // If previous is personal folder and new is not personal folder => no key exist on item => add new
+            // ---
+                // ---
             } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '0') {
-                $decrypt = cryption(
-                    $dataSource['pw'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    'decrypt',
-                    $SETTINGS
+                // If previous is personal folder and new is not personal folder => no key exist on item => add new
+                // Create keys for all users
+
+                // Get the ITEM object key for the user
+                $userKey = DB::queryFirstRow(
+                    'SELECT share_key
+                    FROM '.prefixTable('sharekeys_items').'
+                    WHERE user_id = %i AND object_id = %i',
+                    $_SESSION['user_id'],
+                    $post_item_id
                 );
-                $encrypt = cryption(
-                    $decrypt['string'],
-                    '',
-                    'encrypt',
-                    $SETTINGS
+                if (DB::count() > 0) {
+                    $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+
+                    // This is a public object
+                    $users = DB::query(
+                        'SELECT id, public_key
+                        FROM '.prefixTable('users').'
+                        WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+                        AND public_key != ""'
+                    );
+                    foreach ($users as $user) {
+                        // Insert in DB the new object key for this item by user
+                        DB::insert(
+                            prefixTable('sharekeys_items'),
+                            array(
+                                'object_id' => $post_item_id,
+                                'user_id' => $user['id'],
+                                'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
+                            )
+                        );
+                    }
+                }
+
+                // Get the FIELDS object key for the user
+                // Get fields for this Item
+                $rows = DB::query(
+                    'SELECT id
+                    FROM '.prefixTable('categories_items').'
+                    WHERE item_id = %i',
+                    $post_item_id
                 );
+                foreach ($rows as $field) {
+                    $userKey = DB::queryFirstRow(
+                        'SELECT share_key
+                        FROM '.prefixTable('sharekeys_fields').'
+                        WHERE user_id = %i AND object_id = %i',
+                        $_SESSION['user_id'],
+                        $field['id']
+                    );
+                    if (DB::count() > 0) {
+                        $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+
+                        // This is a public object
+                        $users = DB::query(
+                            'SELECT id, public_key
+                            FROM '.prefixTable('users').'
+                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                            AND public_key != ""'
+                        );
+                        foreach ($users as $user) {
+                            // Insert in DB the new object key for this item by user
+                            DB::insert(
+                                prefixTable('sharekeys_fields'),
+                                array(
+                                    'object_id' => $field['id'],
+                                    'user_id' => $user['id'],
+                                    'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
+                                )
+                            );
+                        }
+                    }
+                }
+
+                // Get the FILE object key for the user
+                // Get FILES for this Item
+                $rows = DB::query(
+                    'SELECT id
+                    FROM '.prefixTable('files').'
+                    WHERE id_item = %i',
+                    $post_item_id
+                );
+                foreach ($rows as $attachment) {
+                    $userKey = DB::queryFirstRow(
+                        'SELECT share_key
+                        FROM '.prefixTable('sharekeys_files').'
+                        WHERE user_id = %i AND object_id = %i',
+                        $_SESSION['user_id'],
+                        $attachment['id']
+                    );
+                    if (DB::count() > 0) {
+                        $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+
+                        // This is a public object
+                        $users = DB::query(
+                            'SELECT id, public_key
+                            FROM '.prefixTable('users').'
+                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                            AND public_key != ""'
+                        );
+                        foreach ($users as $user) {
+                            // Insert in DB the new object key for this item by user
+                            DB::insert(
+                                prefixTable('sharekeys_files'),
+                                array(
+                                    'object_id' => $attachment['id'],
+                                    'user_id' => $user['id'],
+                                    'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
+                                )
+                            );
+                        }
+                    }
+                }
 
                 // update item
                 DB::update(
                     prefixTable('items'),
                     array(
                         'id_tree' => $post_folder_id,
-                        'pw' => $encrypt['string'],
-                        'pw_iv' => '',
                         'perso' => 0,
                     ),
                     'id=%i',
                     $post_item_id
                 );
             }
+
             // Log item moved
             logItems(
                 $SETTINGS,
