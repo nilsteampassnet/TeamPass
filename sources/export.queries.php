@@ -222,7 +222,7 @@ if (null !== $post_type) {
                 include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tcpdf.php';
 
                 $pdf = new TCPDF("L", "mm", "A4", true, 'UTF-8', false);
-                $pdf->SetProtection(array('print'), $post_pdf_password);
+                $pdf->SetProtection(array('print'), $post_pdf_password, $post_pdf_password, 3);
 
                 $pdf->SetCreator($_SESSION['name'].' '.$_SESSION['lastname']);
                 $pdf->SetAuthor('Teampass');

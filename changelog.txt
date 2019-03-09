@@ -1,4 +1,12 @@
 2.1.27
+35/
+ #2563 Unable to add item via API
+ #2560 Fix an issue for one time password changes if current user is not root
+ #2536 low 40bit RC4 - pdf export?
+ #2505 Update readme.md
+ #2503 Update Dockerfile to use $uri and $args variables
+ #2439 Allow RFC2307bis group membership checks.
+
 34/
  #2549 Missing library
  #2534 Syntax error in share permissions

@@ -26,7 +26,7 @@ echo
 # Search last } and insert configuration rows before
 RUN sed -i "/^}/i \
   location /api/ {\
-          try_files $uri $uri/ /api/index.php?$args;\
+          try_files \$uri \$uri/ /api/index.php?\$args;\
   }" /etc/nginx/sites-enabled/default.conf
 
 COPY teampass-docker-start.sh /teampass-docker-start.sh

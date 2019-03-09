@@ -880,7 +880,7 @@ function restGet()
                     // get sent parameters
                     $params = explode(';', $GLOBALS['request'][2]);
                     if (count($params) != 9) {
-                        rest_error('ITEMBADDEFINITION');
+                        restError('ITEMBADDEFINITION');
                     }
 
                     $item_label = urlSafeB64Decode($params[0]);
