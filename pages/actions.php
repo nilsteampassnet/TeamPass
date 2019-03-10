@@ -246,6 +246,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                             </div>
                         </div>
 
+                        <!--
                         <div class="row mt-3">
                             <div class="col-12">
                                 <span class="fa-stack mr-3 infotip pointer button-action" data-action="change-sk" title="<?php echo langHdl('launch'); ?>">
@@ -319,6 +320,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </small>
                             </div>
                         </div>
+                        -->
 
 
 

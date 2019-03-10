@@ -98,7 +98,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
                                 <a class="text-info" target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues">Github</a></h5>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-lightbulb-o fa-lg fa-fw mr-2"></i><?php echo langHdl('feature_request_canal'); ?>
+                                <h5><i class="fas fa-lightbulb fa-lg fa-fw mr-2"></i><?php echo langHdl('feature_request_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://teampass.userecho.com">User Echo</a></h5>
                             </div>
                             <div class="callout callout-info">

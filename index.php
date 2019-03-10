@@ -400,7 +400,9 @@ if (($session_validite_pw === null
                     }
 
     // IMPORT menu
-    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1) {
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1
+        && $session_user_admin === 0
+    ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $pageSel === 'import' ? ' active' : '' ,'"">
@@ -442,7 +444,8 @@ if (($session_validite_pw === null
     }
     */
 
-    echo '
+    if ($session_user_admin === 0) {
+        echo '
                     <li class="nav-item">
                         <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
                         <i class="nav-icon fas fa-search"></i>
@@ -451,6 +454,7 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
+    }
 
     // Favourites menu
     if (isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
@@ -484,8 +488,8 @@ if (($session_validite_pw === null
     */
     // SUGGESTION menu
     if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
-                                    && ($session_user_admin === 1 || $session_user_manager === 1)
-                                ) {
+        && ($session_user_admin === 1 || $session_user_manager === 1)
+    ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
@@ -1042,6 +1046,8 @@ if (isset($_SESSION['CPM']) === true
             include_once $SETTINGS['cpassman_dir'].'/pages/actions.js.php';
         } elseif ($pageSel === 'fields') {
             include_once $SETTINGS['cpassman_dir'].'/pages/fields.js.php';
+        } elseif ($pageSel === 'options') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/options.js.php';
         }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';

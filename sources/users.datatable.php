@@ -196,7 +196,7 @@ foreach ($rows as $record) {
                 $listAlloFcts_position = true;
             }
             if (empty($listAlloFcts)) {
-                $listAlloFcts = '<i class="fa fa-exclamation mi-red tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, 'UTF-8').'"></i>';
+                $listAlloFcts = '<i class="fa fa-exclamation-triangle text-danger tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, 'UTF-8').'"></i>';
                 $listAlloFcts_position = false;
             }
         }

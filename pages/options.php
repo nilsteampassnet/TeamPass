@@ -47,13 +47,23 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
     <!-- Content Header (Page header) -->
     <div class='content-header'>
-      <div class='container-fluid'>
-        <div class='row mb-2'>
-          <div class='col-sm-6'>
-            <h1 class='m-0 text-dark'><?php echo langHdl('options'); ?></h1>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
+        <div class='container-fluid'>
+            <div class='row mb-2'>
+                <div class='col-sm-6'>
+                    <h1 class='m-0 text-dark'><?php echo langHdl('options'); ?></h1>
+                </div><!-- /.col -->
+                <div class='col-sm-6 text-right'>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find-options">
+                        <div class="input-group-append">
+                            <div class="btn btn-primary" id="button-find-options">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
     </div>
     <!-- /.content-header -->
     
@@ -71,7 +81,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
               <!-- form start -->
               <form role='form-horizontal'>
                 <div class='card-body'>
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='cpassman_dir' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_misc_cpassman_dir'); ?>
                     </label>
@@ -82,7 +92,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='cpassman_url' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_misc_cpassman_url'); ?>
                     </label>
@@ -92,7 +102,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='path_to_upload_folder' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_path_to_upload_folder'); ?>
                     </label>
@@ -106,7 +116,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='url_to_upload_folder' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_url_to_upload_folder'); ?>
                     </label>
@@ -116,7 +126,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='path_to_files_folder' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_path_to_files_folder'); ?>
                     </label>
@@ -130,7 +140,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='url_to_files_folder' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_url_to_files_folder'); ?>
                     </label>
@@ -140,7 +150,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='favicon' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_misc_favicon'); ?>
                     </label>
@@ -150,7 +160,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='custom_logo' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_misc_custom_logo'); ?>
                     </label>
@@ -160,7 +170,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
                   </div>
 
-                  <div class='form-group'>
+                  <div class='form-group option' data-keywords="server setting">
                     <label for='custom_login_text' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_misc_custom_login_text'); ?>
                     </label>
@@ -182,7 +192,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
               <!-- /.card-header -->
               <!-- form start -->
                 <div class='card-body'>
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="setting">
                       <div class='col-10'>
                           <?php echo langHdl('settings_maintenance_mode'); ?>
                       </div>
@@ -191,7 +201,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="server setting">
                       <div class='col-10'>
                           <?php echo langHdl('settings_default_session_expiration_time'); ?>
                       </div>
@@ -200,7 +210,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="server setting">
                       <div class='col-10'>
                           <?php echo langHdl('enable_http_request_login'); ?>
                       </div>
@@ -209,7 +219,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="server setting">
                       <div class='col-10'>
                           <?php echo langHdl('settings_enable_sts'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -221,7 +231,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="server setting">
                         <div class='col-10'>
                             <?php echo langHdl('admin_proxy_ip'); ?>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -233,7 +243,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="server setting">
                         <div class='col-10'>
                             <?php echo langHdl('admin_proxy_port'); ?>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -245,7 +255,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user ui setting login">
                         <div class='col-10'>
                             <?php echo langHdl('admin_pwd_maximum_length'); ?>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -257,7 +267,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user ui setting">
                         <div class='col-4'>
                             <?php echo langHdl('timezone_selection'); ?>
                         </div>
@@ -276,7 +286,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user ui setting">
                         <div class='col-4'>
                             <?php echo langHdl('date_format'); ?>
                         </div>
@@ -295,7 +305,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user ui setting">
                         <div class='col-4'>
                             <?php echo langHdl('time_format'); ?>
                         </div>
@@ -310,7 +320,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user ui setting">
                         <div class='col-8'>
                             <?php echo langHdl('settings_default_language'); ?>
                         </div>
@@ -327,7 +337,8 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <!--
+                    <div class='row mb-2 option'>
                         <div class='col-10'>
                             <?php echo langHdl('number_of_used_pw'); ?>
                         </div>
@@ -335,8 +346,9 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                             <input type='text' class='form-control form-control-sm' id='number_of_used_pw' value='<?php echo isset($SETTINGS['number_of_used_pw']) ? $SETTINGS['number_of_used_pw'] : '5'; ?>'>
                         </div>
                     </div>
+                    -->
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="user login">
                         <div class='col-10'>
                             <?php echo langHdl('pw_life_duration'); ?>
                         </div>
@@ -345,7 +357,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="log user login">
                         <div class='col-10'>
                             <?php echo langHdl('nb_false_login_attempts'); ?>
                         </div>
@@ -354,7 +366,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="log user login">
                       <div class='col-10'>
                           <?php echo langHdl('settings_log_connections'); ?>
                       </div>
@@ -363,7 +375,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="log item password">
                       <div class='col-10'>
                           <?php echo langHdl('settings_log_accessed'); ?>
                       </div>
@@ -372,7 +384,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="folder personal user">
                       <div class='col-10'>
                           <?php echo langHdl('enable_personal_folder_feature'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -384,7 +396,8 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                <!--
+                  <div class='row mb-2 option'>
                       <div class='col-10'>
                           <?php echo langHdl('enable_personal_saltkey_cookie'); ?>
                       </div>
@@ -393,7 +406,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option'>
                       <div class='col-10'>
                           <?php echo langHdl('personal_saltkey_cookie_duration'); ?>
                       </div>
@@ -402,7 +415,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option'>
                         <div class='col-8'>
                             <?php echo langHdl('personal_saltkey_security_level'); ?>
                         </div>
@@ -419,7 +432,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option'>
                       <div class='col-10'>
                           <?php echo langHdl('settings_attachments_encryption'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -430,8 +443,9 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                           <div class='toggle toggle-modern' id='enable_attachment_encryption' data-toggle-on='<?php echo isset($SETTINGS['enable_attachment_encryption']) === true && $SETTINGS['enable_attachment_encryption'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_attachment_encryption_input' value='<?php echo isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1' ? '1' : '0'; ?>' />
                       </div>
                   </div>
+                  -->
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="image">
                       <div class='col-10'>
                           <?php echo langHdl('settings_secure_display_image'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -443,7 +457,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="option">
                       <div class='col-10'>
                           <?php echo langHdl('settings_kb'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -455,7 +469,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="option">
                       <div class='col-10'>
                           <?php echo langHdl('settings_suggestion'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -467,7 +481,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                       </div>
                   </div>
 
-                  <div class='row mb-2'>
+                  <div class='row mb-2 option' data-keywords="display">
                       <div class='col-10'>
                           <?php echo langHdl('settings_get_tp_info'); ?>
                           <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -496,7 +510,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 <!-- /.card-header -->
                 <!-- card-body -->
                 <div class='card-body'>
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="item edit">
                         <div class='col-10'>
                             <?php echo langHdl('settings_delay_for_item_edition'); ?>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -508,7 +522,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>                    
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="one time">
                         <div class='col-10'>
                             <?php echo langHdl('otv_is_enabled'); ?>
                         </div>
@@ -517,7 +531,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="one time period expiration">
                         <div class='col-10'>
                             <?php echo langHdl('settings_otv_expiration_period'); ?>
                         </div>
@@ -526,7 +540,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="right manager item">
                         <div class='col-10'>
                             <?php echo langHdl('settings_manager_edit'); ?>
                         </div>
@@ -535,7 +549,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div> 
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="right manager move item">
                         <div class='col-10'>
                             <?php echo langHdl('settings_manager_move_item'); ?>
                         </div>
@@ -544,7 +558,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password last">
                         <div class='col-10'>
                             <?php echo langHdl('max_last_items'); ?>
                         </div>
@@ -553,7 +567,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="create duplicate folder">
                         <div class='col-10'>
                             <?php echo langHdl('duplicate_folder'); ?>
                         </div>
@@ -562,7 +576,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
                     
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password duplicate">
                         <div class='col-10'>
                             <?php echo langHdl('duplicate_item'); ?>
                         </div>
@@ -571,7 +585,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password duplicate folder">
                         <div class='col-10'>
                             <?php echo langHdl('duplicate_item_in_folder'); ?>
                         </div>
@@ -580,7 +594,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="folder display optimization">
                         <div class='col-10'>
                             <?php echo langHdl('show_only_accessible_folders'); ?>
                             <small class='form-text text-muted'>
@@ -592,7 +606,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="folder creation">
                         <div class='col-10'>
                             <?php echo langHdl('subfolder_rights_as_parent'); ?>
                             <small class='form-text text-muted'>
@@ -604,7 +618,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password creation">
                         <div class='col-10'>
                             <?php echo langHdl('create_item_without_password'); ?>
                         </div>
@@ -613,7 +627,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="favorite">
                         <div class='col-10'>
                             <?php echo langHdl('enable_favourites'); ?>
                         </div>
@@ -622,7 +636,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="folder creation">
                         <div class='col-10'>
                             <?php echo langHdl('enable_user_can_create_folders'); ?>
                         </div>
@@ -631,7 +645,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="folder creation">
                         <div class='col-10'>
                             <?php echo langHdl('can_create_root_folder'); ?>
                         </div>
@@ -640,7 +654,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password delete massive">
                         <div class='col-10'>
                             <?php echo langHdl('enable_massive_move_delete'); ?>
                             <small class='form-text text-muted'>
@@ -652,7 +666,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password delete view expiration">
                         <div class='col-10'>
                             <?php echo langHdl('admin_setting_activate_expiration'); ?>
                             <small class='form-text text-muted'>
@@ -664,7 +678,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password delete view expiration">
                         <div class='col-10'>
                             <?php echo langHdl('admin_setting_enable_delete_after_consultation'); ?>
                             <small class='form-text text-muted'>
@@ -676,7 +690,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="import export print">
                         <div class='col-10'>
                             <?php echo langHdl('settings_printing'); ?>
                             <small class='form-text text-muted'>
@@ -688,7 +702,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="import export print">
                         <div class='col-6'>
                             <?php echo langHdl('settings_roles_allowed_to_print'); ?>
                             <small class='form-text text-muted'>
@@ -715,7 +729,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="import export">
                         <div class='col-10'>
                             <?php echo langHdl('settings_importing'); ?>
                         </div>
@@ -724,7 +738,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="role restriction modify right">
                         <div class='col-10'>
                             <?php echo langHdl('settings_anyone_can_modify'); ?>
                             <small class='form-text text-muted'>
@@ -736,7 +750,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2 <?php echo isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-modify">
+                    <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
                         <div class='col-10'>
                             <?php echo langHdl('settings_anyone_can_modify_bydefault'); ?>
                         </div>
@@ -745,7 +759,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="role restriction">
                         <div class='col-10'>
                             <?php echo langHdl('settings_restricted_to'); ?>
                         </div>
@@ -754,7 +768,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2 <?php echo isset($SETTINGS['restricted_to']) === true && $SETTINGS['restricted_to'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-restricted">
+                    <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && $SETTINGS['restricted_to'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
                         <div class='col-10'>
                             <?php echo langHdl('restricted_to_roles'); ?>
                         </div>
@@ -763,7 +777,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="display optimization icon">
                         <div class='col-10'>
                             <?php echo langHdl('copy_to_clipboard_small_icons'); ?>
                             <small class='form-text text-muted'>
@@ -775,7 +789,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="display optimization description">
                         <div class='col-10'>
                             <?php echo langHdl('settings_show_description'); ?>
                         </div>
@@ -784,7 +798,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="display tree counter">
                         <div class='col-10'>
                             <?php echo langHdl('settings_tree_counters'); ?>
                             <small class='form-text text-muted'>
@@ -796,7 +810,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="query display optimization">
                         <div class='col-10'>
                             <?php echo langHdl('nb_items_by_query'); ?>
                             <small class='form-text text-muted'>
@@ -808,7 +822,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="email notification login">
                         <div class='col-10'>
                             <?php echo langHdl('enable_send_email_on_user_login'); ?>
                         </div>
@@ -817,7 +831,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="email notification">
                         <div class='col-10'>
                             <?php echo langHdl('enable_email_notification_on_item_shown'); ?>
                         </div>
@@ -826,7 +840,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="email notification password change">
                         <div class='col-10'>
                             <?php echo langHdl('enable_email_notification_on_user_pw_change'); ?>
                         </div>
@@ -835,7 +849,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="history manual">
                         <div class='col-10'>
                             <?php echo langHdl('settings_insert_manual_entry_item_history'); ?>
                             <small class='form-text text-muted'>
@@ -847,7 +861,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="offline">
                         <div class='col-10'>
                             <?php echo langHdl('settings_offline_mode'); ?>
                             <small class='form-text text-muted'>
@@ -859,7 +873,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="offline">
                         <div class='col-7'>
                             <?php echo langHdl('offline_mode_key_level'); ?>
                         </div>
@@ -875,7 +889,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="syslog">
                         <div class='col-10'>
                             <?php echo langHdl('syslog_enable'); ?>
                         </div>
@@ -884,7 +898,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="syslog">
                         <div class='col-7'>
                             <?php echo langHdl('syslog_host'); ?>
                         </div>
@@ -893,7 +907,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-5'>
+                    <div class='row mb-5 option' data-keywords="syslog port">
                         <div class='col-10'>
                             <?php echo langHdl('syslog_port'); ?>
                         </div>
@@ -902,7 +916,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class='row mb-2'>
+                    <div class='row mb-2 option' data-keywords="password server">
                         <div class='col-10'>
                             <?php echo langHdl('server_password_change_enable'); ?>
                             <small class='form-text text-muted'>
@@ -925,8 +939,3 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
       </div><!-- /.container-fluid -->
     </div>
     <!-- /.content -->
-
-
-
-
-
