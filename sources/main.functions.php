@@ -3228,3 +3228,73 @@ function generateQuickPassword($length = 16)
 
     return $random_string;
 }
+
+/**
+ * Permit to store the sharekey of an object for users.
+ *
+ * @param string $object_name             Type for table selection
+ * @param int    $post_folder_is_personal Personal
+ * @param int    $post_folder_id          Folder
+ * @param int    $post_object_id          Object
+ * @param array  $objectKey               Object key
+ * @param array  $SETTINGS                Teampass settings
+ */
+function storeUsersShareKey(
+    $object_name,
+    $post_folder_is_personal,
+    $post_folder_id,
+    $post_object_id,
+    $objectKey,
+    $SETTINGS
+) {
+    // include librairies & connect to DB
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
+
+    // Delete existing entries for this object
+    DB::delete(
+        $object_name,
+        'object_id = %i',
+        $post_object_id
+    );
+
+    if ((int) $post_folder_is_personal === 1
+        && in_array($post_folder_id, $_SESSION['personal_folders']) === true
+    ) {
+        // If this is a personal object
+        // Only create the sharekey for user
+        DB::insert(
+            $object_name,
+            array(
+                'object_id' => $post_object_id,
+                'user_id' => $_SESSION['user_id'],
+                'share_key' => encryptUserObjectKey($objectKey, $_SESSION['user']['public_key']),
+            )
+        );
+    } else {
+        // This is a public object
+        // Create sharekey for each user
+        $users = DB::query(
+            'SELECT id, public_key
+            FROM '.prefixTable('users').'
+            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+            AND public_key != ""'
+        );
+        foreach ($users as $user) {
+            // Insert in DB the new object key for this item by user
+            DB::insert(
+                $object_name,
+                array(
+                    'object_id' => $post_object_id,
+                    'user_id' => $user['id'],
+                    'share_key' => encryptUserObjectKey(
+                        $objectKey,
+                        $user['public_key']
+                    ),
+                )
+            );
+        }
+    }
+}

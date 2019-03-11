@@ -3591,15 +3591,22 @@ function Details(itemDefinition, actionType, hotlink = false)
                         $(data.fields).each(function(index, field) {
                             // Show cateogry
                             $('#card-item-category-' + field.parent_id).removeClass('hidden');
+
+                            // Is data encrypted
+                            // Then base64 decode is required
+                            if (field.encrypted === 1) {
+                                field.value = atob(field.value);
+                            }
+
                             // Show field
-                            if (field.masked === '1') {
+                            if (field.masked === 1) {
                                 // Item card
                                 $('#card-item-field-' + field.id)
                                     .removeClass('hidden')
                                     .children(".card-item-field-value")
                                     .html(
                                         '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + atob(field.value) + '">'
+                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
                                     )
                                 $('#card-item-field-' + field.id)
                                     .children(".btn-copy-clipboard-clear")
@@ -3618,7 +3625,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                         });
 
                         // Manage template to show
-                        if (data.template_id !== '') {
+                        if (data.template_id !== '' && data.template_id === data.categories) {
                             // Tick the box in edit mode
                             $('#template_' + data.template_id).attr('checked', true);
 

@@ -858,7 +858,7 @@ if (($session_validite_pw === null
 
     /* MAIN PAGE */
     echo '
-<input type="text" id="temps_restant" value="', isset($_SESSION['sessionDuration']) ? $_SESSION['sessionDuration'] : '', '" />';
+<input type="hidden" id="temps_restant" value="', isset($_SESSION['sessionDuration']) ? $_SESSION['sessionDuration'] : '', '" />';
 } elseif ((empty($session_user_id) === false
     && $session_user_id !== null)
     || empty($session_user_id) === true

@@ -30,6 +30,7 @@ $scripts_list = array(
     array('upgrade_run_3.0.0_fields.php', 'user_id'),
     array('upgrade_run_3.0.0_suggestions.php', 'user_id'),
     array('upgrade_run_3.0.0_files.php', 'user_id'),
+    array('./tools/upgrade.tools.field.php', 'user_id'),
     /*array('upgrade_run_db_original.php', ""),
     array('upgrade_run_2.1.26.php', ""),
     array('upgrade_run_encryption_pwd.php', ""),

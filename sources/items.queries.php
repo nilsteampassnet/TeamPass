@@ -426,6 +426,17 @@ if (null !== $post_type) {
                     );
                     $newID = DB::insertId();
 
+                    // Create sharekeys for users
+                    storeUsersShareKey(
+                        prefixTable('sharekeys_items'),
+                        $post_folder_is_personal,
+                        $post_folder_id,
+                        $newID,
+                        $cryptedStuff['objectKey'],
+                        $SETTINGS
+                    );
+
+                    /*
                     // Prepare shareKey for users
                     if ((int) $post_folder_is_personal === 1 && isset($post_folder_is_personal) === true) {
                         // If this is a personal object
@@ -457,6 +468,7 @@ if (null !== $post_type) {
                             );
                         }
                     }
+                    */
 
                     // update fields
                     if (isset($SETTINGS['item_extra_fields']) === true
@@ -847,7 +859,7 @@ if (null !== $post_type) {
                 // Check PWD EMPTY
                 if (empty($pw) === true
                     && isset($_SESSION['user_settings']['create_item_without_password']) === true
-                    && $_SESSION['user_settings']['create_item_without_password'] !== '1'
+                    && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -966,7 +978,7 @@ if (null !== $post_type) {
 
                     // encrypt PW
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                        && $_SESSION['user_settings']['create_item_without_password'] !== '1')
+                        && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1)
                         || empty($pw) === false
                     ) {
                         //-----
@@ -974,6 +986,16 @@ if (null !== $post_type) {
                         $cryptedStuff = doDataEncryption($post_password);
 
                         $post_password = $cryptedStuff['encrypted'];
+
+                        // Create sharekeys for users
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_items'),
+                            $post_folder_is_personal,
+                            $post_folder_id,
+                            $post_item_id,
+                            $cryptedStuff['objectKey'],
+                            $SETTINGS
+                        );
                     } else {
                         $post_password = '';
                     }
@@ -1023,82 +1045,48 @@ if (null !== $post_type) {
                         $post_item_id
                     );
 
-                    // Create sharekeys for users
-                    if ((int) $post_folder_is_personal === 1
-                        && in_array($post_folder_id, $_SESSION['personal_folders']) === true
-                    ) {
-                        // If this is a personal object
-                        DB::insert(
-                            prefixTable('sharekeys'),
-                            array(
-                                'type' => 'item',
-                                'object_id' => $post_item_id,
-                                'user_id' => $_SESSION['user_id'],
-                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
-                            )
-                        );
-                    } else {
-                        // This is a public object
-                        $users = DB::query(
-                            'SELECT id, public_key
-                            FROM '.prefixTable('users').'
-                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
-                            AND public_key != ""'
-                        );
-                        foreach ($users as $user) {
-                            // Insert in DB the new object key for this item by user
-                            DB::insert(
-                                prefixTable('sharekeys'),
-                                array(
-                                    'type' => 'item',
-                                    'object_id' => $post_item_id,
-                                    'user_id' => $user['id'],
-                                    'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
-                                )
-                            );
-                        }
-                    }
-
+                    //TODO : REVOIR CETTE PARTIE
                     // update fields
                     if (isset($SETTINGS['item_extra_fields']) === true
-                        && $SETTINGS['item_extra_fields'] === '1'
+                        && (int) $SETTINGS['item_extra_fields'] === 1
                         && empty($post_fields) === false
                     ) {
                         foreach ($post_fields as $field) {
                             if (empty($field['value']) === false) {
-                                //echo $field['id'].' -- '.$field['value'];
                                 $dataTmpCat = DB::queryFirstRow(
-                                    'SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv,
+                                    'SELECT c.id AS id, c.title AS title, i.data AS data, i.data_iv AS data_iv,
                                     i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
-                                    c.masked AS masked
+                                    c.masked AS masked, i.id AS field_item_id
                                     FROM '.prefixTable('categories_items').' AS i
                                     INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i',
                                     $field['id'],
                                     $post_item_id
                                 );
+
                                 // store Field text in DB
                                 if (DB::count() === 0) {
-                                    // get info about this custom field
-                                    $dataTmpCat = DB::queryFirstRow(
-                                        'SELECT title, encrypted_data
-                                        FROM '.prefixTable('categories').'
-                                        WHERE id = %i',
-                                        $field['id']
-                                    );
+                                    // The data for this foeld doesn't exist
+                                    // It has to be added
 
-                                    // should we encrypt the data
-                                    if ($dataTmpCat['encrypted_data'] === '1') {
-                                        $encrypt = cryption(
-                                            $field['value'],
-                                            '',
-                                            'encrypt',
+                                    // Should we encrypt the data
+                                    if ((int) $dataTmpCat['encrypted_data'] === 1) {
+                                        $cryptedStuff = doDataEncryption($field['value']);
+                                        $encrypt['string'] = $cryptedStuff['encrypted'];
+                                        $encrypt['type'] = TP_ENCRYPTION_NAME;
+
+                                        // Create sharekeys for users
+                                        storeUsersShareKey(
+                                            prefixTable('sharekeys_fields'),
+                                            $post_folder_is_personal,
+                                            $post_folder_id,
+                                            $dataTmpCat['field_item_id'],
+                                            $cryptedStuff['objectKey'],
                                             $SETTINGS
                                         );
-                                        $enc_type = 'defuse';
                                     } else {
                                         $encrypt['string'] = $field['value'];
-                                        $enc_type = 'not_set';
+                                        $encrypt['type'] = 'not_set';
                                     }
 
                                     // store field text
@@ -1109,7 +1097,7 @@ if (null !== $post_type) {
                                             'field_id' => $field['id'],
                                             'data' => $encrypt['string'],
                                             'data_iv' => '',
-                                            'encryption_type' => $enc_type,
+                                            'encryption_type' => $encrypt['type'],
                                         )
                                     );
 
@@ -1125,30 +1113,50 @@ if (null !== $post_type) {
                                     );
                                 } else {
                                     // compare the old and new value
-                                    if ($dataTmpCat['encryption_type'] === 'defuse') {
-                                        $oldVal = cryption(
-                                            $dataTmpCat['data'],
-                                            '',
-                                            'decrypt',
-                                            $SETTINGS
+                                    if ($dataTmpCat['encryption_type'] !== 'not_set') {
+                                        // Get user sharekey for this field
+                                        $userKey = DB::queryFirstRow(
+                                            'SELECT share_key
+                                            FROM '.prefixTable('sharekeys_fields').'
+                                            WHERE user_id = %i AND object_id = %i',
+                                            $_SESSION['user_id'],
+                                            $dataTmpCat['field_item_id']
                                         );
+
+                                        // Decrypt the current value
+                                        $oldVal = base64_decode(doDataDecryption(
+                                            $dataTmpCat['data'],
+                                            decryptUserObjectKey(
+                                                $userKey['share_key'],
+                                                $_SESSION['user']['private_key']
+                                            )
+                                        ));
                                     } else {
-                                        $oldVal['string'] = $dataTmpCat['data'];
+                                        $oldVal = $dataTmpCat['data'];
                                     }
 
-                                    if ($field['value'] !== $oldVal['string']) {
-                                        // should we encrypt the data
-                                        if ($dataTmpCat['encrypted_data'] === '1') {
-                                            $encrypt = cryption(
-                                                $field['value'],
-                                                '',
-                                                'encrypt',
+                                    // Compare both values to see if any change was done
+                                    if ($field['value'] !== $oldVal) {
+                                        // The strings are different
+
+                                        // Should we encrypt the data
+                                        if ((int) $dataTmpCat['encrypted_data'] === 1) {
+                                            $cryptedStuff = doDataEncryption($field['value']);
+                                            $encrypt['string'] = $cryptedStuff['encrypted'];
+                                            $encrypt['type'] = TP_ENCRYPTION_NAME;
+
+                                            // Create sharekeys for users
+                                            storeUsersShareKey(
+                                                prefixTable('sharekeys_fields'),
+                                                $post_folder_is_personal,
+                                                $post_folder_id,
+                                                $dataTmpCat['field_item_id'],
+                                                $cryptedStuff['objectKey'],
                                                 $SETTINGS
                                             );
-                                            $enc_type = 'defuse';
                                         } else {
                                             $encrypt['string'] = $field['value'];
-                                            $enc_type = 'not_set';
+                                            $encrypt['type'] = 'not_set';
                                         }
 
                                         // update value
@@ -1157,7 +1165,7 @@ if (null !== $post_type) {
                                             array(
                                                 'data' => $encrypt['string'],
                                                 'data_iv' => '',
-                                                'encryption_type' => $enc_type,
+                                                'encryption_type' => $encrypt['type'],
                                             ),
                                             'item_id = %i AND field_id = %i',
                                             $post_item_id,
@@ -1172,12 +1180,12 @@ if (null !== $post_type) {
                                             $_SESSION['user_id'],
                                             'at_modification',
                                             $_SESSION['login'],
-                                            'at_field : '.$dataTmpCat['title'].' => '.$oldVal['string']
+                                            'at_field : '.$dataTmpCat['title'].' => '.$oldVal
                                         );
                                     }
                                 }
                             } else {
-                                if (empty($field_data[1])) {
+                                if (empty($field_data[1]) === true) {
                                     DB::delete(
                                         prefixTable('categories_items'),
                                         'item_id = %i AND field_id = %s',
@@ -2163,7 +2171,7 @@ if (null !== $post_type) {
                 $_SESSION['user_id'],
                 $post_id
             );
-            if (DB::count() === 0) {
+            if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                 // No share key found
                 $pw = '';
             } else {
@@ -2337,7 +2345,7 @@ if (null !== $post_type) {
                 // get fields
                 $fieldsTmp = array();
                 $arrCatList = $template_id = '';
-                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                if (isset($SETTINGS['item_extra_fields']) && (int) $SETTINGS['item_extra_fields'] === 1) {
                     // get list of associated Categories
                     $arrCatList = array();
                     $rows_tmp = DB::query(
@@ -2374,15 +2382,17 @@ if (null !== $post_type) {
                             );
                             if (DB::count() === 0) {
                                 // Not encrypted
-                                $fieldText = $fieldText['string'];
+                                $fieldText['string'] = $row['data'];
+                                $fieldText['encrypted'] = false;
                             } else {
-                                $fieldText = doDataDecryption(
+                                $fieldText['string'] = doDataDecryption(
                                     $row['data'],
                                     decryptUserObjectKey(
                                         $userKey['share_key'],
                                         $_SESSION['user']['private_key']
                                     )
                                 );
+                                $fieldText['encrypted'] = true;
                             }
 
                             // Manage textarea string
@@ -2394,11 +2404,12 @@ if (null !== $post_type) {
                             array_push(
                                 $fieldsTmp,
                                 array(
-                                    'id' => $row['field_id'],
-                                    'value' => $fieldText,
-                                    'parent_id' => $row['parent_id'],
+                                    'id' => (int) $row['field_id'],
+                                    'value' => $fieldText['string'],
+                                    'encrypted' => (int) $fieldText['encrypted'],
+                                    'parent_id' => (int) $row['parent_id'],
                                     'type' => $row['field_type'],
-                                    'masked' => $row['field_masked'],
+                                    'masked' => (int) $row['field_masked'],
                                 )
                             );
                         }
@@ -2420,7 +2431,7 @@ if (null !== $post_type) {
                 //}
                 $arrData['fields'] = $fieldsTmp;
                 $arrData['categories'] = $arrCatList;
-                $arrData['template_id'] = $template_id;
+                $arrData['template_id'] = (int) $template_id;
                 $arrData['to_be_deleted'] = '';
 
                 // Manage user restriction
@@ -5477,31 +5488,8 @@ if (null !== $post_type) {
             foreach ($rows as $record) {
                 $reason = explode(' :', $record['raison']);
                 if ($reason[0] === 'at_pw') {
-                    // check if item is PF
-                    if ($dataItem['perso'] !== 1) {
-                        $pw = cryption(
-                            $reason[1],
-                            '',
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    } else {
-                        if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                            $pw = cryption(
-                                $reason[1],
-                                $_SESSION['user_settings']['session_psk'],
-                                'decrypt',
-                                $SETTINGS
-                            );
-                        } else {
-                            $pw['string'] = '';
-                        }
-                    }
-                    $reason[1] = $pw['string'];
-                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                    if (!isUTF8($reason[1]) || is_array($reason[1])) {
-                        $reason[1] = '';
-                    }
+                    // This is a password change.
+                    // Just indicate it was changed
                 }
                 // imported via API
                 if (empty($record['login'])) {
@@ -5529,11 +5517,11 @@ if (null !== $post_type) {
                     $detail = '';
                     if ($reason[0] === 'at_pw') {
                         $action = langHdl($reason[0]);
-                        if (empty($reason[1]) === true) {
-                            $detail = langHdl('no_previous_value');
-                        } else {
-                            $detail = langHdl('previous_value').': '.$reason[1];
-                        }
+                    /*if (empty($reason[1]) === true) {
+                        $detail = langHdl('no_previous_value');
+                    } else {
+                        $detail = langHdl('previous_value').': '.$reason[1];
+                    }*/
                     } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
                         if ($reason[0] === 'at_moved') {
                             $tmp = explode(' -> ', $reason[1]);

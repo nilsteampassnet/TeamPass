@@ -271,12 +271,12 @@ function buildNodeTree(
 
                 if (in_array($node->id, $session_groupes_visibles)) {
                     if (in_array($node->id, $session_read_only_folders)) {
-                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                         $title = langHdl('read_only_account');
                         $restricted = 1;
                         $folderClass = 'folder_not_droppable';
                     } elseif ($_SESSION['user_read_only'] === true && !in_array($node->id, $session_personal_visible_groups)) {
-                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.$itemsNb.'</span>';
                     // display tree counters
@@ -287,13 +287,13 @@ function buildNodeTree(
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_folders_limited[$node->id]).'</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='far fa-eye fa-xs'></i>&nbsp;".$text;
+                        $text = "<i class='far fa-eye fa-xs mr-1'></i>".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_restricted_folders_for_items[$node->id]).'</span>';
                 } else {
@@ -338,7 +338,7 @@ function buildNodeTree(
                         '"id":"li_'.$node->id.'"'.
                         ', "parent":"'.$parent.'"'.
                         ', "children":'.($childrenNb == 0 ? 'false' : 'true').
-                        ', "text":"<i class=\'fa fa-close mi-red\'></i>&nbsp;'.$text.'"'.
+                        ', "text":"<i class=\'fas fa-times fa-xs text-danger mr-1\'></i>'.$text.'"'.
                         ', "li_attr":{"class":"", "title":"ID ['.$node->id.'] '.langHdl('no_access').'"}'.
                     '}';
                 }
@@ -582,7 +582,7 @@ function recursiveTree(
                     array(
                         'id' => 'li_'.$completTree[$nodeId]->id,
                         'parent' => empty($last_visible_parent) === true ? $parent : $last_visible_parent,
-                        'text' => '<i class="fa fa-close mi-red mr-1"></i>'.$text,
+                        'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>'.$text,
                         'li_attr' => array(
                             'class' => '',
                             'title' => 'ID ['.$completTree[$nodeId]->id.'] '.langHdl('no_access'),

@@ -16,7 +16,6 @@
  *
  * @see      http://www.teampass.net
  */
-
 define('TP_VERSION', '3.0.0');
 define('TP_VERSION_FULL', TP_VERSION.'.0');
 define('TP_TOOL_NAME', 'Teampass');
@@ -40,6 +39,7 @@ define('OTV_USER_ID', '9999991');
 define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
+define('TP_ENCRYPTION_NAME', 'teampass_aes');
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');

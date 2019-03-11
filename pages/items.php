@@ -1030,7 +1030,8 @@ echo '
                     <div class="card-header">
                         <div class="row justify-content-end">
                             <div class="col-6">
-                                <h3 class="card-title"><i class="far fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
+                                <h3 class="card-title"><i class="far fa-folder-open mr-2"></i>
+                                <span class="d-lg-block"><?php echo langHdl('folders'); ?></span>
                             </div>
                             <div class="col-6">
                                 <div class="btn-group float-right">

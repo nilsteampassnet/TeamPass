@@ -208,7 +208,6 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
-
 // Add new table Notifications
 mysqli_query(
     $db_link,
