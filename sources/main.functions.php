@@ -58,7 +58,7 @@ function langHdl($string)
         return str_replace(
             array('"', "'"),
             array('&quot;', '&apos;'),
-            $_SESSION['teampass']['lang'][$string]
+            $_SESSION['teampass']['lang'][trim($string)]
         );
     }
 }
@@ -1864,7 +1864,7 @@ function logItems(
             'action' => $action,
             'raison' => $raison,
             'raison_iv' => '',
-            'encryption_type' => is_null($encryption_type) === true ? '' : $encryption_type,
+            'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
         )
     );
     // Timestamp the last change

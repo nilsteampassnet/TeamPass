@@ -687,7 +687,7 @@ $('#form-item .track-change').on('change', function() {
         $(this).data('change-ongoing', true);
 
         // SHow button in sticky footer
-        $('#form-item-buttons').addClass('sticky-footer');
+        //$('#form-item-buttons').addClass('sticky-footer');
     }
 });
 
@@ -1425,7 +1425,7 @@ function closeItemDetailsCard()
         // Do some form cleaning
         $('.clear-me-val').val('');
         $('.item-details-card').find('.form-control').val('');
-        $('.clear-me-html').html('');
+        $('.clear-me-html, .card-item-field-value').html('');
         $('.form-item-control').val('');
         $('.form-check-input').attr('checked', '');
         $('.card-item-extra').collapse();
@@ -1436,8 +1436,13 @@ function closeItemDetailsCard()
             .detach()
             .appendTo('#card-item-fields');
 
+        // Ensure the form is correct
+        $('#list-group-item-main, #item-details-card-categories')
+            .children('.list-group')
+            .removeClass('hidden');
+
         // SHow save button in card
-        $('#form-item-buttons').removeClass('sticky-footer');
+        //$('#form-item-buttons').removeClass('sticky-footer');
         
         // Destroy editors
         if (itemEditor) {
@@ -2295,7 +2300,7 @@ function showItemEditForm(selectedFolderId)
                 })
             } else {
                 $('#form-item-field, .form-item-category').addClass('hidden');
-            }
+            }            
             // ---
         }
     });
@@ -3428,7 +3433,9 @@ function Details(itemDefinition, actionType, hotlink = false)
                         teampassItem.timestamp = data.timestamp,
                         teampassItem.user_can_modify = data.user_can_modify,
                         teampassItem.anyone_can_modify = data.anyone_can_modify,
-                        teampassItem.edit_item_salt_key = data.edit_item_salt_key
+                        teampassItem.edit_item_salt_key = data.edit_item_salt_key,
+                        teampassItem.id_restricted_to = data.id_restricted_to,
+                        teampassItem.id_restricted_to_roles = data.id_restricted_to_roles
                     }
                 );
                 
@@ -3501,7 +3508,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                                 $('#form-item-description').data('change-ongoing', true);
 
                                 // SHow button in sticky footer
-                                $('#form-item-buttons').addClass('sticky-footer');
+                                //$('#form-item-buttons').addClass('sticky-footer');
                             }
                         });
 
@@ -3625,7 +3632,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                         });
 
                         // Manage template to show
-                        if (data.template_id !== '' && data.template_id === data.categories) {
+                        if (data.template_id !== '' && $.inArray(data.template_id, data.categories) > -1) {
                             // Tick the box in edit mode
                             $('#template_' + data.template_id).attr('checked', true);
 
@@ -3639,6 +3646,14 @@ function Details(itemDefinition, actionType, hotlink = false)
                                 .addClass('fields-to-move')
                                 .detach()
                                 .appendTo('#list-group-item-main');
+
+                            // If only one category of Custom Fields
+                            // Then hide the CustomFields div
+                            if (data.categories.length === 1) {
+                                $('#item-details-card-categories').addClass('hidden');
+                            } else {
+                                $('#item-details-card-categories').removeClass('hidden');
+                            }
                         }
                     }
                 }
@@ -3874,60 +3889,23 @@ function showDetailsStep2(id, actionType)
             // Hide loading state
             $('#card-item-attachments').nextAll().addClass('hidden');
             
-
-            // -> MANAGE RESTRICTIONS
-            var html_restrictions = '',
-                preselect_list = [];
-            
-            // Clear existing values
-            $('#form-item-restrictedto, #form-item-anounce').empty();
-
-            // Users restriction list
-            $(data.users_list).each(function(index, value) {
-                // Prepare list for FORM
-                $("#form-item-restrictedto")
-                    .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
-                // Prepare list of emailers
-                $('#form-item-anounce').append('<option value="'+value.email+'">'+value.name+'</option>');
-                // Select this droplist
-                if ($.inArray(value.id, JSON.parse($('#form-item-restrictedToUsers').val())) !== -1) {
-                    // 
-                    preselect_list.push(value.id);
-                    
-                    // Prepare list for CARD
-                    html_restrictions += '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-user fa-sm mr-1"></i>' + value.name + '</span>';
-                }
+            // Show restrictions with Badges
+            var html_restrictions = '';
+            $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
+                html_restrictions += 
+                    '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' +
+                    data.users_list.find(x => x.id === parseInt(value)).name + '</span>';
             });
-            if (data.setting_restricted_to_roles === 1) {
-                //add optgroup
-                var optgroup = $('<optgroup label="<?php echo langHdl('users'); ?>">');
-                $(".restriction_is_user").wrapAll(optgroup);
-            
-                // Now add the roles to the list
-                $(data.roles_list).each(function(index, value) {
-                    $("#form-item-restrictedto")
-                            .append('<option value="role_' + value.id + '" class="restriction_is_role">' + value.title + '</option>');
-
-                    if ($.inArray(value.id, JSON.parse($('#form-item-restrictedToRoles').val())) !== -1) {
-                        // 
-                        preselect_list.push('role_' + value.id);
-                        // Prepare list for CARD
-                        html_restrictions += 
-                        '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' + value.title + '</span>';
-                    }
-                });
-                /// Add a group label for Groups
-                $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo langHdl('roles'); ?>">'));
-            }
-
+            $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {
+                html_restrictions += 
+                    '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' +
+                    data.roles_list.find(x => x.id === parseInt(value)).title + '</span>';
+            });
             if (html_restrictions === '') {
                 $('#card-item-restrictedto').html('<?php echo langHdl('no_special_restriction'); ?>');
             } else {
                 $('#card-item-restrictedto').html(html_restrictions);
-            } 
-            console.log(preselect_list);
-            // Now do the pre-selection            
-            $('#form-item-restrictedto').val(preselect_list);
+            }
             
 
             $('#edit_past_pwds').attr('title', (data.history_of_pwds));//htmlspecialchars_decode 
@@ -3984,8 +3962,9 @@ function showDetailsStep2(id, actionType)
                                 '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
                                 '</div>' +
                                 '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
-                                '<div class="direct-chat-text">' + (value.action === '' ? '' : (value.action +
-                                ' | ')) + value.detail + '</div></div>';
+                                '<div class="direct-chat-text"><span class="text-capitalize">' +
+                                (value.action === '' ? '' : (value.action)) + '</span> ' +
+                                (value.detail === '' ? '' : (' | ' + value.detail)) + '</div></div>';
                             });
                             // Display
                             $('#card-item-history').html(html);
@@ -4235,13 +4214,18 @@ function getPrivilegesOnItem(val, edit, context)
                 // Prepare list of users where needed
                 $('#form-item-restrictedto, #form-item-anounce').empty().val('').change();
                 // Users restriction list
-                var preselect_list = [];
+                var html_restrictions = '';
+
                 $(data.usersList).each(function(index, value) {
                     // Prepare list for FORM
                     $("#form-item-restrictedto")
                         .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
+
                     // Prepare list of emailers
                     $('#form-item-anounce').append('<option value="'+value.email+'">'+value.name+'</option>');
+
+                    // Prepare list for CARD
+                    html_restrictions += '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-user fa-sm mr-1"></i>' + value.name + '</span>';
                 });
                 if (data.setting_restricted_to_roles === 1) {
                     //add optgroup
@@ -4251,16 +4235,36 @@ function getPrivilegesOnItem(val, edit, context)
                     // Now add the roles to the list
                     $(data.rolesList).each(function(index, value) {
                         $("#form-item-restrictedto")
-                            .append('<option value="role_' + value.id + '" class="restriction_is_role">' + value.title + '</option>');
+                            .append('<option value="role_' + value.id + '" class="restriction_is_role">' +
+                            value.title + '</option>');
+                        
+                        // Prepare list for CARD
+                        html_restrictions += 
+                            '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' +
+                            value.title + '</span>';
                     });
                     /// Add a group label for Groups
                     $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo langHdl('roles'); ?>">'));
+                }
+
+                // Show badges
+                if (html_restrictions === '') {
+                    $('#card-item-restrictedto').html('<?php echo langHdl('no_special_restriction'); ?>');
+                } else {
+                    $('#card-item-restrictedto').html(html_restrictions);
                 }
 
                 // Prepare Select2
                 $('.select2').select2({
                     language: '<?php echo $_SESSION['user_language_code']; ?>'
                 });
+                
+                // Show selected restricted inputs
+                $('#form-item-restrictedto')
+                    .val(store.get('teampassItem').id_restricted_to.concat(
+                        store.get('teampassItem').id_restricted_to_roles.map(i => 'role_' + i))
+                    )
+                    .change();
             }
 
             store.update(
@@ -4327,7 +4331,7 @@ $('#item-button-password-generate').click(function() {
                 $('#form-item-password').data('change-ongoing', true);
 
                 // SHow button in sticky footer
-                $('#form-item-buttons').addClass('sticky-footer');
+                //$('#form-item-buttons').addClass('sticky-footer');
             }
         }
    );

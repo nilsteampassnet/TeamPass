@@ -800,7 +800,7 @@ if (null !== $post_type) {
                 $itemInfos = array();
                 $post_label = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
-                $post_password = $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
+                $post_password = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
                 $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
@@ -910,7 +910,7 @@ if (null !== $post_type) {
                 }
 
                 // Check length
-                if (strlen($pw) > $SETTINGS['pwd_maximum_length']) {
+                if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -976,16 +976,50 @@ if (null !== $post_type) {
                         $post_item_id
                     );
 
+                    // Should we log a password change?
+                    $userKey = DB::queryFirstRow(
+                        'SELECT share_key
+                        FROM '.prefixTable('sharekeys_items').'
+                        WHERE user_id = %i AND object_id = %i',
+                        $_SESSION['user_id'],
+                        $post_item_id
+                    );
+                    if (DB::count() === 0 || empty($data['pw']) === true) {
+                        // No share key found
+                        $pw = '';
+                    } else {
+                        $pw = base64_decode(doDataDecryption(
+                            $data['pw'],
+                            decryptUserObjectKey(
+                                $userKey['share_key'],
+                                $_SESSION['user']['private_key']
+                            )
+                        ));
+                    }
+
+                    if ($post_password !== $pw) {
+                        logItems(
+                            $SETTINGS,
+                            $post_item_id,
+                            $post_label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_pw',
+                            'defuse'
+                        );
+                    }
+
                     // encrypt PW
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
                         && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1)
-                        || empty($pw) === false
+                        || empty($post_password) === false
                     ) {
                         //-----
                         // NEW ENCRYPTION
                         $cryptedStuff = doDataEncryption($post_password);
 
-                        $post_password = $cryptedStuff['encrypted'];
+                        $encrypted_password = $cryptedStuff['encrypted'];
 
                         // Create sharekeys for users
                         storeUsersShareKey(
@@ -997,7 +1031,7 @@ if (null !== $post_type) {
                             $SETTINGS
                         );
                     } else {
-                        $post_password = '';
+                        $encrypted_password = '';
                     }
 
                     // ---Manage tags
@@ -1030,7 +1064,7 @@ if (null !== $post_type) {
                         array(
                             'label' => $post_label,
                             'description' => $post_description,
-                            'pw' => $post_password,
+                            'pw' => $encrypted_password,
                             'email' => $post_email,
                             'login' => $post_login,
                             'url' => $post_url,
@@ -1045,7 +1079,6 @@ if (null !== $post_type) {
                         $post_item_id
                     );
 
-                    //TODO : REVOIR CETTE PARTIE
                     // update fields
                     if (isset($SETTINGS['item_extra_fields']) === true
                         && (int) $SETTINGS['item_extra_fields'] === 1
@@ -1239,9 +1272,10 @@ if (null !== $post_type) {
                         }
                     }
 
+                    // TODO - a revoir
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
-                        && $SETTINGS['enable_delete_after_consultation'] === '1'
+                        && (int) $SETTINGS['enable_delete_after_consultation'] === 1
                     ) {
                         // check if elem exists in Table. If not add it or update it.
                         DB::query(
@@ -1254,7 +1288,7 @@ if (null !== $post_type) {
                         if (DB::count() === 0) {
                             // No automatic deletion for this item
                             if (empty($post_to_be_deleted_after_date) === false
-                                || $post_to_be_deleted_after_x_views > 0
+                                || (int) $post_to_be_deleted_after_x_views > 0
                             ) {
                                 // Automatic deletion to be added
                                 DB::insert(
@@ -1262,8 +1296,11 @@ if (null !== $post_type) {
                                     array(
                                         'item_id' => $post_item_id,
                                         'del_enabled' => 1,
-                                        'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                        'del_type' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                            1 : 2, //1 = numeric : 2 = date
+                                        'del_value' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                            (int) $post_to_be_deleted_after_x_views :
+                                            dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         )
                                 );
                                 // update LOG
@@ -1274,82 +1311,101 @@ if (null !== $post_type) {
                                     $_SESSION['user_id'],
                                     'at_modification',
                                     $_SESSION['login'],
-                                    'at_automatic_del : '.$post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : $post_to_be_deleted_after_date
+                                    'at_automatic_del : enabled'
                                 );
                             }
                         } else {
                             // Automatic deletion exists for this item
                             if (empty($post_to_be_deleted_after_date) === false
-                                && $post_to_be_deleted_after_x_views > 0
+                                || (int) $post_to_be_deleted_after_x_views > 0
                             ) {
                                 // Update automatic deletion
                                 DB::update(
                                     prefixTable('automatic_del'),
                                     array(
-                                        'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                        'del_type' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                            1 : 2, //1 = numeric : 2 = date
+                                        'del_value' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                            $post_to_be_deleted_after_x_views :
+                                            dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         ),
                                     'item_id = %i',
                                     $post_item_id
                                 );
                             } else {
                                 // delete automatic deleteion for this item
-                                DB::delete(prefixTable('automatic_del'), 'item_id = %i', $post_item_id);
+                                DB::delete(
+                                    prefixTable('automatic_del'),
+                                    'item_id = %i',
+                                    $post_item_id
+                                );
+
+                                // update LOG
+                                logItems(
+                                    $SETTINGS,
+                                    $post_item_id,
+                                    $post_label,
+                                    $_SESSION['user_id'],
+                                    'at_modification2',
+                                    $_SESSION['login'],
+                                    'at_automatic_del : disabled'
+                                );
                             }
-                            // update LOG
-                            logItems(
-                                $SETTINGS,
-                                $post_item_id,
-                                $post_label,
-                                $_SESSION['user_id'],
-                                'at_modification',
-                                $_SESSION['login'],
-                                'at_automatic_del : '.$post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : $post_to_be_deleted_after_date
-                            );
                         }
                     }
 
                     // get readable list of restriction
                     $listOfRestricted = $oldRestrictionList = '';
+                    $arrayOfUsersRestriction = array();
+                    $arrayOfUsersIdRestriction = array();
+                    $diffUsersRestiction = array();
+                    $diffRolesRestiction = array();
                     if (is_array($post_restricted_to) === true
                         && count($post_restricted_to) > 0
                         && isset($SETTINGS['restricted_to']) === true
                         && $SETTINGS['restricted_to'] === '1'
                     ) {
-                        foreach ($post_restricted_to as $userRest) {
-                            if (empty($userRest) === false) {
-                                $dataTmp = DB::queryfirstrow('SELECT login FROM '.prefixTable('users').' WHERE id= %i', $userRest);
-                                if (empty($listOfRestricted)) {
-                                    $listOfRestricted = $dataTmp['login'];
-                                } else {
-                                    $listOfRestricted .= ';'.$dataTmp['login'];
-                                }
+                        foreach ($post_restricted_to as $userId) {
+                            if (empty($userId) === false) {
+                                $dataTmp = DB::queryfirstrow(
+                                    'SELECT id, name, lastname
+                                    FROM '.prefixTable('users').'
+                                    WHERE id= %i',
+                                    $userId
+                                );
+
+                                // Add to array
+                                array_push(
+                                    $arrayOfUsersRestriction,
+                                    $dataTmp['name'].' '.$dataTmp['lastname']
+                                );
+                                array_push(
+                                    $arrayOfUsersIdRestriction,
+                                    $dataTmp['id']
+                                );
                             }
                         }
                     }
-                    if ($data['restricted_to'] !== $post_restricted_to && $SETTINGS['restricted_to'] === '1') {
-                        if (empty($data['restricted_to']) === false) {
-                            foreach (explode(';', $data['restricted_to']) as $userRest) {
-                                if (empty($userRest) === false) {
-                                    $dataTmp = DB::queryfirstrow('SELECT login FROM '.prefixTable('users').' WHERE id= '.$userRest);
-                                    if (empty($oldRestrictionList) === true) {
-                                        $oldRestrictionList = $dataTmp['login'];
-                                    } else {
-                                        $oldRestrictionList .= ';'.$dataTmp['login'];
-                                    }
-                                }
-                            }
-                        }
+                    if ((int) $SETTINGS['restricted_to'] === 1) {
+                        $diffUsersRestiction = array_diff(
+                            explode(';', $data['restricted_to']),
+                            $arrayOfUsersIdRestriction
+                        );
                     }
+
                     // Manage retriction_to_roles
                     if (is_array($post_restricted_to_roles) === true
                         && count($post_restricted_to_roles) > 0
                         && isset($SETTINGS['restricted_to_roles']) === true
-                        && $SETTINGS['restricted_to_roles'] === '1'
+                        && (int) $SETTINGS['restricted_to_roles'] === 1
                     ) {
+                        // Init
+                        $arrayOfRestrictionRolesOld = array();
+                        $arrayOfRestrictionRoles = array();
+
                         // get values before deleting them
                         $rows = DB::query(
-                            'SELECT t.title
+                            'SELECT t.title, t.id AS id
                             FROM '.prefixTable('roles_title').' as t
                             INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (t.id=r.role_id)
                             WHERE r.item_id = %i
@@ -1357,25 +1413,24 @@ if (null !== $post_type) {
                             $post_item_id
                         );
                         foreach ($rows as $record) {
-                            if (empty($oldRestrictionList) === true) {
-                                $oldRestrictionList = $record['title'];
-                            } else {
-                                $oldRestrictionList .= ';'.$record['title'];
-                            }
+                            // Add to array
+                            array_push(
+                                $arrayOfRestrictionRolesOld,
+                                $record['title']
+                            );
                         }
                         // delete previous values
-                        DB::delete(prefixTable('restriction_to_roles'), 'item_id = %i', $post_item_id);
+                        DB::delete(
+                            prefixTable('restriction_to_roles'),
+                            'item_id = %i',
+                            $post_item_id
+                        );
 
                         // add roles for item
                         if (is_array($post_restricted_to_roles) === true
                             && count($post_restricted_to_roles) > 0
                         ) {
                             foreach ($post_restricted_to_roles as $role) {
-                                if (count($role) > 1) {
-                                    $role = $role[1];
-                                } else {
-                                    $role = $role[0];
-                                }
                                 DB::insert(
                                     prefixTable('restriction_to_roles'),
                                     array(
@@ -1389,19 +1444,44 @@ if (null !== $post_type) {
                                     WHERE id = %i',
                                     $role
                                 );
-                                if (empty($listOfRestricted)) {
-                                    $listOfRestricted = $dataTmp['title'];
-                                } else {
-                                    $listOfRestricted .= ';'.$dataTmp['title'];
-                                }
+
+                                // Add to array
+                                array_push(
+                                    $arrayOfRestrictionRoles,
+                                    $dataTmp['title']
+                                );
+                            }
+
+                            if ((int) $SETTINGS['restricted_to'] === 1) {
+                                $diffRolesRestiction = array_diff(
+                                    $arrayOfRestrictionRoles,
+                                    $arrayOfRestrictionRolesOld
+                                );
                             }
                         }
                     }
                     // Update CACHE table
                     updateCacheTable('update_value', $SETTINGS, $post_item_id);
-
                     // Log all modifications done
-                    /*LABEL */
+                    // RESTRICTIONS
+                    if (count($diffRolesRestiction) > 0 || count($diffUsersRestiction) > 0) {
+                        logItems(
+                            $SETTINGS,
+                            $post_item_id,
+                            $post_label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_restriction : '.
+                                (count($diffUsersRestiction) > 0 ?
+                                    implode(', ', $arrayOfUsersRestriction).
+                                    (count($diffRolesRestiction) > 0 ? ', ' : '') :
+                                    ''
+                                ).(count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
+                        );
+                    }
+
+                    // LABEL
                     if ($data['label'] !== $post_label) {
                         logItems(
                             $SETTINGS,
@@ -1413,7 +1493,7 @@ if (null !== $post_type) {
                             'at_label : '.$data['label'].' => '.$post_label
                         );
                     }
-                    /*LOGIN */
+                    // LOGIN
                     if ($data['login'] !== $post_login) {
                         logItems(
                             $SETTINGS,
@@ -1425,7 +1505,7 @@ if (null !== $post_type) {
                             'at_login : '.$data['login'].' => '.$post_login
                         );
                     }
-                    /*EMAIL */
+                    // EMAIL
                     if ($data['email'] !== $post_email) {
                         logItems(
                             $SETTINGS,
@@ -1437,7 +1517,7 @@ if (null !== $post_type) {
                             'at_email : '.$data['email'].' => '.$post_email
                         );
                     }
-                    /*URL */
+                    // URL
                     if ($data['url'] !== $post_url && $post_url !== 'http://') {
                         logItems(
                             $SETTINGS,
@@ -1449,7 +1529,7 @@ if (null !== $post_type) {
                             'at_url : '.$data['url'].' => '.$post_url
                         );
                     }
-                    /*DESCRIPTION */
+                    // DESCRIPTION
                     if ($data['description'] !== $post_description) {
                         logItems(
                             $SETTINGS,
@@ -1461,7 +1541,7 @@ if (null !== $post_type) {
                             'at_description'
                         );
                     }
-                    /*FOLDER */
+                    // FOLDER
                     if ($data['id_tree'] !== $post_folder_id) {
                         // Get name of folders
                         $dataTmp = DB::query('SELECT title FROM '.prefixTable('nested_tree').' WHERE id IN %li', array($data['id_tree'], $post_folder_id));
@@ -1478,52 +1558,7 @@ if (null !== $post_type) {
                         // ask for page reloading
                         $reloadPage = true;
                     }
-                    /*PASSWORD */
-                    if ((int) $post_salt_key_set === 1
-                        && isset($post_salt_key_set) === true
-                        && (int) $post_folder_is_personal === 1
-                        && isset($post_folder_is_personal) === true
-                    ) {
-                        $oldPw = $data['pw'];
-                        $oldPwClear = cryption(
-                            $oldPw,
-                            $_SESSION['user_settings']['session_psk'],
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    } else {
-                        $oldPw = $data['pw'];
-                        $oldPwClear = cryption(
-                            $oldPw,
-                            '',
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    }
-                    if ($sentPw !== $oldPwClear['string']) {
-                        logItems(
-                            $SETTINGS,
-                            $post_item_id,
-                            $post_label,
-                            $_SESSION['user_id'],
-                            'at_modification',
-                            $_SESSION['login'],
-                            'at_pw :'.$oldPw,
-                            'defuse'
-                        );
-                    }
-                    /*RESTRICTIONS */
-                    if ($data['restricted_to'] !== $listOfRestricted) {
-                        logItems(
-                            $SETTINGS,
-                            $post_item_id,
-                            $post_label,
-                            $_SESSION['user_id'],
-                            'at_modification',
-                            $_SESSION['login'],
-                            'at_restriction : '.$oldRestrictionList.' => '.$listOfRestricted
-                        );
-                    }
+
                     // Reload new values
                     $dataItem = DB::queryfirstrow(
                         'SELECT *
@@ -1558,6 +1593,8 @@ if (null !== $post_type) {
                             }
                         }
                     }
+
+                    // TODO
                     // decrypt PW
                     if (empty($dataReceived['salt_key'])) {
                         $encrypt = cryption(
@@ -2356,7 +2393,7 @@ if (null !== $post_type) {
                     );
                     if (DB::count() > 0) {
                         foreach ($rows_tmp as $row) {
-                            array_push($arrCatList, $row['id_category']);
+                            array_push($arrCatList, (int) $row['id_category']);
                         }
 
                         // get fields for this Item
@@ -2726,7 +2763,7 @@ if (null !== $post_type) {
                     array_push(
                         $listOptionsForRoles,
                         array(
-                            'id' => $record['role_id'],
+                            'id' => (int) $record['role_id'],
                             'title' => $record['title'],
                         )
                     );
@@ -2744,7 +2781,7 @@ if (null !== $post_type) {
                                 array_push(
                                     $listOptionsForUsers,
                                     array(
-                                        'id' => $record2['id'],
+                                        'id' => (int) $record2['id'],
                                         'login' => $record2['login'],
                                         'name' => $record2['name'].' '.$record2['lastname'],
                                         'email' => $record2['email'],
@@ -2754,7 +2791,7 @@ if (null !== $post_type) {
                         }
                     }
                 }
-                //print_r($listOptionsForUsers);
+
                 $returnArray['users_list'] = $listOptionsForUsers;
                 $returnArray['roles_list'] = $listOptionsForRoles;
 
@@ -5517,20 +5554,26 @@ if (null !== $post_type) {
                     $detail = '';
                     if ($reason[0] === 'at_pw') {
                         $action = langHdl($reason[0]);
-                    /*if (empty($reason[1]) === true) {
-                        $detail = langHdl('no_previous_value');
-                    } else {
-                        $detail = langHdl('previous_value').': '.$reason[1];
-                    }*/
+                    } elseif ($reason[0] === 'at_description') {
+                        $action = langHdl('description_has_changed');
                     } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
                         if ($reason[0] === 'at_moved') {
                             $tmp = explode(' -> ', $reason[1]);
-                            $detail = langHdl('from').' <b>'.$tmp[0].'</b> '.langHdl('to').' <b>'.$tmp[1].' </b>';
-                        } elseif ($reason[0] === 'at_email') {
+                            $detail = langHdl('from').' <span class="font-weight-light">'.$tmp[0].'</span> '.langHdl('to').' <span class="font-weight-light">'.$tmp[1].' </span>';
+                        } elseif ($reason[0] === 'at_field') {
                             $tmp = explode(' => ', $reason[1]);
-                            $detail = langHdl('from').' <b>'.$tmp[0].'</b> '.langHdl('to').' <b>'.$tmp[1].' </b>';
-                        } elseif ($reason[0] === 'at_description') {
-                            $detail = langHdl('description_has_changed');
+                            if (count($tmp) > 1) {
+                                $detail = '<b>'.trim($tmp[0]).'</b> | '.langHdl('previous_value').': <span class="font-weight-light">'.trim($tmp[1]).'</span>';
+                            } else {
+                                $detail = trim($reason[1]);
+                            }
+                        } elseif ($reason[0] === 'at_restriction' || $reason[0] === 'at_email') {
+                            $tmp = explode(' => ', $reason[1]);
+                            $detail = empty(trim($tmp[0])) === true ?
+                                langHdl('no_previous_value') :
+                                langHdl('previous_value').': <span class="font-weight-light">'.$tmp[0].' </span>';
+                        } elseif ($reason[0] === 'at_automatic_del') {
+                            $detail = langHdl($reason[1]);
                         } else {
                             $detail = $reason[0];
                         }

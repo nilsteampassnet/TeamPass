@@ -15,6 +15,8 @@
  */
 
 return array(
+    'disabled' => 'Disabled',
+    'enabled' => 'Enabled',
     'confirmation_seems_wrong' => 'Confirmation seems wrong, please correct',
     'i_cannot_remember' => 'I cannot remember',
     'i_cannot_remember_info' => 'This action is without rollback. It will clear the passwords stored inside your personal items. Items will not be deleted but only their passwords. If you cannot remember your personal saltkey then it is the only option.',
