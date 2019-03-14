@@ -41,10 +41,8 @@ header('Cache-Control: no-cache, must-revalidate');
 // Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
-// Prepare Encryption class calls
-
 /**
- * Undocumented function.
+ * Convert language code to string.
  *
  * @param string $string String to get
  *
@@ -52,13 +50,17 @@ use PHP_Crypt\PHP_Crypt as PHP_Crypt;
  */
 function langHdl($string)
 {
+    // Clean the string to convert
+    $string = trim($string);
+
     if (empty($string) === true || isset($_SESSION['teampass']['lang'][$string]) === false) {
         // Manage error
+        return 'ERROR in language strings!';
     } else {
         return str_replace(
             array('"', "'"),
             array('&quot;', '&apos;'),
-            $_SESSION['teampass']['lang'][trim($string)]
+            $_SESSION['teampass']['lang'][$string]
         );
     }
 }
@@ -3144,7 +3146,7 @@ function encryptFile($fileInName, $fileInPath)
     include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
 
     // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+    $cipher = new Crypt_AES();
 
     // Generate an object key
     $objectKey = uniqidReal(32);
@@ -3297,4 +3299,27 @@ function storeUsersShareKey(
             );
         }
     }
+}
+
+/**
+ * Is this string base64 encoded?
+ *
+ * @param string $str Encoded string?
+ *
+ * @return bool
+ */
+function isBase64($str)
+{
+    $str = (string) trim($str);
+
+    if (!isset($str[0])) {
+        return false;
+    }
+
+    $base64String = (string) base64_decode($str, true);
+    if ($base64String && base64_encode($base64String) === $str) {
+        return true;
+    }
+
+    return false;
 }

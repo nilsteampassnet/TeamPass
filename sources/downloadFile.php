@@ -73,7 +73,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 
     // get file key
     $file_info = DB::queryfirstrow(
-        'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
+        'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
         s.share_key AS share_key
         FROM '.prefixTable('files').' AS f
         INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
@@ -90,7 +90,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     );
 
     // Set the filename of the download
-    $filename = $file_info['name'];
+    $filename = base64_decode(basename($file_info['name'], $file_info['extension']));
 
     // Output CSV-specific headers
     header('Pragma: public');
@@ -98,7 +98,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
     header('Cache-Control: private', false);
     header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="'.$filename.'";');
+    header('Content-Disposition: attachment; filename="'.$filename.'.'.$file_info['extension'].'";');
     header('Content-Transfer-Encoding: binary');
 
     // Stream the CSV data

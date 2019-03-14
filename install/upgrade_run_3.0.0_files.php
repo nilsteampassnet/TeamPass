@@ -25,7 +25,6 @@ $_SESSION['db_encoding'] = 'utf8';
 $_SESSION['CPM'] = 1;
 
 // prepare Encryption class calls
-use Defuse\Crypto\Crypto;
 use Defuse\Crypto\File;
 
 require_once '../includes/language/english.php';
@@ -131,9 +130,9 @@ $total = mysqli_num_rows($rows);
 $rows = mysqli_query(
     $db_link,
     'SELECT id, file, status
-    FROM '.$pre."files
-    WHERE status = 'encrypted'
-    LIMIT ".$post_start.', '.$post_nb
+    FROM '.$pre.'files
+    WHERE status != "aes_encryption"
+    LIMIT '.$post_start.', '.$post_nb
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
@@ -143,70 +142,76 @@ if (!$rows) {
 while ($file_info = mysqli_fetch_array($rows)) {
     // Check if is file
     if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']) === true) {
-        // load PhpEncryption library
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+        // Is this file encrypted?
+        // Force all files to be encrypted
+        if ($file_info['status'] === 'encrypted') {
+            // load PhpEncryption library
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
-        // get KEY
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+            // get KEY
+            $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
 
-        // Now decrypt the file
-        $err = '';
-        try {
-            \Defuse\Crypto\File::decryptFile(
-                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
-                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].'.delete',
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-            );
-        } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-            $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-        } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\CryptoException $ex) {
-            $err = $ex;
-        } catch (Defuse\Crypto\Exception\IOException $ex) {
-            $err = $ex;
-        }
-        if (empty($err) === false) {
-            echo $err;
+            // Now decrypt the file
+            $err = '';
+            try {
+                \Defuse\Crypto\File::decryptFile(
+                    $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                    $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].'.delete',
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
+            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
+            }
+
+            // Change the file name variable
+            $file_info['file'] = $file_info['file'].'.delete';
         }
 
         // Encrypt the file
-        $encryptedFile = encryptFile($file_info['file'].'.delete', $SETTINGS['path_to_upload_folder']);
+        $encryptedFile = encryptFile($file_info['file'], $SETTINGS['path_to_upload_folder']);
 
         // Unlink original file
-        unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].'.delete');
+        unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']);
 
         // Store new password in DB
         mysqli_query(
             $db_link,
-            "UPDATE ".$pre."files
+            'UPDATE '.$pre."files
             SET file = '".$encryptedFile['fileHash']."', status = 'aes_encryption'
             WHERE id = ".$file_info['id']
         );
-        
 
         // Insert in DB the new object key for this item by user
         mysqli_query(
             $db_link,
-            "INSERT INTO `".$pre."sharekeys_files` (`increment_id`, `object_id`, `user_id`, `share_key`)
+            'INSERT INTO `'.$pre."sharekeys_files` (`increment_id`, `object_id`, `user_id`, `share_key`)
             VALUES (NULL, '".$file_info['id']."', '".$userId."', '".encryptUserObjectKey($encryptedFile['objectKey'], $userPublicKey)."');"
         );
     } else {
         // remove it
         mysqli_query(
             $db_link,
-            "DELETE ".$pre."files
-            WHERE id = ".$file_info['id']
+            'DELETE '.$pre.'files
+            WHERE id = '.$file_info['id']
         );
     }
 }

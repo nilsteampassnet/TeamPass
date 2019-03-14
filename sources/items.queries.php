@@ -301,8 +301,8 @@ if (null !== $post_type) {
                     $itemInfos['no_complex_check_on_modification'] = 1;
                     $itemInfos['no_complex_check_on_creation'] = 1;
                 } else {
-                    $itemInfos['no_complex_check_on_modification'] = $dataFolderSettings['bloquer_modification'];
-                    $itemInfos['no_complex_check_on_creation'] = $dataFolderSettings['bloquer_creation'];
+                    $itemInfos['no_complex_check_on_modification'] = (int) $dataFolderSettings['bloquer_modification'];
+                    $itemInfos['no_complex_check_on_creation'] = (int) $dataFolderSettings['bloquer_creation'];
                 }
                 // Get folder complexity
                 $folderComplexity = DB::queryfirstrow(
@@ -312,7 +312,7 @@ if (null !== $post_type) {
                     'complex',
                     $post_folder_id
                 );
-                $itemInfos['requested_folder_complexity'] = $folderComplexity['valeur'];
+                $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
 
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
@@ -879,13 +879,13 @@ if (null !== $post_type) {
                     WHERE id = %i',
                     $post_folder_id
                 );
-                $itemInfos['personal_folder'] = $dataFolderSettings['personal_folder'];
+                $itemInfos['personal_folder'] = (int) $dataFolderSettings['personal_folder'];
                 if ($itemInfos['personal_folder'] === '1') {
                     $itemInfos['no_complex_check_on_modification'] = 1;
                     $itemInfos['no_complex_check_on_creation'] = 1;
                 } else {
-                    $itemInfos['no_complex_check_on_modification'] = $dataFolderSettings['bloquer_modification'];
-                    $itemInfos['no_complex_check_on_creation'] = $dataFolderSettings['bloquer_creation'];
+                    $itemInfos['no_complex_check_on_modification'] = (int) $dataFolderSettings['bloquer_modification'];
+                    $itemInfos['no_complex_check_on_creation'] = (int) $dataFolderSettings['bloquer_creation'];
                 }
                 // Get folder complexity
                 $folderComplexity = DB::queryfirstrow(
@@ -895,7 +895,7 @@ if (null !== $post_type) {
                     'complex',
                     $post_folder_id
                 );
-                $itemInfos['requested_folder_complexity'] = $folderComplexity['valeur'];
+                $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
 
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
@@ -966,7 +966,7 @@ if (null !== $post_type) {
                 ) {
                     // Get existing values
                     $data = DB::queryfirstrow(
-                        'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
+                        'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
                         i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                         u.login as user_login, u.email as user_email
                         FROM '.prefixTable('items').' as i
@@ -1102,25 +1102,13 @@ if (null !== $post_type) {
                                     // The data for this foeld doesn't exist
                                     // It has to be added
 
-                                    // Should we encrypt the data
-                                    if ((int) $dataTmpCat['encrypted_data'] === 1) {
-                                        $cryptedStuff = doDataEncryption($field['value']);
-                                        $encrypt['string'] = $cryptedStuff['encrypted'];
-                                        $encrypt['type'] = TP_ENCRYPTION_NAME;
-
-                                        // Create sharekeys for users
-                                        storeUsersShareKey(
-                                            prefixTable('sharekeys_fields'),
-                                            $post_folder_is_personal,
-                                            $post_folder_id,
-                                            $dataTmpCat['field_item_id'],
-                                            $cryptedStuff['objectKey'],
-                                            $SETTINGS
-                                        );
-                                    } else {
-                                        $encrypt['string'] = $field['value'];
-                                        $encrypt['type'] = 'not_set';
-                                    }
+                                    // Perform new query
+                                    $dataTmpCat = DB::queryFirstRow(
+                                        'SELECT id, title, encrypted_data, masked
+                                        FROM '.prefixTable('categories').'
+                                        WHERE id = %i',
+                                        $field['id']
+                                    );
 
                                     // store field text
                                     DB::insert(
@@ -1128,11 +1116,40 @@ if (null !== $post_type) {
                                         array(
                                             'item_id' => $post_item_id,
                                             'field_id' => $field['id'],
-                                            'data' => $encrypt['string'],
+                                            'data' => $field['value'],
                                             'data_iv' => '',
-                                            'encryption_type' => $encrypt['type'],
+                                            'encryption_type' => 'not_set',
                                         )
                                     );
+
+                                    $newId = DB::insertId();
+
+                                    // Should we encrypt the data
+                                    if ((int) $dataTmpCat['encrypted_data'] === 1) {
+                                        $cryptedStuff = doDataEncryption($field['value']);
+
+                                        // Create sharekeys for users
+                                        storeUsersShareKey(
+                                            prefixTable('sharekeys_fields'),
+                                            $post_folder_is_personal,
+                                            $post_folder_id,
+                                            $newId,
+                                            $cryptedStuff['objectKey'],
+                                            $SETTINGS
+                                        );
+
+                                        // update value
+                                        DB::update(
+                                            prefixTable('categories_items'),
+                                            array(
+                                                'data' => $cryptedStuff['encrypted'],
+                                                'data_iv' => '',
+                                                'encryption_type' => TP_ENCRYPTION_NAME,
+                                            ),
+                                            'id = %i',
+                                            $newId
+                                        );
+                                    }
 
                                     // update LOG
                                     logItems(
@@ -1272,7 +1289,6 @@ if (null !== $post_type) {
                         }
                     }
 
-                    // TODO - a revoir
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
                         && (int) $SETTINGS['enable_delete_after_consultation'] === 1
@@ -1296,9 +1312,9 @@ if (null !== $post_type) {
                                     array(
                                         'item_id' => $post_item_id,
                                         'del_enabled' => 1,
-                                        'del_type' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                        'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                        'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
                                             (int) $post_to_be_deleted_after_x_views :
                                             dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         )
@@ -1323,9 +1339,9 @@ if (null !== $post_type) {
                                 DB::update(
                                     prefixTable('automatic_del'),
                                     array(
-                                        'del_type' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                        'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => is_numeric($post_to_be_deleted_after_x_views) === true ?
+                                        'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
                                             $post_to_be_deleted_after_x_views :
                                             dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         ),
@@ -1388,7 +1404,9 @@ if (null !== $post_type) {
                     }
                     if ((int) $SETTINGS['restricted_to'] === 1) {
                         $diffUsersRestiction = array_diff(
-                            explode(';', $data['restricted_to']),
+                            empty($data['restricted_to']) === false ?
+                                explode(';', $data['restricted_to']) :
+                                array(),
                             $arrayOfUsersIdRestriction
                         );
                     }
@@ -1462,7 +1480,9 @@ if (null !== $post_type) {
                     }
                     // Update CACHE table
                     updateCacheTable('update_value', $SETTINGS, $post_item_id);
-                    // Log all modifications done
+
+                    //---- Log all modifications done ----
+
                     // RESTRICTIONS
                     if (count($diffRolesRestiction) > 0 || count($diffUsersRestiction) > 0) {
                         logItems(
@@ -1506,7 +1526,7 @@ if (null !== $post_type) {
                         );
                     }
                     // EMAIL
-                    if ($data['email'] !== $post_email) {
+                    if (strcmp($data['email'], $post_email) !== 0) {
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1530,7 +1550,7 @@ if (null !== $post_type) {
                         );
                     }
                     // DESCRIPTION
-                    if ($data['description'] !== $post_description) {
+                    if (strcmp(md5($data['description']), md5($post_description)) !== 0) {
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1557,6 +1577,18 @@ if (null !== $post_type) {
                         );
                         // ask for page reloading
                         $reloadPage = true;
+                    }
+                    // ANYONE_CAN_MODIFY
+                    if ($post_anyone_can_modify !== $data['anyone_can_modify']) {
+                        logItems(
+                            $SETTINGS,
+                            $post_item_id,
+                            $post_label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_anyoneconmodify : '.((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
+                        );
                     }
 
                     // Reload new values
@@ -2057,7 +2089,7 @@ if (null !== $post_type) {
 
             $arrData = array();
             // return ID
-            $arrData['id'] = $post_id;
+            $arrData['id'] = (int) $post_id;
             $arrData['id_user'] = API_USER_ID;
             $arrData['author'] = 'API';
 
@@ -2131,7 +2163,7 @@ if (null !== $post_type) {
                 if ($user['id'] === $dataItem['id_user']) {
                     $arrData['author'] = $user['login'];
                     $arrData['author_email'] = $user['email'];
-                    $arrData['id_user'] = $dataItem['id_user'];
+                    $arrData['id_user'] = (int) $dataItem['id_user'];
                 }
 
                 // Get restriction list for users
@@ -2345,7 +2377,7 @@ if (null !== $post_type) {
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = $listRestrictionRoles;
                 $arrData['tags'] = $tags;
-                $arrData['folder'] = $dataItem['id_tree'];
+                $arrData['folder'] = (int) $dataItem['id_tree'];
 
                 if (isset($SETTINGS['enable_server_password_change'])
                     && $SETTINGS['enable_server_password_change'] === '1') {
@@ -2489,7 +2521,7 @@ if (null !== $post_type) {
                     if (DB::count() > 0) {
                         $arrData['to_be_deleted'] = $dataDelete['del_value'];
                     }
-                    $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
+                    $arrData['to_be_deleted_type'] = (int) $dataDelete['del_type'];
 
                     // Now delete if required
                     if ($dataDelete['del_enabled'] === '1' || intval($arrData['id_user']) !== intval($_SESSION['user_id'])) {
@@ -2708,18 +2740,18 @@ if (null !== $post_type) {
                 $rows = DB::query(
                     'SELECT id, name, file, extension, size
                     FROM '.prefixTable('files').'
-                    WHERE id_item=%i',
+                    WHERE id_item = %i AND confirmed = 1',
                     $post_id
                 );
                 foreach ($rows as $record) {
                     array_push(
                         $attachments,
                         array(
-                            'icon' => fileFormatImage($record['extension']),
+                            'icon' => fileFormatImage(strtolower($record['extension'])),
                             'filename' => basename($record['name'], '.'.$record['extension']),
                             'extension' => $record['extension'],
                             'size' => formatSizeUnits($record['size']),
-                            'is_image' => in_array($record['extension'], TP_IMAGE_FILE_EXT) === true ? 1 : 0,
+                            'is_image' => in_array(strtolower($record['extension']), TP_IMAGE_FILE_EXT) === true ? 1 : 0,
                             'id' => $record['id'],
                             'key' => $_SESSION['key_tmp'],
                         )
@@ -3753,7 +3785,7 @@ if (null !== $post_type) {
                 'list_to_be_continued' => $listToBeContinued,
                 'items_count' => $counter,
                 'counter_full' => $counter_full,
-                'folder_complexity' => $folderComplexity,
+                'folder_complexity' => (int) $folderComplexity,
                 'categoriesStructure' => $categoriesStructure,
                 'access_level' => $accessLevel,
                 'IsPersonalFolder' => $folderIsPf === true ? 1 : 0,
@@ -5093,63 +5125,41 @@ if (null !== $post_type) {
 
             // get file info
             $file_info = DB::queryfirstrow(
-                'SELECT file, status, type, content, extension, name
-                FROM '.prefixTable('files').'
-                WHERE id=%i',
+                'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
+                f.extension AS extension, f.type AS type,
+                s.share_key AS share_key
+                FROM '.prefixTable('files').' AS f
+                INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                WHERE s.user_id = %i AND s.object_id = %i',
+                $_SESSION['user_id'],
                 $post_id
             );
 
+            //$fileName = basename($file_info['name'], '.'.$file_info['extension']);
+
             // prepare image info
-            $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+            $post_title = basename($file_info['name'], '.'.$file_info['extension']);
+            $post_title = isBase64($post_title) === true ?
+                    base64_decode($post_title) :
+                    $post_title;
             $image_code = $file_info['file'];
             $extension = $file_info['extension'];
             $file_to_display = $SETTINGS['url_to_upload_folder'].'/'.$image_code;
-            $file_suffix = '';
 
-            // should we encrypt/decrypt the file
-            encryptOrDecryptFile(
-                $file_info['file'],
-                $file_info['status'],
-                $SETTINGS
+            // Get image content
+            $fileContent = decryptFile(
+                $image_code,
+                $SETTINGS['path_to_upload_folder'],
+                decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
             );
-
-            // should we decrypt the attachment?
-            if (isset($file_info['status']) === true
-                && $file_info['status'] === 'encrypted'
-            ) {
-                // Delete the file as viewed
-                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension, $SETTINGS);
-
-                // Open the file
-                if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$image_code) === true) {
-                    // Should we encrypt or decrypt?
-                    prepareFileWithDefuse(
-                        'decrypt',
-                        $SETTINGS['path_to_upload_folder'].'/'.$image_code,
-                        $SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension,
-                        $SETTINGS
-                    );
-
-                    // prepare variable
-                    $file_to_display = $file_to_display.'_delete.'.$extension;
-                    $file_suffix = '_delete.'.$extension;
-                }
-            }
 
             // Encrypt data to return
-            echo prepareExchangedData(
-                array(
-                    'error' => '',
-                    'new_file' => $file_to_display,
-                    'filename' => $file_info['name'],
-                    'file_type' => $file_info['type'],
-                    'file_suffix' => $file_suffix,
-                    'file_path' => $SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension,
-                    'image_secure' => isset($SETTINGS['secure_display_image']) === true ? $SETTINGS['secure_display_image'] : '0',
-                    'file_content' => base64_encode(file_get_contents($SETTINGS['path_to_upload_folder'].'/'.$image_code.'_delete.'.$extension)),
-                ),
-                'encode'
-            );
+            echo json_encode(array(
+                'error' => false,
+                'filename' => $post_title.'.'.$file_info['extension'],
+                'file_type' => $file_info['type'],
+                'file_content' => $fileContent,
+            ));
             break;
 
         /*
@@ -5534,9 +5544,9 @@ if (null !== $post_type) {
                 }
 
                 if (in_array(
-                        $record['action'],
-                        array('at_password_copied', 'at_shown', 'at_password_shown')
-                    ) === false
+                    $record['action'],
+                    array('at_password_copied', 'at_shown', 'at_password_shown')
+                ) === false
                 ) {
                     // Prepare avatar
                     if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
@@ -5563,17 +5573,26 @@ if (null !== $post_type) {
                         } elseif ($reason[0] === 'at_field') {
                             $tmp = explode(' => ', $reason[1]);
                             if (count($tmp) > 1) {
-                                $detail = '<b>'.trim($tmp[0]).'</b> | '.langHdl('previous_value').': <span class="font-weight-light">'.trim($tmp[1]).'</span>';
+                                $detail = '<b>'.trim($tmp[0]).'</b> | '.langHdl('previous_value').
+                                    ': <span class="font-weight-light">'.trim($tmp[1]).'</span>';
                             } else {
                                 $detail = trim($reason[1]);
                             }
-                        } elseif ($reason[0] === 'at_restriction' || $reason[0] === 'at_email') {
+                        } elseif ($reason[0] === 'at_restriction' || $reason[0] === 'at_email' || $reason[0] === 'at_login') {
                             $tmp = explode(' => ', $reason[1]);
                             $detail = empty(trim($tmp[0])) === true ?
                                 langHdl('no_previous_value') :
                                 langHdl('previous_value').': <span class="font-weight-light">'.$tmp[0].' </span>';
                         } elseif ($reason[0] === 'at_automatic_del') {
                             $detail = langHdl($reason[1]);
+                        } elseif ($reason[0] === 'at_anyoneconmodify') {
+                            $detail = langHdl($reason[1]);
+                        } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
+                            $tmp = explode(':', $reason[1]);
+                            $tmp = explode('.', $tmp[0]);
+                            $detail = isBase64($tmp[0]) === true ?
+                                base64_decode($tmp[0]).'.'.$tmp[1] :
+                                $tmp[0];
                         } else {
                             $detail = $reason[0];
                         }
@@ -5939,6 +5958,130 @@ if (null !== $post_type) {
             echo prepareExchangedData($data, 'encode');
 
             break;
+
+        /*
+        * CASE
+        * delete_uploaded_files_but_not_saved
+        */
+        case 'delete_uploaded_files_but_not_saved':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => 'key_not_conform',
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // prepare variables
+            $post_item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            // Delete non confirmed files for this item
+            // And related logs
+            $rows = DB::query(
+                'SELECT id, file AS filename
+                FROM '.prefixTable('files').'
+                WHERE id_item = %i AND confirmed = %i',
+                $post_item_id,
+                0
+            );
+            foreach ($rows as $file) {
+                // Delete file in DB
+                DB::delete(
+                    prefixTable('files'),
+                    'id = %i',
+                    $file['id']
+                );
+
+                // Delete file on server
+                unlink($SETTINGS['path_to_upload_folder'].'/'.TP_FILE_PREFIX.base64_decode($file['filename']));
+
+                // Delete related logs
+                $logFile = DB::query(
+                    'SELECT increment_id, raison
+                    FROM '.prefixTable('log_items').'
+                    WHERE id_item = %i AND id_user = %i AND action = %s AND raison LIKE "at_add_file :%"',
+                    $post_item_id,
+                    $_SESSION['user_id'],
+                    'at_modification'
+                );
+                foreach ($logFile as $log) {
+                    $tmp = explode(':', $log['raison']);
+                    if (count($tmp) === 3 && (int) $tmp[2] === (int) $file['id']) {
+                        DB::delete(
+                            prefixTable('log_items'),
+                            'increment_id = %i',
+                            $log['increment_id']
+                        );
+                    }
+                }
+            }
+
+            $data = array(
+                'error' => false,
+                'message' => '',
+            );
+
+            // send data
+            echo prepareExchangedData($data, 'encode');
+
+            break;
+
+        /*
+        * CASE
+        * confirm_attachments
+        */
+        case 'confirm_attachments':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => 'key_not_conform',
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // prepare variables
+            $post_item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            // Confirm attachments
+            $rows = DB::query(
+                'SELECT id, file AS filename
+                FROM '.prefixTable('files').'
+                WHERE id_item = %i AND confirmed = %i',
+                $post_item_id,
+                0
+            );
+            foreach ($rows as $file) {
+                DB::update(
+                    prefixTable('files'),
+                    array(
+                        'confirmed' => 1,
+                    ),
+                    'id_item = %i',
+                    $post_item_id
+                );
+            }
+
+            $data = array(
+                'error' => false,
+                'message' => '',
+            );
+
+            // send data
+            echo prepareExchangedData($data, 'encode');
+
+            break;
     }
 }
 // Build the QUERY in case of GET
@@ -5976,10 +6119,16 @@ function recupDroitCreationSansComplexite($groupe)
     );
     // Check if it's in a personal folder. If yes, then force complexity overhead.
     if ($data['personal_folder'] === '1') {
-        return array('bloquer_modification_complexite' => 1, 'bloquer_creation_complexite' => 1);
+        return array(
+            'bloquer_modification_complexite' => 1,
+            'bloquer_creation_complexite' => 1,
+        );
     }
 
-    return array('bloquer_modification_complexite' => $data['bloquer_modification'], 'bloquer_creation_complexite' => $data['bloquer_creation']);
+    return array(
+        'bloquer_modification_complexite' => (int) $data['bloquer_modification'],
+        'bloquer_creation_complexite' => (int) $data['bloquer_creation'],
+    );
 }
 
 /**

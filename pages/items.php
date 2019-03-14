@@ -123,7 +123,7 @@ echo '
                 <div class="card text-center">
                     <div class="card-header">
                         <div class="card-tools-left">
-                            <button type="button" class="btn btn-gray but-back">
+                            <button type="button" class="btn btn-gray but-back item-edit">
                                 <i class="fas fa-arrow-left"></i>
                             </button>
                         </div>
@@ -131,7 +131,7 @@ echo '
                         <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
                         
                         <div class="card-tools">
-                            <button type="button" class="btn btn-tool btn-sm but-back">
+                            <button type="button" class="btn btn-tool btn-sm but-back item-edit">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -311,7 +311,7 @@ echo '
                                                             <i class="fas fa-calendar"></i>
                                                         </span>
                                                     </div>
-                                                    <input type="date" class="form-control float-right form-item-control track-change" id="form-item-deleteAfterDate">
+                                                    <input type="text" class="form-control float-right form-item-control track-change" id="form-item-deleteAfterDate">
                                                 </div>
                                             </div>
                                         </div>
@@ -395,7 +395,7 @@ echo '
                                                 , $field['is_mandatory'] === '1' ?
                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
                                                 , '</label>
-                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
+                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'" data-change-ongoing="0"></textarea>
                                             </div>';
                                         } else {
                                             echo '
@@ -406,7 +406,7 @@ echo '
                                                     '<span class="fas fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
                                                     , '</span>
                                                 </div>
-                                                <input type="'.$field['type'].'" class="form-control form-item-control form-item-field-custom track-change" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'">
+                                                <input type="'.$field['type'].'" class="form-control form-item-control form-item-field-custom track-change" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'" data-change-ongoing="0">
                                             </div>';
                                         }
                                     }
@@ -435,7 +435,7 @@ echo '
                     </div>
                     <div class="card-footer" id="form-item-buttons">
                         <button type="button" class="btn btn-info" id="form-item-button-save" data-action=""><?php echo langHdl('save'); ?></button>
-                        <button type="button" class="btn btn-default but-back"><?php echo langHdl('cancel'); ?></button>
+                        <button type="button" class="btn btn-default but-back item-edit"><?php echo langHdl('cancel'); ?></button>
                     </div>
                     <!-- /.card-footer -->
                 </div>
@@ -510,10 +510,11 @@ echo '
                                 <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard" id="card-item-pwd-button">
                                     <i class="far fa-copy"></i>
                                 </button>
+                                <button type="button" class="float-right btn btn-outline-info btn-sm mr-1" id="card-item-pwd-show-button">
+                                    <i class="far fa-eye pwd-show-spinner"></i>
+                                </button>
                                 <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
                                 <input id="hidden-item-pwd" type="hidden">
-                                <input type="hidden" id="hid_pw_old" value="">
-                                <input type="hidden" id="pw_shown" value="0">
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('index_login'); ?></b>

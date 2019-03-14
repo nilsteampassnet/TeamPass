@@ -143,8 +143,8 @@
 .icon-badge-text{
     margin: 0;
     position:absolute;
-    top: -8px;
-    right: -9px;
+    top: -10px;
+    left: 9px;
     font-size: .7rem;
     font-weight: 300;
     padding: 2px 4px;
@@ -152,6 +152,16 @@
 
 .icon-badge-far {
     right: -16px;
+}
+
+.icon-badge-text-bottom-right{
+    margin: 0;
+    position:absolute;
+    top: -10px;
+    left: 9px;
+    font-size: .7rem;
+    font-weight: 300;
+    padding: 2px 4px;
 }
 
 .sticky-footer {

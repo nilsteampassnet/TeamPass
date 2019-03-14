@@ -185,10 +185,10 @@ $('#jstree_search')
     });
 
 
-
+// TODO : delete after DEBUG
 store.each(function(value, key) {
-        console.log(key, '==', value)
-    })
+    console.log(key, '==', value)
+})
 
 
 // Is this a short url
@@ -293,6 +293,55 @@ $('#jstree').height(screenHeight - 200);
 $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
     checkboxClass: 'icheckbox_flat-blue',
     radioClass   : 'iradio_flat-blue'
+});
+
+// Manage the password show button
+// including autohide after a couple of seconds
+$(document).on('click', '#card-item-pwd-show-button', function() {
+    if($(this).hasClass('pwd-shown') === false) {
+        $(this).addClass('pwd-shown');
+        // Prepare data to show
+        // Is data crypted?
+        var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $_SESSION['key']; ?>');
+        if (data !== false && data !== undefined) {
+            $('#hidden-item-pwd').val(
+                data.password
+            );
+        }
+        
+        // Change class and show spinner
+        $('.pwd-show-spinner')
+            .removeClass('far fa-eye')
+            .addClass('fas fa-circle-notch fa-spin text-warning');
+            
+
+        $('#card-item-pwd')
+            .html(
+                '<span style="cursor:none;">' +
+                $('#hidden-item-pwd').val()
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;') +
+                '</span>'
+            );
+            
+        // log password is shown
+        itemLog(
+            'at_password_shown',
+            store.get('teampassItem').id,
+            $('#card-item-label').text()
+        );
+
+        // Autohide
+        setTimeout(() => {
+            $(this).removeClass('pwd-shown');
+            $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+            $('.pwd-show-spinner')
+                .removeClass('fas fa-circle-notch fa-spin text-warning')
+                .addClass('far fa-eye');
+        }, 4000);
+    } else {
+        $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+    }
 });
 
 
@@ -654,8 +703,30 @@ function savePreviousView()
     );
 }
 $('.but-back').click(function() {
+    // Is this form the edition one?
+    if ($(this).hasClass('item-edit') === true && userUploadedFile === true) {
+        // Do some operation such as cancel file upload
+        var data = {
+            'item_id' : store.get('teampassItem').id,
+        }
+
+        $.post(
+            "sources/items.queries.php",
+            {
+                type : 'delete_uploaded_files_but_not_saved',
+                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key  : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+            }
+        );
+    }
+    
     // Hide all
-    $('.form-item, .form-item-action,.form-folder-action, .item-details-card, #folders-tree-card').addClass('hidden');
+    $('.form-item, .form-item-action,.form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories')
+        .addClass('hidden');
 
     // Show expected one
     $(store.get('teampassUser').previousView).removeClass('hidden');
@@ -663,13 +734,9 @@ $('.but-back').click(function() {
     // Destroy editor
     if (itemEditor) itemEditor.destroy();
 
-/*
-    #folders-tree-card
-    .form-item-action
-    .form-folder-action
-    .item-details-card
-    .form-item
-*/
+    // Clear pickfiles div
+    $('#form-item-upload-pickfilesList').html('').addClass('hidden');
+    $('.form-item-control').val('');
 });
 
 
@@ -681,15 +748,15 @@ $('.but-back-to-list').click(function() {
 
 
 // Manage if change is performed by user
-$('#form-item .track-change').on('change', function() {
-    if ($(this).val().length > 0) {
+$('#form-item .track-change')
+    .on('change', function() {
         userDidAChange = true;
         $(this).data('change-ongoing', true);
-
-        // SHow button in sticky footer
-        //$('#form-item-buttons').addClass('sticky-footer');
-    }
-});
+    })
+    .on('ifToggled', function() {
+        userDidAChange = true;
+        $(this).data('change-ongoing', true);
+    });
 
 /**
  * Click on perform IMPORT
@@ -1627,17 +1694,18 @@ var showPwdContinuous = function(){
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;') +
                 '</span>'
-            );
+            )
+            .addClass('pwd-shown');
             
         setTimeout('showPwdContinuous("card-item-pwd")', 50);
         // log password is shown
-        if ($("#pw_shown").val() === "0") {
+        if ($('#card-item-pwd').hassClass('pwd-shown') === true) {
             itemLog(
                 'at_password_shown',
                 store.get('teampassItem').id,
                 $('#card-item-label').text()
             );
-            $("#pw_shown").val('1');
+            $('#card-item-pwd').removeClass('pwd-shown');
         }
     } else {
         $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
@@ -1859,16 +1927,15 @@ var uploader_attachments = new plupload.Uploader({
                 randomId        : store.get('teampassApplication').uploadedFileId,
                 files_number    : $('#form-item-hidden-pickFilesNumber').val()
             });
-        },
+        }/*,
         UploadComplete: function(up, files) {
-            //console.log(files)
-            //console.log('----')
             userUploadedFile = true;
+            userDidAChange = true;
             alertify
                 .success('<?php echo langHdl('success'); ?>', 1)
                 .dismissOthers();
             $('#form-item-hidden-pickFilesNumber').val(0);
-        }
+        }*/
     }
 });
 
@@ -1888,8 +1955,13 @@ uploader_attachments.bind('Error', function(up, err) {
     up.refresh(); // Reposition Flash/Silverlight
 });
 uploader_attachments.bind('FilesAdded', function(up, file) {
+    userUploadedFile = true;
     $('#upload-file_' + file.id + '')
         .html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
+    alertify
+            .success('<?php echo langHdl('success'); ?>', 1)
+            .dismissOthers();
+        $('#form-item-hidden-pickFilesNumber').val(0);
 });
 
 $("#form-item-upload-pickfiles").click(function(e) {
@@ -2011,7 +2083,8 @@ $('#form-item-button-save').click(function() {
             });
         }
     });
-
+    console.log('CHANGED FIELDS')
+console.log(arrayQuery);
 
     // Do checks
     if (arrayQuery.length > 0) {
@@ -2088,10 +2161,11 @@ $('#form-item-button-save').click(function() {
                     'id' : $(this).data('field-name'),
                     'value' : $(this).val(),
                 });
+                
                 // Mandatory?
-                if ($(this).data('field-mandatory') === 1
+                if (parseInt($(this).data('field-mandatory')) === 1
                     && $(this).val() === ''
-                    && $(this).is('visible') === true
+                    && $('#form-item-field-'+$(this).data('field-name')).hasClass('hidden') === false
                 ) {
                     console.log($(this))
                     errorExit = true;
@@ -2195,6 +2269,19 @@ console.log(data)
                         // Refresh list of items inside the folder
                         ListerItems($('#form-item-folder').val(), '', 0);
 
+                        // Send query to confirm attachments
+                        var data = {
+                            'item_id' : store.get('teampassItem').id,
+                        }
+                        $.post(
+                            "sources/items.queries.php",
+                            {
+                                type : 'confirm_attachments',
+                                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                key  : '<?php echo $_SESSION['key']; ?>'
+                            }
+                        );
+
                         // Inform user
                         alertify
                             .success('<?php echo langHdl('success'); ?>', 1)
@@ -2210,6 +2297,21 @@ console.log(data)
             );
         }
     } else if (userUploadedFile === true) {
+        // Send query to confirm attachments
+        var data = {
+            'item_id' : store.get('teampassItem').id,
+        }
+
+        $.post(
+            "sources/items.queries.php",
+            {
+                type : 'confirm_attachments',
+                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key  : '<?php echo $_SESSION['key']; ?>'
+            }
+        );
+        
+
         // Inform user
         alertify
             .success('<?php echo langHdl('success'); ?>', 1)
@@ -2281,17 +2383,23 @@ function showItemEditForm(selectedFolderId)
         } else {
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
                 .removeClass('hidden');
-            $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action')
+            $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action, #item-details-card-categories')
                 .addClass('hidden');
+            
+            // Initial 'user did a change'
             userDidAChange = false;
+
             // Force update of simplepassmeter
             $('#form-item-password').focus();
             $('#form-item-label').focus();
+
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
+
             // Does this folder contain Custom Fields
             if (store.get('teampassItem').hasCustomCategories.length > 0) {
                 $('#form-item-field').removeClass('hidden');
@@ -3245,7 +3353,7 @@ function proceed_list_update(stop_proceeding)
                     $('.folder_rights_role').wrapAll(optgroup);
                 }
             }
-       );*/
+        );*/
     }
 }
 
@@ -3296,9 +3404,8 @@ function Details(itemDefinition, actionType, hotlink = false)
         var itemOpenEdit    = 0;
         var itemReload      = 0;
     }
-    userDidAChange      = false;
 
-    
+    userDidAChange      = false;    
 
     // Select tab#1
     $('#form-item-nav-pills li:first-child a').tab('show');
@@ -3330,325 +3437,308 @@ function Details(itemDefinition, actionType, hotlink = false)
         );
     }
     
-    // Check if personal SK is needed and set
-    if ((store.get('teampassApplication').personalSaltkeyRequired === 1
-        && store.get('teampassUser').pskDefinedInDatabase !== 1)
-        && itemSk === 1
-    ) {
-        $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
-        $('#div_set_personal_saltkey').dialog('open');
+    // Clear
+    $('#card-item-history')
+        .html('<div class="overlay"><i class="fa fa-refresh fa-spin"></i></div>');
+    
 
-        showPersonalSKDialog();
+    // Prepare data to be sent
+    var data = {
+        'id'                    : itemId,
+        'folder_id'             : itemTreeId,
+        'salt_key_required'     : itemSk,
+        'expired_item'          : itemExpired,
+        'restricted'            : itemRestricted,
+        'folder_access_level'   : store.get('teampassItem').hasAccessLevel,
+        'page'                  : 'items'
+    };
 
-        // Clear ongoing request status
-        requestRunning = false;
+    console.log("SEND");
+    console.log(data);
 
-        // Finished
-        return false;
-    } else if ((store.get('teampassApplication').personalSaltkeyRequired === 0 || store.get('teampassApplication').personalSaltkeyRequired === undefined)
-        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassUser').pskDefinedInDatabase === 1)
-    ) {
-        // Clear
-        $('#card-item-history')
-            .html('<div class="overlay"><i class="fa fa-refresh fa-spin"></i></div>');
-        
-
-        // Prepare data to be sent
-        var data = {
-            'id'                    : itemId,
-            'folder_id'             : itemTreeId,
-            'salt_key_required'     : itemSk,
-            'expired_item'          : itemExpired,
-            'restricted'            : itemRestricted,
-            'folder_access_level'   : store.get('teampassItem').hasAccessLevel,
-            'page'                  : 'items'
-        };
-
-        console.log("SEND");
-        console.log(data);
-
-        //Send query
-        $.post(
-            'sources/items.queries.php',
-            {
-                type : 'show_details_item',
-                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key  : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                console.log("RECEIVED");
-                console.log(data);
-                
-                if (data.error !== '') {
-                    alertify
-                        .error('<i class="fas fa-ban mr-2"></i>' + data.error, 3)
-                        .dismissOthers();
-                    return false;
-                } else if (data.user_can_modify === 0 && actionType === 'edit') {
-                    alertify
-                        .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
-                        .dismissOthers();
-                    return false;
-                }
-
+    //Send query
+    $.post(
+        'sources/items.queries.php',
+        {
+            type : 'show_details_item',
+            data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+            key  : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            console.log("RECEIVED");
+            console.log(data);
+            
+            if (data.error !== '') {
                 alertify
-                    .success('<?php echo langHdl('success'); ?>', 1)
+                    .error('<i class="fas fa-ban mr-2"></i>' + data.error, 3)
                     .dismissOthers();
-                
-                // Store scroll position
-                userScrollPosition = $(window).scrollTop();
+                return false;
+            } else if (data.user_can_modify === 0 && actionType === 'edit') {
+                alertify
+                    .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
+                    .dismissOthers();
+                return false;
+            }
 
-                // Scroll to top
-                $(window).scrollTop(0);
+            alertify
+                .success('<?php echo langHdl('success'); ?>', 1)
+                .dismissOthers();
+            
+            // Store scroll position
+            userScrollPosition = $(window).scrollTop();
 
-                // SHould we show?
-                if (data.show_detail_option === '1') {
-                    // SHow expiration alert
-                    $('#card-item-expired').removeClass('hidden');
-                } else if (data.show_detail_option === '2') {
-                    // Don't show anything
-                    alertify.alert(
-                        '<?php echo langHdl('warning'); ?>',
-                        '<?php echo langHdl('not_allowed_to_see_pw'); ?>'
-                    );
+            // Scroll to top
+            $(window).scrollTop(0);
 
-                    return false;
-                }
-
-                // Show header info
-                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
-                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
-                
-                // Uncrypt the pwd
-                data.pw = atob(data.pw);
-
-                // Update hidden variables
-                store.update(
-                    'teampassItem',
-                    function (teampassItem)
-                    {
-                        teampassItem.id = parseInt(data.id),
-                        teampassItem.timestamp = data.timestamp,
-                        teampassItem.user_can_modify = data.user_can_modify,
-                        teampassItem.anyone_can_modify = data.anyone_can_modify,
-                        teampassItem.edit_item_salt_key = data.edit_item_salt_key,
-                        teampassItem.id_restricted_to = data.id_restricted_to,
-                        teampassItem.id_restricted_to_roles = data.id_restricted_to_roles
-                    }
+            // SHould we show?
+            if (data.show_detail_option === '1') {
+                // SHow expiration alert
+                $('#card-item-expired').removeClass('hidden');
+            } else if (data.show_detail_option === '2') {
+                // Don't show anything
+                alertify.alert(
+                    '<?php echo langHdl('warning'); ?>',
+                    '<?php echo langHdl('not_allowed_to_see_pw'); ?>'
                 );
-                
-                // Prepare forms
-                $('#folders-tree-card').addClass('hidden');
-                if (actionType === 'show') {
-                    // Prepare Views
-                    $('.item-details-card, #item-details-card-categories').removeClass('hidden');
-                    $('.form-item').addClass('hidden');
 
-                    $('#form-item-suggestion-password').focus();
-                    // If Description empty then remove it
-                    if (data.description === '<p>&nbsp;</p>') {
-                        $('#card-item-description')
-                            .parents('.item-details-card')
-                            .addClass('hidden');
-                    } else {
-                        $('#card-item-description')
-                            .parents('.item-details-card')
-                            .removeClass('hidden');
-                    }
-                } else {
-                    $('.form-item').removeClass('hidden');
-                    $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                return false;
+            }
+
+            // Show header info
+            $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+            $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+            
+            // Uncrypt the pwd
+            data.pw = atob(data.pw);
+
+            // Update hidden variables
+            store.update(
+                'teampassItem',
+                function (teampassItem)
+                {
+                    teampassItem.id = parseInt(data.id),
+                    teampassItem.timestamp = data.timestamp,
+                    teampassItem.user_can_modify = data.user_can_modify,
+                    teampassItem.anyone_can_modify = data.anyone_can_modify,
+                    teampassItem.edit_item_salt_key = data.edit_item_salt_key,
+                    teampassItem.id_restricted_to = data.id_restricted_to,
+                    teampassItem.id_restricted_to_roles = data.id_restricted_to_roles
                 }
-                $('#pwd-definition-size').val(data.pw.length);
-                
-                // Prepare card
-                $('#card-item-label, #form-item-title').html(data.label);
-                $('#form-item-label, #form-item-suggestion-label').val(data.label);
-                $('#card-item-description, #form-item-suggestion-description').html(data.description);
-                if (data.description === '') {
-                    $('#card-item-description').addClass('hidden');
-                } else {
-                    $('#card-item-description').removeClass('hidden');
-                }
-                $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                $('#form-item-password, #form-item-password-confirmation').val(data.pw);
-                $('#card-item-login').html(data.login);
-                $('#form-item-login, #form-item-suggestion-login').val(data.login);
-                
-                $('#card-item-email').text(data.email);
-                $('#form-item-email, #form-item-suggestion-email').val(data.email);
-                $('#card-item-url').html(data.url);
-                $('#form-item-url, #form-item-suggestion-url').val(data.url);
-                $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
-                $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
-                $('#form-item-folder').val(data.folder);
-                $('#form-item-tags').val(data.tags.join(' '));
-                
-                $('#form-item-password').focus();
-                $('#form-item-label').focus();
+            );
+            
+            // Prepare forms
+            $('#folders-tree-card').addClass('hidden');
+            if (actionType === 'show') {
+                // Prepare Views
+                $('.item-details-card, #item-details-card-categories').removeClass('hidden');
+                $('.form-item').addClass('hidden');
 
-                // Editor for description field
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-description'), {
-                            toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
-                        }
-                    )
-                    .then( editor => {
-                        editor.setData(data.description);
-                        $('#form-item-description').val(editor.getData());
-
-                        // On change
-                        editor.model.document.on('change', () => {
-                            if (userDidAChange === false) {
-                                userDidAChange = true;
-                                $('#form-item-description').data('change-ongoing', true);
-
-                                // SHow button in sticky footer
-                                //$('#form-item-buttons').addClass('sticky-footer');
-                            }
-                        });
-
-                        // Define variable name
-                        itemEditor = editor;
-                    } )
-                    .catch( error => {
-                        console.log( error );
-                    });
-                
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-suggestion-description'), {
-                            toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
-                        }
-                    )
-                    .then( editor => {
-                        editor.setData(data.description);
-                        $('#form-item-suggestion-description').val(editor.getData());
-                        itemEditorSuggestion = editor;
-                    } )
-                    .catch( error => {
-                        console.log( error );
-                    });
-
-                //prepare nice list of users / groups
-                var html_users = '',
-                    html_groups = '',
-                    html_tags = '',
-                    html_kbs = '';                   
-
-                $(data.tags).each(function(index, value){
-                    html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\"'+value+'\")"><i class="fas fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
-                });
-                if (html_tags === '') {
-                    $('#card-item-tags').html('<?php echo langHdl('none'); ?>');
-                } else {
-                    $('#card-item-tags').html(html_tags);
-                } 
-
-                $(data.links_to_kbs).each(function(index, value){
-                    html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fas fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
-
-                });
-                if (html_kbs === '') {
-                    $('#card-item-kbs').html('<?php echo langHdl('none'); ?>');
-                } else {
-                    $('#card-item-kbs').html(html_kbs);
-                }
-
-
-                // Manage CATEGORIES / CUSTOM FIELDS
-                if (data.categories.length === 0) {
-                    $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
+                $('#form-item-suggestion-password').focus();
+                // If Description empty then remove it
+                if (data.description === '<p>&nbsp;</p>') {
+                    $('#card-item-description')
+                        .parents('.item-details-card')
                         .addClass('hidden');
-                    $('.no-item-fields').removeClass('hidden');
                 } else {
-                    // 
-                    if (data.template_id === '') {                                
-                        $('#list-group-item-main')
-                            .children('.list-group')
-                            .removeClass('hidden');
-                        $('#card-item-category').removeClass('hidden');
+                    $('#card-item-description')
+                        .parents('.item-details-card')
+                        .removeClass('hidden');
+                }
+            } else {
+                $('.form-item').removeClass('hidden');
+                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+            }
+            $('#pwd-definition-size').val(data.pw.length);
+            
+            // Prepare card
+            $('#card-item-label, #form-item-title').html(data.label);
+            $('#form-item-label, #form-item-suggestion-label').val(data.label);
+            $('#card-item-description, #form-item-suggestion-description').html(data.description);
+            if (data.description === '') {
+                $('#card-item-description').addClass('hidden');
+            } else {
+                $('#card-item-description').removeClass('hidden');
+            }
+            $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+            $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
+            $('#form-item-password, #form-item-password-confirmation').val(data.pw);
+            $('#card-item-login').html(data.login);
+            $('#form-item-login, #form-item-suggestion-login').val(data.login);
+            
+            $('#card-item-email').text(data.email);
+            $('#form-item-email, #form-item-suggestion-email').val(data.email);
+            $('#card-item-url').html(data.url);
+            $('#form-item-url, #form-item-suggestion-url').val(data.url);
+            $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
+            $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
+            $('#form-item-folder').val(data.folder);
+            $('#form-item-tags').val(data.tags.join(' '));
+            
+            $('#form-item-password').focus();
+            $('#form-item-label').focus();
+
+            // Editor for description field
+            ClassicEditor
+                .create(
+                    document.querySelector('#form-item-description'), {
+                        toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
                     }
+                )
+                .then( editor => {
+                    editor.setData(data.description);
+                    $('#form-item-description').val(editor.getData());
 
-                    if (data.fields.length === 0) {
-                        if (actionType === 'show') {
-                            $('#item-details-card-categories').addClass('hidden');
-                            // Refresh last item seen
-                            refreshListLastSeenItems();
-                        } else {
-                            // Show the inputs for EDITION
-                            $(data.categories).each(function(index, category) {
-                                $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
-                            });
+                    // On change
+                    editor.model.document.on('change', () => {
+                        if (userDidAChange === false) {
+                            userDidAChange = true;
+                            $('#form-item-description').data('change-ongoing', true);
+
+                            // SHow button in sticky footer
+                            //$('#form-item-buttons').addClass('sticky-footer');
                         }
-                    } else {
-                        // Show expected categories
-                        $('.no-item-fields, .form-item-category').addClass('hidden');
+                    });
 
-                        // In edition mode, show all fields in expected Categories
+                    // Define variable name
+                    itemEditor = editor;
+                } )
+                .catch( error => {
+                    console.log( error );
+                });
+            
+            ClassicEditor
+                .create(
+                    document.querySelector('#form-item-suggestion-description'), {
+                        toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
+                    }
+                )
+                .then( editor => {
+                    editor.setData(data.description);
+                    $('#form-item-suggestion-description').val(editor.getData());
+                    itemEditorSuggestion = editor;
+                } )
+                .catch( error => {
+                    console.log( error );
+                });
+
+            //prepare nice list of users / groups
+            var html_users = '',
+                html_groups = '',
+                html_tags = '',
+                html_kbs = '';                   
+
+            $(data.tags).each(function(index, value){
+                html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\''+value+'\')"><i class="fas fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
+            });
+            if (html_tags === '') {
+                $('#card-item-tags').html('<?php echo langHdl('none'); ?>');
+            } else {
+                $('#card-item-tags').html(html_tags);
+            } 
+
+            $(data.links_to_kbs).each(function(index, value){
+                html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fas fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
+
+            });
+            if (html_kbs === '') {
+                $('#card-item-kbs').html('<?php echo langHdl('none'); ?>');
+            } else {
+                $('#card-item-kbs').html(html_kbs);
+            }
+
+
+            // Manage CATEGORIES / CUSTOM FIELDS
+            if (data.categories.length === 0) {
+                $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
+                    .addClass('hidden');
+                $('.no-item-fields').removeClass('hidden');
+            } else {
+                // 
+                if (data.template_id === '') {                                
+                    $('#list-group-item-main')
+                        .children('.list-group')
+                        .removeClass('hidden');
+                    $('#card-item-category').removeClass('hidden');
+                }
+
+                if (data.fields.length === 0) {
+                    if (actionType === 'show') {
+                        $('#item-details-card-categories').addClass('hidden');
+                        // Refresh last item seen
+                        refreshListLastSeenItems();
+                    } else {
+                        // Show the inputs for EDITION
                         $(data.categories).each(function(index, category) {
                             $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                         });
+                    }
+                } else {
+                    // Show expected categories
+                    $('.no-item-fields, .form-item-category').addClass('hidden');
 
-                        // Now show expected fields and values
-                        $(data.fields).each(function(index, field) {
-                            // Show cateogry
-                            $('#card-item-category-' + field.parent_id).removeClass('hidden');
+                    // In edition mode, show all fields in expected Categories
+                    $(data.categories).each(function(index, category) {
+                        $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
+                    });
 
-                            // Is data encrypted
-                            // Then base64 decode is required
-                            if (field.encrypted === 1) {
-                                field.value = atob(field.value);
-                            }
+                    // Now show expected fields and values
+                    $(data.fields).each(function(index, field) {
+                        // Show cateogry
+                        $('#card-item-category-' + field.parent_id).removeClass('hidden');
 
-                            // Show field
-                            if (field.masked === 1) {
-                                // Item card
-                                $('#card-item-field-' + field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value")
-                                    .html(
-                                        '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
-                                    )
-                                $('#card-item-field-' + field.id)
-                                    .children(".btn-copy-clipboard-clear")
-                                    .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
-                            } else {
-                                // Show Field
-                                $('#card-item-field-'+field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value")
-                                    .text(field.value);
-                            }
-                            // Item edit form
-                            $('#form-item-field-' + field.id)
-                                .children(".form-item-field-custom")
-                                .val(field.value);
-                        });
+                        // Is data encrypted
+                        // Then base64 decode is required
+                        if (field.encrypted === 1) {
+                            field.value = atob(field.value);
+                        }
 
-                        // Manage template to show
-                        if (data.template_id !== '' && $.inArray(data.template_id, data.categories) > -1) {
-                            // Tick the box in edit mode
-                            $('#template_' + data.template_id).attr('checked', true);
+                        // Show field
+                        if (field.masked === 1) {
+                            // Item card
+                            $('#card-item-field-' + field.id)
+                                .removeClass('hidden')
+                                .children(".card-item-field-value")
+                                .html(
+                                    '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
+                                    '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
+                                )
+                            $('#card-item-field-' + field.id)
+                                .children(".btn-copy-clipboard-clear")
+                                .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
+                        } else {
+                            // Show Field
+                            $('#card-item-field-'+field.id)
+                                .removeClass('hidden')
+                                .children(".card-item-field-value")
+                                .text(field.value);
+                        }
+                        // Item edit form
+                        $('#form-item-field-' + field.id)
+                            .children(".form-item-field-custom")
+                            .val(field.value);
+                    });
 
-                            // Hide existing data as replaced by Category template                                
-                            $('#list-group-item-main, #item-details-card-categories')
-                                .children('.list-group')
-                                .addClass('hidden');
+                    // Manage template to show
+                    if (data.template_id !== '' && $.inArray(data.template_id, data.categories) > -1) {
+                        // Tick the box in edit mode
+                        $('#template_' + data.template_id).iCheck('check');
 
-                            // Move the template in place of item main  
-                            $('#card-item-category-' + data.template_id)
-                                .addClass('fields-to-move')
-                                .detach()
-                                .appendTo('#list-group-item-main');
+                        // Hide existing data as replaced by Category template                                
+                        $('#list-group-item-main, #item-details-card-categories')
+                            .children('.list-group')
+                            .addClass('hidden');
 
-                            // If only one category of Custom Fields
-                            // Then hide the CustomFields div
+                        // Move the template in place of item main  
+                        $('#card-item-category-' + data.template_id)
+                            .addClass('fields-to-move')
+                            .detach()
+                            .appendTo('#list-group-item-main');
+
+                        // If only one category of Custom Fields
+                        // Then hide the CustomFields div
+                        if (actionType === 'show') {
                             if (data.categories.length === 1) {
                                 $('#item-details-card-categories').addClass('hidden');
                             } else {
@@ -3657,157 +3747,156 @@ function Details(itemDefinition, actionType, hotlink = false)
                         }
                     }
                 }
-
-                
-                // Waiting
-                $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
-
-                // Manage clipboard button
-                if (itemClipboard) itemClipboard.destroy();
-                itemClipboard = new Clipboard('.btn-copy-clipboard-clear', {
-                        text: function(e) {
-                            //console.log($(e).data('clipboard-target'))
-                            return ($($(e).data('clipboard-target')).val());
-                        }
-                    })
-                    .on('success', function(e) {
-                        showAlertify(
-                            '<?php echo langHdl('copy_to_clipboard'); ?>',
-                            1,
-                            'top-right',
-                            'message'
-                        );
-                        e.clearSelection();
-                    });
-
-                // Prepare clipboard - COPY LOGIN
-                if (data.login !== '') {
-                    $('#card-item-login-btn').removeClass('hidden');
-                } else {
-                    $('#card-item-login-btn').addClass('hidden');
-                }
-
-                // Prepare clipboard - COPY PASSWORD
-                if (data.pw !== '') {
-                    new Clipboard('#card-item-pwd-button', {
-                        text: function() {
-                            return (data.pw);
-                        }
-                    })
-                    .on('success', function(e) {
-                        itemLog(
-                            'at_password_copied',
-                            e.trigger.dataset.clipboardId,
-                            $('#card-item-label').text()
-                        );
-
-                        showAlertify(
-                            '<?php echo langHdl('copy_to_clipboard'); ?>',
-                            1,
-                            'top-right',
-                            'message'
-                        );
-
-                        e.clearSelection();
-                    });
-                    $('#card-item-pwd-button').removeClass('hidden');
-                } else {
-                    $('#card-item-pwd-button').addClass('hidden');
-                }
-
-                // Prepare clipboard - COPY EMAIL
-                if (data.email !== '') {
-                    $('#card-item-email-btn').removeClass('hidden');
-                } else {
-                    $('#card-item-email-btn').addClass('hidden');
-                }
-
-                // Prepare auto_update info
-                $('#card-item-misc').html('');
-                if (data.auto_update_pwd_frequency !== '0') {
-                    $('#card-item-misc')
-                        .append('<span class="fas fa-shield infotip mr-4" title="<?php
-                            echo langHdl('auto_update_enabled');
-                        ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
-                }
-
-                // Prepare counter
-                $('#card-item-misc')
-                    .append('<span class="icon-badge mr-5"><span class="far fa-eye infotip" title="<?php
-                        echo langHdl('viewed_number');
-                    ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
-
-                //Anyone can modify button
-                if (data.anyone_can_modify === '1') {
-                    console.log($('#form-item-anyoneCanModify'))
-                    $('#form-item-anyoneCanModify').iCheck('check');
-                } else {
-                    $('#form-item-anyoneCanModify').iCheck('uncheck');
-                }
-
-                // Delete after X views
-                if (data.to_be_deleted !== '') {
-                    if (data.to_be_deleted_type === '1') {
-                        $('#form-item-deleteAfterShown').val(data.to_be_deleted);
-                        $('#form-item-deleteAfterDate').val('');
-                    } else {
-                        $('#form-item-deleteAfterShown').val('');
-                        $('#form-item-deleteAfterDate').val(data.to_be_deleted);
-                    }
-                    // Show icon
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-6"><span class="far fa-trash-alt infotip" title="<?php
-                            echo langHdl('automatic_deletion_engaged');
-                        ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
-                }
-
-                // Show Notification engaged
-                if (data.notification_status === true) {
-                    $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php
-                            echo langHdl('notification_engaged');
-                        ?>"></span></span>');
-                } else {
-                    $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php
-                            echo langHdl('notification_not_engaged');
-                        ?>"></span></span>');
-                }
-
-                // reset password shown info
-                $('#pw_shown').val('0');
-                
-                
-
-                if (data.show_details == '1' && data.show_detail_option != '2') {
-                    // continue loading data
-                    showDetailsStep2(itemId, actionType);
-                } else if (data.show_details === '1' && data.show_detail_option === '2') {
-                    $('#item_details_nok').addClass('hidden');
-                    $('#item_details_ok').addClass('hidden');
-                    $('#item_details_expired_full').show();
-                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
-                    $('#div_loading').addClass('hidden');
-                } else {
-                    //Dont show details
-                    $('#item_details_nok').removeClass('hidden');
-                    $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo langHdl('author'); ?>: </b>' + data.author + '<br /><b><?php echo langHdl('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo langHdl('request_access_ot_item'); ?></a></u></div>');
-
-                    $('#reason_to_access').remove();
-                    $('#item_details_nok')
-                        .append('<input type="hidden" id="reason_to_access" value="'+data.id + ',' + data.id_user+'">');
-
-                    // Protect
-                    $('#item_details_ok').addClass('hidden');
-                    $('#item_details_expired').addClass('hidden');
-                    $('#item_details_expired_full').addClass('hidden');
-                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
-                    $('#div_loading').addClass('hidden');
-                }
-                requestRunning = false;
             }
-        );
-    }
+
+            
+            // Waiting
+            $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
+
+            // Manage clipboard button
+            if (itemClipboard) itemClipboard.destroy();
+            itemClipboard = new Clipboard('.btn-copy-clipboard-clear', {
+                    text: function(e) {
+                        //console.log($(e).data('clipboard-target'))
+                        return ($($(e).data('clipboard-target')).val());
+                    }
+                })
+                .on('success', function(e) {
+                    showAlertify(
+                        '<?php echo langHdl('copy_to_clipboard'); ?>',
+                        1,
+                        'top-right',
+                        'message'
+                    );
+                    e.clearSelection();
+                });
+
+            // Prepare clipboard - COPY LOGIN
+            if (data.login !== '') {
+                $('#card-item-login-btn').removeClass('hidden');
+            } else {
+                $('#card-item-login-btn').addClass('hidden');
+            }
+
+            // Prepare clipboard - COPY PASSWORD
+            if (data.pw !== '') {
+                new Clipboard('#card-item-pwd-button', {
+                    text: function() {
+                        return (data.pw);
+                    }
+                })
+                .on('success', function(e) {
+                    itemLog(
+                        'at_password_copied',
+                        e.trigger.dataset.clipboardId,
+                        $('#card-item-label').text()
+                    );
+
+                    showAlertify(
+                        '<?php echo langHdl('copy_to_clipboard'); ?>',
+                        1,
+                        'top-right',
+                        'message'
+                    );
+
+                    e.clearSelection();
+                });
+                $('#card-item-pwd-button').removeClass('hidden');
+            } else {
+                $('#card-item-pwd-button').addClass('hidden');
+            }
+
+            // Prepare clipboard - COPY EMAIL
+            if (data.email !== '') {
+                $('#card-item-email-btn').removeClass('hidden');
+            } else {
+                $('#card-item-email-btn').addClass('hidden');
+            }
+
+            // Prepare auto_update info
+            $('#card-item-misc').html('');
+            if (data.auto_update_pwd_frequency !== '0') {
+                $('#card-item-misc')
+                    .append('<span class="fas fa-shield infotip mr-4" title="<?php
+                        echo langHdl('auto_update_enabled');
+                    ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+            }
+
+            // Show Notification engaged
+            if (data.notification_status === true) {
+                $('#card-item-misc')
+                    .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php
+                        echo langHdl('notification_engaged');
+                    ?>"></span></span>');
+            } else {
+                $('#card-item-misc')
+                    .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php
+                        echo langHdl('notification_not_engaged');
+                    ?>"></span></span>');
+            }
+
+            // Prepare counter
+            $('#card-item-misc')
+                .append('<span class="icon-badge mr-4"><span class="far fa-eye infotip" title="<?php
+                    echo langHdl('viewed_number');
+                ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+
+            // Delete after X views
+            if (data.to_be_deleted !== '') {
+                if (data.to_be_deleted_type === 1) {
+                    $('#form-item-deleteAfterShown').val(data.to_be_deleted);
+                    $('#form-item-deleteAfterDate').val('');
+                } else {
+                    $('#form-item-deleteAfterShown').val('');
+                    $('#form-item-deleteAfterDate').val(data.to_be_deleted);
+                }
+                // Show icon
+                $('#card-item-misc')
+                    .append('<span class="icon-badge mr-5"><span class="far fa-trash-alt infotip" title="<?php
+                        echo langHdl('automatic_deletion_engaged');
+                    ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+            }
+
+            // reset password shown info
+            $('#card-item-pwd').removeClass('pwd-shown');
+
+            //Anyone can modify button
+            if (data.anyone_can_modify === 1) {
+                $('#form-item-anyoneCanModify').iCheck('check');
+            } else {
+                $('#form-item-anyoneCanModify').iCheck('uncheck');
+            }
+            
+            
+
+            if (data.show_details == '1' && data.show_detail_option != '2') {
+                // continue loading data
+                showDetailsStep2(itemId, actionType);
+            } else if (data.show_details === '1' && data.show_detail_option === '2') {
+                $('#item_details_nok').addClass('hidden');
+                $('#item_details_ok').addClass('hidden');
+                $('#item_details_expired_full').show();
+                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
+                $('#div_loading').addClass('hidden');
+            } else {
+                //Dont show details
+                $('#item_details_nok').removeClass('hidden');
+                $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo langHdl('author'); ?>: </b>' + data.author + '<br /><b><?php echo langHdl('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo langHdl('request_access_ot_item'); ?></a></u></div>');
+
+                $('#reason_to_access').remove();
+                $('#item_details_nok')
+                    .append('<input type="hidden" id="reason_to_access" value="'+data.id + ',' + data.id_user+'">');
+
+                // Protect
+                $('#item_details_ok').addClass('hidden');
+                $('#item_details_expired').addClass('hidden');
+                $('#item_details_expired_full').addClass('hidden');
+                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
+                $('#div_loading').addClass('hidden');
+            }
+            requestRunning = false;
+        }
+    );
 }
 
 
@@ -3855,22 +3944,25 @@ function showDetailsStep2(id, actionType)
                         html += 
                         '<i class="fas fa-eye infotip preview-image pointer mr-2" ' +
                         'title="<?php echo langHdl('see'); ?>" ' +
-                        'data-file-id="' + value.id + '" data-file-title="' + value.title + '"></i>';
+                        'data-file-id="' + value.id + '" data-file-title="' +
+                        (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
                     } else {
                         html += 
                         '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' + 
                         '<i class="fas fa-file-download"></i></a>';
                     }
-
+                    
                     html += 
-                        '<span class="font-weight-bold mr-3">' + value.filename + '</span>' +
+                        '<span class="font-weight-bold mr-3">' +
+                        (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '</span>' +
                         '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
-                        '<span class="font-italic">' + value.size + '</span>' +
+                        //'<span class="font-italic">' + value.size + '</span>' +
                         '</div></div>';
 
                     htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +  
                         '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                        '<div class="info-box-content"><span class="info-box-text">' + value.filename + '</span>' +
+                        '<div class="info-box-content"><span class="info-box-text">' +
+                        (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '.' + value.extension + '</span>' +
                         '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
                         '</div></div>';
 
@@ -3885,9 +3977,11 @@ function showDetailsStep2(id, actionType)
                 });
                 $('#card-item-attachments').html(html);
                 $('#form-item-attachments').html(htmlFull);
+                $('#form-item-attachments-zone').removeClass('hidden');
             }
             // Hide loading state
             $('#card-item-attachments').nextAll().addClass('hidden');
+            
             
             // Show restrictions with Badges
             var html_restrictions = '';
@@ -3907,6 +4001,7 @@ function showDetailsStep2(id, actionType)
                 $('#card-item-restrictedto').html(html_restrictions);
             }
             
+            
 
             $('#edit_past_pwds').attr('title', (data.history_of_pwds));//htmlspecialchars_decode 
             $('#edit_past_pwds_div').html((data.history_of_pwds));//htmlspecialchars_decode 
@@ -3923,14 +4018,6 @@ function showDetailsStep2(id, actionType)
                 PreviewImage($(this).attr('href'),$(this).attr('title'));
             });
 
-            /*//Set favourites icon
-            if (data.favourite == '1') {
-                $('#menu_button_add_fav').attr('disabled','disabled');
-                $('#menu_button_del_fav').prop('disabled', false);
-            } else {
-                $('#menu_button_add_fav').prop('disabled', false);
-                $('#menu_button_del_fav').attr('disabled','disabled');
-            }*/
 
             // set indicator if item has change proposal
             if (parseInt(data.has_change_proposal) > 0) {
@@ -3981,15 +4068,37 @@ function showDetailsStep2(id, actionType)
                 );
             }
 
+            // Prepare Select2 inputs
             $('.select2').select2({
                 language: '<?php echo $_SESSION['user_language_code']; ?>'
             });
 
-
+            // Prepare datePicker
             $('#form-item-deleteAfterDate').datepicker({
-                format: '<?php echo str_replace(array('Y', 'M'), array('yyyy', 'mm'), $SETTINGS['date_format']); ?>',
-                language: '<?php echo $_SESSION['user_language_code']; ?>'
+                format:         '<?php echo str_replace(array('Y', 'M'), array('yyyy', 'mm'), $SETTINGS['date_format']); ?>',
+                todayHighlight: true,
+                todayBtn:       true,
+                language:       '<?php echo $_SESSION['user_language_code']; ?>'
             });
+
+
+            // Delete inputs related files uploaded but not confirmed
+            var data = {
+                'item_id' : store.get('teampassItem').id,
+            }
+
+            $.post(
+                "sources/items.queries.php",
+                {
+                    type : 'delete_uploaded_files_but_not_saved',
+                    data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                    key  : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+                }
+            );
          }
      );
 };
@@ -4062,7 +4171,8 @@ PreviewImage = function(fileId) {
         },
         function(data) {
             //decrypt data
-            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            //data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            data = JSON.parse(data);
             console.log(data);
 
             $("#card-item-preview").html('<img id="image_files" src="">');
@@ -4071,11 +4181,7 @@ PreviewImage = function(fileId) {
             imageTag = $('#image_files');
 
             //Set the image src
-            if (data.image_secure === '1') {
-                imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
-            } else {
-                imageTag.attr("src", data.file_path);
-            }
+            imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
 
             alertify
                 .success('<?php echo langHdl('done'); ?>', 1)
@@ -4086,26 +4192,15 @@ PreviewImage = function(fileId) {
             pre.style.textAlign = "center";
             $(pre).append($(imageDialog).html());
             alertify
-                .confirm(pre)
+                .alert(pre)
                 .set({
-                    labels:{
-                        cancel: '<?php echo langHdl('close'); ?>'
-                    },
+                    label: '<?php echo langHdl('close'); ?>',
                     closable: false,
                     padding: false,
                     title: data.filename,
-                    onclose: function() {
-                        // delete file
-                        $.post(
-                            "sources/main.queries.php",
-                            {
-                                type    : "file_deletion",
-                                filename: data.file_path,
-                                key     : "<?php echo $_SESSION['key']; ?>"
-                            }
-                        );
-                    }
-                });
+                    resizable: true,
+                })
+                .resizeTo('90%', '250px');
         }
     );
 };
@@ -4210,7 +4305,7 @@ function getPrivilegesOnItem(val, edit, context)
                 || data.error === ''
             ) {
                 // Do some prepartion
-
+                
                 // Prepare list of users where needed
                 $('#form-item-restrictedto, #form-item-anounce').empty().val('').change();
                 // Users restriction list
@@ -4223,9 +4318,6 @@ function getPrivilegesOnItem(val, edit, context)
 
                     // Prepare list of emailers
                     $('#form-item-anounce').append('<option value="'+value.email+'">'+value.name+'</option>');
-
-                    // Prepare list for CARD
-                    html_restrictions += '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-user fa-sm mr-1"></i>' + value.name + '</span>';
                 });
                 if (data.setting_restricted_to_roles === 1) {
                     //add optgroup
@@ -4237,22 +4329,11 @@ function getPrivilegesOnItem(val, edit, context)
                         $("#form-item-restrictedto")
                             .append('<option value="role_' + value.id + '" class="restriction_is_role">' +
                             value.title + '</option>');
-                        
-                        // Prepare list for CARD
-                        html_restrictions += 
-                            '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' +
-                            value.title + '</span>';
                     });
                     /// Add a group label for Groups
                     $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo langHdl('roles'); ?>">'));
                 }
-
-                // Show badges
-                if (html_restrictions === '') {
-                    $('#card-item-restrictedto').html('<?php echo langHdl('no_special_restriction'); ?>');
-                } else {
-                    $('#card-item-restrictedto').html(html_restrictions);
-                }
+                
 
                 // Prepare Select2
                 $('.select2').select2({
@@ -4341,6 +4422,29 @@ $('#item-button-password-copy').click(function() {
     $('#form-item-password-confirmation').val($('#form-item-password').val());
 });
 
+
+/**
+* On tag badge click, launch the search query
+ */
+function searchItemsWithTags(criteria)
+{
+    if (criteria !== '') {
+        $('#folders-tree-card').removeClass('hidden');
+        $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
+
+        $('#find_items').val(criteria);
+
+        searchItems(criteria);
+    }
+}
+
+function isBase64(str) {
+    try {
+        return btoa(atob(str)) == str;
+    } catch (err) {
+        return false;
+    }
+}
 
 /*
 // Get parameters from url

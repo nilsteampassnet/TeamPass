@@ -15,6 +15,9 @@
  */
 
 return array(
+    'download' => 'Download',
+    'see' => 'See',
+    'at_anyoneconmodify' => 'Anyone can modify',
     'disabled' => 'Disabled',
     'enabled' => 'Enabled',
     'confirmation_seems_wrong' => 'Confirmation seems wrong, please correct',

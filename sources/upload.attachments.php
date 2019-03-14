@@ -130,7 +130,9 @@ if (null === $post_user_token) {
 
         // check if token is expired
         $data = DB::queryFirstRow(
-            'SELECT end_timestamp FROM '.prefixTable('tokens').' WHERE user_id = %i AND token = %s',
+            'SELECT end_timestamp
+            FROM '.prefixTable('tokens').'
+            WHERE user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
@@ -227,8 +229,9 @@ if (in_array(
 set_time_limit(5 * 60);
 
 // Clean the fileName for security reasons
-$fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
-$fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($fileName)));
+$fileInfo = pathinfo($fileName);
+$fileName = base64_encode($fileInfo['filename']).'.'.$fileInfo['extension'];
+$fileFullSize = 0;
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
@@ -364,7 +367,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             'id_item' => $post_itemId,
             'name' => $fileName,
             'size' => $_FILES['file']['size'],
-            'extension' => getFileExtension($fileName),
+            'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],
             'file' => $newFile['fileHash'],
             'status' => 'aes_encryption',
@@ -423,7 +426,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
                 'date' => time(),
                 'id_user' => $_SESSION['user_id'],
                 'action' => 'at_modification',
-                'raison' => 'at_add_file : '.addslashes($fileName),
+                'raison' => 'at_add_file : '.$fileName.':'.$newID,
             )
         );
     }

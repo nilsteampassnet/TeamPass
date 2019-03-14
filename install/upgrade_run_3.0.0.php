@@ -219,6 +219,31 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
+// Alter table
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `'.$pre.'files` CHANGE `name` `name` TEXT CHARACTER SET utf8 COLLATE NOT NULL;'
+);
+
+// Add field confirmed to FILES table
+$res = addColumnIfNotExist(
+    $pre.'files',
+    'confirmed',
+    "INT(1) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Confirmed to table FILES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+} else {
+    // Update all existing entries
+    mysqli_query(
+        $db_link,
+        'UPDATE '.$pre."files
+        SET confirmed = '1'"
+    );
+}
+
 // Copy all items passwords
 $db_count = mysqli_fetch_row(
     mysqli_query(
