@@ -245,13 +245,13 @@ echo '
                                 <!-- FOLDERS -->
                                 <div class="form-group mb-3">
                                     <label><?php echo langHdl('folder'); ?></label>
-                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root track-change" style="width:100%;"></select>
+                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root track-change" style="width:100%;" data-change-ongoing=""></select>
                                 </div>
 
                                 <!-- RESTRICTED TO -->
                                 <div class="input-group mb-3">
                                     <label><?php echo langHdl('restricted_to'); ?></label>
-                                    <select id="form-item-restrictedto" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple"></select>
+                                    <select id="form-item-restrictedto" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
                                     <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
                                     <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
                                 </div>
@@ -260,7 +260,7 @@ echo '
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('tags'); ?></span>
                                     </div>
-                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete track-change">
+                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete track-change" data-change-ongoing="">
                                 </div>
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
@@ -271,7 +271,7 @@ echo '
                                 <div class="form-check mb-3">
                                     <input type="checkbox" class="form-check-input form-item-control flat-blue track-change" id="form-item-anyoneCanModify"<?php
                                     echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?>>
+                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                     <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                 </div>
                                     <?php
@@ -297,7 +297,7 @@ echo '
                                                 <?php echo langHdl('item_deleted_after_being_viewed_x_times'); ?>
                                             </div>
                                             <div class="d-inline p-2">
-                                                <input type="text" class="form-control form-item-control track-change" id="form-item-deleteAfterShown">
+                                                <input type="text" class="form-control form-item-control track-change" id="form-item-deleteAfterShown" data-change-ongoing="">
                                             </div>
                                         </div>
                                         <div class="row">
@@ -311,7 +311,7 @@ echo '
                                                             <i class="fas fa-calendar"></i>
                                                         </span>
                                                     </div>
-                                                    <input type="text" class="form-control float-right form-item-control track-change" id="form-item-deleteAfterDate">
+                                                    <input type="text" class="form-control float-right form-item-control track-change" id="form-item-deleteAfterDate" data-change-ongoing="">
                                                 </div>
                                             </div>
                                         </div>
@@ -330,7 +330,7 @@ echo '
                                     </div>
                                     <!-- /.card-header -->
                                     <div class="card-body">
-                                        <select id="form-item-anounce" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple" data-placeholder="<?php echo langHdl('select_users_if_needed'); ?>"></select>
+                                        <select id="form-item-anounce" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple" data-placeholder="<?php echo langHdl('select_users_if_needed'); ?>" data-change-ongoing=""></select>
                                     </div>
                                 </div>
                             </div>
@@ -1031,8 +1031,8 @@ echo '
                     <div class="card-header">
                         <div class="row justify-content-end">
                             <div class="col-6">
-                                <h3 class="card-title"><i class="far fa-folder-open mr-2"></i>
-                                <span class="d-lg-block"><?php echo langHdl('folders'); ?></span>
+                                <h3 class="card-title"><i class="far fa-folder-open mr-2">
+                                </i><span class=""><?php echo langHdl('folders'); ?></span>
                             </div>
                             <div class="col-6">
                                 <div class="btn-group float-right">

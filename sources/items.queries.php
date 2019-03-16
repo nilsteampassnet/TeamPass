@@ -472,7 +472,7 @@ if (null !== $post_type) {
 
                     // update fields
                     if (isset($SETTINGS['item_extra_fields']) === true
-                        && $SETTINGS['item_extra_fields'] === '1'
+                        && (int) $SETTINGS['item_extra_fields'] === 1
                     ) {
                         foreach (explode('_|_', $post_fields) as $field) {
                             $field_data = explode('~~', $field);
@@ -484,7 +484,7 @@ if (null !== $post_type) {
                                     WHERE id = %i',
                                     $field_data[0]
                                 );
-                                if ($dataTmp['encrypted_data'] === '1') {
+                                if ((int) $dataTmp['encrypted_data'] === 1) {
                                     $encrypt = cryption(
                                         $field_data[1],
                                         '',
@@ -513,7 +513,7 @@ if (null !== $post_type) {
 
                     // If template enable, is there a main one selected?
                     if (isset($SETTINGS['item_creation_templates']) === true
-                        && $SETTINGS['item_creation_templates'] === '1'
+                        && (int) $SETTINGS['item_creation_templates'] === 1
                         && isset($post_template_id) === true
                         && empty($post_template_id) === false
                     ) {
@@ -556,7 +556,7 @@ if (null !== $post_type) {
 
                     // If automatic deletion asked
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
-                        && $SETTINGS['enable_delete_after_consultation'] === '1'
+                        && (int) $SETTINGS['enable_delete_after_consultation'] === 1
                         && null !== $post_to_be_deleted_after_x_views
                         && null !== $post_to_be_deleted_after_date
                     ) {
@@ -581,7 +581,7 @@ if (null !== $post_type) {
                     if (is_array($post_restricted_to) === true
                         && count($post_restricted_to) > 0
                         && isset($SETTINGS['restricted_to']) === true
-                        && $SETTINGS['restricted_to'] === '1'
+                        && (int) $SETTINGS['restricted_to'] === 1
                     ) {
                         foreach ($post_restricted_to as $userRest) {
                             if (empty($userRest) === false) {
@@ -595,7 +595,7 @@ if (null !== $post_type) {
                         }
                     }
                     if ($data['restricted_to'] !== $post_restricted_to
-                        && $SETTINGS['restricted_to'] === '1'
+                        && (int) $SETTINGS['restricted_to'] === 1
                     ) {
                         if (empty($data['restricted_to']) === false) {
                             foreach (explode(';', $data['restricted_to']) as $userRest) {
@@ -614,7 +614,7 @@ if (null !== $post_type) {
                     if (is_array($post_restricted_to_roles) === true
                         && count($post_restricted_to_roles) > 0
                         && isset($SETTINGS['restricted_to_roles']) === true
-                        && $SETTINGS['restricted_to_roles'] === '1'
+                        && (int) $SETTINGS['restricted_to_roles'] === 1
                     ) {
                         // add roles for item
                         if (is_array($post_restricted_to_roles) === true
@@ -675,6 +675,7 @@ if (null !== $post_type) {
                                 prefixTable('files'),
                                 array(
                                     'id_item' => $newID,
+                                    'confirmed' => 1,
                                     ),
                                 'id=%i',
                                 $record['id']
@@ -719,7 +720,7 @@ if (null !== $post_type) {
                         }
                     }
                 } elseif (isset($SETTINGS['duplicate_item']) === true
-                    && $SETTINGS['duplicate_item'] === '0'
+                    && (int) $SETTINGS['duplicate_item'] === 0
                     && (int) $itemExists === 1
                 ) {
                     // Encrypt data to return
@@ -1787,11 +1788,17 @@ if (null !== $post_type) {
             $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === '1'
+            if ((int) $_SESSION['user_read_only'] === 1
                 && (in_array($post_source_id, $_SESSION['personal_folders']) === false
                     || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
             ) {
-                echo '[{"error" : "not_allowed"}, {"error_text" : "'.langHdl('error_not_allowed_to').'"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -1806,14 +1813,19 @@ if (null !== $post_type) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow(
                     'SELECT * FROM '.prefixTable('items').'
-                    WHERE id=%i',
+                    WHERE id = %i',
                     $post_item_id
                 );
 
-                // Check if the folder where this item is, is accessible to the user
+                // Check if the folder where this item is accessible to the user
                 if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
-                    $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.langHdl('error_not_allowed_to').'"}]';
-                    echo $returnValues;
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
@@ -1824,124 +1836,41 @@ if (null !== $post_type) {
                     $post_dest_id
                 );
 
-                // previous is personal folder and public one
-                if ($originalRecord['perso'] === '1'
-                    && $dataDestination['personal_folder'] === '0'
-                ) {
-                    // decrypt and re-encrypt password
-                    $decrypt = cryption(
-                        $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'decrypt',
-                        $SETTINGS
+                // Get the ITEM object key for the user
+                $userKey = DB::queryFirstRow(
+                    'SELECT share_key
+                    FROM '.prefixTable('sharekeys_items').'
+                    WHERE user_id = %i AND object_id = %i',
+                    $_SESSION['user_id'],
+                    $post_item_id
+                );
+                if (DB::count() === 0) {
+                    // ERROR - No sharekey found for this item and user
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to'),
+                        ),
+                        'encode'
                     );
-                    $encrypt = cryption(
-                        $decrypt['string'],
-                        '',
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // reaffect pw
-                    $originalRecord['pw'] = $encrypt['string'];
-
-                    // this item is now public
-                    $is_perso = 0;
-                // previous is public folder and personal one
-                } elseif ($originalRecord['perso'] === '0'
-                    && $dataDestination['personal_folder'] === '1'
-                ) {
-                    // check if PSK is set
-                    if (isset($_SESSION['user_settings']['session_psk']) === false
-                        || empty($_SESSION['user_settings']['session_psk']) === true
-                    ) {
-                        echo '[{"error" : "no_psk"}, {"error_text" : "'.langHdl('alert_message_personal_sk_missing').'"}]';
-                        break;
-                    }
-
-                    // decrypt and re-encrypt password
-                    $decrypt = cryption(
-                        $originalRecord['pw'],
-                        '',
-                        'decrypt',
-                        $SETTINGS
-                    );
-                    $encrypt = cryption(
-                        $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // reaffect pw
-                    $originalRecord['pw'] = $encrypt['string'];
-
-                    // this item is now private
-                    $is_perso = 1;
-                } elseif ($originalRecord['perso'] === '1'
-                    && $dataDestination['personal_folder'] === '1'
-                ) {
-                    // previous is public folder and personal one
-                    // check if PSK is set
-                    if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])) {
-                        echo '[{"error" : "no_psk"}, {"error_text" : "'.langHdl('alert_message_personal_sk_missing').'"}]';
-                        break;
-                    }
-
-                    // decrypt and re-encrypt password
-                    $decrypt = cryption(
-                        $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'decrypt',
-                        $SETTINGS
-                    );
-                    $encrypt = cryption(
-                        $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // reaffect pw
-                    $originalRecord['pw'] = $encrypt['string'];
-
-                    // this item is now private
-                    $is_perso = 1;
-                } elseif ($originalRecord['perso'] === '0'
-                    && $dataDestination['personal_folder'] === '0'
-                ) {
-                    // decrypt and re-encrypt password
-                    $decrypt = cryption(
-                        $originalRecord['pw'],
-                        '',
-                        'decrypt',
-                        $SETTINGS
-                    );
-                    $encrypt = cryption(
-                        $decrypt['string'],
-                        '',
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // reaffect pw
-                    $originalRecord['pw'] = $encrypt['string'];
-
-                    // is public item
-                    $is_perso = 0;
-                } else {
-                    echo '[{"error" : "case_not_managed"}, {"error_text" : "ERROR - case is not managed"}]';
                     break;
                 }
 
-                // insert the new record and get the new auto_increment id
-                DB::insert(
-                    prefixTable('items'),
-                    array(
-                        'label' => 'duplicate',
+                // Decrypt / Encrypt the password
+                $cryptedStuff = doDataEncryption(
+                    base64_decode(
+                        doDataDecryption(
+                            $originalRecord['pw'],
+                            decryptUserObjectKey(
+                                $userKey['share_key'],
+                                $_SESSION['user']['private_key']
+                            )
+                        )
                     )
                 );
-                $newID = DB::insertId();
+                // reaffect pw
+                $originalRecord['pw'] = $cryptedStuff['encrypted'];
+
                 // generate the query to update the new record with the previous values
                 $aSet = array();
                 foreach ($originalRecord as $key => $value) {
@@ -1961,17 +1890,105 @@ if (null !== $post_type) {
                     }
                 }
 
-                DB::update(
+                // insert the new record and get the new auto_increment id
+                DB::insert(
                     prefixTable('items'),
-                    $aSet,
-                    'id = %i',
-                    $newID
+                    $aSet
                 );
-                // Add attached itms
-                $rows = DB::query('SELECT * FROM '.prefixTable('files').' WHERE id_item=%i', $post_item_id);
+                $newItemId = DB::insertId();
+
+                // Create sharekeys for users of this new ITEM
+                storeUsersShareKey(
+                    prefixTable('sharekeys_items'),
+                    $dataDestination['personal_folder'],
+                    $post_dest_id,
+                    $newItemId,
+                    $cryptedStuff['objectKey'],
+                    $SETTINGS
+                );
+
+                // --------------------
+                // Manage Custom Fields
+                $rows = DB::query(
+                    'SELECT *
+                    FROM '.prefixTable('categories_items').'
+                    WHERE item_id = %i',
+                    $post_item_id
+                );
+                foreach ($rows as $field) {
+                    // Create the entry for the new item
+
+                    // Is the data encrypted
+                    if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
+                        $cryptedStuff = doDataEncryption($field['value']);
+                    }
+
+                    // store field text
+                    DB::insert(
+                        prefixTable('categories_items'),
+                        array(
+                            'item_id' => $newItemId,
+                            'field_id' => $field['field_id'],
+                            'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
+                                $cryptedStuff['encrypted'] :
+                                $field['value'],
+                            'data_iv' => '',
+                            'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
+                                TP_ENCRYPTION_NAME :
+                                'not_set',
+                        )
+                    );
+                    $newId = DB::insertId();
+
+                    // Create sharekeys for users
+                    if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_fields'),
+                            $dataDestination['personal_folder'],
+                            $post_dest_id,
+                            $newId,
+                            $cryptedStuff['objectKey'],
+                            $SETTINGS
+                        );
+                    }
+                }
+                // <---
+
+                // ------------------
+                // Manage attachments
+
+                // get file key
+                $rows = DB::queryfirstrow(
+                    'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
+                    s.share_key AS share_key
+                    FROM '.prefixTable('files').' AS f
+                    INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                    WHERE s.user_id = %i AND s.object_id = %i',
+                    $_SESSION['user_id'],
+                    $post_item_id
+                );
                 foreach ($rows as $record) {
                     // Check if file still exists
-                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'])) {
+                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.$record['file']) === true) {
+                        // Step1 - decrypt the file
+                        $fileContent = decryptFile(
+                            $record['file'],
+                            $SETTINGS['path_to_upload_folder'],
+                            decryptUserObjectKey($record['share_key'], $_SESSION['user']['private_key'])
+                        );
+
+                        // Step2 - create file
+                        $newFileName = md5(time().'_'.$record['id']).'.'.$record['extension'];
+                        fwrite(
+                            fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.time().$newFileName, 'rb'),
+                            base64_decode($fileContent)
+                        );
+
+                        // Step2 - encrypt the file
+                        $newFile = encryptFile($newFileName, $SETTINGS['path_to_upload_folder']);
+
+                        // Step3 - create sharekeys
+
                         // duplicate file
                         $fileRandomId = md5($record['name'].time());
                         copy(
@@ -1994,7 +2011,9 @@ if (null !== $post_type) {
                         );
                     }
                 }
+                // <---
 
+                // ------------------------- \\ TODO
                 // Add specific restrictions
                 $rows = DB::query('SELECT * FROM '.prefixTable('restriction_to_roles').' WHERE item_id = %i', $post_item_id);
                 foreach ($rows as $record) {
@@ -3883,7 +3902,7 @@ if (null !== $post_type) {
                             if ($dataItem['anyone_can_modify'] != 1) {
                                 // else return not authorized
                                 $returnValues = array(
-                                    'error' => 'user_is_readonly',
+                                    'error' => true,
                                     'message' => langHdl('error_not_allowed_to'),
                                 );
                                 echo prepareExchangedData($returnValues, 'encode');
@@ -3892,7 +3911,7 @@ if (null !== $post_type) {
                         } else {
                             // else return not authorized
                             $returnValues = array(
-                                'error' => 'user_is_readonly',
+                                'error' => true,
                                 'message' => langHdl('error_not_allowed_to'),
                             );
                             echo prepareExchangedData($returnValues, 'encode');
@@ -3941,7 +3960,7 @@ if (null !== $post_type) {
                 // Edition not possible
                 } else {
                     $returnValues = array(
-                        'error' => 'no_edition_possible',
+                        'error' => true,
                         'message' => langHdl('error_no_edition_possible_locked'),
                     );
                     echo prepareExchangedData($returnValues, 'encode');
@@ -3977,7 +3996,7 @@ if (null !== $post_type) {
                         )   // take into consideration if this is a personal folder
                     ) {
                         $returnValues = array(
-                            'error' => 'no_folder_creation_possible',
+                            'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
                         );
                         echo prepareExchangedData($returnValues, 'encode');
@@ -3999,7 +4018,7 @@ if (null !== $post_type) {
 
             if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
                 $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
-                $folder_is_personal = $data['personal_folder'];
+                //$folder_is_personal = $data['personal_folder'];
 
                 // Prepare Item actual visibility (what Users/Roles can see it)
                 $rows = DB::query(
@@ -4028,7 +4047,7 @@ if (null !== $post_type) {
                     WHERE id = %s',
                     $post_groupe
                 );
-                $folder_is_personal = $data_pf['personal_folder'];
+                //$folder_is_personal = $data_pf['personal_folder'];
                 $visibilite = $_SESSION['name'].' '.$_SESSION['lastname'].' ('.$_SESSION['login'].')';
             }
 
@@ -4077,16 +4096,16 @@ if (null !== $post_type) {
             }
 
             $returnValues = array(
-                'folderId' => $post_groupe,
-                'error' => '',
-                'val' => $data['valeur'],
+                'folderId' => (int) $post_groupe,
+                'error' => false,
+                'val' => (int) $data['valeur'],
                 'visibility' => $visibilite,
                 'complexity' => $complexity,
-                'personal' => $folder_is_personal,
+                //'personal' => $folder_is_personal,
                 'usersList' => $listOptionsForUsers,
                 'rolesList' => $listOptionsForRoles,
                 'setting_restricted_to_roles' => isset($SETTINGS['restricted_to_roles']) === true
-                    && $SETTINGS['restricted_to_roles'] === '1' ? 1 : 0,
+                    && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0,
             );
             echo prepareExchangedData($returnValues, 'encode');
             break;
@@ -4418,7 +4437,7 @@ if (null !== $post_type) {
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM '.prefixTable('users').'
-                        WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+                        WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
                         AND public_key != ""'
                     );
                     foreach ($users as $user) {

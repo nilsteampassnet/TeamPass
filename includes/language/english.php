@@ -15,6 +15,7 @@
  */
 
 return array(
+    'form_presents_inconsistencies' => 'The form presents some inconsistencies. Please check fields with red borders.',
     'download' => 'Download',
     'see' => 'See',
     'at_anyoneconmodify' => 'Anyone can modify',

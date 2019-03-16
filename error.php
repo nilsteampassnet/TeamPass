@@ -25,7 +25,7 @@ if (file_exists('../sources/SecureHandler.php')) {
 }
 if (isset($_SESSION) === false) {
     session_name('teampass_session');
-session_start();
+    session_start();
 }
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
@@ -47,6 +47,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
     // connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
