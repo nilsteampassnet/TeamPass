@@ -1,14 +1,19 @@
 <?php
 /**
- * @author        Nils Laumaillé <nils@teampass.net>
+ * Teampass - a collaborative passwords manager.
  *
- * @version       2.1.27
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- *
- * @see
+ * @package   Teampass
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      https://www.teampass.net
  */
+
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -876,8 +881,8 @@ function identUser(
         array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
     }
     // Get IDs of personal folders
-    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
-        && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
+    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+        && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
     ) {
         $persoFld = DB::queryfirstrow(
             'SELECT id
@@ -892,9 +897,9 @@ function identUser(
                 array_push($listAllowedFolders, $persoFld['id']);
                 array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
                 // get all descendants
-                $ids = $tree->getChildren($persoFld['id'], false, false);
+                $ids = $tree->getChildren($persoFld['id'], false);
                 foreach ($ids as $ident) {
-                    if ($ident->personal_folder === 1) {
+                    if ((int) $ident->personal_folder === 1) {
                         array_push($listAllowedFolders, $ident->id);
                         array_push($_SESSION['personal_visible_groups'], $ident->id);
                         array_push($_SESSION['personal_folders'], $ident->id);
@@ -902,11 +907,16 @@ function identUser(
                 }
             }
         }
-        // get list of readonly folders when pf is disabled.
+        // get list of readonly folders when pf is enabled.
         $_SESSION['personal_folders'] = array_unique($_SESSION['personal_folders']);
         // rule - if one folder is set as W or N in one of the Role, then User has access as W
         foreach ($listAllowedFolders as $folderId) {
-            if (in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))) === false) {
+            if (
+                in_array(
+                    $folderId,
+                    array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))
+                ) === false
+            ) {
                 DB::query(
                     'SELECT *
                     FROM '.prefixTable('roles_values').'
@@ -954,7 +964,7 @@ function identUser(
     } else {
         $_SESSION['nb_item_change_proposals'] = 0;
     }
-
+    
     $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
     $_SESSION['groupes_visibles'] = $listAllowedFolders;
     $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
@@ -3137,7 +3147,9 @@ function decryptUserObjectKey($key, $privateKey)
  */
 function encryptFile($fileInName, $fileInPath)
 {
-    define('FILE_BUFFER_SIZE', 128 * 1024);
+    if (defined('FILE_BUFFER_SIZE') === false) {
+        define('FILE_BUFFER_SIZE', 128 * 1024);
+    }
 
     // Includes
     include_once '../includes/config/include.php';
@@ -3174,6 +3186,15 @@ function encryptFile($fileInName, $fileInPath)
     );
 }
 
+/**
+ * Decrypt a file
+ *
+ * @param string $fileName File name
+ * @param string $filePath Path to file
+ * @param string $key      Key to use
+ *
+ * @return void
+ */
 function decryptFile($fileName, $filePath, $key)
 {
     define('FILE_BUFFER_SIZE', 128 * 1024);

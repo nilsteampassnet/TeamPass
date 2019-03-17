@@ -6,16 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ * @package   Teampass
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
  * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * @link      https://www.teampass.net
  */
+
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
 

@@ -499,9 +499,9 @@ if (null !== $post_type) {
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_duration = filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT);
-            $post_create_auth_without = filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT);
-            $post_edit_auth_without = filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT);
+            $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
+            $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
+            $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
 
             // Init
             $error = false;

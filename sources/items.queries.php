@@ -1,18 +1,19 @@
 <?php
 /**
- * @author        Nils Laumaillé <nils@teampass.net>
- *
- * @version       2.1.27
- *
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- *
- * @see          https://www.teampass.net
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @package   Teampass
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      https://www.teampass.net
  */
+
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -1749,7 +1750,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($arrData, 'encode');
             break;
 
-        /*".."
+        /*
           * CASE
           * Copy an Item
         */
@@ -1832,7 +1833,7 @@ if (null !== $post_type) {
                 // Load the destination folder record into an array
                 $dataDestination = DB::queryfirstrow(
                     'SELECT personal_folder FROM '.prefixTable('nested_tree').'
-                    WHERE id=%i',
+                    WHERE id = %i',
                     $post_dest_id
                 );
 
@@ -1875,21 +1876,21 @@ if (null !== $post_type) {
                 $aSet = array();
                 foreach ($originalRecord as $key => $value) {
                     if ($key === 'id_tree') {
-                        array_push($aSet, array('id_tree' => $post_dest_id));
+                        $aSet['id_tree'] = $post_dest_id;
                     } elseif ($key === 'label') {
-                        array_push($aSet, array($key => $post_new_label));
+                        $aSet[$key] = $post_new_label;
                     } elseif ($key === 'viewed_no') {
-                        array_push($aSet, array('viewed_no' => '0'));
+                        $aSet['viewed_no'] = '0';
                     } elseif ($key === 'pw' && empty($pw) === false) {
-                        array_push($aSet, array('pw' => $originalRecord['pw']));
-                        array_push($aSet, array('pw_iv' => ''));
+                        $aSet['pw'] = $originalRecord['pw'];
+                        $aSet['pw_iv'] = '';
                     } elseif ($key === 'perso') {
-                        array_push($aSet, array('perso' => $is_perso));
+                        $aSet['perso'] = $is_perso;
                     } elseif ($key != 'id' && $key != 'key') {
-                        array_push($aSet, array($key => $value));
+                        $aSet[$key] = $value;
                     }
                 }
-
+                
                 // insert the new record and get the new auto_increment id
                 DB::insert(
                     prefixTable('items'),
@@ -1938,7 +1939,7 @@ if (null !== $post_type) {
                                 'not_set',
                         )
                     );
-                    $newId = DB::insertId();
+                    $newFieldId = DB::insertId();
 
                     // Create sharekeys for users
                     if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
@@ -1946,7 +1947,7 @@ if (null !== $post_type) {
                             prefixTable('sharekeys_fields'),
                             $dataDestination['personal_folder'],
                             $post_dest_id,
-                            $newId,
+                            $newFieldId,
                             $cryptedStuff['objectKey'],
                             $SETTINGS
                         );
@@ -1958,18 +1959,18 @@ if (null !== $post_type) {
                 // Manage attachments
 
                 // get file key
-                $rows = DB::queryfirstrow(
+                $rows = DB::query(
                     'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-                    s.share_key AS share_key
+                    f.size AS size, f.type AS type, s.share_key AS share_key
                     FROM '.prefixTable('files').' AS f
                     INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
-                    WHERE s.user_id = %i AND s.object_id = %i',
+                    WHERE s.user_id = %i AND f.id_item = %i',
                     $_SESSION['user_id'],
                     $post_item_id
                 );
                 foreach ($rows as $record) {
                     // Check if file still exists
-                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.$record['file']) === true) {
+                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.base64_decode($record['file'])) === true) {
                         // Step1 - decrypt the file
                         $fileContent = decryptFile(
                             $record['file'],
@@ -1980,47 +1981,50 @@ if (null !== $post_type) {
                         // Step2 - create file
                         $newFileName = md5(time().'_'.$record['id']).'.'.$record['extension'];
                         fwrite(
-                            fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.time().$newFileName, 'rb'),
+                            fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$newFileName, 'ab'),
                             base64_decode($fileContent)
                         );
 
-                        // Step2 - encrypt the file
+                        // Step3 - encrypt the file
                         $newFile = encryptFile($newFileName, $SETTINGS['path_to_upload_folder']);
 
-                        // Step3 - create sharekeys
-
-                        // duplicate file
-                        $fileRandomId = md5($record['name'].time());
-                        copy(
-                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
-                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
-                        );
-
-                        // store in DB
+                        // Step4 - store in database
                         DB::insert(
                             prefixTable('files'),
                             array(
-                                'id_item' => $newID,
+                                'id_item' => $newItemId,
                                 'name' => $record['name'],
                                 'size' => $record['size'],
                                 'extension' => $record['extension'],
                                 'type' => $record['type'],
-                                'file' => $fileRandomId,
-                                'status' => $record['status'],
+                                'file' => $newFile['fileHash'],
+                                'status' => TP_ENCRYPTION_NAME,
+                                'confirmed' => 1,
                             )
+                        );
+                        $newFileId = DB::insertId();
+
+                        // Step5 - create sharekeys
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_files'),
+                            $dataDestination['personal_folder'],
+                            $post_dest_id,
+                            $newFileId,
+                            $newFile['objectKey'],
+                            $SETTINGS
                         );
                     }
                 }
                 // <---
 
-                // ------------------------- \\ TODO
+                // -------------------------
                 // Add specific restrictions
                 $rows = DB::query('SELECT * FROM '.prefixTable('restriction_to_roles').' WHERE item_id = %i', $post_item_id);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
-                            'item_id' => $newID,
+                            'item_id' => $newItemId,
                             'role_id' => $record['role_id'],
                             )
                     );
@@ -2032,7 +2036,7 @@ if (null !== $post_type) {
                     DB::insert(
                         prefixTable('tags'),
                         array(
-                            'item_id' => $newID,
+                            'item_id' => $newItemId,
                             'tag' => $record['tag'],
                             )
                     );
@@ -2041,7 +2045,7 @@ if (null !== $post_type) {
                 // Add this duplicate in logs
                 logItems(
                     $SETTINGS,
-                    $newID,
+                    $newItemId,
                     $originalRecord['label'],
                     $_SESSION['user_id'],
                     'at_creation',
@@ -2050,17 +2054,17 @@ if (null !== $post_type) {
                 // Add the fact that item has been copied in logs
                 logItems(
                     $SETTINGS,
-                    $newID,
+                    $newItemId,
                     $originalRecord['label'],
                     $_SESSION['user_id'],
                     'at_copy',
                     $_SESSION['login']
                 );
                 // reload cache table
-                require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+                include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 updateCacheTable('reload', $SETTINGS, '');
 
-                $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "'.$newID.'"}]';
+                $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "'.$newItemId.'"}]';
             } else {
                 // no item
                 $returnValues = '[{"error" : "no_item"}, {"error_text" : "No item ID"}]';
@@ -3727,13 +3731,13 @@ if (null !== $post_type) {
                             // 50 -> can edit and delete but not move
                             // 60 -> can edit and move but not delete
                             // 70 -> can edit and move
-                            if ($accessLevel === 0) {
+                            if ((int) $accessLevel === 0) {
                                 $right = 70;
-                            } elseif ($accessLevel === 1) {
+                            } elseif ((int) $accessLevel === 1) {
                                 $right = 20;
-                            } elseif ($accessLevel === 2) {
+                            } elseif ((int) $accessLevel === 2) {
                                 $right = 60;
-                            } elseif ($accessLevel === 3) {
+                            } elseif ((int) $accessLevel === 3) {
                                 $right = 70;
                             } else {
                                 $right = 10;
@@ -4224,7 +4228,7 @@ if (null !== $post_type) {
                 exit();
             }
 
-            if (intval(filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT)) === 0) {
+            if ((int) filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT) === 0) {
                 // Add new favourite
                 array_push($_SESSION['favourites'], $post_item_id);
                 //print_r($_SESSION['favourites']);
@@ -5377,7 +5381,7 @@ if (null !== $post_type) {
                         $disabled = 0;
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
                             || in_array($folder->id, $_SESSION['read_only_folders']) === true
-                            || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
+                            //|| ((int) $_SESSION['user_read_only'] === 1 && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
                         ) {
                             $disabled = 1;
                         }
@@ -5945,7 +5949,7 @@ if (null !== $post_type) {
             );
             if (DB::count() > 0) {
                 // Notification is set for this user on this item
-                if ($post_notification_status === 0) {
+                if ((int) $post_notification_status === 0) {
                     // Remove the notification
                     DB::delete(
                         prefixTable('notification'),
@@ -5956,7 +5960,7 @@ if (null !== $post_type) {
                 }
             } else {
                 // Notification is not set on this item
-                if ($post_notification_status === 1) {
+                if ((int) $post_notification_status === 1) {
                     // Add the notification
                     DB::insert(
                         prefixTable('notification'),

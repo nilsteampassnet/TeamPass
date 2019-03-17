@@ -6,16 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @package   Teampass
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
  * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * @link      https://www.teampass.net
  */
+
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -926,15 +924,15 @@ echo '
                         <div class="card-body">
                             <div class="form-group">
                                 <label><?php echo langHdl('label'); ?></label>
-                                <input type="text" class="form-control form-folder-control" id="form-folder-add-label">
+                                <input type="text" class="form-control form-folder-control" id="form-folder-add-label" required>
                             </div>
                             <div class="form-group">
                                 <label><?php echo langHdl('select_folder_parent'); ?></label>
-                                <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-add-parent"></select>
+                                <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-add-parent" required></select>
                             </div>
                             <div class="form-group">
                                 <label><?php echo langHdl('complex_asked'); ?></label>
-                                <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-add-complexicity">
+                                <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-add-complexicity" required>
                                     <?php
                                     foreach (TP_PW_COMPLEXITY as $key => $value) {
                                         echo '<option value="'.$key.'">'.$value[1].'</option>';
@@ -963,10 +961,10 @@ echo '
                     <div class="card-body">
                         <div class="form-group">
                             <label><?php echo langHdl('select_folder_to_delete'); ?></label>
-                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-delete-selection"></select>
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-delete-selection" required></select>
                         </div>
                         <div class="form-check mb-3 alert alert-warning">
-                            <input type="checkbox" class="form-check-input form-item-control flat-blue mr-2" id="form-folder-confirm-delete">
+                            <input type="checkbox" class="form-check-input form-item-control flat-blue mr-2" id="form-folder-confirm-delete" required>
                             <label class="form-check-label ml-3" for="form-folder-confirm-delete"><i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('folder_delete_confirm'); ?></label>
                         </div>
                     </div>
@@ -989,15 +987,15 @@ echo '
                     <div class="card-body">
                         <div class="form-group">
                             <label><?php echo langHdl('label'); ?></label>
-                            <input type="text" class="form-control form-folder-control" id="form-folder-copy-label"></select>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-copy-label" required></select>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('select_source_folder'); ?></label>
-                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-source"></select>
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-source" required></select>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('select_destination_folder'); ?></label>
-                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-destination">
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-destination" required>
                             </select>
                         </div>
                     </div>

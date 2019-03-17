@@ -6,16 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @category Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ * @package   Teampass
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * @version   GIT: <git_id>
+ * @link      https://www.teampass.net
  */
+
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -1149,6 +1147,12 @@ $('#form-item-suggestion-perform').click(function() {
 
     if (form[0].checkValidity() === false) {
         form.addClass('was-validated');
+
+        // Send alert to user
+        alertify
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('form_presents_inconsistencies'); ?>', 10)
+            .dismissOthers();
+
         return false;
     }
 
@@ -1214,9 +1218,15 @@ $('#form-item-suggestion-perform').click(function() {
  */
 $('#form-folder-add-perform').click(function() {
     var form = $('#form-folder-add');
-
+   
     if (form[0].checkValidity() === false) {
         form.addClass('was-validated');
+
+        // Send alert to user
+        alertify
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('form_presents_inconsistencies'); ?>', 10)
+            .dismissOthers();
+            
         return false;
     }
 
@@ -2168,7 +2178,7 @@ console.log(arrayQuery);
             var data = {
                 'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                 'complexity_level': parseInt($('#form-item-password-complex').val()),
-                'description': itemEditor.getData(),
+                'description': itemEditor.getData() !== "<p>&nbsp;</p>" ? itemEditor.getData() : '',
                 'diffusion_list' : diffusion,
                 'folder': parseInt($('#form-item-folder').val()),
                 'email': $('#form-item-email').val(),
@@ -2549,9 +2559,11 @@ function refreshFoldersInfo(folders, action)
         sending = '';
 
     if (action === 'clear') {
-        sending = JSON.stringify(folders.map(a => a.id));console.log(sending)
+        sending = JSON.stringify(folders.map(a => a.id));
+        console.log(sending)
     } else if (action === 'update') {
-        sending = JSON.stringify([folders]);console.log(sending)
+        sending = JSON.stringify([folders]);
+        console.log(sending)
     }
     // 
     $.post(
