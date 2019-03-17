@@ -2601,29 +2601,29 @@ if (null !== $post_type) {
                 $accessLevel = 2;
                 $arrTmp = [];
                 foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                    $access = DB::queryFirstRow(
-                        "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
-                        $role,
-                        $post_id
-                    );
-                    if ($access['type'] === "R") {
-                        array_push($arrTmp, 1);
-                    } elseif ($access['type'] === "W") {
-                        array_push($arrTmp, 0);
-                    } elseif ($access['type'] === "ND") {
-                        array_push($arrTmp, 2);
-                    } else {
-                        // Ensure to give access Right if allowed folder
-                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                    if (empty($role) === false) {
+                        $access = DB::queryFirstRow(
+                            "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
+                            $role,
+                            $post_id
+                        );
+                        if ($access['type'] === "R") {
+                            array_push($arrTmp, 1);
+                        } elseif ($access['type'] === "W") {
                             array_push($arrTmp, 0);
+                        } elseif ($access['type'] === "ND") {
+                            array_push($arrTmp, 2);
                         } else {
-                            array_push($arrTmp, 3);
+                            // Ensure to give access Right if allowed folder
+                            if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                                array_push($arrTmp, 0);
+                            } else {
+                                array_push($arrTmp, 3);
+                            }
                         }
                     }
                 }
-                $accessLevel = min($arrTmp);
-                $uniqueLoadData['accessLevel'] = $accessLevel;
-
+                
                 // check if this folder is a PF. If yes check if saltket is set
                 if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
                     $showError = "is_pf_but_no_saltkey";

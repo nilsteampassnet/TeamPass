@@ -1,5 +1,6 @@
 2.1.27
 35/
+ #2564 Permissions problem
  #2563 Unable to add item via API
  #2560 Fix an issue for one time password changes if current user is not root
  #2536 low 40bit RC4 - pdf export?

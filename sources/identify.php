@@ -628,7 +628,7 @@ function identifyUser(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
                         $filter,
-                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
+                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire', 'useraccountcontrol')
                     );
                     if ($debugLdap == 1) {
                         fputs(
@@ -830,6 +830,13 @@ function identifyUser(
                     exit();
                 }
 
+                // Is user disabled?
+                $user_info_from_ad = $adldap->user()->info($auth_username, array("useraccountcontrol"));
+                if ((($user_info[0]['useraccountcontrol'][0] & 2) == 0) === false) {
+                    echo '[{"value" : "user_disabled'.$auth_username.'", "text":""}]';
+                    exit();
+                }
+
                 // Update user's password
                 if ($ldapConnection === true) {
                     $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
@@ -930,7 +937,7 @@ function identifyUser(
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
             $user_info_from_ad = $result;
         } else {
-            $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+            $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn", "useraccountcontrol"));
         }
 
         DB::insert(
