@@ -2599,7 +2599,7 @@ if (null !== $post_type) {
 
                 // check role access on this folder (get the most restrictive) (2.1.23)
                 $accessLevel = 2;
-                $arrTmp = [];
+                $arrTmp = array();
                 foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                     if (empty($role) === false) {
                         $access = DB::queryFirstRow(
@@ -2623,6 +2623,8 @@ if (null !== $post_type) {
                         }
                     }
                 }
+                $accessLevel = $uniqueLoadData['accessLevel'] = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
+
                 
                 // check if this folder is a PF. If yes check if saltket is set
                 if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
