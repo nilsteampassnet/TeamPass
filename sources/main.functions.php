@@ -3193,7 +3193,7 @@ function encryptFile($fileInName, $fileInPath)
  * @param string $filePath Path to file
  * @param string $key      Key to use
  *
- * @return void
+ * @return string
  */
 function decryptFile($fileName, $filePath, $key)
 {
