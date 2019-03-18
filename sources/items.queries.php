@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -1890,7 +1890,7 @@ if (null !== $post_type) {
                         $aSet[$key] = $value;
                     }
                 }
-                
+
                 // insert the new record and get the new auto_increment id
                 DB::insert(
                     prefixTable('items'),
@@ -2143,7 +2143,14 @@ if (null !== $post_type) {
 
             if ($dataDeleted != 0 && intval($item_deleted['date']) > intval($item_restored['date'])) {
                 // This item is deleted => exit
-                echo prepareExchangedData(array('show_detail_option' => 2), 'encode');
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('not_allowed_to_see_pw'),
+                        'show_detail_option' => 2,
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -5601,7 +5608,7 @@ if (null !== $post_type) {
                             } else {
                                 $detail = trim($reason[1]);
                             }
-                        } elseif ($reason[0] === 'at_restriction' || $reason[0] === 'at_email' || $reason[0] === 'at_login') {
+                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login','at_label', 'at_url')) === true) {
                             $tmp = explode(' => ', $reason[1]);
                             $detail = empty(trim($tmp[0])) === true ?
                                 langHdl('no_previous_value') :

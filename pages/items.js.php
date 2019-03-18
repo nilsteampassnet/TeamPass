@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -184,10 +184,12 @@ $('#jstree_search')
     });
 
 
+/*
 // TODO : delete after DEBUG
 store.each(function(value, key) {
     console.log(key, '==', value)
-})
+});
+*/
 
 
 // Is this a short url
@@ -3466,9 +3468,9 @@ function Details(itemDefinition, actionType, hotlink = false)
             console.log("RECEIVED");
             console.log(data);
             
-            if (data.error !== '') {
+            if (data.error === true) {
                 alertify
-                    .error('<i class="fas fa-ban mr-2"></i>' + data.error, 3)
+                    .error('<i class="fas fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
                 return false;
             } else if (data.user_can_modify === 0 && actionType === 'edit') {
@@ -3487,12 +3489,12 @@ function Details(itemDefinition, actionType, hotlink = false)
 
             // Scroll to top
             $(window).scrollTop(0);
-
+            
             // SHould we show?
-            if (data.show_detail_option === '1') {
+            if (data.show_detail_option === 1) {
                 // SHow expiration alert
                 $('#card-item-expired').removeClass('hidden');
-            } else if (data.show_detail_option === '2') {
+            } else if (data.show_detail_option === 2) {
                 // Don't show anything
                 alertify.alert(
                     '<?php echo langHdl('warning'); ?>',
@@ -3865,10 +3867,10 @@ function Details(itemDefinition, actionType, hotlink = false)
             
             
 
-            if (data.show_details == '1' && data.show_detail_option != '2') {
+            if (data.show_details === 1 && data.show_detail_option !== 2) {
                 // continue loading data
                 showDetailsStep2(itemId, actionType);
-            } else if (data.show_details === '1' && data.show_detail_option === '2') {
+            } else if (data.show_details === 1 && data.show_detail_option === 2) {
                 $('#item_details_nok').addClass('hidden');
                 $('#item_details_ok').addClass('hidden');
                 $('#item_details_expired_full').show();
@@ -4328,6 +4330,9 @@ function getPrivilegesOnItem(val, edit, context)
                     $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo langHdl('roles'); ?>">'));
                 }
                 
+
+                //
+                $('#card-item-visibility').html(data.visibility);
 
                 // Prepare Select2
                 $('.select2').select2({

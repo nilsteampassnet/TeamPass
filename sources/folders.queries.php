@@ -1095,18 +1095,37 @@ if (null !== $post_type) {
                     if ((int) $dataDeleted !== 1
                         || (int) $item_deleted['date'] < (int) $item_restored['date']
                     ) {
-                        // Decrypt and re-encrypt password
-                        $decrypt = cryption(
-                            $record['pw'],
-                            '',
-                            'decrypt',
-                            $SETTINGS
+                        // Get the ITEM object key for the user
+                        $userKey = DB::queryFirstRow(
+                            'SELECT share_key
+                            FROM '.prefixTable('sharekeys_items').'
+                            WHERE user_id = %i AND object_id = %i',
+                            $_SESSION['user_id'],
+                            $record['id']
                         );
-                        $originalRecord = cryption(
-                            $decrypt['string'],
-                            '',
-                            'encrypt',
-                            $SETTINGS
+                        if (DB::count() === 0) {
+                            // ERROR - No sharekey found for this item and user
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => langHdl('error_not_allowed_to'),
+                                ),
+                                'encode'
+                            );
+                            break;
+                        }
+
+                        // Decrypt / Encrypt the password
+                        $cryptedStuff = doDataEncryption(
+                            base64_decode(
+                                doDataDecryption(
+                                    $record['pw'],
+                                    decryptUserObjectKey(
+                                        $userKey['share_key'],
+                                        $_SESSION['user']['private_key']
+                                    )
+                                )
+                            )
                         );
 
                         // Insert the new record and get the new auto_increment id
@@ -1115,20 +1134,28 @@ if (null !== $post_type) {
                             array(
                                 'label' => 'duplicate',
                                 'id_tree' => $newFolderId,
-                                'pw' => $originalRecord['string'],
+                                'pw' => $cryptedStuff['encrypted'],
                                 'pw_iv' => '',
-                                'perso' => 0,
                                 'viewed_no' => 0,
                             )
                         );
                         $newItemId = DB::insertId();
+
+                        // Create sharekeys for users of this new ITEM
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_items'),
+                            $record['perso'],
+                            $newFolderId,
+                            $newItemId,
+                            $cryptedStuff['objectKey'],
+                            $SETTINGS
+                        );
 
                         // Generate the query to update the new record with the previous values
                         $aSet = array();
                         foreach ($record as $key => $value) {
                             if ($key !== 'id' && $key !== 'key' && $key !== 'id_tree'
                                 && $key !== 'viewed_no' && $key !== 'pw' && $key !== 'pw_iv'
-                                && $key !== 'perso'
                             ) {
                                 array_push($aSet, array($key => $value));
                             }
@@ -1140,24 +1167,115 @@ if (null !== $post_type) {
                             $newItemId
                         );
 
-                        // Add attached itms
-                        $rows2 = DB::query(
-                            'SELECT * FROM '.prefixTable('files').' WHERE id_item=%i',
-                            $newItemId
+                        // --------------------
+                        // Manage Custom Fields
+                        $categories = DB::query(
+                            'SELECT *
+                            FROM '.prefixTable('categories_items').'
+                            WHERE item_id = %i',
+                            $record['id']
                         );
-                        foreach ($rows2 as $record2) {
+                        foreach ($categories as $field) {
+                            // Create the entry for the new item
+
+                            // Is the data encrypted
+                            if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
+                                $cryptedStuff = doDataEncryption($field['value']);
+                            }
+
+                            // store field text
                             DB::insert(
-                                prefixTable('files'),
+                                prefixTable('categories_items'),
                                 array(
-                                    'id_item' => $newID,
-                                    'name' => $record2['name'],
-                                    'size' => $record2['size'],
-                                    'extension' => $record2['extension'],
-                                    'type' => $record2['type'],
-                                    'file' => $record2['file'],
-                                    )
+                                    'item_id' => $newItemId,
+                                    'field_id' => $field['field_id'],
+                                    'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
+                                        $cryptedStuff['encrypted'] :
+                                        $field['value'],
+                                    'data_iv' => '',
+                                    'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
+                                        TP_ENCRYPTION_NAME :
+                                        'not_set',
+                                )
                             );
+                            $newFieldId = DB::insertId();
+
+                            // Create sharekeys for users
+                            if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
+                                storeUsersShareKey(
+                                    prefixTable('sharekeys_fields'),
+                                    $record['id'],
+                                    $newFolderId,
+                                    $newFieldId,
+                                    $cryptedStuff['objectKey'],
+                                    $SETTINGS
+                                );
+                            }
                         }
+                        // <---
+
+                        // ------------------
+                        // Manage attachments
+
+                        // get file key
+                        $files = DB::query(
+                            'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
+                            f.size AS size, f.type AS type, s.share_key AS share_key
+                            FROM '.prefixTable('files').' AS f
+                            INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                            WHERE s.user_id = %i AND f.id_item = %i',
+                            $_SESSION['user_id'],
+                            $record['id']
+                        );
+                        foreach ($files as $file) {
+                            // Check if file still exists
+                            if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.base64_decode($file['file'])) === true) {
+                                // Step1 - decrypt the file
+                                $fileContent = decryptFile(
+                                    $file['file'],
+                                    $SETTINGS['path_to_upload_folder'],
+                                    decryptUserObjectKey($file['share_key'], $_SESSION['user']['private_key'])
+                                );
+
+                                // Step2 - create file
+                                $newFileName = md5(time().'_'.$file['id']).'.'.$file['extension'];
+                                fwrite(
+                                    fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$newFileName, 'ab'),
+                                    base64_decode($fileContent)
+                                );
+
+                                // Step3 - encrypt the file
+                                $newFile = encryptFile($newFileName, $SETTINGS['path_to_upload_folder']);
+
+                                // Step4 - store in database
+                                DB::insert(
+                                    prefixTable('files'),
+                                    array(
+                                        'id_item' => $newItemId,
+                                        'name' => $file['name'],
+                                        'size' => $file['size'],
+                                        'extension' => $file['extension'],
+                                        'type' => $file['type'],
+                                        'file' => $newFile['fileHash'],
+                                        'status' => TP_ENCRYPTION_NAME,
+                                        'confirmed' => 1,
+                                    )
+                                );
+                                $newFileId = DB::insertId();
+
+                                // Step5 - create sharekeys
+                                storeUsersShareKey(
+                                    prefixTable('sharekeys_files'),
+                                    $record['perso'],
+                                    $newFolderId,
+                                    $newFileId,
+                                    $newFile['objectKey'],
+                                    $SETTINGS
+                                );
+                            }
+                        }
+                        // <---
+
                         // Add this duplicate in logs
                         logItems(
                             $SETTINGS,

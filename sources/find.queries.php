@@ -465,6 +465,16 @@ if (isset($_GET['type']) === false) {
 
         $arr_data[$record['id']]['restricted'] = $restrictedTo;
 
+        // Get log for this item
+        $logs = DB::query(
+            'SELECT *
+            FROM '.prefixTable('log_items').'
+            WHERE id_item = %i AND action = %s AND id_user = %i',
+            $record['id'],
+            'at_creation',
+            $_SESSION['user_id']
+        );
+
         /*************** */
         $right = 0;
         // Possible values:
@@ -478,10 +488,7 @@ if (isset($_GET['type']) === false) {
 
         // Let's identify the rights belonging to this ITEM
         if ((int) $record['perso'] === 1
-            && $record('log_action') === 'at_creation'
-            && $record('log_user') === $_SESSION['user_id']
-            && (int) $folder_is_in_personal === 1
-            && (int) $folder_is_personal === 1
+            && DB::count() > 0
         ) {
             // Case 1 - Is this item personal and user its owner?
             // If yes then allow
@@ -614,7 +621,9 @@ if (isset($_GET['type']) === false) {
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
-        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true
+            && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1
+        ) {
             $data_item = DB::queryFirstRow(
                 'SELECT i.pw AS pw, s.share_key AS share_key
                 FROM '.prefixTable('items').' AS i
@@ -623,9 +632,8 @@ if (isset($_GET['type']) === false) {
                 $record['id'],
                 $_SESSION['user_id']
             );
-
             // Uncrypt PW
-            if (DB::count() === 0) {
+            if (DB::count() === 0 || empty($data_item['pw'])=== true) {
                 // No share key found
                 $pw = '';
             } else {
