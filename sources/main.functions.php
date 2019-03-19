@@ -3259,7 +3259,7 @@ function generateQuickPassword($length = 16)
  * @param int    $post_folder_is_personal Personal
  * @param int    $post_folder_id          Folder
  * @param int    $post_object_id          Object
- * @param array  $objectKey               Object key
+ * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
  */
 function storeUsersShareKey(

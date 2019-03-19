@@ -286,6 +286,18 @@ $(this).delay(500).queue(function() {
     $(this).dequeue();
 });
 
+// Keep the scroll position
+$(window).on("scroll", function() {
+    if ($('#folders-tree-card').hasClass('hidden') === false) {
+        store.set(
+            'teampassApplication',
+            {
+                tempScrollTop : $(window).scrollTop(),
+            }
+        );
+    }
+});
+
    
 
 // Ensure correct height of folders tree
@@ -752,12 +764,16 @@ $('.but-back-to-list').click(function() {
 // Manage if change is performed by user
 $('#form-item .track-change')
     .on('change', function() {
-        userDidAChange = true;
-        $(this).data('change-ongoing', true);
+        if (requestRunning === false) {
+            userDidAChange = true;
+            $(this).data('change-ongoing', true);
+        }
     })
     .on('ifToggled', function() {
-        userDidAChange = true;
-        $(this).data('change-ongoing', true);
+        if (requestRunning === false) {
+            userDidAChange = true;
+            $(this).data('change-ongoing', true);
+        }
     });
 
 /**
@@ -1541,6 +1557,11 @@ function closeItemDetailsCard()
         // Enable the parent in select
         $("#form-folder-add-parent option[value='"+selectedFolder.id.split('_')[1]+"']")
             .prop('disabled', false);
+
+        // Scroll back to position
+        if (store.get('teampassApplication').tempScrollTop > 0) {
+            window.scrollTo(store.get('teampassApplication').tempScrollTop); 
+        }
 
         console.log('Edit for closed');
     }
@@ -2434,32 +2455,58 @@ function searchItems(criteria)
         $('#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info').html('');
         $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
         $('#teampass_items_list').html('');
+        // Continu the list of results
+        finishingItemsFind(
+            'search_for_items',
+            $('#limited-search').is(":checked") === true ? store.get('teampassApplication').selectedFolder : false,
+            criteria,
+            0
+        );
+    }
+}
 
-console.log(store.get('teampassApplication'))
-        // send query
-        $.get(
-            'sources/find.queries.php',
-            {
-                type    : 'search_for_items',
-                limited : $('#limited-search').is(":checked") === true ? store.get('teampassApplication').selectedFolder : false,
-                search  : criteria,
-                key     : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                var pwd_error = '',
-                    icon_login,
-                    icon_pwd,
-                    icon_favorite;
+/**
+ * 
+ */
+function finishingItemsFind(type, limited, criteria, start)
+{
+    // send query
+    $.get(
+        'sources/find.queries.php',
+        {
+            type    : type,
+            limited : limited,
+            search  : criteria,
+            start   : start,
+            length  : 10,
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            var pwd_error = '',
+                icon_login,
+                icon_pwd,
+                icon_favorite;
 
-                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data)
 
-                // Ensure correct div is not hidden
-                $('#info_teampass_items_list').addClass('hidden');
-                $('#table_teampass_items_list').removeClass('hidden');
+            // Ensure correct div is not hidden
+            $('#info_teampass_items_list').addClass('hidden');
+            $('#table_teampass_items_list').removeClass('hidden');
 
-                // Show Items list
-                sList(data.html_json);
+            // Show Items list
+            sList(data.html_json);
 
+            if (data.start !== -1 && (data.start <= data.total)) {
+                // Continu the list of results
+                finishingItemsFind(
+                    'search_for_items',
+                    $('#limited-search').is(":checked") === true ?
+                        store.get('teampassApplication').selectedFolder : false,
+                    criteria,
+                    data.start
+                )
+            } else {
                 alertify
                     .success(data.message, 5)
                     .dismissOthers();
@@ -2470,8 +2517,8 @@ console.log(store.get('teampassApplication'))
 
                 adjustElemsSize();
             }
-        );
-    }
+        }
+    );
 }
 
 
@@ -3067,7 +3114,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
 function sList(data)
 {
-    console.log(data);
+    //console.log(data);
     var counter = 0;
     $.each(data, function(i, value) {
         var new_line = '',
@@ -3146,6 +3193,9 @@ function sList(data)
                     '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fas fa-circle fa-stack-2x text-danger"></i><i class="far fa-handshake fa-stack-1x fa-inverse"></i></span>' : 
                     pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite) +
                     '</span>' +
+                    (value.folder !== undefined ?
+                        '<br><span class="text-secondary small font-italic pointer open-folder" data-tree-id="' +
+                            value.tree_id + '"">[' + value.folder + ']</span>' : '') +
                     '</td>'
                 + '</tr>'
             );
@@ -3170,8 +3220,47 @@ function sList(data)
         $('#teampass_items_list')
             .append('<tr class="row"><td class="">&nbsp;</td></tr>');
     }
-    adjustElemsSize();    
+    adjustElemsSize();
+    
+    // Show tooltips
+    $('.infotip').tooltip();
 }
+
+$(document).on('click', '.open-folder', function() {
+    if ($(this).data('tree-id') !== undefined) {
+        console.log($(this).data('tree-id'))
+
+        // Prepare
+        store.update(
+            'teampassApplication',
+            function (teampassApplication) {
+                teampassApplication.itemsListFolderId = parseInt($(this).data('tree-id'));
+            }
+        );
+        store.update(
+            'teampassApplication',
+            function (teampassApplication) {
+                teampassApplication.selectedFolder = parseInt($(this).data('tree-id'));
+            }
+        );
+        store.update(
+            'teampassApplication',
+            function (teampassApplication) {
+                teampassApplication.itemsListStart = 0;
+            }
+        );
+
+        // Show
+        ListerItems(
+            $(this).data('tree-id'),
+            '',
+            0
+        );
+
+        $('#jstree').jstree('deselect_all');
+        $('#jstree').jstree('select_node', '#li_'+$(this).data('tree-id'));
+    }
+});
 
 
 function adjustElemsSize()
@@ -3368,9 +3457,9 @@ function Details(itemDefinition, actionType, hotlink = false)
     // Store current view
     savePreviousView();
 
-    store.each(function(value, key) {
+    /*store.each(function(value, key) {
         console.log(key, '==', value)
-    })
+    })*/
     console.log("Request is running: "+requestRunning)
     // If a request is already launched, then kill new.
     /*if (requestRunning === true) {
@@ -4091,11 +4180,11 @@ function showDetailsStep2(id, actionType)
                     type : 'delete_uploaded_files_but_not_saved',
                     data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                     key  : '<?php echo $_SESSION['key']; ?>'
-                },
+                }/*,
                 function(data) {
                     data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
                     console.log(data);
-                }
+                }*/
             );
          }
      );
@@ -4263,7 +4352,7 @@ function prepareOneTimeView()
                 });
 
                 alertify
-                    .success('<?php echo langHdl('success'); ?>', 0);
+                    .success('<?php echo langHdl('success'); ?>', 3);
 
             } else {
                 $('#card-item-otv').html(data.error);

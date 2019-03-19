@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -463,6 +463,11 @@ function refreshListLastSeenItems()
  */
 function showItemCard(itemDefinition)
 {
+    // Show cog
+    alertify
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+
     if (window.location.href.indexOf('page=items') === -1) {
         location.replace('<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&group='+itemDefinition.data().itemTreeId+'&id='+itemDefinition.data().itemId);
     } else {
@@ -474,7 +479,7 @@ function showItemCard(itemDefinition)
 
         // Hide sidebar-mini
         $('body')
-            .removeClass('control-sidebar-slide-open')
+            .removeClass('control-sidebar-slide-open');
     }
 }
 

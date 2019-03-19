@@ -6,15 +6,17 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
 
 return array(
+    'browse_folder' => 'Browse folder',
     'form_presents_inconsistencies' => 'The form presents some inconsistencies. Please check fields with red borders.',
     'download' => 'Download',
     'see' => 'See',

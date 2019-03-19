@@ -140,6 +140,8 @@ if (isset($_GET['order']) === true) {
             $sOrder = '';
         }
     }
+} else {
+    $sOrder = 'ORDER BY '.$aColumns[1].' ASC';
 }
 
 // Define criteria
@@ -633,7 +635,7 @@ if (isset($_GET['type']) === false) {
                 $_SESSION['user_id']
             );
             // Uncrypt PW
-            if (DB::count() === 0 || empty($data_item['pw'])=== true) {
+            if (DB::count() === 0 || empty($data_item['pw']) === true) {
                 // No share key found
                 $pw = '';
             } else {
@@ -665,7 +667,10 @@ if (isset($_GET['type']) === false) {
 
     $returnValues = array(
         'html_json' => $arr_data,
-        'message' => str_replace('%X%', $iFilteredTotal, langHdl('find_message')),
+        'message' => str_replace('%X%', $iTotal, langHdl('find_message')),
+        'total' => $iTotal,
+        'start' => (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ?
+            ((int) $_GET['start'] + (int) $_GET['length']) : -1,
     );
 
     echo prepareExchangedData($returnValues, 'encode');

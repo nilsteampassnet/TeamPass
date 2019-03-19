@@ -2581,6 +2581,7 @@ if (null !== $post_type) {
                                 'id = %i',
                                 $post_id
                             );
+
                             // log
                             logItems(
                                 $SETTINGS,
@@ -2591,6 +2592,14 @@ if (null !== $post_type) {
                                 $_SESSION['login'],
                                 'at_automatically_deleted'
                             );
+
+                            // Update cache table
+                            updateCacheTable(
+                                'delete_value',
+                                $SETTINGS,
+                                $post_id
+                            );
+
                             $arrData['to_be_deleted'] = 0;
                         } elseif ($dataDelete['del_type'] === '2') {
                             $arrData['to_be_deleted'] = date($SETTINGS['date_format'], $dataDelete['del_value']);
@@ -5608,7 +5617,7 @@ if (null !== $post_type) {
                             } else {
                                 $detail = trim($reason[1]);
                             }
-                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login','at_label', 'at_url')) === true) {
+                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url')) === true) {
                             $tmp = explode(' => ', $reason[1]);
                             $detail = empty(trim($tmp[0])) === true ?
                                 langHdl('no_previous_value') :
@@ -5623,6 +5632,8 @@ if (null !== $post_type) {
                             $detail = isBase64($tmp[0]) === true ?
                                 base64_decode($tmp[0]).'.'.$tmp[1] :
                                 $tmp[0];
+                        } elseif ($reason[0] === 'at_import') {
+                            $detail = '';
                         } else {
                             $detail = $reason[0];
                         }
