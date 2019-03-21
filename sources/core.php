@@ -68,7 +68,7 @@ $get_group = $superGlobal->get('group', 'GET');
 if (isset($_SERVER['HTTPS']) === true
     && $_SERVER['HTTPS'] !== 'on'
     && isset($SETTINGS['enable_sts']) === true
-    && $SETTINGS['enable_sts'] === '1'
+    && (int) $SETTINGS['enable_sts'] === 1
 ) {
     redirect('https://'.$superGlobal->get('HTTP_HOST', 'SERVER').$superGlobal->get('REQUEST_URI', 'SERVER'));
 }
@@ -217,16 +217,15 @@ if (empty($_SESSION['sessionDuration']) === false) {
 }
 
 // get some init
-if (isset($_SESSION['user_id']) === false) {
-    $_SESSION['key'] = mt_rand();
-    $_SESSION['user_id'] = '0';
-    $_SESSION['user_settings']['clear_psk'] = '';
+if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
+    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false);
+    $_SESSION['user_id'] = 0;
 }
 
 if (isset($_SESSION['user_id']) === true
     && isset($_GET['type']) === false
     && isset($_GET['action']) === false
-    && $_SESSION['user_id'] !== '0'
+    && (int) $_SESSION['user_id'] !== 0
     && (empty($_SESSION['sessionDuration']) === true
     || $_SESSION['sessionDuration'] < time()
     || empty($_SESSION['key']) === true
@@ -246,7 +245,7 @@ if (isset($_SESSION['user_id']) === true
 
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) === true
-        && $SETTINGS['log_connections'] === '1'
+        && (int) $SETTINGS['log_connections'] === 1
         && isset($_SESSION['login']) === true
         && empty($_SESSION['login']) === false
     ) {
@@ -352,7 +351,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
 
 /* Force HTTPS Strict Transport Security */
 if (isset($SETTINGS['enable_sts']) === true
-    && $SETTINGS['enable_sts'] === '1'
+    && (int) $SETTINGS['enable_sts'] === 1
     && isset($_SERVER['SSL_SERVER_CERT']) === true
 ) {
     // do a check to make sure that the certificate is not self signed.
@@ -434,11 +433,11 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 
         // user type
         if (isset($LANG) === true) {
-            if ($_SESSION['user_admin'] === '1') {
+            if ((int) $_SESSION['user_admin'] === 1) {
                 $_SESSION['user_privilege'] = $LANG['god'];
-            } elseif ($_SESSION['user_manager'] === '1') {
+            } elseif ((int) $_SESSION['user_manager'] === 1) {
                 $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-            } elseif ($_SESSION['user_read_only'] === '1') {
+            } elseif ((int) $_SESSION['user_read_only'] === 1) {
                 $_SESSION['user_privilege'] = $LANG['read_only_account'];
             } else {
                 $_SESSION['user_privilege'] = $LANG['user'];
@@ -451,7 +450,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 * LOAD CATEGORIES
 */
 if (isset($SETTINGS['item_extra_fields']) === true
-    && $SETTINGS['item_extra_fields'] === '1'
+    && (int) $SETTINGS['item_extra_fields'] === 1
     && isset($_GET['page']) === true
     && $_GET['page'] === 'items'
     && isset($_SESSION['fonction_id']) === true
@@ -518,12 +517,12 @@ if (isset($SETTINGS['item_extra_fields']) === true
 * Don't take into consideration if LDAP in use
 */
 $_SESSION['numDaysBeforePwExpiration'] = ''; //initiliaze variable
-if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
+if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change']) === true) {
-        if ($SETTINGS['pw_life_duration'] === '0') {
+        if ((int) $SETTINGS['pw_life_duration'] === 0) {
             $_SESSION['numDaysBeforePwExpiration'] = 'infinite';
             $_SESSION['validite_pw'] = true;
         } else {

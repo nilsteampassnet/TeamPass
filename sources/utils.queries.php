@@ -56,8 +56,17 @@ require_once 'main.functions.php';
 
 //Connect to DB
 include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = DB_PASSWD_CLEAR;
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
+//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+//$link->set_charset(DB_ENCODING);
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -131,7 +140,7 @@ if (null !== $post_type) {
                                 if (empty($post_salt_key) === false && null !== $post_salt_key) {
                                     $pw = cryption(
                                         $record['pw'],
-                                        mysqli_escape_string($link, stripslashes($post_salt_key)),
+                                        $post_salt_key,
                                         'decrypt',
                                         $SETTINGS
                                     );
@@ -215,207 +224,6 @@ if (null !== $post_type) {
             }
 
             echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
-            break;
-
-        //CASE user personal pwd re-encryption
-        case 'reencrypt_personal_pwd':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            if (null !== $post_data && empty($post_current_id) === false) {
-                // ON DEMAND
-
-                //decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    $post_data,
-                    'decode'
-                );
-
-                if (count($dataReceived) > 0) {
-                    // Prepare variables
-                    $post_psk = filter_var($dataReceived['new-saltkey'], FILTER_SANITIZE_STRING);
-                    $post_old_psk = filter_var($dataReceived['current-saltkey'], FILTER_SANITIZE_STRING);
-                } else {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_empty_data'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // do a check on old PSK
-                if (empty($post_psk) === true || empty($post_old_psk) === true) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_personal_saltkey_is_not_set'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // Prepare the PSK
-                $user_key_encoded = defuse_validate_personal_key(
-                    $post_old_psk,
-                    $_SESSION['user_settings']['encrypted_oldpsk']
-                );
-
-                // get data about pw
-                $dataItem = DB::queryfirstrow(
-                    'SELECT id, pw
-                    FROM '.prefixTable('items').'
-                    WHERE id = %i',
-                    $post_current_id
-                );
-
-                // decrypt with Defuse (assuming default)
-                $decrypt = cryption(
-                    $dataItem['pw'],
-                    $user_key_encoded,
-                    'decrypt',
-                    $SETTINGS
-                );
-                if (empty($decrypt['err']) === true) {
-                    $pw = $decrypt['string'];
-                } else {
-                    // An error occurred
-                    $pw = '';
-                }
-
-                // encrypt it
-                if (empty($pw) === false
-                    && isUTF8($pw) === true
-                ) {
-                    $encrypt = cryption(
-                        $pw,
-                        $session_psk,
-                        'encrypt',
-                        $SETTINGS
-                    );
-                    if (isUTF8($pw) === true) {
-                        // store Password
-                        DB::update(
-                            prefixTable('items'),
-                            array(
-                                'pw' => $encrypt['string'],
-                                'pw_iv' => '',
-                                ),
-                            'id = %i',
-                            $dataItem['id']
-                        );
-                    }
-                }
-            } else {
-                // COMPLETE RE-ENCRYPTION
-                // get data about pw
-                $data = DB::queryfirstrow(
-                    'SELECT id, pw, pw_iv, encryption_type
-                    FROM '.prefixTable('items').'
-                    WHERE id = %i',
-                    $post_current_id
-                );
-                if (empty($data['pw_iv']) && $data['encryption_type'] === 'not_set') {
-                    // check if pw encrypted with protocol #2
-                    $pw = decrypt(
-                        $data['pw'],
-                        $_SESSION['user_settings']['clear_psk']
-                    );
-                    if (empty($pw)) {
-                        // used protocol is #1
-                        $pw = decryptOld($data['pw'], $_SESSION['user_settings']['clear_psk']); // decrypt using protocol #1
-                    } else {
-                        // used protocol is #2
-                        // get key for this pw
-                        $dataItem = DB::queryfirstrow(
-                            'SELECT rand_key
-                            FROM '.prefixTable('keys').'
-                            WHERE `sql_table` = %s AND id = %i',
-                            'items',
-                            $data['id']
-                        );
-                        if (!empty($dataItem['rand_key'])) {
-                            // remove key from pw
-                            $pw = substr($pw, strlen($dataTemp['rand_key']));
-                        }
-                    }
-
-                    // encrypt it
-                    $encrypt = cryption(
-                        $pw,
-                        $_SESSION['user_settings']['session_psk'],
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // store Password
-                    DB::update(
-                        prefixTable('items'),
-                        array(
-                            'pw' => $encrypt['string'],
-                            'pw_iv' => '',
-                            'encryption_type' => 'defuse',
-                            ),
-                        'id = %i',
-                        $data['id']
-                    );
-                } elseif ($data['encryption_type'] === 'not_set') {
-                    // to be re-encrypted with defuse
-
-                    // decrypt
-                    $pw = cryption_phpCrypt(
-                        $data['pw'],
-                        $_SESSION['user_settings']['clear_psk'],
-                        $data['pw_iv'],
-                        'decrypt'
-                    );
-
-                    // encrypt
-                    $encrypt = cryption(
-                        $pw['string'],
-                        $_SESSION['user_settings']['session_psk'],
-                        'encrypt',
-                        $SETTINGS
-                    );
-
-                    // store Password
-                    DB::update(
-                        prefixTable('items'),
-                        array(
-                            'pw' => $encrypt['string'],
-                            'pw_iv' => '',
-                            'encryption_type' => 'defuse',
-                            ),
-                        'id = %i',
-                        $data['id']
-                    );
-                } else {
-                    // already re-encrypted
-                }
-            }
-
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'upgrade_needed' => 0,
-                    ),
-                'id = %i',
-                $_SESSION['user_id']
-            );
-            $_SESSION['user_upgrade_needed'] = 0;
-
-            echo '[{"error" : ""}]';
             break;
 
             //CASE auto update server password

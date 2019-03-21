@@ -38,6 +38,9 @@ class NestedTree
             'parent' => $parentField,
             'sort' => $sortField,
         );
+
+        $this->link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+        $this->link->set_charset(DB_ENCODING);
     }
 
     /**
@@ -62,16 +65,15 @@ class NestedTree
      */
     public function getNode($folder_id)
     {
-        global $link;
         $query = sprintf(
             'select %s from %s where %s = %d',
             join(',', $this->getFields()),
             $this->table,
             $this->fields['id'],
-            mysqli_real_escape_string($link, $folder_id)
+            mysqli_real_escape_string($this->link, $folder_id)
         );
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
         if ($row = mysqli_fetch_object($result)) {
             return $row;
         }
@@ -95,7 +97,6 @@ class NestedTree
      */
     public function getDescendants($folder_id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
     {
-        global $link;
         $idField = $this->fields['id'];
 
         $node = $this->getNode(filter_var($folder_id, FILTER_SANITIZE_NUMBER_INT));
@@ -157,7 +158,7 @@ class NestedTree
             }
         }
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {
@@ -199,7 +200,6 @@ class NestedTree
      */
     public function getPath($folder_id = 0, $includeSelf = false)
     {
-        global $link;
         $node = $this->getNode($folder_id);
         if (is_null($node)) {
             return array();
@@ -223,7 +223,7 @@ class NestedTree
             );
         }
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         $idField = $this->fields['id'];
         $arr = array();
@@ -245,7 +245,6 @@ class NestedTree
      */
     public function isDescendantOf($descendant_id, $ancestor_id)
     {
-        global $link;
         $node = $this->getNode($ancestor_id);
         if (is_null($node)) {
             return false;
@@ -259,12 +258,12 @@ class NestedTree
             and nright < %d',
             $this->table,
             $this->fields['id'],
-            mysqli_real_escape_string($link, $descendant_id),
+            mysqli_real_escape_string($this->link, $descendant_id),
             $node->nleft,
             $node->nright
         );
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         if ($row = mysqli_fetch_object($result)) {
             return $row->is_descendant > 0;
@@ -284,17 +283,16 @@ class NestedTree
      */
     public function isChildOf($child_id, $parent_id)
     {
-        global $link;
         $query = sprintf(
             'select count(*) as is_child from %s where %s = %d and %s = %d',
             $this->table,
             $this->fields['id'],
-            mysqli_real_escape_string($link, $child_id),
+            mysqli_real_escape_string($this->link, $child_id),
             $this->fields['parent'],
-            mysqli_real_escape_string($link, $parent_id)
+            mysqli_real_escape_string($this->link, $parent_id)
         );
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         if ($row = mysqli_fetch_object($result)) {
             return $row->is_child > 0;
@@ -312,10 +310,9 @@ class NestedTree
      */
     public function numDescendants($folder_id)
     {
-        global $link;
         if ($folder_id == 0) {
             $query = sprintf('select count(*) as num_descendants from %s', $this->table);
-            $result = mysqli_query($link, $query);
+            $result = mysqli_query($this->link, $query);
             if ($row = mysqli_fetch_object($result)) {
                 return (int) $row->num_descendants;
             }
@@ -338,14 +335,13 @@ class NestedTree
      */
     public function numChildren($folder_id)
     {
-        global $link;
         $query = sprintf(
             'select count(*) as num_children from %s where %s = %d',
             $this->table,
             $this->fields['parent'],
-            mysqli_real_escape_string($link, $folder_id)
+            mysqli_real_escape_string($this->link, $folder_id)
         );
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
         if ($row = mysqli_fetch_object($result)) {
             return (int) $row->num_children;
         }
@@ -360,7 +356,6 @@ class NestedTree
      */
     public function getTreeWithChildren()
     {
-        global $link;
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
@@ -371,7 +366,7 @@ class NestedTree
             $this->fields['sort']
         );
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         // create a root node to hold child data about first level items
         $root = new \stdClass();
@@ -401,7 +396,6 @@ class NestedTree
      */
     public function rebuild()
     {
-        global $link;
         $data = $this->getTreeWithChildren();
 
         $n_tally = 0; // need a variable to hold the running n tally
@@ -434,7 +428,7 @@ class NestedTree
                 $this->fields['id'],
                 $folder_id
             );
-            mysqli_query($link, $query);
+            mysqli_query($this->link, $query);
         }
     }
 
@@ -479,7 +473,6 @@ class NestedTree
      */
     public function getImmediateFamily($folder_id)
     {
-        global $link;
         $node = $this->getNode($folder_id);
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
@@ -507,7 +500,7 @@ class NestedTree
             );
         }
 
-        $result = mysqli_query($link, $query);
+        $result = mysqli_query($this->link, $query);
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {

@@ -615,4 +615,23 @@ function userShareKeysReencryptionNext(userId, step, start)
     }
 }
 
+// This permits to manage the column width of tree/items
+$(document).on('click', '.columns-position', function() {
+    var colLeft = $('#folders-tree-card').find('.column-left'),
+        colRight = $('#folders-tree-card').find('.column-right'),
+        counterLeft = $(colLeft).attr("class").match(/col-md-[\w-]*\b/)[0].split('-')[2],
+        counterRight = $(colRight).attr("class").match(/col-md-[\w-]*\b/)[0].split('-')[2];
+
+    // Toogle class
+    if ($('#folders-tree-card').hasClass('hidden') === false) {
+        if ($(this).hasClass('tree-decrease') === true && counterRight < 9) {
+            $(colLeft).toggleClass('col-md-'+counterLeft + ' col-md-'+(parseInt(counterLeft) - 1));
+            $(colRight).toggleClass('col-md-'+counterRight + ' col-md-'+(parseInt(counterRight) + 1));
+        } else if ($(this).hasClass('tree-increase') === true && counterLeft < 9) {
+            $(colLeft).toggleClass('col-md-'+counterLeft + ' col-md-'+(parseInt(counterLeft) + 1));
+            $(colRight).toggleClass('col-md-'+counterRight + ' col-md-'+(parseInt(counterRight) - 1));
+        }
+    }
+})
+
 </script>

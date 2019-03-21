@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -58,7 +58,7 @@ require_once 'main.functions.php';
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+//$link->set_charset(DB_ENCODING);
 
 // Protect POST
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);

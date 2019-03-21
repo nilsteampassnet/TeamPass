@@ -16,6 +16,11 @@
  */
 
 return array(
+    'otv_link' => 'One-time-view link',
+    'one_time_view' => 'One-time-view',
+    'display_options' => 'Display options',
+    'move_right_columns_separator' => 'Move columns separator Right',
+    'move_left_columns_separator' => 'Move columns separator Left',
     'browse_folder' => 'Browse folder',
     'form_presents_inconsistencies' => 'The form presents some inconsistencies. Please check fields with red borders.',
     'download' => 'Download',

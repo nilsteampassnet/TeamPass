@@ -47,14 +47,17 @@ require_once 'main.functions.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
-DB::$user = DB_USER;
-DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-DB::$dbName = DB_NAME;
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
 DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = DB_PASSWD_CLEAR;
+DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
+//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+//$link->set_charset(DB_ENCODING);
 
 // Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -95,7 +98,7 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
     if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['column'])
     ) {
         $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-        .mysqli_escape_string($link, $_GET['order'][0]['column']).', ';
+        .filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_STRING).', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -190,7 +193,7 @@ foreach ($rows as $record) {
             if (count($rolesList) > 0) {
                 foreach ($rolesList as $fonction) {
                     if (in_array($fonction['id'], explode(';', $record['fonction_id']))) {
-                        $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($fonction['title'], FILTER_SANITIZE_STRING))).'<br />';
+                        $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'<br />';
                     }
                 }
                 $listAlloFcts_position = true;
@@ -208,7 +211,7 @@ foreach ($rows as $record) {
                     if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                         $ident = '';
                         if (in_array($t->id, explode(';', $record['groupes_visibles']))) {
-                            $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
+                            $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($ident.$t->title, FILTER_SANITIZE_STRING)).'<br />';
                         }
                         $prev_level = $t->nlevel;
                     }
@@ -222,7 +225,7 @@ foreach ($rows as $record) {
                 foreach ($treeDesc as $t) {
                     $ident = '';
                     if (in_array($t->id, explode(';', $record['groupes_interdits']))) {
-                        $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
+                        $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($ident.$t->title, FILTER_SANITIZE_STRING)).'<br />';
                     }
                     $prev_level = $t->nlevel;
                 }

@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -582,24 +582,28 @@ function launchIdentify(isDuo, redirect, psk)
             type : 'get2FAMethods'
         },
         function(data) {
-            var data = JSON.parse(data),
-                mfaData = {};
-            console.log("get2FAMethods")
-            //console.log(data)
-            console.log('>> '+user2FaMethod)
+            data = prepareExchangedData(
+                    data,
+                    "decode",
+                    "<?php echo $_SESSION['key']; ?>"
+                );
+            var mfaData = {};
+            //console.log("get2FAMethods")
+            console.log(data)
+            //console.log('>> '+data.user2FaMethod)
 
             // Google 2FA
-            if (user2FaMethod === 'agses' && $('#agses_code').val() !== undefined) {
+            if (data.agses === true && $('#agses_code').val() !== undefined) {
                 mfaData['agses_code'] = $('#agses_code').val();
             }
     
             // Google 2FA
-            if (user2FaMethod === 'google' && $('#ga_code').val() !== undefined) {
+            if (data.google === true && $('#ga_code').val() !== undefined) {
                 mfaData['GACode'] = $('#ga_code').val();
             }
             
             // Yubico
-            if (user2FaMethod === 'yubico' && $('#yubico_key').val() !== undefined) {
+            if (data.yubico === true && $('#yubico_key').val() !== undefined) {
                 mfaData['yubico_key'] = $('#yubico_key').val();
                 mfaData['yubico_user_id'] = $('#yubico_user_id').val();
                 mfaData['yubico_user_key'] = $('#yubico_user_key').val();                
@@ -616,9 +620,9 @@ function launchIdentify(isDuo, redirect, psk)
             mfaData['user_2fa_selection'] = user2FaMethod;
 
             // Handle if DUOSecurity is enabled
-            if (user2FaMethod === 'agses' && $('#agses_code').val() === '') {
+            if (data.agses === true && $('#agses_code').val() === '') {
                 startAgsesAuth();
-            } else if (user2FaMethod !== 'duo' || $('#login').val() === 'admin') {
+            } else if (data.duo === false || $('#login').val() === 'admin') {
                 identifyUser(redirect, psk, mfaData, randomstring);
             } else {
                 // Handle if DUOSecurity is enabled
@@ -657,7 +661,6 @@ function identifyUser(redirect, psk, data, randomstring)
         },
         function(check_data) {
             if (parseInt(check_data) === 1) {
-                console.log(data);
                 //send query
                 $.post(
                     "sources/identify.php",
@@ -666,7 +669,11 @@ function identifyUser(redirect, psk, data, randomstring)
                         data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
                     },
                     function(receivedData) {
-                        var data = JSON.parse(receivedData);
+                        var data = prepareExchangedData(
+                            receivedData,
+                            "decode",
+                            "<?php echo $_SESSION['key']; ?>"
+                        );
                         console.log(data);
 
                         if (data.value === randomstring) {

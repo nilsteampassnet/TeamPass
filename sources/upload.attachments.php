@@ -75,14 +75,17 @@ if (null === $post_user_token) {
     //Connect to mysql server
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());

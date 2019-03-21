@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -126,15 +126,19 @@ if ($post_type === 'identify_duo_user') {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
             // connect to the server
+            if (defined('DB_PASSWD_CLEAR') === false) {
+                define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+            }
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+            if (defined('DB_PASSWD_CLEAR') === false) {
+                define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+            }
             DB::$host = DB_HOST;
             DB::$user = DB_USER;
-            DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+            DB::$password = DB_PASSWD_CLEAR;
             DB::$dbName = DB_NAME;
             DB::$port = DB_PORT;
             DB::$encoding = DB_ENCODING;
-            $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-            $link->set_charset(DB_ENCODING);
 
             // is user in Teampass?
             $data = DB::queryfirstrow(
@@ -211,8 +215,17 @@ if ($post_type === 'identify_duo_user') {
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // do checks
     if (null !== $post_cardid && empty($post_cardid) === true) {
@@ -307,6 +320,12 @@ if ($post_type === 'identify_duo_user') {
     // NORMAL IDENTICATION STEP
     //--------
 
+    // decrypt and retreive data in JSON format
+    /*$dataReceived = prepareExchangedData(
+        $post_data,
+        'decode'
+    );*/
+
     // increment counter of login attempts
     if (empty($_SESSION['pwd_attempts'])) {
         $_SESSION['pwd_attempts'] = 1;
@@ -332,7 +351,7 @@ if ($post_type === 'identify_duo_user') {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
 
         // Encrypt data to return
-        echo json_encode(
+        echo prepareExchangedData(
             array(
                 'value' => 'bruteforce_wait',
                 'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
@@ -340,61 +359,34 @@ if ($post_type === 'identify_duo_user') {
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => true,
                 'message' => langHdl('error_bad_credentials_more_than_3_times'),
-            )
+            ),
+            'encode'
         );
 
         return false;
     }
-} elseif ($post_type === 'store_data_in_cookie') {
-    //--------
-    // STORE DATA IN COOKIE
-    //--------
-    //
-    // not used any more (only development purpose)
-    if ($post_key !== $_SESSION['key']) {
-        echo '[{"error" : "something_wrong"}]';
-
-        return false;
-    }
-    // store some connection data in cookie
-    setcookie(
-        'TeamPassC',
-        $post_data,
-        time() + 60 * 60,
-        '/'
-    );
+    // ---
+    // ---
+    // ---
 } elseif ($post_type === 'get2FAMethods') {
     //--------
-    // STORE DATA IN COOKIE
+    // Get MFA methods
     //--------
     //
-    $agses = $duo = $google = $yubico = $nb = 0;
-    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
-        $agses = 1;
-        ++$nb;
-    }
-    if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
-        $google = 1;
-        ++$nb;
-    }
-    if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
-        $yubico = 1;
-        ++$nb;
-    }
-    if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
-        $duo = 1;
-        ++$nb;
-    }
 
     // Encrypt data to return
-    echo json_encode(
+    echo prepareExchangedData(
         array(
-            'agses' => $agses,
-            'google' => $google,
-            'yubico' => $yubico,
-            'duo' => $duo,
-            'nb' => $nb,
-        )
+            'agses' => (isset($SETTINGS['agses_authentication_enabled']) === true
+                && (int) $SETTINGS['agses_authentication_enabled'] === 1) ? true : false,
+            'google' => (isset($SETTINGS['google_authentication']) === true
+            && (int) $SETTINGS['google_authentication'] === 1) ? true : false,
+            'yubico' => (isset($SETTINGS['yubico_authentication']) === true
+            && (int) $SETTINGS['yubico_authentication'] === 1) ? true : false,
+            'duo' => (isset($SETTINGS['duo']) === true
+            && (int) $SETTINGS['duo'] === 1) ? true : false,
+        ),
+        'encode'
     );
 
     return false;
@@ -443,14 +435,17 @@ function identifyUser($sentData, $SETTINGS)
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
@@ -493,7 +488,7 @@ function identifyUser($sentData, $SETTINGS)
         || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
-        echo json_encode(
+        echo prepareExchangedData(
             array(
                 'value' => '2fa_not_set',
                 'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
@@ -501,10 +496,11 @@ function identifyUser($sentData, $SETTINGS)
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => '2fa_not_set',
                 'message' => langHdl('2fa_credential_not_correct'),
-            )
+            ),
+            'encode'
         );
 
-        return;
+        return false;
     }
 
     // Debug
@@ -603,7 +599,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo json_encode($ret['message']);
             } elseif ($ret['proceedIdentification'] !== true && $ret['userInLDAP'] === true) {
                 logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-                echo json_encode(
+                echo prepareExchangedData(
                     array(
                         'value' => '',
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
@@ -611,10 +607,11 @@ function identifyUser($sentData, $SETTINGS)
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                         'error' => 'user_not_exists7',
                         'message' => langHdl('error_bad_credentials'),
-                    )
+                    ),
+                    'encode'
                 );
 
-                return;
+                return false;
             } else {
                 $ldapConnection = true;
                 $user_info_from_ad = $ret['user_info_from_ad'];
@@ -633,7 +630,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo json_encode($ret['message']);
             } elseif ($ret['proceedIdentification'] !== true) {
                 logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-                echo json_encode(
+                echo prepareExchangedData(
                     array(
                         'value' => '',
                         'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
@@ -641,10 +638,11 @@ function identifyUser($sentData, $SETTINGS)
                         'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                         'error' => 'user_not_exists8',
                         'message' => langHdl('error_bad_credentials'),
-                    )
+                    ),
+                    'encode'
                 );
 
-                return;
+                return false;
             } else {
                 $auth_username = $ret['auth_username'];
                 $proceedIdentification = $ret['proceedIdentification'];
@@ -699,9 +697,9 @@ function identifyUser($sentData, $SETTINGS)
         );
 
         if ($ret['error'] === true) {
-            echo json_encode($ret['message']);
+            echo prepareExchangedData($ret['message'], 'encode');
 
-            return;
+            return false;
         } else {
             $proceedIdentification = $ret['proceedIdentification'];
             $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
@@ -722,7 +720,7 @@ function identifyUser($sentData, $SETTINGS)
 
     if (DB::count() === 0) {
         logEvents('failed_auth', 'user_not_exists', '', $username, $username);
-        echo json_encode(
+        echo prepareExchangedData(
             array(
                 'value' => '',
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
@@ -730,10 +728,11 @@ function identifyUser($sentData, $SETTINGS)
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                 'error' => 'user_not_exists1 '.$username,
                 'message' => langHdl('error_bad_credentials'),
-            )
+            ),
+            'encode'
         );
 
-        return;
+        return false;
     }
 
     // check GA code
@@ -877,7 +876,7 @@ function identifyUser($sentData, $SETTINGS)
     // If admin user then check if folder install exists
     // if yes then refuse connection
     if ((int) $data['admin'] === 1 && is_dir('../install') === true) {
-        echo json_encode(
+        echo prepareExchangedData(
             array(
                 'value' => '',
                 'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
@@ -885,16 +884,17 @@ function identifyUser($sentData, $SETTINGS)
                 'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                 'error' => true,
                 'message' => 'Install folder has to be removed!',
-            )
+            ),
+            'encode'
         );
 
-        return;
+        return false;
     }
 
     if ($proceedIdentification === true) {
         // Check user and password
         if (checkCredentials($passwordClear, $data, $dataReceived, $username, $SETTINGS) !== true) {
-            echo json_encode(
+            echo prepareExchangedData(
                 array(
                     'value' => '',
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
@@ -902,10 +902,11 @@ function identifyUser($sentData, $SETTINGS)
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
                     'error' => 'user_not_exists2',
                     'message' => langHdl('error_bad_credentials'),
-                )
+                ),
+                'encode'
             );
 
-            return;
+            return false;
         } else {
             $userPasswordVerified = true;
         }
@@ -938,7 +939,7 @@ function identifyUser($sentData, $SETTINGS)
             $_SESSION['pwd_attempts'] = 0;
 
             // Generate a ramdom ID
-            $key = GenerateCryptKey(50);
+            //$key = GenerateCryptKey(50, false, true, true, false);
 
             // Debug
             debugIdentify(
@@ -991,7 +992,7 @@ function identifyUser($sentData, $SETTINGS)
             $_SESSION['last_pw_change'] = $data['last_pw_change'];
             $_SESSION['last_pw'] = $data['last_pw'];
             $_SESSION['can_create_root_folder'] = $data['can_create_root_folder'];
-            $_SESSION['key'] = $key;
+            //$_SESSION['key'] = $key;
             $_SESSION['personal_folder'] = $data['personal_folder'];
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
@@ -1279,7 +1280,7 @@ function identifyUser($sentData, $SETTINGS)
             */
         } elseif ((int) $data['disabled'] === 1) {
             // User and password is okay but account is locked
-            echo json_encode(
+            echo prepareExchangedData(
                 array(
                     'value' => $return,
                     'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
@@ -1298,10 +1299,11 @@ function identifyUser($sentData, $SETTINGS)
                     'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
                     //'debug' => $_SESSION['user']['private_key'],
                     //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
-                )
+                ),
+                'encode'
             );
 
-            return;
+            return false;
         } else {
             // User exists in the DB but Password is false
             // check if user is locked
@@ -1330,7 +1332,7 @@ function identifyUser($sentData, $SETTINGS)
             );
             // What return shoulb we do
             if ($userIsLocked === true) {
-                echo json_encode(
+                echo prepareExchangedData(
                     array(
                         'value' => $return,
                         'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
@@ -1349,10 +1351,11 @@ function identifyUser($sentData, $SETTINGS)
                         'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
                         //'debug' => $_SESSION['user']['private_key'],
                         //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
-                    )
+                    ),
+                    'encode'
                 );
 
-                return;
+                return false;
             /*} elseif ($SETTINGS['nb_bad_authentication'] === '0') {
                 return json_encode(
                     array(
@@ -1367,7 +1370,7 @@ function identifyUser($sentData, $SETTINGS)
                     )
                 );*/
             } else {
-                echo json_encode(
+                echo prepareExchangedData(
                     array(
                         'value' => $return,
                         'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
@@ -1386,10 +1389,11 @@ function identifyUser($sentData, $SETTINGS)
                         'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
                         //'debug' => $_SESSION['user']['private_key'],
                         //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
-                    )
+                    ),
+                    'encode'
                 );
 
-                return;
+                return false;
             }
         }
     } else {
@@ -1401,7 +1405,7 @@ function identifyUser($sentData, $SETTINGS)
         if ($user_initial_creation_through_ldap === true) {
             $return = 'new_ldap_account_created';
         } else {
-            echo json_encode(
+            echo prepareExchangedData(
                 array(
                     'value' => $return,
                     'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
@@ -1420,10 +1424,11 @@ function identifyUser($sentData, $SETTINGS)
                     'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
                     //'debug' => $_SESSION['user']['private_key'],
                     //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
-                )
+                ),
+                'encode'
             );
 
-            return;
+            return false;
         }
     }
 
@@ -1435,7 +1440,7 @@ function identifyUser($sentData, $SETTINGS)
         'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
     );
 
-    echo json_encode(
+    echo prepareExchangedData(
         array(
             'value' => $return,
             'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
@@ -1453,7 +1458,8 @@ function identifyUser($sentData, $SETTINGS)
             'session_key' => $_SESSION['key'],
             'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
             //'action_on_login' => isset($data['special']) === true ? base64_encode($data['special']) : '',
-        )
+        ),
+        'encode'
     );
 }
 
@@ -2161,7 +2167,7 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
             $data['id']
         );
     }
-    
+
     // check the given password
     if ($userPasswordVerified !== true) {
         if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {

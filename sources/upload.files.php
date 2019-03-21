@@ -323,12 +323,8 @@ if (!$chunks || $chunk == $chunks - 1) {
     die();
 }
 
-// phpcrypt
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
-use PHP_Crypt\PHP_Crypt as PHP_Crypt;
-
 // generate file name
-$newFileName = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+$newFileName = bin2hex(GenerateCryptKey(16));
 
 //Connect to mysql server
 //require_once '../../includes/config/settings.php';
@@ -340,7 +336,7 @@ DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+//$link->set_charset(DB_ENCODING);
 
 if (null !== ($post_type_upload)
     && empty($post_type_upload) === false

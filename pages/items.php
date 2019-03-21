@@ -464,13 +464,14 @@ echo '
                                     <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="far fa-bell mr-2"></i><?php echo langHdl('notification'); ?></a>
                                     <?php
                                     if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
-                                        && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
+                                        && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
                                     ) {
                                         ?>
                                     <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="fas fa-volume-up mr-2"></i><?php echo langHdl('item_menu_copy_elem'); ?></a>
                                     <?php
                                     }
                                     ?>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="otv"><i class="far fa-eye mr-2"></i><?php echo langHdl('one_time_view'); ?></a>
                                 </div>
                             </div>
                         </span>
@@ -874,11 +875,45 @@ echo '
                             <p><?php echo langHdl('notification_message'); ?></p>
                         </div>
                         <div class="form-group">
-                        <input type="checkbox" class="flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
+                            <input type="checkbox" class="flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
                         </div>
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('perform'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+
+        <!-- OTV ITEM FORM -->
+        <div class="row hidden form-item-otv form-item-action">
+            <div class="col-12">
+
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5><i class="far fa-eye mr-2"></i><?php echo langHdl('one_time_view'); ?></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="callout callout-info">
+                            <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                            <p><?php echo langHdl('notification_message'); ?></p>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="form-item-otv-link"><?php echo langHdl('otv_link'); ?></label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control clear-me-val" id="form-item-otv-link">
+                                <div class="input-group-prepend">
+                                    <button type="button" class="btn btn-warning btn-copy-clipboard"  id="form-item-otv-copy-button"><?php echo langHdl('copy'); ?></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
                         <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
@@ -1024,7 +1059,7 @@ echo '
                         
 
         <div class="row h-25" id="folders-tree-card">
-            <div class="col-md-3">
+            <div class="col-md-5 column-left">
                 <div class="card card-info card-outline">
                     <div class="card-header">
                         <div class="row justify-content-end">
@@ -1070,59 +1105,60 @@ echo '
                 </div><!-- /.card -->
             </div>
             <!-- /.col-md-6 -->
-            <div class="col-md-9">
-            <div class="card card-primary card-outline" id="items-list-card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <div class="row justify-content-start">
-                            <div class="col">
-                                <div class="btn-group" id="btn-new-item">
-                                    <button type="button" class="btn btn-primary btn-sm tp-action"
-                                        data-item-action="new">
-                                        <i class="fas fa-plus mr-2"></i><?php echo langHdl('new_item'); ?>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find_items">
-                                    <div class="input-group-append">
-                                        <div class="btn btn-primary" id="find_items_button">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <span class="sr-only">Toggle Dropdown</span>
+            <div class="col-md-7 column-right">
+                <div class="card card-primary card-outline" id="items-list-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="row justify-content-start">
+                                <div class="col">
+                                    <div class="btn-group" id="btn-new-item">
+                                        <button type="button" class="btn btn-primary btn-sm tp-action"
+                                            data-item-action="new">
+                                            <i class="fas fa-plus mr-2"></i><?php echo langHdl('new_item'); ?>
                                         </button>
-                                        <div class="dropdown-menu">
-                                            <div class="dropdown-item">   
-                                                <input type="checkbox" class=" mr-2" id="limited-search">
-                                                <label class="form-check-label" for="limited-search"><?php echo langHdl('limited_search'); ?></label>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find_items">
+                                        <div class="input-group-append">
+                                            <div class="btn btn-primary" id="find_items_button">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                            <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <span class="sr-only">Toggle Dropdown</span>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <div class="dropdown-item">   
+                                                    <input type="checkbox" class=" mr-2" id="limited-search">
+                                                    <label class="form-check-label" for="limited-search"><?php echo langHdl('limited_search'); ?></label>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- /.card-tools -->
                     </div>
-                    <!-- /.card-tools -->
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body p-1">
-                    <div class="table-responsive">
-                        <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
-                            <tbody id="teampass_items_list"></tbody>
-                        </table>
-                        <!-- /.table -->
+                    <!-- /.card-header -->
+                    <div class="card-body p-1">
+                        <div class="table-responsive">
+                            <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
+                                <tbody id="teampass_items_list"></tbody>
+                            </table>
+                            <!-- /.table -->
+                        </div>
+                        
+                        <div class="form-group row justify-content-md-center hidden" id="info_teampass_items_list"></div>
+                    <!-- /.mail-box-messages -->
                     </div>
-                    
-                    <div class="form-group row justify-content-md-center hidden" id="info_teampass_items_list"></div>
-                <!-- /.mail-box-messages -->
+                    <!-- /.card-body -->
+                    <div class="card-footer p-0">
+                    </div>
                 </div>
-                <!-- /.card-body -->
-                <div class="card-footer p-0">
-                </div>
+                <!-- /. box -->
             </div>
-            <!-- /. box -->
         </div>
         <!-- /.col -->
         

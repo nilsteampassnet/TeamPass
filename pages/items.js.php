@@ -692,6 +692,23 @@ $('.tp-action').click(function() {
         //
         // > END <
         //
+    } else if ($(this).data('item-action') === 'otv') {
+        console.info('SHOW OTV ITEM');
+
+        // Store current view
+        savePreviousView();
+
+        // Generate link
+        prepareOneTimeView();
+
+        $('#form-item-otv-link').val('');
+        // Show notify form
+        $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
+        $('.form-item-otv, .item-details-card-menu').removeClass('hidden');
+        
+        //
+        // > END <
+        //
     }
 });
 
@@ -858,6 +875,8 @@ $(document).on('click', '#form-item-request-access-perform', function() {
             }
         }
     );
+    
+    scrollBackToPosition();
 });
 
 
@@ -1558,13 +1577,11 @@ function closeItemDetailsCard()
         $("#form-folder-add-parent option[value='"+selectedFolder.id.split('_')[1]+"']")
             .prop('disabled', false);
 
-        // Scroll back to position
-        if (store.get('teampassApplication').tempScrollTop > 0) {
-            window.scrollTo(store.get('teampassApplication').tempScrollTop); 
-        }
-
         console.log('Edit for closed');
     }
+
+    // Scroll back to position
+    scrollBackToPosition();
 }
 
 
@@ -1699,14 +1716,15 @@ $('.btn-no-click')
 var mouseStillDown = false;
 $('.item-details-card').on('mousedown', '.unhide_masked_data', function(event) {
     mouseStillDown = true;
-
     showPwdContinuous();
 })
 .on('mouseup', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
+    showPwdContinuous();
 })
 .on('mouseleave', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
+    showPwdContinuous();
 });
 var showPwdContinuous = function(){
     if(mouseStillDown === true) {
@@ -1726,21 +1744,22 @@ var showPwdContinuous = function(){
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;') +
                 '</span>'
-            )
-            .addClass('pwd-shown');
+            );
             
         setTimeout('showPwdContinuous("card-item-pwd")', 50);
         // log password is shown
-        if ($('#card-item-pwd').hassClass('pwd-shown') === true) {
+        if ($('#card-item-pwd').hasClass('pwd-shown') === false) {
             itemLog(
                 'at_password_shown',
                 store.get('teampassItem').id,
                 $('#card-item-label').text()
             );
-            $('#card-item-pwd').removeClass('pwd-shown');
+            $('#card-item-pwd').addClass('pwd-shown');
         }
     } else {
-        $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+        $('#card-item-pwd')
+            .html('<?php echo $var['hidden_asterisk']; ?>')
+            .removeClass('pwd-shown');
     }
 };
 
@@ -4334,9 +4353,9 @@ function prepareOneTimeView()
         function(data) {
             //check if format error
             if (data.error == "") {
-                $('#card-item-otv').val(data.url);
+                $('#form-item-otv-link').val(data.url);
                 // prepare clipboard
-                var clipboard = new Clipboard("#card-item-otv-copy-button", {
+                var clipboard = new Clipboard("#form-item-otv-copy-button", {
                     text: function() {
                         return data.url;
                     }
@@ -4350,12 +4369,6 @@ function prepareOneTimeView()
                     );
                     e.clearSelection();
                 });
-
-                alertify
-                    .success('<?php echo langHdl('success'); ?>', 3);
-
-            } else {
-                $('#card-item-otv').html(data.error);
             }
         },
         "json"
@@ -4529,11 +4542,30 @@ function searchItemsWithTags(criteria)
     }
 }
 
-function isBase64(str) {
+/**
+ * Checks if string is base64 encoded
+ *
+ * @return bool
+ */
+function isBase64(str)
+{
     try {
         return btoa(atob(str)) == str;
     } catch (err) {
         return false;
+    }
+}
+
+/**
+ * Scroll back to previous vertical position
+ *
+ * @return void
+ */
+function scrollBackToPosition()
+{
+    // Scroll back to position
+    if (store.get('teampassApplication').tempScrollTop > 0) {
+        window.scrollTo({top: store.get('teampassApplication').tempScrollTop}); 
     }
 }
 

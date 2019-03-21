@@ -73,8 +73,17 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = DB_PASSWD_CLEAR;
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
+//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+//$link->set_charset(DB_ENCODING);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -830,11 +839,13 @@ if (null !== $post_type) {
                 $rows = DB::query(
                     'SELECT *
                     FROM '.prefixTable('log_system').'
-                    WHERE type = %s AND field_1=%i
+                    WHERE type = %s AND field_1 = %i
                     ORDER BY date DESC
-                    LIMIT '.mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).', '.mysqli_real_escape_string($link, $post_nb_items_by_page),
+                    LIMIT %i, %i',
                     'user_mngt',
-                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
+                    filter_var($start, FILTER_SANITIZE_NUMBER_INT),
+                    $post_nb_items_by_page
                 );
             }
             // generate data

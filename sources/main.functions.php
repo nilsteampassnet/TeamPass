@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -31,20 +31,8 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
     }
 }
 
-// load phpCrypt
-if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-    include_once '../includes/libraries/phpcrypt/phpCrypt.php';
-    include_once '../includes/config/settings.php';
-} else {
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-}
-
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
-
-// Prepare PHPCrypt class calls
-use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
 /**
  * Convert language code to string.
@@ -307,72 +295,6 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-/*
- * cryption() - Encrypt and decrypt string based upon phpCrypt library
- *
- * Using AES_128 and mode CBC
- *
- * $key and $init_vect have to be given in hex format
- */
-function cryption_phpCrypt($string, $key, $init_vect, $type)
-{
-    // manage key origin
-    if (null != SALT && $key != SALT) {
-        // check key (AES-128 requires a 16 bytes length key)
-        if (strlen($key) < 16) {
-            for ($inc = strlen($key) + 1; $inc <= 16; ++$inc) {
-                $key .= chr(0);
-            }
-        } elseif (strlen($key) > 16) {
-            $key = substr($key, 16);
-        }
-    }
-
-    // load crypt
-    $crypt = new PHP_Crypt($key, PHP_Crypt::CIPHER_AES_128, PHP_Crypt::MODE_CBC);
-
-    if ($type === 'encrypt') {
-        // generate IV and encrypt
-        $init_vect = $crypt->createIV();
-        $encrypt = $crypt->encrypt($string);
-        // return
-        return array(
-            'string' => bin2hex($encrypt),
-            'iv' => bin2hex($init_vect),
-            'error' => empty($encrypt) ? 'ERR_ENCRYPTION_NOT_CORRECT' : '',
-        );
-    } elseif ($type === 'decrypt') {
-        // case if IV is empty
-        if (empty($init_vect)) {
-            return array(
-                'string' => '',
-                'error' => 'ERR_ENCRYPTION_NOT_CORRECT',
-            );
-        }
-
-        // convert
-        try {
-            $string = testHex2Bin(trim($string));
-            $init_vect = testHex2Bin($init_vect);
-        } catch (Exception $e) {
-            return array(
-                'string' => '',
-                'error' => 'ERR_ENCRYPTION_NOT_CORRECT',
-            );
-        }
-
-        // load IV
-        $crypt->IV($init_vect);
-        // decrypt
-        $decrypt = $crypt->decrypt($string);
-        // return
-        return array(
-            'string' => str_replace(chr(0), '', $decrypt),
-            'error' => '',
-        );
-    }
-}
-
 function testHex2Bin($val)
 {
     if (!@hex2bin($val)) {
@@ -417,6 +339,7 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
 
+    //echo $path.' -- '.$message.' ;; '.$ascii_key.' --- ';
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -437,6 +360,7 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
     } catch (Defuse\Crypto\Exception\IOException $ex) {
         $err = $ex;
     }
+    //echo \Defuse\Crypto\Crypto::decrypt($message, $key).' ## ';
 
     return array(
         'string' => isset($text) ? $text : '',
@@ -626,8 +550,17 @@ function identifyUserRights(
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
@@ -964,7 +897,7 @@ function identUser(
     } else {
         $_SESSION['nb_item_change_proposals'] = 0;
     }
-    
+
     $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
     $_SESSION['groupes_visibles'] = $listAllowedFolders;
     $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
@@ -1017,15 +950,17 @@ function cacheTableRefresh($SETTINGS)
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1108,15 +1043,17 @@ function cacheTableUpdate($SETTINGS, $ident = null)
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1183,15 +1120,17 @@ function cacheTableAdd($SETTINGS, $ident = null)
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1718,8 +1657,7 @@ function prefixTable($table)
  */
 function GenerateCryptKey($size = null, $secure = false, $numerals = false, $capitalize = false, $symbols = false)
 {
-    global $SETTINGS;
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once 'SplClassLoader.php';
 
     if ($secure === true) {
         $numerals = true;
@@ -1728,7 +1666,14 @@ function GenerateCryptKey($size = null, $secure = false, $numerals = false, $cap
     }
 
     // Load libraries
-    $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+    if (file_exists('../includes/config/tp.config.php')) {
+        $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        $generator = new SplClassLoader('PasswordGenerator\Generator', './includes/libraries');
+    } else {
+        throw new Exception('Error file not exists', 1);
+    }
+
     $generator->register();
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
@@ -1789,16 +1734,17 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
-
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     DB::insert(
         prefixTable('log_system'),
@@ -1857,14 +1803,17 @@ function logItems(
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // Insert log in DB
     DB::insert(
@@ -2009,16 +1958,17 @@ function handleConfigFile($action, $field = null, $value = null)
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
-
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
@@ -2163,14 +2113,17 @@ function encryptOrDecryptFile(
 ) {
     // Include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // Get file info in DB
     $fileInfo = DB::queryfirstrow(
@@ -2885,8 +2838,17 @@ function performDBQuery($SETTINGS, $fields, $table)
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // Insert log in DB
     return DB::query(
@@ -3187,7 +3149,7 @@ function encryptFile($fileInName, $fileInPath)
 }
 
 /**
- * Decrypt a file
+ * Decrypt a file.
  *
  * @param string $fileName File name
  * @param string $filePath Path to file
@@ -3232,13 +3194,15 @@ function decryptFile($fileName, $filePath, $key)
  *
  * @return string
  */
-function generateQuickPassword($length = 16)
+function generateQuickPassword($length = 16, $symbolsincluded = true)
 {
     // Generate new user password
     $small_letters = range('a', 'z');
     $big_letters = range('A', 'Z');
     $digits = range(0, 9);
-    $symbols = array('#', '_', '-', '@', '$', '+', '&');
+    $symbols = $symbolsincluded === true ?
+        array('#', '_', '-', '@', '$', '+', '&') :
+        array();
 
     $res = array_merge($small_letters, $big_letters, $digits, $symbols);
     $c = count($res);
@@ -3273,8 +3237,17 @@ function storeUsersShareKey(
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // Delete existing entries for this object
     DB::delete(

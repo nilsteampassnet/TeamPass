@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
 
@@ -74,16 +74,17 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // Open MYSQL database connection
 require_once './includes/libraries/Database/Meekrodb/db.class.php';
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
-DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//DB::$errorHandler = true;
-
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+////$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+////$link->set_charset(DB_ENCODING);
 
 // Load Core library
 require_once $SETTINGS['cpassman_dir'].'/sources/core.php';
@@ -308,33 +309,24 @@ if (($session_validite_pw === null
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
             </li>
-            <!--
+            <?php
+            if (empty($_GET['page']) === false && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items') {
+                ?>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="index.html" class="nav-link">Home</a>
+                <a class="nav-link" href="#">
+                    <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
+                </a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Contact</a>
+                <a class="nav-link" href="#">
+                    <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
+                </a>
             </li>
-            -->
+                <?php
+            } ?>
         </ul>
 
-        <!-- SEARCH FORM -->
-        <!--
-        <form class="form-inline ml-3">
-        <div class="input-group input-group-sm">
-            <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
-            <div class="input-group-append">
-            <button class="btn btn-navbar" type="submit">
-                <i class="fas fa-search"></i>
-            </button>
-            </div>
-        </div>
-        </form>
-        -->
-
         <!-- Right navbar links -->
-            
-        
         <ul class="navbar-nav ml-auto">
             <!-- Messages Dropdown Menu -->
             <li class="nav-item dropdown">
@@ -399,8 +391,8 @@ if (($session_validite_pw === null
 
     // IMPORT menu
     if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1
-        && $session_user_admin === 0
-    ) {
+                        && $session_user_admin === 0
+                    ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $pageSel === 'import' ? ' active' : '' ,'"">
@@ -822,12 +814,12 @@ if (($session_validite_pw === null
     <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
         <div class="p-3">
-        <h5><?php echo langHdl('last_items_title'); ?></h5>
-        <div>
-            <ul class="list-unstyled" id="index-last-pwds">
+            <h5><?php echo langHdl('last_items_title'); ?></h5>
+            <div>
+                <ul class="list-unstyled" id="index-last-pwds">
 
-            </ul>
-        </div>
+                </ul>
+            </div>
         </div>
     </aside>
     <!-- /.control-sidebar -->

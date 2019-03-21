@@ -145,7 +145,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             '<div class="form-group">' +
                             '<label class="form-group-label"><?php echo langHdl('pw'); ?></label>' +
                             '<span id="pwd-show_'+data.id+'" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>'+
-                            '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
+                            '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + atob(data.pw) + '">' +
                             '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0">' +
                             '</div>' +
                             '<div class="form-group">' +
@@ -178,16 +178,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.new-row').remove();
                 })
 
-                // show password during longpress
-                $('.unhide_masked_data').mousedown(function(event) {
-                    mouseStillDown = true;
-                    showPwdContinuous($(this).attr('id'));
-                }).mouseup(function(event) {
-                    mouseStillDown = false;
-                }).mouseleave(function(event) {
-                    mouseStillDown = false;
-                });
-
                 $('#search-spinner').remove();
 
                 $('.infotip').tooltip();
@@ -196,13 +186,30 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         return data;
     }
 
+    // show password during longpress
     var mouseStillDown = false;
+    $('#search-results-items').on('mousedown', '.unhide_masked_data', function(event) {
+        mouseStillDown = true;
+
+        showPwdContinuous($(this).attr('id'));
+    })
+    .on('mouseup', '.unhide_masked_data', function(event) {
+        mouseStillDown = false;
+        showPwdContinuous($(this).attr('id'));
+    })
+    .on('mouseleave', '.unhide_masked_data', function(event) {
+        mouseStillDown = false;
+        showPwdContinuous($(this).attr('id'));
+    });
+
     var showPwdContinuous = function(elem_id){
         var itemId = elem_id.split('_')[1];
-        if(mouseStillDown === true) {
+        console.log("Mouse down: "+mouseStillDown)
+        if (mouseStillDown === true) {
+            console.log("    Still down")
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#pwd-hidden_' + itemId).val());
+            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $_SESSION['key']; ?>');
             
             if (data !== false) {
                 $('#pwd-hidden_' + itemId).val(
@@ -210,25 +217,28 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 );
             }
 
-            $('#pwd-show_' + itemId)
-                .html(
-                    '<span style="cursor:none;">' +
-                    $('#pwd-hidden_' + itemId).val() +
-                    '</span>'
-                );
+            $('#pwd-show_' + itemId).html(
+                '<span style="cursor:none;">' +
+                $('#pwd-hidden_' + itemId).val()
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;') +
+                '</span>'
+            );
             
             setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
             // log password is shown
-            if ($("#pwd-is-shown_" + itemId).val() === "0") {
+            if ($("#pwd-show_" + itemId).hasClass('pwd-shown') === false) {
                 itemLog(
                     'at_password_shown',
                     itemId,
                     $('#pwd-label_' + itemId).text()
                 );
-                $("#pwd-is-shown_" + itemId).val('1');
+                $('#pwd-show_' + itemId).addClass('pwd-shown');
             }
         } else {
-            $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
+            $('#pwd-show_' + itemId)
+                .html('<?php echo $var['hidden_asterisk']; ?>')
+                .removeClass('pwd-shown');
         }
     };
 
@@ -251,72 +261,65 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Prepare tooltips
                 $('.infotip').tooltip();
-
-                // Now move or trash
-                $('.mass-operation').click(function() {
-                    $('#dialog-mass-operation').removeClass('hidden');
-
-                    // Define
-                    var item_id,
-                        sel_items_txt = '<ul>',
-                        testToShow = '';
-                    
-                    // Init
-                    selectedAction = $(this).data('action');
-                    selectedItems = '';
-
-                    // Selected items
-                    $('.mass_op_cb:checkbox:checked').each(function () {
-                        item_id = $(this).data('id') ;
-                        selectedItems += item_id + ';';
-                        sel_items_txt += '<li>' + $('#item_label-'+item_id).text() + '</li>';
-                    });
-                    sel_items_txt += '</ul>';
-
-                    if (selectedAction === 'move') {
-                        // get list of folders
-                        var htmlFolders = '';
-                        $.post(
-                            'sources/folders.queries.php',
-                            {
-                                type    : 'get_list_of_folders',
-                                key     : '<?php echo $_SESSION['key']; ?>'
-                            },
-                            function(data) {
-                                $('#div_loading').hide();
-                                // check/uncheck checkbox
-                                if (data[0].list_folders !== '') {
-                                    var tmp = data[0].list_folders.split(';');
-                                    for (var i = tmp.length - 1; i >= 0; i--) {
-                                        listOfFolders += tmp[i];
-                                    }
-                                }
-
-                                // destination folder
-                                htmlFolders += '<div><?php echo langHdl('import_keepass_to_folder'); ?>:&nbsp;&nbsp;' +
-                                '<select class="form-control form-item-control select2" style="width:100%;" id="mass_move_destination_folder_id">' +
-                                data[0].list_folders + '</select>'+
-                                '</div>';
-
-                                //display to user
-                                $('#dialog-mass-operation-html').html(
-                                    '<?php echo langHdl('you_decided_to_move_items'); ?>: ' +
-                                    '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
-                                    '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
-                                );
-                            },
-                            'json'
-                        );
-                        
-                    } else if (selectedAction === 'delete') {
-                        $('#dialog-mass-operation-html').html(
-                            '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
-                            '<div><ul>' + sel_items_txt + '</ul></div>' +
-                            '<div class="mt-3 alert alert-danger"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
-                        );
-                    }
-                });
             }
+
+            // Add selected to list
+
+
+            // Now move or trash
+            $('.mass-operation').click(function() {
+                $('#dialog-mass-operation').removeClass('hidden');
+
+                // Define
+                var item_id,
+                    sel_items_txt = '<ul>',
+                    testToShow = '';
+                
+                // Init
+                selectedAction = $(this).data('action');
+                selectedItems = '';
+
+                // Selected items
+                $('.mass_op_cb:checkbox:checked').each(function () {
+                    item_id = $(this).data('id') ;
+                    selectedItems += item_id + ';';
+                    sel_items_txt += '<li>' + $('#item_label-'+item_id).text() + '</li>';
+                });
+                sel_items_txt += '</ul>';
+
+                if (selectedAction === 'move') {
+                    // destination folder
+                    var folders = '';
+                    console.log(store.get('teampassApplication').foldersList)
+                    $.each(store.get('teampassApplication').foldersList, function(index, item) {
+                        if (item.disabled === 0) {
+                            folders += '<option value="' + item.id + '">' + item.title +
+                                '   [' +
+                                (item.path === '' ? '<?php echo langHdl('root'); ?>' : item.path) +
+                                ']</option>';
+                        }
+                    });
+
+                    htmlFolders = '<div><?php echo langHdl('import_keepass_to_folder'); ?>:&nbsp;&nbsp;' +
+                        '<select class="form-control form-item-control select2" style="width:100%;" id="mass_move_destination_folder_id">' + folders+ '</select>'+
+                        '</div>';
+
+                    //display to user
+                    $('#dialog-mass-operation-html').html(
+                        '<?php echo langHdl('you_decided_to_move_items'); ?>: ' +
+                        '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
+                        '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
+                    );
+                    
+                } else if (selectedAction === 'delete') {
+                    $('#dialog-mass-operation-html').html(
+                        '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
+                        '<div><ul>' + sel_items_txt + '</ul></div>' +
+                        '<div class="mt-3 alert alert-danger"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
+                    );
+                }
+            });
+
         } else {
             $('#dialog-mass-operation').addClass('hidden');
 
@@ -345,21 +348,31 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         
         if (selectedAction === 'delete') {
             // Delete selected items
+            // prepare data
+            var data = {
+                'item_ids' : selectedItems,
+            };
+
+            // Launch query
             $.post(
                 'sources/items.queries.php',
                 {
                     type        : 'mass_delete_items',
-                    item_ids    : selectedItems,
+                    data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                     key         : '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
+                    //decrypt data
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.info(data);
+
                     //check if format error
-                    if (data[0].error !== '') {
+                    if (data.error === true) {
                         alertify
-                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data[0].error, 3)
+                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.message, 3)
                             .dismissOthers();
                         return false;
-                    } else if (data[0].status === 'ok') {
+                    } else {
                         //reload search
                         oTable.ajax.reload();
 
@@ -374,26 +387,35 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             .html('&nbsp;');                            
                         $('#dialog-mass-operation-html').html('');
                     }
-                },
-                'json'
+                }
             );
         } else if (selectedAction === 'move') {
+            // prepare data
+            var data = {
+                'item_ids' : selectedItems,
+                'folder_id' : $('#mass_move_destination_folder_id').val(),
+            };
+
+            // Launch query
             $.post(
                 'sources/items.queries.php',
                 {
-                    type        : 'mass_move_items',
-                    item_ids    : selectedItems,
-                    folder_id   : $('#mass_move_destination_folder_id').val(),
-                    key         : '<?php echo $_SESSION['key']; ?>'
+                    type :  'mass_move_items',
+                    data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                    key  :  '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
+                    //decrypt data
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.info(data);
+
                     //check if format error
-                    if (data[0].error !== '') {
+                    if (data.error === true) {
                         alertify
-                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data[1].error_text, 3)
+                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.message, 3)
                             .dismissOthers();
                         return false;
-                    } else if (data[0].status === 'ok') {
+                    } else {
                         //reload search
                         oTable.ajax.reload();
 
@@ -408,8 +430,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             .html('&nbsp;');                            
                         $('#dialog-mass-operation-html').html('');
                     }
-                },
-                'json'
+                }
             );
         }
     });
@@ -717,7 +738,7 @@ $("#div_copy_item_to_folder").dialog({
 */
 
 
-function unCryptData(data)
+function unCryptData1(data)
 {
     if (data.substr(0, 7) === 'crypted') {
         return prepareExchangedData(

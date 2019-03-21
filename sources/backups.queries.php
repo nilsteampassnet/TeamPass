@@ -50,14 +50,17 @@ require_once 'main.functions.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
-DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+//$link->set_charset(DB_ENCODING);
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -101,7 +104,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_STRING);
-            
+
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             $return = '';
 
@@ -109,7 +112,7 @@ if (null !== $post_type) {
             $tables = array();
             $result = DB::query('SHOW TABLES');
             foreach ($result as $row) {
-                $tables[] = $row["Tables_in_".DB_NAME];
+                $tables[] = $row['Tables_in_'.DB_NAME];
             }
 
             //cycle through
@@ -118,10 +121,10 @@ if (null !== $post_type) {
                     // Do query
                     $result = DB::queryRaw('SELECT * FROM '.$table);
                     $mysqli_result = DB::queryRaw(
-                        "SELECT *
+                        'SELECT *
                         FROM INFORMATION_SCHEMA.COLUMNS
                         WHERE table_schema = %s
-                        AND table_name = %s",
+                        AND table_name = %s',
                         DB_NAME,
                         $table
                     );
@@ -130,15 +133,15 @@ if (null !== $post_type) {
                     // prepare a drop table
                     $return .= 'DROP TABLE '.$table.';';
                     $row2 = DB::queryfirstrow('SHOW CREATE TABLE '.$table);
-                    $return .= "\n\n".$row2["Create Table"].";\n\n";
+                    $return .= "\n\n".$row2['Create Table'].";\n\n";
 
                     //prepare all fields and datas
-                    for ($i = 0; $i < $numFields; $i++) {
+                    for ($i = 0; $i < $numFields; ++$i) {
                         while ($row = $result->fetch_row()) {
                             $return .= 'INSERT INTO '.$table.' VALUES(';
-                            for ($j = 0; $j < $numFields; $j++) {
+                            for ($j = 0; $j < $numFields; ++$j) {
                                 $row[$j] = addslashes($row[$j]);
-                                $row[$j] = preg_replace("/\n/", "\\n", $row[$j]);
+                                $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
                                 if (isset($row[$j])) {
                                     $return .= '"'.$row[$j].'"';
                                 } else {
@@ -161,7 +164,7 @@ if (null !== $post_type) {
 
                 //save file
                 $filename = time().'-'.$token.'.sql';
-                $handle = fopen($SETTINGS['path_to_files_folder']."/".$filename, 'w+');
+                $handle = fopen($SETTINGS['path_to_files_folder'].'/'.$filename, 'w+');
                 if ($handle !== false) {
                     //write file
                     fwrite($handle, $return);
@@ -173,17 +176,17 @@ if (null !== $post_type) {
                     // Encrypt the file
                     prepareFileWithDefuse(
                         'encrypt',
-                        $SETTINGS['path_to_files_folder']."/".$filename,
-                        $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
+                        $SETTINGS['path_to_files_folder'].'/'.$filename,
+                        $SETTINGS['path_to_files_folder'].'/defuse_temp_'.$filename,
                         $SETTINGS,
                         $post_key
                     );
 
                     // Do clean
-                    unlink($SETTINGS['path_to_files_folder']."/".$filename);
+                    unlink($SETTINGS['path_to_files_folder'].'/'.$filename);
                     rename(
-                        $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
-                        $SETTINGS['path_to_files_folder']."/".$filename
+                        $SETTINGS['path_to_files_folder'].'/defuse_temp_'.$filename,
+                        $SETTINGS['path_to_files_folder'].'/'.$filename
                     );
                 }
 
@@ -221,7 +224,6 @@ if (null !== $post_type) {
             );
             break;
 
-
         case 'onthefly_restore':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -255,19 +257,18 @@ if (null !== $post_type) {
 
             // Get filename from database
             $data = DB::queryFirstRow(
-                "SELECT valeur
-                FROM ".prefixTable('misc')."
-                WHERE increment_id = %i",
+                'SELECT valeur
+                FROM '.prefixTable('misc').'
+                WHERE increment_id = %i',
                 $post_backupFile
             );
 
             // Delete operation id
             DB::delete(
                 prefixTable('misc'),
-                "increment_id = %i",
+                'increment_id = %i',
                 $post_backupFile
             );
-            
 
             $post_backupFile = $data['valeur'];
 
@@ -276,8 +277,8 @@ if (null !== $post_type) {
                 // Decrypt the file
                 $ret = prepareFileWithDefuse(
                     'decrypt',
-                    $SETTINGS['path_to_files_folder']."/".$post_backupFile,
-                    $SETTINGS['path_to_files_folder']."/defuse_temp_".$post_backupFile,
+                    $SETTINGS['path_to_files_folder'].'/'.$post_backupFile,
+                    $SETTINGS['path_to_files_folder'].'/defuse_temp_'.$post_backupFile,
                     $SETTINGS,
                     $post_key
                 );
@@ -288,15 +289,15 @@ if (null !== $post_type) {
                 }
 
                 // Do clean
-                fileDelete($SETTINGS['path_to_files_folder']."/".$post_backupFile, $SETTINGS);
-                $post_backupFile = $SETTINGS['path_to_files_folder']."/defuse_temp_".$post_backupFile;
+                fileDelete($SETTINGS['path_to_files_folder'].'/'.$post_backupFile, $SETTINGS);
+                $post_backupFile = $SETTINGS['path_to_files_folder'].'/defuse_temp_'.$post_backupFile;
             } else {
-                $post_backupFile = $SETTINGS['path_to_files_folder']."/".$post_backupFile;
+                $post_backupFile = $SETTINGS['path_to_files_folder'].'/'.$post_backupFile;
             }
 
             //read sql file
-            if ($handle = fopen($post_backupFile, "r")) {
-                $query = "";
+            if ($handle = fopen($post_backupFile, 'r')) {
+                $query = '';
                 while (!feof($handle)) {
                     $query .= fgets($handle, 4096);
                     if (substr(rtrim($query), -1) == ';') {
@@ -310,7 +311,6 @@ if (null !== $post_type) {
 
             //delete file
             unlink($post_backupFile);
-            
 
             echo prepareExchangedData(
                 array(

@@ -6,14 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
-
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
 if (isset($_SESSION) === false) {
@@ -103,14 +103,17 @@ function mainQuery($SETTINGS)
 
     // Connect to mysql server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-    $link->set_charset(DB_ENCODING);
-    DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-    DB::$dbName = DB_NAME;
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+    //$link->set_charset(DB_ENCODING);
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -706,7 +709,7 @@ function mainQuery($SETTINGS)
             $key = GenerateCryptKey(50);
 
             // Prepare post variables
-            $post_login = mysqli_escape_string($link, filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING));
+            $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
 
             // Get account and pw associated to email
             DB::query(
@@ -789,8 +792,10 @@ function mainQuery($SETTINGS)
 
             // check if key is okay
             $data = DB::queryFirstRow(
-                'SELECT valeur FROM '.prefixTable('misc').' WHERE intitule = %s AND type = %s',
-                mysqli_escape_string($link, $login),
+                'SELECT valeur
+                FROM '.prefixTable('misc').'
+                WHERE intitule = %s AND type = %s',
+                $login,
                 'password_recovery'
             );
             if ($key == $data['valeur']) {
@@ -812,20 +817,20 @@ function mainQuery($SETTINGS)
                         'pw' => $newPw,
                         ),
                     'login = %s',
-                    mysqli_escape_string($link, $login)
+                    $login
                 );
                 // Delete recovery in DB
                 DB::delete(
                     prefixTable('misc'),
                     'type = %s AND intitule = %s AND valeur = %s',
                     'password_recovery',
-                    mysqli_escape_string($link, $login),
+                    $login,
                     $key
                 );
                 // Get email
                 $dataUser = DB::queryFirstRow(
                     'SELECT email FROM '.prefixTable('users').' WHERE login = %s',
-                    mysqli_escape_string($link, $login)
+                    $login
                 );
 
                 $_SESSION['validite_pw'] = false;
@@ -1376,7 +1381,7 @@ function mainQuery($SETTINGS)
             $data = DB::query(
                 'SELECT login, psk FROM '.prefixTable('users').'
                 WHERE login = %i',
-                mysqli_escape_string($link, stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT)))
+                stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT))
             );
             if (empty($data['login'])) {
                 $userOk = false;
@@ -2413,7 +2418,8 @@ Insert the log here and especially the answer of the query that failed.
                     $filter_psk,
                     $_SESSION['user_settings']['encrypted_psk']
                 );
-                echo $filter_psk." -- ".$_SESSION['user_settings']['encrypted_psk']." -- ".$user_key_encoded." ;; ";break;
+                echo $filter_psk.' -- '.$_SESSION['user_settings']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
+                break;
 
                 if (strpos($user_key_encoded, 'Error ') !== false) {
                     echo prepareExchangedData(

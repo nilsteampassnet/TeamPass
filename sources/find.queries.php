@@ -58,8 +58,15 @@ if (isset($_SESSION['groupes_visibles']) === false
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-$link->set_charset(DB_ENCODING);
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = DB_PASSWD_CLEAR;
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
 
 //Columns name
 $aColumns = array('id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
@@ -95,7 +102,7 @@ $listPf = '';
 if (empty($row['id']) === false) {
     $rows = DB::query(
         'SELECT id FROM '.prefixTable('nested_tree').'
-        WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i',
+        WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
         '1',
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
@@ -132,7 +139,7 @@ if (isset($_GET['order']) === true) {
         $sOrder = 'ORDER BY  ';
         if ($_GET['order'][0]['column'] >= 0) {
             $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-            .mysqli_escape_string($link, $_GET['order'][0]['dir']).', ';
+            .filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).', ';
         }
 
         $sOrder = substr_replace($sOrder, '', -2);
@@ -268,7 +275,7 @@ if (isset($_GET['type']) === false) {
                     array_push($arrTmp, 1);
                 }
             }
-            $accessLevel = min($arrTmp);
+            $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
             if ($accessLevel === 0) {
                 $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" data-id=\"'.$record['id'].'\">';
             }
