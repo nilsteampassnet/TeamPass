@@ -1,7 +1,6 @@
 <?php
 namespace Authentication\TwoFactorAuth;
 
-require_once(dirname(__FILE__)."/Providers/Qr/GoogleQRCodeProvider.php");
 require_once(dirname(__FILE__)."/Providers/Qr/IQRCodeProvider.php");
 require_once(dirname(__FILE__)."/Providers/Qr/GoqrMeQRCodeProvider.php");
 require_once(dirname(__FILE__)."/Providers/Rng/CSRNGProvider.php");
