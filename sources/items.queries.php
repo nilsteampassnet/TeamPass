@@ -5357,8 +5357,6 @@ if (null !== $post_type) {
             // generate session
             $otv_code = GenerateCryptKey(32, false, true, true, false);
             $otv_user_code = GenerateCryptKey(32, false, true, true, false);
-<<<<<<< HEAD
-=======
 
             // Generate Defuse key
             $otv_user_code_encrypted = defuse_generate_personal_key($otv_user_code);
@@ -5400,7 +5398,6 @@ if (null !== $post_type) {
                 'encrypt',
                 $SETTINGS
             );
->>>>>>> 7a37a6c5... 3.0.0
 
             DB::insert(
                 prefixTable('otv'),
