@@ -50,6 +50,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 <?php
 if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
     && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
+    && filter_var($_GET['key'], FILTER_SANITIZE_STRING) !== false
 ) {
     //Include files
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
@@ -80,13 +81,19 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
         exit(true);
     }
 
+    // Prepare GET variables
+    $code = filter_var($_GET['code'], FILTER_SANITIZE_STRING);
+    $key = filter_var($_GET['key'], FILTER_SANITIZE_STRING);
+    $stamp = filter_var($_GET['stamp'], FILTER_VALIDATE_INT);
+
     // check session validity
     $data = DB::queryfirstrow(
-        'SELECT id, timestamp, code, item_id FROM '.prefixTable('otv').'
+        'SELECT id, timestamp, code, item_id, encrypted
+        FROM '.prefixTable('otv').'
         WHERE code = %s',
-        $_GET['code']
+        $code
     );
-    if ($data['timestamp'] == intval($_GET['stamp'])) {
+    if ((int) $data['timestamp'] === (int) $stamp) {
         // otv is too old
         if ($data['timestamp'] < (time() - ($SETTINGS['otv_expiration_period'] * 86400))) {
             $html = 'Link is too old!';
@@ -153,6 +160,25 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
             }
 
             // Uncrypt PW
+            echo '> '.$data['encrypted'].' -- '.$key.' ;;';
+            // Generate Defuse key
+            $otv_user_code_encrypted = defuse_generate_personal_key($key);
+
+            // check if psk is correct.
+            $otv_key_encoded = defuse_validate_personal_key(
+                $key,
+                $otv_user_code_encrypted
+            );
+
+            $password_decrypted = cryption(
+                $data['encrypted'],
+                $otv_key_encoded,
+                'decrypt',
+                $SETTINGS
+            );
+            print_r($password_decrypted);
+
+            return;
             // Get the object key for the user
             db::debugmode(true);
             $userKey = DB::queryFirstRow(

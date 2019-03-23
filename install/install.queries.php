@@ -964,14 +964,15 @@ $SETTINGS = array (';
                     } elseif ($task === 'otv') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'otv` (
+                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."otv` (
                             `id` int(10) NOT NULL AUTO_INCREMENT,
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
                             `originator` int(12) NOT NULL,
+                            `encrypted` text NOT NULL default 'not_set',
                             PRIMARY KEY (`id`)
-                            ) CHARSET=utf8;'
+                            ) CHARSET=utf8;"
                         );
                     } elseif ($task === 'suggestion') {
                         $mysqli_result = mysqli_query(

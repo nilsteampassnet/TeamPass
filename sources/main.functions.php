@@ -375,15 +375,28 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
  */
 function defuse_generate_key()
 {
-    include_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-    include_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-    include_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    include_once '../includes/libraries/Encryption/Encryption/Key.php';
-    include_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    include_once '../includes/libraries/Encryption/Encryption/File.php';
-    include_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    include_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    include_once '../includes/libraries/Encryption/Encryption/Core.php';
+    // load PhpEncryption library
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
+        if (file_exists('../includes/config/tp.config.php') === true) {
+            $path = '../includes/libraries/Encryption/Encryption/';
+        } elseif (file_exists('./includes/config/tp.config.php') === true) {
+            $path = './includes/libraries/Encryption/Encryption/';
+        } else {
+            $path = '../includes/libraries/Encryption/Encryption/';
+        }
+    } else {
+        $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
+    }
+
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
@@ -400,15 +413,28 @@ function defuse_generate_key()
  */
 function defuse_generate_personal_key($psk)
 {
-    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/File.php';
-    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+    // load PhpEncryption library
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
+        if (file_exists('../includes/config/tp.config.php') === true) {
+            $path = '../includes/libraries/Encryption/Encryption/';
+        } elseif (file_exists('./includes/config/tp.config.php') === true) {
+            $path = './includes/libraries/Encryption/Encryption/';
+        } else {
+            $path = '../includes/libraries/Encryption/Encryption/';
+        }
+    } else {
+        $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
+    }
+
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     $protected_key_encoded = $protected_key->saveToAsciiSafeString();
@@ -426,15 +452,22 @@ function defuse_generate_personal_key($psk)
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
 {
-    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/File.php';
-    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+    if (file_exists('../includes/config/tp.config.php') === true) {
+        $path = '..';
+    } elseif (file_exists('./includes/config/tp.config.php') === true) {
+        $path = '.';
+    } else {
+        $path = '../..';
+    }
+    require_once $path.'/includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/Key.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/File.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once $path.'/includes/libraries/Encryption/Encryption/Core.php';
 
     try {
         $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
@@ -943,6 +976,8 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
  * Cache table - refresh.
  *
  * @param array $SETTINGS Teampass settings
+ *
+ * @return void
  */
 function cacheTableRefresh($SETTINGS)
 {
@@ -959,8 +994,6 @@ function cacheTableRefresh($SETTINGS)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -984,17 +1017,21 @@ function cacheTableRefresh($SETTINGS)
         if (empty($record['id_tree']) === false) {
             // Get all TAGS
             $tags = '';
-            $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $record['id']);
+            $itemTags = DB::query(
+                'SELECT tag
+                FROM '.prefixTable('tags').'
+                WHERE item_id = %i AND tag != ""',
+                $record['id']
+            );
             foreach ($itemTags as $itemTag) {
-                if (!empty($itemTag['tag'])) {
-                    $tags .= $itemTag['tag'].' ';
-                }
+                $tags .= $itemTag['tag'].' ';
             }
+            
             // Get renewal period
             $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
 
             // form id_tree to full foldername
-            $folder = '';
+            $folder = array();
             $arbo = $tree->getPath($record['id_tree'], true);
             foreach ($arbo as $elem) {
                 if ((int) $elem->title === $_SESSION['user_id']
@@ -1002,11 +1039,8 @@ function cacheTableRefresh($SETTINGS)
                 ) {
                     $elem->title = $_SESSION['login'];
                 }
-                if (empty($folder)) {
-                    $folder = stripslashes($elem->title);
-                } else {
-                    $folder .= ' » '.stripslashes($elem->title);
-                }
+                // Build path
+                array_push($folder, stripslashes($elem->title));
             }
             // store data
             DB::insert(
@@ -1021,7 +1055,7 @@ function cacheTableRefresh($SETTINGS)
                     'perso' => $record['perso'],
                     'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : '0',
                     'login' => isset($record['login']) ? $record['login'] : '',
-                    'folder' => $folder,
+                    'folder' => implode(' » ', $folder),
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : '0',
                     'timestamp' => $record['date'],
@@ -1036,6 +1070,8 @@ function cacheTableRefresh($SETTINGS)
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
+ *
+ * @return void
  */
 function cacheTableUpdate($SETTINGS, $ident = null)
 {
@@ -1052,8 +1088,6 @@ function cacheTableUpdate($SETTINGS, $ident = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1069,24 +1103,24 @@ function cacheTableUpdate($SETTINGS, $ident = null)
     );
     // Get all TAGS
     $tags = '';
-    $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $ident);
+    $itemTags = DB::query(
+        'SELECT tag
+        FROM '.prefixTable('tags').'
+        WHERE item_id = %i AND tag != ""',
+        $ident
+    );
     foreach ($itemTags as $itemTag) {
-        if (!empty($itemTag['tag'])) {
-            $tags .= $itemTag['tag'].' ';
-        }
+        $tags .= $itemTag['tag'].' ';
     }
     // form id_tree to full foldername
-    $folder = '';
+    $folder = array();
     $arbo = $tree->getPath($data['id_tree'], true);
     foreach ($arbo as $elem) {
         if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
             $elem->title = $_SESSION['login'];
         }
-        if (empty($folder)) {
-            $folder = stripslashes($elem->title);
-        } else {
-            $folder .= ' » '.stripslashes($elem->title);
-        }
+        // Build path
+        array_push($folder, stripslashes($elem->title));
     }
     // finaly update
     DB::update(
@@ -1100,7 +1134,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
             'perso' => $data['perso'],
             'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
             'login' => isset($data['login']) ? $data['login'] : '',
-            'folder' => $folder,
+            'folder' => implode(' » ', $folder),
             'author' => $_SESSION['user_id'],
             ),
         'id = %i',
@@ -1113,6 +1147,8 @@ function cacheTableUpdate($SETTINGS, $ident = null)
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
+ *
+ * @return void
  */
 function cacheTableAdd($SETTINGS, $ident = null)
 {
@@ -1129,8 +1165,6 @@ function cacheTableAdd($SETTINGS, $ident = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1149,24 +1183,24 @@ function cacheTableAdd($SETTINGS, $ident = null)
     );
     // Get all TAGS
     $tags = '';
-    $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id = %i', $ident);
+    $itemTags = DB::query(
+        'SELECT tag
+        FROM '.prefixTable('tags').'
+        WHERE item_id = %i AND tag != ""',
+        $ident
+    );
     foreach ($itemTags as $itemTag) {
-        if (!empty($itemTag['tag'])) {
-            $tags .= $itemTag['tag'].' ';
-        }
+        $tags .= $itemTag['tag'].' ';
     }
     // form id_tree to full foldername
-    $folder = '';
+    $folder = array();
     $arbo = $tree->getPath($data['id_tree'], true);
     foreach ($arbo as $elem) {
         if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
             $elem->title = $_SESSION['login'];
         }
-        if (empty($folder)) {
-            $folder = stripslashes($elem->title);
-        } else {
-            $folder .= ' » '.stripslashes($elem->title);
-        }
+        // Build path
+        array_push($folder, stripslashes($elem->title));
     }
     // finaly update
     DB::insert(
@@ -1181,7 +1215,7 @@ function cacheTableAdd($SETTINGS, $ident = null)
             'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== 'None') ? $data['perso'] : '0',
             'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
             'login' => isset($data['login']) ? $data['login'] : '',
-            'folder' => $folder,
+            'folder' => implode(' » ', $folder),
             'author' => $_SESSION['user_id'],
             'timestamp' => $data['date'],
         )

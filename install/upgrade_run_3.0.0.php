@@ -244,6 +244,18 @@ if ($res === false) {
     );
 }
 
+// Add field encrypted to OTV table
+$res = addColumnIfNotExist(
+    $pre.'otv',
+    'encrypted',
+    "text NOT NULL default 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Encrypted to table OTV! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Copy all items passwords
 $db_count = mysqli_fetch_row(
     mysqli_query(

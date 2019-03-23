@@ -5357,6 +5357,50 @@ if (null !== $post_type) {
             // generate session
             $otv_code = GenerateCryptKey(32, false, true, true, false);
             $otv_user_code = GenerateCryptKey(32, false, true, true, false);
+<<<<<<< HEAD
+=======
+
+            // Generate Defuse key
+            $otv_user_code_encrypted = defuse_generate_personal_key($otv_user_code);
+
+            // check if psk is correct.
+            $otv_key_encoded = defuse_validate_personal_key(
+                $otv_user_code,
+                $otv_user_code_encrypted
+            );
+
+            // Decrypt the pwd
+            // Should we log a password change?
+            $itemQ = DB::queryFirstRow(
+                'SELECT s.share_key, i.pw
+                FROM '.prefixTable('items').' AS i
+                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (i.id = s.object_id)
+                WHERE s.user_id = %i AND s.object_id = %i',
+                $_SESSION['user_id'],
+                $post_id
+            );
+            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
+                // No share key found
+                $pw = '';
+            } else {
+                $pw = base64_decode(doDataDecryption(
+                    $itemQ['pw'],
+                    decryptUserObjectKey(
+                        $itemQ['share_key'],
+                        $_SESSION['user']['private_key']
+                    )
+                ));
+            }
+
+            // Encrypt it with DEFUSE using the generated code as key
+            // This is required as the OTV is used by someone without any Teampass account
+            $passwd = cryption(
+                $pw,
+                $otv_key_encoded,
+                'encrypt',
+                $SETTINGS
+            );
+>>>>>>> 7a37a6c5... 3.0.0
 
             DB::insert(
                 prefixTable('otv'),
@@ -5366,17 +5410,19 @@ if (null !== $post_type) {
                     'timestamp' => time(),
                     'originator' => intval($_SESSION['user_id']),
                     'code' => $otv_code,
+                    'encrypted' => $passwd['string'],
                     )
             );
             $newID = DB::insertId();
 
+            // Prepare URL content
             $otv_session = array(
                 'code' => $otv_code,
                 'key' => $otv_user_code,
                 'stamp' => time(),
             );
 
-            if (!isset($SETTINGS['otv_expiration_period'])) {
+            if (isset($SETTINGS['otv_expiration_period']) === false) {
                 $SETTINGS['otv_expiration_period'] = 7;
             }
             $url = $SETTINGS['cpassman_url'].'/index.php?otv=true&'.http_build_query($otv_session);
@@ -5386,11 +5432,11 @@ if (null !== $post_type) {
                 array(
                     'error' => '',
                     'url' => $url,
-                    'text' => str_replace(
+                    /*'text' => str_replace(
                         array('#URL#', '#DAY#'),
                         array('<span id=\'otv_link\'>'.$url.'</span>&nbsp;<span class=\'fa-stack tip" title=\''.langHdl('copy').'\' style=\'cursor:pointer;\' id=\'button_copy_otv_link\'><span class=\'fa fa-square fa-stack-2x\'></span><span class=\'fa fa-clipboard fa-stack-1x fa-inverse\'></span></span>', $exp_date),
                         langHdl('one_time_view_item_url_box')
-                    ),
+                    ),*/
                 )
             );
             break;
