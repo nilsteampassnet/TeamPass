@@ -1678,7 +1678,7 @@ if (null !== $post_type) {
                     foreach ($arrFolders as $fld) {
                         if ($fld['id'] === $record['folder_id']) {
                             // get the level of access on the folder
-                            $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
+                            $arrFolders[$x]['type'] = evaluateFolderAccesLevel($record['type'], $arrFolders[$x]['type']);
                             $bFound = true;
                             break;
                         }
@@ -2275,7 +2275,7 @@ if (null !== $post_type) {
  *
  * @return string Returned index
  */
-function evaluate_folder_acces_level($new_val, $existing_val)
+function evaluateFolderAccesLevel($new_val, $existing_val)
 {
     $levels = array(
         'W' => 4,

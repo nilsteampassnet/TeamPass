@@ -131,7 +131,7 @@ $rows = mysqli_query(
     $db_link,
     'SELECT id, file, status
     FROM '.$pre.'files
-    WHERE status != "aes_encryption"
+    WHERE status != "'.TP_ENCRYPTION_NAME.'"
     LIMIT '.$post_start.', '.$post_nb
 );
 if (!$rows) {
@@ -196,7 +196,7 @@ while ($file_info = mysqli_fetch_array($rows)) {
         mysqli_query(
             $db_link,
             'UPDATE '.$pre."files
-            SET file = '".$encryptedFile['fileHash']."', status = 'aes_encryption'
+            SET file = '".$encryptedFile['fileHash']."', status = '".TP_ENCRYPTION_NAME."'
             WHERE id = ".$file_info['id']
         );
 

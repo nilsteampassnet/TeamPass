@@ -376,16 +376,12 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
 function defuse_generate_key()
 {
     // load PhpEncryption library
-    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-        if (file_exists('../includes/config/tp.config.php') === true) {
-            $path = '../includes/libraries/Encryption/Encryption/';
-        } elseif (file_exists('./includes/config/tp.config.php') === true) {
-            $path = './includes/libraries/Encryption/Encryption/';
-        } else {
-            $path = '../includes/libraries/Encryption/Encryption/';
-        }
+    if (file_exists('../includes/config/tp.config.php') === true) {
+        $path = '../includes/libraries/Encryption/Encryption/';
+    } elseif (file_exists('./includes/config/tp.config.php') === true) {
+        $path = './includes/libraries/Encryption/Encryption/';
     } else {
-        $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
+        $path = '../includes/libraries/Encryption/Encryption/';
     }
 
     include_once $path.'Crypto.php';
@@ -414,16 +410,12 @@ function defuse_generate_key()
 function defuse_generate_personal_key($psk)
 {
     // load PhpEncryption library
-    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-        if (file_exists('../includes/config/tp.config.php') === true) {
-            $path = '../includes/libraries/Encryption/Encryption/';
-        } elseif (file_exists('./includes/config/tp.config.php') === true) {
-            $path = './includes/libraries/Encryption/Encryption/';
-        } else {
-            $path = '../includes/libraries/Encryption/Encryption/';
-        }
+    if (file_exists('../includes/config/tp.config.php') === true) {
+        $path = '../includes/libraries/Encryption/Encryption/';
+    } elseif (file_exists('./includes/config/tp.config.php') === true) {
+        $path = './includes/libraries/Encryption/Encryption/';
     } else {
-        $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
+        $path = '../includes/libraries/Encryption/Encryption/';
     }
 
     include_once $path.'Crypto.php';
@@ -452,22 +444,24 @@ function defuse_generate_personal_key($psk)
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
 {
+    // load PhpEncryption library
     if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '..';
+        $path = '../includes/libraries/Encryption/Encryption/';
     } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = '.';
+        $path = './includes/libraries/Encryption/Encryption/';
     } else {
-        $path = '../..';
+        $path = '../includes/libraries/Encryption/Encryption/';
     }
-    require_once $path.'/includes/libraries/Encryption/Encryption/Crypto.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/Encoding.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/Key.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/File.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    require_once $path.'/includes/libraries/Encryption/Encryption/Core.php';
+
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     try {
         $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
@@ -2328,6 +2322,81 @@ function prepareFileWithDefuse(
     $source_file = $antiXss->xss_clean($source_file);
     $target_file = $antiXss->xss_clean($target_file);
 
+    if (empty($password) === true || is_null($password) === true) {
+        /*
+        File encryption/decryption is done with the SALTKEY
+         */
+
+        // get KEY
+        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+
+        // Now perform action on the file
+        $err = '';
+        if ($type === 'decrypt') {
+            // Decrypt file
+            $err = defuseFileDecrypt(
+                $source_file,
+                $target_file,
+                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key),
+                $SETTINGS
+            );
+            // ---
+        } elseif ($type === 'encrypt') {
+            // Encrypt file
+            $err = defuseFileEncrypt(
+                $source_file,
+                $target_file,
+                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key),
+                $SETTINGS
+            );
+        }
+    } else {
+        /*
+        File encryption/decryption is done with special password and not the SALTKEY
+         */
+
+        $err = '';
+        if ($type === 'decrypt') {
+            // Decrypt file
+            $err = defuseFileDecrypt(
+                $source_file,
+                $target_file,
+                $password,
+                $SETTINGS
+            );
+            // ---
+        } elseif ($type === 'encrypt') {
+            // Encrypt file
+            $err = defuseFileEncrypt(
+                $source_file,
+                $target_file,
+                $password,
+                $SETTINGS
+            );
+        }
+    }
+
+    // return error
+    return empty($err) === false ? $err : true;
+}
+
+
+/**
+ * Encrypt a file with Defuse
+ *
+ * @param string $source_file path to source file
+ * @param string $target_file path to target file
+ * @param array  $SETTINGS    Settings
+ * @param string $password    A password
+ *
+ * @return string|bool
+ */
+function defuseFileEncrypt(
+    $source_file,
+    $target_file,
+    $SETTINGS,
+    $password = null
+) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
     include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
@@ -2340,89 +2409,71 @@ function prepareFileWithDefuse(
     include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
     include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
-    if (empty($password) === true || is_null($password) === true) {
-        /*
-        File encryption/decryption is done with the SALTKEY
-         */
-
-        // get KEY
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
-
-        // Now perform action on the file
-        $err = '';
-        if ($type === 'decrypt') {
-            try {
-                \Defuse\Crypto\File::decryptFile(
-                    $source_file,
-                    $target_file,
-                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-                );
-            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = 'decryption_not_possible';
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
-                $err = $ex;
-            }
-        } elseif ($type === 'encrypt') {
-            try {
-                \Defuse\Crypto\File::encryptFile(
-                    $source_file,
-                    $target_file,
-                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-                );
-            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = 'encryption_not_possible';
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
-                $err = $ex;
-            }
-        }
-    } else {
-        /*
-        File encryption/decryption is done with special password and not the SALTKEY
-         */
-
-        $err = '';
-        if ($type === 'decrypt') {
-            try {
-                \Defuse\Crypto\File::decryptFileWithPassword(
-                    $source_file,
-                    $target_file,
-                    $password
-                );
-            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = 'wrong_key';
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
-                $err = $ex;
-            }
-        } elseif ($type === 'encrypt') {
-            try {
-                \Defuse\Crypto\File::encryptFileWithPassword(
-                    $source_file,
-                    $target_file,
-                    $password
-                );
-            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = 'wrong_key';
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
-                $err = $ex;
-            }
-        }
+    try {
+        \Defuse\Crypto\File::encryptFileWithPassword(
+            $source_file,
+            $target_file,
+            $password
+        );
+    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = 'wrong_key';
+    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        $err = $ex;
+    } catch (Defuse\Crypto\Exception\IOException $ex) {
+        $err = $ex;
     }
 
     // return error
-    if (empty($err) === false) {
-        return $err;
-    } else {
-        return true;
-    }
+    return empty($err) === false ? $err : true;
 }
+
+
+/**
+ * Decrypt a file with Defuse
+ *
+ * @param string $source_file path to source file
+ * @param string $target_file path to target file
+ * @param array  $SETTINGS    Settings
+ * @param string $password    A password
+ *
+ * @return string|bool
+ */
+function defuseFileDecrypt(
+    $source_file,
+    $target_file,
+    $SETTINGS,
+    $password = null
+) {
+    // load PhpEncryption library
+    $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
+
+    try {
+        \Defuse\Crypto\File::decryptFileWithPassword(
+            $source_file,
+            $target_file,
+            $password
+        );
+    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = 'wrong_key';
+    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        $err = $ex;
+    } catch (Defuse\Crypto\Exception\IOException $ex) {
+        $err = $ex;
+    }
+
+    // return error
+    return empty($err) === false ? $err : true;
+}
+
 
 /*
 * NOT TO BE USED

@@ -100,10 +100,10 @@ echo '
 
     // 2FA auth selector
     echo '
-        <input type="hidden" id="2fa_agses" value="', isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' ? '1' : '0', '" />
-        <input type="hidden" id="2fa_duo" value="', isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1' ? '1' : '0', '" />
-        <input type="hidden" id="2fa_google" value="', isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1' ? '1' : '0', '" />
-        <input type="hidden" id="2fa_yubico" value="', isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1' ? '1' : '0', '" />
+        <input type="hidden" id="2fa_agses" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_duo" value="', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_google" value="', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_yubico" value="', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ? 1 : 0, '" />
         <input type="hidden" id="2fa_user_selection" value="',
             (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : '')
         , '" />
@@ -111,17 +111,17 @@ echo '
         <div class="row mb-3" id="2fa_methods_selector">
           <div class="col-12">
             <h8 class="login-box-msg">'.langHdl('2fa_authentication_selector').'</h8>
-            <div class="2fa-methods" style="padding:3px; text-align:center;">
-            ', isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1' ?
+            <div class="2fa-methods text-center mt-2">
+            ', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
                 '<label for="select2fa-google">Google</label>
                 <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google" data-mfa="google">' : '', '
-                ', isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' ?
+                ', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ?
                 '<label for="select2fa-agses">Agses</label>
                 <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-agses" data-mfa="agses">' : '', '
-                ', isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1' ?
+                ', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
                 '<label for="select2fa-duo">Duo Security</label>
                 <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo">' : '', '
-                ', isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1' ?
+                ', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
                 '<label for="select2fa-yubico">Yubico</label>
                 <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico">' : '', '
             </div>
@@ -129,7 +129,7 @@ echo '
         </div>';
 
 // AGSES
-if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
+if (isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1) {
     echo '
         <div id="div-2fa-agses" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '' : 'hidden', '">
             <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
@@ -144,7 +144,7 @@ if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agse
 }
 
 // DUO box
-if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
+if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
     echo '
         <div id="div-2fa-duo" class="row mb-3 div-2fa-method hidden">
             <div id="div-2fa-duo-progress" class="text-center hidden"></div>
@@ -157,7 +157,7 @@ if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
 }
 
 // Google Authenticator code
-if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
+if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
         <div id="div-2fa-google" class="mb-3 div-2fa-method', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : ' hidden', '">
             <div class="row">
@@ -205,7 +205,7 @@ setInterval(function() {
 }
 
 // Yubico authentication
-if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
+if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1) {
     echo '
         <div id="div-2fa-yubico" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '' : 'hidden', '">
             <div class="col-3">

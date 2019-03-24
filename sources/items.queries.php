@@ -5467,6 +5467,18 @@ if (null !== $post_type) {
                 $post_id
             );
 
+            // Check if user has this sharekey
+            if (empty($file_info['share_key']) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('no_sharekey_found'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             //$fileName = basename($file_info['name'], '.'.$file_info['extension']);
 
             // prepare image info
@@ -5486,12 +5498,15 @@ if (null !== $post_type) {
             );
 
             // Encrypt data to return
-            echo json_encode(array(
-                'error' => false,
-                'filename' => $post_title.'.'.$file_info['extension'],
-                'file_type' => $file_info['type'],
-                'file_content' => $fileContent,
-            ));
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'filename' => $post_title.'.'.$file_info['extension'],
+                    'file_type' => $file_info['type'],
+                    'file_content' => $fileContent,
+                ),
+                'encode'
+            );
             break;
 
         /*

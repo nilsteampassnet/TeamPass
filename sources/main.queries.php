@@ -2284,9 +2284,9 @@ Insert the log here and especially the answer of the query that failed.
                         $rows = DB::query(
                             'SELECT id
                             FROM '.prefixTable('files').'
-                            WHERE status = "aes_encryption"
+                            WHERE status = "'.TP_ENCRYPTION_NAME.'"
                             LIMIT '.$post_start.', '.$post_length
-                        );
+                        );//aes_encryption
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
@@ -2318,7 +2318,7 @@ Insert the log here and especially the answer of the query that failed.
                         DB::query(
                             'SELECT *
                             FROM '.prefixTable('files').'
-                            WHERE status = "aes_encryption"'
+                            WHERE status = "'.TP_ENCRYPTION_NAME.'"'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
                         if ($next_start > DB::count()) {
@@ -2418,8 +2418,8 @@ Insert the log here and especially the answer of the query that failed.
                     $filter_psk,
                     $_SESSION['user_settings']['encrypted_psk']
                 );
-                echo $filter_psk.' -- '.$_SESSION['user_settings']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
-                break;
+                //echo $filter_psk.' -- '.$_SESSION['user_settings']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
+                //break;
 
                 if (strpos($user_key_encoded, 'Error ') !== false) {
                     echo prepareExchangedData(
@@ -2439,7 +2439,7 @@ Insert the log here and especially the answer of the query that failed.
                         $items = DB::query(
                             'SELECT id FROM '.prefixTable('items').'
                             WHERE id_tree = %i',
-                            $folder['id']
+                            $folder
                         );
                         foreach ($items as $item) {
                             if (in_array($item['id'], $itemsToTreat) === false) {
@@ -2487,10 +2487,10 @@ Insert the log here and especially the answer of the query that failed.
             break;
 
         /*
-            * Remove personal saltkey
-            * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
-            */
-        case 'convert_items_with_personal_saltkey_start':
+        * Remove personal saltkey
+        * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
+        */
+        case 'convert_items_with_personal_saltkey_progress':
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo prepareExchangedData(
                     array(

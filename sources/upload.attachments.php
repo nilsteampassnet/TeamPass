@@ -373,7 +373,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],
             'file' => $newFile['fileHash'],
-            'status' => 'aes_encryption',
+            'status' => TP_ENCRYPTION_NAME,
         )
     );
     $newID = DB::insertId();

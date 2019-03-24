@@ -16,6 +16,7 @@
  */
 
 return array(
+    'no_sharekey_found' => 'No key found for this file and your account',
     'otv_link' => 'One-time-view link',
     'one_time_view' => 'One-time-view',
     'display_options' => 'Display options',

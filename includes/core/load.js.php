@@ -44,7 +44,7 @@ $(function() {
     // Init
     // Countdown
     countdown();
-console.log(" LOGINs : " + ($('#user-login-attempts').length));
+    
     // If login attempts experimented
     if ($('#user-login-attempts').length > 0) {
         alertify.confirm(
@@ -275,7 +275,10 @@ $(document).on('click', '#button_do_sharekeys_reencryption', function() {
         .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
-    $('#dialog-encryption-keys-progress').text('<?php echo langHdl('change_login_password'); ?>');
+    $('#dialog-encryption-keys-progress').html('<b><?php echo langHdl('change_login_password'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+
+    // Disable buttons
+    $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').attr('disabled','disabled');
 
     // This sends a new password by email to user
     data = {
@@ -300,6 +303,9 @@ $(document).on('click', '#button_do_sharekeys_reencryption', function() {
                 alertify
                     .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
+
+                // Enable buttons
+                $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
             } else {
                 // Inform user
                 userShareKeysReencryption($('#sharekeys_reencryption_target_user').val());
@@ -528,7 +534,7 @@ function userShareKeysReencryption(userId = null)
 {
     console.log('USER SHAREKEYS RE-ENCRYPTION START');
 
-    $("#dialog-encryption-keys-progress").text("<?php echo langHdl('clearing_old_sharekeys'); ?>");
+    $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
     alertify
         .message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0)
@@ -549,6 +555,9 @@ function userShareKeysReencryption(userId = null)
                 alertify
                     .error('<i class="fa fa-ban mr-2"></i>' + data.message, 0)
                     .dismissOthers();
+
+                // Enable buttons
+                $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                 return false;
             } else {
                 // Start looping on all steps of re-encryption
@@ -577,7 +586,9 @@ function userShareKeysReencryptionNext(userId, step, start)
 
     if (step !== 'finished') {
         // Inform user
-        $("#dialog-encryption-keys-progress").text('<?php echo langHdl('encryption_keys'); ?> - ' + stepText);
+        $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+            stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] '
+            + '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
         // Do query
         $.post(
@@ -596,8 +607,11 @@ function userShareKeysReencryptionNext(userId, step, start)
                 if (data.error === true) {
                     // error
                     alertify
-                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 0)
-                    .dismissOthers();
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 0)
+                        .dismissOthers();
+
+                    // Enable buttons
+                    $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                     return false;
                 } else {
                     // Start looping on all steps of re-encryption
@@ -607,11 +621,14 @@ function userShareKeysReencryptionNext(userId, step, start)
         );
     } else {
         // Finished
-        $("#dialog-encryption-keys-progress").text('<?php echo langHdl('done'); ?>');
+        $("#dialog-encryption-keys-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
 
         alertify
             .success('<?php echo langHdl('done'); ?>', 5)
             .dismissOthers();
+
+        // Enable buttons
+        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
     }
 }
 

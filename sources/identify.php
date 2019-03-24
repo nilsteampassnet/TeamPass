@@ -750,7 +750,10 @@ function identifyUser($sentData, $SETTINGS)
 
         if ($ret['error'] === true) {
             logEvents('failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
-            echo json_encode($ret);
+            echo prepareExchangedData(
+                $ret,
+                'encode'
+            );
 
             return;
         } else {
@@ -759,7 +762,10 @@ function identifyUser($sentData, $SETTINGS)
 
             // Manage 1st usage of Google MFA
             if (count($ret['firstTime']) > 0) {
-                echo json_encode($ret['firstTime']);
+                echo prepareExchangedData(
+                    $ret['firstTime'],
+                    'encode'
+                );
 
                 return;
             }
@@ -2167,7 +2173,7 @@ function checkCredentials($passwordClear, $data, $dataReceived, $username, $SETT
             $data['id']
         );
     }
-
+    //echo $passwordClear." - ".$data['pw']." - ".$pwdlib->verifyPasswordHash($passwordClear, $data['pw'])." ;; ";
     // check the given password
     if ($userPasswordVerified !== true) {
         if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {

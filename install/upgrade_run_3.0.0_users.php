@@ -588,7 +588,7 @@ if (null !== $post_step) {
                     $db_link,
                     'SELECT id
                     FROM '.$pre."files
-                    WHERE status = 'aes_encryption'
+                    WHERE status = ''.TP_ENCRYPTION_NAME.''
                     LIMIT ".$post_start.', '.$post_count_in_loop
                 );
 

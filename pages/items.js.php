@@ -4277,36 +4277,46 @@ PreviewImage = function(fileId) {
         },
         function(data) {
             //decrypt data
-            //data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-            data = JSON.parse(data);
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
             console.log(data);
 
-            $("#card-item-preview").html('<img id="image_files" src="">');
-            //Get the HTML Elements
-            imageDialog = $("#card-item-preview");
-            imageTag = $('#image_files');
+            //check if format error
+            if (data.error === true) {
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        3
+                    )
+                    .dismissOthers();
+            } else {
+                $("#card-item-preview").html('<img id="image_files" src="">');
+                //Get the HTML Elements
+                imageDialog = $("#card-item-preview");
+                imageTag = $('#image_files');
 
-            //Set the image src
-            imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
+                //Set the image src
+                imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
 
-            alertify
-                .success('<?php echo langHdl('done'); ?>', 1)
-                .dismissOthers();
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
 
-            //When the image has loaded, display the dialog
-            var pre = document.createElement('pre');
-            pre.style.textAlign = "center";
-            $(pre).append($(imageDialog).html());
-            alertify
-                .alert(pre)
-                .set({
-                    label: '<?php echo langHdl('close'); ?>',
-                    closable: false,
-                    padding: false,
-                    title: data.filename,
-                    resizable: true,
-                })
-                .resizeTo('90%', '250px');
+                //When the image has loaded, display the dialog
+                var pre = document.createElement('pre');
+                pre.style.textAlign = "center";
+                $(pre).append($(imageDialog).html());
+                alertify
+                    .alert(pre)
+                    .set({
+                        label: '<?php echo langHdl('close'); ?>',
+                        closable: false,
+                        padding: false,
+                        title: data.filename,
+                        resizable: true,
+                    })
+                    .resizeTo('90%', '250px');
+            }
         }
     );
 };

@@ -206,6 +206,8 @@ if (twoFaMethods > 1) {
         }
     });
 } else if (twoFaMethods === 1) {
+    // Show only expected MFA
+    $('#2fa_methods_selector').addClass('hidden');
     // One 2FA method is expected
     if ($('#2fa_google').val() === '1') {
         $('#div-2fa-google').removeClass('hidden');
@@ -730,6 +732,7 @@ function identifyUser(redirect, psk, data, randomstring)
                                     //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             }
                         } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
+                            console.log("ici")
                             $('#div-2fa-google-qr')
                                 .removeClass('hidden')
                                 .html('<div class="col-12 alert alert-info">' +
