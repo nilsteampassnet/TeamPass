@@ -597,18 +597,21 @@ function launchIdentify(isDuo, redirect, psk)
             // Google 2FA
             if (data.agses === true && $('#agses_code').val() !== undefined) {
                 mfaData['agses_code'] = $('#agses_code').val();
+                user2FaMethod = 'agses';
             }
     
             // Google 2FA
             if (data.google === true && $('#ga_code').val() !== undefined) {
                 mfaData['GACode'] = $('#ga_code').val();
+                user2FaMethod = 'google';
             }
             
             // Yubico
             if (data.yubico === true && $('#yubico_key').val() !== undefined) {
                 mfaData['yubico_key'] = $('#yubico_key').val();
                 mfaData['yubico_user_id'] = $('#yubico_user_id').val();
-                mfaData['yubico_user_key'] = $('#yubico_user_key').val();                
+                mfaData['yubico_user_key'] = $('#yubico_user_key').val();
+                user2FaMethod = 'yubico';              
             }
 
             // Other values

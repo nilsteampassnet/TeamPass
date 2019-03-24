@@ -3266,8 +3266,24 @@ if (null !== $post_type) {
         case 'do_items_list_in_folder':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.str_replace('"', '\"', langHdl('error_not_allowed_to')).'"}]';
-                echo prepareExchangedData($returnValues, 'encode');
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (count($_SESSION['user_roles']) === 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -3362,7 +3378,7 @@ if (null !== $post_type) {
                         }
                     }
                 }
-                $accessLevel = min($arrTmp);
+                $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
                 $uniqueLoadData['accessLevel'] = $accessLevel;
 
                 /*
@@ -3629,7 +3645,7 @@ if (null !== $post_type) {
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                         }
-
+                        
                         // Has this item a restriction to Groups of Users
                         $user_is_included_in_role = false;
                         $roles = DB::query(

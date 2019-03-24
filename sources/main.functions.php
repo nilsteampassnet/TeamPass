@@ -1203,11 +1203,11 @@ function cacheTableAdd($SETTINGS, $ident = null)
             'id' => $data['id'],
             'label' => $data['label'],
             'description' => $data['description'],
-            'tags' => (isset($tags) && !empty($tags)) ? $tags : 'None',
+            'tags' => (isset($tags) && empty($tags) === false) ? $tags : 'None',
             'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
             'id_tree' => $data['id_tree'],
-            'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== 'None') ? $data['perso'] : '0',
-            'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
+            'perso' => (isset($data['perso']) && empty($data['perso']) === false && $data['perso'] !== 'None') ? $data['perso'] : '0',
+            'restricted_to' => (isset($data['restricted_to']) && empty($data['restricted_to']) === false) ? $data['restricted_to'] : '0',
             'login' => isset($data['login']) ? $data['login'] : '',
             'folder' => implode(' » ', $folder),
             'author' => $_SESSION['user_id'],
@@ -2127,169 +2127,6 @@ function checkCFconsistency($source_id, $target_id)
     return true;
 }
 
-/**
- * Shall we crypt/decrypt.
- *
- * @param string $filename_to_rework File name
- * @param string $filename_status    Its status
- * @param array  $SETTINGS           Settings
- */
-function encryptOrDecryptFile(
-    $filename_to_rework,
-    $filename_status,
-    $SETTINGS
-) {
-    // Include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
-
-    // Get file info in DB
-    $fileInfo = DB::queryfirstrow(
-        'SELECT id FROM '.prefixTable('files').' WHERE file = %s',
-        filter_var($filename_to_rework, FILTER_SANITIZE_STRING)
-    );
-    if (empty($fileInfo['id']) === false) {
-        // Load PhpEncryption library
-        $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
-
-        // Get KEY
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
-
-        if (isset($SETTINGS['enable_attachment_encryption'])
-            && $SETTINGS['enable_attachment_encryption'] === '1'
-            && isset($filename_status) === true
-            && ($filename_status === 'clear' || $filename_status === '0')
-        ) {
-            // File needs to be encrypted
-            if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework) === true) {
-                // Make a copy of file
-                if (copy(
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
-                )
-                    === false
-                ) {
-                    return;
-                } else {
-                    // Do a bck
-                    copy(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.bck'
-                    );
-                }
-
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework);
-
-                // Now encrypt the file with saltkey
-                $err = '';
-                try {
-                    \Defuse\Crypto\File::encryptFile(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy',
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-                    );
-                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                    $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-                } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                    $err = $ex;
-                } catch (Defuse\Crypto\Exception\IOException $ex) {
-                    $err = $ex;
-                }
-                if (empty($err) === false) {
-                    echo $err;
-                }
-
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy');
-
-                // update table
-                DB::update(
-                    prefixTable('files'),
-                    array(
-                        'status' => 'encrypted',
-                        ),
-                    'id = %i',
-                    $fileInfo['id']
-                );
-            }
-        } elseif (isset($SETTINGS['enable_attachment_encryption'])
-            && $SETTINGS['enable_attachment_encryption'] === '0'
-            && isset($filename_status)
-            && $filename_status === 'encrypted'
-        ) {
-            // file needs to be decrypted
-            if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
-                // make a copy of file
-                if (!copy(
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
-                )) {
-                    return;
-                } else {
-                    // do a bck
-                    copy(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.bck'
-                    );
-                }
-
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework);
-
-                // Now encrypt the file with saltkey
-                $err = '';
-                try {
-                    \Defuse\Crypto\File::decryptFile(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy',
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-                    );
-                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                    $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-                } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                    $err = $ex;
-                } catch (Defuse\Crypto\Exception\IOException $ex) {
-                    $err = $ex;
-                }
-                if (empty($err) === false) {
-                    echo $err;
-                }
-
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy');
-
-                // update table
-                DB::update(
-                    prefixTable('files'),
-                    array(
-                        'status' => 'clear',
-                        ),
-                    'id = %i',
-                    $fileInfo['id']
-                );
-            }
-        }
-    }
-
-    // Exit
-    return false;
-}
 
 /**
  * Will encrypte/decrypt a fil eusing Defuse.

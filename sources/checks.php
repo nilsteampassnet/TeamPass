@@ -151,8 +151,6 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // load user's data
     $data = DB::queryfirstrow(
@@ -165,23 +163,35 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         return false;
     }
 
-    // check if user is allowed to see this page
-    if ($data['admin'] !== '1'
-        && $data['gestionnaire'] !== '1'
-        && $data['can_manage_all_users'] !== '1'
-        && isInArray($pageVisited, $pagesRights['user']) === true
-    ) {
-        return true;
-    } elseif ($data['admin'] !== '1'
-        && ($data['gestionnaire'] === '1' || $data['can_manage_all_users'] === '1')
-        && (isInArray($pageVisited, $pagesRights['manager']) === true || isInArray($pageVisited, $pagesRights['human_resources']) === true)
-    ) {
-        return true;
-    } elseif ($data['admin'] === '1'
+    if ((int) $data['admin'] === 1
         && isInArray($pageVisited, $pagesRights['admin']) === true
     ) {
         return true;
+    } elseif (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
+        && (isInArray($pageVisited, $pagesRights['manager'].concat($pagesRights['human_resources'])) === true)
+    ) {
+        return true;
+    } elseif (isInArray($pageVisited, $pagesRights['user']) === true) {
+        return true;
     }
+
+    // check if user is allowed to see this page
+    /*if ((int) $data['admin'] !== 1
+        && (int) $data['gestionnaire'] !== 1
+        && (int) $data['can_manage_all_users'] !== 1
+        && isInArray($pageVisited, $pagesRights['user']) === true
+    ) {
+        return true;
+    } elseif ((int) $data['admin'] !== 1
+        && ((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
+        && (isInArray($pageVisited, $pagesRights['manager'].concat($pagesRights['human_resources'])) === true)
+    ) {
+        return true;
+    } elseif ((int) $data['admin'] === 1
+        && isInArray($pageVisited, $pagesRights['admin']) === true
+    ) {
+        return true;
+    }*/
 
     return false;
 }

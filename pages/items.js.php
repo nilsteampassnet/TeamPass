@@ -2851,9 +2851,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 requestRunning = false;
 
                 // manage not allowed
-                if (data.error === 'not_allowed') {
+                if (data.error === true) {
                     alertify
-                        .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.error_text, 0)
+                        .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.message, 0)
                         .dismissOthers();
                    return false;
                 }
