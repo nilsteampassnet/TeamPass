@@ -993,7 +993,7 @@ if ($menuAdmin === true) {
     } elseif ($pageSel === 'export') {
         ?>
 <!-- FILESAVER -->
-<script type="text/javascript" src="plugins/filesaver/FileSaver.min.js"></script>
+<script type="text/javascript" src="plugins/downloadjs/download.js"></script>
         <?php
     }
 ?>

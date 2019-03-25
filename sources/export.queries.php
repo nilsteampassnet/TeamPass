@@ -358,7 +358,7 @@ if (null !== $post_type) {
                     && in_array($id, $_SESSION['groupes_visibles']) === true
                 ) {
                     $rows = DB::query(
-                        'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
                             i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
                             i.email as email,l.date as date, i.pw_iv as pw_iv,n.renewal_period as renewal_period
                         FROM '.prefixTable('items').' as i
@@ -377,13 +377,15 @@ if (null !== $post_type) {
                     foreach ($rows as $record) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
-                        if (empty($id_managed) || $id_managed != $record['id']) {
-                            if ((in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                                ||
-                                (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
+                            if (
+                                (in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
+                                || (
+                                    in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
+                                    && (empty($record['restricted_to']) === true
+                                    || (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true))
+                                )
                             ) {
-                                //exclude this case
-                            } else {
                                 // Run query
                                 $dataItem = DB::queryfirstrow(
                                     'SELECT i.pw AS pw, s.share_key AS share_key
@@ -449,14 +451,15 @@ if (null !== $post_type) {
                                 ++$i;
 
                                 // log
-                                /*logItems(
+                                logItems(
+                                    $SETTINGS,
                                     $record['id'],
                                     $record['label'],
                                     $_SESSION['user_id'],
                                     'at_export',
                                     $_SESSION['login'],
                                     'csv'
-                                );*/
+                                );
                             }
                         }
                         $id_managed = $record['id'];
@@ -464,16 +467,6 @@ if (null !== $post_type) {
                 }
             }
 
-            // Prepare file
-            $csv_file = 'print_out_csv_'.time().'_'.generateKey().'.csv';
-            // Output CSV-specific headers
-            header('Pragma: public');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-            header('Cache-Control: private', false);
-            header('Content-Type: text/csv');
-            header('Content-Disposition: attachment; filename="'.$csv_file.'";');
-            header('Content-Transfer-Encoding: binary');
 
             // Loop on Results, decode to UTF8 and write in CSV file
             $tmp = '';
@@ -482,28 +475,10 @@ if (null !== $post_type) {
                 $tmp .= array2csv($value);
             }
 
-            //echo $tmp;
-            echo '[{"file":"'.base64_encode($tmp).'"}]';
-
-/*
-            // Save the file
-            $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
-            $outstream = fopen($SETTINGS['path_to_files_folder'].$csv_file, 'w');
-
-            // Loop on Results, decode to UTF8 and write in CSV file
-            foreach ($full_listing as $value) {
-                $value = array_map('utf8_decode', $value);
-                fputcsv($outstream, $value, ';');
-            }
-
-            // Close and display
-            fclose($outstream);
-
-            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
-            */
+            echo '[{"content":"'.base64_encode($tmp).'", "file":"print_out_csv_'.time().'_'.generateKey().'.csv"}]';
             break;
 
-    //CASE export in HTML format
+        //CASE export in HTML format
         case 'export_to_html_format':
             // step 1:
             // - prepare export file
@@ -973,7 +948,7 @@ function nbLines($width, $txt)
     return $var_nl;
 }
 
-function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '\\')
+function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
 {
     $buffer = fopen('php://temp', 'r+');
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);

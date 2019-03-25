@@ -93,7 +93,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary" id="form-item-export-perform"><?php echo langHdl('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right" id="form-item-export-cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
             </div>
         </div>

@@ -114,6 +114,8 @@ function exportItemsToFile()
         return;
     }
 
+    $('#form-item-export-perform').attr('disabled', 'disabled');
+
 
     // Export to PDF
     if ($('#export-format').val() === 'pdf') {
@@ -144,16 +146,22 @@ function exportItemsToFile()
             function(data) {
                 console.log(data);
                 $("#export-progress")
+                .addClass('hidden')
                 .find('span')
-                //.html('<i class="fas fa-download mr-2"></i>'+data[0].text);
-                //.html('<a href="data:text/csv, ' + atob(data[0].file) + '">CSV Octet</a>')
+                .html('');
 
-                var file = new File([atob(data[0].file)], "myfile.csv", {type: "text/csv;charset=utf-8"});
-                FileSaver.saveAs(file);
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+
+                download(new Blob([atob(data[0].content)]), data[0].file, "text/csv");
             },
             'json'
         );
     }
+
+    
+    $('#form-item-export-perform').removeAttr('disabled');
 }
 
 
