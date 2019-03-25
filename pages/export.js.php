@@ -44,5 +44,217 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
 <script type='text/javascript'>
 
+// Prepare list of folders
+$('.select2').val('');
+$.each(store.get('teampassApplication').foldersList, function(index, item) {
+    $('#export-folders').append('<option value="' + item.id + '">' + item.title + '</option>');
+});
+
+// Prepare Select2 inputs
+$('.select2').select2({
+    language: '<?php echo $_SESSION['user_language_code']; ?>'
+});
+
+// On type selection
+$('#export-format').on("change", function (e) {
+    if ($(this).val() === 'pdf') {
+        $('#pdf-password').removeClass('hidden');
+        $('#export-password').val('');
+    } else {
+        $('#pdf-password').addClass('hidden');
+        $('#export-password').val('');
+    }
+});
+
+// Action
+$(document).on('click', '#form-item-export-perform', function() {
+    exportItemsToFile();
+});
+
+function exportItemsToFile()
+{
+    showAlertify(
+        '<?php echo langHdl('exporting_items'); ?>...<i class="fas fa-cog fa-spin ml-2"></i>',
+        0,
+        'bottom-right',
+        'message'
+    );
+
+    $('#export-progress')
+        .removeClass('hidden')
+        .find('span')
+        .html('<?php echo langHdl('starting'); ?>');
+
+    //Get list of selected folders
+    var ids = [];
+    $("#export-folders :selected").each(function(i, selected) {
+        ids.push($(selected).val());
+    });
+    
+    // No selection of folders done
+    if (ids.length === 0) {
+        $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('error_no_selected_folder'); ?>');
+
+        alertify
+            .error('<?php echo langHdl('done'); ?>', 1)
+            .dismissOthers();
+
+        return;
+    }
+
+    // Get PDF encryption password and make sure it is set
+    if (($('#export-password').val() == '') && ($('#export-format').val() === 'pdf')) {
+        $('#export-progress').find('span')
+            .html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('pdf_password_warning'); ?>');
+
+        alertify
+            .error('<?php echo langHdl('done'); ?>', 1)
+            .dismissOthers();
+
+        return;
+    }
+
+
+    // Export to PDF
+    if ($('#export-format').val() === 'pdf') {
+        // Initialize
+        $.post(
+            "sources/export.queries.php",
+            {
+                type : "initialize_export_table"
+            },
+            function() {
+                // launch export by building content of export table
+                var currentID = ids[0];
+                ids.shift();
+                var nb = ids.length + 1;
+                pollExport('export_to_pdf_format', ids, currentID, nb);
+            }
+        );
+        // ---
+        // ---
+    } else if ($('#export-format').val() === 'csv') {
+        // Export to CSV
+        $.post(
+            "sources/export.queries.php",
+            {
+                type : 'export_to_csv_format',
+                ids  : (JSON.stringify(ids))
+            },
+            function(data) {
+                console.log(data);
+                $("#export-progress")
+                .find('span')
+                //.html('<i class="fas fa-download mr-2"></i>'+data[0].text);
+                //.html('<a href="data:text/csv, ' + atob(data[0].file) + '">CSV Octet</a>')
+
+                var file = new File([atob(data[0].file)], "myfile.csv", {type: "text/csv;charset=utf-8"});
+                FileSaver.saveAs(file);
+            },
+            'json'
+        );
+    }
+}
+
+
+function pollExport(export_format, remainingIds, currentID, nb)
+{
+    var data = {
+        id  : currentID,
+        ids : remainingIds
+    };
+    
+    $.post(
+        'sources/export.queries.php',
+        {
+            type    : export_format,
+            data    :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            //decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
+
+            //check if format error
+            if (data.error === true) {
+                // ERROR
+                alertify
+                    .error(
+                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        3
+                    )
+                    .dismissOthers();
+            } else {
+                var aIds = remainingIds.split(",");
+                var currentID = aIds[0];
+                aIds.shift();
+                var nb2 = aIds.length;
+                aIds = aIds.toString();
+                $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
+                //console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+                if (currentID != "") {
+                    pollExport(export_format, aIds, currentID, nb);
+                } else {
+                    //Send query
+                    $.post(
+                        "sources/export.queries.php",
+                        {
+                            type    : "finalize_export_pdf",
+                            pdf_password : $("#export_pdf_password").val()
+                        },
+                        function(data) {
+                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                        },
+                        "json"
+                    );
+                }
+
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        }
+    );
+
+
+
+    $.ajax({
+        url: "sources/export.queries.php",
+        type : 'POST',
+        dataType : "json",
+        data : {
+            type    : export_format,
+            id     : currentID,
+            ids     : remainingIds
+        },
+        complete : function(data, statut){
+            var aIds = remainingIds.split(",");
+            var currentID = aIds[0];
+            aIds.shift();
+            var nb2 = aIds.length;
+            aIds = aIds.toString();
+            $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
+            //console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+            if (currentID != "") {
+                pollExport(export_format, aIds, currentID, nb);
+            } else {
+                //Send query
+                $.post(
+                    "sources/export.queries.php",
+                    {
+                        type    : "finalize_export_pdf",
+                        pdf_password : $("#export_pdf_password").val()
+                    },
+                    function(data) {
+                        $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                    },
+                    "json"
+                );
+            }
+        }
+    })
+};
 
 </script>

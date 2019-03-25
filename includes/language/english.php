@@ -16,6 +16,12 @@
  */
 
 return array(
+    'exporting_items' => 'Exporting items',
+    'select_folders_to_export' => 'Select folders to export',
+    'export_format_type' => 'Select the export format type',
+    'export_items' => 'Export items',
+    'loading_item' => 'Loading item',
+    'otv_message' => 'You can share this item with someone without a Teampass account. One-Time-View permits your guest to access basic fields of this item only once without being authenticated in Teampass. Please notice that this link is valid for a period of ##otv_expiration_period##  days. Copy and share the link below.',
     'no_sharekey_found' => 'No key found for this file and your account',
     'otv_link' => 'One-time-view link',
     'one_time_view' => 'One-time-view',
@@ -361,6 +367,7 @@ return array(
     'email_new_user_password' => '[Teampass] Login credential update',
     'email_new_user_password_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has decided to reset your current password. Next time you will connect to Teampass, please use:<br><br><b>#tp_password#</b><br><br>We highly encourage you to change this password once connected.<br><br>Cheers',
     '---' => '---',
+    'error_no_selected_folder' => 'At least one folder needs to be selected',
     'email_subject_item_updated' => '[Teampass] One item you are following has been updated',
     'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You have asked to be notified on changes performed on item `#item_label#` in folder `#folder_name#`.<br><br>User <b>#name# #lastname#</b> did some changes you can evalue by follwing newt <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>LINK</a>.<br><br>Cheers',
     'import_kp_finished' => 'Import using KeePass file is now finished! The required password strength for new folders has been set to Medium.',
@@ -643,7 +650,6 @@ return array(
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Number of items to retrieve per query',
     'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
-    'error_no_selected_folder' => 'You must select a folder',
     'open_url_link' => 'Open in a new window',
     'error_pw_too_long' => 'Password longer than system maximum (default 40 characters).',
     'at_restriction' => 'Restriction',

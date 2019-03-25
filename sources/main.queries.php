@@ -112,8 +112,6 @@ function mainQuery($SETTINGS)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -2286,7 +2284,7 @@ Insert the log here and especially the answer of the query that failed.
                             FROM '.prefixTable('files').'
                             WHERE status = "'.TP_ENCRYPTION_NAME.'"
                             LIMIT '.$post_start.', '.$post_length
-                        );//aes_encryption
+                        ); //aes_encryption
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(

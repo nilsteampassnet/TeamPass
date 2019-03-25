@@ -754,20 +754,24 @@ $('.but-back').click(function() {
             }
         );
     }
+
+    // Clear pickfiles div
+    $('#form-item-upload-pickfilesList').html('');
     
     // Hide all
-    $('.form-item, .form-item-action,.form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories')
+    $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
         .addClass('hidden');
 
     // Show expected one
     $(store.get('teampassUser').previousView).removeClass('hidden');
 
+    /*
     // Destroy editor
     if (itemEditor) itemEditor.destroy();
 
-    // Clear pickfiles div
-    $('#form-item-upload-pickfilesList').html('').addClass('hidden');
+    // Clear form inputs
     $('.form-item-control').val('');
+    */
 });
 
 
@@ -1592,7 +1596,7 @@ function closeItemDetailsCard()
 $(document)
     .on('click', '.list-item-clicktoshow', function() {
         showAlertify(
-            '<span class="fas fa-cog fa-spin fa-2x"></span>',
+            '<?php echo langHdl('loading_item'); ?>...<i class="fas fa-cog fa-spin ml-2"></i>',
             0,
             'bottom-right',
             'message'
@@ -1603,7 +1607,7 @@ $(document)
     })
     .on('click', '.list-item-clicktoedit', function() {
         showAlertify(
-            '<span class="fas fa-cog fa-spin fa-2x"></span>',
+            '<?php echo langHdl('loading_item'); ?>...<i class="fas fa-cog fa-spin ml-2"></i>',
             0,
             'bottom-right',
             'message'
@@ -1615,9 +1619,9 @@ $(document)
         // Load item info
         Details($(this).closest('tr'), 'edit');
     })
-    .on('click', '#card-item-otv-generate-button', function() {        
+    /*.on('click', '#card-item-otv-generate-button', function() {        
         prepareOneTimeView();
-    });
+    })*/;
 
 /**
  *  Manage mini icons on mouse over
@@ -3190,17 +3194,14 @@ function sList(data)
             if (value.desc !== '') {
                 value.desc = ' <span class="text-secondary small">- ' + value.desc + '</span>';
             }
-
-            // Prepare flag
-            if (value.expired === 1) {
-                item_flag = '<i class="fas fa-ban fa-sm"></i>&nbsp;';
-            }
             
             $('#teampass_items_list').append(
                 '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-rights="'+value.rights+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1 && value.is_result_of_search === 0 ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') +
+                    // Show user a ban icon if expired
+                    (value.expired === 1 ? '<i class="far fa-calendar-times mr-2 text-warning infotip" title="<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
                     (value.rights === 10 ? '<i class="far fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo langHdl('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
@@ -3581,7 +3582,9 @@ function Details(itemDefinition, actionType, hotlink = false)
                     .error('<i class="fas fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
                 return false;
-            } else if (data.user_can_modify === 0 && actionType === 'edit') {
+            } else if ((data.user_can_modify === 0 && actionType === 'edit')
+                || data.show_details === 0
+            ) {
                 alertify
                     .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
                     .dismissOthers();
@@ -3597,9 +3600,9 @@ function Details(itemDefinition, actionType, hotlink = false)
 
             // Scroll to top
             $(window).scrollTop(0);
-            
+
             // SHould we show?
-            if (data.show_detail_option === 1) {
+            if (data.show_detail_option === 1 || itemExpired === 1) {
                 // SHow expiration alert
                 $('#card-item-expired').removeClass('hidden');
             } else if (data.show_detail_option === 2) {
@@ -3617,7 +3620,9 @@ function Details(itemDefinition, actionType, hotlink = false)
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
             
             // Uncrypt the pwd
-            data.pw = atob(data.pw);
+            if (data.pw !== undefined) {
+                data.pw = atob(data.pw);
+            }
 
             // Update hidden variables
             store.update(
@@ -4011,7 +4016,6 @@ function Details(itemDefinition, actionType, hotlink = false)
 */
 function showDetailsStep2(id, actionType)
 {
-    $('#div_loading').removeClass('hidden');
     $.post(
         'sources/items.queries.php',
         {

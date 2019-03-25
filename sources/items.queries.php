@@ -2107,7 +2107,7 @@ if (null !== $post_type) {
             $post_salt_key_required = filter_var(($dataReceived['salt_key_required']), FILTER_SANITIZE_STRING);
             $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
                 && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
-            $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
+            $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_NUMBER_INT);
             $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_STRING);
             $post_page = filter_var(($dataReceived['page']), FILTER_SANITIZE_STRING);
             $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
@@ -2246,10 +2246,11 @@ if (null !== $post_type) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-            if (in_array($_SESSION['user_id'], $restrictedTo) === true) {
+            if (in_array($_SESSION['user_id'], $restrictedTo) === true
+                || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)) {
                 $restrictionActive = false;
             }
-            if (empty($dataItem['restricted_to'])) {
+            if (empty($dataItem['restricted_to']) === true) {
                 $restrictionActive = false;
             }
 
@@ -2285,26 +2286,18 @@ if (null !== $post_type) {
                 );
             }
 
-            // check if item is expired
-            if (null !== $post_expired_item
-                && $post_expired_item === '1'
-            ) {
-                $item_is_expired = true;
-            } else {
-                $item_is_expired = false;
-            }
-
            // echo $dataItem['id_tree']." ;; ";
             //print_r($_SESSION['groupes_visibles']);
 
             // check user is admin
-            if ($_SESSION['user_admin'] === '1'
-                && $dataItem['perso'] != 1
+            if ((int) $_SESSION['user_admin'] === 1
+                && (int) $dataItem['perso'] !== 1
                 && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null === TP_ADMIN_FULL_RIGHT
             ) {
                 $arrData['show_details'] = 0;
-            // Check if actual USER can see this ITEM
+            // ---
+                // ---
             } elseif ((
                 (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
@@ -2316,10 +2309,11 @@ if (null !== $post_type) {
                     && $post_restricted === '1'
                     && $user_in_restricted_list_of_item === true)
                 ||
-                (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === '1'
+                (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
                     && $restrictionActive === false
                 )
             ) {
+                // Check if actual USER can see this ITEM
                 // Allow show details
                 $arrData['show_details'] = 1;
 
@@ -2393,9 +2387,9 @@ if (null !== $post_type) {
                     $arrData['links_to_kbs'] = $tmp;
                 }
                 // Prepare DIalogBox data
-                if ($item_is_expired === false) {
+                if ((int) $post_expired_item === 0) {
                     $arrData['show_detail_option'] = 0;
-                } elseif ($user_is_allowed_to_modify === true && $item_is_expired === true) {
+                } elseif ($user_is_allowed_to_modify === true && (int) $post_expired_item === 1) {
                     $arrData['show_detail_option'] = 1;
                 } else {
                     $arrData['show_detail_option'] = 2;
@@ -2619,6 +2613,8 @@ if (null !== $post_type) {
                 } else {
                     $arrData['to_be_deleted'] = 'not_enabled';
                 }
+                // ---
+                // ---
             } else {
                 $arrData['show_details'] = 0;
                 // get readable list of restriction
@@ -2660,9 +2656,26 @@ if (null !== $post_type) {
         case 'showDetailsStep2':
             // Is this query expected (must be run after a step1 and not standalone)
             if ($_SESSION['user_settings']['show_step2'] !== true) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.langHdl('error_not_allowed_to').'"}]';
-                echo prepareExchangedData($returnValues, 'encode');
-                break;
+                // Check KEY and rights
+                if ($post_key !== $_SESSION['key']) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('key_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                } elseif ($_SESSION['user_read_only'] === true) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
             }
             $returnArray = array();
 
@@ -2678,7 +2691,10 @@ if (null !== $post_type) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-            if (in_array($_SESSION['user_id'], $restrictedTo)) {
+            if (in_array($_SESSION['user_id'], $restrictedTo)
+                || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+                && (int) $SETTINGS['manager_edit'] === 1)
+            ) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to'])) {
@@ -3579,7 +3595,7 @@ if (null !== $post_type) {
                     $query_limit = ' LIMIT '.
                         $start.','.
                         $post_nb_items_to_display_once;
-
+                    //db::debugmode(true);
                     $rows = DB::query(
                         'SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
@@ -3594,6 +3610,7 @@ if (null !== $post_type) {
                         ORDER BY i.label ASC, l.date DESC'.$query_limit,
                         $where
                     );
+                //db::debugmode(false);
                 } else {
                     $post_nb_items_to_display_once = 'max';
                     $where->add('i.inactif=%i', 0);
@@ -3645,7 +3662,7 @@ if (null !== $post_type) {
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                         }
-                        
+
                         // Has this item a restriction to Groups of Users
                         $user_is_included_in_role = false;
                         $roles = DB::query(
@@ -3659,9 +3676,23 @@ if (null !== $post_type) {
                             $user_is_included_in_role = true;
                         }
 
+                        // Is user in restricted list of users
+                        if (empty($record['restricted_to']) === false) {
+                            if (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
+                                || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+                                && (int) $SETTINGS['manager_edit'] === 1)
+                            ) {
+                                $user_is_in_restricted_list = true;
+                            } else {
+                                $user_is_in_restricted_list = false;
+                            }
+                        } else {
+                            $user_is_in_restricted_list = true;
+                        }
+
                         // Get Expiration date
                         $expired_item = 0;
-                        if ($SETTINGS['activate_expiration'] === '1'
+                        if ((int) $SETTINGS['activate_expiration'] === 1
                             && $record['renewal_period'] > 0
                             && ($record['date'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
                         ) {
@@ -3705,81 +3736,80 @@ if (null !== $post_type) {
                             // If no then continue
                             $itemIsPersonal = true;
                             $right = 70;
-
-                        // ----- END CASE 1 -----
+                        // ---
+                            // ----- END CASE 1 -----
                         } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
                             || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
                             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
-                            && $record['perso'] !== 1
+                            && (int) $record['perso'] !== 1
+                            && $user_is_in_restricted_list === true
                         ) {
                             // Case 2 - Is user manager and option "manager_edit" set to true?
                             // Allow all rights
                             $right = 70;
-
-                        // ----- END CASE 2 -----
+                        // ---
+                            // ----- END CASE 2 -----
                         } elseif ((int) $record['anyone_can_modify'] === 1
-                            && $record['perso'] !== 1
+                            && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 3 - Has this item the setting "anyone can modify" set to true?
                             // Allow all rights
                             $right = 70;
-
-                        // ----- END CASE 3 -----
-                        } elseif (empty($record['restricted_to']) === false
-                            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
-                            && $record['perso'] !== 1
+                        // ---
+                            // ----- END CASE 3 -----
+                        } elseif ($user_is_in_restricted_list === true
+                            && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 4 - Is this item limited to Users? Is current user in this list?
                             // Allow all rights
                             $right = 70;
-
-                        // ----- END CASE 4 -----
+                        // ---
+                            // ----- END CASE 4 -----
                         } elseif ($user_is_included_in_role === true
-                            && $record['perso'] !== 1
+                            && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
                             // Allow all rights
                             $right = 60;
-
-                        // ----- END CASE 5 -----
-                        } elseif ($record['perso'] !== 1
+                        // ---
+                            // ----- END CASE 5 -----
+                        } elseif ((int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 6 - Is user readonly?
                             // Allow limited rights
                             $right = 10;
-
-                        // ----- END CASE 6 -----
-                        } elseif ($record['perso'] !== 1
+                        // ---
+                            // ----- END CASE 6 -----
+                        } elseif ((int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 7 - Is user readonly?
                             // Allow limited rights
                             $right = 10;
-
-                        // ----- END CASE 7 -----
-                        } elseif ($record['perso'] !== 1
+                        // ---
+                            // ----- END CASE 7 -----
+                        } elseif ((int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 8 - Is user allowed to access?
                             // Allow rights
                             $right = 10;
-
-                        // ----- END CASE 8 -----
-                        } elseif (((empty($record['restricted_to']) === false
-                            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+                        // ---
+                            // ----- END CASE 8 -----
+                        } elseif (($user_is_in_restricted_list === false
                             || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
-                            && $record['perso'] !== 1
+                            && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
                             // If no then Allow none
                             $right = 10;
-
-                        // ----- END CASE 9 -----
+                        // ---
+                            // ----- END CASE 9 -----
                         } else {
                             // Define the access based upon setting on folder
                             // 0 -> no access to item
@@ -5372,14 +5402,14 @@ if (null !== $post_type) {
 
             // generate session
             $otv_code = GenerateCryptKey(32, false, true, true, false);
-            $otv_user_code = GenerateCryptKey(32, false, true, true, false);
+            $otv_key = GenerateCryptKey(32, false, true, true, false);
 
             // Generate Defuse key
-            $otv_user_code_encrypted = defuse_generate_personal_key($otv_user_code);
+            $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);
 
             // check if psk is correct.
             $otv_key_encoded = defuse_validate_personal_key(
-                $otv_user_code,
+                $otv_key,
                 $otv_user_code_encrypted
             );
 
@@ -5431,7 +5461,7 @@ if (null !== $post_type) {
             // Prepare URL content
             $otv_session = array(
                 'code' => $otv_code,
-                'key' => $otv_user_code,
+                'key' => $otv_key_encoded,
                 'stamp' => time(),
             );
 

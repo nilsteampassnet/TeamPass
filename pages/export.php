@@ -50,7 +50,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     <div class="container-fluid">
     <div class="row mb-2">
         <div class="col-sm-6">
-        <h1 class="m-0 text-dark"><i class="fas fa-file-import mr-2"></i><?php echo langHdl('import_new_items'); ?></h1>
+        <h1 class="m-0 text-dark"><i class="fas fa-file-export mr-2"></i><?php echo langHdl('export_items'); ?></h1>
         </div><!-- /.col -->
     </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -62,12 +62,38 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title" id="search-select"></h3>
-                </div>
-                <!-- /.card-header -->
                 <div class="card-body">
+                    <div class="form-group">
+                        <label><?php echo langHdl('export_format_type'); ?></label>
+                        <select class="form-control select2" style="width:100%;" id="export-format">
+                            <option value="csv"><?php echo langHdl('csv'); ?></option>
+                            <option value="pdf"><?php echo langHdl('pdf'); ?></option>
+                        </select>
+                    </div>
                     
+                    <div class="row mt-3">
+                        <div class="form-group col-12">
+                            <label><?php echo langHdl('select_folders_to_export'); ?></label>
+                            <select class="form-control select2" style="width:100%;" id="export-folders" multiple>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="pdf-password">
+                        <label><?php echo langHdl('file_protection_password'); ?></label>
+                        <input type="text" class="form-control form-item-control" id="export-password">
+                    </div>
+
+                    <div class="alert alert-warning mb-3 mt-3 hidden" id="export-progress">
+                        <div class="card-body">
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary" id="form-item-export-perform"><?php echo langHdl('perform'); ?></button>
+                    <button type="submit" class="btn btn-default float-right" id="form-item-export-cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
             </div>
         </div>

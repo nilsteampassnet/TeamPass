@@ -160,46 +160,12 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
             }
 
             // Uncrypt PW
-            echo '> '.$data['encrypted'].' -- '.$key.' ;;';
-            // Generate Defuse key
-            $otv_user_code_encrypted = defuse_generate_personal_key($key);
-
-            // check if psk is correct.
-            $otv_key_encoded = defuse_validate_personal_key(
-                $key,
-                $otv_user_code_encrypted
-            );
-
             $password_decrypted = cryption(
                 $data['encrypted'],
-                $otv_key_encoded,
+                $key,
                 'decrypt',
                 $SETTINGS
             );
-            print_r($password_decrypted);
-
-            return;
-            // Get the object key for the user
-            db::debugmode(true);
-            $userKey = DB::queryFirstRow(
-                'SELECT share_key
-                FROM '.prefixTable('sharekeys_items').'
-                WHERE user_id = %i AND object_id = %i',
-                $_SESSION['user_id'],
-                $data['item_id']
-            );
-            db::debugmode(false);
-            echo DB::count().' ;; '.$dataItem['pw'].' ;; ';
-            if (DB::count() === 0 || empty($dataItem['pw']) === true) {
-                // No share key found
-                $pw = '';
-            } else {
-                $pw = doDataDecryption(
-                    $dataItem['pw'],
-                    decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key'])
-                );
-                echo $pw.' ;; ';
-            }
 
             // get data
             $label = strip_tags($dataItem['label']);
@@ -210,12 +176,12 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
 
             // display data
             $html = '<div class="text-center">'.
-                '<h3>Welcome to One-Time item view page</h3>'.
+                '<h3>One-Time item view page</h3>'.
                 "<p class='font-weight-light mt-3'>- Here are the details of the Item that has been shared to you -</p>".
                 "<div class='mt-5'>".
                 '<table class="table text-left" style="margin: 0 auto;">'.
                 '<tr><th>Label:</th><td>'.$label.'</td></tr>'.
-                '<tr><th>Password:</th><td>'.base64_decode($pw).'</td></tr>'.
+                '<tr><th>Password:</th><td>'.addslashes($password_decrypted['string']).'</td></tr>'.
                 '<tr><th>Description:</th><td>'.$description.'</td></tr>'.
                 '<tr><th>login:</th><td>'.$login.'</td></tr>'.
                 '<tr><th>URL:</th><td>'.$url.'</td></tr>'.

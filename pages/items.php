@@ -114,6 +114,17 @@ echo '
     <!-- Main content -->
     <section class="content">
 
+        <!-- EXPIRED ITEM -->
+        <div class="row hidden" id="card-item-expired">
+            <div class="col-12">
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                    <h5><i class="fas fa-exclamation-triangle mr-2"></i><?php echo langHdl('warning'); ?></h5>
+                    <?php echo langHdl('pw_is_expired_-_update_it'); ?>
+                </div>
+            </div>
+        </div>
+
         <!-- ITEM FORM -->
         <div class="row hidden form-item">
             <div class="col-12">
@@ -477,22 +488,11 @@ echo '
                         </span>
                         <h3 class="d-inline align-middle" id="card-item-label"></h3>
                         <div class="card-tools">
-                            <button type="button" class="btn btn-tool btn-sm but-back-to-list">
+                            <button type="button" class="btn btn-tool btn-sm but-back">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- EXPIRED ITEM -->
-        <div class="row hidden" id="card-item-expired">
-            <div class="col-12">
-                <div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <h5><i class="icon fa fa-warning"></i> <?php echo langHdl('warning'); ?></h5>
-                    <?php echo langHdl('pw_is_expired_-_update_it'); ?>
                 </div>
             </div>
         </div>
@@ -767,6 +767,7 @@ echo '
         }
         ?>
 
+        <!--
         <div class="row hidden item-details-card">
             <div class="col-12">
                 <div class="input-group mb-3">
@@ -776,11 +777,11 @@ echo '
                     <div class="input-group-prepend">
                         <button type="button" class="btn btn-warning btn-copy-clipboard"  id="card-item-otv-copy-button"><?php echo langHdl('copy'); ?></button>
                     </div>
-                    <!-- /btn-group -->
                     <input type="text" class="form-control" placeholder="OTV link" id="card-item-otv">
                 </div>
             </div>
         </div>
+        -->
 
 
         <!-- COPY ITEM FORM -->
@@ -899,7 +900,13 @@ echo '
                     <div class="card-body">
                         <div class="callout callout-info">
                             <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
-                            <p><?php echo langHdl('notification_message'); ?></p>
+                            <p><?php
+                            echo str_replace(
+                                array('##otv_expiration_period##', '. '),
+                                array('<span class="text-bold text-primary">'.$SETTINGS['otv_expiration_period'].'</span>', '<br>'),
+                                langHdl('otv_message')
+                            );
+                            ?></p>
                         </div>
 
 
@@ -914,7 +921,7 @@ echo '
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('close'); ?></button>
                     </div>
                 </div>
                 

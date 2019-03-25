@@ -140,6 +140,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION').'.php';
     include_once 'SplClassLoader.php';
     include_once 'main.functions.php';
+
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -168,30 +169,12 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     ) {
         return true;
     } elseif (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
-        && (isInArray($pageVisited, $pagesRights['manager'].concat($pagesRights['human_resources'])) === true)
+        && (isInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true)
     ) {
         return true;
     } elseif (isInArray($pageVisited, $pagesRights['user']) === true) {
         return true;
     }
-
-    // check if user is allowed to see this page
-    /*if ((int) $data['admin'] !== 1
-        && (int) $data['gestionnaire'] !== 1
-        && (int) $data['can_manage_all_users'] !== 1
-        && isInArray($pageVisited, $pagesRights['user']) === true
-    ) {
-        return true;
-    } elseif ((int) $data['admin'] !== 1
-        && ((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
-        && (isInArray($pageVisited, $pagesRights['manager'].concat($pagesRights['human_resources'])) === true)
-    ) {
-        return true;
-    } elseif ((int) $data['admin'] === 1
-        && isInArray($pageVisited, $pagesRights['admin']) === true
-    ) {
-        return true;
-    }*/
 
     return false;
 }

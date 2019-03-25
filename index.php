@@ -404,7 +404,6 @@ if (($session_validite_pw === null
                     </li>';
     }
 
-    /*
     // EXPORT menu
     if (isset($SETTINGS['roles_allowed_to_print']) === true && (int) $SETTINGS['roles_allowed_to_print'] === 1) {
         echo '
@@ -412,12 +411,11 @@ if (($session_validite_pw === null
                         <a href="#" data-name="export" class="nav-link', $pageSel === 'export' ? ' active' : '' ,'"">
                         <i class="nav-icon fas fa-file-export"></i>
                         <p>
-                            '.langHdl('import').'
+                            '.langHdl('export').'
                         </p>
                         </a>
                     </li>';
     }
-    */
 
     /*
     // OFFLINE MODE menu
@@ -991,6 +989,11 @@ if ($menuAdmin === true) {
         ?>
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <?php
+    } elseif ($pageSel === 'export') {
+        ?>
+<!-- FILESAVER -->
+<script type="text/javascript" src="plugins/filesaver/FileSaver.min.js"></script>
         <?php
     }
 ?>
