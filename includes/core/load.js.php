@@ -471,7 +471,7 @@ function showItemCard(itemDefinition)
 {
     // Show cog
     alertify
-        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     if (window.location.href.indexOf('page=items') === -1) {

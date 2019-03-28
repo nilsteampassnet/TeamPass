@@ -202,4 +202,8 @@
     position: absolute;
     left: 1rem;
     top: .5rem;
-  }
+}
+
+.datatable.path {
+    font-size: 11pt;
+}

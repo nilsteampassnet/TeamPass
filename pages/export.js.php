@@ -129,8 +129,9 @@ function exportItemsToFile()
                 // launch export by building content of export table
                 var currentID = ids[0];
                 ids.shift();
-                var nb = ids.length + 1;
-                pollExport('export_to_pdf_format', ids, currentID, nb);
+                var counterRemainingFolders = ids.length,
+                    totalFolders = counterRemainingFolders + 1;
+                pollExport('export_to_pdf_format', ids, currentID, counterRemainingFolders, totalFolders);
             }
         );
         // ---
@@ -144,17 +145,16 @@ function exportItemsToFile()
                 ids  : (JSON.stringify(ids))
             },
             function(data) {
-                console.log(data);
                 $("#export-progress")
-                .addClass('hidden')
-                .find('span')
-                .html('');
+                    .addClass('hidden')
+                    .find('span')
+                    .html('');
 
                 alertify
                     .success('<?php echo langHdl('done'); ?>', 1)
                     .dismissOthers();
 
-                download(new Blob([atob(data[0].content)]), data[0].file, "text/csv");
+                download(new Blob([atob(data[0].content)]), $('#export-filename').val(), "text/csv");
             },
             'json'
         );
@@ -165,19 +165,25 @@ function exportItemsToFile()
 }
 
 
-function pollExport(export_format, remainingIds, currentID, nb)
+function pollExport(export_format, remainingIds, currentID, counterRemainingFolders, totalFolders)
 {
     var data = {
         id  : currentID,
         ids : remainingIds
     };
+
+    $("#export-progress")
+        .find('span')
+        .html('<?php echo langHdl('operation_progress'); ?> <b>' +
+            Math.round((totalFolders-counterRemainingFolders)*100/totalFolders).toFixed() +
+            '%</b> ... <i class="fas fa-spinner fa-pulse"></i>');
     
     $.post(
         'sources/export.queries.php',
         {
-            type    : export_format,
-            data    :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-            key     : '<?php echo $_SESSION['key']; ?>'
+            type : export_format,
+            data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+            key  : '<?php echo $_SESSION['key']; ?>'
         },
         function(data) {
             //decrypt data
@@ -194,75 +200,169 @@ function pollExport(export_format, remainingIds, currentID, nb)
                     )
                     .dismissOthers();
             } else {
-                var aIds = remainingIds.split(",");
-                var currentID = aIds[0];
-                aIds.shift();
-                var nb2 = aIds.length;
-                aIds = aIds.toString();
-                $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-                //console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
-                if (currentID != "") {
-                    pollExport(export_format, aIds, currentID, nb);
+                currentID = remainingIds[0];
+                remainingIds.shift();
+                counterRemainingFolders = remainingIds.length;
+                
+                if (currentID !== "" && currentID !== undefined) {
+                    pollExport(export_format, remainingIds, currentID, counterRemainingFolders, totalFolders);
                 } else {
+                    $("#export-progress")
+                        .find('span')
+                        .html('</i>Preparing PDF file ... <i class="fas fa-cog fa-spin ml-2">');
+
+                    // Prepare
+                    var dataLocal = {
+                        pdf_password : $("#export-password").val()
+                    };
+
+                    // Build XMLHttpRequest parameters
+                    var data = new FormData();
+                    data.append('type', 'finalize_export_pdf');
+                    data.append('data', prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $_SESSION['key']; ?>'));
+                    data.append('key', '<?php echo $_SESSION['key']; ?>');
+
+                    // Build XMLHttpRequest
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", 'sources/export.queries.php', true);
+                    xhr.responseType = "blob";
+
+                    xhr.onload = function () {
+                        if (this.status === 200) {
+                            var blob = new Blob([xhr.response], {type: "application/pdf"}),
+                                objectUrl = URL.createObjectURL(blob),
+                                a = document.createElement("a");
+                            a.href = objectUrl;
+                            a.download = $('#export-filename').val()+ '.pdf';
+                            document.body.appendChild(a);
+                            a.target = "_blank";
+
+                            $("#export-progress")
+                                .addClass('hidden')
+                                .find('span')
+                                .html('');
+
+                            alertify
+                                .success('<?php echo langHdl('done'); ?>', 1)
+                                .dismissOthers();
+
+                            // Shown download dialog
+                            a.click();
+                        }
+                    };
+                    xhr.send(data);
+
+                    /*
                     //Send query
+                    var xhr = new XMLHttpRequest();
+                    $.ajax({
+                        cache: false,
+                        type: 'POST',
+                        url: 'sources/export.queries.php',
+                        contentType: false,
+                        processData: false,
+                        data: {
+                            type : "finalize_export_pdf",
+                            //data :  prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                            pdf_password : $("#export-password").val(),
+                            key  : '<?php echo $_SESSION['key']; ?>'
+                        },
+                        xhrFields: {
+                            responseType: 'blob' 
+                        }
+                    }).done(function(response){
+                        var filename = "";                   
+                        
+                        var linkelem = document.createElement('a');
+                        try {
+                            var blob = new Blob([response], { type: 'application/pdf' });                        
+
+                            if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                                //   IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+                                window.navigator.msSaveBlob(blob, filename);
+                            } else {
+                                var URL = window.URL || window.webkitURL;
+                                var downloadUrl = URL.createObjectURL(blob);
+
+                                if (filename) { 
+                                    // use HTML5 a[download] attribute to specify filename
+                                    var a = document.createElement("a");
+
+                                    // safari doesn't support this yet
+                                    if (typeof a.download === 'undefined') {
+                                        window.location = downloadUrl;
+                                    } else {
+                                        a.href = downloadUrl;
+                                        a.download = filename;
+                                        document.body.appendChild(a);
+                                        a.target = "_blank";
+                                        a.click();
+                                    }
+                                } else {
+                                    //window.location = downloadUrl;
+                                }
+                            }   
+                            $("#export-progress")
+                                .addClass('hidden')
+                                .find('span')
+                                .html('');
+
+                            alertify
+                                .success('<?php echo langHdl('done'); ?>', 1)
+                                .dismissOthers();
+
+                        } catch (ex) {
+                            console.log(ex);
+                        } 
+                    });
+*/
+/*
                     $.post(
                         "sources/export.queries.php",
                         {
-                            type    : "finalize_export_pdf",
-                            pdf_password : $("#export_pdf_password").val()
+                            type : "finalize_export_pdf",
+                            data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                            key  : '<?php echo $_SESSION['key']; ?>'
                         },
                         function(data) {
-                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
-                        },
-                        "json"
-                    );
-                }
+                            //decrypt data
+                            //data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                            console.log(data);
 
-                // Inform user
-                alertify
-                    .success('<?php echo langHdl('done'); ?>', 1)
-                    .dismissOthers();
+                            //check if format error
+                            if (data.error === true) {
+                                // ERROR
+                                alertify
+                                    .error(
+                                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                                        3
+                                    )
+                                    .dismissOthers();
+                            } else {
+                                $("#export-progress")
+                                    .addClass('hidden')
+                                    .find('span')
+                                    .html('');
+
+                                alertify
+                                    .success('<?php echo langHdl('done'); ?>', 1)
+                                    .dismissOthers();
+
+                                // Display file
+                                //download(new Blob([(data)]), 'export_pdf_' + Date.now() + '.pdf', "application/pdf");
+
+                                console.log(data.size);
+                                var link=document.createElement('a');
+                                link.href=window.URL.createObjectURL(data);
+                                link.download="Dossier_" + new Date() + ".pdf";
+                                link.click();
+                            }
+                        }
+                    );*/
+                }
             }
         }
     );
-
-
-
-    $.ajax({
-        url: "sources/export.queries.php",
-        type : 'POST',
-        dataType : "json",
-        data : {
-            type    : export_format,
-            id     : currentID,
-            ids     : remainingIds
-        },
-        complete : function(data, statut){
-            var aIds = remainingIds.split(",");
-            var currentID = aIds[0];
-            aIds.shift();
-            var nb2 = aIds.length;
-            aIds = aIds.toString();
-            $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-            //console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
-            if (currentID != "") {
-                pollExport(export_format, aIds, currentID, nb);
-            } else {
-                //Send query
-                $.post(
-                    "sources/export.queries.php",
-                    {
-                        type    : "finalize_export_pdf",
-                        pdf_password : $("#export_pdf_password").val()
-                    },
-                    function(data) {
-                        $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
-                    },
-                    "json"
-                );
-            }
-        }
-    })
 };
 
 </script>

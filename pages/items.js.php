@@ -137,9 +137,9 @@ $('#jstree').jstree({
         console.info('SELECTED NODE ' + selectedFolderId);
         console.log(selectedFolder);
 
-        store.each(function(value, key) {
+        /*store.each(function(value, key) {
             console.log(key, '==', value)
-        })
+        });*/
 
         store.update(
             'teampassApplication',
@@ -201,6 +201,11 @@ location.search.substr(1).split("&").forEach(function(item) {queryDict[item.spli
 if (queryDict['group'] !== undefined && queryDict['group'] !== ''
     && queryDict['id'] !== undefined && queryDict['id'] !== ''
 ) {
+    // Show cog
+    alertify
+        .message('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+
     // Store current view
     savePreviousView();
 
@@ -597,6 +602,13 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('item-action') === 'edit') {
         console.info('SHOW EDIT ITEM');
+        // Is user allowed
+        if (store.get('teampassItem').item_rights < 40) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
 
         // Store current view
         savePreviousView();
@@ -645,6 +657,15 @@ $('.tp-action').click(function() {
         // > END <
         //
     } else if ($(this).data('item-action') === 'delete') {
+        // Is user allowed
+        var levels = [50, 70];
+        if (levels.includes(store.get('teampassItem').item_rights) === false) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
+
         // Store current view
         savePreviousView();
 
@@ -902,8 +923,8 @@ $('#item-button-password-showOptions').click(function() {
  */
 $('#form-item-folder').change(function() {
     if ($(this).val() !== null && store.get('teampass-folders') !== undefined) {
-        console.log('teampass-folders');
-        console.log(store.get('teampass-folders'))
+        //console.log('teampass-folders');
+        //console.log(store.get('teampass-folders'))
         var folders = JSON.parse(store.get('teampass-folders'));
         $('#card-item-visibility').html(folders[$(this).val()].visibilityRoles);
         $('#card-item-minimum-complexity').html(folders[$(this).val()].complexity.text);
@@ -1046,6 +1067,7 @@ $('#form-item-delete-perform').click(function() {
         'item_id'   : store.get('teampassItem').id,
         'folder_id' : selectedFolderId,
         'label' : $('#form-item-copy-new-label').val(),
+        'access_level' : store.get('teampassItem').hasAccessLevel,
     }
 
     // Launch action
@@ -2125,7 +2147,7 @@ $('#form-item-button-save').click(function() {
         }
     });
     console.log('CHANGED FIELDS')
-console.log(arrayQuery);
+    //console.log(arrayQuery);
 
     // Do checks
     if (arrayQuery.length > 0) {
@@ -2208,7 +2230,7 @@ console.log(arrayQuery);
                     && $(this).val() === ''
                     && $('#form-item-field-'+$(this).data('field-name')).parent().hasClass('hidden') === false
                 ) {
-                    console.log($(this))
+                    //console.log($(this))
                     errorExit = true;
                     return false;
                 }
@@ -2827,17 +2849,22 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         alertify
             .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fas fa-cog fa-spin"></i>', 0)
             .dismissOthers();
-            
+
+        // Prepare data to be sent
+        var dataArray = {
+            id                       : store.get('teampassApplication').selectedFolder,
+            restricted               : restricted,
+            start                    : start !== undefined ? start : 0,
+            uniqueLoadData           : store.get('teampassApplication').queryUniqueLoad,
+            nb_items_to_display_once : store.get('teampassApplication').itemsShownByQuery,
+        };
+
         //ajax query
         var request = $.post('sources/items.queries.php',
             {
-                type                     : 'do_items_list_in_folder',
-                id                       : store.get('teampassApplication').selectedFolder,
-                restricted               : restricted,
-                start                    : start,
-                uniqueLoadData           : store.get('teampassApplication').queryUniqueLoad,
-                key                      : '<?php echo $_SESSION['key']; ?>',
-                nb_items_to_display_once : store.get('teampassApplication').itemsShownByQuery
+                type : 'do_items_list_in_folder',
+                data : prepareExchangedData(JSON.stringify(dataArray), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key  : '<?php echo $_SESSION['key']; ?>',
             },
             function(retData) {
 
@@ -3248,7 +3275,7 @@ function sList(data)
 
 $(document).on('click', '.open-folder', function() {
     if ($(this).data('tree-id') !== undefined) {
-        console.log($(this).data('tree-id'))
+        //console.log($(this).data('tree-id'))
 
         // Prepare
         store.update(
@@ -3501,6 +3528,7 @@ function Details(itemDefinition, actionType, hotlink = false)
         var itemDisplay     = parseInt($(itemDefinition).data('item-display')) || 0;
         var itemOpenEdit    = parseInt($(itemDefinition).data('item-open-edit')) || 0;
         var itemReload      = parseInt($(itemDefinition).data('item-reload')) || 0;
+        var itemRights      = parseInt($(itemDefinition).data('item-rights')) || 10;
     } else {
         var itemId          = itemDefinition || '';
         var itemTreeId      = store.get('teampassApplication').selectedFolder || '';
@@ -3510,6 +3538,7 @@ function Details(itemDefinition, actionType, hotlink = false)
         var itemDisplay     = 1;
         var itemOpenEdit    = 0;
         var itemReload      = 0;
+        var itemRights      = 10;
     }
 
     userDidAChange      = false;    
@@ -3557,7 +3586,8 @@ function Details(itemDefinition, actionType, hotlink = false)
         'expired_item'          : itemExpired,
         'restricted'            : itemRestricted,
         'folder_access_level'   : store.get('teampassItem').hasAccessLevel,
-        'page'                  : 'items'
+        'page'                  : 'items',
+        'rights'                : itemRights,
     };
 
     console.log("SEND");
@@ -3635,7 +3665,8 @@ function Details(itemDefinition, actionType, hotlink = false)
                     teampassItem.anyone_can_modify = data.anyone_can_modify,
                     teampassItem.edit_item_salt_key = data.edit_item_salt_key,
                     teampassItem.id_restricted_to = data.id_restricted_to,
-                    teampassItem.id_restricted_to_roles = data.id_restricted_to_roles
+                    teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
+                    teampassItem.item_rights = itemRights
                 }
             );
             
@@ -3773,7 +3804,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                         .removeClass('hidden');
                     $('#card-item-category').removeClass('hidden');
                 }
-
+                
                 if (data.fields.length === 0) {
                     if (actionType === 'show') {
                         $('#item-details-card-categories').addClass('hidden');
@@ -4478,8 +4509,8 @@ function getPrivilegesOnItem(val, edit, context)
                     teampassItem.id_restricted_to_roles = data.rolesList === undefined ? '' : data.rolesList
                 }
             );
-            console.log('Content of teampassItem;')
-            console.log(store.get('teampassItem'))
+            //console.log('Content of teampassItem;')
+            //console.log(store.get('teampassItem'))
         }
     );
 }

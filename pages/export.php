@@ -81,7 +81,12 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
                     <div class="form-group hidden" id="pdf-password">
                         <label><?php echo langHdl('file_protection_password'); ?></label>
-                        <input type="text" class="form-control form-item-control" id="export-password">
+                        <input type="password" class="form-control form-item-control" id="export-password">
+                    </div>
+
+                    <div class="form-group">
+                        <label><?php echo langHdl('file_protection_password'); ?></label>
+                        <input type="text" class="form-control form-item-control" id="export-filename" value="Teampass_export_<?php echo time(); ?>">
                     </div>
 
                     <div class="alert alert-warning mb-3 mt-3 hidden" id="export-progress">

@@ -44,6 +44,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
 <script type='text/javascript'>
 
+// Manage memory
+browserSession(
+    'init',
+    'teampassApplication',
+    {
+        lastItemSeen : '',
+        selectedFolder : '',
+        itemsListStop : '',
+        itemsListStart : '',
+        selectedFolder : '',
+        itemsListFolderId : '',
+        itemsListRestricted : '',
+        itemsShownByQuery : '',
+        foldersList : [],
+        personalSaltkeyRequired : 0,
+        uploadedFileId : '',
+    }
+);
+
 // Preapre select drop list
 $('#roles-list.select2').select2({
     language    : '<?php echo $_SESSION['user_language_code']; ?>',

@@ -1715,15 +1715,15 @@ if (null !== $post_type) {
                             } elseif ($fld['type'] == 'ND') {
                                 $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
                                 '<i class="fas fa-edit infotip text-success mr-2" title="'.langHdl('edit').'"></i>'.
-                                '<i class="fas fa-edit infotip text-danger" title="'.langHdl('no_delete').'"></i>';
+                                '<i class="fas fa-eraser infotip text-danger" title="'.langHdl('no_delete').'"></i>';
                             } elseif ($fld['type'] == 'NE') {
                                 $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
                                 '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
-                                '<i class="fas fa-edit infotip text-success" title="'.langHdl('delete').'"></i>';
+                                '<i class="fas fa-eraser infotip text-success" title="'.langHdl('delete').'"></i>';
                             } elseif ($fld['type'] == 'NDNE') {
                                 $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
                                 '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
-                                '<i class="fas fa-edit infotip text-danger" title="'.langHdl('no_delete').'"></i>';
+                                '<i class="fas fa-eraser infotip text-danger" title="'.langHdl('no_delete').'"></i>';
                             } else {
                                 $color = '#FEBC11';
                                 $allowed = 'R';

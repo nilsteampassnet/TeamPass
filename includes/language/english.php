@@ -16,6 +16,11 @@
  */
 
 return array(
+    'select_date_showing_items_expiration' => 'List the expired items at date',
+    'renewal_page_info' => 'This page permits to identify the items currently expired or expiring in next period.',
+    'filename' => 'Filename',
+    'exported_to_file' => 'Exported to file',
+    'operation_progress' => 'Operation is in progress',
     'exporting_items' => 'Exporting items',
     'select_folders_to_export' => 'Select folders to export',
     'export_format_type' => 'Select the export format type',

@@ -2114,6 +2114,7 @@ if (null !== $post_type) {
                 filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
                 :
                 '';
+            $post_item_rights = filter_var(($dataReceived['rights']), FILTER_SANITIZE_NUMBER_INT);
 
             $arrData = array();
             // return ID
@@ -2984,10 +2985,12 @@ if (null !== $post_type) {
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
             $post_folder_id = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_access_level = filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true
                 && in_array($post_label, $_SESSION['personal_folders']) === false
+                || (int) $post_access_level >= 2
             ) {
                 echo prepareExchangedData(
                     array(
@@ -3303,10 +3306,17 @@ if (null !== $post_type) {
                 break;
             }
 
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+
             // Prepare POST variables
-            $post_restricted = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_NUMBER_INT);
-            $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
-            $post_nb_items_to_display_once = filter_input(INPUT_POST, 'nb_items_to_display_once', FILTER_SANITIZE_NUMBER_INT);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_restricted = filter_var($dataReceived['restricted'], FILTER_SANITIZE_NUMBER_INT);
+            $post_start = filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT);
+            $post_nb_items_to_display_once = filter_var($dataReceived['nb_items_to_display_once'], FILTER_SANITIZE_NUMBER_INT);
 
             $arboHtml = $html = '';
             $arr_arbo = [];
@@ -3549,11 +3559,15 @@ if (null !== $post_type) {
                 }
                 $uniqueLoadData['list_folders_editable_by_role'] = $list_folders_editable_by_role;
             } else {
-                // get preloaded data
+                $post_uniqueLoadData = json_decode(
+                    filter_var_array($dataReceived['uniqueLoadData'], FILTER_UNSAFE_RAW),
+                    true
+                );
+                /*// get preloaded data
                 $uniqueLoadData = json_decode(
                     filter_input(INPUT_POST, 'uniqueLoadData', FILTER_UNSAFE_RAW),
                     true
-                );
+                );*/
 
                 // initialize main variables
                 $showError = $uniqueLoadData['showError'];
@@ -3687,7 +3701,7 @@ if (null !== $post_type) {
                                 $user_is_in_restricted_list = false;
                             }
                         } else {
-                            $user_is_in_restricted_list = true;
+                            $user_is_in_restricted_list = false;
                         }
 
                         // Get Expiration date
@@ -3800,8 +3814,7 @@ if (null !== $post_type) {
                             $right = 10;
                         // ---
                             // ----- END CASE 8 -----
-                        } elseif (($user_is_in_restricted_list === false
-                            || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
+                        } elseif (($user_is_included_in_role === false && $item_is_restricted_to_role === true)
                             && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
@@ -5131,8 +5144,8 @@ if (null !== $post_type) {
                 break;
             }
 
-             // decrypt and retrieve data in JSON format
-             $dataReceived = prepareExchangedData($post_data, 'decode');
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
 
             // Prepare variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
@@ -5960,6 +5973,7 @@ if (null !== $post_type) {
                     } elseif ($reason[0] === 'at_description') {
                         $action = langHdl('description_has_changed');
                     } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
+                        $action = langHdl($reason[0]);
                         if ($reason[0] === 'at_moved') {
                             $tmp = explode(' -> ', $reason[1]);
                             $detail = langHdl('from').' <span class="font-weight-light">'.$tmp[0].'</span> '.langHdl('to').' <span class="font-weight-light">'.$tmp[1].' </span>';
@@ -5988,10 +6002,12 @@ if (null !== $post_type) {
                                 $tmp[0];
                         } elseif ($reason[0] === 'at_import') {
                             $detail = '';
+                        } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
+                            $detail = $reason[0];
+                            $action = langHdl('exported_to_file');
                         } else {
                             $detail = $reason[0];
                         }
-                        $action = langHdl($reason[0]);
                     } elseif ($record['action'] === 'at_manual') {
                         $detail = langHdl($record['action']);
                         $action = $reason[0];

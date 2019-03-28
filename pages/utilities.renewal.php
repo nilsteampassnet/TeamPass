@@ -59,38 +59,43 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 
 <!-- Main content -->
-<div class='content'>
-    <div class='container-fluid'>
-        <div class='row'>
-            <div class='col-md-12'>
-                
-            <?php
-            if (null !== DEBUG && DEBUG === false) {
-                ?>
-                <div class='card card-primary'>
-                    <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
-                    </div>
-                    
-                    <div class='card-body'>
-
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="alert alert-primary row">
+                            <div class="col-1">
+                                <i class="fas fa-lightbulb text-warning fa-lg"></i>
+                            </div>
+                            <div class="col-11">
+                                <?php echo langHdl('renewal_page_info'); ?>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="d-inline p-2">
+                                <?php echo langHdl('select_date_showing_items_expiration'); ?>
+                            </div>
+                            <div class="d-inline p-2">
+                                <div class="input-group date inline">
+                                    <input type="text" class="form-control" id="renewal-date">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <table class="table table-striped" id="table-renewal" style="width:100%;">
+                                <thead><tr>
+                                    <th style=""></th>
+                                    <th style=""><?php echo langHdl('label'); ?></th>
+                                    <th style=""><?php echo langHdl('expiration_date'); ?></th>
+                                    <th style=""><?php echo langHdl('folder'); ?></th>
+                                </tr></thead>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                    
-            <?php
-            } else {
-                ?>
-                <div class="mt-4">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
-                    </div>
-                </div>
-
-                <?php
-            }
-            ?>
             </div>
         </div>
-    
     </div>
 </div>

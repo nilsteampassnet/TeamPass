@@ -815,7 +815,6 @@ if (($session_validite_pw === null
             <h5><?php echo langHdl('last_items_title'); ?></h5>
             <div>
                 <ul class="list-unstyled" id="index-last-pwds">
-
                 </ul>
             </div>
         </div>
@@ -926,6 +925,8 @@ if (($session_validite_pw === null
 <!-- ICHECK -->
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
+<!-- bootstrap-add-clear -->
+<script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script>
 
 <?php
 if ($menuAdmin === true) {
@@ -945,7 +946,7 @@ if ($menuAdmin === true) {
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
     <?php
-} elseif ($pageSel === 'items' || $pageSel === 'import') {
+} elseif (in_array($pageSel, array('items', 'import')) === true) {
         ?>
 <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
 <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
@@ -959,11 +960,7 @@ if ($menuAdmin === true) {
 <!-- VALIDATE -->
 <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
     <?php
-    } elseif ($pageSel === 'search' || $pageSel === 'folders'
-        || $pageSel === 'users' || $pageSel === 'roles'
-        || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs'
-        || $pageSel === 'utilities.database'
-    ) {
+    } elseif (in_array($pageSel, array('search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal')) === true) {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -977,9 +974,8 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
 <!-- daterange picker -->
-<link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker-bs3.css">
-<script src="./plugins/moment/moment.min.js"></script>
-<script src="./plugins/daterangepicker/daterangepicker.js"></script>
+<link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
+<script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
@@ -1068,6 +1064,8 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/utilities.logs.js.php';
     } elseif ($pageSel === 'utilities.database') {
         include_once $SETTINGS['cpassman_dir'].'/pages/utilities.database.js.php';
+    } elseif ($pageSel === 'utilities.renewal') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/utilities.renewal.js.php';
     } else {
         include_once $SETTINGS['cpassman_dir'].'/includes/core/login.js.php';
     }

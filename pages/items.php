@@ -570,7 +570,7 @@ echo '
         
         <?php
         if (isset($SETTINGS['item_extra_fields']) === true
-            && $SETTINGS['item_extra_fields'] === '1'
+            && (int) $SETTINGS['item_extra_fields'] === 1
         ) {
             ?>
         <div class="row hidden item-details-card" id="item-details-card-categories">

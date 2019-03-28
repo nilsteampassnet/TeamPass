@@ -89,248 +89,12 @@ $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
 $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
 $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
 
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+
 //Manage type of action asked
 if (null !== $post_type) {
     switch ($post_type) {
-        case 'initialize_export_table':
-            DB::query('TRUNCATE TABLE '.prefixTable('export'));
-            break;
-
-        //CASE export to PDF format
-        case 'export_to_pdf_format':
-            if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                // get path
-                $tree->rebuild();
-                $folders = $tree->getPath($id, true);
-                $path = '';
-                foreach ($folders as $val) {
-                    if ($path) {
-                        $path .= ' » ';
-                    }
-                    $path .= $val->title;
-                }
-
-                // send query
-                $rows = DB::query(
-                    'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
-                        l.date as date, i.pw_iv as pw_iv,
-                        n.renewal_period as renewal_period
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
-                        WHERE i.inactif = %i
-                        AND i.id_tree= %i
-                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                        ORDER BY i.label ASC, l.date DESC',
-                    '0',
-                    intval($id),
-                    'at_creation',
-                    'at_modification',
-                    'at_pw :%'
-                );
-
-                $id_managed = '';
-                $i = 0;
-                $items_id_list = array();
-                foreach ($rows as $record) {
-                    $restricted_users_array = explode(';', $record['restricted_to']);
-                    //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $record['id']) {
-                        if ((in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                            ||
-                            (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
-                        ) {
-                            //exclude this case
-                        } else {
-                            //encrypt PW
-                            if (empty($post_salt_key) === false && null !== $post_salt_key) {
-                                $pw = cryption(
-                                    $record['pw'],
-                                    mysqli_escape_string($link, stripslashes($post_salt_key)),
-                                    'decrypt'
-                                );
-                            } else {
-                                $pw = cryption(
-                                    $record['pw'],
-                                    '',
-                                    'decrypt'
-                                );
-                            }
-
-                            // get KBs
-                            $arr_kbs = '';
-                            $rows_kb = DB::query(
-                                'SELECT b.label, b.id
-                                FROM '.prefixTable('kb_items').' AS a
-                                INNER JOIN '.prefixTable('kb').' AS b ON (a.kb_id = b.id)
-                                WHERE a.item_id = %i',
-                                $record['id']
-                            );
-                            foreach ($rows_kb as $rec_kb) {
-                                if (empty($arr_kbs)) {
-                                    $arr_kbs = $rec_kb['label'];
-                                } else {
-                                    $arr_kbs .= ' | '.$rec_kb['label'];
-                                }
-                            }
-
-                            // get TAGS
-                            $arr_tags = '';
-                            $rows_tag = DB::query(
-                                'SELECT tag
-                                FROM '.prefixTable('tags').'
-                                WHERE item_id = %i',
-                                $record['id']
-                            );
-                            foreach ($rows_tag as $rec_tag) {
-                                if (empty($arr_tags)) {
-                                    $arr_tags = $rec_tag['tag'];
-                                } else {
-                                    $arr_tags .= ' '.$rec_tag['tag'];
-                                }
-                            }
-
-                            // store
-                            DB::insert(
-                                prefixTable('export'),
-                                array(
-                                    'id' => $record['id'],
-                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true),
-                                    'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'path' => $path,
-                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                    'kbs' => $arr_kbs,
-                                    'tags' => $arr_tags,
-                                )
-                            );
-
-                            // log
-                            logItems(
-                                $record['id'],
-                                $record['label'],
-                                $_SESSION['user_id'],
-                                'at_export',
-                                $_SESSION['login'],
-                                'pdf'
-                            );
-                        }
-                    }
-                    $id_managed = $record['id'];
-                    $folder_title = $record['folder_title'];
-                }
-            }
-            //}
-            echo '[{}]';
-            break;
-
-        case 'finalize_export_pdf':
-            // query
-            $rows = DB::query('SELECT * FROM '.prefixTable('export'));
-            $counter = DB::count();
-            if ($counter > 0) {
-                // print
-                //Some variables
-                $table_full_width = 300;
-                $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
-                $table = array('label', 'login', 'pw', 'description', 'email', 'url', 'kbs', 'tags');
-                $prev_path = '';
-
-                //Prepare the PDF file
-                include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
-
-                $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
-                $pdf->SetProtection(array('print'), $post_pdf_password);
-
-                //Add font for regular text
-                $pdf->AddFont('helvetica', '');
-                //Add monospace font for passwords
-                $pdf->AddFont('LiberationMono', '');
-
-                $pdf->aliasNbPages();
-                $pdf->addPage(L);
-
-                $prev_path = '';
-                foreach ($rows as $record) {
-                    // decode
-                    $record['label'] = utf8_decode($record['label']);
-                    $record['login'] = utf8_decode($record['login']);
-                    $record['pw'] = utf8_decode($record['pw']);
-                    $record['description'] = utf8_decode($record['description']);
-                    $record['email'] = utf8_decode($record['email']);
-                    $record['url'] = utf8_decode($record['url']);
-                    $record['kbs'] = utf8_decode($record['kbs']);
-                    $record['tags'] = utf8_decode($record['tags']);
-
-                    $printed_ids[] = $record['id'];
-                    if ($prev_path != $record['path']) {
-                        $pdf->SetFont('helvetica', '', 10);
-                        $pdf->SetFillColor(192, 192, 192);
-                        //error_log('key: '.$key.' - paths: '.$record['path']);
-                        $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, 'L', true);
-                        $pdf->SetFillColor(222, 222, 222);
-                        $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, 'C', true);
-                    }
-                    $prev_path = $record['path'];
-                    if (!isutf8($record['pw'])) {
-                        $record['pw'] = '';
-                    }
-                    //row height calculation
-                    $nb = 0;
-                    $nb = max($nb, nbLines($table_col_width[0], $record['label']));
-                    $nb = max($nb, nbLines($table_col_width[1], $record['login']));
-                    $nb = max($nb, nbLines($table_col_width[3], $record['description']));
-                    $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
-                    $nb = max($nb, nbLines($table_col_width[5], $record['url']));
-                    $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
-                    $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
-
-                    $h = 5 * $nb;
-                    //Page break needed?
-                    checkPageBreak($h);
-                    //Draw cells
-                    $pdf->SetFont('helvetica', '', 8);
-                    for ($i = 0; $i < count($table); ++$i) {
-                        $w = $table_col_width[$i];
-                        $a = 'L';
-                        //actual position
-                        $x = $pdf->GetX();
-                        $y = $pdf->GetY();
-                        //Draw
-                        $pdf->Rect($x, $y, $w, $h);
-                        //Write
-                        $pdf->MultiCell($w, 5, iconv('UTF-8', 'windows-1252', html_entity_decode($record[$table[$i]])), 0, $a);
-                        //go to right
-                        $pdf->SetXY($x + $w, $y);
-                    }
-                    //return to line
-                    $pdf->Ln($h);
-                }
-
-                $pdf_file = 'print_out_pdf_'.date('Y-m-d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).'_'.generateKey().'.pdf';
-
-                //send the file
-                $pdf->Output($SETTINGS['path_to_files_folder'].'/'.$pdf_file);
-
-                //log
-                logEvents('pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
-
-                //clean table
-                DB::query('TRUNCATE TABLE '.prefixTable('export'));
-
-                echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$pdf_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
-            }
-            break;
-
         //CASE export in CSV format
         case 'export_to_csv_format':
             //Init
@@ -467,7 +231,6 @@ if (null !== $post_type) {
                 }
             }
 
-
             // Loop on Results, decode to UTF8 and write in CSV file
             $tmp = '';
             foreach ($full_listing as $value) {
@@ -475,7 +238,300 @@ if (null !== $post_type) {
                 $tmp .= array2csv($value);
             }
 
-            echo '[{"content":"'.base64_encode($tmp).'", "file":"print_out_csv_'.time().'_'.generateKey().'.csv"}]';
+            echo '[{"content":"'.base64_encode($tmp).'"}]';
+            break;
+
+        /*
+         * PDF - step 1 - Prepare database
+         */
+        case 'initialize_export_table':
+            DB::query('TRUNCATE TABLE '.prefixTable('export'));
+            break;
+
+        /*
+         * PDF - step 2 - Export the items inside database
+         */
+        case 'export_to_pdf_format':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_ids = filter_var_array($dataReceived['ids'], FILTER_SANITIZE_NUMBER_INT);
+
+            if (in_array($post_id, $_SESSION['forbiden_pfs']) === false
+                && in_array($post_id, $_SESSION['groupes_visibles']) === true
+            ) {
+                // get path
+                $tree->rebuild();
+                $folders = $tree->getPath($post_id, true);
+                $path = array();
+                foreach ($folders as $val) {
+                    array_push($path, $val->title);
+                }
+                $path = implode(' » ', $path);
+
+                // send query
+                $rows = DB::query(
+                    'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
+                        l.date as date, i.pw_iv as pw_iv,
+                        n.renewal_period as renewal_period
+                        FROM '.prefixTable('items').' as i
+                        INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
+                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                        WHERE i.inactif = %i
+                        AND i.id_tree= %i
+                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                        ORDER BY i.label ASC, l.date DESC',
+                    '0',
+                    $post_id,
+                    'at_creation',
+                    'at_modification',
+                    'at_pw :%'
+                );
+
+                $id_managed = '';
+                $i = 0;
+                $items_id_list = array();
+                foreach ($rows as $record) {
+                    $restricted_users_array = explode(';', $record['restricted_to']);
+                    //exclude all results except the first one returned by query
+                    if (empty($id_managed) || $id_managed != $record['id']) {
+                        if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
+                            ||
+                            (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        ) {
+                            //exclude this case
+                        } else {
+                            // Run query
+                            $dataItem = DB::queryfirstrow(
+                                'SELECT i.pw AS pw, s.share_key AS share_key
+                                FROM '.prefixTable('items').' AS i
+                                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                                WHERE user_id = %i AND i.id = %i',
+                                $_SESSION['user_id'],
+                                $record['id']
+                            );
+
+                            // Uncrypt PW
+                            if (DB::count() === 0) {
+                                // No share key found
+                                $pw = '';
+                            } else {
+                                $pw = base64_decode(doDataDecryption(
+                                    $dataItem['pw'],
+                                    decryptUserObjectKey(
+                                        $dataItem['share_key'],
+                                        $_SESSION['user']['private_key']
+                                    )
+                                ));
+                            }
+
+                            // get KBs
+                            $arr_kbs = '';
+                            $rows_kb = DB::query(
+                                'SELECT b.label, b.id
+                                FROM '.prefixTable('kb_items').' AS a
+                                INNER JOIN '.prefixTable('kb').' AS b ON (a.kb_id = b.id)
+                                WHERE a.item_id = %i',
+                                $record['id']
+                            );
+                            foreach ($rows_kb as $rec_kb) {
+                                if (empty($arr_kbs)) {
+                                    $arr_kbs = $rec_kb['label'];
+                                } else {
+                                    $arr_kbs .= ' | '.$rec_kb['label'];
+                                }
+                            }
+
+                            // get TAGS
+                            $arr_tags = '';
+                            $rows_tag = DB::query(
+                                'SELECT tag
+                                FROM '.prefixTable('tags').'
+                                WHERE item_id = %i',
+                                $record['id']
+                            );
+                            foreach ($rows_tag as $rec_tag) {
+                                if (empty($arr_tags)) {
+                                    $arr_tags = $rec_tag['tag'];
+                                } else {
+                                    $arr_tags .= ' '.$rec_tag['tag'];
+                                }
+                            }
+
+                            // store
+                            DB::insert(
+                                prefixTable('export'),
+                                array(
+                                    'id' => $record['id'],
+                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true),
+                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF - 8),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'path' => $path,
+                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'kbs' => $arr_kbs,
+                                    'tags' => $arr_tags,
+                                )
+                            );
+
+                            // log
+                            logItems(
+                                $SETTINGS,
+                                $record['id'],
+                                $record['label'],
+                                $_SESSION['user_id'],
+                                'at_export',
+                                $_SESSION['login'],
+                                'pdf'
+                            );
+                        }
+                    }
+                    $id_managed = $record['id'];
+                    $folder_title = $record['folder_title'];
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        case 'finalize_export_pdf':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Adapt header to pdf
+            header('Content-type: application/pdf');
+
+            // query
+            $rows = DB::query('SELECT * FROM '.prefixTable('export'));
+            $counter = DB::count();
+            if ($counter > 0) {
+                // print
+                //Some variables
+                $table_full_width = 300;
+                $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
+                $table = array('label', 'login', 'pw', 'description', 'email', 'url', 'kbs', 'tags');
+                $prev_path = '';
+
+                //Prepare the PDF file
+                include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
+
+                $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
+                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null, 256);
+
+                //Add font for regular text
+                $pdf->AddFont('helvetica', '');
+                //Add monospace font for passwords
+                $pdf->AddFont('LiberationMono', '');
+
+                $pdf->aliasNbPages();
+                $pdf->addPage(L);
+
+                $prev_path = '';
+                foreach ($rows as $record) {
+                    // decode
+                    $record['label'] = utf8_decode($record['label']);
+                    $record['login'] = utf8_decode($record['login']);
+                    $record['pw'] = utf8_decode($record['pw']);
+                    $record['description'] = utf8_decode($record['description']);
+                    $record['email'] = utf8_decode($record['email']);
+                    $record['url'] = utf8_decode($record['url']);
+                    $record['kbs'] = utf8_decode($record['kbs']);
+                    $record['tags'] = utf8_decode($record['tags']);
+
+                    $printed_ids[] = $record['id'];
+                    if ($prev_path != $record['path']) {
+                        $pdf->SetFont('helvetica', '', 10);
+                        $pdf->SetFillColor(192, 192, 192);
+                        //error_log('key: '.$key.' - paths: '.$record['path']);
+                        $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, 'L', true);
+                        $pdf->SetFillColor(222, 222, 222);
+                        $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, 'C', true);
+                        $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, 'C', true);
+                    }
+                    $prev_path = $record['path'];
+                    if (!isutf8($record['pw'])) {
+                        $record['pw'] = '';
+                    }
+                    //row height calculation
+                    $nb = 0;
+                    $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                    $nb = max($nb, nbLines($table_col_width[1], $record['login']));
+                    $nb = max($nb, nbLines($table_col_width[3], $record['description']));
+                    $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
+                    $nb = max($nb, nbLines($table_col_width[5], $record['url']));
+                    $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
+                    $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
+
+                    $h = 5 * $nb;
+                    //Page break needed?
+                    checkPageBreak($h);
+                    //Draw cells
+                    $pdf->SetFont('helvetica', '', 8);
+                    for ($i = 0; $i < count($table); ++$i) {
+                        $w = $table_col_width[$i];
+                        $a = 'L';
+                        //actual position
+                        $x = $pdf->GetX();
+                        $y = $pdf->GetY();
+                        //Draw
+                        $pdf->Rect($x, $y, $w, $h);
+                        //Write
+                        $pdf->MultiCell($w, 5, iconv('UTF-8', 'windows-1252', html_entity_decode($record[$table[$i]])), 0, $a);
+                        //go to right
+                        $pdf->SetXY($x + $w, $y);
+                    }
+                    //return to line
+                    $pdf->Ln($h);
+                }
+
+                //log
+                logEvents('pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
+
+                //clean table
+                DB::query('TRUNCATE TABLE '.prefixTable('export'));
+
+                // Send back the file in Blob
+                echo $pdf->Output(null, 'I');
+            }
             break;
 
         //CASE export in HTML format
@@ -887,6 +943,12 @@ if (null !== $post_type) {
 }
 
 //SPECIFIC FUNCTIONS FOR FPDF
+
+/**
+ * Should we incloude  apage break in pdf.
+ *
+ * @param int $height Height of cell to add
+ */
 function checkPageBreak($height)
 {
     global $pdf;
@@ -896,6 +958,14 @@ function checkPageBreak($height)
     }
 }
 
+/**
+ * Calculates the number of lines inside the PDF depending of content.
+ *
+ * @param int    $width Width allowed
+ * @param string $txt   Text to display
+ *
+ * @return int
+ */
 function nbLines($width, $txt)
 {
     global $pdf;
@@ -948,6 +1018,16 @@ function nbLines($width, $txt)
     return $var_nl;
 }
 
+/**
+ * Converts an array to CSV format.
+ *
+ * @param array  $fields      Array of fields
+ * @param string $delimiter   What delimiter is used in CSV
+ * @param string $enclosure   What enclosure is used in CSV
+ * @param string $escape_char What escape character is used in CSV
+ *
+ * @return string
+ */
 function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
 {
     $buffer = fopen('php://temp', 'r+');
