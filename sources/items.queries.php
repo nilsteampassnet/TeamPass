@@ -697,7 +697,7 @@ if (null !== $post_type) {
                         }
 
                         // Get path
-                        $path = prepareEmaiItemPath(
+                        $path = geItemReadablePath(
                             $post_folder_id,
                             $label,
                             $SETTINGS
@@ -930,6 +930,9 @@ if (null !== $post_type) {
 
                 // ./ END
 
+                // Init
+                $arrayOfChanges = array();
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     'SELECT *
@@ -1158,6 +1161,12 @@ if (null !== $post_type) {
                                         );
                                     }
 
+                                    // Store updates performed
+                                    array_push(
+                                        $arrayOfChanges,
+                                        $dataTmpCat['title']
+                                    );
+
                                     // update LOG
                                     logItems(
                                         $SETTINGS,
@@ -1227,6 +1236,12 @@ if (null !== $post_type) {
                                             'item_id = %i AND field_id = %i',
                                             $post_item_id,
                                             $field['id']
+                                        );
+
+                                        // Store updates performed
+                                        array_push(
+                                            $arrayOfChanges,
+                                            $dataTmpCat['title']
                                         );
 
                                         // update LOG
@@ -1326,6 +1341,13 @@ if (null !== $post_type) {
                                             dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         )
                                 );
+
+                                // Store updates performed
+                                array_push(
+                                    $arrayOfChanges,
+                                    langHdl('automatic_deletion_engaged').': '.langHdl('enabled')
+                                );
+
                                 // update LOG
                                 logItems(
                                     $SETTINGS,
@@ -1361,6 +1383,12 @@ if (null !== $post_type) {
                                     prefixTable('automatic_del'),
                                     'item_id = %i',
                                     $post_item_id
+                                );
+
+                                // Store updates performed
+                                array_push(
+                                    $arrayOfChanges,
+                                    langHdl('automatic_deletion_engaged').': '.langHdl('disabled')
                                 );
 
                                 // update LOG
@@ -1492,6 +1520,13 @@ if (null !== $post_type) {
 
                     // RESTRICTIONS
                     if (count($diffRolesRestiction) > 0 || count($diffUsersRestiction) > 0) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_restriction')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1510,6 +1545,13 @@ if (null !== $post_type) {
 
                     // LABEL
                     if ($data['label'] !== $post_label) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_label')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1522,6 +1564,13 @@ if (null !== $post_type) {
                     }
                     // LOGIN
                     if ($data['login'] !== $post_login) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_login')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1534,6 +1583,13 @@ if (null !== $post_type) {
                     }
                     // EMAIL
                     if (strcmp($data['email'], $post_email) !== 0) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_email')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1546,6 +1602,13 @@ if (null !== $post_type) {
                     }
                     // URL
                     if ($data['url'] !== $post_url && $post_url !== 'http://') {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_url')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1558,6 +1621,13 @@ if (null !== $post_type) {
                     }
                     // DESCRIPTION
                     if (strcmp(md5($data['description']), md5($post_description)) !== 0) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_description')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1573,6 +1643,13 @@ if (null !== $post_type) {
                         // Get name of folders
                         $dataTmp = DB::query('SELECT title FROM '.prefixTable('nested_tree').' WHERE id IN %li', array($data['id_tree'], $post_folder_id));
 
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_category')
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1587,6 +1664,14 @@ if (null !== $post_type) {
                     }
                     // ANYONE_CAN_MODIFY
                     if ($post_anyone_can_modify !== $data['anyone_can_modify']) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            langHdl('at_anyoneconmodify').': '.
+                                    ((int) $post_anyone_can_modify === 0 ? langHdl('disabled') : langHdl('enabled'))
+                        );
+
+                        // Log
                         logItems(
                             $SETTINGS,
                             $post_item_id,
@@ -1691,42 +1776,8 @@ if (null !== $post_type) {
                         }
                     }
 
-                    // send email to user that what to be notified
-                    $notification = DB::queryOneColumn(
-                        'email',
-                        'SELECT *
-                        FROM '.prefixTable('notification').' AS n
-                        INNER JOIN '.prefixTable('users').' AS u ON (n.user_id = u.id)
-                        WHERE n.item_id = %i AND n.user_id != %i',
-                        $post_item_id,
-                        $_SESSION['user_id']
-                    );
-
-                    if (DB::count() > 0) {
-                        // Get name of folders
-                        $dataTmp = DB::queryFirstRow(
-                            'SELECT title 
-                            FROM '.prefixTable('nested_tree').' 
-                            WHERE id = %i',
-                            $post_folder_id
-                        );
-
-                        // send email
-                        DB::insert(
-                            prefixTable('emails'),
-                            array(
-                                'timestamp' => time(),
-                                'subject' => langHdl('email_subject_item_updated'),
-                                'body' => str_replace(
-                                    array('#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#'),
-                                    array($post_label, $dataTmp['title'], $post_item_id, $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname']),
-                                    langHdl('email_body_item_updated')
-                                ),
-                                'receivers' => implode(',', $notification),
-                                'status' => '',
-                            )
-                        );
-                    }
+                    // Notifiy changes to the users
+                    notifyChangesToSubscribers($post_item_id, $post_label, $arrayOfChanges, $SETTINGS);
 
                     // Prepare some stuff to return
                     $arrData = array(
@@ -2331,14 +2382,15 @@ if (null !== $post_type) {
                 }*/
 
                 // Display menu icon for deleting if user is allowed
-                if ($dataItem['id_user'] == $_SESSION['user_id']
+                if ((int) $dataItem['id_user'] === (int) $_SESSION['user_id']
                     || (int) $_SESSION['is_admin'] === 1
                     || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
                     || (int) $dataItem['anyone_can_modify'] === 1
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
                     || in_array($_SESSION['user_id'], $restrictedTo) === true
                     //|| count($restrictedTo) === 0
-                    || (int) $post_folder_access_level === 0
+                    || (int) $post_folder_access_level === 3
+                    || (int) $post_item_rights >= 40
                 ) {
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
@@ -3386,7 +3438,7 @@ if (null !== $post_type) {
                     if ($access['type'] === 'R') {
                         array_push($arrTmp, 1);
                     } elseif ($access['type'] === 'W') {
-                        array_push($arrTmp, 0);
+                        array_push($arrTmp, 3);
                     } elseif ($access['type'] === 'ND'
                         || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
                     ) {
@@ -3398,9 +3450,9 @@ if (null !== $post_type) {
                     } else {
                         // Ensure to give access Right if allowed folder
                         if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
-                            array_push($arrTmp, 0);
-                        } else {
                             array_push($arrTmp, 3);
+                        } else {
+                            array_push($arrTmp, 0);
                         }
                     }
                 }
@@ -3559,15 +3611,10 @@ if (null !== $post_type) {
                 }
                 $uniqueLoadData['list_folders_editable_by_role'] = $list_folders_editable_by_role;
             } else {
-                $post_uniqueLoadData = json_decode(
-                    filter_var_array($dataReceived['uniqueLoadData'], FILTER_UNSAFE_RAW),
+                $uniqueLoadData = json_decode(
+                    filter_var($dataReceived['uniqueLoadData'], FILTER_UNSAFE_RAW),
                     true
                 );
-                /*// get preloaded data
-                $uniqueLoadData = json_decode(
-                    filter_input(INPUT_POST, 'uniqueLoadData', FILTER_UNSAFE_RAW),
-                    true
-                );*/
 
                 // initialize main variables
                 $showError = $uniqueLoadData['showError'];
@@ -3834,7 +3881,7 @@ if (null !== $post_type) {
                             // 60 -> can edit and move but not delete
                             // 70 -> can edit and move
                             if ((int) $accessLevel === 0) {
-                                $right = 70;
+                                $right = 0;
                             } elseif ((int) $accessLevel === 1) {
                                 $right = 20;
                             } elseif ((int) $accessLevel === 2) {
@@ -5166,7 +5213,7 @@ if (null !== $post_type) {
                 $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM '.prefixTable('items').' WHERE id= '.$content[0]);
 
                 // Get path
-                $path = prepareEmaiItemPath(
+                $path = geItemReadablePath(
                     $dataItem['id_tree'],
                     $dataItem['label'],
                     $SETTINGS
@@ -5194,7 +5241,7 @@ if (null !== $post_type) {
                 );
 
                 // Get path
-                $path = prepareEmaiItemPath(
+                $path = geItemReadablePath(
                     $dataItem['id_tree'],
                     $dataItem['label'],
                     $SETTINGS
@@ -5547,7 +5594,6 @@ if (null !== $post_type) {
                     $post_title;
             $image_code = $file_info['file'];
             $extension = $file_info['extension'];
-            $file_to_display = $SETTINGS['url_to_upload_folder'].'/'.$image_code;
 
             // Get image content
             $fileContent = decryptFile(
@@ -6194,7 +6240,7 @@ if (null !== $post_type) {
             );
 
             // Get path
-            $path = prepareEmaiItemPath(
+            $path = geItemReadablePath(
                 $dataItem['id_tree'],
                 $dataItem['label'],
                 $SETTINGS
@@ -6579,42 +6625,4 @@ function passwordReplacement($pwd)
     $pwRemplacements = array('&', '+');
 
     return preg_replace($pwPatterns, $pwRemplacements, $pwd);
-}
-
-/**
- * Returns the Item + path.
- *
- * @param int    $id_tree
- * @param string $label
- * @param array  $SETTINGS
- *
- * @return string
- */
-function prepareEmaiItemPath($id_tree, $label, $SETTINGS)
-{
-    // Class loader
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-
-    //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    $arbo = $tree->getPath($id_tree, true);
-    $path = '';
-    foreach ($arbo as $elem) {
-        if (empty($path) === true) {
-            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
-        } else {
-            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
-        }
-    }
-    // Build text to show user
-    if (empty($path) === true) {
-        $path = addslashes($label);
-    } else {
-        $path = addslashes($label).' ('.$path.')';
-    }
-
-    return $path;
 }

@@ -970,8 +970,6 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
  * Cache table - refresh.
  *
  * @param array $SETTINGS Teampass settings
- *
- * @return void
  */
 function cacheTableRefresh($SETTINGS)
 {
@@ -1020,7 +1018,7 @@ function cacheTableRefresh($SETTINGS)
             foreach ($itemTags as $itemTag) {
                 $tags .= $itemTag['tag'].' ';
             }
-            
+
             // Get renewal period
             $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
 
@@ -1064,8 +1062,6 @@ function cacheTableRefresh($SETTINGS)
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
- *
- * @return void
  */
 function cacheTableUpdate($SETTINGS, $ident = null)
 {
@@ -1141,8 +1137,6 @@ function cacheTableUpdate($SETTINGS, $ident = null)
  *
  * @param array  $SETTINGS Teampass settings
  * @param string $ident    Ident format
- *
- * @return void
  */
 function cacheTableAdd($SETTINGS, $ident = null)
 {
@@ -1840,8 +1834,6 @@ function logItems(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // Insert log in DB
     DB::insert(
@@ -1895,20 +1887,30 @@ function logItems(
     }
 
     // send notification if enabled
+    notifyOnChange($item_id, $action, $SETTINGS);
+}
+
+/**
+ * If enabled, then notify admin/manager.
+ *
+ * @param int   $item_id  Item id
+ * @param array $action   Action to do
+ * @param array $SETTINGS Teampass settings
+ */
+function notifyOnChange($item_id, $action, $SETTINGS)
+{
     if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
-        && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
+        && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
         // Get info about item
-        if (empty($dataItem) === true || empty($item_label) === true) {
-            $dataItem = DB::queryfirstrow(
-                'SELECT id, id_tree, label
-                FROM '.prefixTable('items').'
-                WHERE id = %i',
-                $item_id
-            );
-            $item_label = $dataItem['label'];
-        }
+        $dataItem = DB::queryfirstrow(
+            'SELECT id, id_tree, label
+            FROM '.prefixTable('items').'
+            WHERE id = %i',
+            $item_id
+        );
+        $item_label = $dataItem['label'];
 
         // send back infos
         DB::insert(
@@ -1919,9 +1921,9 @@ function logItems(
                 'body' => str_replace(
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
-                        addslashes($_SESSION['login']),
+                        addslashes($_SESSION['name'].' '.$_SESSION['lastname']),
                         addslashes($item_label),
-                        $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$dataItem['id'],
+                        $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$item_id,
                     ),
                     langHdl('email_on_open_notification_mail')
                 ),
@@ -1929,6 +1931,93 @@ function logItems(
                 'status' => '',
             )
         );
+    }
+}
+
+/**
+ * Prepare notification email to subscribers.
+ *
+ * @param int    $item_id  Item id
+ * @param string $label    Item label
+ * @param array  $changes  List of changes
+ * @param array  $SETTINGS Teampass settings
+ */
+function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
+{
+    // send email to user that what to be notified
+    $notification = DB::queryOneColumn(
+        'email',
+        'SELECT *
+        FROM '.prefixTable('notification').' AS n
+        INNER JOIN '.prefixTable('users').' AS u ON (n.user_id = u.id)
+        WHERE n.item_id = %i AND n.user_id != %i',
+        $item_id,
+        $_SESSION['user_id']
+    );
+
+    if (DB::count() > 0) {
+        // Prepare path
+        $path = geItemReadablePath($item_id, '', $SETTINGS);
+
+        // Get list of changes
+        $htmlChanges = '<ul>';
+        foreach ($changes as $change) {
+            $htmlChanges .= '<li>'.$change.'</li>';
+        }
+        $htmlChanges .= '</ul>';
+
+        // send email
+        DB::insert(
+            prefixTable('emails'),
+            array(
+                'timestamp' => time(),
+                'subject' => langHdl('email_subject_item_updated'),
+                'body' => str_replace(
+                    array('#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'),
+                    array($label, $path, $item_id, $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $htmlChanges),
+                    langHdl('email_body_item_updated')
+                ),
+                'receivers' => implode(',', $notification),
+                'status' => '',
+            )
+        );
+    }
+}
+
+/**
+ * Returns the Item + path.
+ *
+ * @param int    $id_tree
+ * @param string $label
+ * @param array  $SETTINGS
+ *
+ * @return string
+ */
+function geItemReadablePath($id_tree, $label, $SETTINGS)
+{
+    // Class loader
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
+    //Load Tree
+    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+    $tree->register();
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    $arbo = $tree->getPath($id_tree, true);
+    $path = '';
+    foreach ($arbo as $elem) {
+        if (empty($path) === true) {
+            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
+        } else {
+            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+        }
+    }
+
+    // Build text to show user
+    if (empty($label) === false) {
+        return empty($path) === true ? addslashes($label) : addslashes($label).' ('.$path.')';
+    } else {
+        return empty($path) === true ? '' : $path;
     }
 }
 
@@ -2127,7 +2216,6 @@ function checkCFconsistency($source_id, $target_id)
     return true;
 }
 
-
 /**
  * Will encrypte/decrypt a fil eusing Defuse.
  *
@@ -2177,7 +2265,7 @@ function prepareFileWithDefuse(
                 \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key),
                 $SETTINGS
             );
-            // ---
+        // ---
         } elseif ($type === 'encrypt') {
             // Encrypt file
             $err = defuseFileEncrypt(
@@ -2201,7 +2289,7 @@ function prepareFileWithDefuse(
                 $password,
                 $SETTINGS
             );
-            // ---
+        // ---
         } elseif ($type === 'encrypt') {
             // Encrypt file
             $err = defuseFileEncrypt(
@@ -2217,9 +2305,8 @@ function prepareFileWithDefuse(
     return empty($err) === false ? $err : true;
 }
 
-
 /**
- * Encrypt a file with Defuse
+ * Encrypt a file with Defuse.
  *
  * @param string $source_file path to source file
  * @param string $target_file path to target file
@@ -2264,9 +2351,8 @@ function defuseFileEncrypt(
     return empty($err) === false ? $err : true;
 }
 
-
 /**
- * Decrypt a file with Defuse
+ * Decrypt a file with Defuse.
  *
  * @param string $source_file path to source file
  * @param string $target_file path to target file
@@ -2310,7 +2396,6 @@ function defuseFileDecrypt(
     // return error
     return empty($err) === false ? $err : true;
 }
-
 
 /*
 * NOT TO BE USED

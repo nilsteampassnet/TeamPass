@@ -623,7 +623,6 @@ echo '
                         <h3 class="card-title pointer" data-widget="collapse">
                             <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
                         </h3>
-                        <!-- /.card-tools -->
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body clear-me-html" id="card-item-attachments">
@@ -647,8 +646,6 @@ echo '
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body" id="card-item-history">
-                        <div class="direct-chat-messages clear-me-html">
-                        </div>
                     </div>
                     <!-- /.card-body -->
                     <div class="overlay">

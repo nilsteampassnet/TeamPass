@@ -442,7 +442,6 @@ $SETTINGS = array (';
                             array('admin', 'cpassman_url', $var['url_path']),
                             array('admin', 'favicon', $var['url_path'].'/favicon.ico'),
                             array('admin', 'path_to_upload_folder', $var['abspath'].'/upload'),
-                            array('admin', 'url_to_upload_folder', $var['url_path'].'/upload'),
                             array('admin', 'path_to_files_folder', $var['abspath'].'/files'),
                             array('admin', 'url_to_files_folder', $var['url_path'].'/files'),
                             array('admin', 'activate_expiration', '0'),

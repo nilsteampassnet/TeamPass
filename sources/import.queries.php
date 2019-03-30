@@ -783,7 +783,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($SETTINGS['url_to_files_folder'].'/'.filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder'].'/'.filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
 
             fputs($cacheLogFile, date('H:i').langHdl('import_error_no_read_possible_kp')."\n");
 

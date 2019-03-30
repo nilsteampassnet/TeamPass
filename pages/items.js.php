@@ -755,6 +755,8 @@ function savePreviousView()
     );
 }
 $('.but-back').click(function() {
+    console.log('Closing item view form');
+    userDidAChange = false;
     // Is this form the edition one?
     if ($(this).hasClass('item-edit') === true && userUploadedFile === true) {
         // Do some operation such as cancel file upload
@@ -786,13 +788,7 @@ $('.but-back').click(function() {
     // Show expected one
     $(store.get('teampassUser').previousView).removeClass('hidden');
 
-    /*
-    // Destroy editor
-    if (itemEditor) itemEditor.destroy();
-
-    // Clear form inputs
-    $('.form-item-control').val('');
-    */
+    closeItemDetailsCard();
 });
 
 
@@ -1562,10 +1558,9 @@ function closeItemDetailsCard()
         }
 
         // Do some form cleaning
-        $('.clear-me-val').val('');
+        $('.clear-me-val, .form-item-control').val('');
         $('.item-details-card').find('.form-control').val('');
         $('.clear-me-html, .card-item-field-value').html('');
-        $('.form-item-control').val('');
         $('.form-check-input').attr('checked', '');
         $('.card-item-extra').collapse();
         $('.to_be_deleted').remove();
@@ -1590,7 +1585,11 @@ function closeItemDetailsCard()
         if (itemEditorSuggestion) {
             itemEditorSuggestion.destroy();
         }
-
+        
+        // Show loading
+        $('.overlay').removeClass('hidden');
+        $('#card-item-attachments, #card-item-history').html('');
+        
         // Collapse accordion
         $('.collapseme').addClass('collapsed-card');
 
@@ -3571,12 +3570,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 teampassApplication.lastItemSeen = parseInt(itemId);
             }
         );
-    }
-    
-    // Clear
-    $('#card-item-history')
-        .html('<div class="overlay"><i class="fa fa-refresh fa-spin"></i></div>');
-    
+    }    
 
     // Prepare data to be sent
     var data = {
@@ -3616,7 +3610,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 || data.show_details === 0
             ) {
                 alertify
-                    .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
+                    .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
                     .dismissOthers();
                 return false;
             }

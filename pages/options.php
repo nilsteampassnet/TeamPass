@@ -117,16 +117,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                   </div>
 
                   <div class='form-group option' data-keywords="server setting">
-                    <label for='url_to_upload_folder' class='col-sm-10 control-label'>
-                        <?php echo langHdl('admin_url_to_upload_folder'); ?>
-                    </label>
-                    <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='url_to_upload_folder'
-                          value='<?php echo isset($SETTINGS['url_to_upload_folder']) === true ? $SETTINGS['url_to_upload_folder'] : ''; ?>'>
-                    </div>
-                  </div>
-
-                  <div class='form-group option' data-keywords="server setting">
                     <label for='path_to_files_folder' class='col-sm-10 control-label'>
                         <?php echo langHdl('admin_path_to_files_folder'); ?>
                     </label>
@@ -137,16 +127,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                             <small id='passwordHelpBlock' class='form-text text-muted'>
                                 <?php echo langHdl('admin_path_to_files_folder_tip'); ?>
                             </small>
-                    </div>
-                  </div>
-
-                  <div class='form-group option' data-keywords="server setting">
-                    <label for='url_to_files_folder' class='col-sm-10 control-label'>
-                        <?php echo langHdl('admin_url_to_files_folder'); ?>
-                    </label>
-                    <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='url_to_files_folder'
-                          value='<?php echo isset($SETTINGS['url_to_files_folder']) === true ? $SETTINGS['url_to_files_folder'] : ''; ?>'>
                     </div>
                   </div>
 

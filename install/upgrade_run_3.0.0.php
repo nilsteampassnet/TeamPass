@@ -256,6 +256,14 @@ if ($res === false) {
     exit();
 }
 
+// Force attachment encryption 'enable_attachment_encryption'
+mysqli_query(
+    $db_link,
+    'UPDATE '.$pre."misc
+    SET valeur = '1'
+    WHERE type = 'admin' AND intitule = 'enable_attachment_encryption'"
+);
+
 // Copy all items passwords
 $db_count = mysqli_fetch_row(
     mysqli_query(

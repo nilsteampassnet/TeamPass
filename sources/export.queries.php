@@ -142,8 +142,7 @@ if (null !== $post_type) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
-                            if (
-                                (in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
+                            if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
                                 || (
                                     in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
                                     && (empty($record['restricted_to']) === true
@@ -638,7 +637,7 @@ if (null !== $post_type) {
             fclose($outstream);
 
             // send back and continue
-            echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
+            //echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
             break;
 
         //CASE export in HTML format - Iteration loop
@@ -699,7 +698,8 @@ if (null !== $post_type) {
                         );
                     }
                     array_push(
-                        $full_listing, array(
+                        $full_listing,
+                        array(
                             'id_tree' => $record['id_tree'],
                             'id' => $record['id'],
                             'label' => $record['label'],
