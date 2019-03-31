@@ -3040,8 +3040,8 @@ if (null !== $post_type) {
             $post_access_level = filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true
-                && in_array($post_label, $_SESSION['personal_folders']) === false
+            if (($_SESSION['user_read_only'] === true
+                && in_array($post_label, $_SESSION['personal_folders']) === false)
                 || (int) $post_access_level >= 2
             ) {
                 echo prepareExchangedData(

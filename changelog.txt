@@ -1,3 +1,10 @@
-3.0.0
+3.0.0.0
 
-//TODO: Forcer cryptage des fichiers joints. Supprimer l'option. Convertir tous les fichiers lors de l'upgrade
+First version
+
+// TODO
+ - Update server password
+ - Suggestion
+ - Knowledge base
+ - Offline mode
+ 

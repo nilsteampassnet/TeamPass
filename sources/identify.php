@@ -67,11 +67,39 @@ $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_ST
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
+
+// connect to the server
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = DB_PASSWD_CLEAR;
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
+
+
 if ($post_type === 'identify_duo_user') {
     //--------
     // DUO AUTHENTICATION
     //--------
     // This step creates the DUO request encrypted key
+
+    // Get DUO keys
+    $duoData = DB::query(
+        'SELECT intitule, valeur
+        FROM '.prefixTable('misc').'
+        WHERE type = %s',
+        'duoSecurity'
+    );
+    foreach ($duoData as $value) {
+        $_GLOBALS[strtoupper($value['intitule'])] = $value['valeur'];
+    }
 
     // load library
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -97,7 +125,8 @@ if ($post_type === 'identify_duo_user') {
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
-// DUO Identification
+    // ---
+    // ---
 } elseif ($post_type === 'identify_duo_user_check') {
     //--------
     // DUO AUTHENTICATION
@@ -124,21 +153,7 @@ if ($post_type === 'identify_duo_user') {
     // return the response (which should be the user name)
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
-        if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
-            // connect to the server
-            if (defined('DB_PASSWD_CLEAR') === false) {
-                define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-            }
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-            if (defined('DB_PASSWD_CLEAR') === false) {
-                define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-            }
-            DB::$host = DB_HOST;
-            DB::$user = DB_USER;
-            DB::$password = DB_PASSWD_CLEAR;
-            DB::$dbName = DB_NAME;
-            DB::$port = DB_PORT;
-            DB::$encoding = DB_ENCODING;
+        if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
 
             // is user in Teampass?
             $data = DB::queryfirstrow(
@@ -208,113 +223,8 @@ if ($post_type === 'identify_duo_user') {
     } else {
         echo '[{"resp" : "'.$resp.'"}]';
     }
-} elseif ($post_type === 'identify_user_with_agses') {
-    //--------
-    //-- AUTHENTICATION WITH AGSES
-    //--------
-
-    // connect to the server
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
-
-    // do checks
-    if (null !== $post_cardid && empty($post_cardid) === true) {
-        // no card id is given
-        // check if it is DB
-        $row = DB::queryFirstRow(
-            'SELECT `agses-usercardid` FROM '.prefixTable('users').'
-            WHERE login = %s',
-            $post_login
-        );
-    } elseif (empty($post_cardid) === false && is_numeric($post_cardid)) {
-        // card id is given
-        // save it in DB
-        DB::update(
-            prefixTable('users'),
-            array(
-                'agses-usercardid' => $post_cardid,
-                ),
-            'login = %s',
-            $post_login
-        );
-        $row['agses-usercardid'] = $post_cardid;
-    } else {
-        // error
-        echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
-
-        return false;
-    }
-
-    //-- get AGSES hosted information
-    $ret_agses_url = DB::queryFirstRow(
-        'SELECT valeur FROM '.prefixTable('misc').'
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'agses_hosted_url'
-    );
-
-    $ret_agses_id = DB::queryFirstRow(
-        'SELECT valeur FROM '.prefixTable('misc').'
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'agses_hosted_id'
-    );
-
-    $ret_agses_apikey = DB::queryFirstRow(
-        'SELECT valeur FROM '.prefixTable('misc').'
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'agses_hosted_apikey'
-    );
-
-    // if we have a card id and all agses credentials
-    // then we try to generate the message for agsesflicker
-    if (isset($row['agses-usercardid']) && empty($ret_agses_url['valeur']) === false
-        && empty($ret_agses_id['valeur']) === false && empty($ret_agses_apikey['valeur']) === false
-    ) {
-        // check that card id is not empty or equal to 0
-        if ($row['agses-usercardid'] !== '0' && !empty($row['agses-usercardid'])) {
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
-            $agses = new AXSILPortal_V1_Auth();
-            $agses->setUrl($ret_agses_url['valeur']);
-            $agses->setAAId($ret_agses_id['valeur']);
-            //for release there will be another api-key - this is temporary only
-            $agses->setApiKey($ret_agses_apikey['valeur']);
-            $agses->create();
-            //create random salt and store it into session
-            if (!isset($_SESSION['hedgeId']) || empty($_SESSION['hedgeId']) === true) {
-                $_SESSION['hedgeId'] = md5(time());
-            }
-            $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
-            $agses_message = $agses->createAuthenticationMessage(
-                (string) $row['agses-usercardid'],
-                true,
-                1,
-                2,
-                (string) $_SESSION['hedgeId']
-            );
-
-            echo '[{"agses_message" : "'.$agses_message.'" , "error" : ""}]';
-        } else {
-            echo '[{"agses_status" : "no_user_card_id" , "agses_message" : "" , "error" : ""}]';
-        }
-    } else {
-        if (empty($ret_agses_apikey['valeur']) || empty($ret_agses_url['valeur']) || empty($ret_agses_id['valeur'])) {
-            echo '[{"error" : "no_agses_info" , "agses_message" : ""}]';
-        } else {
-            echo '[{"error" : "something_wrong" , "agses_message" : "none" , "agses_status" : "no_user_card_id"}]'; // user not found but not displayed as this in the error message
-        }
-    }
+    // ---
+    // ---
 } elseif ($post_type === 'identify_user') {
     //--------
     // NORMAL IDENTICATION STEP
@@ -444,8 +354,6 @@ function identifyUser($sentData, $SETTINGS)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
@@ -1945,7 +1853,7 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
     // Now check yubico validity
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/Yubico/Yubico.php';
     $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
-    $auth = $yubi->verify($yubico_key);
+    $auth = $yubi->verify($yubico_key, null, null, null, 60);
 
     if (PEAR::isError($auth)) {
         $proceedIdentification = false;

@@ -200,7 +200,7 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF - 8),
                                     'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
@@ -448,7 +448,7 @@ if (null !== $post_type) {
                 include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
 
                 $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
-                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null, 256);
+                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null, 3);
 
                 //Add font for regular text
                 $pdf->AddFont('helvetica', '');

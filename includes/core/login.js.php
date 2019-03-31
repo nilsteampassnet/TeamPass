@@ -589,29 +589,24 @@ function launchIdentify(isDuo, redirect, psk)
                     "decode",
                     "<?php echo $_SESSION['key']; ?>"
                 );
-            var mfaData = {};
-            //console.log("get2FAMethods")
-            console.log(data)
-            //console.log('>> '+data.user2FaMethod)
+            var mfaData = {},
+                mfaMethod = $(".2fa_selector_select:checked").data('mfa');
+            console.log(data);
+
+            // Get selected user MFA method
+            console.log($(".2fa_selector_select:checked").data('mfa'));
+
 
             // Google 2FA
-            if (data.agses === true && $('#agses_code').val() !== undefined) {
-                mfaData['agses_code'] = $('#agses_code').val();
-                user2FaMethod = 'agses';
-            }
-    
-            // Google 2FA
-            if (data.google === true && $('#ga_code').val() !== undefined) {
+            if (mfaMethod === 'google' && data.google === true && $('#ga_code').val() !== undefined) {
                 mfaData['GACode'] = $('#ga_code').val();
-                user2FaMethod = 'google';
             }
             
             // Yubico
-            if (data.yubico === true && $('#yubico_key').val() !== undefined) {
+            if (mfaMethod === 'yubico' && data.yubico === true && $('#yubico_key').val() !== undefined) {
                 mfaData['yubico_key'] = $('#yubico_key').val();
                 mfaData['yubico_user_id'] = $('#yubico_user_id').val();
                 mfaData['yubico_user_key'] = $('#yubico_user_key').val();
-                user2FaMethod = 'yubico';              
             }
 
             // Other values
@@ -622,12 +617,10 @@ function launchIdentify(isDuo, redirect, psk)
             mfaData['randomstring'] = randomstring;
             mfaData['TimezoneOffset'] = TimezoneOffset;
             mfaData['client'] = client_info;
-            mfaData['user_2fa_selection'] = user2FaMethod;
+            mfaData['user_2fa_selection'] = mfaMethod;
 
             // Handle if DUOSecurity is enabled
-            if (data.agses === true && $('#agses_code').val() === '') {
-                startAgsesAuth();
-            } else if (data.duo === false || $('#login').val() === 'admin') {
+            if (mfaMethod !== 'duo' || $('#login').val() === 'admin') {
                 identifyUser(redirect, psk, mfaData, randomstring);
             } else {
                 // Handle if DUOSecurity is enabled
@@ -665,7 +658,9 @@ function identifyUser(redirect, psk, data, randomstring)
             type : "checkSessionExists"
         },
         function(check_data) {
+            console.log(check_data);
             if (parseInt(check_data) === 1) {
+                console.log(data)
                 //send query
                 $.post(
                     "sources/identify.php",
@@ -679,6 +674,7 @@ function identifyUser(redirect, psk, data, randomstring)
                             "decode",
                             "<?php echo $_SESSION['key']; ?>"
                         );
+                        console.info('Identification answer:')
                         console.log(data);
 
                         if (data.value === randomstring) {

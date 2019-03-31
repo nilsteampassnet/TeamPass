@@ -1821,8 +1821,6 @@ function logItems(
     $raison = null,
     $encryption_type = null
 ) {
-    $dataItem = '';
-
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -1893,9 +1891,11 @@ function logItems(
 /**
  * If enabled, then notify admin/manager.
  *
- * @param int   $item_id  Item id
- * @param array $action   Action to do
- * @param array $SETTINGS Teampass settings
+ * @param int    $item_id  Item id
+ * @param string $action   Action to do
+ * @param array  $SETTINGS Teampass settings
+ *
+ * @return void
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
@@ -1941,6 +1941,8 @@ function notifyOnChange($item_id, $action, $SETTINGS)
  * @param string $label    Item label
  * @param array  $changes  List of changes
  * @param array  $SETTINGS Teampass settings
+ *
+ * @return void
  */
 function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
 {
@@ -3140,7 +3142,9 @@ function encryptFile($fileInName, $fileInPath)
     $cipher->disablePadding();
 
     // Encrypt the file content
-    $plaintext = file_get_contents($fileInPath.'/'.$fileInName);
+    $plaintext = file_get_contents(
+        filter_var($fileInPath.'/'.$fileInName, FILTER_SANITIZE_URL)
+    );
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
@@ -3253,8 +3257,6 @@ function storeUsersShareKey(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // Delete existing entries for this object
     DB::delete(

@@ -2294,7 +2294,7 @@ switch ($post_type) {
                 'admin',
                 'duo'
             );
-        }$post_status;
+        }
         break;
 
     case 'save_duo_in_sk_file':
@@ -2313,75 +2313,36 @@ switch ($post_type) {
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
 
-        // prepare variables
-        $post_akey = $dataReceived['akey'];
-        $post_ikey = $dataReceived['ikey'];
-        $post_skey = $dataReceived['skey'];
-        $post_host = $dataReceived['host'];
-
-        //get infos from SETTINGS.PHP file
-        $filename = $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-        $tmp_skfile = '';
-        if (file_exists($filename)) {
-            // get sk.php file path
-            $settingsFile = file($filename);
-            foreach ($settingsFile as $key => $val) {
-                if (substr_count($val, "define('SECUREPATH'")) {
-                    $tmp_skfile = substr($val, 26, strpos($val, "');") - 26).'/sk.php';
-                }
-            }
-
-            // before perform a copy of sk.php file
-            if (file_exists($tmp_skfile)) {
-                //Do a copy of the existing file
-                if (!copy(
-                    $tmp_skfile,
-                    $tmp_skfile.'.'.date(
-                        'Y_m_d',
-                        mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
-                    )
-                )) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => "Could NOT perform a copy of file: $tmp_skfile",
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    fileDelete($tmp_skfile, $SETTINGS);
-                }
-            } else {
-                // send back an error
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => "Could NOT access file: $tmp_skfile",
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        }
-
-        // Write back values in sk.php file
-        $fh = fopen($tmp_skfile, 'w');
-        if ($fh !== false) {
-            $result2 = fwrite(
-                $fh,
-                utf8_encode(
-                    "<?php
-@define('COST', '13'); // Don't change this.
-// DUOSecurity credentials
-\$_GLOBALS['AKEY'] = '".(string) $post_akey."';
-\$_GLOBALS['IKEY'] = '".(string) $post_ikey."';
-\$_GLOBALS['SKEY'] = '".(string) $post_skey."';
-\$_GLOBALS['HOST'] = '".(string) $post_host."';
-?>"
-                )
+        // Store in DB
+        foreach ($dataReceived as $key => $value) {
+            DB::query(
+                'SELECT * 
+                FROM '.prefixTable('misc').'
+                WHERE type = %s AND intitule = %s',
+                'duoSecurity',
+                $key
             );
-            fclose($fh);
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'duoSecurity',
+                        'intitule' => $key,
+                        'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
+                        )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
+                        ),
+                    'type = %s AND intitule = %s',
+                    'duoSecurity',
+                    $key
+                );
+            }
         }
 
         // send data

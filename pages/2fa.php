@@ -58,25 +58,6 @@ if (file_exists($filename)) {
     }
 }
 
-// read SK.PHP file
-$duoAkey = $duoIkey = $duoSkey = $duoHost = '';
-if (isset($skfile) === true && is_file($skfile) === true) {
-    $skFile = file($skfile);
-    if ($skFile !== false) {
-        foreach ($skFile as $key => $val) {
-            if (substr_count($val, "_GLOBALS['AKEY']") > 0) {
-                $duoAkey = substr($val, 21, strlen($val) - 24);
-            } elseif (substr_count($val, "_GLOBALS['IKEY']") > 0) {
-                $duoIkey = substr($val, 21, strlen($val) - 24);
-            } elseif (substr_count($val, "_GLOBALS['SKEY']") > 0) {
-                $duoSkey = substr($val, 21, strlen($val) - 24);
-            } elseif (substr_count($val, "_GLOBALS['HOST']") > 0) {
-                $duoHost = substr($val, 21, strlen($val) - 24);
-            }
-        }
-    }
-}
-
 ?>
 
 <!-- Content Header (Page header) -->
@@ -125,9 +106,6 @@ if (isset($skfile) === true && is_file($skfile) === true) {
                             </li>
                             <li class="nav-item">
                             <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo langHdl('yubico'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#agses" role="tab" aria-controls="agses" aria-selected="false"><?php echo langHdl('agses'); ?></a>
                             </li>
                         </ul>
                         <div class="tab-content">
@@ -247,12 +225,6 @@ if (isset($skfile) === true && is_file($skfile) === true) {
                                     <div class="col-3">
                                         <div class="toggle toggle-modern" id="yubico_authentication" data-toggle-on="<?php echo isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] == 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="yubico_authentication_input" value="<?php echo isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] == 1 ? '1' : '0'; ?>">
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="tab-pane" id="agses" role="tabpanel" aria-labelledby="agses-tab">
-                                <div class="card-info">
-                                    This is not yet implemented
                                 </div>
                             </div>
 
