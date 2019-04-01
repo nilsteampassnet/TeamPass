@@ -346,40 +346,42 @@ function loadSettings()
                     .alert()
                     .setting({
                         'label' : '<?php echo langHdl('ok'); ?>',
-                        'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('error'); ?>'
+                        'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('server_answer_error'); ?>'
                     })
                     .show(); 
                 return false;
             };
             
-            // Store settings in localstorage
-            store.update(
-                'teampassSettings',
-                {},
-                function(teampassSettings) {
-                    $.each(data, function(key, value) {
-                        teampassSettings[key] = value;
-                    });
-                }
-            );
+            if (Array.isArray(data) === true) {
+                // Store settings in localstorage
+                store.update(
+                    'teampassSettings',
+                    {},
+                    function(teampassSettings) {
+                        $.each(data, function(key, value) {
+                            teampassSettings[key] = value;
+                        });
+                    }
+                );
 
-            // Store some User info
-            store.update(
-                'teampassUser',
-                {},
-                function(teampassUser) {
-                    teampassUser['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
-                    teampassUser['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
-                    teampassUser['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
-                    teampassUser['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
-                    teampassUser['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
-                    teampassUser['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
-                    teampassUser['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
-                    teampassUser['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
-                    teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
-                    teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>;
-                }
-            );
+                // Store some User info
+                store.update(
+                    'teampassUser',
+                    {},
+                    function(teampassUser) {
+                        teampassUser['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
+                        teampassUser['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
+                        teampassUser['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
+                        teampassUser['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
+                        teampassUser['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
+                        teampassUser['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
+                        teampassUser['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
+                        teampassUser['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
+                        teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
+                        teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>;
+                    }
+                );
+            }
         }
     );
 }
@@ -436,7 +438,11 @@ function refreshListLastSeenItems()
             key  : '<?php echo $_SESSION['key']; ?>'
         },
         function(data) {
-            data = $.parseJSON(data);
+            try {
+                data = $.parseJSON(data)
+            } catch (e) {
+                return false;
+            }
             //check if format error
             if (data.error === '') {
                 if (data.html_json === null) {

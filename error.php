@@ -86,13 +86,13 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     include_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
     $errorCode = '';
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
-        $errorCode = langHdl('error_not_authorized');
+        $errorCode = 'ERROR NOT ALLOWED';
     } elseif (@$_SESSION['error']['code'] === ERR_NOT_EXIST) {
-        $errorCode = langHdl('error_not_exists');
+        $errorCode = 'ERROR NOT EXISTS';
     } elseif (@$_SESSION['error']['code'] === ERR_SESS_EXPIRED) {
-        $errorCode = langHdl('index_session_expired');
+        $errorCode = 'ERROR SESSION EXPIRED';
     } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
-        $errorCode = langHdl('error_not_authorized');
+        $errorCode = 'ERROR NOT ALLOWED';
     } ?>
 <!-- Main content -->
 <section class="content">

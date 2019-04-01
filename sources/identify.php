@@ -67,7 +67,6 @@ $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_ST
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
-
 // connect to the server
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
@@ -82,7 +81,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 
 if ($post_type === 'identify_duo_user') {
     //--------
@@ -125,7 +123,7 @@ if ($post_type === 'identify_duo_user') {
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
-    // ---
+// ---
     // ---
 } elseif ($post_type === 'identify_duo_user_check') {
     //--------
@@ -154,7 +152,6 @@ if ($post_type === 'identify_duo_user') {
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
-
             // is user in Teampass?
             $data = DB::queryfirstrow(
                 'SELECT id
@@ -1621,13 +1618,16 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
         $userInLDAP = false;
     }
 
-    return array(
-        'error' => false,
-        'message' => $ldapConnection,
-        'auth_username' => $username,
-        'user_info_from_ad' => $result,
-        'proceedIdentification' => $proceedIdentification,
-        'userInLDAP' => $userInLDAP,
+    return prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => $ldapConnection,
+            'auth_username' => $username,
+            'user_info_from_ad' => $result,
+            'proceedIdentification' => $proceedIdentification,
+            'userInLDAP' => $userInLDAP,
+        ),
+        'encode'
     );
 }
 
@@ -1725,16 +1725,19 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
 
         // Is user expired?
         if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
-            return array(
-                'error' => true,
-                'message' => array(
-                    'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                    'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'user_not_exists6',
-                    'message' => langHdl('error_bad_credentials'),
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'initial_url' => @$_SESSION['initial_url'],
+                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'error' => 'user_not_exists6',
+                        'message' => langHdl('error_bad_credentials'),
+                    ),
                 ),
+                'encode'
             );
         }
 
@@ -1789,12 +1792,15 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
         'ldap status : '.$ldapConnection."\n\n\n"
     );
 
-    return array(
-        'error' => false,
-        'message' => $ldapConnection,
-        'auth_username' => $auth_username,
-        'proceedIdentification' => $proceedIdentification,
-        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn')),
+    return prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => $ldapConnection,
+            'auth_username' => $auth_username,
+            'proceedIdentification' => $proceedIdentification,
+            'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
+        ),
+        'encode'
     );
 }
 
@@ -1833,16 +1839,19 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
     } else {
         // Check existing yubico credentials
         if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
-            return array(
-                'error' => true,
-                'message' => array(
-                    'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                    'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'no_user_yubico_credentials',
-                    'message' => '',
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'initial_url' => @$_SESSION['initial_url'],
+                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'error' => 'no_user_yubico_credentials',
+                        'message' => '',
+                    ),
                 ),
+                'encode'
             );
         } else {
             $yubico_user_key = $data['yubico_user_key'];
@@ -1853,21 +1862,24 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
     // Now check yubico validity
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/Yubico/Yubico.php';
     $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
-    $auth = $yubi->verify($yubico_key, null, null, null, 60);
+    $auth = $yubi->verify($yubico_key); //, null, null, null, 60
 
     if (PEAR::isError($auth)) {
         $proceedIdentification = false;
 
-        return array(
-            'error' => true,
-            'message' => array(
-                'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                'error' => 'bad_user_yubico_credentials',
-                'message' => langHdl('yubico_bad_code'),
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => array(
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'initial_url' => @$_SESSION['initial_url'],
+                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'error' => 'bad_user_yubico_credentials',
+                    'message' => langHdl('yubico_bad_code'),
+                ),
             ),
+            'encode'
         );
     } else {
         $proceedIdentification = true;

@@ -61,8 +61,6 @@ $(function() {
                         )
                         .dismissOthers();
                     
-
-                    console.log(window.atob($("#duo_data").val()));
                     $.post(
                         "sources/identify.php",
                         {
@@ -209,12 +207,10 @@ if (twoFaMethods > 1) {
     // Show only expected MFA
     $('#2fa_methods_selector').addClass('hidden');
     // One 2FA method is expected
-    if ($('#2fa_google').val() === '1') {
+    if (parseInt($('#2fa_google').val()) === 1) {
         $('#div-2fa-google').removeClass('hidden');
-    } else if ($('#2fa_yubico').val() === '1') {
+    } else if (parseInt($('#2fa_yubico').val()) === 1) {
         $('#div-2fa-yubico').removeClass('hidden');
-    } else if ($('#2fa_agses').val() === '1') {
-        $('#div-2fa-agses').removeClass('hidden');
     }
     $('#login').focus();
 } else {
@@ -584,29 +580,68 @@ function launchIdentify(isDuo, redirect, psk)
             type : 'get2FAMethods'
         },
         function(data) {
-            data = prepareExchangedData(
-                    data,
-                    "decode",
-                    "<?php echo $_SESSION['key']; ?>"
-                );
-            var mfaData = {},
-                mfaMethod = $(".2fa_selector_select:checked").data('mfa');
+            try {
+                data = prepareExchangedData(
+                        data,
+                        "decode",
+                        "<?php echo $_SESSION['key']; ?>"
+                    );
+            } catch (e) {
+                // error
+                alertify
+                    .alert()
+                    .setting({
+                        'label' : '<?php echo langHdl('ok'); ?>',
+                        'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('server_answer_error'); ?>'
+                    })
+                    .show(); 
+                return false;
+            }
             console.log(data);
 
+            var mfaData = {},
+                mfaMethod = '';
+                
             // Get selected user MFA method
-            console.log($(".2fa_selector_select:checked").data('mfa'));
+            if ($(".2fa_selector_select").length > 1) {
+                mfaMethod = $(".2fa_selector_select:checked").data('mfa');
+            } else {
+                $('.user-mfa').each(function(i, obj) {
+                    if (parseInt($(obj).val()) === 1) {
+                        var tmp = $(obj).attr('id').split('_');
+                        mfaMethod = tmp[1];
+                        return true;
+                    }
+                });
+            }
 
 
             // Google 2FA
-            if (mfaMethod === 'google' && data.google === true && $('#ga_code').val() !== undefined) {
-                mfaData['GACode'] = $('#ga_code').val();
+            if (mfaMethod === 'google' && data.google === true) {
+                if ($('#ga_code').val() !== undefined && $('#ga_code').val() !== '') {
+                    mfaData['GACode'] = $('#ga_code').val();
+                } else {
+                    $('#ga_code').focus();
+                    alertify
+                        .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('ga_bad_code'); ?>', 5)
+                        .dismissOthers(); 
+                    return false;
+                }
             }
             
             // Yubico
-            if (mfaMethod === 'yubico' && data.yubico === true && $('#yubico_key').val() !== undefined) {
-                mfaData['yubico_key'] = $('#yubico_key').val();
-                mfaData['yubico_user_id'] = $('#yubico_user_id').val();
-                mfaData['yubico_user_key'] = $('#yubico_user_key').val();
+            if (mfaMethod === 'yubico' && data.yubico === true) {
+                if ($('#yubico_key').val() !== undefined && $('#yubico_key').val() !== '') {
+                    mfaData['yubico_key'] = $('#yubico_key').val();
+                    mfaData['yubico_user_id'] = $('#yubico_user_id').val();
+                    mfaData['yubico_user_key'] = $('#yubico_user_key').val();
+                } else {
+                    $('#yubico_key').focus();
+                    alertify
+                        .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('press_your_yubico_key'); ?>', 5)
+                        .dismissOthers(); 
+                    return false;
+                }
             }
 
             // Other values
@@ -658,7 +693,6 @@ function identifyUser(redirect, psk, data, randomstring)
             type : "checkSessionExists"
         },
         function(check_data) {
-            console.log(check_data);
             if (parseInt(check_data) === 1) {
                 console.log(data)
                 //send query
@@ -669,6 +703,7 @@ function identifyUser(redirect, psk, data, randomstring)
                         data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
                     },
                     function(receivedData) {
+                        console.log(receivedData)
                         var data = prepareExchangedData(
                             receivedData,
                             "decode",
@@ -731,7 +766,6 @@ function identifyUser(redirect, psk, data, randomstring)
                                     //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                             }
                         } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
-                            console.log("ici")
                             $('#div-2fa-google-qr')
                                 .removeClass('hidden')
                                 .html('<div class="col-12 alert alert-info">' +
@@ -776,7 +810,7 @@ function identifyUser(redirect, psk, data, randomstring)
 
                 // Delay page submit
                 $(this).delay(2000).queue(function() {
-                    $("#form_identify").submit();
+                    document.location.reload(true);
                     $(this).dequeue();
                 });
             }

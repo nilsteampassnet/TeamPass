@@ -6,12 +6,13 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @package   Teampass
  * @author    Nils Laumaillé <nils@teamapss.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ *
+ * @see      https://www.teampass.net
  */
 
 // Automatic redirection
@@ -100,10 +101,10 @@ echo '
 
     // 2FA auth selector
     echo '
-        <input type="hidden" id="2fa_agses" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_duo" value="', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_google" value="', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_yubico" value="', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_agses" class="user-mfa" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_duo" class="user-mfa" value="', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_google" class="user-mfa" value="', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ? 1 : 0, '" />
+        <input type="hidden" id="2fa_yubico" class="user-mfa" value="', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ? 1 : 0, '" />
         <input type="hidden" id="2fa_user_selection" value="',
             (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : '')
         , '" />
@@ -159,7 +160,7 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
 // Google Authenticator code
 if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
-        <div id="div-2fa-google" class="mb-3 div-2fa-method', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : ' hidden', '">
+        <div id="div-2fa-google" class="mb-3 div-2fa-method hidden">
             <div class="row">
                 <div class="col-3">
                     <img src="includes/images/2fa_google_auth.png">
@@ -207,7 +208,7 @@ setInterval(function() {
 // Yubico authentication
 if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1) {
     echo '
-        <div id="div-2fa-yubico" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '' : 'hidden', '">
+        <div id="div-2fa-yubico" class="row mb-3 div-2fa-method hidden">
             <div class="col-3">
                 <img src="includes/images/yubico.png">
             </div>
