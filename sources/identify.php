@@ -601,14 +601,8 @@ function identifyUser($sentData, $SETTINGS)
             $SETTINGS
         );
 
-        if ($ret['error'] === true) {
-            echo prepareExchangedData($ret['message'], 'encode');
-
-            return false;
-        } else {
-            $proceedIdentification = $ret['proceedIdentification'];
-            $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
-        }
+        $proceedIdentification = $ret['proceedIdentification'];
+        $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
     }
 
     // Check if user exists (and has been created in case of new LDAP user)
@@ -1804,11 +1798,11 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
 /**
  * Undocumented function.
  *
- * @param string $username     Username
- * @param string $ldap_suffix  Suffix
- * @param string $dataReceived Received data
- * @param string $data         Result of query
- * @param array  $SETTINGS     Teampass settings
+ * @param string       $username     Username
+ * @param string       $ldap_suffix  Suffix
+ * @param string|array $dataReceived Received data
+ * @param string       $data         Result of query
+ * @param array        $SETTINGS     Teampass settings
  *
  * @return array
  */
@@ -1955,10 +1949,10 @@ function ldapCreateUser($username, $passwordClear, $data, $user_info_from_ad, $S
 /**
  * Undocumented function.
  *
- * @param string $username     Username
- * @param string $data         Result of query
- * @param string $dataReceived DataReceived
- * @param array  $SETTINGS     Teampass settings
+ * @param string       $username     Username
+ * @param string       $data         Result of query
+ * @param string|array $dataReceived DataReceived
+ * @param array        $SETTINGS     Teampass settings
  *
  * @return array
  */
@@ -2048,11 +2042,11 @@ function googleMFACheck($username, $data, $dataReceived, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param string $passwordClear Password in clear
- * @param array  $data          Array of user data
- * @param bool   $dataReceived  Received data
- * @param string $username      User name
- * @param array  $SETTINGS      Teampass settings
+ * @param string       $passwordClear Password in clear
+ * @param array|string $data          Array of user data
+ * @param array|string $dataReceived  Received data
+ * @param string       $username      User name
+ * @param array        $SETTINGS      Teampass settings
  *
  * @return bool
  */

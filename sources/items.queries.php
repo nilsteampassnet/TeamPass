@@ -149,7 +149,7 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            if (count($dataReceived) > 0) {
+            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);

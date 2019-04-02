@@ -1019,7 +1019,7 @@ function mainQuery($SETTINGS)
                 'decode'
             );
 
-            if (count($dataReceived) > 0) {
+            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $post_psk = filter_var($dataReceived['new-saltkey'], FILTER_SANITIZE_STRING);
                 $post_old_psk = filter_var($dataReceived['current-saltkey'], FILTER_SANITIZE_STRING);
