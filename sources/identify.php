@@ -1618,16 +1618,13 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
         $userInLDAP = false;
     }
 
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => $ldapConnection,
-            'auth_username' => $username,
-            'user_info_from_ad' => $result,
-            'proceedIdentification' => $proceedIdentification,
-            'userInLDAP' => $userInLDAP,
-        ),
-        'encode'
+    return array(
+        'error' => false,
+        'message' => $ldapConnection,
+        'auth_username' => $username,
+        'user_info_from_ad' => $result,
+        'proceedIdentification' => $proceedIdentification,
+        'userInLDAP' => $userInLDAP,
     );
 }
 
@@ -1839,19 +1836,16 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
     } else {
         // Check existing yubico credentials
         if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => array(
-                        'value' => '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                        'initial_url' => @$_SESSION['initial_url'],
-                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                        'error' => 'no_user_yubico_credentials',
-                        'message' => '',
-                    ),
+            return array(
+                'error' => true,
+                'message' => array(
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'initial_url' => @$_SESSION['initial_url'],
+                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'error' => 'no_user_yubico_credentials',
+                    'message' => '',
                 ),
-                'encode'
             );
         } else {
             $yubico_user_key = $data['yubico_user_key'];
@@ -1867,19 +1861,16 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
     if (PEAR::isError($auth)) {
         $proceedIdentification = false;
 
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => array(
-                    'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                    'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'bad_user_yubico_credentials',
-                    'message' => langHdl('yubico_bad_code'),
-                ),
+        return array(
+            'error' => true,
+            'message' => array(
+                'value' => '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'bad_user_yubico_credentials',
+                'message' => langHdl('yubico_bad_code'),
             ),
-            'encode'
         );
     } else {
         $proceedIdentification = true;

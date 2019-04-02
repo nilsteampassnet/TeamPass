@@ -493,9 +493,7 @@ function defuseReturnDecrypted($value, $SETTINGS)
 }
 
 /**
- * trimElement().
- *
- * trim a string depending on a specific string
+ * Trims a string depending on a specific string
  *
  * @param string $chaine  what to trim
  * @param string $element trim on what
@@ -1560,7 +1558,7 @@ function utf8Converter($array)
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
- * @return string
+ * @return string|array
  */
 function prepareExchangedData($data, $type, $key = null)
 {
