@@ -1716,19 +1716,16 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
 
         // Is user expired?
         if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => array(
-                        'value' => '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                        'initial_url' => @$_SESSION['initial_url'],
-                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                        'error' => 'user_not_exists6',
-                        'message' => langHdl('error_bad_credentials'),
-                    ),
+            return array(
+                'error' => true,
+                'message' => array(
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'initial_url' => @$_SESSION['initial_url'],
+                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'error' => 'user_not_exists6',
+                    'message' => langHdl('error_bad_credentials'),
                 ),
-                'encode'
             );
         }
 
@@ -1783,15 +1780,12 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
         'ldap status : '.$ldapConnection."\n\n\n"
     );
 
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => $ldapConnection,
-            'auth_username' => $auth_username,
-            'proceedIdentification' => $proceedIdentification,
-            'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
-        ),
-        'encode'
+    return array(
+        'error' => false,
+        'message' => $ldapConnection,
+        'auth_username' => $auth_username,
+        'proceedIdentification' => $proceedIdentification,
+        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
     );
 }
 
