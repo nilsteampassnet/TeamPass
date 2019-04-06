@@ -7,4 +7,6 @@ First version
  - Suggestion
  - Knowledge base
  - Offline mode
+ - Backups
+ - Statistics
  

@@ -694,7 +694,6 @@ function identifyUser(redirect, psk, data, randomstring)
         },
         function(check_data) {
             if (parseInt(check_data) === 1) {
-                console.log(data)
                 //send query
                 $.post(
                     "sources/identify.php",
@@ -805,11 +804,11 @@ function identifyUser(redirect, psk, data, randomstring)
                 // Warn user
                 alertify.set('notifier','position', 'top-center');
                 alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>Browser session is now expired. The page will be automatically reloaded in 2 seconds.', 5)
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>Browser session is now expired. The page will automatically be reloaded now.', 5)
                     .dismissOthers(); 
 
                 // Delay page submit
-                $(this).delay(2000).queue(function() {
+                $(this).delay(500).queue(function() {
                     document.location.reload(true);
                     $(this).dequeue();
                 });

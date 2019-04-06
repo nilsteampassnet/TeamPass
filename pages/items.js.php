@@ -3206,7 +3206,7 @@ function sList(data)
             }
 
             // Prepare Favorite icon
-            if (parseInt(store.get('teampassSettings').enable_favourites) === 1
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').enable_favourites) === 1
                 && value.rights > 10
             ) {
                 if (value.is_favourited === 1) {
