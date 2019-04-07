@@ -20,9 +20,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Is maintenance on-going?
 if (isset($SETTINGS['maintenance_mode']) === true
-    && $SETTINGS['maintenance_mode'] === '1'
+    && (int) $SETTINGS['maintenance_mode'] === 1
     && ($session_user_admin === null
-    || $session_user_admin === '1')
+    || (int) $session_user_admin === 1)
 ) {
     ?>
 <script type="text/javascript">
@@ -40,8 +40,19 @@ if (isset($SETTINGS['maintenance_mode']) === true
 var userScrollPosition = 0;
 
 // On page load
-$(function() {
-    // Init
+//$(function() {
+    // Start real time
+    // get list of last items
+    if (store.get('teampassUser') !== undefined && store.get('teampassUser').user_id !== '') {
+        $.when(
+            // Load teampass settings
+            loadSettings()
+        ).then(function() {
+            refreshListLastSeenItems();
+        });
+    } 
+    //-- end
+    
     // Countdown
     countdown();
     
@@ -215,18 +226,6 @@ $(function() {
             }
         });
 
-    // Start real time
-    // get list of last items
-    if (store.get('teampassUser') !== undefined && store.get('teampassUser').user_id !== '') {
-        $.when(
-            // Load teampass settings
-            loadSettings()
-        ).then(function() {
-            refreshListLastSeenItems();
-        });
-    }
-    //-- end
-
     // Hide sidebar footer icons when reducing sidebar
     $('a[data-widget="pushmenu"]').click(function(event) {
         if ($('#sidebar-footer').hasClass('hidden') === true) {
@@ -261,7 +260,7 @@ $(function() {
         },
         1000
     );
-});
+//});
 
 
 /**
@@ -351,8 +350,8 @@ function loadSettings()
                     .show(); 
                 return false;
             };
-            
-            if (Array.isArray(data) === true) {
+            // Test if JSON object
+            if (typeof data === 'object') {
                 // Store settings in localstorage
                 store.update(
                     'teampassSettings',

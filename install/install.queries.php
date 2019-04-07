@@ -551,6 +551,7 @@ $SETTINGS = array (';
                             array('admin', 'upload_all_extensions_file', '0'),
                             array('admin', 'bck_script_passkey', generateRandomKey()),
                             array('admin', 'admin_2fa_required', '1'),
+                            array('admin', 'password_overview_delay', '4'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

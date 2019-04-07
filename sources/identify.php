@@ -571,7 +571,7 @@ function identifyUser($sentData, $SETTINGS)
         );
 
         if ($ret['error'] === true) {
-            echo json_encode($ret['message']);
+            echo prepareExchangedData($ret, 'encode');
 
             return;
         } else {
@@ -1718,14 +1718,12 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
         if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
             return array(
                 'error' => true,
-                'message' => array(
-                    'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                    'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'user_not_exists6',
-                    'message' => langHdl('error_bad_credentials'),
-                ),
+                'value' => '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'user_not_exists6',
+                'message' => langHdl('error_bad_credentials'),
             );
         }
 
@@ -1826,14 +1824,12 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
         if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
             return array(
                 'error' => true,
-                'message' => array(
-                    'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                    'initial_url' => @$_SESSION['initial_url'],
-                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                    'error' => 'no_user_yubico_credentials',
-                    'message' => '',
-                ),
+                'value' => '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'no_user_yubico_credentials',
+                'message' => '',
             );
         } else {
             $yubico_user_key = $data['yubico_user_key'];
@@ -1851,14 +1847,12 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
 
         return array(
             'error' => true,
-            'message' => array(
-                'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                'error' => 'bad_user_yubico_credentials',
-                'message' => langHdl('yubico_bad_code'),
-            ),
+            'value' => '',
+            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
+            'initial_url' => @$_SESSION['initial_url'],
+            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+            'error' => 'bad_user_yubico_credentials',
+            'message' => langHdl('yubico_bad_code'),
         );
     } else {
         $proceedIdentification = true;

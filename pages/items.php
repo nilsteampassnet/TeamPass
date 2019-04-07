@@ -56,8 +56,7 @@ $session_user_upgrade_needed = $superGlobal->get('user_upgrade_needed', 'SESSION
 $cookie_jstree_select = $superGlobal->get('jstree_select', 'COOKIE');
 
 if ((int) $session_user_admin === 1
-    && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
-    || null === TP_ADMIN_FULL_RIGHT
+    && TP_ADMIN_FULL_RIGHT === true
 ) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);

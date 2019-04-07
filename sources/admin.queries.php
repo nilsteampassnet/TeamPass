@@ -529,7 +529,7 @@ switch ($post_type) {
             );
             break;
         }
-        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $post_option);
         $file = htmlspecialchars($dataPost[0]);

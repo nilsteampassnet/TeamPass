@@ -16,6 +16,8 @@
  */
 
 return array(
+    'password_overview_delay' => 'Delay for password overview',
+    'password_overview_delay_tip' => 'This setting permits to define the number of seconds the clear password will be displayed to the user.',
     'select_date_showing_items_expiration' => 'List the expired items at date',
     'renewal_page_info' => 'This page permits to identify the items currently expired or expiring in next period.',
     'filename' => 'Filename',

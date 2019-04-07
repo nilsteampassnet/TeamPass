@@ -1435,8 +1435,6 @@ function mainQuery($SETTINGS)
             }
 
             // get list of last items seen
-            $x_counter = 1;
-            $arrTmp = array();
             $arr_html = array();
             $rows = DB::query(
                 'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
@@ -1450,7 +1448,7 @@ function mainQuery($SETTINGS)
             );
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
-                    if (!in_array($record['id'], $arrTmp)) {
+                    if (in_array($record['id']->id, array_column($arr_html, 'id')) === false) {
                         array_push(
                             $arr_html,
                             array(
@@ -1461,9 +1459,7 @@ function mainQuery($SETTINGS)
                                 'restricted' => $record['restricted'],
                             )
                         );
-                        ++$x_counter;
-                        array_push($arrTmp, $record['id']);
-                        if ($x_counter >= 10) {
+                        if (count($arr_html) >= (int) $SETTINGS['max_last_items']) {
                             break;
                         }
                     }

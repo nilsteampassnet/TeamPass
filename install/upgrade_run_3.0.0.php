@@ -264,6 +264,15 @@ mysqli_query(
     WHERE type = 'admin' AND intitule = 'enable_attachment_encryption'"
 );
 
+// Add new setting 'password_overview_delay'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'password_overview_delay'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'password_overview_delay', '4')"
+    );
+}
+
 // Copy all items passwords
 $db_count = mysqli_fetch_row(
     mysqli_query(

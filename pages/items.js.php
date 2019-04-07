@@ -100,6 +100,8 @@ browserSession(
 );
 
 
+
+
 // Build tree
 $('#jstree').jstree({
     'core' : {
@@ -357,7 +359,7 @@ $(document).on('click', '#card-item-pwd-show-button', function() {
             $('.pwd-show-spinner')
                 .removeClass('fas fa-circle-notch fa-spin text-warning')
                 .addClass('far fa-eye');
-        }, 4000);
+        }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay']*1000) : 4000; ?>);
     } else {
         $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
     }
@@ -3095,7 +3097,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             //teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
                         }
                     );
-
+                    
                     // show items
                     sList(data.html_json);
 
@@ -3189,7 +3191,7 @@ function sList(data)
             // Prepare mini icons
             if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1
                 && value.rights > 10
-            ) {
+            ) {console.log('ici')
                 // Login icon
                 if (value.login !== '') {
                     icon_login = '<span class="fa-stack fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-user fa-stack-1x fa-inverse"></i></span>';

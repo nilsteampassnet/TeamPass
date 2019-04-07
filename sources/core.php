@@ -108,31 +108,35 @@ if (isset($SETTINGS['cpassman_dir']) === true
          */
         function delTree($dir)
         {
-            $files = array_diff(scandir($dir), array('.', '..'));
+            $directories = scandir($dir);
+            if ($directories !== false) {
+                $files = array_diff($directories, array('.', '..'));
 
-            foreach ($files as $file) {
-                if (is_dir($dir.'/'.$file)) {
-                    delTree($dir.'/'.$file);
-                } else {
-                    try {
-                        unlink($dir.'/'.$file);
-                    } catch (Exception $e) {
-                        // do nothing... php will ignore and continue
+                foreach ($files as $file) {
+                    if (is_dir($dir.'/'.$file)) {
+                        delTree($dir.'/'.$file);
+                    } else {
+                        try {
+                            unlink($dir.'/'.$file);
+                        } catch (Exception $e) {
+                            // do nothing... php will ignore and continue
+                        }
                     }
                 }
-            }
 
-            return @rmdir($dir);
+                return @rmdir($dir);
+            } else {
+                return false;
+            }
         }
 
-        $result = true;
         if (is_dir($SETTINGS['cpassman_dir'].'/install')) {
             // Set the permissions on the install directory and delete
             // is server Windows or Linux?
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
                 chmodRecursive($SETTINGS['cpassman_dir'].'/install', 0755, 0440);
             }
-            $result = delTree($SETTINGS['cpassman_dir'].'/install');
+            delTree($SETTINGS['cpassman_dir'].'/install');
         }
 
         // Delete temporary install table

@@ -646,6 +646,18 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                     </div>
 
+                    <div class='row mb-2 option' data-keywords="password display">
+                        <div class='col-10'>
+                            <?php echo langHdl('password_overview_delay'); ?>
+                            <small class='form-text text-muted'>
+                                <?php echo langHdl('password_overview_delay_tip'); ?>
+                            </small>
+                        </div>
+                        <div class='col-2'>
+                            <input type='text' class='form-control form-control-sm' id='password_overview_delay' value='<?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] : '4'; ?>'>
+                        </div>
+                    </div>
+
                     <div class='row mb-2 option' data-keywords="password delete view expiration">
                         <div class='col-10'>
                             <?php echo langHdl('admin_setting_activate_expiration'); ?>
