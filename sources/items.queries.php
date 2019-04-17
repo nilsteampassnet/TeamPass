@@ -2624,6 +2624,8 @@ if (null !== $post_type) {
                     }
                 }
                 
+                $accessLevel = empty($arrTmp) ? $accessLevel : max($arrTmp);
+                $uniqueLoadData['accessLevel'] = $accessLevel;
                 // check if this folder is a PF. If yes check if saltket is set
                 if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
                     $showError = "is_pf_but_no_saltkey";
