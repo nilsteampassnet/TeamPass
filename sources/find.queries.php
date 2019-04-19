@@ -97,7 +97,8 @@ $row = DB::query(
 );
 
 //get list of personal folders
-$arrayPf = $crit = array();
+$arrayPf = array();
+$crit = array();
 $listPf = '';
 if (empty($row['id']) === false) {
     $rows = DB::query(
@@ -175,7 +176,7 @@ if (empty($search_criteria) === false) {
     $sWhere = substr_replace($sWhere, '', -3).') ';
 
     $crit = array(
-        'idtree' => $folders,
+        'idtree' => array_unique($folders),
         '0' => $search_criteria,
         '1' => $search_criteria,
         '2' => $search_criteria,
@@ -215,7 +216,7 @@ if (empty($listPf) === false) {
 } else {
     $sWhere = 'WHERE '.$sWhere;
 }
-db::debugmode(false);
+
 DB::query(
     'SELECT id FROM '.prefixTable('cache')."
     $sWhere
@@ -279,6 +280,18 @@ if (isset($_GET['type']) === false) {
             if ($accessLevel === 0) {
                 $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" data-id=\"'.$record['id'].'\">';
             }
+
+            if ((int) $accessLevel === 0) {
+                $right = 0;
+            } elseif ((10 <= (int) $accessLevel) && ((int) $accessLevel < 20)) {
+                $right = 20;
+            } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) {
+                $right = 60;
+            } elseif ((int) $accessLevel === 30) {
+                $right = 70;
+            } else {
+                $right = 10;
+            }
         }
 
         // Expiration
@@ -311,7 +324,7 @@ if (isset($_GET['type']) === false) {
 
         //col1
         $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"'.langHdl('open_url_link').'\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;\" style=\"cursor:pointer;\"></i>'.
-            '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"'.langHdl('see_item_title').'\" data-id=\"'.$record['id'].'\" data-perso=\"'.$record['perso'].'\" data-tree-id=\"'.$record['id_tree'].'\" data-expired=\"'.$expired.'\" data-restricted-to=\"'.$restrictedTo.'\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+            '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"'.langHdl('see_item_title').'\" data-id=\"'.$record['id'].'\" data-perso=\"'.$record['perso'].'\" data-tree-id=\"'.$record['id_tree'].'\" data-expired=\"'.$expired.'\" data-restricted-to=\"'.$restrictedTo.'\" data-rights=\"'.$right.'\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
         $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes(utf8_encode($record['label']))).'</span>", ';

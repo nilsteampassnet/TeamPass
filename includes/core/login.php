@@ -55,10 +55,10 @@ echo '
                 </div>';
 
 if (isset($SETTINGS['enable_http_request_login']) === true
-    && $SETTINGS['enable_http_request_login'] === '1'
+    && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && !(isset($SETTINGS['maintenance_mode']) === true
-    && $SETTINGS['maintenance_mode'] === '1')
+    && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
     if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
         $username = explode('@', $_SERVER['PHP_AUTH_USER'])[0];
@@ -77,10 +77,10 @@ if (isset($SETTINGS['enable_http_request_login']) === true
 echo '
         </div>';
 if (!(isset($SETTINGS['enable_http_request_login']) === true
-    && $SETTINGS['enable_http_request_login'] === '1'
+    && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && !(isset($SETTINGS['maintenance_mode']) === true
-    && $SETTINGS['maintenance_mode'] === '1'))
+    && (int) $SETTINGS['maintenance_mode'] === 1))
 ) {
     echo '
         <div class="input-group has-feedback mb-2">

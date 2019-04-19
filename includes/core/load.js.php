@@ -39,228 +39,230 @@ if (isset($SETTINGS['maintenance_mode']) === true
 <script type="text/javascript">
 var userScrollPosition = 0;
 
-// On page load
-//$(function() {
-    // Start real time
-    // get list of last items
-    if (store.get('teampassUser') !== undefined && store.get('teampassUser').user_id !== '') {
-        $.when(
-            // Load teampass settings
-            loadSettings()
-        ).then(function() {
-            refreshListLastSeenItems();
-        });
-    } 
-    //-- end
-    
-    // Countdown
-    countdown();
-    
-    // If login attempts experimented
-    if ($('#user-login-attempts').length > 0) {
-        alertify.confirm(
-            '<?php echo langHdl('caution'); ?>',
-            '<i class="fas fa-warning mr-3"></i><?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
-            function() {
-                document.location.href="index.php?page=profile&tab=timeline";
-            },
-            function() {
-                // Nothing
-            }
-        )
-        .set(
-            'labels',
-            {
-                ok: '<?php echo langhdl('see_detail'); ?>',
-                cancel: '<?php echo langhdl('cancel'); ?>'
-            }
-        );
-    }
-
-    // Show tooltips
-    $('.infotip').tooltip();
-
-    // Load user profiles
-    $('.user-panel').click(function () {
-        document.location.href="index.php?page=profile";
+console.log("Timestamp: "+(Date.now() - store.get('teampassUser').sessionStartTimestamp) +" ++ "+ (store.get('teampassUser').sessionDuration*1000));
+// Start real time
+// get list of last items
+if (store.get('teampassUser') !== undefined
+    && store.get('teampassUser').user_id !== ''
+    && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration*1000)
+) {
+    console.log(store.get('teampassUser'));
+    $.when(
+        // Load teampass settings
+        loadSettings()
+    ).then(function() {
+        refreshListLastSeenItems();
     });
+}
+//-- end
 
-    // Sidebar redirection
-    $('.nav-link').click(function () {
-        if ($(this).data('name') !== undefined) {
-            NProgress.start();
-            document.location.href="index.php?page=" + $(this).data('name');
-        }
-    });
+// Countdown
+countdown();
 
-    // User menu action
-    $('.user-menu').click(function () {
-        if ($(this).data('name') !== undefined) {
-            if ($(this).data('name') === 'set_psk') {
-                showPersonalSKDialog();
-            } else if ($(this).data('name') === 'increase_session') {
-                showExtendSession();
-            } else if ($(this).data('name') === 'profile') {
-                NProgress.start();
-                document.location.href="index.php?page=profile";
-            } else if ($(this).data('name') === 'logout') {
-                alertify.confirm(
-                    '<?php echo TP_TOOL_NAME; ?>',
-                    '<?php echo langHdl('logout_confirm'); ?>',
-                    function(){
-                        alertify.success('<?php echo langHdl('ok'); ?>');
-                        window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
-                    },
-                    function(){
-                        alertify.error('<?php echo langHdl('cancel'); ?>');
-                    }
-                );
-            }
-        }
-    });
-
-    $('.close-element').click(function() {
-        $(this).closest('.card').addClass('hidden');
-
-        $('.content-header, .content').removeClass('hidden');
-    });
-
-    /**
-     * When clicking save Personal saltkey
-     */
-    $('#button_save_user_psk').click(function() {
-        alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
-
-        // Prepare data
-        var data = {
-            "psk" : sanitizeString($("#user_personal_saltkey").val()),
-            "complexity" : $("#psk_strength_value").val()
-        };
-        
-        //
-        $.post(
-            "sources/main.queries.php",
-            {
-                type    : "store_personal_saltkey",
-                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key     : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, '<?php echo $_SESSION['key']; ?>');
-
-                // Is there an error?
-                if (data.error === true) {
-                    alertify.dismissAll();
-                    alertify
-                        .alert(
-                            '<?php echo langHdl('warning'); ?>',
-                            data.message
-                        );
-                } else {
-                    store.update(
-                        'teampassUser',
-                        function (teampassUser) {
-                            teampassUser.pskDefinedInDatabase = 1;
-                        }
-                    )
-
-                    store.update(
-                        'teampassUser',
-                        function (teampassUser) {
-                            teampassUser.pskSetForSession = data.encrypted_psk;
-                        }
-                    )
-                    
-                    alertify
-                        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
-                        .dismissOthers();
-                    location.reload();
-                }
-            }
-        );
-    });
-
-    // For Personal Saltkey
-    $("#user_personal_saltkey").simplePassMeter({
-            "requirements": {},
-            "container": "#psk_strength",
-            "defaultText" : "<?php echo langHdl('index_pw_level_txt'); ?>",
-            "ratings": [
-                {"minScore": 0,
-                    "className": "meterFail",
-                    "text": "<?php echo langHdl('complex_level0'); ?>"
-                },
-                {"minScore": 25,
-                    "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level1'); ?>"
-                },
-                {"minScore": 50,
-                    "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level2'); ?>"
-                },
-                {"minScore": 60,
-                    "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level3'); ?>"
-                },
-                {"minScore": 70,
-                    "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level4'); ?>"
-                },
-                {"minScore": 80,
-                    "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level5'); ?>"
-                },
-                {"minScore": 90,
-                    "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level6'); ?>"
-                }
-            ]
-        });
-        $("#user_personal_saltkey").bind({
-            "score.simplePassMeter" : function(jQEvent, score) {
-                $("#psk_strength_value").val(score);
-            }
-        }).change({
-            "score.simplePassMeter" : function(jQEvent, score) {
-                $("#psk_strength_value").val(score);
-            }
-        });
-
-    // Hide sidebar footer icons when reducing sidebar
-    $('a[data-widget="pushmenu"]').click(function(event) {
-        if ($('#sidebar-footer').hasClass('hidden') === true) {
-            setTimeout(function() {$('#sidebar-footer').removeClass('hidden');}, 300);
-        } else {
-            $('#sidebar-footer').addClass('hidden');
-        }
-    });
-
-
-    var clipboardCopy = new Clipboard(".clipboard-copy", {
-        text: function(trigger) {
-            var elementId = $(trigger).data('clipboard-text');
-            return $('#' + elementId).val();
-        }
-    });
-
-    clipboardCopy.on('success', function(e) {
-        showAlertify(
-            '<?php echo langHdl('copy_to_clipboard'); ?>',
-            1,
-            'top-right',
-            'message'
-        );
-    });
-
-    // Progress bar
-    setTimeout(
+// If login attempts experimented
+if ($('#user-login-attempts').length > 0) {
+    alertify.confirm(
+        '<?php echo langHdl('caution'); ?>',
+        '<i class="fas fa-warning mr-3"></i><?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
         function() {
-            NProgress.done();
-            $(".fade").removeClass("out");
+            document.location.href="index.php?page=profile&tab=timeline";
         },
-        1000
+        function() {
+            // Nothing
+        }
+    )
+    .set(
+        'labels',
+        {
+            ok: '<?php echo langhdl('see_detail'); ?>',
+            cancel: '<?php echo langhdl('cancel'); ?>'
+        }
     );
-//});
+}
+
+// Show tooltips
+$('.infotip').tooltip();
+
+// Load user profiles
+$('.user-panel').click(function () {
+    document.location.href="index.php?page=profile";
+});
+
+// Sidebar redirection
+$('.nav-link').click(function () {
+    if ($(this).data('name') !== undefined) {
+        NProgress.start();
+        document.location.href="index.php?page=" + $(this).data('name');
+    }
+});
+
+// User menu action
+$('.user-menu').click(function () {
+    if ($(this).data('name') !== undefined) {
+        if ($(this).data('name') === 'set_psk') {
+            showPersonalSKDialog();
+        } else if ($(this).data('name') === 'increase_session') {
+            showExtendSession();
+        } else if ($(this).data('name') === 'profile') {
+            NProgress.start();
+            document.location.href="index.php?page=profile";
+        } else if ($(this).data('name') === 'logout') {
+            alertify.confirm(
+                '<?php echo TP_TOOL_NAME; ?>',
+                '<?php echo langHdl('logout_confirm'); ?>',
+                function(){
+                    alertify.success('<?php echo langHdl('ok'); ?>');
+                    window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                },
+                function(){
+                    alertify.error('<?php echo langHdl('cancel'); ?>');
+                }
+            );
+        }
+    }
+});
+
+$('.close-element').click(function() {
+    $(this).closest('.card').addClass('hidden');
+
+    $('.content-header, .content').removeClass('hidden');
+});
+
+/**
+    * When clicking save Personal saltkey
+    */
+$('#button_save_user_psk').click(function() {
+    alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
+
+    // Prepare data
+    var data = {
+        "psk" : sanitizeString($("#user_personal_saltkey").val()),
+        "complexity" : $("#psk_strength_value").val()
+    };
+    
+    //
+    $.post(
+        "sources/main.queries.php",
+        {
+            type    : "store_personal_saltkey",
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data, '<?php echo $_SESSION['key']; ?>');
+
+            // Is there an error?
+            if (data.error === true) {
+                alertify.dismissAll();
+                alertify
+                    .alert(
+                        '<?php echo langHdl('warning'); ?>',
+                        data.message
+                    );
+            } else {
+                store.update(
+                    'teampassUser',
+                    function (teampassUser) {
+                        teampassUser.pskDefinedInDatabase = 1;
+                    }
+                )
+
+                store.update(
+                    'teampassUser',
+                    function (teampassUser) {
+                        teampassUser.pskSetForSession = data.encrypted_psk;
+                    }
+                )
+                
+                alertify
+                    .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+                    .dismissOthers();
+                location.reload();
+            }
+        }
+    );
+});
+
+// For Personal Saltkey
+$("#user_personal_saltkey").simplePassMeter({
+        "requirements": {},
+        "container": "#psk_strength",
+        "defaultText" : "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "ratings": [
+            {"minScore": 0,
+                "className": "meterFail",
+                "text": "<?php echo langHdl('complex_level0'); ?>"
+            },
+            {"minScore": 25,
+                "className": "meterWarn",
+                "text": "<?php echo langHdl('complex_level1'); ?>"
+            },
+            {"minScore": 50,
+                "className": "meterWarn",
+                "text": "<?php echo langHdl('complex_level2'); ?>"
+            },
+            {"minScore": 60,
+                "className": "meterGood",
+                "text": "<?php echo langHdl('complex_level3'); ?>"
+            },
+            {"minScore": 70,
+                "className": "meterGood",
+                "text": "<?php echo langHdl('complex_level4'); ?>"
+            },
+            {"minScore": 80,
+                "className": "meterExcel",
+                "text": "<?php echo langHdl('complex_level5'); ?>"
+            },
+            {"minScore": 90,
+                "className": "meterExcel",
+                "text": "<?php echo langHdl('complex_level6'); ?>"
+            }
+        ]
+    });
+    $("#user_personal_saltkey").bind({
+        "score.simplePassMeter" : function(jQEvent, score) {
+            $("#psk_strength_value").val(score);
+        }
+    }).change({
+        "score.simplePassMeter" : function(jQEvent, score) {
+            $("#psk_strength_value").val(score);
+        }
+    });
+
+// Hide sidebar footer icons when reducing sidebar
+$('a[data-widget="pushmenu"]').click(function(event) {
+    if ($('#sidebar-footer').hasClass('hidden') === true) {
+        setTimeout(function() {$('#sidebar-footer').removeClass('hidden');}, 300);
+    } else {
+        $('#sidebar-footer').addClass('hidden');
+    }
+});
+
+
+var clipboardCopy = new Clipboard(".clipboard-copy", {
+    text: function(trigger) {
+        var elementId = $(trigger).data('clipboard-text');
+        return $('#' + elementId).val();
+    }
+});
+
+clipboardCopy.on('success', function(e) {
+    showAlertify(
+        '<?php echo langHdl('copy_to_clipboard'); ?>',
+        1,
+        'top-right',
+        'message'
+    );
+});
+
+// Progress bar
+setTimeout(
+    function() {
+        NProgress.done();
+        $(".fade").removeClass("out");
+    },
+    1000
+);
 
 
 /**
@@ -655,5 +657,13 @@ $(document).on('click', '.columns-position', function() {
         }
     }
 })
+
+$(function() {
+    // In case that session was expired and login form was reloaded
+    // Force the launchIdentify as if the user has clicked the button
+    if ($("#auto_log").length > 0) {
+        $("#but_identify_user").click();
+    }
+});
 
 </script>

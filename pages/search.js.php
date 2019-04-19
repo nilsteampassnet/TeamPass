@@ -22,6 +22,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
 <script type="text/javascript">
+    var pwdClipboard,
+        loginClipboard,
+        urlClipboard;
+
     //Launch the datatables pluggin
     var oTable = $("#search-results-items").DataTable({
         "paging": true,
@@ -84,6 +88,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             detailRows.splice( idx, 1 );
         }
         else {
+            // Remove existing one
+            if ($('.new-row').length > 0) {
+                $('.new-row').remove();
+
+                // Change eye icon
+                var eyeIcon = $('.item-detail').closest('i.fa-eye-slash');
+                eyeIcon
+                    .removeClass('fa-eye-slash text-warning')
+                    .addClass('fa-eye');
+            }
+
             // Change eye icon
             $(this)
                 .removeClass('fa-eye')
@@ -112,7 +127,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'salt_key_set' : store.get('teampassUser').pskSetForSession,
             'expired_item' : $(item).data('expired'),
             'restricted' : $(item).data('restricted-to'),
-            'page' : 'find'
+            'page' : 'find',
+            'rights' : $(item).data('rights'),
         };
 
         // Launch query
@@ -138,27 +154,36 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     return_html = '<td colspan="7">' +
                     '<div class="card card-info">' +
                         '<div class="card-header">' +
-                            '<h5>' + data.label + '</h5>' +
+                            '<h5 id="item-label">' + data.label + '</h5>' +
                         '</div>' +
                         '<div class="card-body">' +
-                            '<div class="form-group">' + data.description + '</div>' +
+                            (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
                             '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo langHdl('pw'); ?></label>' +
+                            '<label class="form-group-label"><?php echo langHdl('pw'); ?>' +
+                            '<button type="button" class="btn btn-gray ml-2" id="btn-copy-pwd" data-id="'+data.id+'"><i class="fas fa-copy"></i></button>' +
+                            '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="'+data.id+'"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
+                            '</label>' +
                             '<span id="pwd-show_'+data.id+'" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>'+
-                            '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + atob(data.pw) + '">' +
+                            '<input id="pwd-hidden_'+data.id+'" class="pwd-clear" type="hidden" value="' + atob(data.pw) + '">' +
                             '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0">' +
                             '</div>' +
+                            (data.login === '' ? '' :
                             '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo langHdl('index_login'); ?></label>' +
-                            '<span class="ml-2">' + data.login + '</span>' +
-                            '</div>' +
+                            '<label class="form-group-label"><?php echo langHdl('index_login'); ?>' +
+                            '<button type="button" class="btn btn-gray ml-2" id="btn-copy-login" data-id="'+data.id+'"><i class="fas fa-copy"></i></button>' +
+                            '</label>' +
+                            '<span class="ml-2" id="login-item_'+data.id+'">' + data.login + '</span>' +
+                            '</div>') +
+                            (data.url === '' ? '' :
                             '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo langHdl('url'); ?></label>' +
-                            '<span class="ml-2">' + data.url + '</span>' +
-                            '</div>' +
+                            '<label class="form-group-label"><?php echo langHdl('url'); ?>' +
+                            '<button type="button" class="btn btn-gray ml-2" id="btn-copy-url" data-id="'+data.id+'"><i class="fas fa-copy"></i></button>' +
+                            '</label>' +
+                            '<span class="ml-2" id="url-item_'+data.id+'">' + data.url + '</span>' +
+                            '</div>') +
                         '</div>' +
                         '<div class="card-footer">' +
-                            '<button type="button" class="btn btn-default float-right" id="cancel"><?php echo langHdl('cancel'); ?></button>' +
+                            '<button type="button" class="btn btn-info float-right" id="cancel"><?php echo langHdl('cancel'); ?></button>' +
                         '</div>' +
                     '</div>' +
                     '</td>';
@@ -176,7 +201,55 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     // Remove card
                     $('.new-row').remove();
-                })
+                });
+
+                // Manage buttons --> PASSWORD
+                new Clipboard('#btn-copy-pwd', {
+                        text: function(e) {
+                            return $('#pwd-hidden_'+$('#btn-copy-pwd').data('id')).val();
+                        }
+                    })
+                    .on('success', function(e) {
+                        showAlertify(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            1,
+                            'top-right',
+                            'message'
+                        );
+                        e.clearSelection();
+                    });
+
+                // Manage buttons --> LOGIN
+                new Clipboard('#btn-copy-login', {
+                        text: function(e) {
+                            return $('#login-item_'+$('#btn-copy-login').data('id')).text();
+                        }
+                    })
+                    .on('success', function(e) {
+                        showAlertify(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            1,
+                            'top-right',
+                            'message'
+                        );
+                        e.clearSelection();
+                    });
+
+                // Manage buttons --> URL
+                new Clipboard('#btn-copy-url', {
+                        text: function(e) {
+                            return $('#url-item_'+$('#btn-copy-url').data('id')).text();
+                        }
+                    })
+                    .on('success', function(e) {
+                        showAlertify(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            1,
+                            'top-right',
+                            'message'
+                        );
+                        e.clearSelection();
+                    });
 
                 $('#search-spinner').remove();
 
@@ -204,9 +277,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     var showPwdContinuous = function(elem_id){
         var itemId = elem_id.split('_')[1];
-        console.log("Mouse down: "+mouseStillDown)
         if (mouseStillDown === true) {
-            console.log("    Still down")
             // Prepare data to show
             // Is data crypted?
             var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $_SESSION['key']; ?>');
@@ -241,6 +312,56 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 .removeClass('pwd-shown');
         }
     };
+
+    // Manage the password show button
+    // including autohide after a couple of seconds
+    $(document).on('click', '.btn-show-pwd', function() {
+        if($(this).hasClass('pwd-shown') === false) {
+            var itemId = $(this).data('id');
+            $(this).addClass('pwd-shown');
+            // Prepare data to show
+            // Is data crypted?
+            var data = unCryptData($('#pwd-hidden_'+itemId).val(), '<?php echo $_SESSION['key']; ?>');
+            if (data !== false && data !== undefined) {
+                $('#pwd-hidden_'+itemId).val(
+                    data.password
+                );
+            }
+            
+            // Change class and show spinner
+            $('.pwd-show-spinner')
+                .removeClass('far fa-eye')
+                .addClass('fas fa-circle-notch fa-spin text-warning');
+                
+
+            $('#pwd-show_'+itemId)
+                .html(
+                    '<span style="cursor:none;">' +
+                    $('#pwd-hidden_'+itemId).val()
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;') +
+                    '</span>'
+                );
+                
+            // log password is shown
+            itemLog(
+                'at_password_shown',
+                itemId,
+                $('#item-label').text()
+            );
+
+            // Autohide
+            setTimeout(() => {
+                $(this).removeClass('pwd-shown_'+itemId);
+                $('#pwd-show_'+itemId).html('<?php echo $var['hidden_asterisk']; ?>');
+                $('.pwd-show-spinner')
+                    .removeClass('fas fa-circle-notch fa-spin text-warning')
+                    .addClass('far fa-eye');
+            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay'] * 1000) : 4000; ?>);
+        } else {
+            $('#pwd-show_'+itemId).html('<?php echo $var['hidden_asterisk']; ?>');
+        }
+    });
 
     
     var selectedItems = '',

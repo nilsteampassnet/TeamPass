@@ -84,8 +84,6 @@ if (null === $post_user_token) {
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
@@ -253,7 +251,7 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
 $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
-if (!file_exists($targetDir)) {
+if (file_exists($targetDir) === false) {
     try {
         mkdir($targetDir, 0777, true);
     } catch (Exception $e) {
@@ -291,13 +289,14 @@ if (isset($_SERVER['CONTENT_TYPE'])) {
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
-    if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+    if (isset($_FILES['file']['tmp_name']) === true && is_uploaded_file($_FILES['file']['tmp_name']) === true) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
 
         if ($out) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
+            $fileFullSize += $_FILES['file']['size'];
 
             if ($in) {
                 while ($buff = fread($in, 4096)) {
@@ -369,7 +368,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         array(
             'id_item' => $post_itemId,
             'name' => $fileName,
-            'size' => $_FILES['file']['size'],
+            'size' => $fileFullSize, //$_FILES['file']['size'],
             'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],
             'file' => $newFile['fileHash'],

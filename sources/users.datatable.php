@@ -207,7 +207,7 @@ foreach ($rows as $record) {
         if ((int) $record['admin'] !== 1) {
             if (count($treeDesc) > 0) {
                 foreach ($treeDesc as $t) {
-                    if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
+                    if (@in_array($t->id, $_SESSION['no_access_folders']) === false && in_array($t->id, $_SESSION['groupes_visibles']) === true) {
                         $ident = '';
                         if (in_array($t->id, explode(';', $record['groupes_visibles']))) {
                             $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($ident.$t->title, FILTER_SANITIZE_STRING)).'<br />';

@@ -59,7 +59,6 @@ if ((int) $session_user_admin === 1
     && TP_ADMIN_FULL_RIGHT === true
 ) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
-    $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
 
 // Get list of users
@@ -116,8 +115,7 @@ echo '
         <!-- EXPIRED ITEM -->
         <div class="row hidden" id="card-item-expired">
             <div class="col-12">
-                <div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                <div class="alert alert-danger">
                     <h5><i class="fas fa-exclamation-triangle mr-2"></i><?php echo langHdl('warning'); ?></h5>
                     <?php echo langHdl('pw_is_expired_-_update_it'); ?>
                 </div>
@@ -459,7 +457,7 @@ echo '
                         <span class="mr-3 align-middle">
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-gray but-back-to-list">
-                                    <i class="fas fa-arrow-left"></i>&nbsp;
+                                    <i class="fas fa-arrow-left"></i>
                                 </button>
                                 <button type="button" class="btn btn-gray dropdown-toggle" data-toggle="dropdown" role="group">
                                     <i class="fas fa-bars"></i>

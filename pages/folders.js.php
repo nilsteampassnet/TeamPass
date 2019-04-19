@@ -45,6 +45,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 <script type='text/javascript'>
 //<![CDATA[
 
+// Clear
+$('#folders-search').val('');
+
 buildTable();
 
 browserSession(
@@ -245,7 +248,7 @@ function buildTable()
 
     // Show spinner
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<?php echo langHdl('loading_data'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
         .dismissOthers();
 
     // Build matrix
@@ -271,11 +274,19 @@ function buildTable()
                     columns = '',
                     rowCounter = 0,
                     path = '',
+                    parentsClass = '',
+                    max_folder_depth = 0,
                     foldersSelect = '<option value="0"><?php echo langHdl('root'); ?></option>';
 
                 $(data.matrix).each(function(i, value) {
+                    // List of parents
+                    parentsClass = '';
+                    $(value.parents).each(function(i, id) {
+                        parentsClass += 'p'+id+' ';
+                    });
+
                     // Row
-                    columns += '<tr data-id="' + value.id + '"><td>';
+                    columns += '<tr data-id="' + value.id + '" data-level="' + value.level + '" class="' + parentsClass + '"><td>';
 
                     // Column 1
                     if ((value.parentId === 0
@@ -292,7 +303,7 @@ function buildTable()
 
                     // Column 2
                     columns += '<td class="modify pointer" min-width="200px">' +
-                        '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
+                        '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
 
 
                     // Column 3
@@ -345,6 +356,11 @@ function buildTable()
                     // Folder Select
                     foldersSelect += '<option value="' + value.id + '">' + value.title + '</option>';
 
+                    // Max depth
+                    if (parseInt(value.level) > max_folder_depth) {
+                        max_folder_depth = parseInt(value.level);
+                    }
+
                     rowCounter++;
                 });
 
@@ -382,6 +398,14 @@ function buildTable()
                     }
                 );
 
+                // Adapt select
+                $('#folders-depth').val('').change();
+                $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
+                for(x=1; x<max_folder_depth; x++) {
+                    $('#folders-depth').append('<option value="'+ x +'">'+ x +'</option>');
+                }
+                $('#folders-depth').val('all').change();
+
                 // Inform user
                 alertify
                     .success('<?php echo langHdl('done'); ?>', 1)
@@ -390,6 +414,39 @@ function buildTable()
         }
     );
 }
+
+
+
+/**
+ * Handle option when role is displayed
+ */
+$(document).on('change', '#folders-depth', function() {
+    if ($('#folders-depth').val() === 'all') {
+        $('tr').removeClass('hidden');
+    } else {
+        $('tr').filter(function() {
+            if ($(this).data('level') <= $('#folders-depth').val()) {
+                $(this).removeClass('hidden');
+            } else {
+                $(this).addClass('hidden');
+            }
+        });
+    }
+});
+
+/**
+ * Handle search criteria
+ */
+$('#folders-search').on('keyup', function() {
+    var criteria = $(this).val();
+    $('.folder-name').filter(function() {
+        if ($(this).text().toLowerCase().indexOf(criteria) !== -1) {
+            $(this).closest('tr').removeClass('hidden');
+        } else {
+            $(this).closest('tr').addClass('hidden');
+        }
+    });
+});
 
 /**
  * Check / Uncheck children folders
@@ -636,6 +693,24 @@ $(document).keyup(function(e) {
     }
 });
 
+
+// Manage collapse/expend
+$(document).on('click', '.icon-collapse', function() {
+    if ($(this).hasClass('fa-folder-minus') === true) {
+        $(this)
+            .removeClass('fa-folder-minus')
+            .addClass('fa-folder-plus text-primary');
+
+        $('.p' + $(this).data('id')).addClass('hidden');
+    } else {
+        $(this)
+            .removeClass('fa-folder-plus  text-primary')
+            .addClass('fa-folder-minus');
+            $('.p' + $(this).data('id')).removeClass('hidden');
+    }
+});
+
+
 //************************************************************** */
 
 /*
@@ -717,21 +792,7 @@ var oTable = $('#table-folders').dataTable({
 });
 
 
-// Manage collapse/expend
-$(document).on('click', '.icon-collapse', function() {
-    if ($(this).hasClass('fa-folder-minus') === true) {
-        $(this)
-            .removeClass('fa-folder-minus')
-            .addClass('fa-folder-plus text-primary');
 
-        $('.p' + $(this).data('id')).addClass('hidden');
-    } else {
-        $(this)
-            .removeClass('fa-folder-plus  text-primary')
-            .addClass('fa-folder-minus');
-            $('.p' + $(this).data('id')).removeClass('hidden');
-    }
-});
 
 var currentText = '',
     item = '',

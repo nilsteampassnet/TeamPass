@@ -65,14 +65,30 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
 }
 
 // erase session table
-session_unset();
 session_destroy();
 $_SESSION = array();
 
+require_once '../../sources/SecureHandler.php';
+session_name('teampass_session');
+session_start();
+$_SESSION['CPM'] = 1;
+
+// Get CSRFP code
+$csrfp_array = include '../../includes/libraries/csrfp/libs/csrfp.config.php';
+
 echo '
+    <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
     <script language="javascript" type="text/javascript">
     <!--
+        // Clear localstorage
+        store.remove("teampassApplication");
+        store.remove("teampassSettings");
+        store.remove("teampassUser");
+        store.remove("teampassItem");
         sessionStorage.clear();
-        setTimeout(function(){document.location.href="../../index.php"}, 1);
+        
+        setTimeout(function() {
+            document.location.href="../../index.php"
+        }, 1);
     -->
     </script>';

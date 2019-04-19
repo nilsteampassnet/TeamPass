@@ -181,6 +181,7 @@ if (null !== $post_type) {
                     $arrayColumns['title'] = $t->title;
                     $arrayColumns['nbItems'] = DB::count();
                     $arrayColumns['path'] = $arrayPath;
+                    $arrayColumns['parents'] = $arrayParents;
 
                     if (isset(TP_PW_COMPLEXITY[$node_data['valeur']][1]) === true) {
                         $arrayColumns['folderComplexity'] = array(
@@ -460,8 +461,8 @@ if (null !== $post_type) {
 
             //Get user's rights
             identifyUserRights(
-                implode(';', $_SESSION['groupes_visibles']).';'.$dataFolder['id'],
-                implode(';', $_SESSION['groupes_interdits']),
+                array_push($_SESSION['groupes_visibles'], $dataFolder['id']),
+                $_SESSION['no_access_folders'],
                 $_SESSION['is_admin'],
                 $_SESSION['fonction_id'],
                 $SETTINGS
@@ -663,7 +664,7 @@ if (null !== $post_type) {
                     //Get user's rights
                     identifyUserRights(
                         $_SESSION['groupes_visibles'],
-                        implode(';', $_SESSION['groupes_interdits']),
+                        $_SESSION['no_access_folders'],
                         $_SESSION['is_admin'],
                         is_array($_SESSION['fonction_id']) === true ?
                             implode(';', $_SESSION['fonction_id']) : $_SESSION['fonction_id'],
@@ -981,21 +982,17 @@ if (null !== $post_type) {
 
                 // add new folder id in SESSION
                 array_push($_SESSION['groupes_visibles'], $newFolderId);
-                $_SESSION['groupes_visibles_list'] .= ','.$newFolderId;
                 if ((int) $nodeInfo->personal_folder === 1) {
                     array_push($_SESSION['personal_folders'], $newFolderId);
                     array_push($_SESSION['personal_visible_groups'], $newFolderId);
-                    $_SESSION['personal_visible_groups_list'] .= ','.$newFolderId;
                 } else {
                     array_push($_SESSION['all_non_personal_folders'], $newFolderId);
                 }
 
                 //Get user's rights
                 identifyUserRights(
-                    is_array($_SESSION['groupes_visibles']) === true ?
-                        array_push($_SESSION['groupes_visibles'], $newFolderId) :
-                        $_SESSION['groupes_visibles'].';'.$newFolderId,
-                    $_SESSION['groupes_interdits'],
+                    array_push($_SESSION['groupes_visibles'], $newFolderId),
+                    $_SESSION['no_access_folders'],
                     $_SESSION['is_admin'],
                     $_SESSION['fonction_id'],
                     $SETTINGS

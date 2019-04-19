@@ -136,7 +136,7 @@ $('#jstree').jstree({
         console.log('JSTREE BIND')
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
         selectedFolderId = selectedFolder.id.split('_')[1];
-        console.info('SELECTED NODE ' + selectedFolderId);
+        console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
         console.log(selectedFolder);
 
         /*store.each(function(value, key) {
@@ -359,7 +359,7 @@ $(document).on('click', '#card-item-pwd-show-button', function() {
             $('.pwd-show-spinner')
                 .removeClass('fas fa-circle-notch fa-spin text-warning')
                 .addClass('far fa-eye');
-        }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay']*1000) : 4000; ?>);
+        }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay'] * 1000) : 4000; ?>);
     } else {
         $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
     }
@@ -523,6 +523,7 @@ $('.tp-action').click(function() {
                 }
             );
             
+            /*
             // Check if personal SK is needed and set
             if (store.get('teampassApplication').personalSaltkeyRequired === 1
                 && (store.get('teampassUser').pskDefinedInDatabase !== 1
@@ -539,6 +540,7 @@ $('.tp-action').click(function() {
                 // Finished
                 return false;
             }
+            */
 
             // Show Visibility and minimum complexity
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
@@ -980,7 +982,7 @@ $('#form-item-notify-perform').click(function() {
 
                 // Inform user
                 alertify
-                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .success('<?php echo langHdl('success'); ?>', 1)
                     .dismissOthers();
 
                 // Clear
@@ -2891,7 +2893,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 }
 
                 // Hide New button if restricted folder
-                if (data.access_level === 1) {
+                if (data.access_level === 10) {
                     $('#btn-new-item').addClass('hidden');
                 } else {
                     $('#btn-new-item').removeClass('hidden');
@@ -3082,7 +3084,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         .removeClass('hidden');
 
                 } else if ((store.get('teampassApplication').userIsReadObly === 1) //&& data.folder_requests_psk == 0
-                    || data.access_level == 1
+                    || data.access_level === 10
                 ) {
                     //readonly user
                     $('#item_details_no_personal_saltkey, #item_details_nok').addClass('hidden');
@@ -3191,7 +3193,7 @@ function sList(data)
             // Prepare mini icons
             if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1
                 && value.rights > 10
-            ) {console.log('ici')
+            ) {
                 // Login icon
                 if (value.login !== '') {
                     icon_login = '<span class="fa-stack fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-user fa-stack-1x fa-inverse"></i></span>';
@@ -3390,7 +3392,7 @@ function proceed_list_update(stop_proceeding)
         );
 
         alertify
-            .success('<?php echo langHdl('success'); ?>', 1)
+            .message('<?php echo langHdl('data_refreshed'); ?>', 1)
             .dismissOthers();
 
 
@@ -3607,6 +3609,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 alertify
                     .error('<i class="fas fa-ban mr-2"></i>' + data.message, 3)
                     .dismissOthers();
+                requestRunning = false;
                 return false;
             } else if ((data.user_can_modify === 0 && actionType === 'edit')
                 || data.show_details === 0
@@ -3614,11 +3617,12 @@ function Details(itemDefinition, actionType, hotlink = false)
                 alertify
                     .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
                     .dismissOthers();
+                requestRunning = false;
                 return false;
             }
 
             alertify
-                .success('<?php echo langHdl('success'); ?>', 1)
+                .message('<?php echo langHdl('done'); ?>', 1)
                 .dismissOthers();
             
             // Store scroll position
@@ -3895,7 +3899,6 @@ function Details(itemDefinition, actionType, hotlink = false)
             if (itemClipboard) itemClipboard.destroy();
             itemClipboard = new Clipboard('.btn-copy-clipboard-clear', {
                     text: function(e) {
-                        //console.log($(e).data('clipboard-target'))
                         return ($($(e).data('clipboard-target')).val());
                     }
                 })
@@ -4077,23 +4080,26 @@ function showDetailsStep2(id, actionType)
                         '<div class="callout callout-info">' +
                         '<i class="' + value.icon + ' mr-2 text-info"></i>';
 
+                    // Show VIEW image icon
                     if (value.is_image === 1) {
                         html += 
                         '<i class="fas fa-eye infotip preview-image pointer mr-2" ' +
                         'title="<?php echo langHdl('see'); ?>" ' +
                         'data-file-id="' + value.id + '" data-file-title="' +
                         (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
-                    } else {
-                        html += 
+                    }
+
+                    // Show DOWNLOAD icon
+                    html += 
                         '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' + 
                         '<i class="fas fa-file-download"></i></a>';
-                    }
                     
+                    // Show other info
                     html += 
                         '<span class="font-weight-bold mr-3">' +
                         (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '</span>' +
                         '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
-                        //'<span class="font-italic">' + value.size + '</span>' +
+                        '<span class="font-italic">' + value.size + '</span>' +
                         '</div></div>';
 
                     htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +  
@@ -4292,11 +4298,9 @@ $(document).on('click', '.preview-image', function(event) {
     PreviewImage($(this).data('file-id'));
 });
 
-
-
 PreviewImage = function(fileId) {
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<?php echo langHdl('loading_image'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
         .dismissOthers();
     
     $.post(
@@ -4309,7 +4313,7 @@ PreviewImage = function(fileId) {
         function(data) {
             //decrypt data
             data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-            console.log(data);
+            //console.log(data);
 
             //check if format error
             if (data.error === true) {
@@ -4330,7 +4334,7 @@ PreviewImage = function(fileId) {
                 imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
 
                 alertify
-                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .message('<?php echo langHdl('done'); ?>', 1)
                     .dismissOthers();
 
                 //When the image has loaded, display the dialog

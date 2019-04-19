@@ -54,8 +54,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 ?>
 
@@ -181,8 +179,37 @@ DB::$encoding = DB_ENCODING;
                 <div class="card hidden" id="card-role-details">
                     <div class="card-header p-2">
                         <h3 id="role-detail-header"></h3>
-                    </div>                   
-
+                        <div class="callout callout-info">
+                            <div class="callout-body">
+                                <div class="row">
+                                    <div class="input-group input-group-sm col-8">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text"><?php echo langHdl('only_display_folders_to_depth'); ?></div>
+                                        </div>
+                                        <select class="form-control form-control-sm w-10" id="folders-depth">
+                                        </select>
+                                    </div>
+                                    <div class="input-group input-group-sm col-4">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text">
+                                                <i class="fas fa-search"></i>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="input-group input-group-sm col-12">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text"><?php echo langHdl('compare_with_another_role'); ?></div>
+                                        </div>
+                                        <select class="form-control form-control-sm w-10" id="folders-compare">
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive" id="role-details">
                             &nbsp;

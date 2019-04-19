@@ -493,10 +493,10 @@ function defuseReturnDecrypted($value, $SETTINGS)
 }
 
 /**
- * Trims a string depending on a specific string
+ * Trims a string depending on a specific string.
  *
- * @param string $chaine  what to trim
- * @param string $element trim on what
+ * @param string|array $chaine  what to trim
+ * @param string       $element trim on what
  *
  * @return string
  */
@@ -584,8 +584,6 @@ function identifyUserRights(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
@@ -632,14 +630,13 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $groupesVisibles = array();
     $_SESSION['personal_folders'] = array();
     $_SESSION['groupes_visibles'] = array();
-    $_SESSION['groupes_interdits'] = array();
+    $_SESSION['no_access_folders'] = array();
     $_SESSION['personal_visible_groups'] = array();
     $_SESSION['read_only_folders'] = array();
     $_SESSION['list_restricted_folders_for_items'] = array();
     $_SESSION['list_folders_editable_by_role'] = array();
     $_SESSION['list_folders_limited'] = array();
     $_SESSION['no_access_folders'] = array();
-    $_SESSION['groupes_visibles_list'] = '';
 
     // Get list of Folders
     $rows = DB::query('SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i', 0);
@@ -691,7 +688,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     }
     $_SESSION['fonction_id'] = implode(';', $tmp);
 
-    $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
     $_SESSION['is_admin'] = 1;
     // Check if admin has created Folders and Roles
     DB::query('SELECT * FROM '.prefixTable('nested_tree').'');
@@ -701,144 +697,126 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 }
 
 /**
- * Undocumented function.
+ * Permits to convert an element to array.
  *
- * @param string $groupesVisiblesUser  Allowed folders
- * @param string $groupesInterditsUser Not allowed folders
- * @param string $idFonctions          Roles of user
- * @param array  $SETTINGS             Teampass settings
- * @param array  $tree                 Tree of folders
+ * @param string|array $element Any value to be returned as array
+ *
+ * @return array
+ */
+function convertToArray($element)
+{
+    if (is_string($element) === true) {
+        if (empty($element) === true) {
+            return array();
+        } else {
+            return explode(
+                ';',
+                trimElement($element, ';')
+            );
+        }
+    } else {
+        return $element;
+    }
+}
+
+/**
+ * Defines the rights the user has.
+ *
+ * @param string|array $allowedFolders  Allowed folders
+ * @param string|array $noAccessFolders Not allowed folders
+ * @param string|array $userRoles       Roles of user
+ * @param array        $SETTINGS        Teampass settings
+ * @param array        $tree            Tree of folders
  */
 function identUser(
-    $groupesVisiblesUser,
-    $groupesInterditsUser,
-    $idFonctions,
+    $allowedFolders,
+    $noAccessFolders,
+    $userRoles,
     $SETTINGS,
     $tree
 ) {
     // init
     $_SESSION['groupes_visibles'] = array();
     $_SESSION['personal_folders'] = array();
-    $_SESSION['groupes_interdits'] = array();
+    $_SESSION['no_access_folders'] = array();
     $_SESSION['personal_visible_groups'] = array();
     $_SESSION['read_only_folders'] = array();
-    $_SESSION['fonction_id'] = $idFonctions;
-
-    $groupesInterdits = array();
-    if (is_array($groupesInterditsUser) === false) {
-        $groupesInterditsUser = explode(';', trimElement(/* @scrutinizer ignore-type */ $groupesInterditsUser, ';'));
-    }
-    if (empty($groupesInterditsUser) === false && count($groupesInterditsUser) > 0) {
-        $groupesInterdits = $groupesInterditsUser;
-    }
+    $_SESSION['fonction_id'] = $userRoles;
     $_SESSION['is_admin'] = '0';
-    $fonctionsAssociees = explode(';', trimElement($idFonctions, ';'));
+    $personalFolders = array();
+    $readOnlyFolders = array();
+    $noAccessPersonalFolders = array();
+    $restrictedFoldersForItems = array();
+    $foldersEditableByRole = array();
+    $foldersLimited = array();
+    $foldersLimitedFull = array();
+    $allowedFoldersByRoles = array();
 
-    $listAllowedFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = array();
+    // Ensure consistency in array format
+    $noAccessFolders = convertToArray($noAccessFolders);
+    $userRoles = convertToArray($userRoles);
+    $allowedFolders = convertToArray($allowedFolders);
 
-    // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
-    foreach ($fonctionsAssociees as $roleId) {
-        if (empty($roleId) === false) {
-            // Get allowed folders for each Role
-            $rows = DB::query(
-                'SELECT folder_id FROM '.prefixTable('roles_values').' WHERE role_id=%i',
-                $roleId
-            );
-
-            if (DB::count() > 0) {
-                $tmp = DB::queryfirstrow(
-                    'SELECT allow_pw_change FROM '.prefixTable('roles_title').' WHERE id = %i',
-                    $roleId
-                );
-                foreach ($rows as $record) {
-                    if (isset($record['folder_id']) && in_array($record['folder_id'], $listAllowedFolders) === false) {
-                        array_push($listAllowedFolders, $record['folder_id']);
-                    }
-                    // Check if this group is allowed to modify any pw in allowed folders
-                    if ((int) $tmp['allow_pw_change'] === 1
-                        && in_array($record['folder_id'], $listFoldersEditableByRole) === false
-                    ) {
-                        array_push($listFoldersEditableByRole, $record['folder_id']);
-                    }
-                }
-                // Check for the users roles if some specific rights exist on items
-                $rows = DB::query(
-                    'SELECT i.id_tree, r.item_id
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (r.item_id=i.id)
-                    WHERE r.role_id=%i
-                    ORDER BY i.id_tree ASC',
-                    $roleId
-                );
-                $inc = 0;
-                foreach ($rows as $record) {
-                    if (isset($record['id_tree'])) {
-                        $listFoldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-                        ++$inc;
-                    }
-                }
-            }
+    // Get list of folders depending on Roles
+    $rows = DB::query(
+        'SELECT *
+        FROM '.prefixTable('roles_values').'
+        WHERE role_id IN %li AND type IN %ls',
+        $userRoles,
+        array('W', 'ND', 'NE', 'NDNE', 'R')
+    );
+    foreach ($rows as $record) {
+        if ($record['type'] === 'R') {
+            array_push($readOnlyFolders, $record['folder_id']);
+        } elseif (in_array($record['folder_id'], $allowedFolders) === false) {
+            array_push($allowedFoldersByRoles, $record['folder_id']);
         }
     }
+    $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
+    $readOnlyFolders = array_unique($readOnlyFolders);
 
     // Clean arrays
-    $listAllowedFolders = array_unique($listAllowedFolders);
-    $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ';'));
+    foreach ($readOnlyFolders as $key => $val) {
+        if (in_array($readOnlyFolders[$key], $allowedFoldersByRoles) === true) {
+            unset($readOnlyFolders[$key]);
+        }
+    }
 
     // Does this user is allowed to see other items
     $inc = 0;
     $rows = DB::query(
         'SELECT id, id_tree FROM '.prefixTable('items').'
-        WHERE restricted_to LIKE %ss AND inactif=%s',
+        WHERE restricted_to LIKE %ss AND inactif = %s',
         $_SESSION['user_id'].';',
         '0'
     );
     foreach ($rows as $record) {
         // Exclude restriction on item if folder is fully accessible
-        if (in_array($record['id_tree'], $listAllowedFolders) === false) {
-            $listRestrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
+        if (in_array($record['id_tree'], $allowedFolders) === false) {
+            $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
             ++$inc;
         }
     }
 
-    // => Build final lists
-    // Add user allowed folders
-    $allowedFoldersTmp = array_unique(
-        array_merge($listAllowedFolders, $groupesVisiblesUser)
+    // Check for the users roles if some specific rights exist on items
+    $rows = DB::query(
+        'SELECT i.id_tree, r.item_id
+        FROM '.prefixTable('items').' as i
+        INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (r.item_id=i.id)
+        WHERE r.role_id IN %li
+        ORDER BY i.id_tree ASC',
+        $userRoles
     );
-    // Exclude from allowed folders all the specific user forbidden folders
-    $allowedFolders = array();
-    foreach ($allowedFoldersTmp as $ident) {
-        if (!in_array($ident, $groupesInterditsUser) && !empty($ident)) {
-            array_push($allowedFolders, $ident);
+    $inc = 0;
+    foreach ($rows as $record) {
+        if (isset($record['id_tree'])) {
+            $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
+            array_push($foldersLimitedFull, $record['item_id']);
+            ++$inc;
         }
     }
 
-    // Clean array
-    $listAllowedFolders = array_filter(array_unique($allowedFolders));
-
-    // Exclude all PF
-    $_SESSION['forbiden_pfs'] = array();
-
-    $where = new WhereClause('and');
-    $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
-        && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
-    ) {
-        $where->add('title=%s', $_SESSION['user_id']);
-        $where->negateLast();
-    }
-
-    $persoFlds = DB::query(
-        'SELECT id
-        FROM '.prefixTable('nested_tree').'
-        WHERE %l',
-        $where
-    );
-    foreach ($persoFlds as $persoFldId) {
-        array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
-    }
-    // Get IDs of personal folders
+    // Get list of Personal Folders
     if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
     ) {
@@ -850,66 +828,80 @@ function identUser(
             1
         );
         if (empty($persoFld['id']) === false) {
-            if (in_array($persoFld['id'], $listAllowedFolders) === false) {
-                array_push($_SESSION['personal_folders'], $persoFld['id']);
-                array_push($listAllowedFolders, $persoFld['id']);
-                array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
+            if (in_array($persoFld['id'], $allowedFolders) === false) {
+                array_push($personalFolders, $persoFld['id']);
+                array_push($allowedFolders, $persoFld['id']);
+                //array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
                 // get all descendants
                 $ids = $tree->getChildren($persoFld['id'], false);
                 foreach ($ids as $ident) {
                     if ((int) $ident->personal_folder === 1) {
-                        array_push($listAllowedFolders, $ident->id);
-                        array_push($_SESSION['personal_visible_groups'], $ident->id);
-                        array_push($_SESSION['personal_folders'], $ident->id);
+                        array_push($allowedFolders, $ident->id);
+                        //array_push($_SESSION['personal_visible_groups'], $ident->id);
+                        array_push($personalFolders, $ident->id);
                     }
-                }
-            }
-        }
-        // get list of readonly folders when pf is enabled.
-        $_SESSION['personal_folders'] = array_unique($_SESSION['personal_folders']);
-        // rule - if one folder is set as W or N in one of the Role, then User has access as W
-        foreach ($listAllowedFolders as $folderId) {
-            if (
-                in_array(
-                    $folderId,
-                    array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))
-                ) === false
-            ) {
-                DB::query(
-                    'SELECT *
-                    FROM '.prefixTable('roles_values').'
-                    WHERE folder_id = %i AND role_id IN %li AND type IN %ls',
-                    $folderId,
-                    $fonctionsAssociees,
-                    array('W', 'ND', 'NE', 'NDNE')
-                );
-                if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
-                    array_push($listReadOnlyFolders, $folderId);
-                }
-            }
-        }
-    } else {
-        // get list of readonly folders when pf is disabled.
-        // rule - if one folder is set as W in one of the Role, then User has access as W
-        foreach ($listAllowedFolders as $folderId) {
-            if (in_array($folderId, $listReadOnlyFolders) === false) {
-                DB::query(
-                    'SELECT *
-                    FROM '.prefixTable('roles_values').'
-                    WHERE folder_id = %i AND role_id IN %li AND type IN %ls',
-                    $folderId,
-                    $fonctionsAssociees,
-                    array('W', 'ND', 'NE', 'NDNE')
-                );
-                if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
-                    array_push($listReadOnlyFolders, $folderId);
                 }
             }
         }
     }
 
+    // Exclude all other PF
+    $where = new WhereClause('and');
+    $where->add('personal_folder=%i', 1);
+    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+        && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
+    ) {
+        $where->add('title=%s', $_SESSION['user_id']);
+        $where->negateLast();
+    }
+    $persoFlds = DB::query(
+        'SELECT id
+        FROM '.prefixTable('nested_tree').'
+        WHERE %l',
+        $where
+    );
+    foreach ($persoFlds as $persoFldId) {
+        array_push($noAccessPersonalFolders, $persoFldId['id']);
+    }
+
+    // All folders visibles
+    $allowedFolders = array_merge(
+        $foldersLimitedFull,
+        $allowedFoldersByRoles,
+        $restrictedFoldersForItems,
+        $readOnlyFolders
+    );
+
+    // Exclude from allowed folders all the specific user forbidden folders
+    if (count($noAccessFolders) > 0) {
+        $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
+    }
+
+    // Return data
+    $_SESSION['all_non_personal_folders'] = $allowedFolders;
+    $_SESSION['groupes_visibles'] = array_merge($allowedFolders, $personalFolders);
+    $_SESSION['read_only_folders'] = $readOnlyFolders;
+    $_SESSION['no_access_folders'] = $noAccessFolders;
+    $_SESSION['personal_folders'] = $personalFolders;
+    $_SESSION['list_folders_limited'] = $foldersLimited;
+    $_SESSION['list_folders_editable_by_role'] = $allowedFoldersByRoles;
+    $_SESSION['list_restricted_folders_for_items'] = $restrictedFoldersForItems;
+    $_SESSION['forbiden_pfs'] = $noAccessPersonalFolders;
+    $_SESSION['all_folders_including_no_access'] = array_merge(
+        $allowedFolders,
+        $personalFolders,
+        $noAccessFolders,
+        $readOnlyFolders
+    );
+
+    // Folders and Roles numbers
+    DB::queryfirstrow('SELECT id FROM '.prefixTable('nested_tree').'');
+    $_SESSION['nb_folders'] = DB::count();
+    DB::queryfirstrow('SELECT id FROM '.prefixTable('roles_title'));
+    $_SESSION['nb_roles'] = DB::count();
+
     // check if change proposals on User's items
-    if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1') {
+    if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
         DB::query(
             'SELECT *
             FROM '.prefixTable('items_change').' AS c
@@ -923,21 +915,7 @@ function identUser(
         $_SESSION['nb_item_change_proposals'] = 0;
     }
 
-    $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
-    $_SESSION['groupes_visibles'] = $listAllowedFolders;
-    $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
-    $_SESSION['personal_visible_groups_list'] = implode(',', $_SESSION['personal_visible_groups']);
-    $_SESSION['read_only_folders'] = $listReadOnlyFolders;
-    $_SESSION['no_access_folders'] = $groupesInterdits;
-
-    $_SESSION['list_folders_limited'] = $listFoldersLimited;
-    $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
-    $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
-    // Folders and Roles numbers
-    DB::queryfirstrow('SELECT id FROM '.prefixTable('nested_tree').'');
-    $_SESSION['nb_folders'] = DB::count();
-    DB::queryfirstrow('SELECT id FROM '.prefixTable('roles_title'));
-    $_SESSION['nb_roles'] = DB::count();
+    return true;
 }
 
 /**
@@ -1892,8 +1870,6 @@ function logItems(
  * @param int    $item_id  Item id
  * @param string $action   Action to do
  * @param array  $SETTINGS Teampass settings
- *
- * @return void
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
@@ -1939,8 +1915,6 @@ function notifyOnChange($item_id, $action, $SETTINGS)
  * @param string $label    Item label
  * @param array  $changes  List of changes
  * @param array  $SETTINGS Teampass settings
- *
- * @return void
  */
 function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
 {

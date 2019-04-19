@@ -224,6 +224,7 @@ if (empty($_SESSION['sessionDuration']) === false) {
 if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
     $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false);
     $_SESSION['user_id'] = 0;
+    $_SESSION['id'] = 1;
 }
 
 if (isset($_SESSION['user_id']) === true
@@ -407,12 +408,12 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
         $_SESSION['user_manager'] = $data['gestionnaire'];
         $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
         $_SESSION['groupes_visibles'] = array();
-        $_SESSION['groupes_interdits'] = array();
+        $_SESSION['no_access_folders'] = array();
         if (empty($data['groupes_visibles']) === false) {
-            $_SESSION['groupes_visibles'] = @implode(';', $data['groupes_visibles']);
+            $_SESSION['groupes_visibles'] = array_filter(explode(';', $data['groupes_visibles']));
         }
         if (empty($data['groupes_interdits']) === false) {
-            $_SESSION['groupes_interdits'] = @implode(';', $data['groupes_interdits']);
+            $_SESSION['no_access_folders'] = array_filter(explode(';', $data['groupes_interdits']));
         }
 
         if (isset($_SESSION['sessionDuration']) === false) {

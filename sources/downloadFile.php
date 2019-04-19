@@ -59,6 +59,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     readfile($SETTINGS['path_to_files_folder'].'/'.basename($get_filename));
 } else {
     include_once 'main.functions.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -71,8 +72,6 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // get file key
     $file_info = DB::queryfirstrow(

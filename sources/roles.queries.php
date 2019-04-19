@@ -68,8 +68,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -120,7 +118,7 @@ if (null !== $post_type) {
                     && in_array($node->id, $_SESSION['personal_visible_groups']) === false
                 ) {
                     $arrNode = array();
-                    $arrNode['ident'] = $node->nlevel;
+                    $arrNode['ident'] = (int) $node->nlevel;
                     $arrNode['title'] = $node->title;
                     $arrNode['id'] = $node->id;
 
@@ -190,6 +188,7 @@ if (null !== $post_type) {
             $post_selectedFolders = filter_var_array($dataReceived['selectedFolders'], FILTER_SANITIZE_NUMBER_INT);
             $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_STRING);
             $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_propagate = filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
 
             // Loop on selection
             foreach ($post_selectedFolders as $folderId) {
@@ -210,6 +209,30 @@ if (null !== $post_type) {
                         'type' => $post_access,
                     )
                 );
+
+                // Manage descendants
+                if ((int) $post_propagate === 1) {
+                    $descendants = $tree->getDescendants($folderId);
+                    foreach ($descendants as $node) {
+                        // delete
+                        DB::delete(
+                            prefixTable('roles_values'),
+                            'folder_id = %i AND role_id = %i',
+                            $node->id,
+                            $post_roleId
+                        );
+
+                        //Store in DB
+                        DB::insert(
+                            prefixTable('roles_values'),
+                            array(
+                                'folder_id' => $node->id,
+                                'role_id' => $post_roleId,
+                                'type' => $post_access,
+                            )
+                        );
+                    }
+                }
             }
 
             $return = array(
@@ -468,6 +491,79 @@ if (null !== $post_type) {
                         'id = %i',
                         $record['id']
                     );
+                }
+            }
+
+            // send data
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        case 'load_rights_for_compare':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $post_role_id = filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
+            $arrData = array();
+
+            //Display each folder with associated rights by role
+            $descendants = $tree->getDescendants();
+            foreach ($descendants as $node) {
+                if (in_array($node->id, $_SESSION['groupes_visibles']) === true
+                    && in_array($node->id, $_SESSION['personal_visible_groups']) === false
+                ) {
+                    $arrNode = array();
+                    $arrNode['ident'] = (int) $node->nlevel;
+                    $arrNode['title'] = $node->title;
+                    $arrNode['id'] = $node->id;
+
+                    $arbo = $tree->getPath($node->id, false);
+                    $parentClass = array();
+                    foreach ($arbo as $elem) {
+                        array_push($parentClass, $elem->title);
+                    }
+                    $arrNode['path'] = $parentClass;
+
+                    // Role access
+                    $role_detail = DB::queryfirstrow(
+                        'SELECT *
+                        FROM '.prefixTable('roles_values').'
+                        WHERE folder_id = %i AND role_id = %i',
+                        $node->id,
+                        $post_role_id
+                    );
+
+                    if (DB::count() > 0) {
+                        $arrNode['access'] = $role_detail['type'];
+                    } else {
+                        $arrNode['access'] = 'none';
+                    }
+
+                    array_push($arrData, $arrNode);
                 }
             }
 

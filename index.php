@@ -62,7 +62,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // initialize session
-$_SESSION['CPM'] = 1;
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
     $SETTINGS['cpassman_dir'] = '.';
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
@@ -83,8 +82,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-////$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-////$link->set_charset(DB_ENCODING);
 
 // Load Core library
 require_once $SETTINGS['cpassman_dir'].'/sources/core.php';

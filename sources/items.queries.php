@@ -214,7 +214,7 @@ if (null !== $post_type) {
                 if (count($_SESSION['list_folders_limited']) > 0) {
                     if (in_array($post_folder_id, array_keys($_SESSION['list_folders_limited'])) === false
                         && in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
-                        && in_array($post_folder_id, $_SESSION['personal_visible_groups_list']) === false
+                        && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     ) {
                         echo prepareExchangedData(
                             array(
@@ -353,54 +353,31 @@ if (null !== $post_type) {
                 // Manage case where item is personal.
                 // In this case, duplication is allowed
                 if (isset($SETTINGS['duplicate_item']) === true
-                    && $SETTINGS['duplicate_item'] === '0'
-                    && $post_salt_key_set === '1'
+                    && (int) $SETTINGS['duplicate_item'] === 0
+                    && (int) $post_salt_key_set === 1
                     && isset($post_salt_key_set) === true
-                    && $post_folder_is_personal === '1'
+                    && (int) $post_folder_is_personal === 1
                     && isset($post_folder_is_personal) === true
                 ) {
                     $itemExists = 0;
                 }
 
                 if ((isset($SETTINGS['duplicate_item']) === true
-                    && $SETTINGS['duplicate_item'] === '0'
+                    && (int) $SETTINGS['duplicate_item'] === 0
                     && (int) $itemExists === 0)
                     ||
                     (isset($SETTINGS['duplicate_item']) === true
-                        && $SETTINGS['duplicate_item'] === '1')
+                        && (int) $SETTINGS['duplicate_item'] === 1)
                 ) {
                     // Handle case where pw is empty
                     // if not allowed then warn user
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                        && $_SESSION['user_settings']['create_item_without_password'] !== '1'
+                        && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
                         ) ||
                         empty($post_password) === false
                     ) {
                         // NEW ENCRYPTION
                         $cryptedStuff = doDataEncryption($post_password);
-                    /*
-                    // encrypt PW
-                    if ($post_salt_key_set === '1'
-                        && isset($post_salt_key_set) === true
-                        && $post_folder_is_personal === '1'
-                        && isset($post_folder_is_personal) === true
-                    ) {
-                        $passwd = cryption(
-                            $post_password,
-                            $_SESSION['user_settings']['session_psk'],
-                            'encrypt',
-                            $SETTINGS
-                        );
-                        $restictedTo = $_SESSION['user_id'];
-                    } else {
-                        $passwd = cryption(
-                            $post_password,
-                            '',
-                            'encrypt',
-                            $SETTINGS
-                        );
-                    }
-                    */
                     } else {
                         $cryptedStuff['encrypted'] = '';
                     }
@@ -490,29 +467,45 @@ if (null !== $post_type) {
                                     WHERE id = %i',
                                     $field_data[0]
                                 );
+
+                                // Should we encrypt the data
                                 if ((int) $dataTmp['encrypted_data'] === 1) {
-                                    $encrypt = cryption(
-                                        $field_data[1],
-                                        '',
-                                        'encrypt',
+                                    $cryptedStuff = doDataEncryption($field_data[1]);
+
+                                    // Create sharekeys for users
+                                    storeUsersShareKey(
+                                        prefixTable('sharekeys_fields'),
+                                        $post_folder_is_personal,
+                                        $post_folder_id,
+                                        $newId,
+                                        $cryptedStuff['objectKey'],
                                         $SETTINGS
                                     );
-                                    $enc_type = 'defuse';
-                                } else {
-                                    $encrypt['string'] = $field_data[1];
-                                    $enc_type = 'not_set';
-                                }
 
-                                DB::insert(
-                                    prefixTable('categories_items'),
-                                    array(
-                                        'item_id' => $newID,
-                                        'field_id' => $field_data[0],
-                                        'data' => $encrypt['string'],
-                                        'data_iv' => '',
-                                        'encryption_type' => $enc_type,
-                                    )
-                                );
+                                    // update value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field_data[0],
+                                            'data' => $cryptedStuff['encrypted'],
+                                            'data_iv' => '',
+                                            'encryption_type' => TP_ENCRYPTION_NAME,
+                                        )
+                                    );
+                                } else {
+                                    // update value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field_data[0],
+                                            'data' => $field_data[1],
+                                            'data_iv' => '',
+                                            'encryption_type' => 'not_set',
+                                        )
+                                    );
+                                }
                             }
                         }
                     }
@@ -1016,7 +1009,7 @@ if (null !== $post_type) {
                             'at_modification',
                             $_SESSION['login'],
                             'at_pw',
-                            'defuse'
+                            TP_ENCRYPTION_NAME
                         );
                     }
 
@@ -1082,7 +1075,7 @@ if (null !== $post_type) {
                             'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
                             'anyone_can_modify' => (int) $post_anyone_can_modify,
                             'complexity_level' => (int) $post_complexity_level,
-                            'encryption_type' => 'defuse',
+                            'encryption_type' => TP_ENCRYPTION_NAME,
                             'perso' => in_array($post_folder_id, $_SESSION['personal_folders']) === true ? 1 : 0,
                             ),
                         'id=%i',
@@ -1155,6 +1148,18 @@ if (null !== $post_type) {
                                                 'data' => $cryptedStuff['encrypted'],
                                                 'data_iv' => '',
                                                 'encryption_type' => TP_ENCRYPTION_NAME,
+                                            ),
+                                            'id = %i',
+                                            $newId
+                                        );
+                                    } else {
+                                        // update value
+                                        DB::update(
+                                            prefixTable('categories_items'),
+                                            array(
+                                                'data' => $field['value'],
+                                                'data_iv' => '',
+                                                'encryption_type' => 'not_set',
                                             ),
                                             'id = %i',
                                             $newId
@@ -1718,25 +1723,6 @@ if (null !== $post_type) {
                         }
                     }
 
-                    // TODO
-                    // decrypt PW
-                    if (empty($dataReceived['salt_key'])) {
-                        $encrypt = cryption(
-                            $dataItem['pw'],
-                            '',
-                            'encrypt',
-                            $SETTINGS
-                        );
-                    } else {
-                        $encrypt = cryption(
-                            $dataItem['pw'],
-                            $_SESSION['user_settings']['session_psk'],
-                            'encrypt',
-                            $SETTINGS
-                        );
-                    }
-
-                    $pw = cleanString($encrypt['string']);
                     // generate 2d key
                     $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16));
 
@@ -2389,7 +2375,7 @@ if (null !== $post_type) {
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
                     || in_array($_SESSION['user_id'], $restrictedTo) === true
                     //|| count($restrictedTo) === 0
-                    || (int) $post_folder_access_level === 3
+                    || (int) $post_folder_access_level === 30
                     || (int) $post_item_rights >= 40
                 ) {
                     $arrData['user_can_modify'] = 1;
@@ -2776,22 +2762,21 @@ if (null !== $post_type) {
                 $returnArray['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
-                (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
+                (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
                 ||
                 (null !== $post_folder_id
-                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
-                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id])
-                    && $post_restricted === '1'
+                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
+                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
+                    && (int) $post_restricted === 1
                     && $user_in_restricted_list_of_item === true)
                 ||
-                (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === '1'
+                (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
                     && $restrictionActive === false
                 )
             ) {
-                /*
-                // GET Audit trail
+                /*// GET Audit trail
                 $history = array();
                 $historyOfPws = array();
                 $rows = DB::query(
@@ -2803,29 +2788,26 @@ if (null !== $post_type) {
                     $post_id,
                     'at_shown'
                 );
+                // Get share_key
+                $shKey = DB::query(
+                    'SELECT share_key
+                    FROM '.prefixTable('sharekeys_items').'
+                    WHERE object_id = %i',
+                    $post_id
+                );
+                // Now loop on logs
                 foreach ($rows as $record) {
                     $reason = explode(':', $record['raison']);
                     if ($record['action'] === 'at_modification' && $reason[0] === 'at_pw ') {
-                        // check if item is PF
-                        if ($dataItem['perso'] !== 1) {
-                            $pw = cryption(
+                        $pw = base64_decode(
+                            doDataDecryption(
                                 $reason[1],
-                                '',
-                                'decrypt',
-                                $SETTINGS
-                            );
-                        } else {
-                            if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                                $pw = cryption(
-                                    $reason[1],
-                                    $_SESSION['user_settings']['session_psk'],
-                                    'decrypt',
-                                    $SETTINGS
-                                );
-                            } else {
-                                $pw['string'] = '';
-                            }
-                        }
+                                decryptUserObjectKey(
+                                    $shKey,
+                                    $_SESSION['user']['private_key']
+                                )
+                            )
+                        );
 
                         $reason[1] = $pw['string'];
                         // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
@@ -2838,7 +2820,12 @@ if (null !== $post_type) {
                         $record['login'] = langHdl('imported_via_api');
                     }
 
-                    if (empty($reason[1]) === false && in_array($record['action'], array('at_copy', 'at_creation', 'at_manual', 'at_modification', 'at_delete', 'at_restored')) === true) {
+                    if (empty($reason[1]) === false
+                        && in_array(
+                            $record['action'],
+                            array('at_copy', 'at_creation', 'at_manual', 'at_modification', 'at_delete', 'at_restored')
+                        ) === true
+                    ) {
                         if (trim($reason[0]) === 'at_pw' && empty($reason[1]) === false) {
                             array_push($historyOfPws, $reason[1]);
                         }
@@ -3042,7 +3029,7 @@ if (null !== $post_type) {
             // perform a check in case of Read-Only user creating an item in his PF
             if (($_SESSION['user_read_only'] === true
                 && in_array($post_label, $_SESSION['personal_folders']) === false)
-                || (int) $post_access_level >= 2
+                || (int) $post_access_level >= 20
             ) {
                 echo prepareExchangedData(
                     array(
@@ -3427,7 +3414,7 @@ if (null !== $post_type) {
                 }
 
                 // check role access on this folder (get the most restrictive) (2.1.23)
-                $accessLevel = 2;
+                $accessLevel = 20;
                 $arrTmp = [];
                 foreach ($_SESSION['user_roles'] as $role) {
                     $access = DB::queryFirstRow(
@@ -3436,21 +3423,21 @@ if (null !== $post_type) {
                         $post_id
                     );
                     if ($access['type'] === 'R') {
-                        array_push($arrTmp, 1);
+                        array_push($arrTmp, 10);
                     } elseif ($access['type'] === 'W') {
-                        array_push($arrTmp, 3);
+                        array_push($arrTmp, 30);
                     } elseif ($access['type'] === 'ND'
                         || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
                     ) {
-                        array_push($arrTmp, 2);
+                        array_push($arrTmp, 20);
                     } elseif ($access['type'] === 'NE') {
-                        array_push($arrTmp, 1);
+                        array_push($arrTmp, 10);
                     } elseif ($access['type'] === 'NDNE') {
-                        array_push($arrTmp, 1);
+                        array_push($arrTmp, 15);
                     } else {
                         // Ensure to give access Right if allowed folder
                         if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
-                            array_push($arrTmp, 3);
+                            array_push($arrTmp, 30);
                         } else {
                             array_push($arrTmp, 0);
                         }
@@ -3882,11 +3869,11 @@ if (null !== $post_type) {
                             // 70 -> can edit and move
                             if ((int) $accessLevel === 0) {
                                 $right = 0;
-                            } elseif ((int) $accessLevel === 1) {
+                            } elseif ((10 <= (int) $accessLevel) && ((int) $accessLevel < 20)) {
                                 $right = 20;
-                            } elseif ((int) $accessLevel === 2) {
+                            } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) {
                                 $right = 60;
-                            } elseif ((int) $accessLevel === 3) {
+                            } elseif ((int) $accessLevel === 30) {
                                 $right = 70;
                             } else {
                                 $right = 10;
@@ -4056,7 +4043,7 @@ if (null !== $post_type) {
                                 // else return not authorized
                                 $returnValues = array(
                                     'error' => true,
-                                    'message' => langHdl('error_not_allowed_to1'),
+                                    'message' => langHdl('error_not_allowed_to'),
                                 );
                                 echo prepareExchangedData($returnValues, 'encode');
                                 break;
@@ -5005,34 +4992,6 @@ if (null !== $post_type) {
                             'id=%i',
                             $item_id
                         );
-
-                        //----
-                        // If previous is personal folder and new is not personal folder => no key exist on item => add new
-                        $decrypt = cryption(
-                            $dataSource['pw'],
-                            stripslashes($_SESSION['user_settings']['session_psk']),
-                            'decrypt',
-                            $SETTINGS
-                        );
-                        $encrypt = cryption(
-                            $decrypt['string'],
-                            '',
-                            'encrypt',
-                            $SETTINGS
-                        );
-
-                        // update item
-                        DB::update(
-                            prefixTable('items'),
-                            array(
-                                'id_tree' => $post_folder_id,
-                                'pw' => $encrypt['string'],
-                                'pw_iv' => '',
-                                'perso' => 0,
-                            ),
-                            'id=%i',
-                            $item_id
-                        );
                     }
                     // Log item moved
                     logItems(
@@ -5746,7 +5705,6 @@ if (null !== $post_type) {
                 || null === TP_ADMIN_FULL_RIGHT
             ) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
-                $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
             }
 
             if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
@@ -6112,10 +6070,12 @@ if (null !== $post_type) {
             $item_id = htmlspecialchars_decode($data_received['item_id']);
 
             if (empty($pwd)) {
-                $encrypt['string'] = '';
+                $cryptedStuff['encrypted'] = '';
             } else {
-                $encrypt = cryption($pwd, '', 'encrypt', $SETTINGS);
+                $cryptedStuff = doDataEncryption($pwd);
             }
+
+            $post_password = $cryptedStuff['encrypted'];
 
             // query
             DB::insert(
@@ -6135,6 +6095,16 @@ if (null !== $post_type) {
                 )
             );
             $newID = DB::insertId();
+
+            // Create sharekeys for users
+            storeUsersShareKey(
+                prefixTable('sharekeys_items'),
+                0,
+                $folder,
+                $newID,
+                $cryptedStuff['objectKey'],
+                $SETTINGS
+            );
 
             // get some info to add to the notification email
             $resp_user = DB::queryfirstrow(
@@ -6285,69 +6255,6 @@ if (null !== $post_type) {
                 ),
                 'encode'
             );
-
-            break;
-
-        /*
-        * CASE
-        * GET CLIPBOARD DATA TO SHOW
-        */
-        case 'get_clipboard_data':
-            // Check KEY and rights
-            if ($post_key !== $_SESSION['key'] || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])) {
-                // error
-                exit();
-            }
-
-            // load the original record into an array
-            $dataItem = DB::queryfirstrow(
-                'SELECT label, pw, login, perso FROM '.prefixTable('items').'
-                WHERE id=%i',
-                $post_item_id
-            );
-
-            if (filter_input(INPUT_POST, 'show_type', FILTER_SANITIZE_STRING) === 'password') {
-                // check if item is PF
-                if ($dataItem['perso'] !== 1) {
-                    $pw = cryption(
-                        $dataItem['pw'],
-                        '',
-                        'decrypt',
-                        $SETTINGS
-                    );
-                } else {
-                    if (isset($_SESSION['user_settings']['session_psk']) === true) {
-                        $pw = cryption(
-                            $dataItem['pw'],
-                            $_SESSION['user_settings']['session_psk'],
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    } else {
-                        $pw = '';
-                    }
-                }
-
-                // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                if (isUTF8($pw['string']) === false) {
-                    $px = '';
-                }
-
-                echo prepareExchangedData($pw['string'], 'encode');
-
-                // Now log
-                logItems(
-                    $SETTINGS,
-                    $post_item_id,
-                    $dataItem['label'],
-                    $_SESSION['user_id'],
-                    'at_password_copied',
-                    $_SESSION['login']
-                );
-                break;
-            } else {
-                echo prepareExchangedData($dataItem['login'], 'encode');
-            }
 
             break;
 

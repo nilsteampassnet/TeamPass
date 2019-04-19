@@ -982,14 +982,14 @@ function identifyUser($sentData, $SETTINGS)
             }
 
             if (!empty($data['groupes_visibles'])) {
-                $_SESSION['groupes_visibles'] = @implode(';', $data['groupes_visibles']);
+                $_SESSION['groupes_visibles'] = implode(';', $data['groupes_visibles']);
             } else {
                 $_SESSION['groupes_visibles'] = array();
             }
             if (!empty($data['groupes_interdits'])) {
-                $_SESSION['groupes_interdits'] = @implode(';', $data['groupes_interdits']);
+                $_SESSION['no_access_folders'] = implode(';', $data['groupes_interdits']);
             } else {
-                $_SESSION['groupes_interdits'] = array();
+                $_SESSION['no_access_folders'] = array();
             }
             // User's roles
             $_SESSION['fonction_id'] = $data['fonction_id'];
@@ -1075,8 +1075,8 @@ function identifyUser($sentData, $SETTINGS)
             // Get user's rights
             if ($user_initial_creation_through_ldap === false) {
                 identifyUserRights(
-                    $data['groupes_visibles'],
-                    $_SESSION['groupes_interdits'],
+                    implode(';', $data['groupes_visibles']),
+                    $_SESSION['no_access_folders'],
                     $data['admin'],
                     $data['fonction_id'],
                     $SETTINGS
@@ -1092,7 +1092,6 @@ function identifyUser($sentData, $SETTINGS)
                 }
                 $_SESSION['all_non_personal_folders'] = array();
                 $_SESSION['groupes_visibles'] = array();
-                $_SESSION['groupes_visibles_list'] = '';
                 $_SESSION['read_only_folders'] = array();
                 $_SESSION['list_folders_limited'] = '';
                 $_SESSION['list_folders_editable_by_role'] = array();
@@ -1783,7 +1782,7 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
         'message' => $ldapConnection,
         'auth_username' => $auth_username,
         'proceedIdentification' => $proceedIdentification,
-        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'))
+        'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn')),
     );
 }
 

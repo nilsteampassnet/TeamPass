@@ -16,6 +16,12 @@
  */
 
 return array(
+    'data_refreshed' => 'Data refreshed',
+    'loading_image' => 'Loading image',
+    'compare_with_another_role' => 'Compare with another role',
+    'only_display_folders_to_depth' => 'Only display folders to depth',
+    'propagate_rights_to_descendants' => 'Propagate rights to descendants',
+    'loading_data' => 'Loading data',
     'password_overview_delay' => 'Delay for password overview',
     'password_overview_delay_tip' => 'This setting permits to define the number of seconds the clear password will be displayed to the user.',
     'select_date_showing_items_expiration' => 'List the expired items at date',

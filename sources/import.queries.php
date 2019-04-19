@@ -959,8 +959,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 fputs($cacheLogFile, date('H:i:s ')."Setting User Rights\n");
                 //Refresh the rights of actual user
                 identifyUserRights(
-                    implode(';', $_SESSION['groupes_visibles']).';'.$id,
-                    $_SESSION['groupes_interdits'],
+                    array_push($_SESSION['groupes_visibles']), $id),
+                    $_SESSION['no_access_folders'],
                     $_SESSION['is_admin'],
                     $_SESSION['fonction_id'],
                     $SETTINGS

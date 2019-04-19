@@ -690,7 +690,7 @@ function identifyUser(redirect, psk, data, randomstring)
     $.post(
         "sources/checks.php",
         {
-            type : "checkSessionExists"
+            type  : "checkSessionExists",
         },
         function(check_data) {
             if (parseInt(check_data) === 1) {
@@ -751,6 +751,7 @@ function identifyUser(redirect, psk, data, randomstring)
                                 {},
                                 function(teampassUser) {
                                     teampassUser.sessionDuration = 3600;
+                                    teampassUser.sessionStartTimestamp = Date.now();
                                 }
                             );
                             
@@ -794,15 +795,7 @@ function identifyUser(redirect, psk, data, randomstring)
                 );
             } else {
                 // No session was found, warn user
-                // Attach the CSRFP tokenn to the form to prevent against error 403
-                var csrfp = check_data.split(";");
-                $("#form_identify").append(
-                    "<input type='hidden' name='"+csrfp[0]+"' value='"+csrfp[1]+"' />" +
-                    "<input type='hidden' name='auto_log' value='1' />"
-                );
-
-                // Warn user
-                alertify.set('notifier','position', 'top-center');
+                alertify.set('notifier', 'position', 'top-center');
                 alertify
                     .error('<i class="fa fa-ban fa-lg mr-3"></i>Browser session is now expired. The page will automatically be reloaded now.', 5)
                     .dismissOthers(); 

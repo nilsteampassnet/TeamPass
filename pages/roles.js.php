@@ -71,18 +71,26 @@ $('#roles-list.select2').select2({
 });
 $('#roles-list').val('').change();
 
+// Populate
+var $options = $("#roles-list > option").clone();
+$('#folders-compare').append($options);
+
+
+
 $('#form-complexity-list.select2').select2({
     language    : '<?php echo $_SESSION['user_language_code']; ?>'
 });
 
 //iCheck for checkbox and radio inputs
-$('#card-role-definition, #card-role-deletion input[type="checkbox"]').iCheck({
+$('input[type="checkbox"]').iCheck({
     checkboxClass: 'icheckbox_flat-blue'
 })
 
 
 // On role selection
 $(document).on('change', '#roles-list', function() {
+    // initi checkboxes
+    $('input[type="checkbox"]').iCheck('uncheck');
     if ($(this).find(':selected').text() === '') {
         // Hide
         $('#card-role-details').addClass('hidden');
@@ -119,7 +127,7 @@ function refreshMatrix(selectedRoleId)
 
     // Show spinner
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<?php echo langHdl('loading_data'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
         .dismissOthers();
 
     // Build matrix
@@ -142,7 +150,8 @@ function refreshMatrix(selectedRoleId)
                 // Build html
                 var newHtml = '',
                     ident = '',
-                    path = '';
+                    path = '',
+                    max_folder_depth = 1;
                 $(data.matrix).each(function(i, value) {
                     // Access
                     access = '';
@@ -178,12 +187,18 @@ function refreshMatrix(selectedRoleId)
                         }
                     });
 
+                    // Max depth
+                    if (parseInt(value.ident) > max_folder_depth) {
+                        max_folder_depth = parseInt(value.ident);
+                    }
+
                     // Finalize
-                    newHtml += '<tr>' +
+                    newHtml += '<tr data-level="' + value.ident + '" class="' + (value.ident === 1 ? 'parent' : 'descendant') + '" data-id="' + value.id + '">' +
                         '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
-                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + value.title + '</td>' +
-                        '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + path + '</td>' +
-                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
+                        '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '">' + value.title + '</td>' +
+                        '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '"><small class="text-muted">' + path + '</small></td>' +
+                        '<td class="pointer modify td-100 text-center" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
+                        '<td class="hidden compare tp-borders td-100 text-center"></td>'
                         '</tr>'
                 });
 
@@ -201,10 +216,23 @@ function refreshMatrix(selectedRoleId)
 
                 $('.infotip').tooltip();
 
+                // Adapt select
+                $('#folders-depth').val('').change();
+                $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
+                for(x=1; x<max_folder_depth; x++) {
+                    $('#folders-depth').append('<option value="'+ x +'">'+ x +'</option>');
+                }
+                $('#folders-depth').val('all').change();
+
                 // Inform user
                 alertify
                     .success('<?php echo langHdl('done'); ?>', 1)
                     .dismissOthers();
+
+                // Now check if role comparision is enabled
+                if ($('#folders-compare').val() !== '') {
+                    buildRoleCompare(store.get('teampassUser').compareRole);
+                }
             }
         }
     );
@@ -324,12 +352,20 @@ $(document).on('click', '.modify', function() {
         '</div>' +
         '<div class="form-group ml-2" id="folder-rights-tuned">' +
         '<div class="form-check">' +
-        '<input type="checkbox" class="form-check-input form-control" id="right-no-delete">' +
+        '<input type="checkbox" class="form-check-input form-control cb-right" id="right-no-delete">' +
         '<label class="form-check-label pointer ml-2" for="right-no-delete"><?php echo langHdl('role_cannot_delete_item'); ?></label>' +
         '</div>' +
         '<div class="form-check">' +
-        '<input type="checkbox" class="form-check-input form-control" id="right-no-edit">' +
+        '<input type="checkbox" class="form-check-input form-control cb-right" id="right-no-edit">' +
         '<label class="form-check-label pointer ml-2" for="right-no-edit"><?php echo langHdl('role_cannot_edit_item'); ?></label>' +
+        '</div>' +
+        '</div>' +
+        '<div class="callout callout-danger">' +
+        '<div class="form-group mt-2">' +
+        '<input type="checkbox" class="form-check-input form-item-control" id="propagate-rights-to-descendants">' +
+        '<label class="form-check-label ml-2" for="propagate-rights-to-descendants">' +
+        '<?php echo langHdl('propagate_rights_to_descendants'); ?>' +
+        '</label>' +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -354,10 +390,10 @@ $(document).on('click', '.modify', function() {
     // Prepare radio and checkboxes depending on existing right on selected folder
     if (folderAccess === 'R') {
         $('#right-read').iCheck('check');
-        $('.form-check-input').iCheck('disable');
+        $('.cb-right').iCheck('disable');
     } else if (folderAccess === 'none') {
         $('#right-noaccess').iCheck('check');
-        $('.form-check-input').iCheck('disable');
+        $('.cb-right').iCheck('disable');
     } else if (folderAccess === 'W') {
         $('#right-write').iCheck('check');
     } else if (folderAccess === 'ND') {
@@ -400,7 +436,7 @@ $(document).on('click', 'button', function() {
             'label'         : $('#form-role-label').val(),
             'complexity'    : $('#form-complexity-list').val(),
             'folderId'      : $('#roles-list').find(':selected').val(),
-            'allowEdit'     : $('#form-role-privilege').prop("checked") === true ? 1 : 0,
+            'allowEdit'     : $('#form-role-privilege').is(":checked") === true ? 1 : 0,
             'action'        : store.get('teampassApplication').formUserAction
         }
         var oldLabel = selectedFolderText;
@@ -547,27 +583,28 @@ $(document).on('click', 'button', function() {
 
         // Get defined rights
         var access = $('input[name=right]:checked').data('type');
-        if ($('#right-no-delete').prop("checked") === true
-            && $('#right-no-edit').prop("checked") === true
+        if ($('#right-no-delete').is(':checked') === true
+            && $('#right-no-edit').is(':checked') === true
         ) {
             access= 'NDNE';
-        } else if ($('#right-no-delete').prop("checked") === true
-            && $('#right-no-edit').prop("checked") === false
+        } else if ($('#right-no-delete').is(':checked') === true
+            && $('#right-no-edit').is(':checked') === false
         ) {
             access= 'ND';
-        } else if ($('#right-no-delete').prop("checked") === false
-            && $('#right-no-edit').prop("checked") === true
+        } else if ($('#right-no-delete').is(':checked') === false
+            && $('#right-no-edit').is(':checked') === true
         ) {
             access= 'NE';
         }
 
         // Prepare data
         var data = {
-            'roleId'            : $('#roles-list').val(),
-            'selectedFolders'   : selectedFolders,
-            'access'            : access,
+            'roleId'          : $('#roles-list').val(),
+            'selectedFolders' : selectedFolders,
+            'access'          : access,
+            'propagate'       : $('#propagate-rights-to-descendants').is(':checked') === true ? 1 : 0,
         }
-        
+        console.log(data)
         // Launch action
         $.post(
             'sources/roles.queries.php',
@@ -600,7 +637,7 @@ $(document).on('click', 'button', function() {
     } else if ($(this).data('action') === 'submit-deletion') {
         // DELETE SELECTED ROLE
 
-        if ($('#form-role-delete').prop('checked') === false) {
+        if ($('#form-role-delete').is(':checked') === false) {
             return false;
         }
 
@@ -667,12 +704,124 @@ $(document).on('click', 'button', function() {
  */
 $(document).on('ifChecked', '.form-radio-input', function() {
     if ($(this).data('type') === 'W') {
-        $('.form-check-input').iCheck('enable');
+        $('.cb-right').iCheck('enable');
     } else {
-        $('.form-check-input').iCheck('disable');
-        $('.form-check-input').iCheck('uncheck');
+        $('.cb-right').iCheck('disable');
+        $('.cb-right').iCheck('uncheck');
     }
 });
 
+/**
+ * Handle option when role is displayed
+ */
+$(document).on('change', '#folders-depth', function() {
+    if ($('#folders-depth').val() === 'all') {
+        $('tr').removeClass('hidden');
+    } else {
+        $('tr').filter(function() {
+            if ($(this).data('level') <= $('#folders-depth').val()) {
+                $(this).removeClass('hidden');
+            } else {
+                $(this).addClass('hidden');
+            }
+        });
+    }
+});
+
+/**
+ * Handle search criteria
+ */
+$('#folders-search').on('keyup', function() {
+    var criteria = $(this).val();
+    $('.folder-name').filter(function() {
+        if ($(this).text().toLowerCase().indexOf(criteria) !== -1) {
+            $(this).closest('tr').removeClass('hidden');
+        } else {
+            $(this).closest('tr').addClass('hidden');
+        }
+    });
+});
+
+$(document).on('change', '#folders-compare', function() {
+    if ($(this).val() === '') {
+        $('#table-role-details tr').find('th:last-child, td:last-child').addClass('hidden');
+    } else {
+        // Show spinner
+        alertify
+            .message('<?php echo langHdl('loading_data'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
+            .dismissOthers();
+
+        // Load the rights for this folder
+        $.post(
+            'sources/roles.queries.php',
+            {
+                type    : 'build_matrix',
+                role_id : $('#folders-compare').val(),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                if (data.error !== false) {
+                    // Show error
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                        .dismissOthers();
+                } else {
+                    buildRoleCompare(data.matrix);
+
+                    // Store in teampassUser
+                    store.update(
+                        'teampassUser',
+                        function (teampassUser) {
+                            teampassUser.compareRole = data.matrix;
+                        }
+                    );
+
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
+    }
+});
+
+function buildRoleCompare(data)
+{
+    // Loop on array
+    $(data).each(function(i, value) {
+        var row = $('tr[data-id="'+value.id+'"]');
+        if (row !== undefined) {
+            // Access
+            access = '';
+            if (value.access === 'W') {
+                access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                    '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
+                    '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+            } else if (value.access === 'ND') {
+                access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                    '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
+                    '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+            } else if (value.access === 'NE') {
+                access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                    '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
+                    '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+            } else if (value.access === 'NDNE') {
+                access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                    '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
+                    '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_anot_llowed'); ?>"></i>';
+            } else if (value.access === 'R') {
+                access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
+            } else {
+                access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo langHdl('no_access'); ?>"></i>';
+            }
+            row.find('td:last-child').html(access).removeClass('hidden');
+        }
+    });
+                    
+    // Tooltips
+    $('.infotip').tooltip();
+}
 
 </script>

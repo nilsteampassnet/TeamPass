@@ -94,7 +94,7 @@ if (empty($sessionTreeStructure) === true
     if (isset($_SESSION['list_folders_limited']) === true
         && count($_SESSION['list_folders_limited']) > 0
     ) {
-        $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
+        $listFoldersLimitedKeys = array_keys($_SESSION['list_folders_limited']);
     } else {
         $listFoldersLimitedKeys = array();
     }
@@ -392,12 +392,13 @@ function recursiveTree(
     $session_no_access_folders = $superGlobal->get('no_access_folders', 'SESSION');
     $session_list_folders_limited = $superGlobal->get('list_folders_limited', 'SESSION');
     $session_read_only_folders = $superGlobal->get('read_only_folders', 'SESSION');
-
+    $session_all_folders_including_no_access = $superGlobal->get('all_folders_including_no_access', 'SESSION');
+    //print_r($session_groupes_visibles);
     // Be sure that user can only see folders he/she is allowed to
     if (in_array($completTree[$nodeId]->id, $session_forbiden_pfs) === false
         || in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true
-        || in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true
-        || in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true
+        //|| in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true
+        //|| in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true
     ) {
         $displayThisNode = false;
         $hide_node = false;
@@ -405,9 +406,11 @@ function recursiveTree(
 
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
+        //echo $completTree[$nodeId]->id.' --> ';
+        //print_r($nodeDescendants);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($SETTINGS['tree_counters']) === true && $SETTINGS['tree_counters'] === '1'
+            if (isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1
                 && in_array(
                     $node,
                     array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
@@ -421,22 +424,16 @@ function recursiveTree(
                 );
                 $nbChildrenItems += DB::count();
             }
-            if (in_array(
-                $node,
-                array_merge(
-                    $session_groupes_visibles,
-                    $session_list_restricted_folders_for_items,
-                    $session_no_access_folders
-                )
-            ) === true
-                || @in_array($node, $listFoldersLimitedKeys) === true
-                || @in_array($node, $listRestrictedFoldersForItemsKeys) === true
+
+            if (in_array($node, $session_groupes_visibles) === true
+                //|| @in_array($node, $listFoldersLimitedKeys) === true
+                //|| @in_array($node, $listRestrictedFoldersForItemsKeys) === true
             ) {
                 // Final check - is PF allowed?
                 $nodeDetails = $tree->getNode($node);
-                if ($nodeDetails->personal_folder === '1'
-                    && intval($SETTINGS['enable_pf_feature']) === 1
-                    && intval($_SESSION['personal_folder']) === 0
+                if ((int) $nodeDetails->personal_folder === 1
+                    && (int) $SETTINGS['enable_pf_feature'] === 1
+                    && (int) $_SESSION['personal_folder'] === 0
                 ) {
                     $displayThisNode = false;
                 } else {
@@ -446,7 +443,7 @@ function recursiveTree(
                 $text = $title = '';
             }
         }
-
+        //echo ' --> '.$displayThisNode.'<br>';
         if ($displayThisNode === true) {
             // get info about current folder
             DB::query(
@@ -574,7 +571,7 @@ function recursiveTree(
                             'id' => 'fld_'.$completTree[$nodeId]->id,
                             'class' => $folderClass,
                             'onclick' => 'ListerItems('.$completTree[$nodeId]->id.', '.$restricted.', 0, 1)',
-                            'ondblclick' => 'LoadTreeNode('.$completTree[$nodeId]->id.')',
+                            //'ondblclick' => 'LoadTreeNode('.$completTree[$nodeId]->id.')',
                             'data-title' => $completTree[$nodeId]->title,
                         ),
                     )

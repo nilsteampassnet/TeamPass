@@ -207,3 +207,11 @@
 .datatable.path {
     font-size: 11pt;
 }
+
+.tp-borders {
+    border: 1px dashed #aaa !important;
+}
+
+.td-100 {
+    width:100px;
+}
