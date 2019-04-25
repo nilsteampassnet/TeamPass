@@ -221,15 +221,21 @@ if (queryDict['group'] !== undefined && queryDict['group'] !== ''
 
     showItemOnPageLoad = true;
     itemIdToShow = queryDict['id'];
+    startedItemsListQuery = true;
 
     $('.item-details-card').removeClass('hidden');
     $('#folders-tree-card').addClass('hidden');
     
-    Details(itemIdToShow, 'show', true);
-
     // refresh selection in jstree
     $('#jstree').jstree('deselect_all');
     $('#jstree').jstree('select_node', '#li_'+itemIdToShow);
+
+    // Get list of items in this folder
+    startedItemsListQuery = true; 
+    ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
+
+    // Show details
+    Details(itemIdToShow, 'show', true);
 } else {
     /*// On page load, refresh list of items
     selectedFolder = $('#jstree').jstree('get_selected', true)[0];
@@ -408,7 +414,7 @@ $('.tp-action').click(function() {
         console.info('SHOW ADD FOLDER');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-folder-add');
 
         // Store last
         // Show copy form
@@ -428,7 +434,7 @@ $('.tp-action').click(function() {
     } else if ($(this).data('folder-action') === 'edit') {
         console.info('SHOW EDIT FOLDER');
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-folder-add');
 
         // Show edit form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
@@ -451,7 +457,7 @@ $('.tp-action').click(function() {
         console.info('SHOW COPY FOLDER');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-folder-copy');
 
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
@@ -472,7 +478,7 @@ $('.tp-action').click(function() {
         console.info('SHOW DELETE FOLDER');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-folder-delete');
 
         // Show copy form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
@@ -490,7 +496,7 @@ $('.tp-action').click(function() {
         console.info('SHOW IMPORT ITEMS');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-folder-import');
 
         
         // Show import form
@@ -639,7 +645,7 @@ $('.tp-action').click(function() {
         console.info('SHOW COPY ITEM');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-item-copy');
 
         if (store.get('teampassItem').user_can_modify === 1) {
             // Show copy form
@@ -671,7 +677,7 @@ $('.tp-action').click(function() {
         }
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-item-delete');
 
         console.info('SHOW DELETE ITEM');
         if (store.get('teampassItem').user_can_modify === 1) {
@@ -694,7 +700,7 @@ $('.tp-action').click(function() {
         console.info('SHOW SHARE ITEM');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-item-share');
 
         // Show share form
         $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
@@ -707,7 +713,7 @@ $('.tp-action').click(function() {
         console.info('SHOW NOTIFY ITEM');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-item-notify');
 
         $('#form-item-notify-checkbox').iCheck('uncheck');
         // Show notify form
@@ -721,7 +727,7 @@ $('.tp-action').click(function() {
         console.info('SHOW OTV ITEM');
 
         // Store current view
-        savePreviousView();
+        savePreviousView('.form-item-otv');
 
         // Generate link
         prepareOneTimeView();
@@ -734,12 +740,35 @@ $('.tp-action').click(function() {
         //
         // > END <
         //
+    } else if ($(this).data('item-action') === 'server') {
+        console.info('SHOW SERVER UPDATE ITEM');
+        
+        // Is user allowed
+        var levels = [50, 70];
+        if (levels.includes(store.get('teampassItem').item_rights) === false) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
+
+        // Store current view
+        savePreviousView('.form-item-server');
+
+        $('#form-item-notify-checkbox').iCheck('uncheck');
+        // Show notify form
+        $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
+        $('.form-item-server, .item-details-card-menu').removeClass('hidden');
+        
+        //
+        // > END <
+        //
     }
 });
 
 
 
-function savePreviousView()
+function savePreviousView(newElement = '')
 {
     var element = '';
     if ($('#folders-tree-card').hasClass('hidden') === false) {
@@ -750,6 +779,7 @@ function savePreviousView()
         element = '.item-details-card';
     }
     
+    // Store current view
     store.update(
         'teampassUser',
         function (teampassUser)
@@ -757,42 +787,55 @@ function savePreviousView()
             teampassUser.previousView = element;
         }
     );
+    
+    // Store the new one to display
+    store.update(
+        'teampassUser',
+        function (teampassUser)
+        {
+            teampassUser.currentView = newElement;
+        }
+    );
 }
 $('.but-back').click(function() {
-    console.log('Closing item view form');
     userDidAChange = false;
-    // Is this form the edition one?
-    if ($(this).hasClass('item-edit') === true && userUploadedFile === true) {
-        // Do some operation such as cancel file upload
-        var data = {
-            'item_id' : store.get('teampassItem').id,
+    if ($(this).hasClass('but-back-to-item') === false) {
+        // Is this form the edition one?
+        if ($(this).hasClass('item-edit') === true && userUploadedFile === true) {
+            // Do some operation such as cancel file upload
+            var data = {
+                'item_id' : store.get('teampassItem').id,
+            }
+
+            $.post(
+                "sources/items.queries.php",
+                {
+                    type : 'delete_uploaded_files_but_not_saved',
+                    data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                    key  : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+                }
+            );
         }
 
-        $.post(
-            "sources/items.queries.php",
-            {
-                type : 'delete_uploaded_files_but_not_saved',
-                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key  : '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
-            }
-        );
+        // Clear pickfiles div
+        $('#form-item-upload-pickfilesList').html('');
+        
+        // Hide all
+        $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
+            .addClass('hidden');
+
+        // Show expected one
+        $(store.get('teampassUser').previousView).removeClass('hidden');
+
+        closeItemDetailsCard();
+    } else {
+        $(store.get('teampassUser').previousView).removeClass('hidden');
+        $(store.get('teampassUser').currentView).addClass('hidden');
     }
-
-    // Clear pickfiles div
-    $('#form-item-upload-pickfilesList').html('');
-    
-    // Hide all
-    $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
-        .addClass('hidden');
-
-    // Show expected one
-    $(store.get('teampassUser').previousView).removeClass('hidden');
-
-    closeItemDetailsCard();
 });
 
 
@@ -1203,6 +1246,98 @@ $('#form-item-copy-perform').click(function() {
 
 
 /**
+ * SERVER - perform server update
+ */
+$('#form-item-server-perform').click(function() {
+    // Decide what action is performing the user
+
+    if ($('#tab-one-shot').hasClass('active') === true) {
+        // Do check
+        if ($('#form-item-server-login').val() === ''
+            || $('#form-item-server-old-password').val() === ''
+            || $('#form-item-server-password').val() === ''
+        ) {
+            alertify
+                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 0)
+                .dismissOthers();
+            return false;
+        }
+
+        // Show cog
+        alertify
+            .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        // Force user did a change to false
+        userDidAChange = false;
+        userUploadedFile= false;
+
+        var data = {
+            'item_id'  : store.get('teampassItem').id,
+            'new_pwd'  : $('#form-item-server-password').val(),
+            'ssh_root' : $('#form-item-server-login').val(),
+            'ssh_pwd'  : $('#form-item-server-old-password').val(),
+            'user_id'  : <?php echo $_SESSION['user_id']; ?>,
+        }
+
+        $.post(
+            "sources/utils.queries.php",
+            {
+                type        : "server_auto_update_password",
+                data        : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                key         : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                console.log(data)
+                //check if format error
+                if (data.error === true) {
+                    alertify
+                        .error(
+                            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    // Warn user
+                    alertify.success('<?php echo langHdl('success'); ?>', 1);
+
+                    // Info
+                    $("#form-item-server-status")
+                        .html("<?php echo langHdl('done'); ?> "+data.text)
+                        .removeClass('hidden');
+                }
+            }
+        );
+    } else if ($('#tab-scheduled').hasClass('active') === true) {
+        $.post(
+            "sources/utils.queries.php",
+            {
+                type    : "server_auto_update_password_frequency",
+                id      : store.get('teampassItem').id,
+                freq    : $('#form-item-server-cron-frequency').val(),
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                if (data[0].error != "") {
+                    alertify
+                        .error(
+                            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[0].error,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    $('#form-item-server-cron-frequency').val(0).change();
+                    alertify.success('<?php echo langHdl('success'); ?>', 1);
+                }
+            },
+            "json"
+        );
+    }
+});
+
+
+/**
  * SUGGESTION - perform new suggestion on item
  */
 $('#form-item-suggestion-perform').click(function() {
@@ -1550,12 +1685,13 @@ function closeItemDetailsCard()
             }
         );
     } else {
+        console.log("Previous view: "+store.get('teampassUser').previousView)
         if (store.get('teampassUser').previousView === '.item-details-card') {
             $('#folders-tree-card').removeClass('hidden');
-            $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
+            $('.item-details-card, .form-item-action, .form-item, .form-folder-action, #card-item-expired').addClass('hidden');
         } else {
             // Hide all
-            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card').addClass('hidden');
+            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #card-item-expired').addClass('hidden');
 
             // Show expected one
             $(store.get('teampassUser').previousView).removeClass('hidden');
@@ -2028,15 +2164,15 @@ uploader_attachments.bind('Error', function(up, err) {
         
     up.refresh(); // Reposition Flash/Silverlight
 });
-/*uploader_attachments.bind('FilesAdded', function(up, file) {
+uploader_attachments.bind('FilesAdded', function(up, file) {
     userUploadedFile = true;
     $('#upload-file_' + file.id + '')
         .html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
     alertify
-            .success('<?php echo langHdl('success'); ?>', 1)
+            .message('<?php echo langHdl('success'); ?>', 1)
             .dismissOthers();
         $('#form-item-hidden-pickFilesNumber').val(0);
-});*/
+});
 
 $("#form-item-upload-pickfiles").click(function(e) {
     if ($('#form-item-upload-pickfilesList').text() !== '') {
@@ -2357,6 +2493,13 @@ console.log(data)
                         userUploadedFile = false;
                         
                         closeItemDetailsCard();
+                        /*
+                        // Hide all
+                        $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #card-item-expired').addClass('hidden');
+
+                        // Show expected one
+                        $(store.get('teampassUser').previousView).removeClass('hidden');
+                        */
                     }
                 }
             );
@@ -3705,9 +3848,9 @@ function Details(itemDefinition, actionType, hotlink = false)
             }
             $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
             $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-            $('#form-item-password, #form-item-password-confirmation').val(data.pw);
+            $('#form-item-password, #form-item-password-confirmation, #form-item-server-old-password').val(data.pw);
             $('#card-item-login').html(data.login);
-            $('#form-item-login, #form-item-suggestion-login').val(data.login);
+            $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
             
             $('#card-item-email').text(data.email);
             $('#form-item-email, #form-item-suggestion-email').val(data.email);
@@ -4036,6 +4179,7 @@ function Details(itemDefinition, actionType, hotlink = false)
                 $('#div_loading').addClass('hidden');
             }
             requestRunning = false;
+            return true;
         }
     );
 }
@@ -4153,7 +4297,7 @@ function showDetailsStep2(id, actionType)
             //$('#hid_files').val(data.files_id);
             //$('#item_edit_list_files').html(data.files_edit);
 
-            //$('#div_last_items').html(htmlspecialchars_decode(data.div_last_items));
+            //$('#index-last-pwds').html(htmlspecialchars_decode(data.div_last_items));
 
             // function calling image lightbox when clicking on link
             $('a.image_dialog').click(function(event) {
@@ -4515,8 +4659,9 @@ function getPrivilegesOnItem(val, edit, context)
     );
 }
 
-$('#item-button-password-generate').click(function() {
-    $('#form-item-password').focus();
+$('.password-generate').click(function() {
+    var elementId = $(this).data('id');
+    $('#' + elementId).focus();console.log(elementId)
 
     // If no criteria is set then do secure
     var secure_pwd = false;
@@ -4542,7 +4687,7 @@ $('#item-button-password-generate').click(function() {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            console.log(data)
+            //console.log(data)
             if (data.error == "true") {
                 // error
                 alertify
@@ -4554,11 +4699,11 @@ $('#item-button-password-generate').click(function() {
                     .show(); 
                 return false;
             } else {
-                $("#form-item-password").val(data.key).focus();
+                $("#" + elementId).val(data.key).focus();
                 
                 // Form has changed
                 userDidAChange = true;
-                $('#form-item-password').data('change-ongoing', true);
+                $('#' + elementId).data('change-ongoing', true);
 
                 // SHow button in sticky footer
                 //$('#form-item-buttons').addClass('sticky-footer');

@@ -140,7 +140,7 @@ uploader_photo.bind('Error', function(up, err) {
 uploader_photo.bind('FileUploaded', function(up, file, object) {
     // Decode returned data
     var myData = prepareExchangedData(object.response, 'decode', '<?php echo $_SESSION['key']; ?>');
-console.log(myData);
+    //console.log(myData);
     // update form
     $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
     $('#profile-avatar-file-list').html('').addClass('hidden');
@@ -160,7 +160,7 @@ $('#profile-user-save-settings').click(function() {
         'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
         'agsescardid':      $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
     }
-    console.log(data)
+    //console.log(data)
     // Inform user
     alertify
         .message('<i class="fa fa-cog fa-spin"></i>', 0)
@@ -191,7 +191,7 @@ $('#profile-user-save-settings').click(function() {
                     .dismissOthers();
                 return false;
             }
-            console.log(data)
+            //console.log(data)
 
             if (data.error === true) {
                 alertify
@@ -412,7 +412,7 @@ $('#button-profile-reset-psk').click(function() {
                     .dismissOthers();
                 return false;
             }
-            console.log(data)
+            //console.log(data)
 
             if (data.error === true) {
                 alertify

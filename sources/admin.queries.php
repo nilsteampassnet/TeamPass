@@ -2680,7 +2680,7 @@ switch ($post_type) {
 
         // Encrypt data to return
         echo prepareExchangedData(
-            getStatisticsData(),
+            getStatisticsData($SETTINGS),
             'encode'
         );
 
@@ -2758,7 +2758,7 @@ switch ($post_type) {
         handleConfigFile('update', 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
-        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        echo '[{"error" : false}]';
         break;
 
     case 'admin_ldap_test_configuration':

@@ -39,7 +39,6 @@ if (isset($SETTINGS['maintenance_mode']) === true
 <script type="text/javascript">
 var userScrollPosition = 0;
 
-console.log("Timestamp: "+(Date.now() - store.get('teampassUser').sessionStartTimestamp) +" ++ "+ (store.get('teampassUser').sessionDuration*1000));
 // Start real time
 // get list of last items
 if (store.get('teampassUser') !== undefined
@@ -51,6 +50,7 @@ if (store.get('teampassUser') !== undefined
         // Load teampass settings
         loadSettings()
     ).then(function() {
+        console.log('REFRESH ITEMS LAST')
         refreshListLastSeenItems();
     });
 }

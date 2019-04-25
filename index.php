@@ -377,7 +377,7 @@ if (($session_validite_pw === null
                         // ITEMS & SEARCH
                         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'"">
+                        <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-key"></i>
                         <p>
                             '.langHdl('pw').'
@@ -392,7 +392,7 @@ if (($session_validite_pw === null
                     ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="import" class="nav-link', $pageSel === 'import' ? ' active' : '' ,'"">
+                        <a href="#" data-name="import" class="nav-link', $pageSel === 'import' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-file-import"></i>
                         <p>
                             '.langHdl('import').'
@@ -402,10 +402,13 @@ if (($session_validite_pw === null
     }
 
     // EXPORT menu
-    if (isset($SETTINGS['roles_allowed_to_print']) === true && (int) $SETTINGS['roles_allowed_to_print'] === 1) {
+    if (isset($SETTINGS['roles_allowed_to_print']) === true
+        && (int) $SETTINGS['roles_allowed_to_print'] === 1
+        && $session_user_admin === 0
+    ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="export" class="nav-link', $pageSel === 'export' ? ' active' : '' ,'"">
+                        <a href="#" data-name="export" class="nav-link', $pageSel === 'export' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-file-export"></i>
                         <p>
                             '.langHdl('export').'
@@ -419,7 +422,7 @@ if (($session_validite_pw === null
     if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="offline" class="nav-link', $pageSel === 'offline' ? ' active' : '' ,'"">
+                        <a href="#" data-name="offline" class="nav-link', $pageSel === 'offline' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-plug"></i>
                         <p>
                             '.langHdl('offline').'
@@ -432,7 +435,7 @@ if (($session_validite_pw === null
     if ($session_user_admin === 0) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
+                        <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-search"></i>
                         <p>
                             '.langHdl('find').'
@@ -448,7 +451,7 @@ if (($session_validite_pw === null
                     ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
+                        <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'">
                         <i class="nav-icon fas fa-star"></i>
                         <p>
                             '.langHdl('favorites').'
@@ -462,7 +465,7 @@ if (($session_validite_pw === null
                                     ) {
             echo '
                         <li class="nav-item">
-                            <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
+                            <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'">
                             <i class="nav-icon fas fa-map-signs"></i>
                             <p>
                                 '.langHdl('kb_menu').'
@@ -472,12 +475,12 @@ if (($session_validite_pw === null
         }
     */
     // SUGGESTION menu
-    if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
-        && ($session_user_admin === 1 || $session_user_manager === 1)
+    if (isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
+        && $session_user_manager === 1
     ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
+                        <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'">
                         <i class="nav-icon fas fa-lightbulb"></i>
                         <p>
                             '.langHdl('suggestion_menu').'
@@ -1034,6 +1037,8 @@ if (isset($_SESSION['CPM']) === true
             include_once $SETTINGS['cpassman_dir'].'/pages/fields.js.php';
         } elseif ($pageSel === 'options') {
             include_once $SETTINGS['cpassman_dir'].'/pages/options.js.php';
+        } elseif ($pageSel === 'statistics') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/statistics.js.php';
         }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';

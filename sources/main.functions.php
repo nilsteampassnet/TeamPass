@@ -967,7 +967,7 @@ function cacheTableRefresh($SETTINGS)
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
+    
     // truncate table
     DB::query('TRUNCATE TABLE '.prefixTable('cache'));
 
@@ -996,16 +996,29 @@ function cacheTableRefresh($SETTINGS)
             }
 
             // Get renewal period
-            $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
+            $resNT = DB::queryfirstrow(
+                'SELECT renewal_period
+                FROM '.prefixTable('nested_tree').'
+                WHERE id = %i',
+                $record['id_tree']
+            );
 
             // form id_tree to full foldername
             $folder = array();
             $arbo = $tree->getPath($record['id_tree'], true);
             foreach ($arbo as $elem) {
-                if ((int) $elem->title === $_SESSION['user_id']
-                    && (int) $elem->nlevel === 1
-                ) {
-                    $elem->title = $_SESSION['login'];
+                // Check if title is the ID of a user
+                if (is_numeric($elem->title) === true) {
+                    // Is this a User id?
+                    $user = DB::queryfirstrow(
+                        'SELECT id, login
+                        FROM '.prefixTable('users').'
+                        WHERE id = %i',
+                        $elem->title
+                    );
+                    if (count($user) > 0) {
+                        $elem->title = $user['login'];
+                    }
                 }
                 // Build path
                 array_push($folder, stripslashes($elem->title));
@@ -1082,8 +1095,18 @@ function cacheTableUpdate($SETTINGS, $ident = null)
     $folder = array();
     $arbo = $tree->getPath($data['id_tree'], true);
     foreach ($arbo as $elem) {
-        if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
-            $elem->title = $_SESSION['login'];
+        // Check if title is the ID of a user
+        if (is_numeric($elem->title) === true) {
+            // Is this a User id?
+            $user = DB::queryfirstrow(
+                'SELECT id, login
+                FROM '.prefixTable('users').'
+                WHERE id = %i',
+                $elem->title
+            );
+            if (count($user) > 0) {
+                $elem->title = $user['login'];
+            }
         }
         // Build path
         array_push($folder, stripslashes($elem->title));
@@ -1160,8 +1183,18 @@ function cacheTableAdd($SETTINGS, $ident = null)
     $folder = array();
     $arbo = $tree->getPath($data['id_tree'], true);
     foreach ($arbo as $elem) {
-        if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
-            $elem->title = $_SESSION['login'];
+        // Check if title is the ID of a user
+        if (is_numeric($elem->title) === true) {
+            // Is this a User id?
+            $user = DB::queryfirstrow(
+                'SELECT id, login
+                FROM '.prefixTable('users').'
+                WHERE id = %i',
+                $elem->title
+            );
+            if (count($user) > 0) {
+                $elem->title = $user['login'];
+            }
         }
         // Build path
         array_push($folder, stripslashes($elem->title));
@@ -1188,10 +1221,12 @@ function cacheTableAdd($SETTINGS, $ident = null)
 
 /**
  * Do statistics.
+ * 
+ * @param array  $SETTINGS Teampass settings
  *
  * @return array
  */
-function getStatisticsData()
+function getStatisticsData($SETTINGS)
 {
     DB::query(
         'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',

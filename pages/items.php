@@ -195,7 +195,7 @@ echo '
                                     </div>
                                     <input id="form-item-password" type="password" class="form-control form-item-control track-change" placeholder="<?php echo langHdl('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
+                                        <button class="btn btn-outline-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo langHdl('pw_generate'); ?>" data-id="form-item-password"><i class="fas fa-random"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo langHdl('options'); ?>"><i class="fas fa-sliders-h"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo langHdl('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>
                                     </div>
@@ -441,7 +441,7 @@ echo '
                     </div>
                     <div class="card-footer" id="form-item-buttons">
                         <button type="button" class="btn btn-info" id="form-item-button-save" data-action=""><?php echo langHdl('save'); ?></button>
-                        <button type="button" class="btn btn-default but-back item-edit"><?php echo langHdl('cancel'); ?></button>
+                        <button type="button" class="btn btn-default but-back item-edit but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                     </div>
                     <!-- /.card-footer -->
                 </div>
@@ -455,10 +455,11 @@ echo '
                 <div class="card">
                     <div class="card-header">
                         <span class="mr-3 align-middle">
+                            <button type="button" class="btn btn-gray but-back-to-list">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <!--
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-gray but-back-to-list">
-                                    <i class="fas fa-arrow-left"></i>
-                                </button>
                                 <button type="button" class="btn btn-gray dropdown-toggle" data-toggle="dropdown" role="group">
                                     <i class="fas fa-bars"></i>
                                     <span class="caret"></span>
@@ -482,6 +483,7 @@ echo '
                                     <a class="dropdown-item tp-action" href="#" data-item-action="otv"><i class="far fa-eye mr-2"></i><?php echo langHdl('one_time_view'); ?></a>
                                 </div>
                             </div>
+                            -->
                         </span>
                         <h3 class="d-inline align-middle" id="card-item-label"></h3>
                         <div class="card-tools">
@@ -489,6 +491,47 @@ echo '
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarNav">
+                                <ul class="navbar-nav">
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="new"><i class="far fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="edit"><i class="far fa-edit mr-1"></i><small><?php echo langHdl('edit'); ?></small></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-1"></i><small><?php echo langHdl('delete'); ?></small></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="copy"><i class="far fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="text-info tp-action ml-3" href="#" data-item-action="notify"><i class="far fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
+                                    </li>
+                                    <?php
+                                    if (isset($SETTINGS['enable_server_password_change']) === true
+                                        && (int) $SETTINGS['enable_server_password_change'] === 1
+                                    ) {
+                                        ?>
+                                        <li class="nav-item">
+                                            <a class="text-info tp-action ml-3" href="#" data-item-action="server"><i class="fas fa-server mr-1"></i><small><?php echo langHdl('server'); ?></small></a>
+                                        </li>
+                                    <?php
+                                    }
+                                    ?>
+                                </ul>
+                            </div>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -735,30 +778,6 @@ echo '
         <?php
         */
         }
-
-        if (isset($SETTINGS['enable_server_password_change']) === true
-            && $SETTINGS['enable_server_password_change'] === '1'
-        ) {
-            ?>
-        <div class="row hidden item-details-card">
-            <div class="col-12">
-                <div class="card card-default collapsed-card">
-                    <div class="card-header bg-gray">
-                        <h3 class="card-title pointer" data-widget="collapse">
-                            <i class="fas fa-server mr-2"></i><?php echo langHdl('update_server_password'); ?>
-                        </h3>
-                        <!-- /.card-tools -->
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body">
-                        The body of the card
-                    </div>
-                    <!-- /.card-body -->
-                </div>
-            </div>
-        </div>
-        <?php
-        }
         ?>
 
         <!--
@@ -777,6 +796,99 @@ echo '
         </div>
         -->
 
+        <!-- SERVER UPDATE --><?php
+        if (null !== DEBUG && DEBUG === true) {
+            ?>
+        <div class="row hidden form-item-server form-item-action">
+            <div class="col-12">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>
+                            <i class="fas fa-server mr-2"></i><?php echo langHdl('update_server_password'); ?>
+                        </h5>
+                        <!-- /.card-tools -->
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="server-tab">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#tab-one-shot" data-action="ssh-one-shot" data-toggle="tab"><?php echo langHdl('ssh_one_shot_change'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#tab-scheduled" data-action="ssh-scheduled" data-toggle="tab"><?php echo langHdl('ssh_scheduled_change'); ?></a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="myTabContent">
+                            <div class="tab-pane fade show active tab-pane" id="tab-one-shot">
+                                <div class="alert alert-info mt-3 form-text text-muted">
+                                    <?php echo langHdl('auto_update_server_password_info'); ?>
+                                </div>
+                                <div class="input-group mb-3 mt-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('ssh_user'); ?></span>
+                                    </div>
+                                    <input id="form-item-server-login" type="text" class="form-control form-item-control form-item-server" data-field-name="login" data-change-ongoing="">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('ssh_pwd'); ?></span>
+                                    </div>
+                                    <input id="form-item-server-old-password" type="password" class="form-control form-item-control form-item-server" data-field-name="old-password" data-change-ongoing="">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
+                                    </div>
+                                    <input id="form-item-server-password" type="password" class="form-control form-item-control form-item-server" data-field-name="password" data-change-ongoing="">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary btn-no-click infotip password-generate" title="<?php echo langHdl('pw_generate'); ?>" data-id="form-item-server-password"><i class="fas fa-random"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade tab-pane" id="tab-scheduled">
+                                <div class="alert alert-info mt-3 form-text text-muted">
+                                    <?php echo langHdl('ssh_password_frequency_change_info'); ?>
+                                </div>
+                                <div class="form-group">
+                                    <label><?php echo langHdl('ssh_password_frequency_change'); ?></label>
+                                    <select class="form-control form-item-control select2" style="width:100%;" id="form-item-server-cron-frequency">
+                                        <option value="0">0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="callout callout-alert mt-3 hidden" id="form-item-server-status">
+
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary" id="form-item-server-perform"><?php echo langHdl('perform'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php
+        } else {
+            ?>
+            <div class="mt-4">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
+                </div>
+            </div>
+
+            <?php
+        }
+        ?>
+        
 
         <!-- COPY ITEM FORM -->
         <div class="row hidden form-item-copy form-item-action">
@@ -797,7 +909,7 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-item-copy-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
             </div>
@@ -820,7 +932,7 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-warning" id="form-item-delete-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
                 
@@ -848,7 +960,7 @@ echo '
                         </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary" id="form-item-share-perform"><?php echo langHdl('perform'); ?></button>
-                            <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                            <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                         </div>
                     </div>
                 </form>
@@ -875,7 +987,7 @@ echo '
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
                 
@@ -915,7 +1027,7 @@ echo '
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('close'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('close'); ?></button>
                     </div>
                 </div>
                 
@@ -941,7 +1053,7 @@ echo '
                         </div>
                         <div class="card-footer">
                             <button type="submit" class="btn btn-primary" id="form-item-request-access-perform"><?php echo langHdl('confirm'); ?></button>
-                            <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                            <button type="submit" class="btn btn-default float-right but-back but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                         </div>
                     </div>
                 </form>

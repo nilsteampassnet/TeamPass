@@ -229,7 +229,13 @@ if (null !== $post_type) {
             //CASE auto update server password
         case 'server_auto_update_password':
             if ($post_key !== $_SESSION['key']) {
-                echo '[{"error" : "something_wrong"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -263,7 +269,8 @@ if (null !== $post_type) {
                 // error in parsing the url
                 echo prepareExchangedData(
                     array(
-                        'error' => 'Parsing URL failed.<br />Ensure the URL is well written!</i>',
+                        'error' => true,
+                        'message' => 'Parsing URL failed.<br />Ensure the URL is well written!</i>',
                         'text' => '',
                     ),
                     'encode'
@@ -274,7 +281,8 @@ if (null !== $post_type) {
                 if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
                     echo prepareExchangedData(
                         array(
-                            'error' => 'Login failed.',
+                            'error' => true,
+                            'message' => 'Login failed.',
                             'text' => '',
                         ),
                         'encode'
@@ -322,7 +330,8 @@ if (null !== $post_type) {
             // finished
             echo prepareExchangedData(
                 array(
-                    'error' => '',
+                    'error' => false,
+                    'message' => '',
                     'text' => str_replace(array("\n"), array('<br />'), $ret),
                 ),
                 'encode'
@@ -334,7 +343,13 @@ if (null !== $post_type) {
                 || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
                 || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_STRING)
             ) {
-                echo '[{"error" : "something_wrong"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 

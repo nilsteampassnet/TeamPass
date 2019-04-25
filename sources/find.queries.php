@@ -327,10 +327,10 @@ if (isset($_GET['type']) === false) {
             '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"'.langHdl('see_item_title').'\" data-id=\"'.$record['id'].'\" data-perso=\"'.$record['perso'].'\" data-tree-id=\"'.$record['id_tree'].'\" data-expired=\"'.$expired.'\" data-restricted-to=\"'.$restrictedTo.'\" data-rights=\"'.$right.'\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
-        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes(utf8_encode($record['label']))).'</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.stripslashes($record['label']).'</span>", ';
 
         //col3
-        $sOutputItem .= '"'.str_replace('&amp;', '&', htmlspecialchars(stripslashes(utf8_encode($record['login'])), ENT_QUOTES)).'", ';
+        $sOutputItem .= '"'.str_replace('&amp;', '&', htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)).'", ';
 
         //col4
         //get restriction from ROles
@@ -616,7 +616,9 @@ if (isset($_GET['type']) === false) {
                     array_push($arrTmp, 1);
                 }
             }
-            $accessLevel = min($arrTmp);
+            if (count($arrTmp) > 0) {
+                $accessLevel = min($arrTmp);
+            }
 
             if ($accessLevel === 0) {
                 $right = 70;

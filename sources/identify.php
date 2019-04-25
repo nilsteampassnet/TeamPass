@@ -992,8 +992,20 @@ function identifyUser($sentData, $SETTINGS)
                 $_SESSION['no_access_folders'] = array();
             }
             // User's roles
+            if (strpos($data['fonction_id'], ',') !== -1) {
+                // Convert , to ;
+                $data['fonction_id'] = str_replace(',', ';', $data['fonction_id']);
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'fonction_id' => $data['fonction_id'],
+                    ),
+                    'id = %i',
+                    $_SESSION['user_id']
+                );
+            }
             $_SESSION['fonction_id'] = $data['fonction_id'];
-            $_SESSION['user_roles'] = array_filter(explode(',', $data['fonction_id']));
+            $_SESSION['user_roles'] = array_filter(explode(';', $data['fonction_id']));
 
             // build array of roles
             $_SESSION['user_pw_complexity'] = 0;

@@ -1459,7 +1459,7 @@ function mainQuery($SETTINGS)
                                 'restricted' => $record['restricted'],
                             )
                         );
-                        if (count($arr_html) >= (int) $SETTINGS['max_last_items']) {
+                        if (count($arr_html) >= (int) $SETTINGS['max_latest_items']) {
                             break;
                         }
                     }

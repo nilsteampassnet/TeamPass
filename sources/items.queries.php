@@ -82,8 +82,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 // Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -2324,9 +2322,9 @@ if (null !== $post_type) {
                 );
             }
 
-           // echo $dataItem['id_tree']." ;; ";
+            // echo $dataItem['id_tree']." ;; ";
             //print_r($_SESSION['groupes_visibles']);
-
+            //echo in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']).' ;; '.$restrictionActive." ;; ";
             // check user is admin
             if ((int) $_SESSION['user_admin'] === 1
                 && (int) $dataItem['perso'] !== 1
@@ -2337,9 +2335,14 @@ if (null !== $post_type) {
             // ---
                 // ---
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
+                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                && $restrictionActive === false)
                 ||
-                (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
+                (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1
+                && (int) $dataItem['anyone_can_modify'] === 1
+                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
+                && $restrictionActive === false)
                 ||
                 (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
@@ -3417,11 +3420,13 @@ if (null !== $post_type) {
                 $accessLevel = 20;
                 $arrTmp = [];
                 foreach ($_SESSION['user_roles'] as $role) {
+                    //db::debugmode(true);
                     $access = DB::queryFirstRow(
                         'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
                         $role,
                         $post_id
                     );
+                    //db::debugmode(false);
                     if ($access['type'] === 'R') {
                         array_push($arrTmp, 10);
                     } elseif ($access['type'] === 'W') {

@@ -8,5 +8,4 @@ First version
  - Knowledge base
  - Offline mode
  - Backups
- - Statistics
  
