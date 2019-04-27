@@ -1695,7 +1695,7 @@ if (null !== $post_type) {
                         if ($fld['id'] === $t->id) {
                             // get folder name
                             $row = DB::queryFirstRow(
-                                'SELECT title, nlevel
+                                'SELECT title, nlevel, id
                                 FROM '.prefixTable('nested_tree').'
                                 WHERE id = %i',
                                 $fld['id']
@@ -1731,7 +1731,8 @@ if (null !== $post_type) {
                                 $label = '<i class="fas fa-eye infotip text-info mr-2" title="'.langHdl('read').'"></i>';
                             }
 
-                            $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label.'</td></tr>';
+                            $html .= '<tr><td>'.$ident.$row['title'].
+                                ' <small>['.$row['id'].']</small></td><td>'.$label.'</td></tr>';
                             break;
                         }
                     }
@@ -2278,19 +2279,15 @@ if (null !== $post_type) {
 function evaluateFolderAccesLevel($new_val, $existing_val)
 {
     $levels = array(
-        'W' => 4,
-        'ND' => 3,
-        'NE' => 3,
-        'NDNE' => 2,
-        'R' => 1,
+        'W' => 30,
+        'ND' => 20,
+        'NE' => 15,
+        'NDNE' => 10,
+        'R' => 10,
     );
 
-    if (empty($existing_val)) {
-        $current_level_points = 0;
-    } else {
-        $current_level_points = $levels[$existing_val];
-    }
-    $new_level_points = $levels[$new_val];
+    $current_level_points =empty($existing_val) === true ? 0 : $levels[$existing_val];
+    $new_level_points = empty($new_val) === true ? 0 : $levels[$new_val];
 
     // check if new is > to current one (always keep the highest level)
     if (($new_val === 'ND' && $existing_val === 'NE')

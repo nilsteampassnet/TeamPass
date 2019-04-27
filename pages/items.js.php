@@ -322,6 +322,9 @@ $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
     radioClass   : 'iradio_flat-blue'
 });
 
+// Prepare some UI elements
+$('#limited-search').prop('checked', false);
+
 // Manage the password show button
 // including autohide after a couple of seconds
 $(document).on('click', '#card-item-pwd-show-button', function() {
@@ -412,6 +415,13 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'add') {
         console.info('SHOW ADD FOLDER');
+        // Check privileges
+        if (store.get('teampassItem').hasAccessLevel < 30) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
 
         // Store current view
         savePreviousView('.form-folder-add');
@@ -433,6 +443,14 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'edit') {
         console.info('SHOW EDIT FOLDER');
+        // Check privileges
+        if (store.get('teampassItem').hasAccessLevel < 20) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
+
         // Store current view
         savePreviousView('.form-folder-add');
 
@@ -443,6 +461,8 @@ $('.tp-action').click(function() {
         $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolder + "']")
             .prop('disabled', true);
         $('#form-folder-add-parent').val(store.get('teampassApplication').selectedFolderParentId).change();
+        $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolderParentId + "']")
+            .prop('disabled', false);
         $('#form-folder-add-label')
             .val(store.get('teampassApplication').selectedFolderParentTitle)
             .focus();
@@ -455,6 +475,13 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'copy') {
         console.info('SHOW COPY FOLDER');
+        // Check privileges
+        if (store.get('teampassItem').hasAccessLevel < 20) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
 
         // Store current view
         savePreviousView('.form-folder-copy');
@@ -476,6 +503,13 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'delete') {
         console.info('SHOW DELETE FOLDER');
+        // Check privileges
+        if (store.get('teampassItem').hasAccessLevel < 30) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                .dismissOthers();
+            return false;
+        }
 
         // Store current view
         savePreviousView('.form-folder-delete');
@@ -1416,7 +1450,8 @@ $('#form-item-suggestion-perform').click(function() {
  */
 $('#form-folder-add-perform').click(function() {
     var form = $('#form-folder-add');
-   
+   console.log(form[0]);
+   console.log(form[0].checkValidity());
     if (form[0].checkValidity() === false) {
         form.addClass('was-validated');
 
@@ -2575,6 +2610,19 @@ $("#form-item-tags")
     }
 );
 
+// Warn in case of limited search
+$(document).on('click', '#limited-search', function() {
+    if ($(this).is(":checked") === true) {
+        $('#find_items').css({
+            "background-color": "#f56954"
+        });
+    } else {
+        $('#find_items').css({
+            "background-color": "#FFF"
+        })
+    }
+});
+
 
 function showItemEditForm(selectedFolderId)
 {
@@ -2646,6 +2694,7 @@ function searchItems(criteria)
         $('#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info').html('');
         $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
         $('#teampass_items_list').html('');
+
         // Continu the list of results
         finishingItemsFind(
             'search_for_items',
@@ -2729,7 +2778,7 @@ function refreshVisibleFolders()
         function(data) {
             //decrypt data
             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-
+console.log(data)
             //check if format error
             if (data.error !== true) {
                 // Build html lists

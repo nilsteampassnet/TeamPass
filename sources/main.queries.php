@@ -1571,12 +1571,14 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            if (isset($SETTINGS['send_statistics_items']) && isset($SETTINGS['send_stats']) && isset($SETTINGS['send_stats_time'])
-                && $SETTINGS['send_stats'] === '1'
+            if (isset($SETTINGS['send_statistics_items']) === true
+                && isset($SETTINGS['send_stats']) === true
+                && isset($SETTINGS['send_stats_time']) === true
+                && (int) $SETTINGS['send_stats'] === 1
                 && ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
             ) {
                 // get statistics data
-                $stats_data = getStatisticsData();
+                $stats_data = getStatisticsData($SETTINGS);
 
                 // get statistics items to share
                 $statsToSend = [];

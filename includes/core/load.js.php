@@ -50,11 +50,39 @@ if (store.get('teampassUser') !== undefined
         // Load teampass settings
         loadSettings()
     ).then(function() {
-        console.log('REFRESH ITEMS LAST')
-        refreshListLastSeenItems();
+        $.when(
+            // Refresh list of last items shopwn
+            refreshListLastSeenItems()
+        ).then(function() {
+            setTimeout(
+                function() {
+                    $.when(
+                        // send email
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type : "send_waiting_emails",
+                                key     : "<?php echo $_SESSION['key']; ?>"
+                            }
+                        )
+                    ).then(function() {
+                        // send statistics
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type : "sending_statistics",
+                                key     : "<?php echo $_SESSION['key']; ?>"
+                            }
+                        );
+                    });
+                },
+                5000
+            );
+        });
     });
 }
 //-- end
+
 
 // Countdown
 countdown();

@@ -460,13 +460,13 @@ if (null !== $post_type) {
             $tree->rebuild();
 
             //Get user's rights
-            identifyUserRights(
-                array_push($_SESSION['groupes_visibles'], $dataFolder['id']),
+            /*identifyUserRights(
+                $_SESSION['groupes_visibles'],
                 $_SESSION['no_access_folders'],
                 $_SESSION['is_admin'],
                 $_SESSION['fonction_id'],
                 $SETTINGS
-            );
+            );*/
 
             echo prepareExchangedData(
                 array(

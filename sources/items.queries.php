@@ -5840,7 +5840,9 @@ if (null !== $post_type) {
 
             foreach (json_decode($post_data) as $folder) {
                 // Do we have Categories
-                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                if (isset($SETTINGS['item_extra_fields']) === true
+                    && (int) $SETTINGS['item_extra_fields'] === 1
+                    ) {
                     // get list of associated Categories
                     $arrCatList = array();
                     $rows_tmp = DB::query(
@@ -5898,11 +5900,7 @@ if (null !== $post_type) {
                     $folder
                 );
                 foreach ($rows_tmp as $record) {
-                    if (empty($valTemp) === true) {
-                        $valTemp = $record['title'];
-                    } else {
-                        $valTemp .= ' - '.$record['title'];
-                    }
+                    $valTemp .= (empty($valTemp) === true ? '' : ' - ') . $record['title'];
                 }
                 $arr_data[$folder]['visibilityRoles'] = $valTemp;
             }

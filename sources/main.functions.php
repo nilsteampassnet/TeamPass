@@ -591,7 +591,7 @@ function identifyUserRights(
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
-    if ($isAdmin === '1') {
+    if ((int) $isAdmin === 1) {
         identAdmin(
             $idFonctions,
             $SETTINGS,
