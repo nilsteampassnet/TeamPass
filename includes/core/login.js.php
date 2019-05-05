@@ -603,16 +603,20 @@ function launchIdentify(isDuo, redirect, psk)
                 mfaMethod = '';
                 
             // Get selected user MFA method
-            if ($(".2fa_selector_select").length > 1) {
-                mfaMethod = $(".2fa_selector_select:checked").data('mfa');
-            } else {
-                $('.user-mfa').each(function(i, obj) {
-                    if (parseInt($(obj).val()) === 1) {
-                        var tmp = $(obj).attr('id').split('_');
-                        mfaMethod = tmp[1];
-                        return true;
-                    }
-                });
+            if ($('#login').val() !== 'admin'
+                || (data.admin_2fa_required === true && $('#login').val() === 'admin')
+            ) {
+                if ($(".2fa_selector_select").length > 1) {
+                    mfaMethod = $(".2fa_selector_select:checked").data('mfa');
+                } else {
+                    $('.user-mfa').each(function(i, obj) {
+                        if (parseInt($(obj).val()) === 1) {
+                            var tmp = $(obj).attr('id').split('_');
+                            mfaMethod = tmp[1];
+                            return true;
+                        }
+                    });
+                }
             }
 
 

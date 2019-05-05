@@ -292,6 +292,8 @@ if ($post_type === 'identify_duo_user') {
             && (int) $SETTINGS['yubico_authentication'] === 1) ? true : false,
             'duo' => (isset($SETTINGS['duo']) === true
             && (int) $SETTINGS['duo'] === 1) ? true : false,
+            'admin_2fa_required' => (isset($SETTINGS['admin_2fa_required']) === true
+            && (int) $SETTINGS['admin_2fa_required'] === 1) ? true : false,
         ),
         'encode'
     );

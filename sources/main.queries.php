@@ -1900,7 +1900,7 @@ Insert the log here and especially the answer of the query that failed.
                             ''
                         );
                     } catch (Exception $e) {
-                        $emailError = e;
+                        $emailError = $e;
                     }
 
                     if ($emailError === false) {

@@ -64,7 +64,7 @@ function langHdl($string)
  *
  * @param int $size Length
  *
- * @return array
+ * @return string
  */
 function getBits($size)
 {
@@ -77,32 +77,7 @@ function getBits($size)
     return substr($str, 0, $size);
 }
 
-//generate pbkdf2 compliant hash
-function strHashPbkdf2($var_p, $var_s, $var_c, $var_kl, $var_a = 'sha256', $var_st = 0)
-{
-    $var_kb = $var_st + $var_kl; // Key blocks to compute
-    $var_dk = ''; // Derived key
 
-    for ($block = 1; $block <= $var_kb; ++$block) { // Create key
-        $var_ib = $var_h = hash_hmac($var_a, $var_s.pack('N', $block), $var_p, true); // Initial hash for this block
-        for ($var_i = 1; $var_i < $var_c; ++$var_i) { // Perform block iterations
-            $var_ib ^= ($var_h = hash_hmac($var_a, $var_h, $var_p, true)); // XOR each iterate
-        }
-        $var_dk .= $var_ib; // Append iterated block
-    }
-
-    return substr($var_dk, $var_st, $var_kl); // Return derived key of correct length
-}
-
-/**
- * stringUtf8Decode().
- *
- * utf8_decode
- */
-function stringUtf8Decode($string)
-{
-    return str_replace(' ', '+', utf8_decode($string));
-}
 
 /**
  * encryptOld().

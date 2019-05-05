@@ -1,6 +1,8 @@
-3.0.0.0
+You are using branch 3 of Teampass.
+This version is currently in beta.
+Nevertheless security is ensured and carrefully taken into consideration. Your data are safe running this version.
+If you have upgraded from previous branch 2.x then some features have not yet being implemented.
 
-First version
 
 // TODO
  - Update server password
@@ -8,4 +10,5 @@ First version
  - Knowledge base
  - Offline mode
  - Backups
+ - LDAP test
  

@@ -203,7 +203,7 @@ if (null !== $post_type) {
                                     'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF - 8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                     'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
                                     'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
@@ -456,7 +456,7 @@ if (null !== $post_type) {
                 $pdf->AddFont('LiberationMono', '');
 
                 $pdf->aliasNbPages();
-                $pdf->addPage(L);
+                $pdf->addPage('L');
 
                 $prev_path = '';
                 foreach ($rows as $record) {
@@ -936,7 +936,7 @@ if (null !== $post_type) {
             fclose($outstream);
 
             echo '[{"text":"<a href=\''.
-                cleanText($post_file_link, 'css').
+                $post_file_link.
                 '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
             break;
     }
