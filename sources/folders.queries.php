@@ -459,15 +459,6 @@ if (null !== $post_type) {
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
-            //Get user's rights
-            /*identifyUserRights(
-                $_SESSION['groupes_visibles'],
-                $_SESSION['no_access_folders'],
-                $_SESSION['is_admin'],
-                $_SESSION['fonction_id'],
-                $SETTINGS
-            );*/
-
             echo prepareExchangedData(
                 array(
                     'error' => $error,
@@ -648,7 +639,7 @@ if (null !== $post_type) {
 
                 // add new folder id in SESSION
                 array_push($_SESSION['groupes_visibles'], $newId);
-                if ($isPersonal == 1) {
+                if ((int) $isPersonal === 1) {
                     array_push($_SESSION['personal_folders'], $newId);
                 }
 
@@ -656,24 +647,8 @@ if (null !== $post_type) {
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                // Add right to see this folder
-                if ($_SESSION['is_admin'] === '1'
-                    || ($_SESSION['user_manager'] === '1'
-                    || $_SESSION['user_can_manage_all_users'] === '1')
-                ) {
-                    //Get user's rights
-                    identifyUserRights(
-                        $_SESSION['groupes_visibles'],
-                        $_SESSION['no_access_folders'],
-                        $_SESSION['is_admin'],
-                        is_array($_SESSION['fonction_id']) === true ?
-                            implode(';', $_SESSION['fonction_id']) : $_SESSION['fonction_id'],
-                        $SETTINGS
-                    );
-                }
-
                 if ($isPersonal !== 1
-                    && $post_parent_id === '0'
+                    && (int) $post_parent_id === 0
                 ) {
                     //add access to this new folder
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {
@@ -988,15 +963,6 @@ if (null !== $post_type) {
                 } else {
                     array_push($_SESSION['all_non_personal_folders'], $newFolderId);
                 }
-
-                //Get user's rights
-                identifyUserRights(
-                    array_push($_SESSION['groupes_visibles'], $newFolderId),
-                    $_SESSION['no_access_folders'],
-                    $_SESSION['is_admin'],
-                    $_SESSION['fonction_id'],
-                    $SETTINGS
-                );
 
                 // If new folder should not heritate of parent rights
                 // Then use the creator ones

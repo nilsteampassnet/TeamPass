@@ -137,12 +137,18 @@ $('#jstree').jstree({
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
         selectedFolderId = selectedFolder.id.split('_')[1];
         console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
-        console.log(selectedFolder);
 
-        /*store.each(function(value, key) {
-            console.log(key, '==', value)
-        });*/
+        // Refresh list of folders
+        var newFoldersList = [];
+        var v = $('#jstree').jstree().get_json('#', {no_state:true,flat:true});
+        $.each(v, function(value, key) {
+            newFoldersList.push({
+                'id' : parseInt(key.id.substring(3)),
+                'label' : key.text.substring(0, key.text.indexOf(' (<span class=')).trim(),
+            })
+        });
 
+        // Store in localstorage for future usage
         store.update(
             'teampassApplication',
             function (teampassApplication)
@@ -150,9 +156,10 @@ $('#jstree').jstree({
                 teampassApplication.selectedFolder = selectedFolderId,
                 teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
                 teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
-                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title']
+                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
+                teampassApplication.foldersList = newFoldersList
             }
-        )
+        );
 
         // Prepare list of items
         if (startedItemsListQuery === false) {
@@ -415,6 +422,7 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'add') {
         console.info('SHOW ADD FOLDER');
+        
         // Check privileges
         if (store.get('teampassItem').hasAccessLevel < 30) {
             alertify
@@ -431,7 +439,9 @@ $('.tp-action').click(function() {
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
         // Prepare some data in the form
-        $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
+        if (selectedFolder !== '') {
+            $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
+        }
         $('#form-folder-add-label')
             .val('')
             .focus();
@@ -2961,6 +2971,16 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || '0';
     console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
+
+    if (groupe_id === '' || groupe_id === undefined) {
+        // Show warning to user
+        $('#info_teampass_items_list')
+            .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
+                '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('no_folder_selected'); ?></b>' +
+                '</div>')
+            .removeClass('hidden');
+        return false;
+    }
 
     // case where we should stop listing the items
     if (store.get('teampassApplication') !== undefined && store.get('teampassApplication') .itemsListStop === 1) {

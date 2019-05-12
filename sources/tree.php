@@ -65,8 +65,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 // Superglobal load
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -76,6 +74,7 @@ $session_user_admin = $superGlobal->get('user_admin', 'GET');
 $sessionTreeStructure = $superGlobal->get('user_tree_structure', 'GET');
 $sessionLastTreeRefresh = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
 
+
 $lastFolderChange = DB::query(
     'SELECT * FROM '.prefixTable('misc').'
     WHERE type = %s AND intitule = %s',
@@ -84,7 +83,7 @@ $lastFolderChange = DB::query(
 );
 if (empty($sessionTreeStructure) === true
     || strtotime($lastFolderChange) > strtotime($sessionLastTreeRefresh)
-    || (isset($_GET['force_refresh']) === true && $_GET['force_refresh'] === '1')
+    || (isset($_GET['force_refresh']) === true && (int) $_GET['force_refresh'] === 1)
 ) {
     // Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
@@ -443,7 +442,7 @@ function recursiveTree(
                 $text = $title = '';
             }
         }
-        //echo ' --> '.$displayThisNode.'<br>';
+        //echo ' --> '.$node." -- ".$displayThisNode.'<br>';
         if ($displayThisNode === true) {
             // get info about current folder
             DB::query(

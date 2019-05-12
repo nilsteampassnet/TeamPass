@@ -332,28 +332,27 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //$listItems = json_decode($post_items, true);
 
         // Clean each array entry
-        array_walk_recursive($post_items, 'cleanOutput');
+        if (is_array($post_items) === true) {
+            array_walk_recursive($post_items, 'cleanOutput');
+        }
 
         // Loop on array
         foreach ($post_items as $item) {
             //For each item, insert into DB
 
-            //Encryption key
-            if ($personalFolder == 1) {
-                $encrypt = cryption(
-                    $item['pwd'],
-                    $_SESSION['user_settings']['session_psk'],
-                    'encrypt',
-                    $SETTINGS
-                );
+            // Handle case where pw is empty
+            // if not allowed then warn user
+            if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
+                && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
+                ) ||
+                empty($item['pwd']) === false
+            ) {
+                // NEW ENCRYPTION
+                $cryptedStuff = doDataEncryption($item['pwd']);
             } else {
-                $encrypt = cryption(
-                    $item['pwd'],
-                    '',
-                    'encrypt',
-                    $SETTINGS
-                );
+                $cryptedStuff['encrypted'] = '';
             }
+            $post_password = $cryptedStuff['encrypted'];
 
             // Insert new item in table ITEMS
             DB::insert(
@@ -361,15 +360,26 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 array(
                     'label' => substr($item['label'], 0, 500),
                     'description' => empty($item['description']) === true ? '' : $item['description'],
-                    'pw' => $encrypt['string'],
+                    'pw' => $post_password,
                     'pw_iv' => '',
                     'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
                     'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === 'true' ? 1 : 0,
+                    'encryption_type' => 'teampass_aes',
                 )
             );
             $newId = DB::insertId();
+
+            // Create sharekeys for users
+            storeUsersShareKey(
+                prefixTable('sharekeys_items'),
+                $personalFolder,
+                filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                $newID,
+                $cryptedStuff['objectKey'],
+                $SETTINGS
+            );
 
             //if asked, anyone in role can modify
             if (null !== filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING)
@@ -467,10 +477,25 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //prepare CACHE files
         $cacheFileName = $SETTINGS['path_to_files_folder'].'/cpassman_cache_'.md5(time().mt_rand());
         $cacheFileNameFolder = $cacheFileName.'_folders';
-        $cacheFile = fopen($cacheFileName, 'w');
-        $cacheFileF = fopen($cacheFileNameFolder, 'w');
         $logFileName = '/keepassImport_'.date('YmdHis').'.log';
-        $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
+        /*$cacheFile = fopen($cacheFileName, 'w');
+        $cacheFileF = fopen($cacheFileNameFolder, 'w');
+        $cacheLogFile =  fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');*/
+
+
+        if (($cacheFile = fopen($cacheFileName, "w")) === false
+            || ($cacheFileF = fopen($cacheFileNameFolder, "w")) === false
+            || ($cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, "w")) === false
+        ) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('cannot_open_file'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // Get filename from database
         $data = DB::queryFirstRow(
@@ -771,7 +796,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             return $temparray;
         }
 
-        fputs($cacheLogFile, date('H:i:s ').'Writing XML File '.filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)."\n");
+        fputs(
+            $cacheLogFile,
+            date('H:i:s ').'Writing XML File '.filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)."\n"
+        );
 
         // Go through each node of XML file
         recursiveKeepassXML($xml);
@@ -959,7 +987,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 fputs($cacheLogFile, date('H:i:s ')."Setting User Rights\n");
                 //Refresh the rights of actual user
                 identifyUserRights(
-                    array_push($_SESSION['groupes_visibles'], $id),
+                    $_SESSION['groupes_visibles'],
                     $_SESSION['no_access_folders'],
                     $_SESSION['is_admin'],
                     $_SESSION['fonction_id'],
@@ -1004,7 +1032,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     //check if not exists
                     $results .= str_replace($foldersSeparator, '\\', $item[KP_PATH]).'\\'.$item[KP_TITLE];
 
-                    $pwd = $item[KP_PASSWORD];
 
                     //Get folder label
                     if (count($foldersArray) == 0 || empty($item[KP_PATH])) {
@@ -1021,22 +1048,19 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     if (!empty($folderId)) {
                         $results .= " - Inserting\n";
 
-                        // prepare PW
-                        if ($import_perso === true) {
-                            $encrypt = cryption(
-                                $pwd,
-                                $_SESSION['user_settings']['session_psk'],
-                                'encrypt',
-                                $SETTINGS
-                            );
+                        // Handle case where pw is empty
+                        // if not allowed then warn user
+                        if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
+                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
+                            ) ||
+                            empty($item[KP_PASSWORD]) === false
+                        ) {
+                            // NEW ENCRYPTION
+                            $cryptedStuff = doDataEncryption($item[KP_PASSWORD]);
                         } else {
-                            $encrypt = cryption(
-                                $pwd,
-                                '',
-                                'encrypt',
-                                $SETTINGS
-                            );
+                            $cryptedStuff['encrypted'] = '';
                         }
+                        $post_password = $cryptedStuff['encrypted'];
 
                         //ADD item
                         DB::insert(
@@ -1044,15 +1068,29 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             array(
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br>', $item[KP_NOTES])),
-                                'pw' => $encrypt['string'],
+                                'pw' => $post_password,
                                 'pw_iv' => '',
                                 'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'id_tree' => $folderId,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),
                                 'anyone_can_modify' => $post_edit_all,
+                                'encryption_type' => 'teampass_aes',
+                                'inactif' => 0,
+                                'restricted_to' => '',
+                                'perso' => $import_perso === true ? 1 : 0,
                             )
                         );
                         $newId = DB::insertId();
+
+                        // Create sharekeys for users
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_items'),
+                            $import_perso === true ? 1 : 0,
+                            filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                            $newId,
+                            $cryptedStuff['objectKey'],
+                            $SETTINGS
+                        );
 
                         //if asked, anyone in role can modify
                         if ($post_edit_role === 1) {

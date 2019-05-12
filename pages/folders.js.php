@@ -89,10 +89,10 @@ $('.tp-action').click(function() {
         // Prepare data
         var data = {
             'title'             : $('#new-title').val(),
-            'parentId'          : $('#new-parent').val(),
-            'complexity'        : $('#new-complexity').val(),
+            'parentId'          : parseInt($('#new-parent').val()),
+            'complexity'        : parseInt($('#new-complexity').val()),
             'accessRight'       : $('#new-access-right').val(),
-            'renewalPeriod'     : $('#new-renewal').val(),
+            'renewalPeriod'     : $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
             'addRestriction'    : $('#new-add-restriction').prop("checked") === true ? 1 : 0,
             'editRestriction'   : $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
         }

@@ -80,7 +80,7 @@ $tst = $tree->getDescendants();
 // prepare options list
 $prev_level = 0;
 $droplist = '<option value="na">---'.langHdl('select').'---</option>';
-if ($_SESSION['is_admin'] === '1' || $_SESSION['user_manager'] === '1' || $_SESSION['can_create_root_folder'] === '1') {
+if ((int) $_SESSION['is_admin'] === 1 || (int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['can_create_root_folder'] === 1) {
     $droplist .= '<option value="0">'.langHdl('root').'</option>';
 }
 foreach ($tst as $t) {

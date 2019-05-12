@@ -11,4 +11,5 @@ If you have upgraded from previous branch 2.x then some features have not yet be
  - Offline mode
  - Backups
  - LDAP test
+ - LDAP synchronization of users
  

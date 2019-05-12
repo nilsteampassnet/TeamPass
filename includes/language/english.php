@@ -17,6 +17,7 @@
 
 return array(
     'server' => 'Server',
+    'no_folder_selected' => 'Please select a folder',
     'enable_statistics' => 'Sendinf',
     'data_refreshed' => 'Data refreshed',
     'loading_image' => 'Loading image',
