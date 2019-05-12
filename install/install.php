@@ -49,7 +49,7 @@ if (isset($_SERVER['HTTPS'])) {
     // # HEADER ##
     echo '
     <div id="top">
-        <div id="logo"><img src="../includes/images/canevas/logo.png" /></div>
+        <div id="logo"><img src="../includes/images/logoTeampassHome.png" />TEAMPASS</div>
     </div>
     <div id="main">
         <div id="menu">
@@ -129,8 +129,6 @@ echo '
     <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
     <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
     <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
-    <li>Directory "/files/" is writable&nbsp;<span id="res2_check7"></span></li>
-    <li>Directory "/upload/" is writable&nbsp;<span id="res2_check8"></span></li>
     <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check10"></span></li>
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check11"></span></li>
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check12"></span></li>
@@ -138,7 +136,7 @@ echo '
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check14"></span></li>
     <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check15"></span></li>
     <li>PHP extension "curl" is loaded&nbsp;<span id="res2_check16"></span></li>
-    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check17"></span></li>
+    <li>PHP version is greater or equal to 7.2.0&nbsp;<span id="res2_check17"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check18"></span></li>
     </ul>
 </div>';

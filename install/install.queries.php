@@ -1,17 +1,18 @@
 <?php
 /**
- * @author        Nils Laumaillé <nils@teampass.net>
- *
- * @version       2.1.27
- *
- * @copyright     2009-2019 Nils Laumaillé
- * @license       GNU GPL-3.0
- *
- * @see          https://www.teampass.net
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
+ * @version   GIT: <git_id>
+ *
+ * @see      https://www.teampass.net
  */
 require_once '../sources/SecureHandler.php';
 session_name('teampass_session');
@@ -208,10 +209,10 @@ if (null !== $post_type) {
             }
 
             if (isset($data['activity']) && $data['activity'] === 'version') {
-                if (version_compare(phpversion(), '5.5.0', '>=')) {
+                if (version_compare(phpversion(), '7.2.0', '>=')) {
                     echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } else {
-                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.5.0)", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 7.2.0)", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
@@ -1165,22 +1166,18 @@ $SETTINGS = array (';
                         $file_handler,
                         utf8_encode(
                             '<?php
-global $lang, $txt, $pathTeampas, $urlTeampass, $pwComplexity, $mngPages;
-global $server, $user, $pass, $database, $pre, $db, $port, $encoding;
+// DATABASE connexion parameters
+define("DB_HOST", "'.$db['db_host'].'");
+define("DB_USER", "'.$db['db_login'].'");
+define("DB_PASSWD", "'.str_replace('$', '\$', $encrypted_text).'");
+define("DB_NAME", "'.$db['db_bdd'].'");
+define("DB_PREFIX", "'.$var['tbl_prefix'].'");
+define("DB_PORT", "'.$db['db_port'].'");
+define("DB_ENCODING", "'.$session_db_encoding.'");
+define("SECUREPATH", "'.$securePath.'");
 
-### DATABASE connexion parameters ###
-$server = "'.$db['db_host'].'";
-$user = "'.$db['db_login'].'";
-$pass = "'.str_replace('$', '\$', $encrypted_text).'";
-$database = "'.$db['db_bdd'].'";
-$pre = "'.$var['tbl_prefix'].'";
-$port = '.$db['db_port'].';
-$encoding = "'.$session_db_encoding."\";
-
-@date_default_timezone_set(\$_SESSION['settings']['timezone']);
-@define('SECUREPATH', '".$securePath."');
-if (file_exists(\"".str_replace('\\', '/', $skFile).'")) {
-    require_once "'.str_replace('\\', '/', $skFile).'";
+if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
 }
 '
                         )

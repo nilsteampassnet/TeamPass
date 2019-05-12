@@ -1,17 +1,18 @@
 <?php
 /**
- * @author        Nils Laumaillé <nils@teampass.net>
- *
- * @version       2.1.27
- *
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- *
- * @see          https://www.teampass.net
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @author    Nils Laumaillé <nils@teamapss.net>
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
+ * @version   GIT: <git_id>
+ *
+ * @see      https://www.teampass.net
  */
 use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
@@ -478,10 +479,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $cacheFileName = $SETTINGS['path_to_files_folder'].'/cpassman_cache_'.md5(time().mt_rand());
         $cacheFileNameFolder = $cacheFileName.'_folders';
         $logFileName = '/keepassImport_'.date('YmdHis').'.log';
-        /*$cacheFile = fopen($cacheFileName, 'w');
-        $cacheFileF = fopen($cacheFileNameFolder, 'w');
-        $cacheLogFile =  fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');*/
-
 
         if (($cacheFile = fopen($cacheFileName, "w")) === false
             || ($cacheFileF = fopen($cacheFileNameFolder, "w")) === false
