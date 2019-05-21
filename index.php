@@ -54,6 +54,10 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 } else {
     throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
 }
+// initialize session
+if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
+    $SETTINGS['cpassman_dir'] = '.';
+}
 
 // Include files
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
@@ -61,11 +65,10 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-// initialize session
-if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
-    $SETTINGS['cpassman_dir'] = '.';
+if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
 }
+
 
 // Include files
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';

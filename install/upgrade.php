@@ -53,13 +53,13 @@ if (file_exists($filename)) {
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
-        <title>TeamPass Installation</title>
+        <title>TeamPass Upgrade</title>
         
         <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <meta http-equiv="x-ua-compatible" content="ie=edge"/>
 
-        <link rel="stylesheet" href="install.css" type="text/css" />
+        <link rel="stylesheet" href="css/install.css" type="text/css" />
         <link rel="stylesheet" href="../plugins/fontawesome5/css/all.css">
         
         <!-- Theme style -->
@@ -103,13 +103,11 @@ echo '
 // HEADER
 echo '
     <div id="top">
-        <table border=0>
-            <tr>
-                <td><img src="../includes/images/logoTeampassHome.png" /></td>
-                <td class="headtitle">'.TP_TOOL_NAME.'</td>
-            </tr>
-        </table>
-    </div>
+        <div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
+		<div class="lcol">
+			<span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
+			<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>
+		</div>
     <div id="content">
         <form name="install" method="post" action="">
         <div class="card card-default color-palette-box">
@@ -139,7 +137,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         <h5>Information</h5>
     
                         <p>Upgrade process is about to start. This will upgrade Teampass database to version '.TP_VERSION_FULL.'.</p>
-                        <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a new password for each user that doesn\'t have such key pair. If this happens, the user will receive the new password by email so please ensure that email settings are correctly set before starting this upgrade.
+                        <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a new password for each user that doesn\'t have such key pair. If this happens, the user will receive the new password by email so please ensure that email settings are correctly set before starting this upgrade.</p>
                     </div>
 
                     <div class="callout callout-info col-12">
@@ -514,13 +512,14 @@ echo '
 //FOOTER
 echo '
     <div id="footer">
-        <div style="width:500px;">
+        <div style="width:500px; font-size:16px;">
             '.TP_TOOL_NAME.' '.TP_VERSION_FULL.' &#169; copyright 2009-2019
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>
     </div>';
 ?>
+    </div>
 
 </body>
 </html>

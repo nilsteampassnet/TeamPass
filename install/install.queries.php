@@ -157,8 +157,11 @@ $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare SESSION variables
 $session_url_path = $superGlobal->get('url_path', 'SESSION');
-$session_abspath = $superGlobal->get('abspath', 'SESSION');
+$session_abspath = $superGlobal->get('absolute_path', 'SESSION');
 $session_db_encoding = $superGlobal->get('db_encoding', 'SESSION');
+if (empty($session_db_encoding) === true) {
+	$session_db_encoding = 'utf8';
+}
 
 $superGlobal->put('CPM', 1, 'SESSION');
 
@@ -174,7 +177,7 @@ if (null !== $post_type) {
             $json = Encryption\Crypt\aesctr::decrypt($post_task, 'cpm', 128);
             $data = array_merge($data, array('task' => $json));
 
-            $abspath = str_replace('\\', '/', $data['root_path']);
+            $abspath = str_replace('\\', '/', $data['absolute_path']);
             if (substr($abspath, strlen($abspath) - 1) == '/') {
                 $abspath = substr($abspath, 0, strlen($abspath) - 1);
             }
@@ -260,13 +263,13 @@ if (null !== $post_type) {
                 if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '".empty($session_url_path) ? $db['url_path'] : $session_url_path."');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $data['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".empty($session_abspath) ? $db['abspath'] : $session_abspath."');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".empty($session_abspath) ? $data['absolute_path'] : $session_abspath."');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".empty($session_abspath) ? $db['abspath'] : $session_abspath."' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".empty($session_abspath) ? $data['absolute_path'] : $session_abspath."' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -346,6 +349,82 @@ if (null !== $post_type) {
                     if ($task === 'utf8') {
                         //FORCE UTF8 DATABASE
                         mysqli_query($dbTmp, 'ALTER DATABASE `'.$dbBdd.'` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci');
+					} elseif ($task === 'defuse_passwords') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'defuse_passwords` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`type` varchar(100) NOT NULL,
+								`object_id` int(12) NOT NULL,
+								`password` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'notification') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE `'.$var['tbl_prefix'].'notification` (
+								`increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+								`item_id` INT(12) NOT NULL,
+								`user_id` INT(12) NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'sharekeys_items') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_items` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`object_id` int(12) NOT NULL,
+								`user_id` int(12) NOT NULL,
+								`share_key` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'sharekeys_logs') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_logs` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`object_id` int(12) NOT NULL,
+								`user_id` int(12) NOT NULL,
+								`share_key` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'sharekeys_fields') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_fields` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`object_id` int(12) NOT NULL,
+								`user_id` int(12) NOT NULL,
+								`share_key` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'sharekeys_suggestions') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_suggestions` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`object_id` int(12) NOT NULL,
+								`user_id` int(12) NOT NULL,
+								`share_key` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
+					} elseif ($task === 'sharekeys_files') {
+                        $mysqli_result = mysqli_query(
+							$dbTmp,
+							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_files` (
+								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
+								`object_id` int(12) NOT NULL,
+								`user_id` int(12) NOT NULL,
+								`share_key` text NOT NULL,
+								PRIMARY KEY (`increment_id`)
+							) CHARSET=utf8;'
+						);
                     } elseif ($task === 'items') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -439,11 +518,11 @@ $SETTINGS = array (';
                             array('admin', 'duplicate_item', '0'),
                             array('admin', 'number_of_used_pw', '3'),
                             array('admin', 'manager_edit', '1'),
-                            array('admin', 'cpassman_dir', $var['abspath']),
+                            array('admin', 'cpassman_dir', $var['absolute_path']),
                             array('admin', 'cpassman_url', $var['url_path']),
                             array('admin', 'favicon', $var['url_path'].'/favicon.ico'),
-                            array('admin', 'path_to_upload_folder', $var['abspath'].'/upload'),
-                            array('admin', 'path_to_files_folder', $var['abspath'].'/files'),
+                            array('admin', 'path_to_upload_folder', $var['absolute_path'].'/upload'),
+                            array('admin', 'path_to_files_folder', $var['absolute_path'].'/files'),
                             array('admin', 'url_to_files_folder', $var['url_path'].'/files'),
                             array('admin', 'activate_expiration', '0'),
                             array('admin', 'pw_life_duration', '0'),
@@ -526,7 +605,7 @@ $SETTINGS = array (';
                             array('admin', 'duo', '0'),
                             array('admin', 'enable_server_password_change', '0'),
                             array('admin', 'ldap_object_class', '0'),
-                            array('admin', 'bck_script_path', $var['abspath'].'/backups'),
+                            array('admin', 'bck_script_path', $var['absolute_path'].'/backups'),
                             array('admin', 'bck_script_filename', 'bck_teampass'),
                             array('admin', 'syslog_enable', '0'),
                             array('admin', 'syslog_host', 'localhost'),
@@ -667,6 +746,9 @@ $SETTINGS = array (';
                             `user_api_key` varchar(500) NOT null DEFAULT 'none',
                             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
                             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
+                            `public_key` TEXT NOT NULL DEFAULT 'none',
+                            `private_key` TEXT NOT NULL DEFAULT 'none',
+                            `special` VARCHAR(250) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -730,13 +812,14 @@ $SETTINGS = array (';
                             'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."files` (
                             `id` int(11) NOT null AUTO_INCREMENT,
                             `id_item` int(11) NOT NULL,
-                            `name` varchar(100) NOT NULL,
+                            `name` TEXT CHARACTER SET utf8 COLLATE NOT NULL,
                             `size` int(10) NOT NULL,
                             `extension` varchar(10) NOT NULL,
                             `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
                             `status` varchar(50) NOT NULL DEFAULT '0',
                             `content` longblob DEFAULT NULL,
+							`confirmed` INT(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
                         );
@@ -1096,11 +1179,11 @@ $SETTINGS = array (';
 
             // launch
             if (empty($var['sk_path'])) {
-                $skFile = $var['abspath'].'/includes/sk.php';
-                $securePath = $var['abspath'];
+                $skFile = $var['absolute_path'].'/includes/sk.php';
+                $securePath = $var['absolute_path'];
             } else {
                 //ensure $var['sk_path'] has no trailing slash
-                $var['sk_path'] = rtrim($var['sk_path'], '/\\');
+                $var['sk_path'] = rtrim(str_replace('\/', '//', $var['sk_path']), '/\\');
                 $skFile = $var['sk_path'].'/sk.php';
                 $securePath = $var['sk_path'];
             }

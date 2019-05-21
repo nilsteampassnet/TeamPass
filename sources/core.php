@@ -347,7 +347,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        setTimeout(function(){document.location.href="logout.php"}, 10);
+        setTimeout(function(){document.location.href="./includes/core/logout.php"}, 10);
         -->
         </script>';
         exit;

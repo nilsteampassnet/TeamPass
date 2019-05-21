@@ -1,18 +1,18 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
-        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-        <meta content="utf-8" http-equiv="encoding">
         <title>TeamPass Installation</title>
+		<meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+
         <link rel="stylesheet" href="css/install.css" type="text/css" />
-        <link rel="stylesheet" href="css/overcast/jquery-ui-1.10.3.custom.min.css" type="text/css" />
-        <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <script type="text/javascript" src="js/jquery.min.js"></script>
-        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="js/aes.min.js"></script>
-        <script type="text/javascript" src="install.js"></script>
-        <script type="text/javascript">
-        </script>
+        <link rel="stylesheet" href="../plugins/fontawesome5/css/all.css">
+        
+        <!-- Theme style -->
+        <link rel="stylesheet" href="../includes/css/adminlte.css">
+        <link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
+        <link rel="stylesheet" href="../plugins/alertifyjs/css/themes/bootstrap.min.css"/>
     </head>
 
     <body>
@@ -32,276 +32,383 @@ if (isset($_SERVER['HTTPS'])) {
     $protocol = 'http://';
 }
 
-    echo '
-    <input type="hidden" id="page_id" value="1" />
-    <input type="hidden" id="step_res" value="" />
-    <input type="hidden" id="hid_db_host" value="" />
-    <input type="hidden" id="hid_db_login" value="" />
-    <input type="hidden" id="hid_db_pwd" value="" />
-    <input type="hidden" id="hid_db_port" value="" />
-    <input type="hidden" id="hid_db_bdd" value="" />
-    <input type="hidden" id="hid_db_pre" value="" />
-    <input type="hidden" id="hid_abspath" value="" />
-    <input type="hidden" id="hid_url_path" value="" />';
+
+$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
+$post_db_host = filter_input(INPUT_POST, 'db_host', FILTER_SANITIZE_STRING);
+if (empty($post_db_host) === true) {
+	$post_db_host = filter_input(INPUT_POST, 'hid_db_host', FILTER_SANITIZE_STRING);
+}
+$post_db_login = filter_input(INPUT_POST, 'db_login', FILTER_SANITIZE_STRING);
+if (empty($post_db_login) === true) {
+	$post_db_login = filter_input(INPUT_POST, 'hid_db_login', FILTER_SANITIZE_STRING);
+}
+$post_db_pwd = filter_input(INPUT_POST, 'db_pwd', FILTER_SANITIZE_STRING);
+if (empty($post_db_pwd) === true) {
+	$post_db_pwd = filter_input(INPUT_POST, 'hid_db_pwd', FILTER_SANITIZE_STRING);
+}
+$post_db_port = filter_input(INPUT_POST, 'db_port', FILTER_SANITIZE_STRING);
+if (empty($post_db_port) === true) {
+	$post_db_port = filter_input(INPUT_POST, 'hid_db_port', FILTER_SANITIZE_STRING);
+}
+$post_db_bdd = filter_input(INPUT_POST, 'db_bdd', FILTER_SANITIZE_STRING);
+if (empty($post_db_bdd) === true) {
+	$post_db_bdd = filter_input(INPUT_POST, 'hid_db_bdd', FILTER_SANITIZE_STRING);
+}
+$post_db_pre = filter_input(INPUT_POST, 'db_pre', FILTER_SANITIZE_STRING);
+if (empty($post_db_pre) === true) {
+	$post_db_pre = filter_input(INPUT_POST, 'hid_db_pre', FILTER_SANITIZE_STRING);
+}
+$post_absolute_path = filter_input(INPUT_POST, 'absolute_path', FILTER_SANITIZE_STRING);
+if (empty($post_absolute_path) === true) {
+	$post_absolute_path = filter_input(INPUT_POST, 'hid_absolute_path', FILTER_SANITIZE_STRING);
+}
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
+if (empty($post_url_path) === true) {
+	$post_url_path = filter_input(INPUT_POST, 'hid_url_path', FILTER_SANITIZE_STRING);
+}
+$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
+if (empty($post_sk_path) === true) {
+	$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_STRING);
+}
+
+// Get some data
+include "../includes/config/include.php";
+
     // # LOADER
     echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="images/76.gif" /></div>';
     // # HEADER ##
     echo '
-    <div id="top">
-        <div id="logo"><img src="../includes/images/logoTeampassHome.png" />TEAMPASS</div>
-    </div>
-    <div id="main">
-        <div id="menu">
-            <div style="font-weight:bold;text-align:center;">Installation steps</div>
-            <ul>
-                <li id="menu_step1" class="li_inprogress"><span id="step_1">Welcome</span>&nbsp;<span id="res_1"></span></li>
-                <li id="menu_step2"><span id="step_2">Server checks</span>&nbsp;<span id="res_2"></span></li>
-                <li id="menu_step3"><span id="step_3">Database connection</span>&nbsp;<span id="res_3"></span></li>
-                <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
-                <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
-                <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
-                <li id="menu_step8">Resume&nbsp;<span id="res_8"></span></li>
-            </ul>
-        </div>
+	<div id="top">
+		<div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
+		<div class="lcol">
+			<span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
+		</div>
+		
         <div id="content">
-            <div id="step_name">Welcome</div>
-            <div id="step_error" class="ui-widget ui-state-error error"></div>
-            <div style="height:400px;overflow:auto;">
-                <div id="step_content" style="">
-                    Before starting, be sure to:<br />
-                    - upload the complete package on the server,<br />
-                    - have the database connection information (*)<br />
-                    <br />
-                    <br />
-                    <i>* Mysql database suggestions:<br />
-                    - create a new database (for example teampass),<br />
-                    - create a new mysql user (for example teampass_root),<br />
-                    - set full admin rights for this user on teampass database,<br />
-                    - allow access from localhost to the database<br /></i><br />
-                    <div style="padding:5px;" class="ui-widget ui-state-highlight">
-                         TeamPass is distributed under GNU AFFERO GPL licence.
-                    </div>
-                </div>
+			<form name="upgrade" method="post" action="">
+			
+			
+			<input type="hidden" id="step" name="step" value="', isset($post_step) ? $post_step : '', '" />
+			<input type="hidden" id="page_id" value="1" />
+			<input type="hidden" id="step_res" value="" />
+			<input type="hidden" name="hid_db_host" id="hid_db_host" value="', isset($post_db_host) ? $post_db_host : '', '" />
+			<input type="hidden" name="hid_db_login" id="hid_db_login" value="', isset($post_db_login) ? $post_db_login : '', '" />
+			<input type="hidden" name="hid_db_pwd" id="hid_db_pwd" value="', isset($post_db_pwd) ? $post_db_pwd : '', '" />
+			<input type="hidden" name="hid_db_port" id="hid_db_port" value="', isset($post_db_port) ? $post_db_port : '', '" />
+			<input type="hidden" name="hid_db_bdd" id="hid_db_bdd" value="', isset($post_db_bdd) ? $post_db_bdd : '', '" />
+			<input type="hidden" name="hid_db_pre" id="hid_db_pre" value="', isset($post_db_pre) ? $post_db_pre : '', '" />
+			<input type="hidden" name="hid_absolute_path" id="hid_absolute_path" value="', isset($post_absolute_path) ? $post_absolute_path : '', '" />
+			<input type="hidden" name="hid_url_path" id="hid_url_path" value="', isset($post_url_path) ? $post_url_path : '', '" />
+			<input type="hidden" name="hid_sk_path" id="hid_sk_path" value="', isset($post_sk_path) ? $post_sk_path : '', '" />
+			
+		    <div class="card card-default color-palette-box">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-people-carry mr-2"></i>Initial installation
+                </h3>
             </div>
+            <div class="card-body">';
+if (!isset($_GET['step']) && !isset($post_step)) {
+    //ETAPE O
+	echo '
+				<div class="row">
+                    <div class="callout callout-warning col-12">
+                        <h5><i class="fas fa-info-circle text-warning mr-2"></i>Welcome to Teampass installation</h5>
+    
+                        <p>This seems to be the 1st time Teampass will be installed on this server.<br>
+						It will proceed with installation of release <b>'.TP_VERSION_FULL.'</b>.</p>
+                    </div>
+
+                    <div class="callout callout-info col-12 mt-3">
+                        <h5><i class="fas fa-exclamation-circle text-info mr-2"></i>Before starting, be sure to:</h5>    
+                        <p>
+                        <ul>
+                            <li>upload the complete package on the server</li>
+                            <li>have the database connection information</li>
+                        </ul>
+                        </p>
+                    </div>
+					
+					<div class="callout callout-danger col-12 mt-3">
+                        <h5><i class="fas fa-ruler text-danger mr-2"></i>License</h5>
+    
+                        <p>TeamPass is distributed under GNU GENERAL PUBLIC LICENSE version 3.</p>
+						<p><a class="text-primary" target="_blank" href="https://spdx.org/licenses/GPL-3.0-only.html#licenseText">Read complete license</a>
+                    </div>
+                </div>';
+// STEP1
+} elseif ((isset($post_step) && $post_step == 2)
+    || (isset($_GET['step']) && $_GET['step'] == 2)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 1
+	echo '
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Teampass instance information</h5>
+				</div>
+				<div class="card-body">
+					<div class="form-group">
+						<label>Absolute path to TeamPass folder</label>
+						<input type="text" class="form-control" name="absolute_path" id="absolute_path" class="ui-widget" value="'.$abs_path.'">
+					</div>
+					<div class="form-group">
+						<label>Full URL to TeamPass</label>
+						<input type="text" class="form-control" name="url_path" id="url_path" class="ui-widget" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Next elements to check</h5>
+				</div>
+				<div class="card-body">
+
+					<ul>
+					<li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
+					<li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
+					<li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
+					<li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check3"></span></li>
+					<li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
+					<li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
+					<li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
+					<li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check7"></span></li>
+					<li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check8"></span></li>
+					<li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check9"></span></li>
+					<li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check10"></span></li>
+					<li>PHP extension "xml" is loaded&nbsp;<span id="res2_check11"></span></li>
+					<li>PHP extension "gd" is loaded&nbsp;<span id="res2_check12"></span></li>
+					<li>PHP extension "curl" is loaded&nbsp;<span id="res2_check13"></span></li>
+					<li>PHP version is greater or equal to 7.2.0&nbsp;<span id="res2_check14"></span></li>
+					<li>Execution time limit&nbsp;<span id="res2_check15"></span></li>
+					</ul>
+					
+					<div class="" id="res_step2"></div>
+					<div class="" id="res_step2_error"></div>
+					
+				</div>
+			</div>
+		</div>
+	</div>';
+// STEP2
+} elseif ((isset($post_step) && $post_step == 3)
+    || (isset($_GET['step']) && $_GET['step'] == 3)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 2
+	echo '
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Database connection Information</h5>
+				</div>
+				<div class="card-body">
+					<div class="form-group">
+						<label>Host</label>
+						<input type="text" class="form-control" name="db_host" id="db_host" class="ui-widget" value="">
+					</div>
+					
+					<div class="form-group">
+						<label>Database name</label>
+						<input type="text" class="form-control" name="db_bdd" id="db_bdd" class="ui-widget" value="">
+					</div>
+					
+					<div class="form-group">
+						<label>Login</label>
+						<input type="text" class="form-control" name="db_login" id="db_login" class="ui-widget" value="">
+					</div>
+					
+					<div class="form-group">
+						<label>Password</label>
+						<input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="">
+					</div>
+					
+					<div class="form-group">
+						<label>Port</label>
+						<input type="text" class="form-control" name="db_port" id="db_port" class="ui-widget" value="3306">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>';
+
+// STEP3
+} elseif ((isset($post_step) && $post_step == 4)
+    || (isset($_GET['step']) && $_GET['step'] == 4)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 3
+	echo '
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Teampass set-up</h5>
+				</div>
+				<div class="card-body">
+					<div class="form-group">
+						<label>Table prefix</label>
+						<input type="text" class="form-control" name="tbl_prefix" id="tbl_prefix" class="ui-widget" value="teampass_"><span id="res4_check0"></span>
+					</div>
+		
+					<div class="form-group">
+						<label>Absolute path to SaltKey</label>
+						<input type="text" class="form-control" name="sk_path" id="sk_path" class="ui-widget" value=""><span id="res4_check2"></span>
+						<small class="form-text text-muted">
+							The SaltKey is stored in a file called teampass-seckey.txt. For security reasons, this file should be stored in a folder outside the WWW folder of your server (example: /var/teampass/). This key will be used to encrypt data when sharing information with users without any Teampass account. If this field remains empty, this file will be stored in folder <path to Teampass>/includes/.
+						</small>
+					</div>
+		
+					<div class="form-group">
+						<label>Teampass Administrator password</label>
+						<input type="password" class="form-control" id="admin_pwd" class="ui-widget" value=""><span id="res4_check10"></span>
+					</div
+					
+					<div class="form-group">
+						<label>Confirm Administrator password</label>
+						<input type="password" class="form-control" id="admin_pwd_confirm" class="ui-widget" value=""><span id="res4_check11"></span>
+					</div
+				</div>
+			</div>
+		</div>
+	</div>';
+	
+
+// STEP4
+} elseif ((isset($post_step) && $post_step == 5)
+    || (isset($_GET['step']) && $_GET['step'] == 5)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 4
+	echo '
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Preparing database</h5>
+				</div>
+				<div class="card-body">
+					<ul id="pop_db"></ul>
+				</div>
+			</div>
+		</div>
+	</div>';
+
+// STEP5
+} elseif ((isset($post_step) && $post_step == 6)
+    || (isset($_GET['step']) && $_GET['step'] == 6)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 5
+	echo '
+	<div class="row">
+		<div class="col-12">
+			<div class="card card-primary">
+				<div class="card-header">
+					<h5>Finalization</h5>
+				</div>
+				<div class="card-body">
+					<ul>
+						<li>Create sk.php file <span id="res6_check0"></span></li>
+						<li>Chmod some folders and files <span id="res6_check1"></span></li>
+						<li>Create settings files <span id="res6_check2"></span></li>
+						<li>Initiate CSRF protection <span id="res6_check3"></span></li>
+						<li>Clean temporary installation data <span id="res6_check4"></span></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>';
+
+// STEP6
+} elseif ((isset($post_step) && $post_step == 7)
+    || (isset($_GET['step']) && $_GET['step'] == 7)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 6
+	echo '
+	<div class="row">
+		<div class="callout callout-primary col-12">
+			<h4>Thank you for installing <b>Teampass</b>.</h4>
+			<div class="card-body">
+				<div class="alert alert-info">
+					The final step is now to move to the authentication page and start using <b>Teampass</b>.<br>
+					The Administrator login is `<b>admin</b>`.
+					<br>
+					Its password is the one you have written during the installation process.
+				</div>
+				
+				<div class="alert alert- mt-2">
+					<i>Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
+					<br>
+					In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
+				</div>
+				
+				<div class="callout callout-info text-center mt-3">
+					<a class="text-primary" id="link_home_page" href="../index.php">Move to home page</a>
+				</div>
+				
+				<div class="alert alert-warning mt-8">
+					For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
+				</div>
+			</div>
+		</div>
+	</div>';
+}
+
+echo '	
+	</div>	
+        <div class="card-footer">';
+//buttons
+if (!isset($post_step)) {
+    echo '
+            <input type="button" class="btn btn-primary" id="but_next" target_id="2" class="button" value="START" />
+            <input type="button" class="btn btn-primary" id="but_start" onclick="document.location = \''.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\'" class="button" style="display: none;" value="Start" />';
+} elseif ($post_step == 7) {
+    // Nothong to do
+} else {
+    echo '
+            <input type="button" id="but_launch" onclick="checkPage(\'step'.$post_step.'\')" class="btn btn-primary" value="START" />
+            <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">
+			<input type="button" class="btn btn-primary" id="but_restart" onclick="document.location = \'install.php\'" class="button" value="RESTART" />';
+}
+
+echo '
         </div>
-    </div>
-        <div id="action_buttons">
-            <span id="step_result"></span>
-            <input type="button" id="but_launch" onclick="checkPage()" class="button" value="LAUNCH" />
-            <input type="button" id="but_next" onclick="GotoNextStep()" class="button" value="NEXT" />
-            <input type="button" id="but_restart" onclick="document.location = \'install.php\'" class="button" value="RESTART" />
-            <input type="button" id="but_start" onclick="document.location = \''.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\'" class="button" style="display: none;" value="Start" />
-            &nbsp;&nbsp;
-        </div>';
+	</form>
+	</div>';
+		
+//FOOTER
+echo '
+    <div id="footer">
+        <div style="width:500px; font-size:16px;">
+            '.TP_TOOL_NAME.' '.TP_VERSION.' <i class="far fa-copyright"></i> copyright 2009-2019
+        </div>
+        <div style="float:right;margin-top:-15px;">
+        </div>
+    </div>';
 ?>
-    </body>
+</body>
 </html>
-<?php
-echo '
-<div id="text_step2" style="display:none;">
-    <h5>Teampass instance information:</h5>
-    <table>
-        <tr>
-            <td style="width:150px;">
-                <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label>
-            </td>
-            <td>
-                <input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
-            </td>
-        </tr>
-        <tr>
-            <td style="width:150px;">
-                <label for="url_path" class="label_block_big">Full URL to teampass :</label>
-            </td>
-            <td>
-                <input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /
-            </td>
-        </tr>
-    </table>
 
-    <h5>Following elements will be checked:</h5>
-    <ul>
-    <li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
-    <li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
-    <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
-    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check3"></span></li>
-    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
-    <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
-    <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
-    <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check10"></span></li>
-    <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check11"></span></li>
-    <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check12"></span></li>
-    <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check13"></span></li>
-    <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check14"></span></li>
-    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check15"></span></li>
-    <li>PHP extension "curl" is loaded&nbsp;<span id="res2_check16"></span></li>
-    <li>PHP version is greater or equal to 7.2.0&nbsp;<span id="res2_check17"></span></li>
-    <li>Execution time limit&nbsp;<span id="res2_check18"></span></li>
-    </ul>
-</div>';
+		
+		
+<script type="text/javascript" src="../includes/js/functions.js"></script>
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="js/aes.min.js"></script>
+<script type="text/javascript" src="install.js"></script>
+<!-- Altertify -->
+<script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
 
-echo '
-<div id="text_step3" style="display:none;">
-    <h5>Database information:</h5>
-    <div style="margin:5px 0 5px 0;">Database connection Information</div>
-    <table>
-        <tr>
-            <td style="width:150px;">
-                <label for="db_host" class="label_block_big">Host :</label>
-            </td>
-            <td>
-                <input type="text" id="db_host" value="" style="width:350px;" />
-            </td>
-        </tr>
-        <tr>
-            <td style="width:150px;">
-                <label for="db_bdd" class="label_block_big">DataBase name :</label>
-            </td>
-            <td>
-                <input type="text" id="db_bdd" value="" style="width:350px;" />
-            </td>
-        </tr>
-        <tr>
-            <td style="width:150px;">
-                <label for="db_login" class="label_block_big">Login :</label>
-            </td>
-            <td>
-                <input type="text" id="db_login" value="" style="width:350px;" />
-            </td>
-        </tr>
-        <tr>
-            <td style="width:150px;">
-                <label for="db_pw" class="label_block_big">Password :</label>
-            </td>
-            <td>
-                <input type="text" id="db_pw" value="" style="width:350px;" title="Double quotes not allowed!" />
-            </td>
-        </tr>
-        <tr>
-            <td style="width:150px;">
-                <label for="db_port" class="label_block_big">Port :</label>
-            </td>
-            <td>
-                <input type="text" id="db_port" value="3306" style="width:350px;" />
-            </td>
-        </tr>
-    </table>
-</div>';
+<script type="text/javascript">
 
-echo '
-<div id="text_step4" style="display:none;">
-    <table>
-        <tr>
-            <td colspan="2">
-                <h5>Teampass set-up:</h5>
-            </td>
-        </tr>
-        <tr>
-            <td style="width:250px;">
-                <label for="tbl_prefix" class="label_block_big">Table prefix :</label>
-            </td>
-            <td>
-                <input type="text" id="tbl_prefix" value="teampass_" style="width:350px;" />&nbsp;<span id="res4_check0"></span>
-            </td>
-        </tr>
-        <tr>
-            <td style="width:250px;">
-                <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-                    <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
-                </label>
-            </td>
-            <td>
-                <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
-            </td>
-
-            <div class="line_entry">
-        </tr>
-        <tr>
-            <td colspan="2">
-                <h5>Administrator account set-up:</h5>
-            </td>
-        </tr>
-        <tr>
-            <td style="width:250px;">
-                <label for="admin_pwd" class="label_block_big">Administrator password :</label>
-            </td>
-            <td>
-                <input type="text" id="admin_pwd" style="width:350px;" />&nbsp;<span id="res4_check10"></span>
-            </td>
-        </tr>
-    </table>
-</div>';
-
-echo '
-<div id="text_step5" style="display:none;">
-    <h5>Now populating database</h5>
-    <ul id="pop_db"></ul>
-    <!--<ul>
-    <li>Add table "items"&nbsp;<span id="res5_check0"></span></li>
-    <li>Add table "log_items"&nbsp;<span id="res5_check1"></span></li>
-    <li>Add table "misc"&nbsp;<span id="res5_check2"></span></li>
-    <li>Add table "nested_tree"&nbsp;<span id="res5_check3"></span></li>
-    <li>Add table "rights"&nbsp;<span id="res5_check4"></span></li>
-    <li>Add table "users"&nbsp;<span id="res5_check5"></span></li>
-    <li>Add Admin account&nbsp;<span id="res5_check6"></span></li>
-    <li>Add table "tags"&nbsp;<span id="res5_check7"></span></li>
-    <li>Add table "log_system"&nbsp;<span id="res5_check8"></span></li>
-    <li>Add table "files"&nbsp;<span id="res5_check9"></span></li>
-    <li>Add table "cache"&nbsp;<span id="res5_check10"></span></li>
-    <li>Add table "roles_title"&nbsp;<span id="res5_check11"></span></li>
-    <li>Add table "roles_values"&nbsp;<span id="res5_check12"></span></li>
-    <li>Add table "kb"&nbsp;<span id="res5_check13"></span></li>
-    <li>Add table "kb_categories"&nbsp;<span id="res5_check14"></span></li>
-    <li>Add table "kb_items"&nbsp;<span id="res5_check15"></span></li>
-    <li>Add table "restriction_to_roles"&nbsp;<span id="res5_check16"></span></li>
-    <li>Add table "languages"&nbsp;<span id="res5_check18"></span></li>
-    <li>Add table "emails"&nbsp;<span id="res5_check19"></span></li>
-    <li>Add table "automatic_del"&nbsp;<span id="res5_check20"></span></li>
-    <li>Add table "items_edition"&nbsp;<span id="res5_check21"></span></li>
-    <li>Add table "categories"&nbsp;<span id="res5_check22"></span></li>
-    <li>Add table "categories_items"&nbsp;<span id="res5_check23"></span></li>
-    <li>Add table "categories_folders"&nbsp;<span id="res5_check24"></span></li>
-    <li>Add table "api"&nbsp;<span id="res5_check25"></span></li>
-    <li>Add table "otv"&nbsp;<span id="res5_check26"></span></li>
-    <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
-    <li>Add table "tokens"&nbsp;<span id="res5_check28"></span></li>
-    <li>Add table "items_change"&nbsp;<span id="res5_check29"></span></li>
-    <li>Add table "templates"&nbsp;<span id="res5_check30"></span></li>
-    </ul>-->
-</div>';
-
-
-echo '
-<div id="text_step6" style="display:none;">
-    <h5>Finalization:</h5>
-    <ul>
-    <li>Write the new setting.php file for your server configuration <span id="res6_check0"></span></li>
-    <li>Write the new sk.php file for data encryption <span id="res6_check1"></span></li>
-    <li>Change directory security permissions <span id="res6_check2"></span></li>
-    </ul>
-</div>';
-
-
-echo '
-<div id="text_step7" style="display:none;">
-    <h4>Thank you for installing <b>Teampass</b>.</h4>
-    <div style="margin-top:20px;">
-        The final step is now to move to the authentication page and start using <b>Teampass</b>.<br>
-        The Administrator login is `<b>admin</b>`.
-        <br>
-        Its password is the one you have written during the installation process.
-    </div>
-    <div style="margin-top:8px;">
-        <i>Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
-        <br>
-        In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
-    </div>
-    <div style="margin-top:40px; text-align:center;">
-        <a id="link_home_page" href="../index.php">Move to home page</a>
-    </div>
-    <div style="margin-top:80px; font-size:10px;">
-        For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
-    </div>
-</div>';
-?>
+</script>

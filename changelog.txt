@@ -12,4 +12,5 @@ If you have upgraded from previous branch 2.x then some features have not yet be
  - Backups
  - LDAP test
  - LDAP synchronization of users
+ - Implement FREEOTP (https://freeotp.github.io/)
  

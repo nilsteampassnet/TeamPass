@@ -534,6 +534,18 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Check if parent folder is allowed for this user
+            if (in_array($post_parent_id, $_SESSION['groupes_visibles']) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             //Check if duplicate folders name are allowed
             if (isset($SETTINGS['duplicate_folder']) === true
                 && $SETTINGS['duplicate_folder'] === '0'
