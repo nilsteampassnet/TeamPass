@@ -116,7 +116,7 @@ function checkPage()
     // STEP 6
         const jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
         data = JSON.stringify(jsonValues);
-        tasks = ["file*sk.php", "file*security", "file*settings.php", "file*csrfp-token", "install*cleanup"];
+        tasks = ["file*security", "file*settings.php", "file*csrfp-token", "install*cleanup"];
         multiple = true;
     }
 

@@ -70,10 +70,10 @@ $(document).on('click', '#button-duo-save', function() {
     
     // Prepare data
     var data = {
-        'akey'  : $('#duo_akey').val(),
-        'ikey'  : $('#duo_ikey').val(),
-        'skey'  : $('#duo_skey').val(),
-        'host'  : $('#duo_host').val(),
+        'duo_akey'  : $('#duo_akey').val(),
+        'duo_ikey'  : $('#duo_ikey').val(),
+        'duo_skey'  : $('#duo_skey').val(),
+        'duo_host'  : $('#duo_host').val(),
     }    
     console.log(data);
 

@@ -933,6 +933,27 @@ if (null !== $post_type) {
                     $post_item_id,
                     'at_creation'
                 );
+
+                // Does the user has the sharekey
+                DB::query(
+                    'SELECT *
+                    FROM '.prefixTable('sharekeys_items').'
+                    WHERE object_id = %i AND user_id = %s',
+                    $post_item_id,
+                    $_SESSION['user_id']
+                );
+                if (DB::count() === 0) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+
                 // check that actual user can access this item
                 $restrictionActive = true;
                 $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
@@ -946,7 +967,8 @@ if (null !== $post_type) {
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
                     && ((int) $dataItem['perso'] === 0
                     || ((int) $dataItem['perso'] === 1
-                    && (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
+                    //&& (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
+                    ))
                     && $restrictionActive === false
                     )
                     ||
@@ -2653,7 +2675,7 @@ if (null !== $post_type) {
                         $arrData['to_be_deleted'] = '';
                     }
                 } else {
-                    $arrData['to_be_deleted'] = 'not_enabled';
+                    $arrData['to_be_deleted'] = langHdl('no');
                 }
                 // ---
                 // ---

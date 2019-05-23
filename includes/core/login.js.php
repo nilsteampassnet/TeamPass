@@ -109,41 +109,6 @@ $(function() {
         launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
     });
 
-    // Click on forgot password button
-    $('#link_forgot_user_pwd').click(function() {
-        alertify.prompt(
-            '<?php echo langHdl('forgot_my_pw'); ?>',
-            '<?php echo langHdl('forgot_my_pw_text'); ?>',
-            '<?php echo langHdl('your_login'); ?>'
-            , function(evt, value) {
-                alertify
-                    .message(
-                        '<?php echo '<span class="fas fa-cog fa-spin fa-lg"></span>&nbsp;'.langHdl('please_wait'); ?>',
-                        0
-                    )
-                    .dismissOthers();
-                $.post(
-                    "sources/main.queries.php",
-                    {
-                        type  : "recovery_send_pw_by_email",
-                        login : value
-                    },
-                    function(data) {
-                        if (data[0].error !== '') {
-                            alertify.error(data[0].message, 10).dismissOthers(); 
-                        } else {
-                            alertify.success(data[0].message).dismissOthers(); 
-                        }
-                    },
-                    "json"
-                );
-            }
-            , function() {
-                alertify.error('Cancel');
-            }
-        );
-    });
-
     // Show tooltips
     $('.infotip').tooltip();
 });
@@ -711,6 +676,15 @@ function identifyUser(redirect, psk, data, randomstring)
                         console.info('Identification answer:')
                         console.log(data);
 
+                        // Maintenance mode is enabled?
+                        if (data.error === 'maintenance_mode_enabled') {
+                            alertify
+                                .warning('<i class="fas fa-ban text-danger fa-lg mr-3"></i><?php echo langHdl('index_maintenance_mode_admin'); ?>', 0)
+                                .dismissOthers(); 
+                            return false;
+                        }
+
+
                         if (data.value === randomstring) {
                             $("#connection_error").hide();
                             // Check if 1st connection
@@ -802,7 +776,7 @@ function identifyUser(redirect, psk, data, randomstring)
 
                 // Delay page submit
                 $(this).delay(500).queue(function() {
-                    //document.location.reload(true);
+                    document.location.reload(true);
                     $(this).dequeue();
                 });
             }

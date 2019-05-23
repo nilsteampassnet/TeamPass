@@ -219,10 +219,16 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
-// Alter table
+// Alter table FILES
 mysqli_query(
     $db_link,
     'ALTER TABLE `'.$pre.'files` CHANGE `name` `name` TEXT CHARACTER SET utf8 COLLATE NOT NULL;'
+);
+
+// Alter table CACHE
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `'.$pre.'cache` CHANGE `folder` `folder` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;'
 );
 
 // Add field confirmed to FILES table
@@ -255,6 +261,7 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
+
 
 // Force attachment encryption 'enable_attachment_encryption'
 mysqli_query(

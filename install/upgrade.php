@@ -411,11 +411,11 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         <h4>Finalization</h4>
         <div>
             <ul>
-            <li>Regenerate settings.php file to remove any dependency to saltkey file if requested <span id="step5_settingFile"></span></li>
-            <li>Anonymize old sk file if requested <span id="step5_skFile"></span></li>
-            <li>Anonymize saltkey file if requested <span id="step5_saltkeyFile"></span></li>
-            <li>Generate config file if requested <span id="step5_configFile"></span></li>
-            <li>Generate CSRFP config file if requested <span id="step5_csrfpFile"></span></li>
+            <li>Regenerate settings.php file to remove any dependency to saltkey file if needed <span id="step5_settingFile"></span></li>
+            <li>Anonymize old sk file if needed <span id="step5_skFile"></span></li>
+            <li>Anonymize saltkey file if needed <span id="step5_saltkeyFile"></span></li>
+            <li>Generate config file if needed <span id="step5_configFile"></span></li>
+            <li>Generate CSRFP config file if needed <span id="step5_csrfpFile"></span></li>
             </ul>
         </div>';
 

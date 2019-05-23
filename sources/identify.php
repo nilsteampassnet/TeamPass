@@ -292,8 +292,6 @@ if ($post_type === 'identify_duo_user') {
             && (int) $SETTINGS['yubico_authentication'] === 1) ? true : false,
             'duo' => (isset($SETTINGS['duo']) === true
             && (int) $SETTINGS['duo'] === 1) ? true : false,
-            'admin_2fa_required' => (isset($SETTINGS['admin_2fa_required']) === true
-            && (int) $SETTINGS['admin_2fa_required'] === 1) ? true : false,
         ),
         'encode'
     );
@@ -366,10 +364,10 @@ function identifyUser($sentData, $SETTINGS)
 
     // prepare variables
     if (isset($SETTINGS['enable_http_request_login']) === true
-        && $SETTINGS['enable_http_request_login'] === '1'
+        && (int) $SETTINGS['enable_http_request_login'] === 1
         && isset($_SERVER['PHP_AUTH_USER']) === true
         && isset($SETTINGS['maintenance_mode']) === true
-        && $SETTINGS['maintenance_mode'] === '1'
+        && (int) $SETTINGS['maintenance_mode'] === 1
     ) {
         if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
             $username = explode('@', filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
@@ -485,7 +483,7 @@ function identifyUser($sentData, $SETTINGS)
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
-        && $SETTINGS['ldap_mode'] === '1'
+        && (int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
     ) {
         //Multiple Domain Names
@@ -560,8 +558,8 @@ function identifyUser($sentData, $SETTINGS)
 
     // Check Yubico
     if (isset($SETTINGS['yubico_authentication'])
-        && $SETTINGS['yubico_authentication'] === '1'
-        && ($data['admin'] !== '1' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $data['admin'] === '1'))
+        && (int) $SETTINGS['yubico_authentication'] === 1
+        && ((int) $data['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $data['admin'] === 1))
         && $user_2fa_selection === 'yubico'
     ) {
         $ret = yubicoMFACheck(
@@ -584,7 +582,7 @@ function identifyUser($sentData, $SETTINGS)
     // Create new LDAP user if not existing in Teampass
     // Don't create it if option "only localy declared users" is enabled
     if ($counter === 0 && $ldapConnection === true
-        && isset($SETTINGS['ldap_elusers']) === true && ($SETTINGS['ldap_elusers'] == 0)
+        && isset($SETTINGS['ldap_elusers']) === true && ((int) $SETTINGS['ldap_elusers'] === 0)
     ) {
         // If LDAP enabled, create user in TEAMPASS if doesn't exist
 
@@ -824,6 +822,25 @@ function identifyUser($sentData, $SETTINGS)
             DEBUGDUOFILE,
             "User's password verified: ".$userPasswordVerified."\n"
         );
+
+        // Manage Maintenance mode
+        if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
+            && (int) $data['admin'] === 0
+        ) {
+            echo prepareExchangedData(
+                array(
+                    'value' => '',
+                    'user_admin' => '',
+                    'initial_url' => '',
+                    'pwd_attempts' => '',
+                    'error' => 'maintenance_mode_enabled',
+                    'message' => '',
+                ),
+                'encode'
+            );
+
+            return false;
+        }
 
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok

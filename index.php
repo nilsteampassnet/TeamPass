@@ -69,7 +69,6 @@ if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === 
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
 }
 
-
 // Include files
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
@@ -114,8 +113,8 @@ $session_login = $superGlobal->get('login', 'SESSION');
 $session_validite_pw = $superGlobal->get('validite_pw', 'SESSION');
 $session_nb_folders = $superGlobal->get('nb_folders', 'SESSION');
 $session_nb_roles = $superGlobal->get('nb_roles', 'SESSION');
-$session_autoriser = $superGlobal->get('autoriser', 'SESSION');
-$session_hide_maintenance = $superGlobal->get('hide_maintenance', 'SESSION');
+//$session_autoriser = $superGlobal->get('autoriser', 'SESSION');
+//$session_hide_maintenance = $superGlobal->get('hide_maintenance', 'SESSION');
 $session_initial_url = $superGlobal->get('initial_url', 'SESSION');
 $server_request_uri = $superGlobal->get('REQUEST_URI', 'SERVER');
 $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');

@@ -2312,7 +2312,6 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
-
         // Store in DB
         foreach ($dataReceived as $key => $value) {
             DB::query(
@@ -2323,7 +2322,7 @@ switch ($post_type) {
                 $key
             );
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2343,6 +2342,9 @@ switch ($post_type) {
                     $key
                 );
             }
+
+            // Refresh settings
+            $SETTINGS[$key] = $value;
         }
 
         // send data

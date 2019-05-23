@@ -250,9 +250,10 @@ if (isset($_GET['type']) === false) {
     foreach ($rows as $record) {
         $getItemInList = true;
         $sOutputItem = '[';
+        $right = 0;
+        $checkbox = '';
 
         // massive move/delete enabled?
-        $checkbox = '';
         if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === '1') {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;

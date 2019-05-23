@@ -632,6 +632,7 @@ $SETTINGS = array (';
                             array('admin', 'bck_script_passkey', generateRandomKey()),
                             array('admin', 'admin_2fa_required', '1'),
                             array('admin', 'password_overview_delay', '4'),
+                            array('admin', 'copy_to_clipboard_small_icons', '1'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -835,7 +836,7 @@ $SETTINGS = array (';
                             `id_tree` int(12) NOT NULL,
                             `perso` tinyint(1) NOT NULL,
                             `restricted_to` varchar(200) DEFAULT NULL,
-                            `login` varchar(200) DEFAULT NULL,
+                            `login` text DEFAULT NULL,
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
@@ -1268,38 +1269,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     fclose($file_handler);
                     if ($result === false) {
                         echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
-                    } else {
-                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
-                    }
-                } elseif ($task === 'sk.php') {
-                    //Create sk.php file
-                    if (file_exists($skFile)) {
-                        if (!copy($skFile, $skFile.'.'.date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "sk.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
-                            break;
-                        } else {
-                            unlink($skFile);
-                        }
-                    }
-                    $file_handler = fopen($skFile, 'w');
-
-                    $result = fwrite(
-                        $file_handler,
-                        utf8_encode(
-                            "<?php
-@define('COST', '13'); // Don't change this.
-@define('AKEY', '');
-@define('IKEY', '');
-@define('SKEY', '');
-@define('HOST', '');
-?>"
-                        )
-                    );
-                    fclose($file_handler);
-
-                    // finalize
-                    if ($result === false) {
-                        echo '[{"error" : "sk.php file could not be created. Please check the path and the rights.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     } else {
                         echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }

@@ -580,6 +580,109 @@ if (isset($post_type)) {
                 } else {
                     unlink($settingsFile);
                 }
+				
+				// CHeck if old sk.php exists.
+				// If yes then get keys to database and delete it
+				if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+					$filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH).'/sk.php';
+					if (file_exists($filename)) {
+						include_once $filename;
+						unlink($filename);
+						
+						// AKEY
+						$tmp = mysqli_num_rows(mysqli_query(
+							$db_link,
+							'SELECT * FROM `'.$pre."misc`
+							WHERE type = 'duoSecurity' AND intitule = 'akey'"
+						));
+						if ($tmp == 0) {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".AKEY."', 'duoSecurity', 'akey')"
+							);
+						} else {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".AKEY."', 'duoSecurity', 'akey')"
+							);
+						}
+						
+						// SKEY
+						$tmp = mysqli_num_rows(mysqli_query(
+							$db_link,
+							'SELECT * FROM `'.$pre."misc`
+							WHERE type = 'duoSecurity' AND intitule = 'skey'"
+						));
+						if ($tmp == 0) {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".SKEY."', 'duoSecurity', 'skey')"
+							);
+						} else {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".SKEY."', 'duoSecurity', 'skey')"
+							);
+						}
+						
+						// IKEY
+						$tmp = mysqli_num_rows(mysqli_query(
+							$db_link,
+							'SELECT * FROM `'.$pre."misc`
+							WHERE type = 'duoSecurity' AND intitule = 'ikey'"
+						));
+						if ($tmp == 0) {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
+							);
+						} else {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
+							);
+						}
+						
+						// HOST
+						$tmp = mysqli_num_rows(mysqli_query(
+							$db_link,
+							'SELECT * FROM `'.$pre."misc`
+							WHERE type = 'duoSecurity' AND intitule = 'host'"
+						));
+						if ($tmp == 0) {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".HOST."', 'duoSecurity', 'host')"
+							);
+						} else {
+							mysqli_query(
+								$db_link,
+								'INSERT INTO `'.$pre."misc`
+								(`valeur`, `type`, `intitule`)
+								VALUES ('".HOST."', 'duoSecurity', 'host')"
+							);
+						}
+					}
+				}
+				
+				// Ensure DB is read as UTF8
+				if (DB_ENCODING === "") {
+					DB_ENCODING = "utf8";
+				}
 
                 // Now create new file
                 $file_handled = fopen($settingsFile, 'w');
@@ -598,11 +701,6 @@ define("DB_PREFIX", "'.DB_PREFIX.'");
 define("DB_PORT", "'.DB_PORT.'");
 define("DB_ENCODING", "'.DB_ENCODING.'");
 define("SECUREPATH", "'.SECUREPATH.'");
-define("SALT", "");
-define("IKEY", "");
-define("SKEY", "");
-define("AKEY", "");
-define("COST", "");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);

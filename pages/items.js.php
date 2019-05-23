@@ -137,18 +137,12 @@ $('#jstree').jstree({
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
         selectedFolderId = selectedFolder.id.split('_')[1];
         console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
+        console.log(selectedFolder);
 
-        // Refresh list of folders
-        var newFoldersList = [];
-        var v = $('#jstree').jstree().get_json('#', {no_state:true,flat:true});
-        $.each(v, function(value, key) {
-            newFoldersList.push({
-                'id' : parseInt(key.id.substring(3)),
-                'label' : key.text.substring(0, key.text.indexOf(' (<span class=')).trim(),
-            })
-        });
+        /*store.each(function(value, key) {
+            console.log(key, '==', value)
+        });*/
 
-        // Store in localstorage for future usage
         store.update(
             'teampassApplication',
             function (teampassApplication)
@@ -156,10 +150,9 @@ $('#jstree').jstree({
                 teampassApplication.selectedFolder = selectedFolderId,
                 teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
                 teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
-                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
-                teampassApplication.foldersList = newFoldersList
+                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title']
             }
-        );
+        )
 
         // Prepare list of items
         if (startedItemsListQuery === false) {
@@ -422,7 +415,6 @@ $('.tp-action').click(function() {
         //
     } else if ($(this).data('folder-action') === 'add') {
         console.info('SHOW ADD FOLDER');
-        
         // Check privileges
         if (store.get('teampassItem').hasAccessLevel < 30) {
             alertify
@@ -439,9 +431,7 @@ $('.tp-action').click(function() {
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
         // Prepare some data in the form
-        if (selectedFolder !== '') {
-            $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
-        }
+        $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
         $('#form-folder-add-label')
             .val('')
             .focus();
@@ -2360,14 +2350,6 @@ $('#form-item-button-save').click(function() {
                 .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_selected_folder'); ?>', 10)
                 .dismissOthers();
             return false;
-        } else if (store.get('teampassApplication').personalSaltkeyRequired === 1
-            && store.get('teampassUser').pskDefinedInDatabase !== 1
-        ) {
-            // No folder selected
-            alertify
-                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_personal_saltkey_is_not_set'); ?>', 10)
-                .dismissOthers();
-            return false;
         } else {
             // Continue preparation of saving query
             
@@ -2435,8 +2417,7 @@ $('#form-item-button-save').click(function() {
                 'folder': parseInt($('#form-item-folder').val()),
                 'email': $('#form-item-email').val(),
                 'fields': fields,
-                'folder_is_personal': (store.get('teampassApplication').personalSaltkeyRequired === 1
-                    && store.get('teampassUser').pskDefinedInDatabase === 1) ? 1 : 0,
+                'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                 'id'   : store.get('teampassItem').id,
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
@@ -2445,9 +2426,9 @@ $('#form-item-button-save').click(function() {
                 'restricted_to_roles': restrictionRole,
                 'tags': $('#form-item-tags').val(),
                 'template_id': parseInt($('input.form-check-input-template:checkbox:checked').data('category-id')),
-                'to_be_deleted_after_date': ($('#form-item-deleteAfterDate') !== undefined
+                'to_be_deleted_after_date': ($('#form-item-deleteAfterDate').length !== 0
                     && $('#form-item-deleteAfterDate').val() !== '') ? $('#form-item-deleteAfterDate').val() : '',
-                'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown') !== undefined
+                'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown').length !== 0
                     && $('#form-item-deleteAfterShown').val() !== '' && $('#form-item-deleteAfterShown').val() >= 1) ?
                     parseInt($('#form-item-deleteAfterShown').val()) : '',
                 'url': $('#form-item-url').val(),
@@ -2971,16 +2952,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || '0';
     console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
-
-    if (groupe_id === '' || groupe_id === undefined) {
-        // Show warning to user
-        $('#info_teampass_items_list')
-            .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
-                '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('no_folder_selected'); ?></b>' +
-                '</div>')
-            .removeClass('hidden');
-        return false;
-    }
 
     // case where we should stop listing the items
     if (store.get('teampassApplication') !== undefined && store.get('teampassApplication') .itemsListStop === 1) {

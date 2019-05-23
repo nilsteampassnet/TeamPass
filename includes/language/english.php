@@ -17,7 +17,6 @@
 
 return array(
     'server' => 'Server',
-    'no_folder_selected' => 'Please select a folder',
     'enable_statistics' => 'Sendinf',
     'data_refreshed' => 'Data refreshed',
     'loading_image' => 'Loading image',
@@ -416,6 +415,8 @@ return array(
     'api_whitelist_ips_tip' => 'If no API client IP addresses are explicitly listed here, then any IP address is authorized.',
     'email_share_item_subject' => 'A password item was shared with you',
     'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item#.<br><br><a href=\'#tp_link#\'>Click this link</a> to access the item.<br><br><br>Greetings',
+    'index_maintenance_mode' => 'Maintenance mode is enabled. Only administrators can sign in.',
+    'index_maintenance_mode_admin' => 'Maintenance mode is enabled. Users cannot sign in.',
     '---' => '---',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
@@ -930,8 +931,6 @@ return array(
     'index_last_pw_change' => 'Password changed',
     'index_last_seen' => 'Last connection ',
     'index_login' => 'Account',
-    'index_maintenance_mode' => 'Maintenance mode has been activated. Only administrators can log in.',
-    'index_maintenance_mode_admin' => 'Maintenance mode is activated. Users currently can not log in.',
     'index_new_pw' => 'New password',
     'index_password' => 'Password',
     'index_pw_error_identical' => 'The passwords have to be identical!',

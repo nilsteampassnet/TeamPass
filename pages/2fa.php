@@ -43,21 +43,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 // Load template
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-//get infos from SETTINGS.PHP file
-$filename = $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-$events = '';
-if (file_exists($filename)) {
-    //copy some constants from this existing file
-    $settingsFile = file($filename);
-    if ($settingsFile !== false) {
-        foreach ($settingsFile as $key => $val) {
-            if (substr_count($val, "define('SECUREPATH'")) {
-                $skfile = substr($val, 26, strpos($val, "');") - 26).'/sk.php';
-            }
-        }
-    }
-}
-
 ?>
 
 <!-- Content Header (Page header) -->
@@ -176,7 +161,7 @@ if (file_exists($filename)) {
                                         <?php echo langHdl('admin_duo_akey'); ?>
                                     </div>
                                     <div class="col-7 input-group mb-0">
-                                        <input type="text" class="form-control form-control-sm" id="duo_akey" value="<?php echo $duoAkey; ?>">
+                                        <input type="text" class="form-control form-control-sm" id="duo_akey" value="<?php echo $SETTINGS['duo_akey']; ?>">
                                         <div class="input-group-append">
                                             <button class="btn btn-outline-secondary btn-no-click infotip generate-key" data-length="40" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
                                         </div>
@@ -187,7 +172,7 @@ if (file_exists($filename)) {
                                         <?php echo langHdl('admin_duo_ikey'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_ikey" value="<?php echo $duoIkey; ?>">
+                                        <input type="text" class="form-control form-control-sm" id="duo_ikey" value="<?php echo $SETTINGS['duo_ikey']; ?>">
                                     </div>
                                 </div>
                                 <div class="row mb-2">
@@ -195,7 +180,7 @@ if (file_exists($filename)) {
                                         <?php echo langHdl('admin_duo_skey'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_skey" value="<?php echo $duoSkey; ?>">
+                                        <input type="text" class="form-control form-control-sm" id="duo_skey" value="<?php echo $SETTINGS['duo_skey']; ?>">
                                     </div>
                                 </div>
                                 <div class="row mb-2">
@@ -203,7 +188,7 @@ if (file_exists($filename)) {
                                         <?php echo langHdl('admin_duo_host'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_host" value="<?php echo $duoHost; ?>">
+                                        <input type="text" class="form-control form-control-sm" id="duo_host" value="<?php echo $SETTINGS['duo_host']; ?>">
                                     </div>
                                 </div>
 

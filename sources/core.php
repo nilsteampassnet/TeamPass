@@ -312,8 +312,8 @@ if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
 * IF yes then authorize all ADMIN connections and
 * reject all others
 */
-if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] == 1) {
-    if (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] != 1) {
+if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1) {
+    if (isset($_SESSION['user_admin']) === true && (int) $_SESSION['user_admin'] !== 1) {
         // Update table by deleting ID
         if (isset($_SESSION['user_id']) === true) {
             DB::update(
@@ -347,7 +347,12 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        setTimeout(function(){document.location.href="./includes/core/logout.php"}, 10);
+        setTimeout(
+            function() {
+                document.location.href="./includes/core/logout.php"
+            },
+            10
+        );
         -->
         </script>';
         exit;

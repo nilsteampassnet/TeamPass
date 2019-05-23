@@ -177,10 +177,10 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
 }
 
 if (isset($SETTINGS['enable_http_request_login']) === true
-    && $SETTINGS['enable_http_request_login'] === '1'
+    && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && (isset($SETTINGS['maintenance_mode']) === false
-    && $SETTINGS['maintenance_mode'] === '1')
+    && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
     echo '
 <script>
@@ -240,13 +240,6 @@ echo '
 
 /*
 // No forgot link any more - not secure - must go through Admin or Managers
-// Forgot link
-if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true) {
-    echo '
-        <div class="row mb-1">
-            <a href="#" id="link_forgot_user_pwd">'.langHdl('forgot_my_pw').'</a>
-        </div>';
-}
 */
 
 echo '

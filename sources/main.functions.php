@@ -1036,7 +1036,7 @@ function cacheTableRefresh($SETTINGS)
                     'perso' => $record['perso'],
                     'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : '0',
                     'login' => isset($record['login']) ? $record['login'] : '',
-                    'folder' => implode(' » ', $folder),
+                    'folder' => implode(' > ', $folder),
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : '0',
                     'timestamp' => $record['date'],
@@ -3266,11 +3266,14 @@ function storeUsersShareKey(
     DB::$encoding = DB_ENCODING;
 
     // Delete existing entries for this object
+    db::debugmode(true);
     DB::delete(
         $object_name,
         'object_id = %i',
         $post_object_id
     );
+    db::debugmode(false);
+    echo " -- ".$post_folder_is_personal." -- ";
 
     if ((int) $post_folder_is_personal === 1
         && in_array($post_folder_id, $_SESSION['personal_folders']) === true
