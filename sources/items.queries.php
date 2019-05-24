@@ -4488,6 +4488,7 @@ if (null !== $post_type) {
             // Check that user can access this folder
             if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                 || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
+                || (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
             ) {
                 echo prepareExchangedData(
                     array(
@@ -4500,7 +4501,7 @@ if (null !== $post_type) {
             }
 
             // Manage possible cases
-            if ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '0') {
+            if ((int) $dataSource['personal_folder'] === 0 && (int) $dataDestination['personal_folder'] === 0) {
                 // Previous is non personal folder and new too
                 // Just update is needed. Item key is the same
                 DB::update(
@@ -4513,7 +4514,7 @@ if (null !== $post_type) {
                 );
             // ---
                 // ---
-            } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
+            } elseif ((int) $dataSource['personal_folder'] === 0 && (int) $dataDestination['personal_folder'] === 1) {
                 // Source is public and destination is personal
                 // Decrypt and remove all sharekeys (items, fields, files)
                 // Encrypt only for the user
@@ -4572,7 +4573,7 @@ if (null !== $post_type) {
                 );
             // ---
                 // ---
-            } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '1') {
+            } elseif ((int) $dataSource['personal_folder'] === 1 && (int) $dataDestination['personal_folder'] === 1) {
                 // If previous is personal folder and new is personal folder too => no key exist on item
                 // just update is needed. Item key is the same
                 DB::update(
@@ -4585,7 +4586,7 @@ if (null !== $post_type) {
                 );
             // ---
                 // ---
-            } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '0') {
+            } elseif ((int) $dataSource['personal_folder'] === 1 && (int) $dataDestination['personal_folder'] === 0) {
                 // If previous is personal folder and new is not personal folder => no key exist on item => add new
                 // Create keys for all users
 

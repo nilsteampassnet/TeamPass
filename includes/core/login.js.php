@@ -113,11 +113,11 @@ $(function() {
     $('.infotip').tooltip();
 });
 
-var twoFaMethods = parseInt($("#2fa_google").val())
-  + parseInt($("#2fa_agses").val())
-  + parseInt($("#2fa_duo").val())
-  + parseInt($("#2fa_yubico").val()
-);
+var twoFaMethods = parseInt(store.get('teampassSettings').google_authentication)
+  + parseInt(store.get('teampassSettings').agses_authentication_enabled)
+  + parseInt(store.get('teampassSettings').duo)
+  + parseInt(store.get('teampassSettings').yubico_authentication);
+
 if (twoFaMethods > 1) {
     // At least 2 2FA methods have to be shown
     var loginButMethods = ['google', 'agses', 'duo'];
@@ -172,9 +172,9 @@ if (twoFaMethods > 1) {
     // Show only expected MFA
     $('#2fa_methods_selector').addClass('hidden');
     // One 2FA method is expected
-    if (parseInt($('#2fa_google').val()) === 1) {
+    if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
         $('#div-2fa-google').removeClass('hidden');
-    } else if (parseInt($('#2fa_yubico').val()) === 1) {
+    } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
         $('#div-2fa-yubico').removeClass('hidden');
     }
     $('#login').focus();
@@ -571,13 +571,19 @@ function launchIdentify(isDuo, redirect, psk)
             if ($(".2fa_selector_select").length > 1) {
                 mfaMethod = $(".2fa_selector_select:checked").data('mfa');
             } else {
-                $('.user-mfa').each(function(i, obj) {
-                    if (parseInt($(obj).val()) === 1) {
-                        var tmp = $(obj).attr('id').split('_');
-                        mfaMethod = tmp[1];
-                        return true;
-                    }
-                });
+                if (data.google === true) {
+                    mfaMethod = 'google';
+                } else if (data.duo === true) {
+                    mfaMethod = 'duo';
+                } else if (data.yubico === true) {
+                    mfaMethod = 'yubico';
+                //} else if (data.agses === true) {
+                //    mfaMethod = 'agses';
+                }
+            }
+
+            if (mfaMethod !== '') {
+                $('#2fa_methods_selector').removeClass('hidden');
             }
 
 

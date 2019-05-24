@@ -3599,6 +3599,15 @@ function proceed_list_update(stop_proceeding)
             hoverClass: 'bg-warning',
             tolerance: 'pointer',
             drop: function(event, ui) {
+                // Check if same folder
+                if (parseInt($(this).attr('id').substring(4)) === parseInt(ui.draggable.data('item-tree-id'))) {
+                    alertify
+                        .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>', 3)
+                        .dismissOthers();
+                    return false;
+                }
+
+                // Warn user that it starts
                 alertify
                     .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                     .dismissOthers();

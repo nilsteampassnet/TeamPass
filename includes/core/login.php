@@ -101,15 +101,16 @@ echo '
 
     // 2FA auth selector
     echo '
-        <input type="hidden" id="2fa_agses" class="user-mfa" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
+        <!--<input type="hidden" id="2fa_agses" class="user-mfa" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
         <input type="hidden" id="2fa_duo" class="user-mfa" value="', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ? 1 : 0, '" />
         <input type="hidden" id="2fa_google" class="user-mfa" value="', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ? 1 : 0, '" />
         <input type="hidden" id="2fa_yubico" class="user-mfa" value="', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ? 1 : 0, '" />
+        -->
         <input type="hidden" id="2fa_user_selection" value="',
             (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : '')
         , '" />
         <input type="hidden" id="duo_sig_response" value="', null !== $post_sig_response ? $post_sig_response : '', '" />
-        <div class="row mb-3" id="2fa_methods_selector">
+        <div class="row mb-3 hidden" id="2fa_methods_selector">
           <div class="col-12">
             <h8 class="login-box-msg">'.langHdl('2fa_authentication_selector').'</h8>
             <div class="2fa-methods text-center mt-2">

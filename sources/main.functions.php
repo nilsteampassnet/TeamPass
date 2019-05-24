@@ -3266,14 +3266,11 @@ function storeUsersShareKey(
     DB::$encoding = DB_ENCODING;
 
     // Delete existing entries for this object
-    db::debugmode(true);
     DB::delete(
         $object_name,
         'object_id = %i',
         $post_object_id
     );
-    db::debugmode(false);
-    echo " -- ".$post_folder_is_personal." -- ";
 
     if ((int) $post_folder_is_personal === 1
         && in_array($post_folder_id, $_SESSION['personal_folders']) === true
