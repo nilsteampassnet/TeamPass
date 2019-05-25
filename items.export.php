@@ -163,7 +163,7 @@ echo '
                             pdf_password : $("#export_pdf_password").val()
                         },
                         function(data) {
-                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                            $("#export_information").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
                         },
                         "json"
                     );
@@ -236,7 +236,7 @@ echo '
                     pdf_password : $("#pdf_password").val()
                 },
                 function(data) {
-                    $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                    $("#export_information").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
                 },
                 "json"
             );

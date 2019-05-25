@@ -237,6 +237,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 }
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                console.log(data);
 
                 // reset doubleclick prevention
                 requestRunning = false;
@@ -470,7 +471,7 @@ function showItemsList(data)
         if (value.copy_to_clipboard_small_icons === "1" && value.display_item === 1) {
             // Login icon
             if (value.login !== "") {
-                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+sanitizeString(value.login)+'" title="<?php echo addslashes($LANG['item_menu_copy_login']); ?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
+                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+decodeURIComponent(escape(value.login))+'" title="<?php echo addslashes($LANG['item_menu_copy_login']); ?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
             }
             // Pwd icon
             if (value.pw !== "") {

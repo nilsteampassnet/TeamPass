@@ -1114,6 +1114,8 @@ function restGet()
                                 'fonction_id' => $rolesList,
                                 'groupes_interdits' => '0',
                                 'groupes_visibles' => '0',
+                                'encrypted_psk' => '',
+                                'fonction_id' => '',
                                 'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
                             )
                         );
@@ -1582,7 +1584,7 @@ function restGet()
                     restError('USERLOGINEMPTY');
                 }
                 // Check if user already exists
-                $data = DB::query(
+                $data = DB::queryfirstrow(
                     "SELECT id, fonction_id, groupes_interdits, groupes_visibles, personal_folder
                     FROM ".prefix_table("users")."
                     WHERE login LIKE %ss",
@@ -1642,6 +1644,7 @@ function restGet()
                                 'fonction_id' => $rolesList,
                                 'groupes_interdits' => '0',
                                 'groupes_visibles' => '0',
+                                'fonction_id' => '',
                                 'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
                             ),
                             "id = %i",
@@ -1682,7 +1685,7 @@ function restGet()
                             ""
                         );
 
-                        echo '{"status":"user added"}';
+                        echo '{"status":"user edited"}';
                     } catch (PDOException $ex) {
                         echo '<br />'.$ex->getMessage();
                     }

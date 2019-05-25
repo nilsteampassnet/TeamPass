@@ -928,7 +928,7 @@ function identifyUser(
     // Create new LDAP user if not existing in Teampass
     // Don't create it if option "only localy declared users" is enabled
     if ($counter == 0 && $ldapConnection === true && isset($SETTINGS['ldap_elusers'])
-        && ($SETTINGS['ldap_elusers'] == 0)
+        && ((int) $SETTINGS['ldap_elusers'] === 0)
     ) {
         // If LDAP enabled, create user in TEAMPASS if doesn't exist
 

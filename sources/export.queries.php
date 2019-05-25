@@ -361,7 +361,10 @@ EOD;
                 //clean table
                 DB::query("TRUNCATE TABLE ".prefix_table("export"));
 
-                echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$pdf_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
+                //generate 2d key
+                $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
+
+                echo '[{"result":"pdf_export" , "href":"sources/downloadFile.php?name='.urlencode($pdf_file).'&sub=files&file='.$pdf_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
             }
             break;
 
@@ -499,7 +502,12 @@ EOD;
             // Close and display
             fclose($outstream);
 
-            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
+            //echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
+
+            //generate 2d key
+            $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
+
+            echo '[{"result":"csv_export" , "href":"sources/downloadFile.php?name='.urlencode($csv_file).'&sub=files&file='.$csv_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
             break;
 
     //CASE export in HTML format

@@ -1,6 +1,7 @@
 2.1.27
 36/
  #2564 Permissions problem
+ #2469 Export of credentials
 
 35/
  #2564 Permissions problem

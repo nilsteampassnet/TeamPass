@@ -2625,7 +2625,6 @@ if (null !== $post_type) {
                 }
                 $accessLevel = $uniqueLoadData['accessLevel'] = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
 
-                
                 // check if this folder is a PF. If yes check if saltket is set
                 if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
                     $showError = "is_pf_but_no_saltkey";
@@ -2803,7 +2802,7 @@ if (null !== $post_type) {
                 $idManaged = '';
                 $i = 0;
                 $arr_items_html = array();
-
+                
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) === true || $idManaged !== $record['id']) {
@@ -2827,7 +2826,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
+                        $html_json[$record['id']]['label'] = utf8_encode($record['label']);
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
                         } else {
@@ -3053,7 +3052,7 @@ if (null !== $post_type) {
                             $pw = "";
                         }
                         $html_json[$record['id']]['pw'] = $pw;
-                        $html_json[$record['id']]['login'] = $record['login'];
+                        $html_json[$record['id']]['login'] = utf8_encode($record['login']);
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
@@ -3067,7 +3066,7 @@ if (null !== $post_type) {
                         }
 
                         // Build array with items
-                        array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
+                        array_push($itemsIDList, array($record['id'], $pw, utf8_encode($record['login']), $displayItem));//
 
                         $i++;
                     }
@@ -3099,7 +3098,6 @@ if (null !== $post_type) {
             } else {
                 $listToBeContinued = "end";
             }
-            
             // Prepare returned values
             $returnValues = array(
                 "html_json" => $html_json,
@@ -3123,6 +3121,8 @@ if (null !== $post_type) {
             if (count($rights) > 0) {
                 $returnValues = array_merge($returnValues, $rights);
             }
+            //print_r($returnValues);
+            
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
 

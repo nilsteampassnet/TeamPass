@@ -808,7 +808,7 @@ function identifyUserRights(
                     array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
                     
                     // get all descendants
-                    $ids = $tree->getDescendants($persoFld['id'], false, false);
+                    $ids = $tree->getDescendants($persoFld['id'], false);
                     foreach ($ids as $ident) {
                         if ((int) $ident->personal_folder === 1) {
                             array_push($listAllowedFolders, $ident->id);
@@ -1405,6 +1405,13 @@ function isUTF8($string)
 function prepareExchangedData($data, $type)
 {
     global $SETTINGS;
+    /* 
+    print_r($data);
+echo "\n".json_encode(
+    $data,
+    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+)."\n".$_SESSION['key']."  --  ";
+*/
 
     //load ClassLoader
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -1418,13 +1425,13 @@ function prepareExchangedData($data, $type)
         ) {
             return json_encode(
                 $data,
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
             );
         } else {
             return Encryption\Crypt\aesctr::encrypt(
                 json_encode(
                     $data,
-                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
                 ),
                 $_SESSION['key'],
                 256
