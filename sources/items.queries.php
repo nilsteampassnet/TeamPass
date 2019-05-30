@@ -2808,14 +2808,14 @@ if (null !== $post_type) {
                     if (empty($idManaged) === true || $idManaged !== $record['id']) {
                         // Get Expiration date
                         $expired_item = 0;
-                        if ($SETTINGS['activate_expiration'] === '1') {
+                        if ((int) $SETTINGS['activate_expiration'] === 1) {
                             if ($record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
                             ) {
                                 $html_json[$record['id']]['expiration_flag'] = "mi-red";
                                 $expired_item = 1;
                             } else {
-                                if ($record['perso'] !== '1') {
+                                if ((int) $record['perso'] !== 1) {
                                     $html_json[$record['id']]['expiration_flag'] = "mi-green";
                                 } else {
                                     $html_json[$record['id']]['expiration_flag'] = "";
