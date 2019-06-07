@@ -506,14 +506,14 @@ function showItemsList(data)
         if (value.expiration_flag !== "") {
             item_flag = '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;';
         }
-
+        
         // Appenditem row
         $("#full_items_list").append(
             '<li name="' + value.label + '" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" data-edition="'+value.open_edit+'">' + item_span +
             item_flag +
             '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
             '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"  ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+
-            '<span id="item_label_' + value.item_id + '">' + value.label + '</span>&nbsp;<font size="1px">' +
+            '<span id="item_label_' + value.item_id + '">' + atob(value.label) + '</span>&nbsp;<font size="1px">' +
             value.desc +
             '</div></font></a>' +
             '<span style="float:right;margin-top:2px;">' +
@@ -1145,7 +1145,7 @@ function EditerItem()
                 "complexity_level": parseInt($("#edit_mypassword_complex").val()),
                 "template_id": mandatoryTemplateId
             };
-            console.log(data);
+            //console.log(data);
             //send query
             $.post(
                 "sources/items.queries.php",
@@ -5009,7 +5009,8 @@ function globalItemsSearch()
                     $("#full_items_list").append(
                     '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
                     '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']); ?>"></span>&nbsp;' +
-                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><b>'+value.label + '</b>' +
+                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><b>'+
+                        decodeURIComponent(escape(value.label)) + '</b>' +
                         '&nbsp;<span style="font-size:11px;font-style:italic; background-color:#f2e9e5;">&nbsp;<i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'&nbsp;</span>&nbsp;'+value.desc+'' +
                         '</span><span style="float:right;margin:2px 10px 0px 0px;">' +
                         value.login +
