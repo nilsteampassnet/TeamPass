@@ -20,6 +20,7 @@ RUN echo && \
   /usr/local/bin/docker-php-ext-install ldap && \
   apk del openldap-dev && \
   echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
+  echo "session.gc_maxlifetime = 57600 " >> /usr/local/etc/php/conf.d/docker-vars.ini && \
 echo
 
 # Fix API URL, BUG: API not working in container. #2100
