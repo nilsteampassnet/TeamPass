@@ -7,7 +7,7 @@ abstract class BaseHTTPQRCodeProvider implements IQRCodeProvider
 {
     protected $verifyssl;
 
-    protected function getContent($url)
+    protected function getContent($url, $proxyIP, $proxyPort)
     {
         $curlhandle = curl_init();
         
@@ -18,7 +18,8 @@ abstract class BaseHTTPQRCodeProvider implements IQRCodeProvider
             CURLOPT_DNS_CACHE_TIMEOUT => 10,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => $this->verifyssl,
-            CURLOPT_USERAGENT => 'TwoFactorAuth'
+            CURLOPT_USERAGENT => 'TwoFactorAuth',
+            CURLOPT_PROXY => empty($proxyIP) === true || empty($proxyPort) === true ? '' : $proxyIP.':'.$proxyPort
         ));
         $data = curl_exec($curlhandle);
         

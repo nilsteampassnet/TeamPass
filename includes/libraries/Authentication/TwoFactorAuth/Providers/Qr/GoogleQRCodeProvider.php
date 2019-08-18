@@ -25,9 +25,9 @@ class GoogleQRCodeProvider extends BaseHTTPQRCodeProvider
         return 'image/png';
     }
     
-    public function getQRCodeImage($qrtext, $size) 
+    public function getQRCodeImage($qrtext, $size, $proxyIP, $proxyPort) 
     {
-        return $this->getContent($this->getUrl($qrtext, $size));
+        return $this->getContent($this->getUrl($qrtext, $size), $proxyIP, $proxyPort);
     }
     
     public function getUrl($qrtext, $size) 

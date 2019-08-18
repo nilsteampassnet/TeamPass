@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 1; //Can be used in order to debug LDAP authentication
+$debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'SecureHandler.php';
@@ -442,8 +442,8 @@ function identifyUser(
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    //$link = mysqli_connect($server, $user, $pass, $database, $port);
+    //$link->set_charset($encoding);
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');

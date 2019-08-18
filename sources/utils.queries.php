@@ -179,13 +179,37 @@ if (null !== $post_type) {
                 "1",
                 $post_user_id
             );
+            
             foreach ($rows as $record) {
                 if (empty($currentID)) {
                     $currentID = $record['id'];
                 } else {
-                    array_push($pws_list, $record['id']);
+                    // Only add item id if not in array
+                    if (in_array($record['id'], $pws_list) === false) {
+                        array_push($pws_list, $record['id']);
+                    }
                 }
             }
+
+            // Loop and find all personal items
+            foreach ($_SESSION['personal_visible_groups'] as $folder) {
+                // Get each item in this folder
+                $items = DB::query(
+                    'SELECT id, perso FROM '.prefixTable('items').'
+                    WHERE id_tree = %i',
+                    $folder
+                );
+                foreach ($items as $item) {
+                    if (in_array($item['id'], $itemsToTreat) === false && (int) $item['perso'] === 1) {
+                        // Only add item id if not in array
+                        if (in_array($item['id'], $pws_list) === false) {
+                            array_push($pws_list, $item['id']);
+                        }
+                    }
+                }
+            }
+            
+
 
             echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
             break;

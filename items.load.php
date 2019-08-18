@@ -237,7 +237,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 }
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data);
+                //console.log(data);
 
                 // reset doubleclick prevention
                 requestRunning = false;

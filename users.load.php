@@ -174,7 +174,7 @@ $(function() {
         for (i = 30; i < 48; i++) {
             a.push(i);
         }
-        console.log(k);
+        
         if ($.inArray(k, a) !== -1) {
             e.preventDefault();
         }
@@ -260,7 +260,7 @@ $(function() {
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            if (data.error == "true") {
+                            if (data.error == "true" || data.key === undefined) {
                                 $("#add_new_user_error").html(data.error_msg).show(1).delay(1000).fadeOut(1000);
                             } else {
                                 //prepare data
@@ -270,8 +270,8 @@ $(function() {
                                     lastname                : $('#new_lastname').val(),
                                     pw                      : data.key[0],
                                     email                   : $('#new_email').val(),
-                                    admin                   : $('#new_admin').prop('checked'),
-                                    manager                 : $('#new_manager').prop('checked'),
+                                    admin                   : $('#new_admin').length === 0 ? false : $('#new_admin').prop('checked'),
+                                    manager                 : $('#new_manager').length === 0 ? false : $('#new_manager').prop('checked'),
                                     read_only               : $('#new_read_only').prop('checked'),
                                     personal_folder         : $('#new_personal_folder').prop('checked'),
                                     new_folder_role_domain  : $('#new_folder_role_domain').prop('checked'),

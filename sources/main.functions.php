@@ -225,7 +225,7 @@ function decrypt($encrypted, $personalSalt = "")
     if (!empty($personalSalt)) {
         $staticSalt = $personalSalt;
     } else {
-        $staticSalt = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        $staticSalt = SALT;
     }
     //base64 decode the entire payload
     $encrypted = base64_decode($encrypted);

@@ -1379,6 +1379,12 @@ function mainQuery()
                         $line = "'bck_script_passkey' => '<removed>'\n";
                     }
 
+                    // Clear bck_script_key
+                    if (strpos($line, 'bck_script_key') > 0) {
+                        $line = "'bck_script_key' => '<removed>'\n";
+                    }
+                    
+
                     // Complete line to display
                     $list_of_options .= $line;
                 }

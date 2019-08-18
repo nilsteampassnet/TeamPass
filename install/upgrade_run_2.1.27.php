@@ -322,10 +322,11 @@ mysqli_free_result($result);
 mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY groupes_visibles varchar(1000) NOT NULL");
 mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY fonction_id varchar(1000) NOT NULL");
 mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY groupes_interdits varchar(1000) NOT NULL");
-mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY favourites varchar(1000) NULL");
-mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY latest_items varchar(1000) NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY favourites varchar(1000) NULL DEFAULT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY latest_items varchar(1000) NULL DEFAULT NULL");
 mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY avatar varchar(1000) NOT NULL");
 mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY avatar_thumb varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY psk varchar(400) NULL DEFAULT NULL");
 
 
 // alter table KB_ITEMS
@@ -985,6 +986,11 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."items_change` CHANGE user_id user_id INT(12) NOT NULL;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."items_change` CHANGE item_id item_id INT(12) NOT NULL;"
 );
 
 // alter table ITEMS

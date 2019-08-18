@@ -198,7 +198,7 @@ $my_functions = explode(';', $_SESSION['fonction_id']);
 
 $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
 foreach ($rows as $record) {
-    if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+    if ($_SESSION['is_admin'] == 1 || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1) && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
         $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role">'.cleanText($record['title']).'</option>';
     }
 }

@@ -169,7 +169,10 @@ $htmlHeaders .= '
         if (redirect == undefined) {
             redirect = ""; //Check if redirection
         }
-
+        
+        // Sanitize redirection
+        redirect = encodeURIComponent(redirect);
+        
         // Check credentials are set
         if ($("#pw").val() === "" || $("#login").val() === "") {
             // Show warning
@@ -1436,14 +1439,20 @@ $htmlHeaders .= '
                 case 40: // Down
                 break;
                 default:
-                var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
+                var regex = new RegExp(/[a-zA-Z0-9\]\[.,/#&$@()%* ]/g);
                 var key = event.key;
                 if (!regex.test(key)) {
                     $("#set_personal_saltkey_warning").html("'.addslashes($LANG['character_not_allowed']).'").stop(true,true).show().fadeOut(1000);
                     event.preventDefault();
                     return false;
                 }
-                if (key !== "Alt" && key !== "Control" && key !== "Shift") $("#set_personal_saltkey_last_letter").html(key).stop(true,true).show().fadeOut(1400);
+                if (key !== "Alt" && key !== "Control" && key !== "Shift") {
+                    $("#set_personal_saltkey_last_letter")
+                        .html("\'"+key+"\' -> \'"+ event.which + "\'")
+                        .stop(true,true)
+                        .show()
+                        .fadeOut(1400);
+                }
                 break;
             }
         }).bind("paste",function(e){

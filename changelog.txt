@@ -1,6 +1,12 @@
 2.1.27
 37/
+ #2662 Google 2FA QR code is not displayed if using a proxy
+ #2651 Enabling Duo 2FA removes ability for a user to change their password
+ #2647 The secret value of "bck_script_key" is not masked in the output of the bug report
+ #2642 Reflected XXS on page index.php
  #2625 title with "ä, ö , ü" is displayed incorrectly
+ Fixed upgrade table Users structure
+ Improved regexp for personal saltkey
 
 36/
  #2564 Permissions problem

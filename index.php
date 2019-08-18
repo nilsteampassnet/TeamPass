@@ -644,7 +644,12 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
 } else {
     // Automatic redirection
     if (strpos($server_request_uri, "?") > 0) {
-        $nextUrl = filter_var(substr($server_request_uri, strpos($server_request_uri, "?")), FILTER_SANITIZE_URL);
+        $nextUrl = filter_var(
+            htmlspecialchars(
+                substr($server_request_uri, strpos($server_request_uri, "?"))
+            ),
+            FILTER_SANITIZE_URL
+        );
     }
     // MAINTENANCE MODE
     if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1') {
@@ -667,7 +672,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
         $superGlobal->put(
             "initial_url",
             filter_var(
-                substr($server_request_uri, strpos($server_request_uri, "index.php?")),
+                htmlspecialchars(substr($server_request_uri, strpos($server_request_uri, "index.php?"))),
                 FILTER_SANITIZE_URL
             ),
             "SESSION"
