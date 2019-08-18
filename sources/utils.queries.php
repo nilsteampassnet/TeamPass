@@ -195,7 +195,7 @@ if (null !== $post_type) {
             foreach ($_SESSION['personal_visible_groups'] as $folder) {
                 // Get each item in this folder
                 $items = DB::query(
-                    'SELECT id, perso FROM '.prefixTable('items').'
+                    'SELECT id, perso FROM '.prefix_table('items').'
                     WHERE id_tree = %i',
                     $folder
                 );
