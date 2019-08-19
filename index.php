@@ -778,10 +778,10 @@ if (($session_validite_pw === null
     } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
         // Define if user is allowed to see management pages
         if ($session_user_admin === 1) {
-            include $SETTINGS['cpassman_dir'].'./pages/'.$mngPages[$_GET['page']];
+            include $SETTINGS['cpassman_dir'].'/pages/'.$mngPages[$_GET['page']];
         } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
             if (($_GET['page'] !== 'manage_main' && $_GET['page'] !== 'manage_settings')) {
-                include $SETTINGS['cpassman_dir'].'./pages/'.$mngPages[$_GET['page']];
+                include $SETTINGS['cpassman_dir'].'/pages/'.$mngPages[$_GET['page']];
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                 include $SETTINGS['cpassman_dir'].'/error.php';
@@ -791,7 +791,7 @@ if (($session_validite_pw === null
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
     } elseif (isset($_GET['page']) === true) {
-        include $SETTINGS['cpassman_dir'].'./pages/'.$_GET['page'].'.php';
+        include $SETTINGS['cpassman_dir'].'/pages/'.$_GET['page'].'.php';
     } else {
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         //include $SETTINGS['cpassman_dir'].'/error.php';

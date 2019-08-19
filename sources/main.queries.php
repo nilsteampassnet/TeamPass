@@ -20,6 +20,7 @@ if (isset($_SESSION) === false) {
     include_once 'SecureHandler.php';
     session_name('teampass_session');
     session_start();
+    $_SESSION['CPM'] = 1;
 }
 
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
@@ -44,7 +45,8 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 if (isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
     || $post_type === 'recovery_send_pw_by_email'
-    || $post_type === 'recovery_generate_new_password')
+    || $post_type === 'recovery_generate_new_password'
+    || $post_type === 'get_teampass_settings')
 ) {
     // continue
     mainQuery($SETTINGS);

@@ -80,6 +80,9 @@ if (store.get('teampassUser') !== undefined
             );
         });
     });
+} else {
+    loadSettings();
+    console.log(store.get('teampassSettings'));
 }
 //-- end
 
@@ -380,6 +383,7 @@ function loadSettings()
                     .show(); 
                 return false;
             };
+
             // Test if JSON object
             if (typeof data === 'object') {
                 // Store settings in localstorage

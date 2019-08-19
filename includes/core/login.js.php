@@ -119,6 +119,9 @@ var twoFaMethods = parseInt(store.get('teampassSettings').google_authentication)
   + parseInt(store.get('teampassSettings').yubico_authentication);
 
 if (twoFaMethods > 1) {
+    // Show only expected MFA
+    $('#2fa_methods_selector').removeClass('hidden');
+
     // At least 2 2FA methods have to be shown
     var loginButMethods = ['google', 'agses', 'duo'];
 
