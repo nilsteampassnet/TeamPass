@@ -113,78 +113,25 @@ $(function() {
     $('.infotip').tooltip();
 });
 
-var twoFaMethods = parseInt(store.get('teampassSettings').google_authentication)
-  + parseInt(store.get('teampassSettings').agses_authentication_enabled)
-  + parseInt(store.get('teampassSettings').duo)
-  + parseInt(store.get('teampassSettings').yubico_authentication);
-
-if (twoFaMethods > 1) {
-    // Show only expected MFA
-    $('#2fa_methods_selector').removeClass('hidden');
-
-    // At least 2 2FA methods have to be shown
-    var loginButMethods = ['google', 'agses', 'duo'];
-
-    // Show methods
-    $("#2fa_selector").removeClass("hidden");
-
-    // Hide login button
-    $('#div-login-button').addClass('hidden');
-
-    // Unselect any method
-    $(".2fa_selector_select").prop('checked', false);
-
-    // Prepare buttons
-    $('.2fa-methods').radiosforbuttons({
-        margin: 20,
-        vertical: false,
-        group: false,
-        autowidth: true
+// Ensure session is ready in case of disconnection
+if (store.get('teampassSettings') === undefined) {
+    store.set(
+        'teampassSettings',
+        {},
+        function(teampassSettings) {}
+    );
+    $.when(
+        // Load teampass settings
+        loadSettings()
+    ).then(function() {
+        showMFAMethod();
     });
-
-    // Handle click
-    $('.radiosforbuttons-2fa_selector_select')
-    .click(function() {
-        $('.div-2fa-method').addClass('hidden');
-        
-        var twofaMethod = $(this).text().toLowerCase();
-
-        // Save user choice
-        $('#2fa_user_selection').val(twofaMethod);
-
-        // Show 2fa method div
-        $('#div-2fa-'+twofaMethod).removeClass('hidden');
-
-        // Show login button if required
-        if ($.inArray(twofaMethod, loginButMethods) !== -1) {
-            $('#div-login-button').removeClass('hidden');
-        } else {
-            $('#div-login-button').addClass('hidden');
-        }
-
-        // Make focus
-        if (twofaMethod === 'google') {
-            $('#ga_code').focus();
-        } else if (twofaMethod === 'yubico') {
-            $('#yubico_key').focus();
-        } else if (twofaMethod === 'agses') {
-            startAgsesAuth();
-        }
-    });
-} else if (twoFaMethods === 1) {
-    // Show only expected MFA
-    $('#2fa_methods_selector').addClass('hidden');
-    // One 2FA method is expected
-    if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
-        $('#div-2fa-google').removeClass('hidden');
-    } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
-        $('#div-2fa-yubico').removeClass('hidden');
-    }
-    $('#login').focus();
+    
 } else {
-    // No 2FA methods is expected
-    $('#2fa_methods_selector').addClass('hidden');
+    showMFAMethod();
 }
+
+
 
 $('.submit-button').keypress(function(event){
     if (event.keyCode === 10 || event.keyCode === 13) {
@@ -874,6 +821,87 @@ function send_user_new_temporary_ga_code() {
             }
         }
     );
+}
+
+/**
+ * Permits to manage the MFA method to show
+ *
+ * @return void
+ */
+function showMFAMethod()
+{
+    var twoFaMethods = parseInt(store.get('teampassSettings').google_authentication)
+    + parseInt(store.get('teampassSettings').agses_authentication_enabled)
+    + parseInt(store.get('teampassSettings').duo)
+    + parseInt(store.get('teampassSettings').yubico_authentication);
+
+    if (twoFaMethods > 1) {
+        // Show only expected MFA
+        $('#2fa_methods_selector').removeClass('hidden');
+
+        // At least 2 2FA methods have to be shown
+        var loginButMethods = ['google', 'agses', 'duo'];
+
+        // Show methods
+        $("#2fa_selector").removeClass("hidden");
+
+        // Hide login button
+        $('#div-login-button').addClass('hidden');
+
+        // Unselect any method
+        $(".2fa_selector_select").prop('checked', false);
+
+        // Prepare buttons
+        $('.2fa-methods').radiosforbuttons({
+            margin: 20,
+            vertical: false,
+            group: false,
+            autowidth: true
+        });
+
+        // Handle click
+        $('.radiosforbuttons-2fa_selector_select')
+        .click(function() {
+            $('.div-2fa-method').addClass('hidden');
+            
+            var twofaMethod = $(this).text().toLowerCase();
+
+            // Save user choice
+            $('#2fa_user_selection').val(twofaMethod);
+
+            // Show 2fa method div
+            $('#div-2fa-'+twofaMethod).removeClass('hidden');
+
+            // Show login button if required
+            if ($.inArray(twofaMethod, loginButMethods) !== -1) {
+                $('#div-login-button').removeClass('hidden');
+            } else {
+                $('#div-login-button').addClass('hidden');
+            }
+
+            // Make focus
+            if (twofaMethod === 'google') {
+                $('#ga_code').focus();
+            } else if (twofaMethod === 'yubico') {
+                $('#yubico_key').focus();
+            } else if (twofaMethod === 'agses') {
+                startAgsesAuth();
+            }
+        });
+    } else if (twoFaMethods === 1) {
+        // Show only expected MFA
+        $('#2fa_methods_selector').addClass('hidden');
+        // One 2FA method is expected
+        if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
+            $('#div-2fa-google').removeClass('hidden');
+        } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
+            $('#div-2fa-yubico').removeClass('hidden');
+        }
+        $('#login').focus();
+    } else {
+        // No 2FA methods is expected
+        $('#2fa_methods_selector').addClass('hidden');
+    }
 }
 
 </script>

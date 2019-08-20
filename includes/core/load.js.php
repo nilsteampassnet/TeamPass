@@ -45,7 +45,6 @@ if (store.get('teampassUser') !== undefined
     && store.get('teampassUser').user_id !== ''
     && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration*1000)
 ) {
-    console.log(store.get('teampassUser'));
     $.when(
         // Load teampass settings
         loadSettings()
@@ -80,9 +79,6 @@ if (store.get('teampassUser') !== undefined
             );
         });
     });
-} else {
-    loadSettings();
-    console.log(store.get('teampassSettings'));
 }
 //-- end
 
