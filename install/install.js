@@ -122,38 +122,41 @@ function checkPage()
 
     // launch query
     if (error === "" && multiple === true) {
-        var ajaxReqs = [],
-			global_error_on_query = false;
+        var global_error_on_query = false,
+            index = 0;
 
         const dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
 
         $("#step_res").val("true");
         $("#pop_db").html("");
 
-        for (index = 0; index < tasks.length; ++index) {
-            tsk = tasks[index].split("*");
-            ajaxReqs.push($.ajax({
-                url: "install.queries.php",
-                type : "POST",
-                dataType : "json",
-                data : {
-                    type:       "step_"+step,
-                    data:       aesEncrypt(data), //
-                    activity:   aesEncrypt(tsk[0]),
-                    task:       aesEncrypt(tsk[1]),
-                    db:         aesEncrypt(JSON.stringify(dbInfo)),
-                    index:      index,
-                    multiple:   multiple,
-                    info:       tsk[0]+"-"+tsk[1]
-                },
-                complete : function(data){
+        function ajaxRequest (tasks) {
+            if (tasks.length > 0) {
+                tsk = tasks[0].split("*");
+                //console.log(tsk);
+                $.ajax({
+                    url: "install.queries.php",
+                    type : "POST",
+                    dataType : "json",
+                    data : {
+                        type:       "step_"+step,
+                        data:       aesEncrypt(data), //
+                        activity:   aesEncrypt(tsk[0]),
+                        task:       aesEncrypt(tsk[1]),
+                        db:         aesEncrypt(JSON.stringify(dbInfo)),
+                        index:      index,
+                        multiple:   multiple,
+                        info:       tsk[0]+"-"+tsk[1]
+                    }
+                })
+                .complete(function(data) {console.log(data)
                     if (data.responseText === "") {
 						alertify
 							.error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
 							.dismissOthers();
                     } else {
                         data = $.parseJSON(data.responseText);
-						
+						//console.log(data)
                         if (data[0].error === "") {
                             if (step === "5") {
                                 if (data[0].activity === "table") {
@@ -176,47 +179,51 @@ function checkPage()
                             global_error_on_query = true;
                         }
                     }
-                }
-            }));
+                    index++;
+                    tasks.shift();
+                    ajaxRequest(tasks);
+                });
+            }
         }
-        $.when.apply($, ajaxReqs).done(function(data) {
-            setTimeout(function(){
-                // all requests are complete
-                if ($("#step_res").val() === "false" || global_error_on_query === true) {
-					alertify
-						.error('<i class="fas fa-ban mr-2"></i>At least one task has failed! Please correct and relaunch.', 0)
-						.dismissOthers();
-					return false;
-                } else {
-					alertify
-						.success('<i class="fas fa-check text-success mr-2"></i><b>Done</b>.<br>Page is now refreshing ...', 1)
-						.dismissOthers();
 
-						$("#but_launch")
-						.prop("disabled", true)
-						.addClass("hidden");
-                    $("#but_next")
-						.prop("disabled", false)
-						.removeClass("hidden");
-                    // Hide restart button at end of step 6 if successful
-                    if (step === "6") {
-                        $("#but_restart")
-							.prop("disabled", true)
-							.addClass("hidden");
-                    }
-					
-					// Go to next step
-					if (step <= 6) {
-						setTimeout(
-							function(){
-								$('#but_next').trigger('click');
-							},
-							1000
-						);
-					}
+        ajaxRequest(tasks); 
+
+        setTimeout(function(){
+            // all requests are complete
+            if ($("#step_res").val() === "false" || global_error_on_query === true) {
+                alertify
+                    .error('<i class="fas fa-ban mr-2"></i>At least one task has failed! Please correct and relaunch.', 0)
+                    .dismissOthers();
+                return false;
+            } else {
+                alertify
+                    .success('<i class="fas fa-check text-success mr-2"></i><b>Done</b>.<br>Page is now refreshing ...', 1)
+                    .dismissOthers();
+
+                    $("#but_launch")
+                    .prop("disabled", true)
+                    .addClass("hidden");
+                $("#but_next")
+                    .prop("disabled", false)
+                    .removeClass("hidden");
+                // Hide restart button at end of step 6 if successful
+                if (step === "6") {
+                    $("#but_restart")
+                        .prop("disabled", true)
+                        .addClass("hidden");
                 }
-            }, 1000);
-        });
+                
+                // Go to next step
+                if (step <= 6) {
+                    setTimeout(
+                        function(){
+                            $('#but_next').trigger('click');
+                        },
+                        1000
+                    );
+                }
+            }
+        }, 1000);
     } else if (error === "" && multiple === "") {
         tsk = tasks[0].split("*");
 

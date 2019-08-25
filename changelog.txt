@@ -5,12 +5,13 @@ If you have upgraded from previous branch 2.x then some features have not yet be
 
 
 // TODO
+ - Migrate ldap library to adldap2
+ - LDAP test
+ - LDAP synchronization of users and roles
  - Update server password
  - Suggestion
  - Knowledge base
  - Offline mode
  - Backups
- - LDAP test
- - LDAP synchronization of users
  - Implement FREEOTP (https://freeotp.github.io/)
  

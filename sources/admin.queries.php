@@ -2318,7 +2318,7 @@ switch ($post_type) {
                 'SELECT * 
                 FROM '.prefixTable('misc').'
                 WHERE type = %s AND intitule = %s',
-                'duoSecurity',
+                'admin',
                 $key
             );
             $counter = DB::count();
@@ -2326,7 +2326,7 @@ switch ($post_type) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
-                        'type' => 'duoSecurity',
+                        'type' => 'admin',
                         'intitule' => $key,
                         'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
                         )
@@ -2338,13 +2338,16 @@ switch ($post_type) {
                         'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
                         ),
                     'type = %s AND intitule = %s',
-                    'duoSecurity',
+                    'admin',
                     $key
                 );
             }
 
             // Refresh settings
             $SETTINGS[$key] = $value;
+
+            // save change in config file
+            handleConfigFile('update', $key, $value);
         }
 
         // send data

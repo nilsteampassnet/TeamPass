@@ -633,6 +633,11 @@ $SETTINGS = array (';
                             array('admin', 'admin_2fa_required', '1'),
                             array('admin', 'password_overview_delay', '4'),
                             array('admin', 'copy_to_clipboard_small_icons', '1'),
+                            array('admin', 'duo_akey', ''),
+                            array('admin', 'duo_ikey', '1'),
+                            array('admin', 'duo_skey', '1'),
+                            array('admin', 'duo_host', '1'),
+                            array('admin', 'teampass_version', ''),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

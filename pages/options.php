@@ -86,7 +86,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_misc_cpassman_dir'); ?>
                     </label>
                     <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='cpassman_dir'
+                      <input type='text' class='form-control form-control-sm' id='cpassman_dir'
                           value='<?php echo isset($SETTINGS['cpassman_dir']) === true ? $SETTINGS['cpassman_dir'] : '
                           '; ?>'>
                     </div>
@@ -97,7 +97,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_misc_cpassman_url'); ?>
                     </label>
                     <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='cpassman_url'
+                      <input type='text' class='form-control form-control-sm' id='cpassman_url'
                           value='<?php echo isset($SETTINGS['cpassman_url']) === true ? $SETTINGS['cpassman_url'] : ''; ?>'>
                     </div>
                   </div>
@@ -107,7 +107,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_path_to_upload_folder'); ?>
                     </label>
                     <div class='col-sm-12'>
-                        <input type='text' class='form-control' id='path_to_upload_folder'
+                        <input type='text' class='form-control form-control-sm' id='path_to_upload_folder'
                             value='<?php echo isset($SETTINGS['path_to_upload_folder']) === true ? $SETTINGS['path_to_upload_folder'] : ''; ?>'
  >
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -121,7 +121,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_path_to_files_folder'); ?>
                     </label>
                     <div class='col-sm-12'>
-                        <input type='text' class='form-control' id='path_to_files_folder'
+                        <input type='text' class='form-control form-control-sm' id='path_to_files_folder'
                             value='<?php echo isset($SETTINGS['path_to_files_folder']) === true ? $SETTINGS['path_to_files_folder'] : ''; ?>'
  >
                             <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -135,7 +135,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_misc_favicon'); ?>
                     </label>
                     <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='favicon'
+                      <input type='text' class='form-control form-control-sm' id='favicon'
                           value='<?php echo isset($SETTINGS['favicon']) === true ? $SETTINGS['favicon'] : ''; ?>'>
                     </div>
                   </div>
@@ -145,7 +145,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_misc_custom_logo'); ?>
                     </label>
                     <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='custom_logo'
+                      <input type='text' class='form-control form-control-sm' id='custom_logo'
                           value='<?php echo isset($SETTINGS['custom_logo']) === true ? $SETTINGS['custom_logo'] : ''; ?>'>
                     </div>
                   </div>
@@ -155,7 +155,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         <?php echo langHdl('admin_misc_custom_login_text'); ?>
                     </label>
                     <div class='col-sm-12'>
-                      <input type='text' class='form-control' id='custom_login_text'
+                      <input type='text' class='form-control form-control-sm' id='custom_login_text'
                           value='<?php echo isset($SETTINGS['custom_login_text']) === true ? $SETTINGS['custom_login_text'] : ''; ?>'>
                     </div>
                   </div>

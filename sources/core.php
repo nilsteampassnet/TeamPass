@@ -293,6 +293,7 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
 /*
  * Set the personal SaltKey if authorized
  */
+/*
 if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
     && $SETTINGS['enable_personal_saltkey_cookie'] == 1
     && isset($_SESSION['user_id']) === true
@@ -307,6 +308,7 @@ if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
         setcookie('TeamPass_PFSK_'.md5($_SESSION['user_id']), '', time() - 3600, '/'); // empty value and old timestamp
     }
 }
+*/
 
 /* CHECK IF MAINTENANCE MODE
 * IF yes then authorize all ADMIN connections and
