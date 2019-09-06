@@ -364,7 +364,7 @@ EOD;
                 //generate 2d key
                 $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
 
-                echo '[{"result":"pdf_export" , "href":"sources/downloadFile.php?name='.urlencode($pdf_file).'&sub=files&file='.$pdf_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
+                echo '[{"result":"pdf_export" , "href":"sources/downloadFile.php?name='.urlencode($pdf_file).'&sub=files&file='.$pdf_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.urlencode($_SESSION['key_tmp']).'&pathIsFiles=1"}]';
             }
             break;
 
@@ -507,7 +507,7 @@ EOD;
             //generate 2d key
             $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
 
-            echo '[{"result":"csv_export" , "href":"sources/downloadFile.php?name='.urlencode($csv_file).'&sub=files&file='.$csv_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
+            echo '[{"result":"csv_export" , "href":"sources/downloadFile.php?name='.urlencode($csv_file).'&sub=files&file='.$csv_file.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.urlencode($_SESSION['key_tmp']).'&pathIsFiles=1"}]';
             break;
 
     //CASE export in HTML format
