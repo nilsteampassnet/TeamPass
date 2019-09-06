@@ -384,7 +384,7 @@ switch ($post_type) {
             //update LOG
             logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
 
-            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.urlencode($_SESSION['key_tmp']).'&pathIsFiles=1"}]';
         }
         break;
 
