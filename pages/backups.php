@@ -43,6 +43,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'backups', $SETTINGS) === 
 // Load template
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
+// Decrypt key
+$localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
+    cryption($SETTINGS['bck_script_passkey'], '', 'decrypt', $SETTINGS)['string'] : '';
 ?>
 
 <!-- Content Header (Page header) -->
@@ -63,10 +66,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     <div class='container-fluid'>
         <div class='row'>
             <div class='col-md-12'>
-                
-            <?php
-                if (null !== DEBUG && DEBUG === false) {
-                    ?>
                 <div class='card card-primary'>
                     <div class='card-header'>
                         <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
@@ -98,7 +97,12 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                                                     <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
                                                 </div>
                                                 <div class="col-9">
-                                                    <input type="text" class="form-control form-control-sm" id="onthefly-backup-key">
+                                                    <div class="input-group mb-0">
+                                                        <input type="text" class="form-control form-control-sm" id="onthefly-backup-key" value="<?php echo $localEncryptionKey;?>">
+                                                        <div class="input-group-append">
+                                                            <button class="btn btn-outline-secondary btn-no-click infotip key-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="row mt-3 hidden" id="onthefly-backup-progress">
@@ -124,7 +128,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                                                     <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
                                                 </div>
                                                 <div class="col-9">
-                                                    <input type="text" class="form-control form-control-sm" id="onthefly-restore-key">
+                                                    <input type="text" class="form-control form-control-sm" id="onthefly-restore-key" value="<?php echo $localEncryptionKey;?>">
                                                 </div>
                                             </div>
                                             <div class="row mt-1">
@@ -155,19 +159,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
                     </div>
                 </div>
-                    
-            <?php
-                } else {
-                    ?>
-                <div class="mt-4">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
-                    </div>
-                </div>
-
-                <?php
-                }
-            ?>
             </div>
         </div>
     

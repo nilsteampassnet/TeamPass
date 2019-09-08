@@ -45,6 +45,28 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 <script type='text/javascript'>
 //<![CDATA[
 
+$(document).on('click', '.key-generate', function() {
+    $.post(
+        "sources/main.queries.php",
+        {
+            type        : "generate_password",
+            size        : "<?php echo $SETTINGS['pwd_maximum_length']; ?>",
+            lowercase   : "true",
+            numerals    : "true",
+            capitalize  : "true",
+            symbols     : "false",
+            secure      : "true"
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+            
+            if (data.key !== "") {
+                $('#onthefly-backup-key').val(data.key);
+            }
+        }
+    );
+});
+
 $(document).on('click', '.start', function() {
     var action = $(this).data('action');
 
@@ -83,6 +105,43 @@ $(document).on('click', '.start', function() {
                             )
                             .dismissOthers();
                     } else {
+                        // Store KEY in DB
+                        var newData = {
+                            "field": 'bck_script_passkey',
+                            "value": $('#onthefly-backup-key').val(),
+                        }
+                        
+                        $.post(
+                            "sources/admin.queries.php", {
+                                type: "save_option_change",
+                                data: prepareExchangedData(JSON.stringify(newData), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key: "<?php echo $_SESSION['key']; ?>"
+                            },
+                            function(data) {
+                                // Handle server answer
+                                try {
+                                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                } catch (e) {
+                                    // error
+                                    showAlertify(
+                                        '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                                        0,
+                                        'top-right',
+                                        'error'
+                                    );
+                                    return false;
+                                }
+                                
+                                if (data.error === false) {
+                                    showAlertify(
+                                        '<?php echo langHdl('saved'); ?>',
+                                        2,
+                                        'top-bottom',
+                                        'success'
+                                    );
+                                }
+                            }
+                        );
                         // SHOW LINK
                         $('#onthefly-backup-progress')
                             .removeClass('hidden')
@@ -191,10 +250,11 @@ var restoreOperationId = '',
                     "sources/main.queries.php",
                     {
                         type : "save_token",
-                        size : 25,
+                        size : 50,
                         capital: true,
                         numeric: true,
-                        ambiguous: true,
+                        lowercase: true,
+                        secure: false,
                         reason: "restore_db",
                         duration: 10
                     },

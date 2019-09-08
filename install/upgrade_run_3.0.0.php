@@ -21,7 +21,6 @@ require_once '../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
-$_SESSION['db_encoding'] = 'utf8';
 $_SESSION['CPM'] = 1;
 
 //include librairies
@@ -33,6 +32,7 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 require_once '../includes/config/tp.config.php';
+define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
 
 //Build tree
 $tree = new Tree\NestedTree\NestedTree(
@@ -44,7 +44,7 @@ $tree = new Tree\NestedTree\NestedTree(
 
 // DataBase
 // Test DB connexion
-$pass = defuse_return_decrypted(DB_PASSWD);
+$pass = DB_PASSWD_CLEAR;
 $server = DB_HOST;
 $pre = DB_PREFIX;
 $database = DB_NAME;
@@ -277,6 +277,22 @@ if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
         "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'password_overview_delay', '4')"
+    );
+}
+
+// Convert the roles_allowed_to_print value to an array
+$roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
+    $db_link,
+    'SELECT valeur
+    FROM '.$pre.'misc
+    WHERE type = "admin" AND intitule = "roles_allowed_to_print"'
+));
+if ($roles_allowed_to_print[0] !== null && empty($roles_allowed_to_print[0]) === false) {
+    mysqli_query(
+        $db_link,
+        'UPDATE '.$pre."misc
+        SET valeur = '".json_encode(explode(';', $roles_allowed_to_print[0]))."'
+        WHERE type = 'admin' AND intitule = 'roles_allowed_to_print'"
     );
 }
 

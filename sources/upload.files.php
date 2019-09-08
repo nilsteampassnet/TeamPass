@@ -324,7 +324,7 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 // generate file name
-$newFileName = bin2hex(GenerateCryptKey(16));
+$newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
 //Connect to mysql server
 //require_once '../../includes/config/settings.php';

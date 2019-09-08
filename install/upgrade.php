@@ -60,10 +60,10 @@ if (file_exists($filename)) {
         <meta http-equiv="x-ua-compatible" content="ie=edge"/>
 
         <link rel="stylesheet" href="css/install.css" type="text/css" />
-        <link rel="stylesheet" href="../plugins/fontawesome5/css/all.css">
+        <link rel="stylesheet" href="../plugins/fontawesome-free/css/all.css">
         
         <!-- Theme style -->
-        <link rel="stylesheet" href="../includes/css/adminlte.css">
+        <link rel="stylesheet" href="../plugins/adminlte/css/adminlte.min.css">
         <link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
         <link rel="stylesheet" href="../plugins/alertifyjs/css/themes/bootstrap.min.css"/>
         
@@ -692,14 +692,14 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         count_in_loop = 200,
         userSteps = {};
 
-    //console.log(usersList)
-    //console.log(step+" -- "+number+" -- "+loop_start+" -- "+loop_finished)
 
     // Decode data
     var newData = '';
     if (data !== '' && step === 'step1') {
         newData = JSON.parse(window.atob(data));
     }
+    console.log(usersList)
+    console.log(step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData)
 
     if (step === 'step1') {
         userInfo = '';
@@ -805,19 +805,28 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 return;
             }
         }
+        
+        if (usersList.length === 0 && step === 'step2' && loop_finished === 'true' && number === 0 && loop_start === 0) {
+            /* Unlock this step */
+            document.getElementById("but_next").disabled = "";
+                document.getElementById("but_launch").disabled = "disabled";
+                
+                $("#user_"+rand_number).parent()
+                .prepend('<div>' + getTime() +' - All steps have been successfully performed <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
+            return;
+        } else {
+            // Show progress
+            rand_number = createRandomId();
+            $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>User "+usersList[number].id+" - Creating keys until "+(loop_start + count_in_loop)+" ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
 
-        // Show progress
-        rand_number = createRandomId();
-        $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>User "+usersList[number].id+" - Creating keys until "+(loop_start + count_in_loop)+" ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
-
-        // Prepare user information                
-        userInfo = {
-            'id' : usersList[number].id,
-            'pwd' : usersList[number].pwd,
-            'public_key' : usersList[number].public_key,
-            'private_key' : usersList[number].private_key,
-        };
-
+            // Prepare user information                
+            userInfo = {
+                'id' : usersList[number].id,
+                'pwd' : usersList[number].pwd,
+                'public_key' : usersList[number].public_key,
+                'private_key' : usersList[number].private_key,
+            };
+        }
     }
     // Migrate if needed all account to new AES encryption
     $.post(

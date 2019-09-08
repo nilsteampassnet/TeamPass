@@ -74,7 +74,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     <div class="row mt-3">
                         <div class="form-group col-12">
                             <label><?php echo langHdl('select_folders_to_export'); ?></label>
-                            <select class="form-control select2" style="width:100%;" id="export-folders" multiple>
+                            <select class="form-control select2-all" style="width:100%;" id="export-folders" multiple>
                             </select>
                         </div>
                     </div>
@@ -85,7 +85,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                     </div>
 
                     <div class="form-group">
-                        <label><?php echo langHdl('file_protection_password'); ?></label>
+                        <label><?php echo langHdl('filename'); ?></label>
                         <input type="text" class="form-control form-item-control" id="export-filename" value="Teampass_export_<?php echo time(); ?>">
                     </div>
 

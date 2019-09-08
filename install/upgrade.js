@@ -19,7 +19,7 @@ function pauseInExecution(millis)
 
     do {
         curDate = new Date();
-    } while(curDate-date < millis);
+    } while((curDate-date) < millis);
 }
 
 /**

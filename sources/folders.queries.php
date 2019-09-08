@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author        Nils Laumaillé <nils@teampass.net>
  *
@@ -30,12 +31,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -48,14 +49,14 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -96,7 +97,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 if (null !== $post_type) {
     switch ($post_type) {
-        /*
+            /*
          * BUILD liste of folders
          */
         case 'build_matrix':
@@ -127,19 +128,20 @@ if (null !== $post_type) {
             $treeDesc = $tree->getDescendants();
 
             foreach ($treeDesc as $t) {
-                if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+                if (
+                    in_array($t->id, $_SESSION['groupes_visibles']) === true
                     && in_array($t->id, $_SESSION['personal_visible_groups']) === false
                     && $t->personal_folder == 0
                 ) {
                     // get $t->parent_id
-                    $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $t->parent_id);
+                    $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $t->parent_id);
                     if ($t->nlevel == 1) {
                         $data['title'] = langHdl('root');
                     }
 
                     // get rights on this folder
                     $arrayRights = array();
-                    $rows = DB::query('SELECT fonction_id  FROM '.prefixTable('rights').' WHERE authorized=%i AND tree_id = %i', 1, $t->id);
+                    $rows = DB::query('SELECT fonction_id  FROM ' . prefixTable('rights') . ' WHERE authorized=%i AND tree_id = %i', 1, $t->id);
                     foreach ($rows as $record) {
                         array_push($arrayRights, $record['fonction_id']);
                     }
@@ -156,8 +158,8 @@ if (null !== $post_type) {
                     $node_data = DB::queryFirstRow(
                         'SELECT m.valeur AS valeur, n.renewal_period AS renewal_period,
                         n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification
-                        FROM '.prefixTable('misc').' AS m,
-                        '.prefixTable('nested_tree').' AS n
+                        FROM ' . prefixTable('misc') . ' AS m,
+                        ' . prefixTable('nested_tree') . ' AS n
                         WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i',
                         'complex',
                         $t->id
@@ -166,7 +168,7 @@ if (null !== $post_type) {
                     // get number of items in folder
                     $data_items = DB::query(
                         'SELECT id
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE id_tree = %i',
                         $t->id
                     );
@@ -198,7 +200,7 @@ if (null !== $post_type) {
                     //col7
                     $data7 = DB::queryFirstRow(
                         'SELECT bloquer_creation,bloquer_modification
-                        FROM '.prefixTable('nested_tree').'
+                        FROM ' . prefixTable('nested_tree') . '
                         WHERE id = %i',
                         intval($t->id)
                     );
@@ -234,7 +236,7 @@ if (null !== $post_type) {
 
             break;
 
-        // CASE where selecting/deselecting sub-folders
+            // CASE where selecting/deselecting sub-folders
         case 'select_sub_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -279,7 +281,7 @@ if (null !== $post_type) {
 
             break;
 
-        //CASE where UPDATING a new group
+            //CASE where UPDATING a new group
         case 'update_folder':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -333,16 +335,18 @@ if (null !== $post_type) {
             // Get info about this folder
             $dataFolder = DB::queryfirstrow(
                 'SELECT *
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_folder_id
             );
 
             //Check if duplicate folders name are allowed
-            if (isset($SETTINGS['duplicate_folder']) === true
+            if (
+                isset($SETTINGS['duplicate_folder']) === true
                 && (int) $SETTINGS['duplicate_folder'] === 0
             ) {
-                if (empty($dataFolder['id']) === false
+                if (
+                    empty($dataFolder['id']) === false
                     && intval($dataReceived['id']) !== intval($dataFolder['id'])
                     && $post_title !== $dataFolder['title']
                 ) {
@@ -367,7 +371,7 @@ if (null !== $post_type) {
             //check if parent folder is personal
             $dataParent = DB::queryfirstrow(
                 'SELECT personal_folder, bloquer_creation, bloquer_modification
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_parent_id
             );
@@ -388,14 +392,15 @@ if (null !== $post_type) {
 
                 // check if complexity level is good
                 // if manager or admin don't care
-                if ((int) $_SESSION['is_admin'] !== 1
+                if (
+                    (int) $_SESSION['is_admin'] !== 1
                     && ((int) $_SESSION['user_manager'] !== 1
-                    || (int) $_SESSION['user_can_manage_all_users'] !== 1)
+                        || (int) $_SESSION['user_can_manage_all_users'] !== 1)
                 ) {
                     // get complexity level for this folder
                     $data = DB::queryfirstrow(
                         'SELECT valeur
-                        FROM '.prefixTable('misc').'
+                        FROM ' . prefixTable('misc') . '
                         WHERE intitule = %i AND type = %s',
                         $post_parent_id,
                         'complex'
@@ -406,7 +411,7 @@ if (null !== $post_type) {
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_folder_complexity_lower_than_top_folder')
-                                    .' [<b>'.TP_PW_COMPLEXITY[$data['valeur']][1].'</b>]',
+                                    . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
                         );
@@ -421,17 +426,20 @@ if (null !== $post_type) {
                 'title' => $post_title,
                 'personal_folder' => $isPersonal,
             );
-            if ($dataFolder['renewal_period'] !== $post_renewal_period
+            if (
+                $dataFolder['renewal_period'] !== $post_renewal_period
                 && empty($post_renewal_period) === false
             ) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if ($dataFolder['bloquer_creation'] !== $post_add_restriction
+            if (
+                $dataFolder['bloquer_creation'] !== $post_add_restriction
                 && empty($post_add_restriction) === false
             ) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if ($dataFolder['bloquer_modification'] !== $post_edit_restriction
+            if (
+                $dataFolder['bloquer_modification'] !== $post_edit_restriction
                 && empty($post_edit_restriction) === false
             ) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
@@ -470,7 +478,7 @@ if (null !== $post_type) {
 
             break;
 
-        //CASE where ADDING a new group
+            //CASE where ADDING a new group
         case 'add_folder':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -508,12 +516,13 @@ if (null !== $post_type) {
             $error = false;
             $newId = $access_level_by_role = $errorMessage = '';
 
-            if ($post_parent_id === '0') {
+            if ((int) $post_parent_id === 0) {
                 if (isset($dataReceived['accessRight']) === true) {
                     $access_level_by_role = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
                 } else {
-                    if ($_SESSION['user_manager'] === '1'
-                        || $_SESSION['user_can_manage_all_users'] === '1'
+                    if (
+                        (int) $_SESSION['user_manager'] === 1
+                        || (int) $_SESSION['user_can_manage_all_users'] === 1
                     ) {
                         $access_level_by_role = 'W';
                     } else {
@@ -533,9 +542,11 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
             // Check if parent folder is allowed for this user
-            if (in_array($post_parent_id, $_SESSION['groupes_visibles']) === false) {
+            if (
+                in_array($post_parent_id, $_SESSION['groupes_visibles']) === false
+                && (int) $_SESSION['is_admin'] !== 1
+            ) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -547,12 +558,13 @@ if (null !== $post_type) {
             }
 
             //Check if duplicate folders name are allowed
-            if (isset($SETTINGS['duplicate_folder']) === true
-                && $SETTINGS['duplicate_folder'] === '0'
+            if (
+                isset($SETTINGS['duplicate_folder']) === true
+                && (int) $SETTINGS['duplicate_folder'] === 0
             ) {
                 DB::query(
                     'SELECT *
-                    FROM '.prefixTable('nested_tree').'
+                    FROM ' . prefixTable('nested_tree') . '
                     WHERE title = %s',
                     $post_title
                 );
@@ -572,7 +584,7 @@ if (null !== $post_type) {
             //check if parent folder is personal
             $data = DB::queryfirstrow(
                 'SELECT personal_folder, bloquer_creation, bloquer_modification
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_parent_id
             );
@@ -593,14 +605,15 @@ if (null !== $post_type) {
 
                 // check if complexity level is good
                 // if manager or admin don't care
-                if ($_SESSION['is_admin'] != 1
+                if (
+                    $_SESSION['is_admin'] != 1
                     && ($_SESSION['user_manager'] !== '1'
-                    || $_SESSION['user_can_manage_all_users'] !== '1')
+                        || $_SESSION['user_can_manage_all_users'] !== '1')
                 ) {
                     // get complexity level for this folder
                     $data = DB::queryfirstrow(
                         'SELECT valeur
-                        FROM '.prefixTable('misc').'
+                        FROM ' . prefixTable('misc') . '
                         WHERE intitule = %i AND type = %s',
                         $post_parent_id,
                         'complex'
@@ -610,7 +623,7 @@ if (null !== $post_type) {
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_folder_complexity_lower_than_top_folder')
-                                    .' [<b>'.TP_PW_COMPLEXITY[$data['valeur']][1].'</b>]',
+                                    . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
                         );
@@ -619,11 +632,13 @@ if (null !== $post_type) {
                 }
             }
 
-            if ($isPersonal == 1
-                || $_SESSION['is_admin'] == 1
-                || ($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1')
-                || (isset($SETTINGS['enable_user_can_create_folders'])
-                && $SETTINGS['enable_user_can_create_folders'] == 1)
+            if (
+                (int) $isPersonal === 1
+                || (int) $_SESSION['is_admin'] === 1
+                || ((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+                || (isset($SETTINGS['enable_user_can_create_folders']) === true
+                    && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
+                || (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1)
             ) {
                 //create folder
                 DB::insert(
@@ -659,7 +674,7 @@ if (null !== $post_type) {
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                if ($isPersonal !== 1
+                if ((int) $isPersonal !== 1
                     && (int) $post_parent_id === 0
                 ) {
                     //add access to this new folder
@@ -677,11 +692,12 @@ if (null !== $post_type) {
                     }
                 }
 
-                if (isset($SETTINGS['subfolder_rights_as_parent']) === true
-                    && $SETTINGS['subfolder_rights_as_parent'] === '1'
+                if (
+                    isset($SETTINGS['subfolder_rights_as_parent']) === true
+                    && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
                 ) {
                     //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                    $rows = DB::query('SELECT role_id, type FROM '.prefixTable('roles_values').' WHERE folder_id = %i', $post_parent_id);
+                    $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $post_parent_id);
                     foreach ($rows as $record) {
                         //add access to this subfolder
                         DB::insert(
@@ -696,7 +712,7 @@ if (null !== $post_type) {
                 }
 
                 // if parent folder has Custom Fields Categories then add to this child one too
-                $rows = DB::query('SELECT id_category FROM '.prefixTable('categories_folders').' WHERE id_folder = %i', $post_parent_id);
+                $rows = DB::query('SELECT id_category FROM ' . prefixTable('categories_folders') . ' WHERE id_folder = %i', $post_parent_id);
                 foreach ($rows as $record) {
                     //add CF Category to this subfolder
                     DB::insert(
@@ -723,7 +739,7 @@ if (null !== $post_type) {
 
             break;
 
-        // CASE where DELETING multiple groups
+            // CASE where DELETING multiple groups
         case 'delete_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -774,17 +790,17 @@ if (null !== $post_type) {
                                 prefixTable('misc'),
                                 array(
                                     'type' => 'folder_deleted',
-                                    'intitule' => 'f'.$folder->id,
-                                    'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                                        $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
-                                        $folder->nlevel.', 0, 0, 0, 0',
+                                    'intitule' => 'f' . $folder->id,
+                                    'valeur' => $folder->id . ', ' . $folder->parent_id . ', ' .
+                                        $folder->title . ', ' . $folder->nleft . ', ' . $folder->nright . ', ' .
+                                        $folder->nlevel . ', 0, 0, 0, 0',
                                 )
                             );
                             //array for delete folder
                             $folderForDel[] = $folder->id;
 
                             //delete items & logs
-                            $items = DB::query('SELECT id FROM '.prefixTable('items').' WHERE id_tree=%i', $folder->id);
+                            $items = DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE id_tree=%i', $folder->id);
                             foreach ($items as $item) {
                                 DB::update(
                                     prefixTable('items'),
@@ -841,7 +857,7 @@ if (null !== $post_type) {
             $tree->rebuild();
 
             // reload cache table
-            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, '');
 
             echo prepareExchangedData(
@@ -927,7 +943,7 @@ if (null !== $post_type) {
                 // get complexity of current node
                 $nodeComplexity = DB::queryfirstrow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc').'
+                    FROM ' . prefixTable('misc') . '
                     WHERE intitule = %i AND type= %s',
                     $nodeInfo->id,
                     'complex'
@@ -978,7 +994,8 @@ if (null !== $post_type) {
 
                 // If new folder should not heritate of parent rights
                 // Then use the creator ones
-                if ((int) $nodeInfo->personal_folder !== 1
+                if (
+                    (int) $nodeInfo->personal_folder !== 1
                     && isset($SETTINGS['subfolder_rights_as_parent']) === true
                     && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
                     && (int) $_SESSION['is_admin'] !== 0
@@ -1001,7 +1018,7 @@ if (null !== $post_type) {
                 // If it is a subfolder, then give access to it for all roles that allows the parent folder
                 $rows = DB::query(
                     'SELECT role_id, type
-                    FROM '.prefixTable('roles_values').'
+                    FROM ' . prefixTable('roles_values') . '
                     WHERE folder_id = %i',
                     $parentId
                 );
@@ -1009,7 +1026,7 @@ if (null !== $post_type) {
                     // Add access to this subfolder after checking that it is not already set
                     DB::query(
                         'SELECT *
-                        FROM '.prefixTable('roles_values').'
+                        FROM ' . prefixTable('roles_values') . '
                         WHERE folder_id = %i AND role_id = %i',
                         $newFolderId,
                         $record['role_id']
@@ -1029,7 +1046,7 @@ if (null !== $post_type) {
                 // if parent folder has Custom Fields Categories then add to this child one too
                 $rows = DB::query(
                     'SELECT id_category
-                    FROM '.prefixTable('categories_folders').'
+                    FROM ' . prefixTable('categories_folders') . '
                     WHERE id_folder = %i',
                     $nodeInfo->id
                 );
@@ -1048,7 +1065,7 @@ if (null !== $post_type) {
 
                 $rows = DB::query(
                     'SELECT *
-                    FROM '.prefixTable('items').'
+                    FROM ' . prefixTable('items') . '
                     WHERE id_tree = %i',
                     $nodeInfo->id
                 );
@@ -1057,7 +1074,7 @@ if (null !== $post_type) {
                     // if it is then don't copy it
                     $item_deleted = DB::queryFirstRow(
                         'SELECT *
-                        FROM '.prefixTable('log_items').'
+                        FROM ' . prefixTable('log_items') . '
                         WHERE id_item = %i AND action = %s
                         ORDER BY date DESC
                         LIMIT 0, 1',
@@ -1068,7 +1085,7 @@ if (null !== $post_type) {
 
                     $item_restored = DB::queryFirstRow(
                         'SELECT *
-                        FROM '.prefixTable('log_items').'
+                        FROM ' . prefixTable('log_items') . '
                         WHERE id_item = %i AND action = %s
                         ORDER BY date DESC
                         LIMIT 0, 1',
@@ -1076,13 +1093,14 @@ if (null !== $post_type) {
                         'at_restored'
                     );
 
-                    if ((int) $dataDeleted !== 1
+                    if (
+                        (int) $dataDeleted !== 1
                         || (int) $item_deleted['date'] < (int) $item_restored['date']
                     ) {
                         // Get the ITEM object key for the user
                         $userKey = DB::queryFirstRow(
                             'SELECT share_key
-                            FROM '.prefixTable('sharekeys_items').'
+                            FROM ' . prefixTable('sharekeys_items') . '
                             WHERE user_id = %i AND object_id = %i',
                             $_SESSION['user_id'],
                             $record['id']
@@ -1138,7 +1156,8 @@ if (null !== $post_type) {
                         // Generate the query to update the new record with the previous values
                         $aSet = array();
                         foreach ($record as $key => $value) {
-                            if ($key !== 'id' && $key !== 'key' && $key !== 'id_tree'
+                            if (
+                                $key !== 'id' && $key !== 'key' && $key !== 'id_tree'
                                 && $key !== 'viewed_no' && $key !== 'pw' && $key !== 'pw_iv'
                             ) {
                                 array_push($aSet, array($key => $value));
@@ -1155,7 +1174,7 @@ if (null !== $post_type) {
                         // Manage Custom Fields
                         $categories = DB::query(
                             'SELECT *
-                            FROM '.prefixTable('categories_items').'
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE item_id = %i',
                             $record['id']
                         );
@@ -1174,12 +1193,10 @@ if (null !== $post_type) {
                                     'item_id' => $newItemId,
                                     'field_id' => $field['field_id'],
                                     'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                        $cryptedStuff['encrypted'] :
-                                        $field['value'],
+                                        $cryptedStuff['encrypted'] : $field['value'],
                                     'data_iv' => '',
                                     'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                        TP_ENCRYPTION_NAME :
-                                        'not_set',
+                                        TP_ENCRYPTION_NAME : 'not_set',
                                 )
                             );
                             $newFieldId = DB::insertId();
@@ -1205,15 +1222,15 @@ if (null !== $post_type) {
                         $files = DB::query(
                             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
                             f.size AS size, f.type AS type, s.share_key AS share_key
-                            FROM '.prefixTable('files').' AS f
-                            INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                            FROM ' . prefixTable('files') . ' AS f
+                            INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                             WHERE s.user_id = %i AND f.id_item = %i',
                             $_SESSION['user_id'],
                             $record['id']
                         );
                         foreach ($files as $file) {
                             // Check if file still exists
-                            if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.base64_decode($file['file'])) === true) {
+                            if (file_exists($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . TP_FILE_PREFIX . base64_decode($file['file'])) === true) {
                                 // Step1 - decrypt the file
                                 $fileContent = decryptFile(
                                     $file['file'],
@@ -1222,9 +1239,9 @@ if (null !== $post_type) {
                                 );
 
                                 // Step2 - create file
-                                $newFileName = md5(time().'_'.$file['id']).'.'.$file['extension'];
+                                $newFileName = md5(time() . '_' . $file['id']) . '.' . $file['extension'];
                                 fwrite(
-                                    fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$newFileName, 'ab'),
+                                    fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab'),
                                     base64_decode($fileContent)
                                 );
 
@@ -1287,7 +1304,7 @@ if (null !== $post_type) {
             $tree->rebuild();
 
             // reload cache table
-            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, '');
 
             $data = array(
@@ -1296,6 +1313,82 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData($data, 'encode');
+
+            break;
+
+            // CASE where selecting/deselecting sub-folders
+        case 'refresh_folders_list':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $subfolders = array();
+
+            if ((int) $_SESSION['is_admin'] === 1 || (int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['can_create_root_folder'] === 1) {
+                array_push(
+                    $subfolders,
+                    array(
+                        'id' => 0,
+                        'label' => langHdl('root'),
+                        'level' => 0,
+                        'path' => ''
+                    )
+                );
+            }
+
+            // get sub folders
+            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+            // Get through each subfolder
+            $folders = $tree->getDescendants(0, false);
+            foreach ($folders as $folder) {
+                if (
+                    in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                    && in_array($folder->id, $_SESSION['personal_visible_groups']) === false
+                ) {
+                    // Get path
+                    $text = '';
+                    foreach ($tree->getPath($folder->id, false) as $fld) {
+                        $text .= empty($text) === true ? '     [<i>' . $fld->title : ' > ' . $fld->title;
+                    }
+
+                    // Save array
+                    array_push(
+                        $subfolders,
+                        array(
+                            'id' => (int) $folder->id,
+                            'label' => $folder->title,
+                            'level' => $folder->nlevel,
+                            'path' => empty($text) === true ? '' : $text . '</i>]'
+                        )
+                    );
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'subfolders' => ($subfolders),
+                ),
+                'encode'
+            );
 
             break;
     }

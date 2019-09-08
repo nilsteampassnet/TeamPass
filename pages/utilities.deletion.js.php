@@ -78,7 +78,7 @@ $(function() {
         function(data) {
             //decrypt data
             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-            
+            console.log(data);
             if (data.error === true) {
                 // ERROR
                 alertify
@@ -90,8 +90,8 @@ $(function() {
             } else {
                 // FOLDERS - Build table
                 if (data.folders.length === 0) {
-                    $('#recycled-folders').after(
-                        '<div class="alert alert-info" id="temp-message>' +
+                    $('#recycled-folders, #recycled-items').html(
+                        '<div class="alert alert-info" id="temp-message">' +
                         '<?php echo langHdl('empty_list'); ?>' +
                         '</div>'
                     )
@@ -108,36 +108,46 @@ $(function() {
                         '</tr>';
                     });
                     $('#recycled-folders').html(foldersHtml);
+                    
+                    // Items - Build table
+                    if (data.items.length === 0) {
+                        $('#recycled-items').html(
+                            '<div class="alert alert-info" id="temp-message">' +
+                            '<?php echo langHdl('empty_list'); ?>' +
+                            '</div>'
+                        )
 
-                    // Items list
-                    $.each(data.items, function (index, value) {
-                        itemsHtml += '<tr class="icheck-toggle">' +
-                        '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
-                        '<td class="font-weight-bold">' + value.label + '</td>' +
-                        '<td class="font-weight-light"><i class="far fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
-                        '<td class=""><i class="far fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
-                        '<td class="font-italic"><i class="far fa-folder mr-1"></i>' + value.folder_label + '</td>' +
-                        (value.folder_deleted === true ?
-                         '<td class=""><?php echo langHdl('belong_of_deleted_folder'); ?></td>'
-                         :
-                         '') +
-                        '</tr>';
-                    });
-                    $('#recycled-items').html(itemsHtml);
+                    } else {
+                        // Items list
+                        $.each(data.items, function (index, value) {
+                            itemsHtml += '<tr class="icheck-toggle">' +
+                            '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
+                            '<td class="font-weight-bold">' + value.label + '</td>' +
+                            '<td class="font-weight-light"><i class="far fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
+                            '<td class=""><i class="far fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
+                            '<td class="font-italic"><i class="far fa-folder mr-1"></i>' + value.folder_label + '</td>' +
+                            (value.folder_deleted === true ?
+                            '<td class=""><?php echo langHdl('belong_of_deleted_folder'); ?></td>'
+                            :
+                            '') +
+                            '</tr>';
+                        });
+                        $('#recycled-items').html(itemsHtml);
 
-                    // Prepare iCheck
-                    $('#recycled-bin input[type="checkbox"]').iCheck({
-                        checkboxClass: 'icheckbox_flat-blue'
-                    });
+                        // Prepare iCheck
+                        $('#recycled-bin input[type="checkbox"]').iCheck({
+                            checkboxClass: 'icheckbox_flat-blue'
+                        });
 
-                    // Global checkboxes toggle
-                    $('#toggle-all').on('ifChanged', function(event){
-                        if ($(this).is(':checked') === true) {
-                            $('.item-select, .folder-select').iCheck('check');
-                        } else {
-                            $('.item-select, .folder-select').iCheck('uncheck');
-                        }
-                    });
+                        // Global checkboxes toggle
+                        $('#toggle-all').on('ifChanged', function(event){
+                            if ($(this).is(':checked') === true) {
+                                $('.item-select, .folder-select').iCheck('check');
+                            } else {
+                                $('.item-select, .folder-select').iCheck('uncheck');
+                            }
+                        });
+                    }
                 }
 
                 // OK

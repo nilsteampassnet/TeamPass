@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -30,7 +31,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
             continue;
         }
 
-        $fullPath = $dir.'/'.$file;
+        $fullPath = $dir . '/' . $file;
 
         if (is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions)) {
@@ -82,7 +83,7 @@ function generateRandomKey()
 {
     // load passwordLib library
     $path = '../includes/libraries/PasswordGenerator/Generator/';
-    include_once $path.'ComputerPasswordGenerator.php';
+    include_once $path . 'ComputerPasswordGenerator.php';
 
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
@@ -109,15 +110,15 @@ function encryptFollowingDefuse($message, $ascii_key)
 {
     // load PhpEncryption library
     $path = '../includes/libraries/Encryption/Encryption/';
-    require_once $path.'Crypto.php';
-    require_once $path.'Encoding.php';
-    require_once $path.'DerivedKeys.php';
-    require_once $path.'Key.php';
-    require_once $path.'KeyOrPassword.php';
-    require_once $path.'File.php';
-    require_once $path.'RuntimeTests.php';
-    require_once $path.'KeyProtectedByPassword.php';
-    require_once $path.'Core.php';
+    require_once $path . 'Crypto.php';
+    require_once $path . 'Encoding.php';
+    require_once $path . 'DerivedKeys.php';
+    require_once $path . 'Key.php';
+    require_once $path . 'KeyOrPassword.php';
+    require_once $path . 'File.php';
+    require_once $path . 'RuntimeTests.php';
+    require_once $path . 'KeyProtectedByPassword.php';
+    require_once $path . 'Core.php';
 
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
@@ -160,7 +161,7 @@ $session_url_path = $superGlobal->get('url_path', 'SESSION');
 $session_abspath = $superGlobal->get('absolute_path', 'SESSION');
 $session_db_encoding = $superGlobal->get('db_encoding', 'SESSION');
 if (empty($session_db_encoding) === true) {
-	$session_db_encoding = 'utf8';
+    $session_db_encoding = 'utf8';
 }
 
 $superGlobal->put('CPM', 1, 'SESSION');
@@ -185,46 +186,46 @@ if (null !== $post_type) {
             $session_url_path = $data['url_path'];
 
             if (isset($data['activity']) && $data['activity'] === 'folder') {
-                if (is_writable($abspath.'/'.$data['task'].'/') === true) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                if (is_writable($abspath . '/' . $data['task'] . '/') === true) {
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : " Path '.$data['task'].' is not writable!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : " Path ' . $data['task'] . ' is not writable!", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === 'extension') {
                 if (extension_loaded($data['task'])) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : " Extension '.$data['task'].' is not loaded!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : " Extension ' . $data['task'] . ' is not loaded!", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === 'function') {
                 if (function_exists($data['task'])) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : " Function '.$data['task'].' is not available!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : " Function ' . $data['task'] . ' is not available!", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === 'version') {
                 if (version_compare(phpversion(), '7.2.0', '>=')) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 7.2.0)", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "PHP version ' . phpversion() . ' is not OK (minimum is 7.2.0)", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === 'ini') {
                 if (ini_get($data['task']) >= 60) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '"}]';
                 } else {
-                    echo '[{"error" : "PHP \"Maximum execution time\" is set to '.ini_get('max_execution_time').' seconds. Please try to set to 60s at least during installation.", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "PHP \"Maximum execution time\" is set to ' . ini_get('max_execution_time') . ' seconds. Please try to set to 60s at least during installation.", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
@@ -252,29 +253,29 @@ if (null !== $post_type) {
                 // store values
                 foreach ($data as $key => $value) {
                     $superGlobal->put($key, $value, 'SESSION');
-                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $key . "'"));
                     if (intval($tmp) === 0) {
-                        mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
+                        mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $key . "', '" . $value . "');");
                     } else {
-                        mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$value."' WHERE `key` = '".$key."';");
+                        mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $value . "' WHERE `key` = '" . $key . "';");
                     }
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '".empty($session_url_path) ? $db['url_path'] : $session_url_path."');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($session_url_path) ? $db['url_path'] : $session_url_path . "');");
                 } else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $data['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".empty($session_abspath) ? $data['absolute_path'] : $session_abspath."');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".empty($session_abspath) ? $data['absolute_path'] : $session_abspath."' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
             } else {
-                echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
+                echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())) . '", "result" : "Failed", "multiple" : ""}]';
             }
             mysqli_close($dbTmp);
             break;
@@ -296,7 +297,7 @@ if (null !== $post_type) {
 
             // check skpath
             if (empty($data['sk_path'])) {
-                $data['sk_path'] = $session_abspath.'/includes';
+                $data['sk_path'] = $session_abspath . '/includes';
             } else {
                 $data['sk_path'] = str_replace('&#92;', '/', $data['sk_path']);
             }
@@ -308,11 +309,11 @@ if (null !== $post_type) {
                     // store all variables in SESSION
                     foreach ($data as $key => $value) {
                         $superGlobal->put($key, $value, 'SESSION');
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $key . "'"));
                         if (intval($tmp) === 0) {
-                            mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
+                            mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $key . "', '" . $value . "');");
                         } else {
-                            mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$value."' WHERE `key` = '".$key."';");
+                            mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $value . "' WHERE `key` = '" . $key . "';");
                         }
                     }
                     echo '[{"error" : "", "result" : "Information stored", "multiple" : ""}]';
@@ -320,7 +321,7 @@ if (null !== $post_type) {
                     echo '[{"error" : "The Directory must be writable!", "result" : "Information stored", "multiple" : ""}]';
                 }
             } else {
-                echo '[{"error" : "'.$data['sk_path'].' is not a Directory!", "result" : "Information stored", "multiple" : ""}]';
+                echo '[{"error" : "' . $data['sk_path'] . ' is not a Directory!", "result" : "Information stored", "multiple" : ""}]';
             }
             mysqli_close($dbTmp);
             break;
@@ -348,87 +349,87 @@ if (null !== $post_type) {
                 if ($activity === 'table') {
                     if ($task === 'utf8') {
                         //FORCE UTF8 DATABASE
-                        mysqli_query($dbTmp, 'ALTER DATABASE `'.$dbBdd.'` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci');
-					} elseif ($task === 'defuse_passwords') {
+                        mysqli_query($dbTmp, 'ALTER DATABASE `' . $dbBdd . '` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci');
+                    } elseif ($task === 'defuse_passwords') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'defuse_passwords` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'defuse_passwords` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`type` varchar(100) NOT NULL,
 								`object_id` int(12) NOT NULL,
 								`password` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'notification') {
+                        );
+                    } elseif ($task === 'notification') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE `'.$var['tbl_prefix'].'notification` (
+                            $dbTmp,
+                            'CREATE TABLE `' . $var['tbl_prefix'] . 'notification` (
 								`increment_id` INT(12) NOT NULL AUTO_INCREMENT,
 								`item_id` INT(12) NOT NULL,
 								`user_id` INT(12) NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'sharekeys_items') {
+                        );
+                    } elseif ($task === 'sharekeys_items') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_items` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'sharekeys_items` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'sharekeys_logs') {
+                        );
+                    } elseif ($task === 'sharekeys_logs') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_logs` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'sharekeys_logs` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'sharekeys_fields') {
+                        );
+                    } elseif ($task === 'sharekeys_fields') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_fields` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'sharekeys_fields` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'sharekeys_suggestions') {
+                        );
+                    } elseif ($task === 'sharekeys_suggestions') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_suggestions` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'sharekeys_suggestions` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
-					} elseif ($task === 'sharekeys_files') {
+                        );
+                    } elseif ($task === 'sharekeys_files') {
                         $mysqli_result = mysqli_query(
-							$dbTmp,
-							'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'sharekeys_files` (
+                            $dbTmp,
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'sharekeys_files` (
 								`increment_id` int(12) NOT NULL AUTO_INCREMENT,
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
-						);
+                        );
                     } elseif ($task === 'items') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."items` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `label` varchar(500) NOT NULL,
                             `description` text DEFAULT NULL,
@@ -456,7 +457,7 @@ if (null !== $post_type) {
                     } elseif ($task === 'log_items') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."log_items` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "log_items` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id_item` int(8) NOT NULL,
                             `date` varchar(50) NOT NULL,
@@ -471,12 +472,12 @@ if (null !== $post_type) {
                         // create index
                         mysqli_query(
                             $dbTmp,
-                            'CREATE INDEX teampass_log_items_id_item_IDX ON '.$var['tbl_prefix'].'log_items (id_item,date);'
+                            'CREATE INDEX teampass_log_items_id_item_IDX ON ' . $var['tbl_prefix'] . 'log_items (id_item,date);'
                         );
                     } elseif ($task === 'misc') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'misc` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'misc` (
                             `increment_id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
@@ -491,8 +492,8 @@ if (null !== $post_type) {
                         // prepare config file
                         $tp_config_file = '../includes/config/tp.config.php';
                         if (file_exists($tp_config_file)) {
-                            if (!copy($tp_config_file, $tp_config_file.'.'.date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                            if (!copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
+                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                                 break;
                             } else {
                                 unlink($tp_config_file);
@@ -520,10 +521,10 @@ $SETTINGS = array (';
                             array('admin', 'manager_edit', '1'),
                             array('admin', 'cpassman_dir', $var['absolute_path']),
                             array('admin', 'cpassman_url', $var['url_path']),
-                            array('admin', 'favicon', $var['url_path'].'/favicon.ico'),
-                            array('admin', 'path_to_upload_folder', $var['absolute_path'].'/upload'),
-                            array('admin', 'path_to_files_folder', $var['absolute_path'].'/files'),
-                            array('admin', 'url_to_files_folder', $var['url_path'].'/files'),
+                            array('admin', 'favicon', $var['url_path'] . '/favicon.ico'),
+                            array('admin', 'path_to_upload_folder', $var['absolute_path'] . '/upload'),
+                            array('admin', 'path_to_files_folder', $var['absolute_path'] . '/files'),
+                            array('admin', 'url_to_files_folder', $var['url_path'] . '/files'),
                             array('admin', 'activate_expiration', '0'),
                             array('admin', 'pw_life_duration', '0'),
                             array('admin', 'maintenance_mode', '1'),
@@ -605,7 +606,7 @@ $SETTINGS = array (';
                             array('admin', 'duo', '0'),
                             array('admin', 'enable_server_password_change', '0'),
                             array('admin', 'ldap_object_class', '0'),
-                            array('admin', 'bck_script_path', $var['absolute_path'].'/backups'),
+                            array('admin', 'bck_script_path', $var['absolute_path'] . '/backups'),
                             array('admin', 'bck_script_filename', 'bck_teampass'),
                             array('admin', 'syslog_enable', '0'),
                             array('admin', 'syslog_host', 'localhost'),
@@ -634,9 +635,9 @@ $SETTINGS = array (';
                             array('admin', 'password_overview_delay', '4'),
                             array('admin', 'copy_to_clipboard_small_icons', '1'),
                             array('admin', 'duo_akey', ''),
-                            array('admin', 'duo_ikey', '1'),
-                            array('admin', 'duo_skey', '1'),
-                            array('admin', 'duo_host', '1'),
+                            array('admin', 'duo_ikey', ''),
+                            array('admin', 'duo_skey', ''),
+                            array('admin', 'duo_host', ''),
                             array('admin', 'teampass_version', ''),
                         );
                         foreach ($aMiscVal as $elem) {
@@ -644,30 +645,30 @@ $SETTINGS = array (';
                             $tmp = mysqli_num_rows(
                                 mysqli_query(
                                     $dbTmp,
-                                    'SELECT * FROM `'.$var['tbl_prefix']."misc`
-                                    WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
+                                    "SELECT * FROM `" . $var['tbl_prefix'] . "misc`
+                                    WHERE type='" . $elem[0] . "' AND intitule='" . $elem[1] . "'"
                                 )
                             );
                             if (intval($tmp) === 0) {
                                 $queryRes = mysqli_query(
                                     $dbTmp,
-                                    'INSERT INTO `'.$var['tbl_prefix']."misc`
+                                    "INSERT INTO `" . $var['tbl_prefix'] . "misc`
                                     (`type`, `intitule`, `valeur`) VALUES
-                                    ('".$elem[0]."', '".$elem[1]."', '".
-                                    str_replace("'", '', $elem[2])."');"
+                                    ('" . $elem[0] . "', '" . $elem[1] . "', '" .
+                                        str_replace("'", '', $elem[2]) . "');"
                                 ); // or die(mysqli_error($dbTmp))
                             }
 
                             // append new setting in config file
                             $config_text .= "
-    '".$elem[1]."' => '".str_replace("'", '', $elem[2])."',";
+    '" . $elem[1] . "' => '" . str_replace("'", '', $elem[2]) . "',";
                         }
 
                         // write to config file
                         $result = fwrite(
                             $file_handler,
                             utf8_encode(
-                                $config_text.'
+                                $config_text . '
 );'
                             )
                         );
@@ -675,7 +676,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'nested_tree') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."nested_tree` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "nested_tree` (
                             `id` bigint(20) unsigned NOT null AUTO_INCREMENT,
                             `parent_id` int(11) NOT NULL,
                             `title` varchar(255) NOT NULL,
@@ -697,7 +698,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'rights') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."rights` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "rights` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `tree_id` int(12) NOT NULL,
                             `fonction_id` int(12) NOT NULL,
@@ -708,7 +709,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'users') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."users` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "users` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `login` varchar(50) NOT NULL,
                             `pw` varchar(400) NOT NULL,
@@ -762,37 +763,37 @@ $SETTINGS = array (';
 
                         require_once '../includes/config/include.php';
                         // check that admin accounts doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, 'SELECT * FROM `'.$var['tbl_prefix']."users` WHERE login = 'admin'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE login = 'admin'"));
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                'INSERT INTO `'.$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '', '".time()."')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1')"
                             );
                         } else {
-                            $mysqli_result = mysqli_query($dbTmp, 'UPDATE `'.$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'], '13')."' WHERE login = 'admin' AND id = '1'");
+                            $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . bCrypt($var['admin_pwd'], '13') . "' WHERE login = 'admin' AND id = '1'");
                         }
 
                         // check that API doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, 'SELECT * FROM `'.$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE id = '" . API_USER_ID . "'"));
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                'INSERT INTO `'.$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".API_USER_ID."', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                             );
                         }
 
                         // check that OTV doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, 'SELECT * FROM `'.$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE id = '" . OTV_USER_ID . "'"));
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                'INSERT INTO `'.$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".OTV_USER_ID."', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                             );
                         }
                     } elseif ($task === 'tags') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'tags` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'tags` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `tag` varchar(30) NOT NULL,
                             `item_id` int(12) NOT NULL,
@@ -802,7 +803,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'log_system') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'log_system` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'log_system` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(20) NOT NULL,
                             `date` varchar(30) NOT NULL,
@@ -815,10 +816,10 @@ $SETTINGS = array (';
                     } elseif ($task === 'files') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."files` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "files` (
                             `id` int(11) NOT null AUTO_INCREMENT,
                             `id_item` int(11) NOT NULL,
-                            `name` TEXT CHARACTER SET utf8 COLLATE NOT NULL,
+                            `name` TEXT NOT NULL,
                             `size` int(10) NOT NULL,
                             `extension` varchar(10) NOT NULL,
                             `type` varchar(255) NOT NULL,
@@ -832,7 +833,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'cache') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."cache` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "cache` (
                             `increment_id`INT(12) NOT NULL AUTO_INCREMENT,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
@@ -854,7 +855,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'roles_title') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."roles_title` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "roles_title` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `title` varchar(50) NOT NULL,
                             `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
@@ -863,10 +864,19 @@ $SETTINGS = array (';
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
+
+                        // create Default role
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "roles_title` WHERE id = '0'"));
+                        if ($tmp === 0) {
+                            $mysqli_result = mysqli_query(
+                                $dbTmp,
+                                "INSERT INTO `" . $var['tbl_prefix'] . "roles_title` (`id`, `title`, `allow_pw_change`, `complexity`, `creator_id`) VALUES (NULL, 'Default', '0', '50', '0')"
+                            );
+                        }
                     } elseif ($task === 'roles_values') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."roles_values` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "roles_values` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
@@ -877,7 +887,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'kb') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."kb` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "kb` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `category_id` int(12) NOT NULL,
                             `label` varchar(200) NOT NULL,
@@ -890,7 +900,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'kb_categories') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'kb_categories` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'kb_categories` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `category` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
@@ -899,7 +909,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'kb_items') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'kb_items` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'kb_items` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `kb_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
@@ -909,7 +919,7 @@ $SETTINGS = array (';
                     } elseif ($task == 'restriction_to_roles') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'restriction_to_roles` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'restriction_to_roles` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `role_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
@@ -919,7 +929,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'languages') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'languages` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'languages` (
                             `id` INT(10) NOT null AUTO_INCREMENT,
                             `name` VARCHAR(50) NOT null ,
                             `label` VARCHAR(50) NOT null ,
@@ -930,11 +940,11 @@ $SETTINGS = array (';
                         );
 
                         // add lanaguages
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, 'SELECT * FROM `'.$var['tbl_prefix']."languages` WHERE name = 'french'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "languages` WHERE name = 'french'"));
                         if ($tmp[0] == 0) {
                             $mysql_result = mysqli_query(
                                 $dbTmp,
-                                'INSERT INTO `'.$var['tbl_prefix']."languages` (`name`, `label`, `code`, `flag`) VALUES
+                                "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`name`, `label`, `code`, `flag`) VALUES
                                 ('french', 'French' , 'fr', 'fr.png'),
                                 ('english', 'English' , 'us', 'us.png'),
                                 ('spanish', 'Spanish' , 'es', 'es.png'),
@@ -964,7 +974,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'emails') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'emails` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'emails` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `timestamp` INT(30) NOT null ,
                             `subject` VARCHAR(255) NOT null ,
@@ -977,7 +987,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'automatic_del') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'automatic_del` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'automatic_del` (
                             `item_id` int(11) NOT NULL,
                             `del_enabled` tinyint(1) NOT NULL,
                             `del_type` tinyint(1) NOT NULL,
@@ -988,7 +998,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'items_edition') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'items_edition` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'items_edition` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `item_id` int(11) NOT NULL,
                             `user_id` int(12) NOT NULL,
@@ -1000,7 +1010,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'categories') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."categories` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "categories` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
                             `parent_id` int(12) NOT NULL,
                             `title` varchar(255) NOT NULL,
@@ -1018,7 +1028,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'categories_items') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."categories_items` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "categories_items` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
                             `field_id` int(11) NOT NULL,
                             `item_id` int(11) NOT NULL,
@@ -1032,7 +1042,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'categories_folders') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'categories_folders` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'categories_folders` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id_category` int(12) NOT NULL,
                             `id_folder` int(12) NOT NULL,
@@ -1042,7 +1052,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'api') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'api` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'api` (
                             `id` int(20) NOT NULL AUTO_INCREMENT,
                             `type` varchar(15) NOT NULL,
                             `label` varchar(255) NOT NULL,
@@ -1054,7 +1064,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'otv') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."otv` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "otv` (
                             `id` int(10) NOT NULL AUTO_INCREMENT,
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
@@ -1067,7 +1077,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'suggestion') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."suggestion` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "suggestion` (
                             `id` tinyint(12) NOT NULL AUTO_INCREMENT,
                             `label` varchar(255) NOT NULL,
                             `pw` text NOT NULL,
@@ -1084,7 +1094,7 @@ $SETTINGS = array (';
 
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."export` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "export` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
@@ -1102,7 +1112,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'tokens') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'tokens` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'tokens` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
                             `user_id` int(12) NOT NULL,
                             `token` varchar(255) NOT NULL,
@@ -1115,7 +1125,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'items_change') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix']."items_change` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "items_change` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
                             `item_id` int(12) NOT NULL,
                             `label` varchar(255) NOT NULL DEFAULT 'none',
@@ -1134,7 +1144,7 @@ $SETTINGS = array (';
                     } elseif ($task === 'templates') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `'.$var['tbl_prefix'].'templates` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'templates` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `item_id` int(12) NOT NULL,
                             `category_id` int(12) NOT NULL,
@@ -1145,12 +1155,12 @@ $SETTINGS = array (';
                 }
                 // answer back
                 if ($mysqli_result) {
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'", "task" : "'.$task.'", "activity" : "'.$activity.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '", "task" : "' . $task . '", "activity" : "' . $activity . '"}]';
                 } else {
-                    echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())).'", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'", "table" : "'.$task.'"}]';
+                    echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())) . '", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '", "table" : "' . $task . '"}]';
                 }
             } else {
-                echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
+                echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())) . '", "result" : "Failed", "multiple" : ""}]';
             }
 
             mysqli_close($dbTmp);
@@ -1185,12 +1195,10 @@ $SETTINGS = array (';
 
             // launch
             if (empty($var['sk_path'])) {
-                $skFile = $var['absolute_path'].'/includes/sk.php';
                 $securePath = $var['absolute_path'];
             } else {
                 //ensure $var['sk_path'] has no trailing slash
                 $var['sk_path'] = rtrim(str_replace('\/', '//', $var['sk_path']), '/\\');
-                $skFile = $var['sk_path'].'/sk.php';
                 $securePath = $var['sk_path'];
             }
 
@@ -1200,11 +1208,11 @@ $SETTINGS = array (';
                 if ($task === 'settings.php') {
                     // first is to create teampass-seckey.txt
                     // 0- check if exists
-                    $filename_seckey = $securePath.'/teampass-seckey.txt';
+                    $filename_seckey = $securePath . '/teampass-seckey.txt';
 
                     if (file_exists($filename_seckey)) {
-                        if (!copy($filename_seckey, $filename_seckey.'.'.date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
+                            echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                             break;
                         } else {
                             unlink($filename);
@@ -1235,8 +1243,8 @@ $SETTINGS = array (';
                     $filename = '../includes/config/settings.php';
 
                     if (file_exists($filename)) {
-                        if (!copy($filename, $filename.'.'.date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        if (!copy($filename, $filename . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
+                            echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                             break;
                         } else {
                             unlink($filename);
@@ -1256,14 +1264,14 @@ $SETTINGS = array (';
                         utf8_encode(
                             '<?php
 // DATABASE connexion parameters
-define("DB_HOST", "'.$db['db_host'].'");
-define("DB_USER", "'.$db['db_login'].'");
-define("DB_PASSWD", "'.str_replace('$', '\$', $encrypted_text).'");
-define("DB_NAME", "'.$db['db_bdd'].'");
-define("DB_PREFIX", "'.$var['tbl_prefix'].'");
-define("DB_PORT", "'.$db['db_port'].'");
-define("DB_ENCODING", "'.$session_db_encoding.'");
-define("SECUREPATH", "'.$securePath.'");
+define("DB_HOST", "' . $db['db_host'] . '");
+define("DB_USER", "' . $db['db_login'] . '");
+define("DB_PASSWD", "' . str_replace('$', '\$', $encrypted_text) . '");
+define("DB_NAME", "' . $db['db_bdd'] . '");
+define("DB_PREFIX", "' . $var['tbl_prefix'] . '");
+define("DB_PORT", "' . $db['db_port'] . '");
+define("DB_ENCODING", "' . $session_db_encoding . '");
+define("SECUREPATH", "' . $securePath . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -1273,9 +1281,9 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     );
                     fclose($file_handler);
                     if ($result === false) {
-                        echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     }
                 } elseif ($task === 'security') {
                     // Sort out the file permissions
@@ -1285,25 +1293,25 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         // Change directory permissions
                         $result = chmodRecursive($session_abspath, 0770, 0740);
                         if ($result) {
-                            $result = chmodRecursive($session_abspath.'/files', 0770, 0770);
+                            $result = chmodRecursive($session_abspath . '/files', 0770, 0770);
                         }
                         if ($result) {
-                            $result = chmodRecursive($session_abspath.'/upload', 0770, 0770);
+                            $result = chmodRecursive($session_abspath . '/upload', 0770, 0770);
                         }
                     }
 
                     if ($result === false) {
-                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     }
                 } elseif ($task === 'csrfp-token') {
                     // update CSRFP TOKEN
                     $csrfp_file_sample = '../includes/libraries/csrfp/libs/csrfp.config.sample.php';
                     $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
                     if (file_exists($csrfp_file)) {
-                        if (!copy($csrfp_file, $csrfp_file.'.'.date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                        if (!copy($csrfp_file, $csrfp_file . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
+                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                             break;
                         } else {
                             $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
@@ -1312,19 +1320,19 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     unlink($csrfp_file); // delete existing csrfp.config file
                     copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
                     $data = file_get_contents($csrfp_file);
-                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-                    $jsUrl = $data_sent['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
-                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $data);
+                    $jsUrl = $data_sent['url_path'] . '/includes/libraries/csrfp/js/csrfprotector.js';
+                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "' . $jsUrl . '"', $newdata);
                     file_put_contents('../includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
 
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
             } elseif ($activity === 'install') {
                 if ($task === 'cleanup') {
                     // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
-                    mysqli_query($dbTmp, 'INSERT INTO `'.$var['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')");
+                    mysqli_query($dbTmp, "INSERT INTO `" . $var['tbl_prefix'] . "misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')");
 
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
             }
 

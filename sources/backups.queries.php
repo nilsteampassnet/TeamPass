@@ -50,17 +50,12 @@ require_once 'main.functions.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
 DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -160,7 +155,7 @@ if (null !== $post_type) {
 
             if (empty($return) === false) {
                 // get a token
-                $token = GenerateCryptKey(20);
+                $token = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
 
                 //save file
                 $filename = time().'-'.$token.'.sql';
@@ -191,7 +186,7 @@ if (null !== $post_type) {
                 }
 
                 //generate 2d key
-                $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
+                $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
 
                 //update LOG
                 logEvents(

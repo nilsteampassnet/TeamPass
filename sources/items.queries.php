@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -31,12 +32,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -49,8 +50,8 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
@@ -72,7 +73,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 }
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -84,7 +85,7 @@ DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
 
 // Class loader
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -112,7 +113,7 @@ $post_iFolderId = filter_input(INPUT_POST, 'iFolderId', FILTER_SANITIZE_NUMBER_I
 // Do asked action
 if (null !== $post_type) {
     switch ($post_type) {
-        /*
+            /*
         * CASE
         * creating a new ITEM
         */
@@ -194,9 +195,10 @@ if (null !== $post_type) {
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
-                if ($_SESSION['user_read_only'] === true
+                if (
+                    $_SESSION['user_read_only'] === true
                     && (in_array($post_folder_id, $_SESSION['personal_folders']) === false
-                    || $post_folder_is_personal !== 1)
+                        || $post_folder_is_personal !== 1)
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -210,7 +212,8 @@ if (null !== $post_type) {
 
                 // Is author authorized to create in this folder
                 if (count($_SESSION['list_folders_limited']) > 0) {
-                    if (in_array($post_folder_id, array_keys($_SESSION['list_folders_limited'])) === false
+                    if (
+                        in_array($post_folder_id, array_keys($_SESSION['list_folders_limited'])) === false
                         && in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                         && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     ) {
@@ -237,7 +240,8 @@ if (null !== $post_type) {
                 }
 
                 // perform a check in case of Read-Only user creating an item in his PF
-                if ($_SESSION['user_read_only'] === true
+                if (
+                    $_SESSION['user_read_only'] === true
                     && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                 ) {
                     echo prepareExchangedData(
@@ -251,7 +255,8 @@ if (null !== $post_type) {
                 }
 
                 // is pwd empty?
-                if (empty($post_password)
+                if (
+                    empty($post_password)
                     && isset($_SESSION['user_settings']['create_item_without_password']) == true
                     && $_SESSION['user_settings']['create_item_without_password'] !== '1'
                 ) {
@@ -277,10 +282,11 @@ if (null !== $post_type) {
                     break;
                 }
 
-                // Check PSK is set
-                if ((int) $post_folder_is_personal === 1
+                /*// Check PSK is set
+                if (
+                    (int) $post_folder_is_personal === 1
                     && (isset($_SESSION['user_settings']['session_psk']) === false
-                    || empty($post_password) === true)
+                        || empty($post_password) === true)
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -290,13 +296,13 @@ if (null !== $post_type) {
                         'encode'
                     );
                     break;
-                }
+                }*/
 
                 // Need info in DB
                 // About special settings
                 $dataFolderSettings = DB::queryFirstRow(
                     'SELECT bloquer_creation, bloquer_modification, personal_folder
-                    FROM '.prefixTable('nested_tree').' 
+                    FROM ' . prefixTable('nested_tree') . ' 
                     WHERE id = %i',
                     $post_folder_id
                 );
@@ -311,7 +317,7 @@ if (null !== $post_type) {
                 // Get folder complexity
                 $folderComplexity = DB::queryfirstrow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc').'
+                    FROM ' . prefixTable('misc') . '
                     WHERE type = %s AND intitule = %i',
                     'complex',
                     $post_folder_id
@@ -336,7 +342,7 @@ if (null !== $post_type) {
                 $itemExists = 0;
                 $newID = '';
                 $data = DB::queryfirstrow(
-                    'SELECT * FROM '.prefixTable('items').'
+                    'SELECT * FROM ' . prefixTable('items') . '
                     WHERE label = %s AND inactif = %i',
                     $post_label,
                     0
@@ -350,7 +356,8 @@ if (null !== $post_type) {
 
                 // Manage case where item is personal.
                 // In this case, duplication is allowed
-                if (isset($SETTINGS['duplicate_item']) === true
+                if (
+                    isset($SETTINGS['duplicate_item']) === true
                     && (int) $SETTINGS['duplicate_item'] === 0
                     && (int) $post_salt_key_set === 1
                     && isset($post_salt_key_set) === true
@@ -361,17 +368,15 @@ if (null !== $post_type) {
                 }
 
                 if ((isset($SETTINGS['duplicate_item']) === true
-                    && (int) $SETTINGS['duplicate_item'] === 0
-                    && (int) $itemExists === 0)
-                    ||
-                    (isset($SETTINGS['duplicate_item']) === true
+                        && (int) $SETTINGS['duplicate_item'] === 0
+                        && (int) $itemExists === 0)
+                    || (isset($SETTINGS['duplicate_item']) === true
                         && (int) $SETTINGS['duplicate_item'] === 1)
                 ) {
                     // Handle case where pw is empty
                     // if not allowed then warn user
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                        && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
-                        ) ||
+                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1) ||
                         empty($post_password) === false
                     ) {
                         // NEW ENCRYPTION
@@ -403,7 +408,7 @@ if (null !== $post_type) {
                                 && $post_anyone_can_modify === 'on') ? 1 : 0,
                             'complexity_level' => $post_complexity_level,
                             'encryption_type' => 'teampass_aes',
-                            )
+                        )
                     );
                     $newID = DB::insertId();
 
@@ -452,7 +457,8 @@ if (null !== $post_type) {
                     */
 
                     // update fields
-                    if (isset($SETTINGS['item_extra_fields']) === true
+                    if (
+                        isset($SETTINGS['item_extra_fields']) === true
                         && (int) $SETTINGS['item_extra_fields'] === 1
                     ) {
                         foreach (explode('_|_', $post_fields) as $field) {
@@ -461,7 +467,7 @@ if (null !== $post_type) {
                                 // should we encrypt the data
                                 $dataTmp = DB::queryFirstRow(
                                     'SELECT encrypted_data
-                                    FROM '.prefixTable('categories').'
+                                    FROM ' . prefixTable('categories') . '
                                     WHERE id = %i',
                                     $field_data[0]
                                 );
@@ -509,14 +515,15 @@ if (null !== $post_type) {
                     }
 
                     // If template enable, is there a main one selected?
-                    if (isset($SETTINGS['item_creation_templates']) === true
+                    if (
+                        isset($SETTINGS['item_creation_templates']) === true
                         && (int) $SETTINGS['item_creation_templates'] === 1
                         && isset($post_template_id) === true
                         && empty($post_template_id) === false
                     ) {
                         DB::queryFirstRow(
                             'SELECT *
-                            FROM '.prefixTable('templates').'
+                            FROM ' . prefixTable('templates') . '
                             WHERE item_id = %i',
                             $newID
                         );
@@ -552,12 +559,14 @@ if (null !== $post_type) {
                     }
 
                     // If automatic deletion asked
-                    if (isset($SETTINGS['enable_delete_after_consultation']) === true
+                    if (
+                        isset($SETTINGS['enable_delete_after_consultation']) === true
                         && (int) $SETTINGS['enable_delete_after_consultation'] === 1
                         && null !== $post_to_be_deleted_after_x_views
                         && null !== $post_to_be_deleted_after_date
                     ) {
-                        if (empty($post_to_be_deleted_after_date) === false
+                        if (
+                            empty($post_to_be_deleted_after_date) === false
                             || $post_to_be_deleted_after_x_views > 0
                         ) {
                             // Automatic deletion to be added
@@ -568,53 +577,57 @@ if (null !== $post_type) {
                                     'del_enabled' => 1,
                                     'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
                                     'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
-                                    )
+                                )
                             );
                         }
                     }
 
                     // Get readable list of restriction
                     $listOfRestricted = $oldRestrictionList = '';
-                    if (is_array($post_restricted_to) === true
+                    if (
+                        is_array($post_restricted_to) === true
                         && count($post_restricted_to) > 0
                         && isset($SETTINGS['restricted_to']) === true
                         && (int) $SETTINGS['restricted_to'] === 1
                     ) {
                         foreach ($post_restricted_to as $userRest) {
                             if (empty($userRest) === false) {
-                                $dataTmp = DB::queryfirstrow('SELECT login FROM '.prefixTable('users').' WHERE id= %i', $userRest);
+                                $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= %i', $userRest);
                                 if (empty($listOfRestricted)) {
                                     $listOfRestricted = $dataTmp['login'];
                                 } else {
-                                    $listOfRestricted .= ';'.$dataTmp['login'];
+                                    $listOfRestricted .= ';' . $dataTmp['login'];
                                 }
                             }
                         }
                     }
-                    if ($data['restricted_to'] !== $post_restricted_to
+                    if (
+                        $data['restricted_to'] !== $post_restricted_to
                         && (int) $SETTINGS['restricted_to'] === 1
                     ) {
                         if (empty($data['restricted_to']) === false) {
                             foreach (explode(';', $data['restricted_to']) as $userRest) {
                                 if (empty($userRest) === false) {
-                                    $dataTmp = DB::queryfirstrow('SELECT login FROM '.prefixTable('users').' WHERE id= '.$userRest);
+                                    $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= ' . $userRest);
                                     if (empty($oldRestrictionList) === true) {
                                         $oldRestrictionList = $dataTmp['login'];
                                     } else {
-                                        $oldRestrictionList .= ';'.$dataTmp['login'];
+                                        $oldRestrictionList .= ';' . $dataTmp['login'];
                                     }
                                 }
                             }
                         }
                     }
                     // Manage retriction_to_roles
-                    if (is_array($post_restricted_to_roles) === true
+                    if (
+                        is_array($post_restricted_to_roles) === true
                         && count($post_restricted_to_roles) > 0
                         && isset($SETTINGS['restricted_to_roles']) === true
                         && (int) $SETTINGS['restricted_to_roles'] === 1
                     ) {
                         // add roles for item
-                        if (is_array($post_restricted_to_roles) === true
+                        if (
+                            is_array($post_restricted_to_roles) === true
                             && count($post_restricted_to_roles) > 0
                         ) {
                             foreach ($post_restricted_to_roles as $role) {
@@ -628,7 +641,7 @@ if (null !== $post_type) {
                                     array(
                                         'role_id' => $role,
                                         'item_id' => $post_item_id,
-                                        )
+                                    )
                                 );
                             }
                         }
@@ -653,7 +666,7 @@ if (null !== $post_type) {
                                 array(
                                     'item_id' => $newID,
                                     'tag' => strtolower($tag),
-                                    )
+                                )
                             );
                         }
                     }
@@ -662,7 +675,7 @@ if (null !== $post_type) {
                     if (empty($post_uploaded_file_id) === false) {
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('files').'
+                            FROM ' . prefixTable('files') . '
                             WHERE id_item = %s',
                             $post_uploaded_file_id
                         );
@@ -673,7 +686,7 @@ if (null !== $post_type) {
                                 array(
                                     'id_item' => $newID,
                                     'confirmed' => 1,
-                                    ),
+                                ),
                                 'id=%i',
                                 $record['id']
                             );
@@ -702,21 +715,22 @@ if (null !== $post_type) {
                                     langHdl('email_subject'),
                                     str_replace(
                                         array('#label', '#link'),
-                                        array($path, $SETTINGS['email_server_url'].'/index.php?page=items&group='.$post_folder_id.'&id='.$newID.$txt['email_body3']),
+                                        array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $post_folder_id . '&id=' . $newID . $txt['email_body3']),
                                         langHdl('new_item_email_body')
                                     ),
                                     $emailAddress,
                                     $SETTINGS,
                                     str_replace(
                                         array('#label', '#link'),
-                                        array($path, $SETTINGS['email_server_url'].'/index.php?page=items&group='.$post_folder_id.'&id='.$newID.$txt['email_body3']),
+                                        array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $post_folder_id . '&id=' . $newID . $txt['email_body3']),
                                         langHdl('new_item_email_body')
                                     )
                                 );
                             }
                         }
                     }
-                } elseif (isset($SETTINGS['duplicate_item']) === true
+                } elseif (
+                    isset($SETTINGS['duplicate_item']) === true
                     && (int) $SETTINGS['duplicate_item'] === 0
                     && (int) $itemExists === 1
                 ) {
@@ -758,7 +772,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($arrData, 'encode');
             break;
 
-        /*
+            /*
         * CASE
         * update an ITEM
         */
@@ -830,19 +844,18 @@ if (null !== $post_type) {
                     $dataReceived['to_be_deleted_after_date'],
                     FILTER_SANITIZE_STRING
                 );
-                $post_fields = (
-                    filter_var_array(
-                        $dataReceived['fields'],
-                        FILTER_SANITIZE_STRING
-                    )
-                );
+                $post_fields = (filter_var_array(
+                    $dataReceived['fields'],
+                    FILTER_SANITIZE_STRING
+                ));
                 $post_description = ($dataReceived['description']);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
-                if ($_SESSION['user_read_only'] === true
+                if (
+                    $_SESSION['user_read_only'] === true
                     && (in_array($post_folder_id, $_SESSION['personal_folders']) === false
-                    || $post_folder_is_personal !== 1)
+                        || $post_folder_is_personal !== 1)
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -855,7 +868,8 @@ if (null !== $post_type) {
                 }
 
                 // Check PWD EMPTY
-                if (empty($pw) === true
+                if (
+                    empty($pw) === true
                     && isset($_SESSION['user_settings']['create_item_without_password']) === true
                     && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
                 ) {
@@ -873,7 +887,7 @@ if (null !== $post_type) {
                 // About special settings
                 $dataFolderSettings = DB::queryFirstRow(
                     'SELECT bloquer_creation, bloquer_modification, personal_folder
-                    FROM '.prefixTable('nested_tree').' 
+                    FROM ' . prefixTable('nested_tree') . ' 
                     WHERE id = %i',
                     $post_folder_id
                 );
@@ -888,7 +902,7 @@ if (null !== $post_type) {
                 // Get folder complexity
                 $folderComplexity = DB::queryfirstrow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc').'
+                    FROM ' . prefixTable('misc') . '
                     WHERE type = %s AND intitule = %i',
                     'complex',
                     $post_folder_id
@@ -927,8 +941,8 @@ if (null !== $post_type) {
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     'SELECT *
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+                    FROM ' . prefixTable('items') . ' as i
+                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
                     WHERE i.id=%i AND l.action = %s',
                     $post_item_id,
                     'at_creation'
@@ -937,7 +951,7 @@ if (null !== $post_type) {
                 // Does the user has the sharekey
                 DB::query(
                     'SELECT *
-                    FROM '.prefixTable('sharekeys_items').'
+                    FROM ' . prefixTable('sharekeys_items') . '
                     WHERE object_id = %i AND user_id = %s',
                     $post_item_id,
                     $_SESSION['user_id']
@@ -965,36 +979,31 @@ if (null !== $post_type) {
                 }
 
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
-                    && ((int) $dataItem['perso'] === 0
-                    || ((int) $dataItem['perso'] === 1
-                    //&& (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
-                    ))
-                    && $restrictionActive === false
-                    )
-                    ||
-                    (
-                        isset($SETTINGS['anyone_can_modify']) === true
+                        && ((int) $dataItem['perso'] === 0
+                            || ((int) $dataItem['perso'] === 1
+                                //&& (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
+                            ))
+                        && $restrictionActive === false)
+                    || (isset($SETTINGS['anyone_can_modify']) === true
                         && (int) $SETTINGS['anyone_can_modify'] === 1
                         && (int) $dataItem['anyone_can_modify'] === 1
                         && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
-                        || (int) $_SESSION['is_admin'] === 1)
-                        && $restrictionActive === false
-                    )
-                    ||
-                    (null !== $post_folder_id
-                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
-                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
-                    //&& $post_restricted === '1'
-                    && $restrictionActive === false)
+                            || (int) $_SESSION['is_admin'] === 1)
+                        && $restrictionActive === false)
+                    || (null !== $post_folder_id
+                        && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
+                        && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
+                        //&& $post_restricted === '1'
+                        && $restrictionActive === false)
                 ) {
                     // Get existing values
                     $data = DB::queryfirstrow(
                         'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
                         i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                         u.login as user_login, u.email as user_email
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id=l.id_item)
-                        INNER JOIN '.prefixTable('users').' as u ON (u.id=l.id_user)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
+                        INNER JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
                         WHERE i.id=%i',
                         $post_item_id
                     );
@@ -1002,7 +1011,7 @@ if (null !== $post_type) {
                     // Should we log a password change?
                     $userKey = DB::queryFirstRow(
                         'SELECT share_key
-                        FROM '.prefixTable('sharekeys_items').'
+                        FROM ' . prefixTable('sharekeys_items') . '
                         WHERE user_id = %i AND object_id = %i',
                         $_SESSION['user_id'],
                         $post_item_id
@@ -1035,7 +1044,7 @@ if (null !== $post_type) {
 
                     // encrypt PW
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                        && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1)
+                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1)
                         || empty($post_password) === false
                     ) {
                         //-----
@@ -1097,13 +1106,14 @@ if (null !== $post_type) {
                             'complexity_level' => (int) $post_complexity_level,
                             'encryption_type' => TP_ENCRYPTION_NAME,
                             'perso' => in_array($post_folder_id, $_SESSION['personal_folders']) === true ? 1 : 0,
-                            ),
+                        ),
                         'id=%i',
                         $post_item_id
                     );
 
                     // update fields
-                    if (isset($SETTINGS['item_extra_fields']) === true
+                    if (
+                        isset($SETTINGS['item_extra_fields']) === true
                         && (int) $SETTINGS['item_extra_fields'] === 1
                         && empty($post_fields) === false
                     ) {
@@ -1113,8 +1123,8 @@ if (null !== $post_type) {
                                     'SELECT c.id AS id, c.title AS title, i.data AS data, i.data_iv AS data_iv,
                                     i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
                                     c.masked AS masked, i.id AS field_item_id
-                                    FROM '.prefixTable('categories_items').' AS i
-                                    INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
+                                    FROM ' . prefixTable('categories_items') . ' AS i
+                                    INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i',
                                     $field['id'],
                                     $post_item_id
@@ -1128,7 +1138,7 @@ if (null !== $post_type) {
                                     // Perform new query
                                     $dataTmpCat = DB::queryFirstRow(
                                         'SELECT id, title, encrypted_data, masked
-                                        FROM '.prefixTable('categories').'
+                                        FROM ' . prefixTable('categories') . '
                                         WHERE id = %i',
                                         $field['id']
                                     );
@@ -1200,7 +1210,7 @@ if (null !== $post_type) {
                                         $_SESSION['user_id'],
                                         'at_modification',
                                         $_SESSION['login'],
-                                        'at_field : '.$dataTmpCat['title'].' : '.$field['value']
+                                        'at_field : ' . $dataTmpCat['title'] . ' : ' . $field['value']
                                     );
                                 } else {
                                     // compare the old and new value
@@ -1208,7 +1218,7 @@ if (null !== $post_type) {
                                         // Get user sharekey for this field
                                         $userKey = DB::queryFirstRow(
                                             'SELECT share_key
-                                            FROM '.prefixTable('sharekeys_fields').'
+                                            FROM ' . prefixTable('sharekeys_fields') . '
                                             WHERE user_id = %i AND object_id = %i',
                                             $_SESSION['user_id'],
                                             $dataTmpCat['field_item_id']
@@ -1277,7 +1287,7 @@ if (null !== $post_type) {
                                             $_SESSION['user_id'],
                                             'at_modification',
                                             $_SESSION['login'],
-                                            'at_field : '.$dataTmpCat['title'].' => '.$oldVal
+                                            'at_field : ' . $dataTmpCat['title'] . ' => ' . $oldVal
                                         );
                                     }
                                 }
@@ -1295,13 +1305,14 @@ if (null !== $post_type) {
                     }
 
                     // If template enable, is there a main one selected?
-                    if (isset($SETTINGS['item_creation_templates']) === true
+                    if (
+                        isset($SETTINGS['item_creation_templates']) === true
                         && $SETTINGS['item_creation_templates'] === '1'
                         && isset($post_template_id) === true
                     ) {
                         DB::queryFirstRow(
                             'SELECT *
-                            FROM '.prefixTable('templates').'
+                            FROM ' . prefixTable('templates') . '
                             WHERE item_id = %i',
                             $post_item_id
                         );
@@ -1337,20 +1348,22 @@ if (null !== $post_type) {
                     }
 
                     // Update automatic deletion - Only by the creator of the Item
-                    if (isset($SETTINGS['enable_delete_after_consultation']) === true
+                    if (
+                        isset($SETTINGS['enable_delete_after_consultation']) === true
                         && (int) $SETTINGS['enable_delete_after_consultation'] === 1
                     ) {
                         // check if elem exists in Table. If not add it or update it.
                         DB::query(
                             'SELECT *
-                            FROM '.prefixTable('automatic_del').'
+                            FROM ' . prefixTable('automatic_del') . '
                             WHERE item_id = %i',
                             $post_item_id
                         );
 
                         if (DB::count() === 0) {
                             // No automatic deletion for this item
-                            if (empty($post_to_be_deleted_after_date) === false
+                            if (
+                                empty($post_to_be_deleted_after_date) === false
                                 || (int) $post_to_be_deleted_after_x_views > 0
                             ) {
                                 // Automatic deletion to be added
@@ -1362,15 +1375,14 @@ if (null !== $post_type) {
                                         'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
                                         'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                            (int) $post_to_be_deleted_after_x_views :
-                                            dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
-                                        )
+                                            (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                    )
                                 );
 
                                 // Store updates performed
                                 array_push(
                                     $arrayOfChanges,
-                                    langHdl('automatic_deletion_engaged').': '.langHdl('enabled')
+                                    langHdl('automatic_deletion_engaged') . ': ' . langHdl('enabled')
                                 );
 
                                 // update LOG
@@ -1386,7 +1398,8 @@ if (null !== $post_type) {
                             }
                         } else {
                             // Automatic deletion exists for this item
-                            if (empty($post_to_be_deleted_after_date) === false
+                            if (
+                                empty($post_to_be_deleted_after_date) === false
                                 || (int) $post_to_be_deleted_after_x_views > 0
                             ) {
                                 // Update automatic deletion
@@ -1396,9 +1409,8 @@ if (null !== $post_type) {
                                         'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
                                         'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                            $post_to_be_deleted_after_x_views :
-                                            dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
-                                        ),
+                                            $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                    ),
                                     'item_id = %i',
                                     $post_item_id
                                 );
@@ -1413,7 +1425,7 @@ if (null !== $post_type) {
                                 // Store updates performed
                                 array_push(
                                     $arrayOfChanges,
-                                    langHdl('automatic_deletion_engaged').': '.langHdl('disabled')
+                                    langHdl('automatic_deletion_engaged') . ': ' . langHdl('disabled')
                                 );
 
                                 // update LOG
@@ -1436,7 +1448,8 @@ if (null !== $post_type) {
                     $arrayOfUsersIdRestriction = array();
                     $diffUsersRestiction = array();
                     $diffRolesRestiction = array();
-                    if (is_array($post_restricted_to) === true
+                    if (
+                        is_array($post_restricted_to) === true
                         && count($post_restricted_to) > 0
                         && isset($SETTINGS['restricted_to']) === true
                         && $SETTINGS['restricted_to'] === '1'
@@ -1445,7 +1458,7 @@ if (null !== $post_type) {
                             if (empty($userId) === false) {
                                 $dataTmp = DB::queryfirstrow(
                                     'SELECT id, name, lastname
-                                    FROM '.prefixTable('users').'
+                                    FROM ' . prefixTable('users') . '
                                     WHERE id= %i',
                                     $userId
                                 );
@@ -1453,7 +1466,7 @@ if (null !== $post_type) {
                                 // Add to array
                                 array_push(
                                     $arrayOfUsersRestriction,
-                                    $dataTmp['name'].' '.$dataTmp['lastname']
+                                    $dataTmp['name'] . ' ' . $dataTmp['lastname']
                                 );
                                 array_push(
                                     $arrayOfUsersIdRestriction,
@@ -1465,14 +1478,14 @@ if (null !== $post_type) {
                     if ((int) $SETTINGS['restricted_to'] === 1) {
                         $diffUsersRestiction = array_diff(
                             empty($data['restricted_to']) === false ?
-                                explode(';', $data['restricted_to']) :
-                                array(),
+                                explode(';', $data['restricted_to']) : array(),
                             $arrayOfUsersIdRestriction
                         );
                     }
 
                     // Manage retriction_to_roles
-                    if (is_array($post_restricted_to_roles) === true
+                    if (
+                        is_array($post_restricted_to_roles) === true
                         && count($post_restricted_to_roles) > 0
                         && isset($SETTINGS['restricted_to_roles']) === true
                         && (int) $SETTINGS['restricted_to_roles'] === 1
@@ -1484,8 +1497,8 @@ if (null !== $post_type) {
                         // get values before deleting them
                         $rows = DB::query(
                             'SELECT t.title, t.id AS id
-                            FROM '.prefixTable('roles_title').' as t
-                            INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (t.id=r.role_id)
+                            FROM ' . prefixTable('roles_title') . ' as t
+                            INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (t.id=r.role_id)
                             WHERE r.item_id = %i
                             ORDER BY t.title ASC',
                             $post_item_id
@@ -1505,7 +1518,8 @@ if (null !== $post_type) {
                         );
 
                         // add roles for item
-                        if (is_array($post_restricted_to_roles) === true
+                        if (
+                            is_array($post_restricted_to_roles) === true
                             && count($post_restricted_to_roles) > 0
                         ) {
                             foreach ($post_restricted_to_roles as $role) {
@@ -1514,11 +1528,11 @@ if (null !== $post_type) {
                                     array(
                                         'role_id' => $role,
                                         'item_id' => $post_item_id,
-                                        )
+                                    )
                                 );
                                 $dataTmp = DB::queryfirstrow(
                                     'SELECT title
-                                    FROM '.prefixTable('roles_title').'
+                                    FROM ' . prefixTable('roles_title') . '
                                     WHERE id = %i',
                                     $role
                                 );
@@ -1559,12 +1573,8 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_restriction : '.
-                                (count($diffUsersRestiction) > 0 ?
-                                    implode(', ', $arrayOfUsersRestriction).
-                                    (count($diffRolesRestiction) > 0 ? ', ' : '') :
-                                    ''
-                                ).(count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
+                            'at_restriction : ' . (count($diffUsersRestiction) > 0 ?
+                                implode(', ', $arrayOfUsersRestriction) . (count($diffRolesRestiction) > 0 ? ', ' : '') : '') . (count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
                         );
                     }
 
@@ -1584,7 +1594,7 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_label : '.$data['label'].' => '.$post_label
+                            'at_label : ' . $data['label'] . ' => ' . $post_label
                         );
                     }
                     // LOGIN
@@ -1603,7 +1613,7 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_login : '.$data['login'].' => '.$post_login
+                            'at_login : ' . $data['login'] . ' => ' . $post_login
                         );
                     }
                     // EMAIL
@@ -1622,7 +1632,7 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_email : '.$data['email'].' => '.$post_email
+                            'at_email : ' . $data['email'] . ' => ' . $post_email
                         );
                     }
                     // URL
@@ -1641,7 +1651,7 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_url : '.$data['url'].' => '.$post_url
+                            'at_url : ' . $data['url'] . ' => ' . $post_url
                         );
                     }
                     // DESCRIPTION
@@ -1666,7 +1676,7 @@ if (null !== $post_type) {
                     // FOLDER
                     if ($data['id_tree'] !== $post_folder_id) {
                         // Get name of folders
-                        $dataTmp = DB::query('SELECT title FROM '.prefixTable('nested_tree').' WHERE id IN %li', array($data['id_tree'], $post_folder_id));
+                        $dataTmp = DB::query('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li', array($data['id_tree'], $post_folder_id));
 
                         // Store updates performed
                         array_push(
@@ -1682,7 +1692,7 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_category : '.$dataTmp[0]['title'].' => '.$dataTmp[1]['title']
+                            'at_category : ' . $dataTmp[0]['title'] . ' => ' . $dataTmp[1]['title']
                         );
                         // ask for page reloading
                         $reloadPage = true;
@@ -1692,8 +1702,7 @@ if (null !== $post_type) {
                         // Store updates performed
                         array_push(
                             $arrayOfChanges,
-                            langHdl('at_anyoneconmodify').': '.
-                                    ((int) $post_anyone_can_modify === 0 ? langHdl('disabled') : langHdl('enabled'))
+                            langHdl('at_anyoneconmodify') . ': ' . ((int) $post_anyone_can_modify === 0 ? langHdl('disabled') : langHdl('enabled'))
                         );
 
                         // Log
@@ -1704,15 +1713,15 @@ if (null !== $post_type) {
                             $_SESSION['user_id'],
                             'at_modification',
                             $_SESSION['login'],
-                            'at_anyoneconmodify : '.((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
+                            'at_anyoneconmodify : ' . ((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
                         );
                     }
 
                     // Reload new values
                     $dataItem = DB::queryfirstrow(
                         'SELECT *
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
                         WHERE i.id = %i AND l.action = %s',
                         $post_item_id,
                         'at_creation'
@@ -1721,8 +1730,8 @@ if (null !== $post_type) {
                     $history = '';
                     $rows = DB::query(
                         'SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
-                        FROM '.prefixTable('log_items').' as l
-                        LEFT JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+                        FROM ' . prefixTable('log_items') . ' as l
+                        LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
                         WHERE l.action <> %s AND id_item=%s',
                         'at_shown',
                         $post_item_id
@@ -1730,38 +1739,37 @@ if (null !== $post_type) {
                     foreach ($rows as $record) {
                         $reason = explode(':', $record['raison']);
                         if (count($reason) > 0) {
-                            $sentence = date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).' - '
-                                .$record['login'].' - '.langHdl($record['action']).' - '
-                                .(empty($record['raison']) === false ?
-                                (count($reason) > 1 ? langHdl(trim($reason[0])).' : '.$reason[1]
-                                : langHdl(trim($reason[0]))) : '');
+                            $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - '
+                                . $record['login'] . ' - ' . langHdl($record['action']) . ' - '
+                                . (empty($record['raison']) === false ? (count($reason) > 1 ? langHdl(trim($reason[0])) . ' : ' . $reason[1]
+                                    : langHdl(trim($reason[0]))) : '');
                             if (empty($history)) {
                                 $history = $sentence;
                             } else {
-                                $history .= '<br />'.$sentence;
+                                $history .= '<br />' . $sentence;
                             }
                         }
                     }
 
                     // generate 2d key
-                    $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16));
+                    $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
                     // Prepare files listing
                     $files = $filesEdit = '';
                     // launch query
-                    $rows = DB::query('SELECT id, name, file, extension FROM '.prefixTable('files').' WHERE id_item=%i', $post_item_id);
+                    $rows = DB::query('SELECT id, name, file, extension FROM ' . prefixTable('files') . ' WHERE id_item=%i', $post_item_id);
                     foreach ($rows as $record) {
                         // get icon image depending on file format
                         $iconImage = fileFormatImage($record['extension']);
 
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if (in_array($record['extension'], TP_IMAGE_FILE_EXT)) {
-                            $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class="image_dialog" href="#'.$record['id'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
+                            $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class="image_dialog" href="#' . $record['id'] . '" title="' . $record['name'] . '">' . $record['name'] . '</a><br />';
                         } else {
-                            $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
+                            $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name=' . urlencode($record['name']) . '&type=sub&key=' . $_SESSION['key'] . '&key_tmp=' . $_SESSION['key_tmp'] . '&fileid=' . $record['id'] . '\' target=\'_blank\'>' . $record['name'] . '</a><br />';
                         }
                         // Prepare list of files for edit dialogbox
-                        $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><span class="fa fa-'.$iconImage.'"></span>&nbsp;<span class="fa fa-eraser tip" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" title="'.langHdl('at_delete').'"></span>&nbsp;'.$record['name'].'</span><br />';
+                        $filesEdit .= '<span id="span_edit_file_' . $record['id'] . '"><span class="fa fa-' . $iconImage . '"></span>&nbsp;<span class="fa fa-eraser tip" style="cursor:pointer;"  onclick="delete_attached_file(\"' . $record['id'] . '\")" title="' . langHdl('at_delete') . '"></span>&nbsp;' . $record['name'] . '</span><br />';
                     }
                     // Send email
                     if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
@@ -1789,7 +1797,7 @@ if (null !== $post_type) {
                     $arrData = array(
                         'error' => false,
                         'message' => '',
-                        );
+                    );
                 } else {
                     echo prepareExchangedData(
                         array(
@@ -1812,7 +1820,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($arrData, 'encode');
             break;
 
-        /*
+            /*
           * CASE
           * Copy an Item
         */
@@ -1851,7 +1859,8 @@ if (null !== $post_type) {
             $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ((int) $_SESSION['user_read_only'] === 1
+            if (
+                (int) $_SESSION['user_read_only'] === 1
                 && (in_array($post_source_id, $_SESSION['personal_folders']) === false
                     || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
             ) {
@@ -1870,12 +1879,13 @@ if (null !== $post_type) {
             $pw = '';
             $is_perso = 0;
 
-            if (empty($post_item_id) === false
+            if (
+                empty($post_item_id) === false
                 && empty($post_dest_id) === false
             ) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow(
-                    'SELECT * FROM '.prefixTable('items').'
+                    'SELECT * FROM ' . prefixTable('items') . '
                     WHERE id = %i',
                     $post_item_id
                 );
@@ -1894,7 +1904,7 @@ if (null !== $post_type) {
 
                 // Load the destination folder record into an array
                 $dataDestination = DB::queryfirstrow(
-                    'SELECT personal_folder FROM '.prefixTable('nested_tree').'
+                    'SELECT personal_folder FROM ' . prefixTable('nested_tree') . '
                     WHERE id = %i',
                     $post_dest_id
                 );
@@ -1902,7 +1912,7 @@ if (null !== $post_type) {
                 // Get the ITEM object key for the user
                 $userKey = DB::queryFirstRow(
                     'SELECT share_key
-                    FROM '.prefixTable('sharekeys_items').'
+                    FROM ' . prefixTable('sharekeys_items') . '
                     WHERE user_id = %i AND object_id = %i',
                     $_SESSION['user_id'],
                     $post_item_id
@@ -1974,7 +1984,7 @@ if (null !== $post_type) {
                 // Manage Custom Fields
                 $rows = DB::query(
                     'SELECT *
-                    FROM '.prefixTable('categories_items').'
+                    FROM ' . prefixTable('categories_items') . '
                     WHERE item_id = %i',
                     $post_item_id
                 );
@@ -1993,12 +2003,10 @@ if (null !== $post_type) {
                             'item_id' => $newItemId,
                             'field_id' => $field['field_id'],
                             'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                $cryptedStuff['encrypted'] :
-                                $field['value'],
+                                $cryptedStuff['encrypted'] : $field['value'],
                             'data_iv' => '',
                             'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                TP_ENCRYPTION_NAME :
-                                'not_set',
+                                TP_ENCRYPTION_NAME : 'not_set',
                         )
                     );
                     $newFieldId = DB::insertId();
@@ -2024,15 +2032,15 @@ if (null !== $post_type) {
                 $rows = DB::query(
                     'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
                     f.size AS size, f.type AS type, s.share_key AS share_key
-                    FROM '.prefixTable('files').' AS f
-                    INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                    FROM ' . prefixTable('files') . ' AS f
+                    INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                     WHERE s.user_id = %i AND f.id_item = %i',
                     $_SESSION['user_id'],
                     $post_item_id
                 );
                 foreach ($rows as $record) {
                     // Check if file still exists
-                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.TP_FILE_PREFIX.base64_decode($record['file'])) === true) {
+                    if (file_exists($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . TP_FILE_PREFIX . base64_decode($record['file'])) === true) {
                         // Step1 - decrypt the file
                         $fileContent = decryptFile(
                             $record['file'],
@@ -2041,9 +2049,9 @@ if (null !== $post_type) {
                         );
 
                         // Step2 - create file
-                        $newFileName = md5(time().'_'.$record['id']).'.'.$record['extension'];
+                        $newFileName = md5(time() . '_' . $record['id']) . '.' . $record['extension'];
                         fwrite(
-                            fopen($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$newFileName, 'ab'),
+                            fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab'),
                             base64_decode($fileContent)
                         );
 
@@ -2081,26 +2089,26 @@ if (null !== $post_type) {
 
                 // -------------------------
                 // Add specific restrictions
-                $rows = DB::query('SELECT * FROM '.prefixTable('restriction_to_roles').' WHERE item_id = %i', $post_item_id);
+                $rows = DB::query('SELECT * FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id = %i', $post_item_id);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
                             'item_id' => $newItemId,
                             'role_id' => $record['role_id'],
-                            )
+                        )
                     );
                 }
 
                 // Add Tags
-                $rows = DB::query('SELECT * FROM '.prefixTable('tags').' WHERE item_id = %i', $post_item_id);
+                $rows = DB::query('SELECT * FROM ' . prefixTable('tags') . ' WHERE item_id = %i', $post_item_id);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefixTable('tags'),
                         array(
                             'item_id' => $newItemId,
                             'tag' => $record['tag'],
-                            )
+                        )
                     );
                 }
 
@@ -2123,10 +2131,10 @@ if (null !== $post_type) {
                     $_SESSION['login']
                 );
                 // reload cache table
-                include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+                include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 updateCacheTable('reload', $SETTINGS, '');
 
-                $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "'.$newItemId.'"}]';
+                $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "' . $newItemId . '"}]';
             } else {
                 // no item
                 $returnValues = '[{"error" : "no_item"}, {"error_text" : "No item ID"}]';
@@ -2135,7 +2143,7 @@ if (null !== $post_type) {
             echo $returnValues;
             break;
 
-        /*
+            /*
           * CASE
           * Display informations of selected item
         */
@@ -2169,8 +2177,7 @@ if (null !== $post_type) {
             $post_page = filter_var(($dataReceived['page']), FILTER_SANITIZE_STRING);
             $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
                 filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
-                :
-                '';
+                : '';
             $post_item_rights = filter_var(($dataReceived['rights']), FILTER_SANITIZE_NUMBER_INT);
 
             $arrData = array();
@@ -2185,7 +2192,7 @@ if (null !== $post_type) {
             // then we can show it
             $item_deleted = DB::queryFirstRow(
                 'SELECT *
-                FROM '.prefixTable('log_items').'
+                FROM ' . prefixTable('log_items') . '
                 WHERE id_item = %i AND action = %s
                 ORDER BY date DESC
                 LIMIT 0, 1',
@@ -2196,7 +2203,7 @@ if (null !== $post_type) {
 
             $item_restored = DB::queryFirstRow(
                 'SELECT *
-                FROM '.prefixTable('log_items').'
+                FROM ' . prefixTable('log_items') . '
                 WHERE id_item = %i AND action = %s
                 ORDER BY date DESC
                 LIMIT 0, 1',
@@ -2220,8 +2227,8 @@ if (null !== $post_type) {
             // Get all informations for this item
             $dataItem = DB::queryfirstrow(
                 'SELECT *
-                FROM '.prefixTable('items').' as i
-                INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+                FROM ' . prefixTable('items') . ' as i
+                INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
                 WHERE i.id = %i AND l.action = %s',
                 $post_id,
                 'at_creation'
@@ -2230,7 +2237,7 @@ if (null !== $post_type) {
             // Notification
             DB::queryfirstrow(
                 'SELECT *
-                FROM '.prefixTable('notification').'
+                FROM ' . prefixTable('notification') . '
                 WHERE item_id = %i AND user_id = %i',
                 $post_id,
                 $_SESSION['user_id']
@@ -2249,7 +2256,7 @@ if (null !== $post_type) {
             $user_in_restricted_list_of_item = false;
             $rows = DB::query(
                 'SELECT id, login, email, admin, name, lastname
-                FROM '.prefixTable('users')
+                FROM ' . prefixTable('users')
             );
             foreach ($rows as $user) {
                 // Get auhtor
@@ -2272,17 +2279,18 @@ if (null !== $post_type) {
                 }*/
 
                 // Add Admins to notification list if expected
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+                if (
+                    isset($SETTINGS['enable_email_notification_on_item_shown']) === true
                     && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
                     && $user['admin'] === '1'
                 ) {
-                    $_SESSION['listNotificationEmails'] .= $user['email'].',';
+                    $_SESSION['listNotificationEmails'] .= $user['email'] . ',';
                 }
             }
 
             // manage case of API user
             if ($dataItem['id_user'] === API_USER_ID) {
-                $arrData['author'] = 'API ['.$dataItem['description'].']';
+                $arrData['author'] = 'API [' . $dataItem['description'] . ']';
                 $arrData['id_user'] = API_USER_ID;
                 $arrData['author_email'] = '';
                 $arrData['notification_status'] = false;
@@ -2292,7 +2300,7 @@ if (null !== $post_type) {
             $tags = array();
             $rows = DB::query(
                 'SELECT tag
-                FROM '.prefixTable('tags').'
+                FROM ' . prefixTable('tags') . '
                 WHERE item_id = %i',
                 $post_id
             );
@@ -2304,8 +2312,10 @@ if (null !== $post_type) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-            if (in_array($_SESSION['user_id'], $restrictedTo) === true
-                || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)) {
+            if (
+                in_array($_SESSION['user_id'], $restrictedTo) === true
+                || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
+            ) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to']) === true) {
@@ -2315,7 +2325,7 @@ if (null !== $post_type) {
             // Check if user has a role that is accepted
             $rows_tmp = DB::query(
                 'SELECT role_id
-                FROM '.prefixTable('restriction_to_roles').'
+                FROM ' . prefixTable('restriction_to_roles') . '
                 WHERE item_id=%i',
                 $post_id
             );
@@ -2329,7 +2339,7 @@ if (null !== $post_type) {
             // Get the object key for the user
             $userKey = DB::queryFirstRow(
                 'SELECT share_key
-                FROM '.prefixTable('sharekeys_items').'
+                FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $_SESSION['user_id'],
                 $post_id
@@ -2348,33 +2358,30 @@ if (null !== $post_type) {
             //print_r($_SESSION['groupes_visibles']);
             //echo in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']).' ;; '.$restrictionActive." ;; ";
             // check user is admin
-            if ((int) $_SESSION['user_admin'] === 1
+            if (
+                (int) $_SESSION['user_admin'] === 1
                 && (int) $dataItem['perso'] !== 1
                 && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null === TP_ADMIN_FULL_RIGHT
             ) {
                 $arrData['show_details'] = 0;
-            // ---
+                // ---
                 // ---
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
-                && $restrictionActive === false)
-                ||
-                (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1
-                && (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
-                && $restrictionActive === false)
-                ||
-                (null !== $post_folder_id
+                    (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
+                    && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                    && $restrictionActive === false)
+                || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1
+                    && (int) $dataItem['anyone_can_modify'] === 1
+                    && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
+                    && $restrictionActive === false)
+                || (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
                     && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id])
                     && $post_restricted === '1'
                     && $user_in_restricted_list_of_item === true)
-                ||
-                (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
-                    && $restrictionActive === false
-                )
+                || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
+                    && $restrictionActive === false)
             ) {
                 // Check if actual USER can see this ITEM
                 // Allow show details
@@ -2393,7 +2400,8 @@ if (null !== $post_type) {
                 }*/
 
                 // Display menu icon for deleting if user is allowed
-                if ((int) $dataItem['id_user'] === (int) $_SESSION['user_id']
+                if (
+                    (int) $dataItem['id_user'] === (int) $_SESSION['user_id']
                     || (int) $_SESSION['is_admin'] === 1
                     || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
                     || (int) $dataItem['anyone_can_modify'] === 1
@@ -2416,8 +2424,8 @@ if (null !== $post_type) {
                     // Add restriction if item is restricted to roles
                     $rows = DB::query(
                         'SELECT t.title, t.id
-                        FROM '.prefixTable('roles_title').' AS t
-                        INNER JOIN '.prefixTable('restriction_to_roles').' AS r ON (t.id=r.role_id)
+                        FROM ' . prefixTable('roles_title') . ' AS t
+                        INNER JOIN ' . prefixTable('restriction_to_roles') . ' AS r ON (t.id=r.role_id)
                         WHERE r.item_id = %i
                         ORDER BY t.title ASC',
                         $post_id
@@ -2433,8 +2441,8 @@ if (null !== $post_type) {
                     $tmp = array();
                     $rows = DB::query(
                         'SELECT k.label, k.id
-                        FROM '.prefixTable('kb_items').' as i
-                        INNER JOIN '.prefixTable('kb').' as k ON (i.kb_id=k.id)
+                        FROM ' . prefixTable('kb_items') . ' as i
+                        INNER JOIN ' . prefixTable('kb') . ' as k ON (i.kb_id=k.id)
                         WHERE i.item_id = %i
                         ORDER BY k.label ASC',
                         $post_id
@@ -2472,8 +2480,10 @@ if (null !== $post_type) {
                 $arrData['tags'] = $tags;
                 $arrData['folder'] = (int) $dataItem['id_tree'];
 
-                if (isset($SETTINGS['enable_server_password_change'])
-                    && $SETTINGS['enable_server_password_change'] === '1') {
+                if (
+                    isset($SETTINGS['enable_server_password_change'])
+                    && $SETTINGS['enable_server_password_change'] === '1'
+                ) {
                     $arrData['auto_update_pwd_frequency'] = $dataItem['auto_update_pwd_frequency'];
                 } else {
                     $arrData['auto_update_pwd_frequency'] = '0';
@@ -2512,7 +2522,7 @@ if (null !== $post_type) {
                     $arrCatList = array();
                     $rows_tmp = DB::query(
                         'SELECT id_category
-                        FROM '.prefixTable('categories_folders').'
+                        FROM ' . prefixTable('categories_folders') . '
                         WHERE id_folder=%i',
                         $post_folder_id
                     );
@@ -2526,8 +2536,8 @@ if (null !== $post_type) {
                             'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
                             i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
                             c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
-                            FROM '.prefixTable('categories_items').' AS i
-                            INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
+                            FROM ' . prefixTable('categories_items') . ' AS i
+                            INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id=c.id)
                             WHERE i.item_id=%i AND c.parent_id IN %ls',
                             $post_id,
                             $arrCatList
@@ -2537,7 +2547,7 @@ if (null !== $post_type) {
                             // Get the object key for the user
                             $userKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_fields').'
+                                FROM ' . prefixTable('sharekeys_fields') . '
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
                                 $row['id']
@@ -2582,7 +2592,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] === '1') {
                     $rows_tmp = DB::queryfirstrow(
                         'SELECT category_id
-                        FROM '.prefixTable('templates').'
+                        FROM ' . prefixTable('templates') . '
                         WHERE item_id = %i',
                         $post_id
                     );
@@ -2607,7 +2617,7 @@ if (null !== $post_type) {
                     // Is the Item to be deleted?
                     $dataDelete = DB::queryfirstrow(
                         'SELECT * 
-                        FROM '.prefixTable('automatic_del').'
+                        FROM ' . prefixTable('automatic_del') . '
                         WHERE item_id = %i',
                         $post_id
                     );
@@ -2624,13 +2634,14 @@ if (null !== $post_type) {
                                 prefixTable('automatic_del'),
                                 array(
                                     'del_value' => $dataDelete['del_value'] - 1,
-                                    ),
+                                ),
                                 'item_id = %i',
                                 $post_id
                             );
                             // store value
                             $arrData['to_be_deleted'] = $dataDelete['del_value'] - 1;
-                        } elseif ((int) $dataDelete['del_type'] === 1
+                        } elseif (
+                            (int) $dataDelete['del_type'] === 1
                             && $dataDelete['del_value'] <= 1
                             || (int) $dataDelete['del_type'] === 2
                             && $dataDelete['del_value'] < time()
@@ -2643,7 +2654,7 @@ if (null !== $post_type) {
                                 prefixTable('items'),
                                 array(
                                     'inactif' => 1,
-                                    ),
+                                ),
                                 'id = %i',
                                 $post_id
                             );
@@ -2686,11 +2697,11 @@ if (null !== $post_type) {
                 if (empty($dataItem['restricted_to']) === false) {
                     foreach (explode(';', $dataItem['restricted_to']) as $userRest) {
                         if (empty($userRest) === false) {
-                            $dataTmp = DB::queryfirstrow('SELECT login FROM '.prefixTable('users').' WHERE id= '.$userRest);
+                            $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= ' . $userRest);
                             if (empty($listOfRestricted)) {
                                 $listOfRestricted = $dataTmp['login'];
                             } else {
-                                $listOfRestricted .= ';'.$dataTmp['login'];
+                                $listOfRestricted .= ';' . $dataTmp['login'];
                             }
                         }
                     }
@@ -2713,7 +2724,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($arrData, 'encode');
             break;
 
-        /*
+            /*
            * CASE
            * Display History of the selected Item
         */
@@ -2746,8 +2757,8 @@ if (null !== $post_type) {
             // Load item data
             $dataItem = DB::queryFirstRow(
                 'SELECT i.*, n.title AS folder_title
-                FROM '.prefixTable('items').' AS i
-                INNER JOIN '.prefixTable('nested_tree').' AS n ON (i.id_tree = n.id)
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                 WHERE i.id = %i',
                 $post_id
             );
@@ -2755,9 +2766,10 @@ if (null !== $post_type) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-            if (in_array($_SESSION['user_id'], $restrictedTo)
+            if (
+                in_array($_SESSION['user_id'], $restrictedTo)
                 || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                && (int) $SETTINGS['manager_edit'] === 1)
+                    && (int) $SETTINGS['manager_edit'] === 1)
             ) {
                 $restrictionActive = false;
             }
@@ -2768,7 +2780,7 @@ if (null !== $post_type) {
             // Check if user has a role that is accepted
             $rows_tmp = DB::query(
                 'SELECT role_id
-                FROM '.prefixTable('restriction_to_roles').'
+                FROM ' . prefixTable('restriction_to_roles') . '
                 WHERE item_id=%i',
                 $post_id
             );
@@ -2779,27 +2791,24 @@ if (null !== $post_type) {
             }
 
             // check user is admin
-            if ($_SESSION['user_admin'] === '1'
+            if (
+                $_SESSION['user_admin'] === '1'
                 && $dataItem['perso'] !== 1
                 && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null == TP_ADMIN_FULL_RIGHT
             ) {
                 $returnArray['show_details'] = 0;
-            // Check if actual USER can see this ITEM
+                // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
-                ||
-                (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
-                ||
-                (null !== $post_folder_id
+                    (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
+                || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
+                || (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
                     && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
                     && (int) $post_restricted === 1
                     && $user_in_restricted_list_of_item === true)
-                ||
-                (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
-                    && $restrictionActive === false
-                )
+                || (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
+                    && $restrictionActive === false)
             ) {
                 /*// GET Audit trail
                 $history = array();
@@ -2860,7 +2869,7 @@ if (null !== $post_type) {
                 */
 
                 // generate 2d key
-                $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16));
+                $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
                 // Prepare files listing
                 $attachments = array();
@@ -2868,7 +2877,7 @@ if (null !== $post_type) {
                 // launch query
                 $rows = DB::query(
                     'SELECT id, name, file, extension, size
-                    FROM '.prefixTable('files').'
+                    FROM ' . prefixTable('files') . '
                     WHERE id_item = %i AND confirmed = 1',
                     $post_id
                 );
@@ -2877,7 +2886,7 @@ if (null !== $post_type) {
                         $attachments,
                         array(
                             'icon' => fileFormatImage(strtolower($record['extension'])),
-                            'filename' => basename($record['name'], '.'.$record['extension']),
+                            'filename' => basename($record['name'], '.' . $record['extension']),
                             'extension' => $record['extension'],
                             'size' => formatSizeUnits($record['size']),
                             'is_image' => in_array(strtolower($record['extension']), TP_IMAGE_FILE_EXT) === true ? 1 : 0,
@@ -2905,8 +2914,8 @@ if (null !== $post_type) {
                         prefixTable('users'),
                         array(
                             'latest_items' => implode(';', $_SESSION['latest_items']),
-                            ),
-                        'id='.$_SESSION['user_id']
+                        ),
+                        'id=' . $_SESSION['user_id']
                     );
                 }
 
@@ -2915,8 +2924,8 @@ if (null !== $post_type) {
                 $listOptionsForRoles = array();
                 $rows = DB::query(
                     'SELECT r.role_id AS role_id, t.title AS title
-                    FROM '.prefixTable('roles_values').' AS r
-                    INNER JOIN '.prefixTable('roles_title').' AS t ON (r.role_id = t.id)
+                    FROM ' . prefixTable('roles_values') . ' AS r
+                    INNER JOIN ' . prefixTable('roles_title') . ' AS t ON (r.role_id = t.id)
                     WHERE r.folder_id = %i',
                     $dataItem['id_tree']
                 );
@@ -2930,13 +2939,14 @@ if (null !== $post_type) {
                     );
                     $rows2 = DB::query(
                         'SELECT id, login, fonction_id, email, name, lastname
-                        FROM '.prefixTable('users').'
+                        FROM ' . prefixTable('users') . '
                         WHERE fonction_id LIKE %s',
-                        '%'.$record['role_id'].'%'
+                        '%' . $record['role_id'] . '%'
                     );
                     foreach ($rows2 as $record2) {
                         foreach (explode(';', $record2['fonction_id']) as $role) {
-                            if (array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
+                            if (
+                                array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
                                 && $role === $record['role_id']
                             ) {
                                 array_push(
@@ -2944,7 +2954,7 @@ if (null !== $post_type) {
                                     array(
                                         'id' => (int) $record2['id'],
                                         'login' => $record2['login'],
-                                        'name' => $record2['name'].' '.$record2['lastname'],
+                                        'name' => $record2['name'] . ' ' . $record2['lastname'],
                                         'email' => $record2['email'],
                                     )
                                 );
@@ -2963,16 +2973,16 @@ if (null !== $post_type) {
                     $path = '';
                     foreach ($arbo as $elem) {
                         if (empty($path) === true) {
-                            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
+                            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
                         } else {
-                            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                         }
                     }
                     // Build text to show user
                     if (empty($path) === true) {
                         $path = addslashes($dataItem['label']);
                     } else {
-                        $path = addslashes($dataItem['label']).' ('.$path.')';
+                        $path = addslashes($dataItem['label']) . ' (' . $path . ')';
                     }
 
                     // send back infos
@@ -2986,7 +2996,7 @@ if (null !== $post_type) {
                                 array(
                                     addslashes($_SESSION['login']),
                                     $path,
-                                    $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$dataItem['id'],
+                                    $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $dataItem['id'],
                                 ),
                                 langHdl('email_on_open_notification_mail')
                             ),
@@ -2997,7 +3007,7 @@ if (null !== $post_type) {
                 }
 
                 // has this item a change proposal
-                DB::query('SELECT * FROM '.prefixTable('items_change').' WHERE item_id = %i', $post_id);
+                DB::query('SELECT * FROM ' . prefixTable('items_change') . ' WHERE item_id = %i', $post_id);
                 $returnArray['has_change_proposal'] = DB::count();
 
                 // Setting
@@ -3013,7 +3023,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * CASE
          * Delete an item
         */
@@ -3053,7 +3063,7 @@ if (null !== $post_type) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if (($_SESSION['user_read_only'] === true
-                && in_array($post_label, $_SESSION['personal_folders']) === false)
+                    && in_array($post_label, $_SESSION['personal_folders']) === false)
                 || (int) $post_access_level >= 20
             ) {
                 echo prepareExchangedData(
@@ -3082,7 +3092,7 @@ if (null !== $post_type) {
             // Load item data
             $data = DB::queryFirstRow(
                 'SELECT id_tree
-                FROM '.prefixTable('items').'
+                FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $post_item_id
             );
@@ -3092,7 +3102,7 @@ if (null !== $post_type) {
                 prefixTable('items'),
                 array(
                     'inactif' => '1',
-                    ),
+                ),
                 'id = %i',
                 $post_item_id
             );
@@ -3117,7 +3127,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE
         * Update a Group
         */
@@ -3151,13 +3161,13 @@ if (null !== $post_type) {
 
             // Check if user is allowed to access this folder
             if (!in_array($post_folder_id, $_SESSION['groupes_visibles'])) {
-                echo '[{"error" : "'.langHdl('error_not_allowed_to').'"}]';
+                echo '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
                 break;
             }
 
             // Check if title doesn't contains html codes
             if (preg_match_all('|<[^>]+>(.*)</[^>]+>|U', $title, $out)) {
-                echo '[ { "error" : "'.langHdl('error_html_codes').'" } ]';
+                echo '[ { "error" : "' . langHdl('error_html_codes') . '" } ]';
                 break;
             }
             // check that title is not numeric
@@ -3169,9 +3179,9 @@ if (null !== $post_type) {
             // Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] === '0') {
-                $data = DB::queryFirstRow('SELECT id, title FROM '.prefixTable('nested_tree').' WHERE title = %s', $title);
+                $data = DB::queryFirstRow('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE title = %s', $title);
                 if (empty($data['id']) === false && $dataReceived['folder'] != $data['id']) {
-                    echo '[ { "error" : "'.langHdl('error_group_exist').'" } ]';
+                    echo '[ { "error" : "' . langHdl('error_group_exist') . '" } ]';
                     break;
                 }
             }
@@ -3179,7 +3189,7 @@ if (null !== $post_type) {
             // query on folder
             $data = DB::queryfirstrow(
                 'SELECT parent_id, personal_folder
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_folder_id
             );
@@ -3189,20 +3199,20 @@ if (null !== $post_type) {
             if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $data['personal_folder'] === '0') {
                 $data = DB::queryfirstrow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc').'
+                    FROM ' . prefixTable('misc') . '
                     WHERE intitule = %i AND type = %s',
                     $data['parent_id'],
                     'complex'
                 );
                 if (intval($dataReceived['complexity']) < intval($data['valeur'])) {
-                    echo '[ { "error" : "'.langHdl('error_folder_complexity_lower_than_top_folder').' [<b>'.TP_PW_COMPLEXITY[$data['valeur']][1].'</b>]"} ]';
+                    echo '[ { "error" : "' . langHdl('error_folder_complexity_lower_than_top_folder') . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]"} ]';
                     break;
                 }
             }
 
             // update Folders table
             $tmp = DB::queryFirstRow(
-                'SELECT title, parent_id, personal_folder FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                'SELECT title, parent_id, personal_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
                 $dataReceived['folder']
             );
             if ($tmp['parent_id'] != 0 || $tmp['title'] != $_SESSION['user_id'] || $tmp['personal_folder'] != 1) {
@@ -3210,7 +3220,7 @@ if (null !== $post_type) {
                     prefixTable('nested_tree'),
                     array(
                         'title' => $title,
-                        ),
+                    ),
                     'id=%s',
                     $post_folder_id
                 );
@@ -3219,7 +3229,7 @@ if (null !== $post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => $dataReceived['complexity'],
-                        ),
+                    ),
                     'intitule = %s AND type = %s',
                     $post_folder_id,
                     'complex'
@@ -3231,7 +3241,7 @@ if (null !== $post_type) {
             echo '[{"error" : ""}]';
             break;
 
-        /*
+            /*
         * CASE
         * Move a Group including sub-folders
         */
@@ -3262,50 +3272,46 @@ if (null !== $post_type) {
             $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check that user can access this folder
-            if ((
-                    in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
-                  in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) &&
-                  (
-                        $post_target_folder_id === '0' &&
-                      isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1'
-                    )
+            if ((in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
+                    in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) && ($post_target_folder_id === '0' &&
+                    isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1')
             ) {
-                $returnValues = '[{"error" : "'.langHdl('error_not_allowed_to').'"}]';
+                $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
                 echo $returnValues;
                 break;
             }
 
             $tmp_source = DB::queryFirstRow(
                 'SELECT title, parent_id, personal_folder
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_source_folder_id
             );
 
             $tmp_target = DB::queryFirstRow(
                 'SELECT title, parent_id, personal_folder
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_target_folder_id
             );
 
             // check if target is not a child of source
             if ($tree->isChildOf($post_target_folder_id, $post_source_folder_id) === true) {
-                $returnValues = '[{"error" : "'.langHdl('error_not_allowed_to').'"}]';
+                $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
                 echo $returnValues;
                 break;
             }
 
             // check if source or target folder is PF. If Yes, then cancel operation
             if ($tmp_source['personal_folder'] === '1' || $tmp_target['personal_folder'] === '1') {
-                $returnValues = '[{"error" : "'.langHdl('error_not_allowed_to').'"}]';
+                $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
                 echo $returnValues;
                 break;
             }
 
             // check if source or target folder is PF. If Yes, then cancel operation
             if ($tmp_source['title'] === $_SESSION['user_id'] || $tmp_target['title'] === $_SESSION['user_id']) {
-                $returnValues = '[{"error" : "'.langHdl('error_not_allowed_to').'"}]';
+                $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
                 echo $returnValues;
                 break;
             }
@@ -3315,7 +3321,7 @@ if (null !== $post_type) {
                 prefixTable('nested_tree'),
                 array(
                     'parent_id' => $post_target_folder_id,
-                    ),
+                ),
                 'id=%s',
                 $post_source_folder_id
             );
@@ -3325,7 +3331,7 @@ if (null !== $post_type) {
             echo '[{"error" : ""}]';
             break;
 
-        /*
+            /*
         * CASE
         * Store hierarchic position of Group
         */
@@ -3334,7 +3340,7 @@ if (null !== $post_type) {
                 prefixTable('nested_tree'),
                 array(
                     'parent_id' => $post_destination,
-                    ),
+                ),
                 'id = %i',
                 $post_source
             );
@@ -3342,7 +3348,7 @@ if (null !== $post_type) {
             $tree->rebuild();
             break;
 
-        /*
+            /*
         * CASE
         * List items of a group
         */
@@ -3428,7 +3434,7 @@ if (null !== $post_type) {
                 foreach ($_SESSION['user_roles'] as $role) {
                     $roleQ = DB::queryfirstrow(
                         'SELECT allow_pw_change
-                        FROM '.prefixTable('roles_title').'
+                        FROM ' . prefixTable('roles_title') . '
                         WHERE id = %i',
                         $role
                     );
@@ -3444,7 +3450,7 @@ if (null !== $post_type) {
                 foreach ($_SESSION['user_roles'] as $role) {
                     //db::debugmode(true);
                     $access = DB::queryFirstRow(
-                        'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
+                        'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                         $role,
                         $post_id
                     );
@@ -3453,7 +3459,8 @@ if (null !== $post_type) {
                         array_push($arrTmp, 10);
                     } elseif ($access['type'] === 'W') {
                         array_push($arrTmp, 30);
-                    } elseif ($access['type'] === 'ND'
+                    } elseif (
+                        $access['type'] === 'ND'
                         || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
                     ) {
                         array_push($arrTmp, 20);
@@ -3470,7 +3477,8 @@ if (null !== $post_type) {
                         }
                     }
                 }
-                $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
+                // 3.0.0.0 - changed  MIN to MAX
+                $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
                 $uniqueLoadData['accessLevel'] = $accessLevel;
 
                 /*
@@ -3486,7 +3494,7 @@ if (null !== $post_type) {
                 if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
                     $counter = count($_SESSION['list_folders_limited'][$post_id]);
                     $uniqueLoadData['counter'] = $counter;
-                // check if this folder is visible
+                    // check if this folder is visible
                 } elseif (!in_array(
                     $post_id,
                     array_merge(
@@ -3506,7 +3514,7 @@ if (null !== $post_type) {
                 } else {
                     DB::query(
                         'SELECT *
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE inactif = %i',
                         0
                     );
@@ -3526,7 +3534,7 @@ if (null !== $post_type) {
 
                 // Get folder complexity
                 $folderComplexity = DB::queryFirstRow(
-                    'SELECT valeur FROM '.prefixTable('misc').' WHERE type = %s AND intitule = %i',
+                    'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %i',
                     'complex',
                     $post_id
                 );
@@ -3538,7 +3546,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
                     $folderRow = DB::query(
                         'SELECT id_category
-                        FROM '.prefixTable('categories_folders').'
+                        FROM ' . prefixTable('categories_folders') . '
                         WHERE id_folder = %i',
                         $post_id
                     );
@@ -3662,13 +3670,13 @@ if (null !== $post_type) {
                 // List all ITEMS
                 if ($folderIsPf === false) {
                     $where->add('i.inactif=%i', 0);
-                    $where->add('l.date=%l', '(SELECT date FROM '.prefixTable('log_items')." WHERE action IN ('at_creation', 'at_modification') AND id_item=i.id ORDER BY date DESC LIMIT 1)");
+                    $where->add('l.date=%l', '(SELECT date FROM ' . prefixTable('log_items') . " WHERE action IN ('at_creation', 'at_modification') AND id_item=i.id ORDER BY date DESC LIMIT 1)");
                     if (empty($limited_to_items) === false) {
                         $where->add('i.id IN %ls', explode(',', $limited_to_items));
                     }
 
-                    $query_limit = ' LIMIT '.
-                        $start.','.
+                    $query_limit = ' LIMIT ' .
+                        $start . ',' .
                         $post_nb_items_to_display_once;
                     //db::debugmode(true);
                     $rows = DB::query(
@@ -3677,15 +3685,15 @@ if (null !== $post_type) {
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
-                        FROM '.prefixTable('items').' AS i
-                        INNER JOIN '.prefixTable('nested_tree').' AS n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' AS l ON (i.id = l.id_item)
+                        FROM ' . prefixTable('items') . ' AS i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
+                        INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id, l.date, l.id_user, l.action
-                        ORDER BY i.label ASC, l.date DESC'.$query_limit,
+                        ORDER BY i.label ASC, l.date DESC' . $query_limit,
                         $where
                     );
-                //db::debugmode(false);
+                    //db::debugmode(false);
                 } else {
                     $post_nb_items_to_display_once = 'max';
                     $where->add('i.inactif=%i', 0);
@@ -3696,9 +3704,9 @@ if (null !== $post_type) {
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
-                        FROM '.prefixTable('items').' AS i
-                        INNER JOIN '.prefixTable('nested_tree').' AS n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' AS l ON (i.id = l.id_item)
+                        FROM ' . prefixTable('items') . ' AS i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
+                        INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id, l.date, l.id_user, l.action
                         ORDER BY i.label ASC, l.date DESC',
@@ -3730,7 +3738,7 @@ if (null !== $post_type) {
                         $item_is_restricted_to_role = false;
                         DB::queryfirstrow(
                             'SELECT role_id
-                            FROM '.prefixTable('restriction_to_roles').'
+                            FROM ' . prefixTable('restriction_to_roles') . '
                             WHERE item_id = %i',
                             $record['id']
                         );
@@ -3742,7 +3750,7 @@ if (null !== $post_type) {
                         $user_is_included_in_role = false;
                         $roles = DB::query(
                             'SELECT role_id
-                            FROM '.prefixTable('restriction_to_roles').'
+                            FROM ' . prefixTable('restriction_to_roles') . '
                             WHERE item_id = %i AND role_id IN %ls',
                             $record['id'],
                             $_SESSION['user_roles']
@@ -3753,9 +3761,10 @@ if (null !== $post_type) {
 
                         // Is user in restricted list of users
                         if (empty($record['restricted_to']) === false) {
-                            if (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
+                            if (
+                                in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
                                 || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                                && (int) $SETTINGS['manager_edit'] === 1)
+                                    && (int) $SETTINGS['manager_edit'] === 1)
                             ) {
                                 $user_is_in_restricted_list = true;
                             } else {
@@ -3767,7 +3776,8 @@ if (null !== $post_type) {
 
                         // Get Expiration date
                         $expired_item = 0;
-                        if ((int) $SETTINGS['activate_expiration'] === 1
+                        if (
+                            (int) $SETTINGS['activate_expiration'] === 1
                             && $record['renewal_period'] > 0
                             && ($record['date'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
                         ) {
@@ -3800,7 +3810,8 @@ if (null !== $post_type) {
                         $itemIsPersonal = false;
 
                         // Let's identify the rights belonging to this ITEM
-                        if ((int) $record['perso'] === 1
+                        if (
+                            (int) $record['perso'] === 1
                             && $record['log_action'] === 'at_creation'
                             && $record['log_user'] === $_SESSION['user_id']
                             && (int) $folder_is_in_personal === 1
@@ -3811,10 +3822,10 @@ if (null !== $post_type) {
                             // If no then continue
                             $itemIsPersonal = true;
                             $right = 70;
-                        // ---
+                            // ---
                             // ----- END CASE 1 -----
                         } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
-                            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+                                || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
                             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
                             && (int) $record['perso'] !== 1
                             && $user_is_in_restricted_list === true
@@ -3822,58 +3833,64 @@ if (null !== $post_type) {
                             // Case 2 - Is user manager and option "manager_edit" set to true?
                             // Allow all rights
                             $right = 70;
-                        // ---
+                            // ---
                             // ----- END CASE 2 -----
-                        } elseif ((int) $record['anyone_can_modify'] === 1
+                        } elseif (
+                            (int) $record['anyone_can_modify'] === 1
                             && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 3 - Has this item the setting "anyone can modify" set to true?
                             // Allow all rights
                             $right = 70;
-                        // ---
+                            // ---
                             // ----- END CASE 3 -----
-                        } elseif ($user_is_in_restricted_list === true
+                        } elseif (
+                            $user_is_in_restricted_list === true
                             && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 4 - Is this item limited to Users? Is current user in this list?
                             // Allow all rights
                             $right = 70;
-                        // ---
+                            // ---
                             // ----- END CASE 4 -----
-                        } elseif ($user_is_included_in_role === true
+                        } elseif (
+                            $user_is_included_in_role === true
                             && (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] !== 1
                         ) {
                             // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
                             // Allow all rights
                             $right = 60;
-                        // ---
+                            // ---
                             // ----- END CASE 5 -----
-                        } elseif ((int) $record['perso'] !== 1
+                        } elseif (
+                            (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 6 - Is user readonly?
                             // Allow limited rights
                             $right = 10;
-                        // ---
+                            // ---
                             // ----- END CASE 6 -----
-                        } elseif ((int) $record['perso'] !== 1
+                        } elseif (
+                            (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 7 - Is user readonly?
                             // Allow limited rights
                             $right = 10;
-                        // ---
+                            // ---
                             // ----- END CASE 7 -----
-                        } elseif ((int) $record['perso'] !== 1
+                        } elseif (
+                            (int) $record['perso'] !== 1
                             && (int) $_SESSION['user_read_only'] === 1
                         ) {
                             // Case 8 - Is user allowed to access?
                             // Allow rights
                             $right = 10;
-                        // ---
+                            // ---
                             // ----- END CASE 8 -----
                         } elseif (($user_is_included_in_role === false && $item_is_restricted_to_role === true)
                             && (int) $record['perso'] !== 1
@@ -3882,7 +3899,7 @@ if (null !== $post_type) {
                             // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
                             // If no then Allow none
                             $right = 10;
-                        // ---
+                            // ---
                             // ----- END CASE 9 -----
                         } else {
                             // Define the access based upon setting on folder
@@ -3940,9 +3957,9 @@ if (null !== $post_type) {
             if ((int) $start === 0) {
                 DB::query(
                     'SELECT i.id
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                    INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                    FROM ' . prefixTable('items') . ' as i
+                    INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
                     WHERE %l
                     ORDER BY i.label ASC, l.date DESC',
                     $where
@@ -3987,7 +4004,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         *
         *
         */
@@ -4010,8 +4027,8 @@ if (null !== $post_type) {
             // Run query
             $dataItem = DB::queryfirstrow(
                 'SELECT i.pw AS pw, s.share_key AS share_key
-                FROM '.prefixTable('items').' AS i
-                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                 WHERE user_id = %i AND i.id = %i',
                 $_SESSION['user_id'],
                 $post_item_id
@@ -4041,7 +4058,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($returnValues, 'encode');
             break;
 
-        /*
+            /*
         * CASE
         * Get complexity level of a group
         */
@@ -4054,14 +4071,15 @@ if (null !== $post_type) {
             if (null !== $post_item_id && empty($post_item_id) === false) {
                 $dataItem = DB::queryfirstrow(
                     'SELECT perso, anyone_can_modify
-                    FROM '.prefixTable('items').'
+                    FROM ' . prefixTable('items') . '
                     WHERE id=%i',
                     $post_item_id
                 );
 
                 // is user allowed to access this folder - readonly
                 if (null !== $post_groupe && empty($post_groupe) === false) {
-                    if (in_array($post_groupe, $_SESSION['read_only_folders']) === true
+                    if (
+                        in_array($post_groupe, $_SESSION['read_only_folders']) === true
                         || in_array($post_groupe, $_SESSION['groupes_visibles']) === false
                     ) {
                         // check if this item can be modified by anyone
@@ -4088,17 +4106,18 @@ if (null !== $post_type) {
                 }
 
                 // Lock Item (if already locked), go back and warn
-                $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM '.prefixTable('items_edition').' WHERE item_id = %i', $post_item_id);
+                $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $post_item_id);
 
                 // If token is taken for this Item and delay is passed then delete it.
-                if (isset($SETTINGS['delay_item_edition']) &&
+                if (
+                    isset($SETTINGS['delay_item_edition']) &&
                     $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false &&
                     round(abs(time() - $dataTmp['timestamp']) / 60, 2) > $SETTINGS['delay_item_edition']
                 ) {
                     DB::delete(prefixTable('items_edition'), 'item_id = %i', $post_item_id);
                     //reload the previous data
                     $dataTmp = DB::queryFirstRow(
-                        'SELECT timestamp, user_id FROM '.prefixTable('items_edition').' WHERE item_id = %i',
+                        'SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i',
                         $post_item_id
                     );
                 }
@@ -4114,7 +4133,7 @@ if (null !== $post_type) {
                         $_SESSION['user_id'],
                         $post_item_id
                     );
-                // If no token for this Item, then initialize one
+                    // If no token for this Item, then initialize one
                 } elseif (empty($dataTmp[0])) {
                     DB::insert(
                         prefixTable('items_edition'),
@@ -4124,7 +4143,7 @@ if (null !== $post_type) {
                             'user_id' => $_SESSION['user_id'],
                         )
                     );
-                // Edition not possible
+                    // Edition not possible
                 } else {
                     $returnValues = array(
                         'error' => true,
@@ -4138,29 +4157,28 @@ if (null !== $post_type) {
             // do query on this folder
             $data_this_folder = DB::queryFirstRow(
                 'SELECT id, personal_folder, title
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %s',
                 $post_groupe
             );
 
             // check if user can perform this action
-            if (null !== $post_context
+            if (
+                null !== $post_context
                 && empty($post_context) === false
             ) {
-                if ($post_context === 'create_folder'
+                if (
+                    $post_context === 'create_folder'
                     || $post_context === 'edit_folder'
                     || $post_context === 'delete_folder'
                     || $post_context === 'copy_folder'
                 ) {
-                    if ((int) $_SESSION['is_admin'] !== 1
+                    if (
+                        (int) $_SESSION['is_admin'] !== 1
                         && ((int) $_SESSION['user_manager'] !== 1)
-                        && (
-                            isset($SETTINGS['enable_user_can_create_folders'])
-                           && (int) $SETTINGS['enable_user_can_create_folders'] !== 1
-                        )
-                        && (
-                            (int) $data_this_folder['personal_folder'] !== 1 && $data_this_folder['title'] !== $_SESSION['user_id']
-                        )   // take into consideration if this is a personal folder
+                        && (isset($SETTINGS['enable_user_can_create_folders'])
+                            && (int) $SETTINGS['enable_user_can_create_folders'] !== 1)
+                        && ((int) $data_this_folder['personal_folder'] !== 1 && $data_this_folder['title'] !== $_SESSION['user_id'])   // take into consideration if this is a personal folder
                     ) {
                         $returnValues = array(
                             'error' => true,
@@ -4176,8 +4194,8 @@ if (null !== $post_type) {
             $visibilite = '';
             $data = DB::queryFirstRow(
                 'SELECT m.valeur, n.personal_folder
-                FROM '.prefixTable('misc').' AS m
-                INNER JOIN '.prefixTable('nested_tree').' AS n ON (m.intitule = n.id)
+                FROM ' . prefixTable('misc') . ' AS m
+                INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (m.intitule = n.id)
                 WHERE type=%s AND intitule = %s',
                 'complex',
                 $post_groupe
@@ -4190,8 +4208,8 @@ if (null !== $post_type) {
                 // Prepare Item actual visibility (what Users/Roles can see it)
                 $rows = DB::query(
                     'SELECT t.title
-                    FROM '.prefixTable('roles_values').' as v
-                    INNER JOIN '.prefixTable('roles_title').' as t ON (v.role_id = t.id)
+                    FROM ' . prefixTable('roles_values') . ' as v
+                    INNER JOIN ' . prefixTable('roles_title') . ' as t ON (v.role_id = t.id)
                     WHERE v.folder_id = %i
                     GROUP BY title',
                     $post_groupe
@@ -4200,7 +4218,7 @@ if (null !== $post_type) {
                     if (empty($visibilite)) {
                         $visibilite = $record['title'];
                     } else {
-                        $visibilite .= ' - '.$record['title'];
+                        $visibilite .= ' - ' . $record['title'];
                     }
                 }
             } else {
@@ -4210,12 +4228,12 @@ if (null !== $post_type) {
                 // do new query to know if current folder is pf
                 $data_pf = DB::queryFirstRow(
                     'SELECT personal_folder
-                    FROM '.prefixTable('nested_tree').'
+                    FROM ' . prefixTable('nested_tree') . '
                     WHERE id = %s',
                     $post_groupe
                 );
                 //$folder_is_personal = $data_pf['personal_folder'];
-                $visibilite = $_SESSION['name'].' '.$_SESSION['lastname'].' ('.$_SESSION['login'].')';
+                $visibilite = $_SESSION['name'] . ' ' . $_SESSION['lastname'] . ' (' . $_SESSION['login'] . ')';
             }
 
             recupDroitCreationSansComplexite($post_groupe);
@@ -4225,8 +4243,8 @@ if (null !== $post_type) {
             $listOptionsForRoles = array();
             $rows = DB::query(
                 'SELECT r.role_id AS role_id, t.title AS title
-                FROM '.prefixTable('roles_values').' AS r
-                INNER JOIN '.prefixTable('roles_title').' AS t ON (r.role_id = t.id)
+                FROM ' . prefixTable('roles_values') . ' AS r
+                INNER JOIN ' . prefixTable('roles_title') . ' AS t ON (r.role_id = t.id)
                 WHERE r.folder_id = %i',
                 $post_groupe
             );
@@ -4240,12 +4258,13 @@ if (null !== $post_type) {
                 );
                 $rows2 = DB::query(
                     'SELECT id, login, fonction_id, email, name, lastname
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE admin = 0'
                 );
                 foreach ($rows2 as $record2) {
                     foreach (explode(';', $record2['fonction_id']) as $role) {
-                        if (array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
+                        if (
+                            array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
                             && $role === $record['role_id']
                         ) {
                             array_push(
@@ -4253,7 +4272,7 @@ if (null !== $post_type) {
                                 array(
                                     'id' => $record2['id'],
                                     'login' => $record2['login'],
-                                    'name' => $record2['name'].' '.$record2['lastname'],
+                                    'name' => $record2['name'] . ' ' . $record2['lastname'],
                                     'email' => $record2['email'],
                                 )
                             );
@@ -4277,7 +4296,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($returnValues, 'encode');
             break;
 
-        /*
+            /*
         * CASE
         * DELETE attached file from an item
         */
@@ -4304,7 +4323,7 @@ if (null !== $post_type) {
             // Get some info before deleting
             $data = DB::queryFirstRow(
                 'SELECT name, id_item, file
-                FROM '.prefixTable('files').'
+                FROM ' . prefixTable('files') . '
                 WHERE id = %i',
                 $fileId
             );
@@ -4312,7 +4331,7 @@ if (null !== $post_type) {
             // Load item data
             $data_item = DB::queryFirstRow(
                 'SELECT id_tree
-                FROM '.prefixTable('items').'
+                FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $data['id_item']
             );
@@ -4339,7 +4358,7 @@ if (null !== $post_type) {
                     $_SESSION['user_id'],
                     'at_modification',
                     $_SESSION['login'],
-                    'at_del_file : '.$data['name']
+                    'at_del_file : ' . $data['name']
                 );
 
                 // DElete sharekeys
@@ -4350,7 +4369,7 @@ if (null !== $post_type) {
                 );
 
                 // Delete file from server
-                fileDelete($SETTINGS['path_to_upload_folder'].'/'.TP_FILE_PREFIX.base64_decode($data['file']), $SETTINGS);
+                fileDelete($SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($data['file']), $SETTINGS);
             }
 
             echo prepareExchangedData(
@@ -4362,21 +4381,21 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE
         * Clear HTML tags
         */
         case 'clear_html_tags':
             // Get information for this item
             $dataItem = DB::queryfirstrow(
-                'SELECT description FROM '.prefixTable('items').' WHERE id=%i',
+                'SELECT description FROM ' . prefixTable('items') . ' WHERE id=%i',
                 filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_NUMBER_INT)
             );
             // Clean up the string
             echo json_encode(array('description' => strip_tags($dataItem['description'])), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             break;
 
-        /*
+            /*
         * FUNCTION
         * Launch an action when clicking on a quick icon
         * $action = 0 => Make not favorite
@@ -4384,7 +4403,8 @@ if (null !== $post_type) {
         */
         case 'action_on_quick_icon':
             // Check KEY and rights
-            if ($post_key !== $_SESSION['key']
+            if (
+                $post_key !== $_SESSION['key']
                 || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])
             ) {
                 // error
@@ -4399,20 +4419,20 @@ if (null !== $post_type) {
                     prefixTable('users'),
                     array(
                         'favourites' => implode(';', $_SESSION['favourites']),
-                        ),
+                    ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
                 // Update SESSION with this new favourite
                 $data = DB::queryfirstrow(
                     'SELECT label,id_tree
-                    FROM '.prefixTable('items').'
-                    WHERE id = '.mysqli_real_escape_string($link, $post_item_id)
+                    FROM ' . prefixTable('items') . '
+                    WHERE id = ' . mysqli_real_escape_string($link, $post_item_id)
                 );
                 $_SESSION['favourites_tab'][$post_item_id] = array(
                     'label' => $data['label'],
-                    'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$post_item_id,
-                    );
+                    'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $post_item_id,
+                );
             } elseif ((int) filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT) === 1) {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
@@ -4442,7 +4462,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
         * CASE
         * Move an ITEM
         */
@@ -4468,11 +4488,19 @@ if (null !== $post_type) {
                 break;
             }
 
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+            $post_folder_id = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
             // get data about item
             $dataSource = DB::queryfirstrow(
                 'SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
-                FROM '.prefixTable('items').' as i
-                INNER JOIN '.prefixTable('nested_tree').' as f ON (i.id_tree=f.id)
+                FROM ' . prefixTable('items') . ' as i
+                INNER JOIN ' . prefixTable('nested_tree') . ' as f ON (i.id_tree=f.id)
                 WHERE i.id=%i',
                 $post_item_id
             );
@@ -4480,15 +4508,16 @@ if (null !== $post_type) {
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
                 'SELECT personal_folder, title
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_folder_id
             );
 
             // Check that user can access this folder
-            if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+            if (
+                in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                 || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
-                || (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
+                //|| (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
             ) {
                 echo prepareExchangedData(
                     array(
@@ -4508,11 +4537,11 @@ if (null !== $post_type) {
                     prefixTable('items'),
                     array(
                         'id_tree' => $post_folder_id,
-                        ),
+                    ),
                     'id=%i',
                     $post_item_id
                 );
-            // ---
+                // ---
                 // ---
             } elseif ((int) $dataSource['personal_folder'] === 0 && (int) $dataDestination['personal_folder'] === 1) {
                 // Source is public and destination is personal
@@ -4531,7 +4560,7 @@ if (null !== $post_type) {
                 // Get fields for this Item
                 $rows = DB::query(
                     'SELECT id
-                    FROM '.prefixTable('categories_items').'
+                    FROM ' . prefixTable('categories_items') . '
                     WHERE item_id = %i',
                     $post_item_id
                 );
@@ -4548,7 +4577,7 @@ if (null !== $post_type) {
                 // Get FILES for this Item
                 $rows = DB::query(
                     'SELECT id
-                    FROM '.prefixTable('files').'
+                    FROM ' . prefixTable('files') . '
                     WHERE id_item = %i',
                     $post_item_id
                 );
@@ -4571,7 +4600,7 @@ if (null !== $post_type) {
                     'id=%i',
                     $post_item_id
                 );
-            // ---
+                // ---
                 // ---
             } elseif ((int) $dataSource['personal_folder'] === 1 && (int) $dataDestination['personal_folder'] === 1) {
                 // If previous is personal folder and new is personal folder too => no key exist on item
@@ -4584,7 +4613,7 @@ if (null !== $post_type) {
                     'id=%i',
                     $post_item_id
                 );
-            // ---
+                // ---
                 // ---
             } elseif ((int) $dataSource['personal_folder'] === 1 && (int) $dataDestination['personal_folder'] === 0) {
                 // If previous is personal folder and new is not personal folder => no key exist on item => add new
@@ -4593,7 +4622,7 @@ if (null !== $post_type) {
                 // Get the ITEM object key for the user
                 $userKey = DB::queryFirstRow(
                     'SELECT share_key
-                    FROM '.prefixTable('sharekeys_items').'
+                    FROM ' . prefixTable('sharekeys_items') . '
                     WHERE user_id = %i AND object_id = %i',
                     $_SESSION['user_id'],
                     $post_item_id
@@ -4604,8 +4633,8 @@ if (null !== $post_type) {
                     // This is a public object
                     $users = DB::query(
                         'SELECT id, public_key
-                        FROM '.prefixTable('users').'
-                        WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                        FROM ' . prefixTable('users') . '
+                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                         AND public_key != ""'
                     );
                     foreach ($users as $user) {
@@ -4625,14 +4654,14 @@ if (null !== $post_type) {
                 // Get fields for this Item
                 $rows = DB::query(
                     'SELECT id
-                    FROM '.prefixTable('categories_items').'
+                    FROM ' . prefixTable('categories_items') . '
                     WHERE item_id = %i',
                     $post_item_id
                 );
                 foreach ($rows as $field) {
                     $userKey = DB::queryFirstRow(
                         'SELECT share_key
-                        FROM '.prefixTable('sharekeys_fields').'
+                        FROM ' . prefixTable('sharekeys_fields') . '
                         WHERE user_id = %i AND object_id = %i',
                         $_SESSION['user_id'],
                         $field['id']
@@ -4643,8 +4672,8 @@ if (null !== $post_type) {
                         // This is a public object
                         $users = DB::query(
                             'SELECT id, public_key
-                            FROM '.prefixTable('users').'
-                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                            FROM ' . prefixTable('users') . '
+                            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                             AND public_key != ""'
                         );
                         foreach ($users as $user) {
@@ -4665,14 +4694,14 @@ if (null !== $post_type) {
                 // Get FILES for this Item
                 $rows = DB::query(
                     'SELECT id
-                    FROM '.prefixTable('files').'
+                    FROM ' . prefixTable('files') . '
                     WHERE id_item = %i',
                     $post_item_id
                 );
                 foreach ($rows as $attachment) {
                     $userKey = DB::queryFirstRow(
                         'SELECT share_key
-                        FROM '.prefixTable('sharekeys_files').'
+                        FROM ' . prefixTable('sharekeys_files') . '
                         WHERE user_id = %i AND object_id = %i',
                         $_SESSION['user_id'],
                         $attachment['id']
@@ -4683,8 +4712,8 @@ if (null !== $post_type) {
                         // This is a public object
                         $users = DB::query(
                             'SELECT id, public_key
-                            FROM '.prefixTable('users').'
-                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                            FROM ' . prefixTable('users') . '
+                            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                             AND public_key != ""'
                         );
                         foreach ($users as $user) {
@@ -4721,7 +4750,7 @@ if (null !== $post_type) {
                 $_SESSION['user_id'],
                 'at_modification',
                 $_SESSION['login'],
-                'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
+                'at_moved : ' . $dataSource['title'] . ' -> ' . $dataDestination['title']
             );
 
             $returnValues = array(
@@ -4733,7 +4762,7 @@ if (null !== $post_type) {
             echo prepareExchangedData($returnValues, 'encode');
             break;
 
-        /*
+            /*
         * CASE
         * MASSIVE Move an ITEM
         */
@@ -4773,14 +4802,15 @@ if (null !== $post_type) {
                     // get data about item
                     $dataSource = DB::queryfirstrow(
                         'SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('nested_tree').' as f ON (i.id_tree=f.id)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' as f ON (i.id_tree=f.id)
                         WHERE i.id=%i',
                         $item_id
                     );
 
                     // Check that user can access this folder
-                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                    if (
+                        in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                         || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                     ) {
                         echo prepareExchangedData(
@@ -4795,12 +4825,13 @@ if (null !== $post_type) {
 
                     // get data about new folder
                     $dataDestination = DB::queryfirstrow(
-                        'SELECT personal_folder, title FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                        'SELECT personal_folder, title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
                         $post_folder_id
                     );
 
                     // previous is non personal folder and new too
-                    if ((int) $dataSource['personal_folder'] === 0
+                    if (
+                        (int) $dataSource['personal_folder'] === 0
                         && (int) $dataDestination['personal_folder'] === 0
                     ) {
                         // just update is needed. Item key is the same
@@ -4808,14 +4839,15 @@ if (null !== $post_type) {
                             prefixTable('items'),
                             array(
                                 'id_tree' => $post_folder_id,
-                                ),
+                            ),
                             'id = %i',
                             $item_id
                         );
-                    // ---
                         // ---
                         // ---
-                    } elseif ((int) $dataSource['personal_folder'] === 0
+                        // ---
+                    } elseif (
+                        (int) $dataSource['personal_folder'] === 0
                         && (int) $dataDestination['personal_folder'] === 1
                     ) {
                         // Source is public and destination is personal
@@ -4834,7 +4866,7 @@ if (null !== $post_type) {
                         // Get fields for this Item
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('categories_items').'
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE item_id = %i',
                             $item_id
                         );
@@ -4851,7 +4883,7 @@ if (null !== $post_type) {
                         // Get FILES for this Item
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('files').'
+                            FROM ' . prefixTable('files') . '
                             WHERE id_item = %i',
                             $item_id
                         );
@@ -4874,10 +4906,11 @@ if (null !== $post_type) {
                             'id = %i',
                             $item_id
                         );
-                    // ---
                         // ---
                         // ---
-                    } elseif ((int) $dataSource['personal_folder'] === 1
+                        // ---
+                    } elseif (
+                        (int) $dataSource['personal_folder'] === 1
                         && (int) $dataDestination['personal_folder'] === 1
                     ) {
                         // If previous is personal folder and new is personal folder too => no key exist on item
@@ -4890,10 +4923,11 @@ if (null !== $post_type) {
                             'id = %i',
                             $item_id
                         );
-                    // ---
                         // ---
                         // ---
-                    } elseif ((int) $dataSource['personal_folder'] === 1
+                        // ---
+                    } elseif (
+                        (int) $dataSource['personal_folder'] === 1
                         && (int) $dataDestination['personal_folder'] === 0
                     ) {
                         // If previous is personal folder and new is not personal folder => no key exist on item => add new
@@ -4902,7 +4936,7 @@ if (null !== $post_type) {
                         // Get the ITEM object key for the user
                         $userKey = DB::queryFirstRow(
                             'SELECT share_key
-                            FROM '.prefixTable('sharekeys_items').'
+                            FROM ' . prefixTable('sharekeys_items') . '
                             WHERE user_id = %i AND object_id = %i',
                             $_SESSION['user_id'],
                             $item_id
@@ -4913,8 +4947,8 @@ if (null !== $post_type) {
                             // This is a public object
                             $users = DB::query(
                                 'SELECT id, public_key
-                                FROM '.prefixTable('users').'
-                                WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                                FROM ' . prefixTable('users') . '
+                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                                 AND public_key != ""'
                             );
                             foreach ($users as $user) {
@@ -4934,14 +4968,14 @@ if (null !== $post_type) {
                         // Get fields for this Item
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('categories_items').'
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE item_id = %i',
                             $item_id
                         );
                         foreach ($rows as $field) {
                             $userKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_fields').'
+                                FROM ' . prefixTable('sharekeys_fields') . '
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
                                 $field['id']
@@ -4952,8 +4986,8 @@ if (null !== $post_type) {
                                 // This is a public object
                                 $users = DB::query(
                                     'SELECT id, public_key
-                                    FROM '.prefixTable('users').'
-                                    WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                                    FROM ' . prefixTable('users') . '
+                                    WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                                     AND public_key != ""'
                                 );
                                 foreach ($users as $user) {
@@ -4974,14 +5008,14 @@ if (null !== $post_type) {
                         // Get FILES for this Item
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('files').'
+                            FROM ' . prefixTable('files') . '
                             WHERE id_item = %i',
                             $item_id
                         );
                         foreach ($rows as $attachment) {
                             $userKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_files').'
+                                FROM ' . prefixTable('sharekeys_files') . '
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
                                 $attachment['id']
@@ -4992,8 +5026,8 @@ if (null !== $post_type) {
                                 // This is a public object
                                 $users = DB::query(
                                     'SELECT id, public_key
-                                    FROM '.prefixTable('users').'
-                                    WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'","'.$_SESSION['user_id'].'")
+                                    FROM ' . prefixTable('users') . '
+                                    WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
                                     AND public_key != ""'
                                 );
                                 foreach ($users as $user) {
@@ -5029,13 +5063,13 @@ if (null !== $post_type) {
                         $_SESSION['user_id'],
                         'at_modification',
                         $_SESSION['login'],
-                        'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
+                        'at_moved : ' . $dataSource['title'] . ' -> ' . $dataDestination['title']
                     );
                 }
             }
 
             // reload cache table
-            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, '');
 
             echo prepareExchangedData(
@@ -5047,7 +5081,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
          * CASE
          * MASSIVE Delete an item
         */
@@ -5098,13 +5132,14 @@ if (null !== $post_type) {
                     // get info
                     $dataSource = DB::queryfirstrow(
                         'SELECT label, id_tree
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE id=%i',
                         $item_id
                     );
 
                     // Check that user can access this folder
-                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                    if (
+                        in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                     ) {
                         echo prepareExchangedData(
                             array(
@@ -5121,7 +5156,7 @@ if (null !== $post_type) {
                         prefixTable('items'),
                         array(
                             'inactif' => '1',
-                            ),
+                        ),
                         'id = %i',
                         $item_id
                     );
@@ -5196,8 +5231,8 @@ if (null !== $post_type) {
                     $content = explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING));
                 }
                 // Variables
-                $dataAuthor = DB::queryfirstrow('SELECT email,login FROM '.prefixTable('users').' WHERE id= '.$content[1]);
-                $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM '.prefixTable('items').' WHERE id= '.$content[0]);
+                $dataAuthor = DB::queryfirstrow('SELECT email,login FROM ' . prefixTable('users') . ' WHERE id= ' . $content[1]);
+                $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM ' . prefixTable('items') . ' WHERE id= ' . $content[0]);
 
                 // Get path
                 $path = geItemReadablePath(
@@ -5211,7 +5246,7 @@ if (null !== $post_type) {
                         langHdl('email_request_access_subject'),
                         str_replace(
                             array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                            array(' '.addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                            array(' ' . addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
                             langHdl('email_request_access_mail')
                         ),
                         $dataAuthor['email'],
@@ -5222,7 +5257,7 @@ if (null !== $post_type) {
             } elseif ($post_cat === 'share_this_item') {
                 $dataItem = DB::queryfirstrow(
                     'SELECT label,id_tree
-                    FROM '.prefixTable('items').'
+                    FROM ' . prefixTable('items') . '
                     WHERE id= %i',
                     $post_id
                 );
@@ -5246,8 +5281,7 @@ if (null !== $post_type) {
                             ),
                             array(
                                 empty($SETTINGS['email_server_url']) === false ?
-                                $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id :
-                                $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id,
+                                    $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $post_id : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $post_id,
                                 addslashes($_SESSION['login']),
                                 addslashes($path),
                             ),
@@ -5270,7 +5304,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
            * CASE
            * manage notification of an Item
         */
@@ -5282,7 +5316,7 @@ if (null !== $post_type) {
                 if (filter_input(INPUT_POST, 'notify_type', FILTER_SANITIZE_STRING) === 'on_show') {
                     // Check if values already exist
                     $data = DB::queryfirstrow(
-                        'SELECT notification FROM '.prefixTable('items').' WHERE id = %i',
+                        'SELECT notification FROM ' . prefixTable('items') . ' WHERE id = %i',
                         $post_item_id
                     );
                     $notifiedUsers = explode(';', $data['notification']);
@@ -5293,9 +5327,9 @@ if (null !== $post_type) {
                             prefixTable('items'),
                             array(
                                 'notification' => empty($data['notification']) ?
-                                    filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT).';'
-                                    : $data['notification'].filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT),
-                                ),
+                                    filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT) . ';'
+                                    : $data['notification'] . filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT),
+                            ),
                             'id=%i',
                             $post_item_id
                         );
@@ -5309,8 +5343,8 @@ if (null !== $post_type) {
                             array(
                                 'notification' => empty($data['notification']) ?
                                     filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT)
-                                    : $data['notification'].';'.filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT),
-                                ),
+                                    : $data['notification'] . ';' . filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT),
+                            ),
                             'id=%i',
                             $post_item_id
                         );
@@ -5319,7 +5353,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
         * CASE
         * Item History Log - add new entry
         */
@@ -5334,8 +5368,8 @@ if (null !== $post_type) {
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     'SELECT *
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+                    FROM ' . prefixTable('items') . ' as i
+                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
                     WHERE i.id=%i AND l.action = %s',
                     $dataReceived['item_id'],
                     'at_creation'
@@ -5351,14 +5385,9 @@ if (null !== $post_type) {
                 }
 
                 if ((
-                        (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false
-                    )
-                    ||
-                    (
-                        isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false
-                    )
-                    ||
-                    (@in_array(
+                        (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                    || (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
+                    || (@in_array(
                         $post_id,
                         $_SESSION['list_folders_limited'][$post_folder_id]
                     ))
@@ -5376,14 +5405,14 @@ if (null !== $post_type) {
                     );
                     // Prepare new line
                     $data = DB::queryfirstrow(
-                        'SELECT * FROM '.prefixTable('log_items').' WHERE id_item = %i ORDER BY date DESC',
+                        'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
                         $dataReceived['item_id']
                     );
-                    $historic = date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']).' - '.$_SESSION['login'].' - '.langHdl($data['action']).' - '.$data['raison'];
+                    $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . langHdl($data['action']) . ' - ' . $data['raison'];
                     // send back
                     $data = array(
                         'error' => '',
-                        'new_line' => '<br>'.addslashes($historic),
+                        'new_line' => '<br>' . addslashes($historic),
                     );
                     echo prepareExchangedData($data, 'encode');
                 } else {
@@ -5394,7 +5423,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
         * CASE
         * Free Item for Edition
         */
@@ -5412,13 +5441,13 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE
         * Check if Item has been changed since loaded
         */
         case 'is_item_changed':
             $data = DB::queryFirstRow(
-                'SELECT date FROM '.prefixTable('log_items').' WHERE action = %s AND id_item = %i ORDER BY date DESC',
+                'SELECT date FROM ' . prefixTable('log_items') . ' WHERE action = %s AND id_item = %i ORDER BY date DESC',
                 'at_modification',
                 $post_item_id
             );
@@ -5430,7 +5459,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
         * CASE
         * Check if Item has been changed since loaded
         */
@@ -5442,14 +5471,14 @@ if (null !== $post_type) {
             }
 
             // delete all existing old otv codes
-            $rows = DB::query('SELECT id FROM '.prefixTable('otv').' WHERE timestamp < '.(time() - $SETTINGS['otv_expiration_period'] * 86400));
+            $rows = DB::query('SELECT id FROM ' . prefixTable('otv') . ' WHERE timestamp < ' . (time() - $SETTINGS['otv_expiration_period'] * 86400));
             foreach ($rows as $record) {
                 DB::delete(prefixTable('otv'), 'id=%i', $record['id']);
             }
 
             // generate session
-            $otv_code = GenerateCryptKey(32, false, true, true, false);
-            $otv_key = GenerateCryptKey(32, false, true, true, false);
+            $otv_code = GenerateCryptKey(32, false, true, true, false, true, $SETTINGS);
+            $otv_key = GenerateCryptKey(32, false, true, true, false, true, $SETTINGS);
 
             // Generate Defuse key
             $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);
@@ -5464,8 +5493,8 @@ if (null !== $post_type) {
             // Should we log a password change?
             $itemQ = DB::queryFirstRow(
                 'SELECT s.share_key, i.pw
-                FROM '.prefixTable('items').' AS i
-                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (i.id = s.object_id)
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
                 WHERE s.user_id = %i AND s.object_id = %i',
                 $_SESSION['user_id'],
                 $post_id
@@ -5501,7 +5530,7 @@ if (null !== $post_type) {
                     'originator' => intval($_SESSION['user_id']),
                     'code' => $otv_code,
                     'encrypted' => $passwd['string'],
-                    )
+                )
             );
             $newID = DB::insertId();
 
@@ -5515,8 +5544,8 @@ if (null !== $post_type) {
             if (isset($SETTINGS['otv_expiration_period']) === false) {
                 $SETTINGS['otv_expiration_period'] = 7;
             }
-            $url = $SETTINGS['cpassman_url'].'/index.php?otv=true&'.http_build_query($otv_session);
-            $exp_date = date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time() + (intval($SETTINGS['otv_expiration_period']) * 86400));
+            $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&' . http_build_query($otv_session);
+            $exp_date = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time() + (intval($SETTINGS['otv_expiration_period']) * 86400));
 
             echo json_encode(
                 array(
@@ -5531,7 +5560,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE
         * Free Item for Edition
         */
@@ -5553,8 +5582,8 @@ if (null !== $post_type) {
                 'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
                 f.extension AS extension, f.type AS type,
                 s.share_key AS share_key
-                FROM '.prefixTable('files').' AS f
-                INNER JOIN '.prefixTable('sharekeys_files').' AS s ON (f.id = s.object_id)
+                FROM ' . prefixTable('files') . ' AS f
+                INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                 WHERE s.user_id = %i AND s.object_id = %i',
                 $_SESSION['user_id'],
                 $post_id
@@ -5575,10 +5604,9 @@ if (null !== $post_type) {
             //$fileName = basename($file_info['name'], '.'.$file_info['extension']);
 
             // prepare image info
-            $post_title = basename($file_info['name'], '.'.$file_info['extension']);
+            $post_title = basename($file_info['name'], '.' . $file_info['extension']);
             $post_title = isBase64($post_title) === true ?
-                    base64_decode($post_title) :
-                    $post_title;
+                base64_decode($post_title) : $post_title;
             $image_code = $file_info['file'];
             $extension = $file_info['extension'];
 
@@ -5593,7 +5621,7 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => false,
-                    'filename' => $post_title.'.'.$file_info['extension'],
+                    'filename' => $post_title . '.' . $file_info['extension'],
                     'file_type' => $file_info['type'],
                     'file_content' => $fileContent,
                 ),
@@ -5601,7 +5629,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE
         * Free Item for Edition
         */
@@ -5614,15 +5642,15 @@ if (null !== $post_type) {
 
             // get file info
             $result = DB::queryfirstrow(
-                'SELECT file FROM '.prefixTable('files').' WHERE id=%i',
+                'SELECT file FROM ' . prefixTable('files') . ' WHERE id=%i',
                 intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_STRING), 1))
             );
 
-            fileDelete($SETTINGS['path_to_upload_folder'].'/'.$result['file'].filter_input(INPUT_POST, 'file_suffix', FILTER_SANITIZE_STRING), $SETTINGS);
+            fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $result['file'] . filter_input(INPUT_POST, 'file_suffix', FILTER_SANITIZE_STRING), $SETTINGS);
 
             break;
 
-        /*
+            /*
         * CASE
         * Get list of users that have access to the folder
         */
@@ -5642,16 +5670,16 @@ if (null !== $post_type) {
             $idFolder = $dataReceived['idFolder'];
 
             // don't check if Personal Folder
-            $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $idFolder);
+            $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $idFolder);
             if ($data['title'] == $_SESSION['user_id']) {
                 // send data
-                echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
+                echo '[{"duplicate" : "' . $duplicate . '" , error" : ""}]';
             } else {
                 if (filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING) === 'same_folder') {
                     // case unique folder
                     DB::query(
                         'SELECT label
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE id_tree = %i AND label = %s',
                         $idFolder,
                         $label
@@ -5664,7 +5692,7 @@ if (null !== $post_type) {
                     $listPf = '';
                     if (empty($row['id']) === false) {
                         $rows = DB::query(
-                            'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',
+                            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
                             '1'
                         );
                         foreach ($rows as $record) {
@@ -5679,12 +5707,12 @@ if (null !== $post_type) {
                     $where->add('id_tree = %i', $idFolder);
                     $where->add('label = %s', $label);
                     if (empty($arrayPf) === false) {
-                        $where->add('id_tree NOT IN ('.implode(',', $arrayPf).')');
+                        $where->add('id_tree NOT IN (' . implode(',', $arrayPf) . ')');
                     }
 
                     DB::query(
                         'SELECT label
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE %l',
                         $where
                     );
@@ -5696,11 +5724,11 @@ if (null !== $post_type) {
                 }
 
                 // send data
-                echo '[{"duplicate" : "'.$duplicate.'" , "error" : ""}]';
+                echo '[{"duplicate" : "' . $duplicate . '" , "error" : ""}]';
             }
             break;
 
-        /*
+            /*
         * CASE
         * Get list of users that have access to the folder
         */
@@ -5717,18 +5745,19 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Init
-
             // Will we show the root folder?
-            $arr_data['can_create_root_folder'] = isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1' ? 1 : 0;
-
-            // Build list of visible folders
-            $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = '';
-            if (isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1') {
-                $selectVisibleFoldersOptions = '<option value="0">'.langHdl('root').'</option>';
+            if (
+                isset($_SESSION['can_create_root_folder']) === true
+                && (int) $_SESSION['can_create_root_folder'] === 1
+            ) {
+                $arr_data['can_create_root_folder'] = 1;
+            } else {
+                $arr_data['can_create_root_folder'] = 0;
             }
 
-            if ($_SESSION['user_admin'] === '1'
+            // Build list of visible folders
+            if (
+                (int) $_SESSION['user_admin'] === 1
                 && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null === TP_ADMIN_FULL_RIGHT
             ) {
@@ -5741,15 +5770,17 @@ if (null !== $post_type) {
                 $listFoldersLimitedKeys = array();
             }
             // list of items accessible but not in an allowed folder
-            if (isset($_SESSION['list_restricted_folders_for_items'])
-                && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+            if (
+                isset($_SESSION['list_restricted_folders_for_items'])
+                && count($_SESSION['list_restricted_folders_for_items']) > 0
+            ) {
                 $listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
             } else {
                 $listRestrictedFoldersForItemsKeys = array();
             }
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
@@ -5758,7 +5789,8 @@ if (null !== $post_type) {
 
             foreach ($folders as $folder) {
                 // Be sure that user can only see folders he/she is allowed to
-                if (in_array($folder->id, $_SESSION['forbiden_pfs']) === false
+                if (
+                    in_array($folder->id, $_SESSION['forbiden_pfs']) === false
                     || in_array($folder->id, $_SESSION['groupes_visibles']) === true
                     || in_array($folder->id, $listFoldersLimitedKeys) === true
                     || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
@@ -5781,7 +5813,8 @@ if (null !== $post_type) {
                             );
                             $nbChildrenItems += DB::count();
                         }*/
-                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
+                        if (
+                            in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
                             || @in_array($node, $listFoldersLimitedKeys)
                             || @in_array($node, $listRestrictedFoldersForItemsKeys)
                         ) {
@@ -5794,7 +5827,8 @@ if (null !== $post_type) {
                         // ALL FOLDERS
                         // Is this folder disabled?
                         $disabled = 0;
-                        if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
+                        if (
+                            in_array($folder->id, $_SESSION['groupes_visibles']) === false
                             || in_array($folder->id, $_SESSION['read_only_folders']) === true
                             //|| ((int) $_SESSION['user_read_only'] === 1 && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
                         ) {
@@ -5808,7 +5842,7 @@ if (null !== $post_type) {
                             if (empty($arr_data['folders'][$inc]['path']) === true) {
                                 $arr_data['folders'][$inc]['path'] = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                             } else {
-                                $arr_data['folders'][$inc]['path'] .= ' / '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                                $arr_data['folders'][$inc]['path'] .= ' / ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                             }
                         }
 
@@ -5822,8 +5856,10 @@ if (null !== $post_type) {
 
                         // Is this folder an active folders? (where user can do something)
                         $is_visible_active = 0;
-                        if (isset($_SESSION['read_only_folders']) === true
-                            && in_array($folder->id, $_SESSION['read_only_folders']) === true) {
+                        if (
+                            isset($_SESSION['read_only_folders']) === true
+                            && in_array($folder->id, $_SESSION['read_only_folders']) === true
+                        ) {
                             $is_visible_active = 1;
                         }
                         $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
@@ -5842,7 +5878,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         * CASE
         * Get list of users that have access to the folder
         */
@@ -5863,16 +5899,17 @@ if (null !== $post_type) {
 
             foreach (json_decode($post_data) as $folder) {
                 // Do we have Categories
-                if (isset($SETTINGS['item_extra_fields']) === true
+                if (
+                    isset($SETTINGS['item_extra_fields']) === true
                     && (int) $SETTINGS['item_extra_fields'] === 1
-                    ) {
+                ) {
                     // get list of associated Categories
                     $arrCatList = array();
                     $rows_tmp = DB::query(
                         'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
                         f.id_category AS category_id
-                        FROM '.prefixTable('categories_folders').' AS f
-                        INNER JOIN '.prefixTable('categories').' AS c ON (f.id_category = c.parent_id)
+                        FROM ' . prefixTable('categories_folders') . ' AS f
+                        INNER JOIN ' . prefixTable('categories') . ' AS c ON (f.id_category = c.parent_id)
                         WHERE id_folder=%i',
                         $folder
                     );
@@ -5899,7 +5936,7 @@ if (null !== $post_type) {
                 $valTemp = '';
                 $data = DB::queryFirstRow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc').'
+                    FROM ' . prefixTable('misc') . '
                     WHERE type = %s AND intitule=%i',
                     'complex',
                     $folder
@@ -5916,8 +5953,8 @@ if (null !== $post_type) {
                 $valTemp = '';
                 $rows_tmp = DB::query(
                     'SELECT t.title
-                    FROM '.prefixTable('roles_values').' as v
-                    INNER JOIN '.prefixTable('roles_title').' as t ON (v.role_id = t.id)
+                    FROM ' . prefixTable('roles_values') . ' as v
+                    INNER JOIN ' . prefixTable('roles_title') . ' as t ON (v.role_id = t.id)
                     WHERE v.folder_id = %i
                     GROUP BY title',
                     $folder
@@ -5937,7 +5974,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         * CASE
         * Load item history
         */
@@ -5951,7 +5988,7 @@ if (null !== $post_type) {
             // get item info
             $dataItem = DB::queryFirstRow(
                 'SELECT *
-                FROM '.prefixTable('items').'
+                FROM ' . prefixTable('items') . '
                 WHERE id=%i',
                 $post_item_id
             );
@@ -5961,8 +5998,8 @@ if (null !== $post_type) {
             $rows = DB::query(
                 'SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
-                FROM '.prefixTable('log_items').' as l
-                LEFT JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+                FROM ' . prefixTable('log_items') . ' as l
+                LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
                 WHERE id_item=%i AND action <> %s
                 ORDER BY date DESC',
                 $post_item_id,
@@ -5976,50 +6013,53 @@ if (null !== $post_type) {
                 }
                 // imported via API
                 if (empty($record['login'])) {
-                    $record['login'] = langHdl('imported_via_api').' ['.$record['raison'].']';
+                    $record['login'] = langHdl('imported_via_api') . ' [' . $record['raison'] . ']';
                 }
 
-                if (in_array(
-                    $record['action'],
-                    array('at_password_copied', 'at_shown', 'at_password_shown')
-                ) === false
+                if (
+                    in_array(
+                        $record['action'],
+                        array('at_password_copied', 'at_shown', 'at_password_shown')
+                    ) === false
                 ) {
                     // Prepare avatar
                     if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
-                        if (file_exists($SETTINGS['cpassman_dir'].'/includes/avatars/'.$record['avatar_thumb'])) {
-                            $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'];
+                        if (file_exists($SETTINGS['cpassman_dir'] . '/includes/avatars/' . $record['avatar_thumb'])) {
+                            $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $record['avatar_thumb'];
                         } else {
-                            $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+                            $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                         }
                     } else {
-                        $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+                        $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                     }
-
+                    
                     // Prepare action
                     $action = '';
                     $detail = '';
                     if ($reason[0] === 'at_pw') {
                         $action = langHdl($reason[0]);
+                    } elseif ($record['action'] === 'at_manual') {
+                        $detail = $reason[0];
+                        $action = langHdl($record['action']);
                     } elseif ($reason[0] === 'at_description') {
                         $action = langHdl('description_has_changed');
                     } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
                         $action = langHdl($reason[0]);
                         if ($reason[0] === 'at_moved') {
                             $tmp = explode(' -> ', $reason[1]);
-                            $detail = langHdl('from').' <span class="font-weight-light">'.$tmp[0].'</span> '.langHdl('to').' <span class="font-weight-light">'.$tmp[1].' </span>';
+                            $detail = langHdl('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . langHdl('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
                         } elseif ($reason[0] === 'at_field') {
                             $tmp = explode(' => ', $reason[1]);
                             if (count($tmp) > 1) {
-                                $detail = '<b>'.trim($tmp[0]).'</b> | '.langHdl('previous_value').
-                                    ': <span class="font-weight-light">'.trim($tmp[1]).'</span>';
+                                $detail = '<b>' . trim($tmp[0]) . '</b> | ' . langHdl('previous_value') .
+                                    ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
                             } else {
                                 $detail = trim($reason[1]);
                             }
                         } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url')) === true) {
                             $tmp = explode(' => ', $reason[1]);
                             $detail = empty(trim($tmp[0])) === true ?
-                                langHdl('no_previous_value') :
-                                langHdl('previous_value').': <span class="font-weight-light">'.$tmp[0].' </span>';
+                                langHdl('no_previous_value') : langHdl('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                         } elseif ($reason[0] === 'at_automatic_del') {
                             $detail = langHdl($reason[1]);
                         } elseif ($reason[0] === 'at_anyoneconmodify') {
@@ -6028,8 +6068,7 @@ if (null !== $post_type) {
                             $tmp = explode(':', $reason[1]);
                             $tmp = explode('.', $tmp[0]);
                             $detail = isBase64($tmp[0]) === true ?
-                                base64_decode($tmp[0]).'.'.$tmp[1] :
-                                $tmp[0];
+                                base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0];
                         } elseif ($reason[0] === 'at_import') {
                             $detail = '';
                         } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
@@ -6038,9 +6077,6 @@ if (null !== $post_type) {
                         } else {
                             $detail = $reason[0];
                         }
-                    } elseif ($record['action'] === 'at_manual') {
-                        $detail = langHdl($record['action']);
-                        $action = $reason[0];
                     } else {
                         $detail = langHdl($record['action']);
                         $action = '';
@@ -6051,8 +6087,8 @@ if (null !== $post_type) {
                         array(
                             'avatar' => $avatar,
                             'login' => $record['login'],
-                            'name' => $record['name'].' '.$record['lastname'],
-                            'date' => date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']),
+                            'name' => $record['name'] . ' ' . $record['lastname'],
+                            'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']),
                             'action' => $action,
                             'detail' => $detail,
                         )
@@ -6134,18 +6170,18 @@ if (null !== $post_type) {
 
             // get some info to add to the notification email
             $resp_user = DB::queryfirstrow(
-                'SELECT login FROM '.prefixTable('users').' WHERE id = %i',
+                'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
                 $_SESSION['user_id']
             );
             $resp_folder = DB::queryfirstrow(
-                'SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                'SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
                 $folder
             );
 
             // notify Managers
             $rows = DB::query(
                 'SELECT email
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE `gestionnaire` = %i AND `email` IS NOT NULL',
                 1
             );
@@ -6176,14 +6212,14 @@ if (null !== $post_type) {
             // Get list of users
             $usersList = array();
             $usersString = '';
-            $rows = DB::query('SELECT id,login,email FROM '.prefixTable('users').' ORDER BY login ASC');
+            $rows = DB::query('SELECT id,login,email FROM ' . prefixTable('users') . ' ORDER BY login ASC');
             foreach ($rows as $record) {
                 $usersList[$record['login']] = array(
                     'id' => $record['id'],
                     'login' => $record['login'],
                     'email' => $record['email'],
-                    );
-                $usersString .= $record['id'].'#'.$record['login'].';';
+                );
+                $usersString .= $record['id'] . '#' . $record['login'] . ';';
             }
 
             $data = array(
@@ -6217,20 +6253,20 @@ if (null !== $post_type) {
             // Send email
             $dataItem = DB::queryfirstrow(
                 'SELECT label, id_tree
-                FROM '.prefixTable('items').'
+                FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $post_item_id
             );
             $dataItemLog = DB::queryfirstrow(
                 'SELECT id_user
-                FROM '.prefixTable('log_items').'
+                FROM ' . prefixTable('log_items') . '
                 WHERE id_item = %i AND action = %s',
                 $post_item_id,
                 'at_creation'
             );
             $dataAuthor = DB::queryfirstrow(
                 'SELECT email, login
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $dataItemLog['id_user']
             );
@@ -6284,7 +6320,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         * CASE
         * save_notification_status
         */
@@ -6309,7 +6345,7 @@ if (null !== $post_type) {
 
             DB::query(
                 'SELECT *
-                FROM '.prefixTable('notification').'
+                FROM ' . prefixTable('notification') . '
                 WHERE item_id = %i AND user_id = %i',
                 $post_item_id,
                 $_SESSION['user_id']
@@ -6349,7 +6385,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         * CASE
         * delete_uploaded_files_but_not_saved
         */
@@ -6375,7 +6411,7 @@ if (null !== $post_type) {
             // And related logs
             $rows = DB::query(
                 'SELECT id, file AS filename
-                FROM '.prefixTable('files').'
+                FROM ' . prefixTable('files') . '
                 WHERE id_item = %i AND confirmed = %i',
                 $post_item_id,
                 0
@@ -6389,12 +6425,12 @@ if (null !== $post_type) {
                 );
 
                 // Delete file on server
-                unlink($SETTINGS['path_to_upload_folder'].'/'.TP_FILE_PREFIX.base64_decode($file['filename']));
+                unlink($SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file['filename']));
 
                 // Delete related logs
                 $logFile = DB::query(
                     'SELECT increment_id, raison
-                    FROM '.prefixTable('log_items').'
+                    FROM ' . prefixTable('log_items') . '
                     WHERE id_item = %i AND id_user = %i AND action = %s AND raison LIKE "at_add_file :%"',
                     $post_item_id,
                     $_SESSION['user_id'],
@@ -6422,7 +6458,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
         * CASE
         * confirm_attachments
         */
@@ -6447,7 +6483,7 @@ if (null !== $post_type) {
             // Confirm attachments
             $rows = DB::query(
                 'SELECT id, file AS filename
-                FROM '.prefixTable('files').'
+                FROM ' . prefixTable('files') . '
                 WHERE id_item = %i AND confirmed = %i',
                 $post_item_id,
                 0
@@ -6477,22 +6513,22 @@ if (null !== $post_type) {
 // Build the QUERY in case of GET
 if (isset($_GET['type'])) {
     switch ($_GET['type']) {
-        /*
+            /*
         * CASE
         * Autocomplet for TAGS
         */
         case 'autocomplete_tags':
             // Get a list off all existing TAGS
             $listOfTags = '';
-            $rows = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE tag LIKE %ss GROUP BY tag', $_GET['term']);
+            $rows = DB::query('SELECT tag FROM ' . prefixTable('tags') . ' WHERE tag LIKE %ss GROUP BY tag', $_GET['term']);
             foreach ($rows as $record) {
                 if (empty($listOfTags)) {
-                    $listOfTags = '"'.$record['tag'].'"';
+                    $listOfTags = '"' . $record['tag'] . '"';
                 } else {
-                    $listOfTags .= ', "'.$record['tag'].'"';
+                    $listOfTags .= ', "' . $record['tag'] . '"';
                 }
             }
-            echo '['.$listOfTags.']';
+            echo '[' . $listOfTags . ']';
             break;
     }
 }
@@ -6504,7 +6540,8 @@ if (isset($_GET['type'])) {
 function recupDroitCreationSansComplexite($groupe)
 {
     $data = DB::queryFirstRow(
-        'SELECT bloquer_creation, bloquer_modification, personal_folder FROM '.prefixTable('nested_tree').' WHERE id = %i',
+        'SELECT bloquer_creation, bloquer_modification, personal_folder
+        FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
         $groupe
     );
     // Check if it's in a personal folder. If yes, then force complexity overhead.

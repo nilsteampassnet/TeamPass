@@ -215,3 +215,14 @@
 .td-100 {
     width:100px;
 }
+
+.footer {
+    position: fixed;
+    bottom: 10px;
+    color:white;
+}
+
+.login-logo {
+    letter-spacing: 10px;
+    font-size: 40pt;
+}

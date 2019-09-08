@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -16,9 +17,11 @@
  *
  * @see      http://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true) {
+    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+) {
     die('Hacking attempt...');
 }
 
@@ -32,15 +35,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // user type
 if ($_SESSION['user_admin'] === '1') {
@@ -66,7 +69,7 @@ foreach (timezone_identifiers_list() as $zone) {
 
 // prepare lsit of flags
 $languageToPreSelect = $SETTINGS['default_language'];
-$rows = DB::query('SELECT label FROM '.prefixTable('languages').' ORDER BY label ASC');
+$rows = DB::query('SELECT label FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
 foreach ($rows as $record) {
     $arrayFlags[$record['label']] = $record['label'];
     if ($_SESSION['user_settings']['user_language'] === $record['label']) {
@@ -75,27 +78,27 @@ foreach ($rows as $record) {
 }
 
 // Do some stats
-DB::query('SELECT id_item FROM '.prefixTable('log_items').' WHERE action = "at_creation" AND  id_user = "'.$_SESSION['user_id'].'"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userItemsNumber = DB::count();
 
-DB::query('SELECT id_item FROM '.prefixTable('log_items').' WHERE action = "at_modification" AND  id_user = "'.$_SESSION['user_id'].'"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_modification" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userModificationNumber = DB::count();
 
-DB::query('SELECT id_item FROM '.prefixTable('log_items').' WHERE action = "at_shown" AND  id_user = "'.$_SESSION['user_id'].'"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenItemsNumber = DB::count();
 
-DB::query('SELECT id_item FROM '.prefixTable('log_items').' WHERE action = "at_password_shown" AND  id_user = "'.$_SESSION['user_id'].'"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenPasswordsNumber = DB::count();
 
 $userInfo = DB::queryFirstRow(
     'SELECT avatar 
-    FROM '.prefixTable('users').' 
-    WHERE id = "'.$_SESSION['user_id'].'"'
+    FROM ' . prefixTable('users') . ' 
+    WHERE id = "' . $_SESSION['user_id'] . '"'
 );
 if (empty($userInfo['avatar']) === true) {
-    $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+    $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
 } else {
-    $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$userInfo['avatar'];
+    $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $userInfo['avatar'];
 }
 
 // Get Groups name
@@ -103,8 +106,8 @@ $userParOfGroups = array();
 foreach ($_SESSION['user_roles'] as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
-        FROM '.prefixTable('roles_title').' 
-        WHERE id = "'.$role.'"'
+        FROM ' . prefixTable('roles_title') . ' 
+        WHERE id = "' . $role . '"'
     );
     array_push($userParOfGroups, $tmp['title']);
 }
@@ -133,7 +136,7 @@ foreach ($_SESSION['user_roles'] as $role) {
 <div class="content">
     <div class="container-fluid">
         <div class="row">
-        
+
             <div class="col-md-3">
 
                 <!-- Profile  -->
@@ -146,7 +149,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                         <h3 id="profile-username" class="text-center">
                             <?php
                             if (isset($_SESSION['name']) === true && empty($_SESSION['name']) === false) {
-                                echo $_SESSION['name'].' '.$_SESSION['lastname'];
+                                echo $_SESSION['name'] . ' ' . $_SESSION['lastname'];
                             } else {
                                 echo $_SESSION['login'];
                             }
@@ -192,13 +195,13 @@ foreach ($_SESSION['user_roles'] as $role) {
                             <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                                <?php echo langHdl('actions'); ?> <span class="caret"></span>
+                                    <?php echo langHdl('actions'); ?> <span class="caret"></span>
                                 </a>
                                 <div class="dropdown-menu">
                                     <?php
                                     if (isset($SETTINGS['duo']) === false || (int) $SETTINGS['duo'] === 0) {
                                         echo '
-                                    <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
+                                    <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">' . langHdl('index_change_pw') . '</a>';
                                     }
                                     ?>
                                 </div>
@@ -219,19 +222,19 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-child fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_seen'); ?></b>
                                         <a class="float-right">
-                                        <?php
-                                        if (isset($SETTINGS['date_format']) === true) {
-                                            echo date($SETTINGS['date_format'], $_SESSION['last_connection']);
-                                        } else {
-                                            echo date('d/m/Y', $_SESSION['last_connection']);
-                                        }
-                                        echo ' '.langHdl('at').' ';
-                                        if (isset($SETTINGS['time_format']) === true) {
-                                            echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
-                                        } else {
-                                            echo date('H:i:s', $_SESSION['last_connection']);
-                                        }
-                                        ?>
+                                            <?php
+                                            if (isset($SETTINGS['date_format']) === true) {
+                                                echo date($SETTINGS['date_format'], $_SESSION['last_connection']);
+                                            } else {
+                                                echo date('d/m/Y', $_SESSION['last_connection']);
+                                            }
+                                            echo ' ' . langHdl('at') . ' ';
+                                            if (isset($SETTINGS['time_format']) === true) {
+                                                echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
+                                            } else {
+                                                echo date('H:i:s', $_SESSION['last_connection']);
+                                            }
+                                            ?>
                                         </a>
                                     </li>
                                     <?php
@@ -248,18 +251,19 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         }
 
                                         // Handle expiration for pw
-                                        if (isset($_SESSION['numDaysBeforePwExpiration']) === false
+                                        if (
+                                            isset($_SESSION['numDaysBeforePwExpiration']) === false
                                             || $_SESSION['numDaysBeforePwExpiration'] === ''
                                             || $_SESSION['numDaysBeforePwExpiration'] === 'infinite'
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'.';
+                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'] . ' ' . $_SESSION['numDaysBeforePwExpiration'] . ' ' . $LANG['days'] . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fas fa-calendar-alt fa-fw fa-lg mr-2"></i>'.langHdl('index_last_pw_change').'</b>
-                                        <a class="float-right">'.$last_pw_change.' '.$numDaysBeforePwExpiration.'</a>
+                                        <b><i class="fas fa-calendar-alt fa-fw fa-lg mr-2"></i>' . langHdl('index_last_pw_change') . '</b>
+                                        <a class="float-right">' . $last_pw_change . ' ' . $numDaysBeforePwExpiration . '</a>
                                     </li>';
                                     }
                                     ?>
@@ -279,19 +283,22 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_api_key').'</b>
+                                        <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . langHdl('user_profile_api_key') . '</b>
                                         <a class="float-right" id="profile-user-api-token">',
-                                        isset($_SESSION['user_settings']['api-key']) === true ? $_SESSION['user_settings']['api-key'] : '', '</a>
+                                            isset($_SESSION['user_settings']['api-key']) === true ? $_SESSION['user_settings']['api-key'] : '',
+                                            '</a>
                                     </li>';
                                     }
-                                    if (isset($SETTINGS['agses_authentication_enabled']) === true
+                                    if (
+                                        isset($SETTINGS['agses_authentication_enabled']) === true
                                         && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_agses_card_id').'</b>
+                                        <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>' . langHdl('user_profile_agses_card_id') . '</b>
                                         <a class="float-right">',
-                                        isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '', '</a>
+                                            isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '',
+                                            '</a>
                                     </li>';
                                     }
                                     ?>
@@ -301,22 +308,23 @@ foreach ($_SESSION['user_roles'] as $role) {
                             <!-- TIMELINE -->
                             <div class="tab-pane<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" id="timeline">
                                 <?php
-                                if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-                                    && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
-                                    && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+                                if (
+                                    isset($_SESSION['user_settings']['unsuccessfull_login_attempts']) === true
+                                    && $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'] !== 0
+                                    && $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'] === false
                                 ) {
                                     ?>
                                     <div class="alert alert-warning mt-4">
                                         <span class="text-bold"><?php echo langHdl('last_login_attempts'); ?></span>
                                         <ul class="">
-                                        <?php
-                                        foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
-                                            echo '<li class="">'.$entry.'</li>';
-                                        } ?>
+                                            <?php
+                                                foreach ($_SESSION['user_settings']['unsuccessfull_login_attempts']['attempts'] as $entry) {
+                                                    echo '<li class="">' . $entry . '</li>';
+                                                } ?>
                                         </ul>
                                     </div>
-                                    <?php
-                                    $_SESSION['unsuccessfull_login_attempts']['shown'] = true;
+                                <?php
+                                    $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'] = true;
                                 }
                                 ?>
                                 <div class="mt-4">
@@ -324,12 +332,12 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <?php
                                         $rows = DB::query(
                                             'SELECT label AS labelAction, date, null
-                                            FROM '.prefixTable('log_system').'
+                                            FROM ' . prefixTable('log_system') . '
                                             WHERE qui = %i
                                             UNION
                                             SELECT l.action, l.date, i.label AS itemLabel
-                                            FROM '.prefixTable('log_items').' AS l
-                                            INNER JOIN '.prefixTable('items').' AS i ON (l.id_item = i.id)
+                                            FROM ' . prefixTable('log_items') . ' AS l
+                                            INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
                                             WHERE l.id_user = %i AND l.action IN ("at_access")
                                             ORDER BY date DESC
                                             LIMIT 0, 40',
@@ -343,9 +351,9 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 $text = langHdl($record['labelAction']);
                                             }
                                             if (empty($record['NULL']) === false) {
-                                                $text .= ' '.langHdl('for').' <span class="font-weight-light">'.addslashes($record['NULL']).'</span>';
+                                                $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
                                             }
-                                            echo '<li class="list-group-item">'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).' - '.$text.'</li>';
+                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - ' . $text . '</li>';
                                         }
                                         ?>
                                     </ul>
@@ -378,16 +386,16 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label class="col-sm-2 control-label"><?php echo langHdl('timezone_selection'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-timezone">
                                                 <?php
                                                 foreach ($arrayTimezones as $zone) {
-                                                    echo '<option value="'.$zone.'"',
-                                                    strtolower($zoneToPreSelect) === strtolower($zone) ? ' selected="selected"' : '',
-                                                    '>'.$zone.'</option>';
+                                                    echo '<option value="' . $zone . '"',
+                                                        strtolower($zoneToPreSelect) === strtolower($zone) ? ' selected="selected"' : '',
+                                                        '>' . $zone . '</option>';
                                                 }
                                                 ?>
                                             </select>
@@ -399,9 +407,9 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
                                                 foreach ($arrayFlags as $flag) {
-                                                    echo '<option value="'.$flag.'"',
-                                                    strtolower($flag) === strtolower($languageToPreSelect) ? ' selected="selected"' : '',
-                                                    '>'.$flag.'</option>';
+                                                    echo '<option value="' . $flag . '"',
+                                                        strtolower($flag) === strtolower($languageToPreSelect) ? ' selected="selected"' : '',
+                                                        '>' . $flag . '</option>';
                                                 }
                                                 ?>
                                             </select>
@@ -412,20 +420,21 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <label class="col-sm-2 control-label"><?php echo langHdl('tree_load_strategy'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
-                                                <option value="<?php echo langHdl('sequential'); ?>"<?php
-                                                if ($_SESSION['user_settings']['treeloadstrategy'] === 'sequential') {
-                                                    echo ' selected';
-                                                }?>><?php echo langHdl('sequential'); ?></option>
-                                                <option value="<?php echo langHdl('full'); ?>"<?php
-                                                if ($_SESSION['user_settings']['treeloadstrategy'] === 'full') {
-                                                    echo ' selected';
-                                                }?>><?php echo langHdl('full'); ?></option>
+                                                <option value="<?php echo langHdl('sequential'); ?>" <?php
+                                                                                                        if ($_SESSION['user_settings']['treeloadstrategy'] === 'sequential') {
+                                                                                                            echo ' selected';
+                                                                                                        } ?>><?php echo langHdl('sequential'); ?></option>
+                                                <option value="<?php echo langHdl('full'); ?>" <?php
+                                                                                                if ($_SESSION['user_settings']['treeloadstrategy'] === 'full') {
+                                                                                                    echo ' selected';
+                                                                                                } ?>><?php echo langHdl('full'); ?></option>
                                             </select>
                                         </div>
                                     </div>
 
                                     <?php
-                                    if (isset($SETTINGS['agses_authentication_enabled']) === true
+                                    if (
+                                        isset($SETTINGS['agses_authentication_enabled']) === true
                                         && $SETTINGS['agses_authentication_enabled'] === '1'
                                     ) {
                                         ?>
@@ -433,14 +442,14 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <label class="col-sm-2 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
                                             <div class="col-sm-10">
                                                 <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
-                                                if (isset($_SESSION['user_settings']['agses-usercardid']) === true) {
-                                                    echo $_SESSION['user_settings']['agses-usercardid'];
-                                                } ?>">
+                                                                                                                                                                    if (isset($_SESSION['user_settings']['agses-usercardid']) === true) {
+                                                                                                                                                                        echo $_SESSION['user_settings']['agses-usercardid'];
+                                                                                                                                                                    } ?>">
                                             </div>
                                         </div>
-                                        <?php
+                                    <?php
                                     }
-                                    ?>                                    
+                                    ?>
 
                                     <div class="form-group">
                                         <div class="row">
@@ -449,7 +458,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             </div>
                                             <div class="col-sm-8">
                                                 <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo langHdl('upload_new_avatar'); ?></button>
-                                                <button type="button" class="btn btn-warning float-right" id="profile-button-api_token"><?php echo langHdl('generate_api_token'); ?></button>
+                                                <?php
+                                                if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
+                                                    echo '<button type="button" class="btn btn-warning float-right" id="profile-button-api_token">' . langHdl('generate_api_token') . '</button>';
+                                                }
+                                                ?>
                                                 <div id="profile-avatar-file-container" class="hidden"></div>
                                                 <div id="profile-avatar-file-list" class="hidden"></div>
                                                 <input type="hidden" id="profile-user-token">
@@ -457,10 +470,10 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         </div>
                                     </div>
                                 </form>
-                                
+
                             </div>
 
-                            
+
                             <!-- CHANGE PW -->
                             <div class="tab-pane" id="tab_change_pw">
                                 <h3 class="card-title mb-3"><?php echo langHdl('index_change_pw'); ?></h3>
@@ -484,7 +497,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
                                         </div>
-                                        <input type="password" class="form-control"  id="profile-password-confirm">
+                                        <input type="password" class="form-control" id="profile-password-confirm">
                                     </div>
                                     <div class="form-group">
                                         <button type="button" class="btn btn-info" id="profile-save-password-change"><?php echo langHdl('perform'); ?></button>
@@ -495,7 +508,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                     </div>
                 </div>
             </div>
-            
+
         </div>
         <!-- /.row -->
     </div>

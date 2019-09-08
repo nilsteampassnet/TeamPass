@@ -400,14 +400,14 @@ if (isset($post_type)) {
                     if (!empty($db_sk[0])) {
                         mysqli_query(
                             $db_link,
-                            'UPDATE `'.$pre."misc`
+                            "UPDATE `".$pre."misc`
                             SET `valeur` = '".$sk_val."'
                             WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                         );
                     } else {
                         mysqli_query(
                             $db_link,
-                            'INSERT INTO `'.$pre."misc`
+                            "INSERT INTO `".$pre."misc`
                             (`valeur`, `type`, `intitule`)
                             VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
                         );
@@ -424,20 +424,20 @@ if (isset($post_type)) {
                 // no old sk is available
                 $tmp = mysqli_num_rows(mysqli_query(
                     $db_link,
-                    'SELECT * FROM `'.$pre."misc`
+                    "SELECT INTO `".$pre."misc`
                     WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                 ));
                 if ($tmp == 0) {
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre."misc`
+                        "INSERT INTO `".$pre."misc`
                         (`valeur`, `type`, `intitule`)
                         VALUES ('none', 'admin', 'saltkey_ante_2127')"
                     );
                 } else {
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre."misc`
+                        "INSERT INTO `".$pre."misc`
                         (`valeur`, `type`, `intitule`)
                         VALUES ('none', 'admin', 'saltkey_ante_2127')"
                     );
@@ -489,7 +489,7 @@ if (isset($post_type)) {
             // put TP in maintenance mode or not
             @mysqli_query(
                 $db_link,
-                'UPDATE `'.$pre."misc`
+                "UPDATE `".$pre."misc`
                 SET `valeur` = 'maintenance_mode'
                 WHERE type = 'admin' AND intitule = '".$post_no_maintenance_mode."'"
             );
@@ -580,109 +580,109 @@ if (isset($post_type)) {
                 } else {
                     unlink($settingsFile);
                 }
-				
-				// CHeck if old sk.php exists.
-				// If yes then get keys to database and delete it
-				if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-					$filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH).'/sk.php';
-					if (file_exists($filename)) {
-						include_once $filename;
-						unlink($filename);
-						
-						// AKEY
-						$tmp = mysqli_num_rows(mysqli_query(
-							$db_link,
-							'SELECT * FROM `'.$pre."misc`
-							WHERE type = 'duoSecurity' AND intitule = 'akey'"
-						));
-						if ($tmp == 0) {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".AKEY."', 'duoSecurity', 'akey')"
-							);
-						} else {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".AKEY."', 'duoSecurity', 'akey')"
-							);
-						}
-						
-						// SKEY
-						$tmp = mysqli_num_rows(mysqli_query(
-							$db_link,
-							'SELECT * FROM `'.$pre."misc`
-							WHERE type = 'duoSecurity' AND intitule = 'skey'"
-						));
-						if ($tmp == 0) {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".SKEY."', 'duoSecurity', 'skey')"
-							);
-						} else {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".SKEY."', 'duoSecurity', 'skey')"
-							);
-						}
-						
-						// IKEY
-						$tmp = mysqli_num_rows(mysqli_query(
-							$db_link,
-							'SELECT * FROM `'.$pre."misc`
-							WHERE type = 'duoSecurity' AND intitule = 'ikey'"
-						));
-						if ($tmp == 0) {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
-							);
-						} else {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
-							);
-						}
-						
-						// HOST
-						$tmp = mysqli_num_rows(mysqli_query(
-							$db_link,
-							'SELECT * FROM `'.$pre."misc`
-							WHERE type = 'duoSecurity' AND intitule = 'host'"
-						));
-						if ($tmp == 0) {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".HOST."', 'duoSecurity', 'host')"
-							);
-						} else {
-							mysqli_query(
-								$db_link,
-								'INSERT INTO `'.$pre."misc`
-								(`valeur`, `type`, `intitule`)
-								VALUES ('".HOST."', 'duoSecurity', 'host')"
-							);
-						}
-					}
-				}
-				
-				// Ensure DB is read as UTF8
-				if (DB_ENCODING === "") {
-					DB_ENCODING = "utf8";
-				}
+
+                // CHeck if old sk.php exists.
+                // If yes then get keys to database and delete it
+                if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+                    $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH).'/sk.php';
+                    if (file_exists($filename)) {
+                        include_once $filename;
+                        unlink($filename);
+                        
+                        // AKEY
+                        $tmp = mysqli_num_rows(mysqli_query(
+                            $db_link,
+                            "SELECT INTO `".$pre."misc`
+                            WHERE type = 'duoSecurity' AND intitule = 'akey'"
+                        ));
+                        if ($tmp == 0) {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".AKEY."', 'duoSecurity', 'akey')"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".AKEY."', 'duoSecurity', 'akey')"
+                            );
+                        }
+                        
+                        // SKEY
+                        $tmp = mysqli_num_rows(mysqli_query(
+                            $db_link,
+                            "SELECT INTO `".$pre."misc`
+                            WHERE type = 'duoSecurity' AND intitule = 'skey'"
+                        ));
+                        if ($tmp == 0) {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".SKEY."', 'duoSecurity', 'skey')"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".SKEY."', 'duoSecurity', 'skey')"
+                            );
+                        }
+                        
+                        // IKEY
+                        $tmp = mysqli_num_rows(mysqli_query(
+                            $db_link,
+                            "SELECT INTO `".$pre."misc`
+                            WHERE type = 'duoSecurity' AND intitule = 'ikey'"
+                        ));
+                        if ($tmp == 0) {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".IKEY."', 'duoSecurity', 'ikey')"
+                            );
+                        }
+                        
+                        // HOST
+                        $tmp = mysqli_num_rows(mysqli_query(
+                            $db_link,
+                            "SELECT INTO `".$pre."misc`
+                            WHERE type = 'duoSecurity' AND intitule = 'host'"
+                        ));
+                        if ($tmp == 0) {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".HOST."', 'duoSecurity', 'host')"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `".$pre."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".HOST."', 'duoSecurity', 'host')"
+                            );
+                        }
+                    }
+                }
+                
+                // Ensure DB is read as UTF8
+                if (DB_ENCODING === "") {
+                    define('DB_ENCODING', "utf8");
+                }
 
                 // Now create new file
                 $file_handled = fopen($settingsFile, 'w');
@@ -694,13 +694,17 @@ if (isset($post_type)) {
 // DATABASE connexion parameters
 define("DB_HOST", "'.DB_HOST.'");
 define("DB_USER", "'.DB_USER.'");
-//define("DB_PASSWD", "'.defuse_return_decrypted(DB_PASSWD).'");
-define("DB_PASSWD", "'.DB_PASSWD.'");
+define("DB_PASSWD", "'.defuse_return_decrypted(DB_PASSWD).'");
+//define("DB_PASSWD", "'.DB_PASSWD.'");
 define("DB_NAME", "'.DB_NAME.'");
 define("DB_PREFIX", "'.DB_PREFIX.'");
 define("DB_PORT", "'.DB_PORT.'");
 define("DB_ENCODING", "'.DB_ENCODING.'");
 define("SECUREPATH", "'.SECUREPATH.'");
+define("IKEY", "'.null !== IKEY ? IKEY : "".'");
+define("SKEY", "'.null !== SKEY ? SKEY : "".'");
+define("AKEY", "'.null !== AKEY ? AKEY : "".'");
+define("HOST", "'.null !== HOST ? HOST : "".'");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -821,12 +825,26 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 $mtables[] = $row[0];
             }
 
+            // Prepare file
+            $backup_file_name = 'sql-backup-'.date('d-m-Y--h-i-s').'.sql';
+            $fp = fopen('../files/'.$backup_file_name, 'a');
+
             foreach ($mtables as $table) {
-                $contents .= '-- Table `'.$table."` --\n";
+                $contents = '-- Table `'.$table."` --\n";
+                if (fwrite($fp, $contents) === false) {
+                    echo '[{ "error" : "Backup fails - please do it manually."}]';
+                    fclose($fp);
+                    return false;
+                }
 
                 $results = $mysqli->query('SHOW CREATE TABLE '.$table);
                 while ($row = $results->fetch_array()) {
-                    $contents .= $row[1].";\n\n";
+                    $contents = $row[1].";\n\n";
+                    if (fwrite($fp, $contents) === false) {
+                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                        fclose($fp);
+                        return false;
+                    }
                 }
 
                 $results = $mysqli->query('SELECT * FROM '.$table);
@@ -848,42 +866,69 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     $r = 0;
                     while ($row = $results->fetch_array()) {
                         if (($r % 400) == 0) {
-                            $contents .= $insert_head;
+                            //$contents .= $insert_head;
+                            if (fwrite($fp, $insert_head) === false) {
+                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                fclose($fp);
+                                return false;
+                            }
                         }
-                        $contents .= '(';
+                        //$contents .= '(';
+                        if (fwrite($fp, '(') === false) {
+                            echo '[{ "error" : "Backup fails - please do it manually."}]';
+                            fclose($fp);
+                            return false;
+                        }
                         for ($i = 0; $i < $fields_count; ++$i) {
                             $row_content = str_replace("\n", '\\n', $mysqli->real_escape_string($row[$i]));
 
                             switch ($fields[$i]->type) {
                                 case 8:
                                 case 3:
-                                    $contents .= $row_content;
+                                    //$contents .= $row_content;
+                                    if (fwrite($fp, $row_content) === false) {
+                                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                        fclose($fp);
+                                        return false;
+                                    }
                                     break;
                                 default:
-                                    $contents .= "'".$row_content."'";
+                                    //$contents .= "'".$row_content."'";
+                                    if (fwrite($fp, "'".$row_content."'") === false) {
+                                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                        fclose($fp);
+                                        return false;
+                                    }
                             }
                             if ($i < $fields_count - 1) {
-                                $contents .= ', ';
+                                //$contents .= ', ';
+                                if (fwrite($fp, ', ') === false) {
+                                    echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                    fclose($fp);
+                                    return false;
+                                }
                             }
                         }
                         if (($r + 1) == $row_count || ($r % 400) == 399) {
-                            $contents .= ");\n\n";
+                            //$contents .= ");\n\n";
+                            if (fwrite($fp, ");\n\n") === false) {
+                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                fclose($fp);
+                                return false;
+                            }
                         } else {
-                            $contents .= "),\n";
+                            //$contents .= "),\n";
+                            if (fwrite($fp, "),\n") === false) {
+                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                fclose($fp);
+                                return false;
+                            }
                         }
                         ++$r;
                     }
                 }
             }
 
-            $backup_file_name = 'sql-backup-'.date('d-m-Y--h-i-s').'.sql';
-
-            $fp = fopen('../files/'.$backup_file_name, 'w+');
-            if (($result = fwrite($fp, $contents))) {
-                echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
-            } else {
-                echo '[{ "error" : "Backup fails - please do it manually."}]';
-            }
             fclose($fp);
 
             return false;

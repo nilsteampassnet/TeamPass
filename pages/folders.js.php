@@ -83,6 +83,7 @@ $('.tp-action').click(function() {
         $('.form').addClass('hidden');
         $('#folder-new').removeClass('hidden');
         $('#folders-list').addClass('hidden');
+        $('#new-title').focus();
 
     } else if ($(this).data('action') === 'new-submit') {
         //--- SAVE NEW FOLDER
@@ -119,6 +120,35 @@ $('.tp-action').click(function() {
                         .dismissOthers();
                 } else {
                     buildTable();
+
+                    // Add new folder to the list 'new-parent'
+                    // Launch action
+                    $.post(
+                        'sources/folders.queries.php',
+                        {
+                            type    : 'refresh_folders_list',
+                            key     : '<?php echo $_SESSION['key']; ?>'
+                        },
+                        function(data) {//decrypt data
+                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                            console.log(data);
+
+                            // prepare options list
+                            var prev_level = 0,
+                                droplist = '';
+
+                            $(data.subfolders).each(function(i, folder) {
+                                droplist += '<option value="' + folder['id'] + '">'
+                                    + folder['label']
+                                    + folder['path']
+                                    + '</option>';
+                            });
+
+                            $('#new-parent')
+                                .empty()
+                                .append(droplist);
+                        }
+                    );
 
                     $('.form').addClass('hidden');
                     $('#folders-list').removeClass('hidden');
@@ -415,6 +445,25 @@ function buildTable()
     );
 }
 
+
+/**
+ * Build list of folders
+ */
+function refreshFoldersList()
+{
+    // Launch action
+    $.post(
+        'sources/folders.queries.php',
+        {
+            type    : 'select_sub_folders',
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {//decrypt data
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+        }
+    );
+}
 
 
 /**

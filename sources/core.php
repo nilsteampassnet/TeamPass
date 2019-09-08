@@ -222,7 +222,7 @@ if (empty($_SESSION['sessionDuration']) === false) {
 
 // get some init
 if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
-    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false);
+    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false, true, array('cpassman_dir' => '.'));
     $_SESSION['user_id'] = 0;
     $_SESSION['id'] = 1;
 }
@@ -443,6 +443,10 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $SETTINGS
         );
 
+        if (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1) {
+            array_push($_SESSION['groupes_visibles'], 0);
+        };
+
         // user type
         if (isset($LANG) === true) {
             if ((int) $_SESSION['user_admin'] === 1) {
@@ -570,3 +574,6 @@ if (isset($SETTINGS['roles_allowed_to_print']) === true
 /* CHECK NUMBER OF USER ONLINE */
 DB::query('SELECT * FROM '.prefixTable('users').' WHERE timestamp>=%i', time() - 600);
 $_SESSION['nb_users_online'] = DB::count();
+
+
+    

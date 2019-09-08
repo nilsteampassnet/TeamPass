@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -84,7 +85,7 @@ function strHashPbkdf2($var_p, $var_s, $var_c, $var_kl, $var_a = 'sha256', $var_
     $var_dk = ''; // Derived key
 
     for ($block = 1; $block <= $var_kb; ++$block) { // Create key
-        $var_ib = $var_h = hash_hmac($var_a, $var_s.pack('N', $block), $var_p, true); // Initial hash for this block
+        $var_ib = $var_h = hash_hmac($var_a, $var_s . pack('N', $block), $var_p, true); // Initial hash for this block
         for ($var_i = 1; $var_i < $var_c; ++$var_i) { // Perform block iterations
             $var_ib ^= ($var_h = hash_hmac($var_a, $var_h, $var_p, true)); // XOR each iterate
         }
@@ -198,7 +199,7 @@ function encrypt($decrypted, $personalSalt = '')
     if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
         require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     }
 
     if (!empty($personalSalt)) {
@@ -225,7 +226,7 @@ function encrypt($decrypted, $personalSalt = '')
     // MAC the encrypted text
     $mac = hash_hmac('sha256', $encrypted, $staticSalt);
     // We're done!
-    return base64_encode($ivBase64.$encrypted.$mac.$pbkdf2Salt);
+    return base64_encode($ivBase64 . $encrypted . $mac . $pbkdf2Salt);
 }
 
 /**
@@ -240,13 +241,13 @@ function decrypt($encrypted, $personalSalt = '')
     if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
         include_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     }
 
     if (!empty($personalSalt)) {
         $staticSalt = $personalSalt;
     } else {
-        $staticSalt = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+        $staticSalt = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
     }
     //base64 decode the entire payload
     $encrypted = base64_decode($encrypted);
@@ -256,7 +257,7 @@ function decrypt($encrypted, $personalSalt = '')
     $encrypted = substr($encrypted, 0, -64);
     $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
     // Retrieve $init_vect which is the first 22 characters plus ==, base64_decoded.
-    $init_vect = base64_decode(substr($encrypted, 0, 43).'==');
+    $init_vect = base64_decode(substr($encrypted, 0, 43) . '==');
     // Remove $init_vect from $encrypted.
     $encrypted = substr($encrypted, 43);
     // Retrieve $mac which is the last 64 characters of $encrypted.
@@ -320,23 +321,23 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
     } else {
-        $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
+        $path = $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     // init
     $err = '';
     if (empty($ascii_key) === true) {
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+        $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
     }
 
     //echo $path.' -- '.$message.' ;; '.$ascii_key.' --- ';
@@ -384,15 +385,15 @@ function defuse_generate_key()
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
@@ -418,15 +419,15 @@ function defuse_generate_personal_key($psk)
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     $protected_key_encoded = $protected_key->saveToAsciiSafeString();
@@ -453,15 +454,15 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     try {
         $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
@@ -548,8 +549,8 @@ function cleanString($string, $special = false)
  */
 function db_error_handler($params)
 {
-    echo 'Error: '.$params['error']."<br>\n";
-    echo 'Query: '.$params['query']."<br>\n";
+    echo 'Error: ' . $params['error'] . "<br>\n";
+    echo 'Query: ' . $params['query'] . "<br>\n";
     throw new Exception('Error - Query', 1);
 }
 
@@ -571,10 +572,10 @@ function identifyUserRights(
     $SETTINGS
 ) {
     //load ClassLoader
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -586,7 +587,7 @@ function identifyUserRights(
     DB::$encoding = DB_ENCODING;
 
     //Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -639,7 +640,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['no_access_folders'] = array();
 
     // Get list of Folders
-    $rows = DB::query('SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i', 0);
+    $rows = DB::query('SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
         array_push($groupesVisibles, $record['id']);
     }
@@ -649,7 +650,8 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['forbiden_pfs'] = array();
     $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
     $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) === true
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true
         && (int) $SETTINGS['enable_pf_feature'] === 1
     ) {
         $where->add('title=%s', $_SESSION['user_id']);
@@ -657,7 +659,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     }
     // Get ID of personal folder
     $persfld = DB::queryfirstrow(
-        'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %s',
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %s',
         $_SESSION['user_id']
     );
     if (empty($persfld['id']) === false) {
@@ -678,7 +680,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     // get complete list of ROLES
     $tmp = explode(';', $idFonctions);
     $rows = DB::query(
-        'SELECT * FROM '.prefixTable('roles_title').'
+        'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'
     );
     foreach ($rows as $record) {
@@ -690,9 +692,9 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 
     $_SESSION['is_admin'] = 1;
     // Check if admin has created Folders and Roles
-    DB::query('SELECT * FROM '.prefixTable('nested_tree').'');
+    DB::query('SELECT * FROM ' . prefixTable('nested_tree') . '');
     $_SESSION['nb_folders'] = DB::count();
-    DB::query('SELECT * FROM '.prefixTable('roles_title'));
+    DB::query('SELECT * FROM ' . prefixTable('roles_title'));
     $_SESSION['nb_roles'] = DB::count();
 }
 
@@ -760,7 +762,7 @@ function identUser(
     // Get list of folders depending on Roles
     $rows = DB::query(
         'SELECT *
-        FROM '.prefixTable('roles_values').'
+        FROM ' . prefixTable('roles_values') . '
         WHERE role_id IN %li AND type IN %ls',
         $userRoles,
         array('W', 'ND', 'NE', 'NDNE', 'R')
@@ -785,9 +787,9 @@ function identUser(
     // Does this user is allowed to see other items
     $inc = 0;
     $rows = DB::query(
-        'SELECT id, id_tree FROM '.prefixTable('items').'
+        'SELECT id, id_tree FROM ' . prefixTable('items') . '
         WHERE restricted_to LIKE %ss AND inactif = %s',
-        $_SESSION['user_id'].';',
+        $_SESSION['user_id'] . ';',
         '0'
     );
     foreach ($rows as $record) {
@@ -801,8 +803,8 @@ function identUser(
     // Check for the users roles if some specific rights exist on items
     $rows = DB::query(
         'SELECT i.id_tree, r.item_id
-        FROM '.prefixTable('items').' as i
-        INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (r.item_id=i.id)
+        FROM ' . prefixTable('items') . ' as i
+        INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (r.item_id=i.id)
         WHERE r.role_id IN %li
         ORDER BY i.id_tree ASC',
         $userRoles
@@ -817,12 +819,13 @@ function identUser(
     }
 
     // Get list of Personal Folders
-    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
     ) {
         $persoFld = DB::queryfirstrow(
             'SELECT id
-            FROM '.prefixTable('nested_tree').'
+            FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND personal_folder = %i',
             $_SESSION['user_id'],
             1
@@ -848,7 +851,8 @@ function identUser(
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
     ) {
         $where->add('title=%s', $_SESSION['user_id']);
@@ -856,7 +860,7 @@ function identUser(
     }
     $persoFlds = DB::query(
         'SELECT id
-        FROM '.prefixTable('nested_tree').'
+        FROM ' . prefixTable('nested_tree') . '
         WHERE %l',
         $where
     );
@@ -895,17 +899,17 @@ function identUser(
     );
 
     // Folders and Roles numbers
-    DB::queryfirstrow('SELECT id FROM '.prefixTable('nested_tree').'');
+    DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     $_SESSION['nb_folders'] = DB::count();
-    DB::queryfirstrow('SELECT id FROM '.prefixTable('roles_title'));
+    DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
     $_SESSION['nb_roles'] = DB::count();
 
     // check if change proposals on User's items
     if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
         DB::query(
             'SELECT *
-            FROM '.prefixTable('items_change').' AS c
-            LEFT JOIN '.prefixTable('log_items').' AS i ON (c.item_id = i.id_item)
+            FROM ' . prefixTable('items_change') . ' AS c
+            LEFT JOIN ' . prefixTable('log_items') . ' AS i ON (c.item_id = i.id_item)
             WHERE i.action = %s AND i.id_user = %i',
             'at_creation',
             $_SESSION['user_id']
@@ -949,10 +953,10 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
  */
 function cacheTableRefresh($SETTINGS)
 {
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -969,13 +973,13 @@ function cacheTableRefresh($SETTINGS)
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // truncate table
-    DB::query('TRUNCATE TABLE '.prefixTable('cache'));
+    DB::query('TRUNCATE TABLE ' . prefixTable('cache'));
 
     // reload date
     $rows = DB::query(
         'SELECT *
-        FROM '.prefixTable('items').' as i
-        INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+        FROM ' . prefixTable('items') . ' as i
+        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
         AND l.action = %s
         AND i.inactif = %i',
         'at_creation',
@@ -987,18 +991,18 @@ function cacheTableRefresh($SETTINGS)
             $tags = '';
             $itemTags = DB::query(
                 'SELECT tag
-                FROM '.prefixTable('tags').'
+                FROM ' . prefixTable('tags') . '
                 WHERE item_id = %i AND tag != ""',
                 $record['id']
             );
             foreach ($itemTags as $itemTag) {
-                $tags .= $itemTag['tag'].' ';
+                $tags .= $itemTag['tag'] . ' ';
             }
 
             // Get renewal period
             $resNT = DB::queryfirstrow(
                 'SELECT renewal_period
-                FROM '.prefixTable('nested_tree').'
+                FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $record['id_tree']
             );
@@ -1012,7 +1016,7 @@ function cacheTableRefresh($SETTINGS)
                     // Is this a User id?
                     $user = DB::queryfirstrow(
                         'SELECT id, login
-                        FROM '.prefixTable('users').'
+                        FROM ' . prefixTable('users') . '
                         WHERE id = %i',
                         $elem->title
                     );
@@ -1054,10 +1058,10 @@ function cacheTableRefresh($SETTINGS)
  */
 function cacheTableUpdate($SETTINGS, $ident = null)
 {
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -1076,7 +1080,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
     // get new value from db
     $data = DB::queryfirstrow(
         'SELECT label, description, id_tree, perso, restricted_to, login, url
-        FROM '.prefixTable('items').'
+        FROM ' . prefixTable('items') . '
         WHERE id=%i',
         $ident
     );
@@ -1084,12 +1088,12 @@ function cacheTableUpdate($SETTINGS, $ident = null)
     $tags = '';
     $itemTags = DB::query(
         'SELECT tag
-        FROM '.prefixTable('tags').'
+        FROM ' . prefixTable('tags') . '
         WHERE item_id = %i AND tag != ""',
         $ident
     );
     foreach ($itemTags as $itemTag) {
-        $tags .= $itemTag['tag'].' ';
+        $tags .= $itemTag['tag'] . ' ';
     }
     // form id_tree to full foldername
     $folder = array();
@@ -1100,7 +1104,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
             // Is this a User id?
             $user = DB::queryfirstrow(
                 'SELECT id, login
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $elem->title
             );
@@ -1125,7 +1129,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
             'login' => isset($data['login']) ? $data['login'] : '',
             'folder' => implode(' » ', $folder),
             'author' => $_SESSION['user_id'],
-            ),
+        ),
         'id = %i',
         $ident
     );
@@ -1139,10 +1143,10 @@ function cacheTableUpdate($SETTINGS, $ident = null)
  */
 function cacheTableAdd($SETTINGS, $ident = null)
 {
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -1161,8 +1165,8 @@ function cacheTableAdd($SETTINGS, $ident = null)
     // get new value from db
     $data = DB::queryFirstRow(
         'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
-        FROM '.prefixTable('items').' as i
-        INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+        FROM ' . prefixTable('items') . ' as i
+        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
         WHERE i.id = %i
         AND l.action = %s',
         $ident,
@@ -1172,12 +1176,12 @@ function cacheTableAdd($SETTINGS, $ident = null)
     $tags = '';
     $itemTags = DB::query(
         'SELECT tag
-        FROM '.prefixTable('tags').'
+        FROM ' . prefixTable('tags') . '
         WHERE item_id = %i AND tag != ""',
         $ident
     );
     foreach ($itemTags as $itemTag) {
-        $tags .= $itemTag['tag'].' ';
+        $tags .= $itemTag['tag'] . ' ';
     }
     // form id_tree to full foldername
     $folder = array();
@@ -1188,7 +1192,7 @@ function cacheTableAdd($SETTINGS, $ident = null)
             // Is this a User id?
             $user = DB::queryfirstrow(
                 'SELECT id, login
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $elem->title
             );
@@ -1229,48 +1233,48 @@ function cacheTableAdd($SETTINGS, $ident = null)
 function getStatisticsData($SETTINGS)
 {
     DB::query(
-        'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
         0
     );
     $counter_folders = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
         1
     );
     $counter_folders_perso = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('items').' WHERE perso = %i',
+        'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
         0
     );
     $counter_items = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('items').' WHERE perso = %i',
+        'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
         1
     );
     $counter_items_perso = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('users').''
+        'SELECT id FROM ' . prefixTable('users') . ''
     );
     $counter_users = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('users').' WHERE admin = %i',
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE admin = %i',
         1
     );
     $admins = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('users').' WHERE gestionnaire = %i',
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE gestionnaire = %i',
         1
     );
     $managers = DB::count();
 
     DB::query(
-        'SELECT id FROM '.prefixTable('users').' WHERE read_only = %i',
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE read_only = %i',
         1
     );
     $readOnly = DB::count();
@@ -1278,11 +1282,11 @@ function getStatisticsData($SETTINGS)
     // list the languages
     $usedLang = [];
     $tp_languages = DB::query(
-        'SELECT name FROM '.prefixTable('languages')
+        'SELECT name FROM ' . prefixTable('languages')
     );
     foreach ($tp_languages as $tp_language) {
         DB::query(
-            'SELECT * FROM '.prefixTable('users').' WHERE user_language = %s',
+            'SELECT * FROM ' . prefixTable('users') . ' WHERE user_language = %s',
             $tp_language['name']
         );
         $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
@@ -1291,7 +1295,7 @@ function getStatisticsData($SETTINGS)
     // get list of ips
     $usedIp = [];
     $tp_ips = DB::query(
-        'SELECT user_ip FROM '.prefixTable('users')
+        'SELECT user_ip FROM ' . prefixTable('users')
     );
     foreach ($tp_ips as $ip) {
         if (array_key_exists($ip['user_ip'], $usedIp)) {
@@ -1353,23 +1357,23 @@ function sendEmail(
 ) {
     // CAse where email not defined
     if ($email === 'none') {
-        return '"error":"" , "message":"'.langHdl('forgot_my_pw_email_sent').'"';
+        return '"error":"" , "message":"' . langHdl('forgot_my_pw_email_sent') . '"';
     }
 
     // Load settings
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get user language
     $session_user_language = $superGlobal->get('user_language', 'SESSION');
     $user_language = isset($session_user_language) ? $session_user_language : 'english';
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $user_language . '.php';
 
     // Load library
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // load PHPMailer
     $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
@@ -1377,12 +1381,12 @@ function sendEmail(
     $mail = new Email\PHPMailer\PHPMailer(true);
     try {
         // send to user
-        $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
+        $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/Email/PHPMailer/language/');
         $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
         $mail->Port = $SETTINGS['email_port']; //COULD BE USED
         $mail->CharSet = 'utf-8';
         $mail->SMTPSecure = ($SETTINGS['email_security'] === 'tls'
-        || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
+            || $SETTINGS['email_security'] === 'ssl') ? $SETTINGS['email_security'] : '';
         $mail->SMTPAutoTLS = ($SETTINGS['email_security'] === 'tls'
             || $SETTINGS['email_security'] === 'ssl') ? true : false;
         $mail->SMTPOptions = array(
@@ -1470,9 +1474,9 @@ function emailBody($textMail)
     <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
         <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
         <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-        <br><div style="float:right;">'.
-    $textMail.
-    '<br><br></td></tr></table>
+        <br><div style="float:right;">' .
+        $textMail .
+        '<br><br></td></tr></table>
     </td></tr></table>
     <br></body></html>';
 }
@@ -1484,7 +1488,7 @@ function emailBody($textMail)
  */
 function generateKey()
 {
-    return substr(md5(rand().rand()), 0, 15);
+    return substr(md5(rand() . rand()), 0, 15);
 }
 
 /**
@@ -1586,11 +1590,11 @@ function prepareExchangedData($data, $type, $key = null)
             throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
         }
     }
-    
+
     //load ClassLoader
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $aes->register();
 
     if ($key !== null) {
@@ -1601,7 +1605,8 @@ function prepareExchangedData($data, $type, $key = null)
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        if (isset($SETTINGS['encryptClientServer'])
+        if (
+            isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_encode(
@@ -1619,7 +1624,8 @@ function prepareExchangedData($data, $type, $key = null)
             );
         }
     } elseif ($type === 'decode' && is_array($data) === false) {
-        if (isset($SETTINGS['encryptClientServer'])
+        if (
+            isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
@@ -1675,7 +1681,7 @@ function makeThumbnail($src, $dest, $desired_width)
  */
 function prefixTable($table)
 {
-    $safeTable = htmlspecialchars(DB_PREFIX.$table);
+    $safeTable = htmlspecialchars(DB_PREFIX . $table);
     if (!empty($safeTable)) {
         // sanitize string
         return $safeTable;
@@ -1685,53 +1691,56 @@ function prefixTable($table)
     }
 }
 
-/*
- * Creates a KEY using PasswordLib
+
+/**
+ * GenerateCryptKey
+ *
+ * @param int     $size      Length
+ * @param boolean $secure    Secure
+ * @param boolean $numerals  Numerics
+ * @param boolean $uppercase Uppercase letters
+ * @param boolean $symbols   Symbols
+ * @param boolean $lowercase Lowercase
+ * @param array   $SETTINGS  SETTINGS
+ * @return void
  */
-function GenerateCryptKey($size = null, $secure = false, $numerals = false, $capitalize = false, $symbols = false)
-{
-    include_once 'SplClassLoader.php';
-
-    if ($secure === true) {
-        $numerals = true;
-        $capitalize = true;
-        $symbols = true;
-    }
-
-    // Load libraries
-    if (file_exists('../includes/config/tp.config.php')) {
-        $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        $generator = new SplClassLoader('PasswordGenerator\Generator', './includes/libraries');
-    } else {
-        throw new Exception('Error file not exists', 1);
-    }
-
+function GenerateCryptKey(
+    $size = null,
+    $secure = false,
+    $numerals = false,
+    $uppercase = false,
+    $symbols = false,
+    $lowercase = false,
+    $SETTINGS
+) {
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    $generator = new SplClassLoader('PasswordGenerator\Generator', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $generator->register();
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
-    // Can we use PHP7 random_int function?
-    /*if (version_compare(phpversion(), '7.0', '>=')) {
-        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
+    // Is PHP7 being used?
+    if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
+        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+        $php7generator->register();
         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
-    }*/
+    }
+    
+    // Manage size
+    $generator->setLength(($size === null) ? 10 : (int) $size);
 
-    // init
-    if (empty($size) === false && is_null($size) === false) {
-        $generator->setLength(intval($size));
-    }
-    if (empty($numerals) === false) {
+    if ($secure === true) {
+        $generator->setSymbols(true);
+        $generator->setLowercase(true);
+        $generator->setUppercase(true);
+        $generator->setNumbers(true);
+    } else {
+        $generator->setLowercase($lowercase);
+        $generator->setUppercase($uppercase);
         $generator->setNumbers($numerals);
-    }
-    if (empty($capitalize) === false) {
-        $generator->setUppercase($capitalize);
-    }
-    if (empty($symbols) === false) {
         $generator->setSymbols($symbols);
     }
-
-    // generate and send back
-    return $generator->generatePassword();
+    
+    return $generator->generatePasswords()[0];
 }
 
 /*
@@ -1742,7 +1751,7 @@ function GenerateCryptKey($size = null, $secure = false, $numerals = false, $cap
 function send_syslog($message, $host, $port, $component = 'teampass')
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-    $syslog_message = '<123>'.date('M d H:i:s ').$component.': '.$message;
+    $syslog_message = '<123>' . date('M d H:i:s ') . $component . ': ' . $message;
     socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
     socket_close($sock);
 }
@@ -1766,7 +1775,7 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     }
 
     // include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -1794,14 +1803,14 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         if ($type === 'user_mngt') {
             send_syslog(
-                'action='.str_replace('at_', '', $label).' attribute=user user='.$who.' userid="'.$login.'" change="'.$field_1.'" ',
+                'action=' . str_replace('at_', '', $label) . ' attribute=user user=' . $who . ' userid="' . $login . '" change="' . $field_1 . '" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 'teampass'
             );
         } else {
             send_syslog(
-                'action='.$type.' attribute='.$label.' user='.$who.' userid="'.$login.'" ',
+                'action=' . $type . ' attribute=' . $label . ' user=' . $who . ' userid="' . $login . '" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 'teampass'
@@ -1833,7 +1842,7 @@ function logItems(
     $encryption_type = null
 ) {
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -1863,7 +1872,7 @@ function logItems(
             prefixTable('misc'),
             array(
                 'valeur' => time(),
-                ),
+            ),
             'type = %s AND intitule = %s',
             'timestamp',
             'last_item_change'
@@ -1879,7 +1888,7 @@ function logItems(
         if (empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
                 'SELECT id, id_tree, label
-                FROM '.prefixTable('items').'
+                FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $item_id
             );
@@ -1888,7 +1897,7 @@ function logItems(
         }
 
         send_syslog(
-            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$item_id.' user='.addslashes($login).' itemname="'.addslashes($item_label).'"',
+            'action=' . str_replace('at_', '', $action) . ' attribute=' . str_replace('at_', '', $attribute[0]) . ' itemno=' . $item_id . ' user=' . addslashes($login) . ' itemname="' . addslashes($item_label) . '"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             'teampass'
@@ -1908,14 +1917,15 @@ function logItems(
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
-    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+    if (
+        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
         // Get info about item
         $dataItem = DB::queryfirstrow(
             'SELECT id, id_tree, label
-            FROM '.prefixTable('items').'
+            FROM ' . prefixTable('items') . '
             WHERE id = %i',
             $item_id
         );
@@ -1930,9 +1940,9 @@ function notifyOnChange($item_id, $action, $SETTINGS)
                 'body' => str_replace(
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
-                        addslashes($_SESSION['name'].' '.$_SESSION['lastname']),
+                        addslashes($_SESSION['name'] . ' ' . $_SESSION['lastname']),
                         addslashes($item_label),
-                        $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$item_id,
+                        $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $item_id,
                     ),
                     langHdl('email_on_open_notification_mail')
                 ),
@@ -1957,8 +1967,8 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
     $notification = DB::queryOneColumn(
         'email',
         'SELECT *
-        FROM '.prefixTable('notification').' AS n
-        INNER JOIN '.prefixTable('users').' AS u ON (n.user_id = u.id)
+        FROM ' . prefixTable('notification') . ' AS n
+        INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
         $item_id,
         $_SESSION['user_id']
@@ -1971,7 +1981,7 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
         // Get list of changes
         $htmlChanges = '<ul>';
         foreach ($changes as $change) {
-            $htmlChanges .= '<li>'.$change.'</li>';
+            $htmlChanges .= '<li>' . $change . '</li>';
         }
         $htmlChanges .= '</ul>';
 
@@ -2005,7 +2015,7 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
 function geItemReadablePath($id_tree, $label, $SETTINGS)
 {
     // Class loader
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -2016,15 +2026,15 @@ function geItemReadablePath($id_tree, $label, $SETTINGS)
     $path = '';
     foreach ($arbo as $elem) {
         if (empty($path) === true) {
-            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
+            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
         } else {
-            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
         }
     }
 
     // Build text to show user
     if (empty($label) === false) {
-        return empty($path) === true ? addslashes($label) : addslashes($label).' ('.$path.')';
+        return empty($path) === true ? addslashes($label) : addslashes($label) . ' (' . $path . ')';
     } else {
         return empty($path) === true ? '' : $path;
     }
@@ -2083,7 +2093,7 @@ function handleConfigFile($action, $field = null, $value = null)
     $tp_config_file = '../includes/config/tp.config.php';
 
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -2099,10 +2109,11 @@ function handleConfigFile($action, $field = null, $value = null)
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
         if (file_exists($tp_config_file)) {
-            if (!copy($tp_config_file, $tp_config_file.'.'.date('Y_m_d_His', time()))) {
-                return "ERROR: Could not copy file '".$tp_config_file."'";
+            if (!copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d_His', time()))) {
+                return "ERROR: Could not copy file '" . $tp_config_file . "'";
             }
         }
+
 
         // regenerate
         $data = array();
@@ -2110,11 +2121,11 @@ function handleConfigFile($action, $field = null, $value = null)
         $data[1] = "global \$SETTINGS;\n";
         $data[2] = "\$SETTINGS = array (\n";
         $rows = DB::query(
-            'SELECT * FROM '.prefixTable('misc').' WHERE type=%s',
+            'SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s',
             'admin'
         );
         foreach ($rows as $record) {
-            array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
+            array_push($data, "    '" . $record['intitule'] . "' => '" . $record['valeur'] . "',\n");
         }
         array_push($data, ");\n");
         $data = array_unique($data);
@@ -2127,15 +2138,15 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
 
-            if (stristr($line, "'".$field."' => '")) {
-                $data[$inc] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
+            if (stristr($line, "'" . $field . "' => '")) {
+                $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_STRING) . "',\n";
                 $bFound = true;
                 break;
             }
             ++$inc;
         }
         if ($bFound === false) {
-            $data[($inc)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n);\n";
+            $data[($inc)] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_STRING) . "',\n);\n";
         }
     }
 
@@ -2171,7 +2182,7 @@ function loadSettings()
         $settings = array();
 
         $rows = DB::query(
-            'SELECT * FROM '.prefixTable('misc').' WHERE type=%s_type OR type=%s_type2',
+            'SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s_type OR type=%s_type2',
             array(
                 'type' => 'admin',
                 'type2' => 'settings',
@@ -2198,7 +2209,7 @@ function checkCFconsistency($source_id, $target_id)
     $source_cf = array();
     $rows = DB::QUERY(
         'SELECT id_category
-        FROM '.prefixTable('categories_folders').'
+        FROM ' . prefixTable('categories_folders') . '
         WHERE id_folder = %i',
         $source_id
     );
@@ -2209,7 +2220,7 @@ function checkCFconsistency($source_id, $target_id)
     $target_cf = array();
     $rows = DB::QUERY(
         'SELECT id_category
-        FROM '.prefixTable('categories_folders').'
+        FROM ' . prefixTable('categories_folders') . '
         WHERE id_folder = %i',
         $target_id
     );
@@ -2244,7 +2255,7 @@ function prepareFileWithDefuse(
     $password = null
 ) {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Protect against bad inputs
@@ -2262,7 +2273,7 @@ function prepareFileWithDefuse(
          */
 
         // get KEY
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+        $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
 
         // Now perform action on the file
         $err = '';
@@ -2271,17 +2282,17 @@ function prepareFileWithDefuse(
             $err = defuseFileDecrypt(
                 $source_file,
                 $target_file,
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key),
-                $SETTINGS
+                $SETTINGS,
+                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
             );
-        // ---
+            // ---
         } elseif ($type === 'encrypt') {
             // Encrypt file
             $err = defuseFileEncrypt(
                 $source_file,
                 $target_file,
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key),
-                $SETTINGS
+                $SETTINGS,
+                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
             );
         }
     } else {
@@ -2295,17 +2306,17 @@ function prepareFileWithDefuse(
             $err = defuseFileDecrypt(
                 $source_file,
                 $target_file,
-                $password,
-                $SETTINGS
+                $SETTINGS,
+                $password
             );
-        // ---
+            // ---
         } elseif ($type === 'encrypt') {
             // Encrypt file
             $err = defuseFileEncrypt(
                 $source_file,
                 $target_file,
-                $password,
-                $SETTINGS
+                $SETTINGS,
+                $password
             );
         }
     }
@@ -2332,15 +2343,15 @@ function defuseFileEncrypt(
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';
 
     try {
         \Defuse\Crypto\File::encryptFileWithPassword(
@@ -2378,15 +2389,15 @@ function defuseFileDecrypt(
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';
 
     try {
         \Defuse\Crypto\File::decryptFileWithPassword(
@@ -2430,7 +2441,7 @@ function debugTeampass($text)
 function fileDelete($file, $SETTINGS)
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     $file = $antiXss->xss_clean($file);
@@ -2473,7 +2484,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
             continue;
         }
 
-        $fullPath = $dir.'/'.$file;
+        $fullPath = $dir . '/' . $file;
 
         if (is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions)) {
@@ -2505,7 +2516,7 @@ function accessToItemIsGranted($item_id)
 {
     global $SETTINGS;
 
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare superGlobal variables
@@ -2515,7 +2526,7 @@ function accessToItemIsGranted($item_id)
     // Load item data
     $data = DB::queryFirstRow(
         'SELECT id_tree
-        FROM '.prefixTable('items').'
+        FROM ' . prefixTable('items') . '
         WHERE id = %i',
         $item_id
     );
@@ -2523,7 +2534,8 @@ function accessToItemIsGranted($item_id)
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
+        if (
+            isset($session_list_restricted_folders_for_items[$data['id_tree']])
             && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
             return 'ERR_FOLDER_NOT_ALLOWED';
@@ -2581,7 +2593,7 @@ function obfuscateEmail($email)
     }
 
     return substr_replace($mailname, $start, 2, $name_l / $prop)
-        .substr_replace($domain, $end, 2, $domain_l / $prop);
+        . substr_replace($domain, $end, 2, $domain_l / $prop);
 }
 
 /**
@@ -2636,9 +2648,9 @@ function ldapPosixSearch($username, $password, $SETTINGS)
 
     foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
         if ($SETTINGS['ldap_ssl'] == 1) {
-            $ldapURIs .= 'ldaps://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
+            $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
         } else {
-            $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
+            $ldapURIs .= 'ldap://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
         }
     }
     $ldapconn = ldap_connect($ldapURIs);
@@ -2652,7 +2664,8 @@ function ldapPosixSearch($username, $password, $SETTINGS)
     // Is LDAP connection ready?
     if ($ldapconn !== false) {
         // Should we bind the connection?
-        if (empty($SETTINGS['ldap_bind_dn']) === false
+        if (
+            empty($SETTINGS['ldap_bind_dn']) === false
             && empty($SETTINGS['ldap_bind_passwd']) === false
         ) {
             $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
@@ -2662,7 +2675,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
         if ((empty($SETTINGS['ldap_bind_dn']) === true && empty($SETTINGS['ldap_bind_passwd']) === true)
             || $ldapbind === true
         ) {
-            $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$username.')(objectClass='.$SETTINGS['ldap_object_class'].'))';
+            $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $username . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
             $result = ldap_search(
                 $ldapconn,
                 $SETTINGS['ldap_search_base'],
@@ -2682,11 +2695,12 @@ function ldapPosixSearch($username, $password, $SETTINGS)
 
                 // Should we restrain the search in specified user groups
                 $GroupRestrictionEnabled = false;
-                if (isset($SETTINGS['ldap_usergroup']) === true
+                if (
+                    isset($SETTINGS['ldap_usergroup']) === true
                     && empty($SETTINGS['ldap_usergroup']) === false
                 ) {
                     // New way to check User's group membership
-                    $filter_group = 'memberUid='.$username;
+                    $filter_group = 'memberUid=' . $username;
                     $result_group = ldap_search(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
@@ -2711,11 +2725,12 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                 }
 
                 // Is user in the LDAP?
-                if ($GroupRestrictionEnabled === true
+                if (
+                    $GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                    && (isset($SETTINGS['ldap_usergroup']) === false
-                    || (isset($SETTINGS['ldap_usergroup']) === true
-                    && empty($SETTINGS['ldap_usergroup']) === true)))
+                        && (isset($SETTINGS['ldap_usergroup']) === false
+                            || (isset($SETTINGS['ldap_usergroup']) === true
+                                && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
@@ -2764,18 +2779,18 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
 
     //Multiple Domain Names
     if (strpos(html_entity_decode($username), '\\') === true) {
-        $ldap_suffix = '@'.substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+        $ldap_suffix = '@' . substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
     //load ClassLoader
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
 
     // Posix style LDAP handles user searches a bit differently
     if ($SETTINGS['ldap_type'] === 'posix') {
-        $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
+        $ldap_suffix = ',' . $SETTINGS['ldap_suffix'] . ',' . $SETTINGS['ldap_domain_dn'];
     } else {
         // case where $SETTINGS['ldap_type'] equals 'windows'
         //Multiple Domain Names
@@ -2799,7 +2814,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
 
     // OpenLDAP expects an attribute=value pair
     if ($SETTINGS['ldap_type'] === 'posix') {
-        $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
+        $auth_username = $SETTINGS['ldap_user_attribute'] . '=' . $username;
     } else {
         $auth_username = $username;
     }
@@ -2814,7 +2829,8 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $user_found = true;
 
         // Is user in allowed group
-        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (
+            isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
@@ -2852,8 +2868,8 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
 function performDBQuery($SETTINGS, $fields, $table)
 {
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -2868,8 +2884,8 @@ function performDBQuery($SETTINGS, $fields, $table)
 
     // Insert log in DB
     return DB::query(
-        'SELECT '.$fields.'
-        FROM '.prefixTable($table)
+        'SELECT ' . $fields . '
+        FROM ' . prefixTable($table)
     );
 }
 
@@ -2883,15 +2899,15 @@ function performDBQuery($SETTINGS, $fields, $table)
 function formatSizeUnits($bytes)
 {
     if ($bytes >= 1073741824) {
-        $bytes = number_format($bytes / 1073741824, 2).' GB';
+        $bytes = number_format($bytes / 1073741824, 2) . ' GB';
     } elseif ($bytes >= 1048576) {
-        $bytes = number_format($bytes / 1048576, 2).' MB';
+        $bytes = number_format($bytes / 1048576, 2) . ' MB';
     } elseif ($bytes >= 1024) {
-        $bytes = number_format($bytes / 1024, 2).' KB';
+        $bytes = number_format($bytes / 1024, 2) . ' KB';
     } elseif ($bytes > 1) {
-        $bytes = $bytes.' bytes';
+        $bytes = $bytes . ' bytes';
     } elseif ($bytes == 1) {
-        $bytes = $bytes.' byte';
+        $bytes = $bytes . ' byte';
     } else {
         $bytes = '0 bytes';
     }
@@ -3150,15 +3166,15 @@ function encryptFile($fileInName, $fileInPath)
 
     // Encrypt the file content
     $plaintext = file_get_contents(
-        filter_var($fileInPath.'/'.$fileInName, FILTER_SANITIZE_URL)
+        filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
     );
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
     $hash = md5($plaintext);
-    $fileOut = $fileInPath.'/'.TP_FILE_PREFIX.$hash;
+    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
     file_put_contents($fileOut, $ciphertext);
-    unlink($fileInPath.'/'.$fileInName);
+    unlink($fileInPath . '/' . $fileInName);
 
     return array(
         'fileHash' => base64_encode($hash),
@@ -3199,7 +3215,7 @@ function decryptFile($fileName, $filePath, $key)
     $cipher->disablePadding();
 
     // Get file content
-    $ciphertext = file_get_contents($filePath.'/'.TP_FILE_PREFIX.$fileName);
+    $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
 
     // Decrypt file content and return
     return base64_encode($cipher->decrypt($ciphertext));
@@ -3219,8 +3235,7 @@ function generateQuickPassword($length = 16, $symbolsincluded = true)
     $big_letters = range('A', 'Z');
     $digits = range(0, 9);
     $symbols = $symbolsincluded === true ?
-        array('#', '_', '-', '@', '$', '+', '&') :
-        array();
+        array('#', '_', '-', '@', '$', '+', '&') : array();
 
     $res = array_merge($small_letters, $big_letters, $digits, $symbols);
     $c = count($res);
@@ -3253,8 +3268,8 @@ function storeUsersShareKey(
     $SETTINGS
 ) {
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -3272,7 +3287,8 @@ function storeUsersShareKey(
         $post_object_id
     );
 
-    if ((int) $post_folder_is_personal === 1
+    if (
+        (int) $post_folder_is_personal === 1
         && in_array($post_folder_id, $_SESSION['personal_folders']) === true
     ) {
         // If this is a personal object
@@ -3290,8 +3306,8 @@ function storeUsersShareKey(
         // Create sharekey for each user
         $users = DB::query(
             'SELECT id, public_key
-            FROM '.prefixTable('users').'
-            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+            FROM ' . prefixTable('users') . '
+            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '")
             AND public_key != ""'
         );
         foreach ($users as $user) {

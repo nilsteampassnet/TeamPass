@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -39,33 +40,35 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // DO CHECKS
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-if (isset($post_type) === true
+if (
+    isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
-    || $post_type === 'recovery_send_pw_by_email'
-    || $post_type === 'recovery_generate_new_password'
-    || $post_type === 'get_teampass_settings')
+        || $post_type === 'recovery_send_pw_by_email'
+        || $post_type === 'recovery_generate_new_password'
+        || $post_type === 'get_teampass_settings')
 ) {
     // continue
     mainQuery($SETTINGS);
-} elseif (isset($_SESSION['user_id']) === true
+} elseif (
+    isset($_SESSION['user_id']) === true
     && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
-    && isset($_SESSION['key'])) === true
+        && isset($_SESSION['key'])) === true
     || (isset($post_type) === true && $post_type === 'change_user_language'
-    && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
+        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
     mainQuery($SETTINGS);
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -96,15 +99,15 @@ function mainQuery($SETTINGS)
         date_default_timezone_set('UTC');
     }
 
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
     // Includes
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // Connect to mysql server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -116,7 +119,7 @@ function mainQuery($SETTINGS)
     DB::$encoding = DB_ENCODING;
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
@@ -178,13 +181,14 @@ function mainQuery($SETTINGS)
             $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
 
             // User has decided to change is PW
-            if ($post_change_request === 'reset_user_password_expected'
+            if (
+                $post_change_request === 'reset_user_password_expected'
                 || $post_change_request === 'user_decides_to_change_password'
             ) {
                 // check if expected security level is reached
                 $dataUser = DB::queryfirstrow(
                     'SELECT *
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
                 );
@@ -198,7 +202,7 @@ function mainQuery($SETTINGS)
                     prefixTable('users'),
                     array(
                         'fonction_id' => $dataUser['fonction_id'],
-                        ),
+                    ),
                     'id = %i',
                     $post_user_id
                 );
@@ -206,8 +210,8 @@ function mainQuery($SETTINGS)
                 if (empty($dataUser['fonction_id']) === false) {
                     $data = DB::queryFirstRow(
                         'SELECT complexity
-                        FROM '.prefixTable('roles_title').'
-                        WHERE id IN ('.$dataUser['fonction_id'].')
+                        FROM ' . prefixTable('roles_title') . '
+                        WHERE id IN (' . $dataUser['fonction_id'] . ')
                         ORDER BY complexity DESC'
                     );
                 } else {
@@ -219,8 +223,8 @@ function mainQuery($SETTINGS)
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => '<div style="margin:10px 0 10px 15px;">'.langHdl('complexity_level_not_reached').'.<br>'.
-                                langHdl('expected_complexity_level').': <b>'.TP_PW_COMPLEXITY[$data['complexity']][1].'</b></div>',
+                            'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
+                                langHdl('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
                         ),
                         'encode'
                     );
@@ -319,7 +323,7 @@ function mainQuery($SETTINGS)
                             'last_pw' => $oldPw,
                             'special' => $special_action,
                             'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
-                            ),
+                        ),
                         'id = %i',
                         $post_user_id
                     );
@@ -347,7 +351,7 @@ function mainQuery($SETTINGS)
                     break;
                 }
             }
-                /*
+            /*
                                 // ADMIN has decided to change the USER's PW
                             } elseif (null !== $post_change_pw_origine
                                 && (($post_change_pw_origine === 'admin_change'
@@ -434,7 +438,7 @@ function mainQuery($SETTINGS)
                                 */
             break;
 
-        /*
+            /*
          * This will generate the QR Google Authenticator
          */
         case 'ga_generate_qr':
@@ -481,14 +485,14 @@ function mainQuery($SETTINGS)
                 // Get data about user
                 $data = DB::queryfirstrow(
                     'SELECT id, email, pw
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE login = %s',
                     $post_login
                 );
             } else {
                 $data = DB::queryfirstrow(
                     'SELECT id, login, email, pw
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_id
                 );
@@ -499,7 +503,7 @@ function mainQuery($SETTINGS)
             $counter = DB::count();
 
             // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
 
@@ -526,7 +530,8 @@ function mainQuery($SETTINGS)
                     ),
                     'encode'
                 );
-            } elseif (isset($pwd) === true
+            } elseif (
+                isset($pwd) === true
                 && isset($data['pw']) === true
                 && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
                 && $post_demand_origin !== 'users_management_list'
@@ -551,10 +556,10 @@ function mainQuery($SETTINGS)
                     );
                 } else {
                     // generate new GA user code
-                    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
+                    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
                     $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
                     $gaSecretKey = $tfa->createSecret();
-                    $gaTemporaryCode = GenerateCryptKey(12);
+                    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true, $SETTINGS);
 
                     // save the code
                     if ($ldap_user_never_auth === false) {
@@ -563,7 +568,7 @@ function mainQuery($SETTINGS)
                             array(
                                 'ga' => $gaSecretKey,
                                 'ga_temporary_code' => $gaTemporaryCode,
-                                ),
+                            ),
                             'id = %i',
                             $data['id']
                         );
@@ -646,7 +651,7 @@ function mainQuery($SETTINGS)
                                 'email' => $data['email'],
                                 'email_result' => str_replace(
                                     '#email#',
-                                    '<b>'.obfuscateEmail($data['email']).'</b>',
+                                    '<b>' . obfuscateEmail($data['email']) . '</b>',
                                     addslashes(langHdl('admin_email_result_ok'))
                                 ),
                             ),
@@ -661,7 +666,7 @@ function mainQuery($SETTINGS)
                                 'email' => $data['email'],
                                 'email_result' => str_replace(
                                     '#email#',
-                                    '<b>'.obfuscateEmail($data['email']).'</b>',
+                                    '<b>' . obfuscateEmail($data['email']) . '</b>',
                                     addslashes(langHdl('admin_email_result_ok'))
                                 ),
                             ),
@@ -671,7 +676,7 @@ function mainQuery($SETTINGS)
                 }
             }
             break;
-        /*
+            /*
          * Increase the session time of User
          */
         case 'increase_session_time':
@@ -689,24 +694,24 @@ function mainQuery($SETTINGS)
                     $_SESSION['user_id']
                 );
                 // Return data
-                echo '[{"new_value":"'.$_SESSION['sessionDuration'].'"}]';
+                echo '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
             } else {
                 echo '[{"new_value":"expired"}]';
             }
             break;
-        /*
+            /*
          * Hide maintenance message
          */
         case 'hide_maintenance':
             $_SESSION['hide_maintenance'] = 1;
             break;
 
-        /*
+            /*
          * Used in order to send the password to the user by email
          */
         case 'recovery_send_pw_by_email':
             // generate key
-            $key = GenerateCryptKey(50);
+            $key = GenerateCryptKey(50, false, true, true, false, true, $SETTINGS);
 
             // Prepare post variables
             $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
@@ -714,26 +719,26 @@ function mainQuery($SETTINGS)
             // Get account and pw associated to email
             DB::query(
                 'SELECT *
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE login = %s',
                 $post_login
             );
             $counter = DB::count();
             if ($counter != 0) {
                 $data = DB::queryFirstRow(
-                    'SELECT login, pw, email FROM '.prefixTable('users').' WHERE login = %s',
+                    'SELECT login, pw, email FROM ' . prefixTable('users') . ' WHERE login = %s',
                     $post_login
                 );
-                $textMail = langHdl('forgot_pw_email_body_1').' <a href="'.
-                    $SETTINGS['cpassman_url'].'/index.php?action=password_recovery&key='.$key.
-                    '&login='.$post_login.'">'.$SETTINGS['cpassman_url'].
-                    '/index.php?action=password_recovery&key='.$key.'&login='.$post_login.'</a>.<br><br>'.langHdl('thku');
-                $textMailAlt = langHdl('forgot_pw_email_altbody_1').' '.langHdl('at_login').' : '.$post_login.' - '.
-                    langHdl('index_password').' : '.md5($data['pw']);
+                $textMail = langHdl('forgot_pw_email_body_1') . ' <a href="' .
+                    $SETTINGS['cpassman_url'] . '/index.php?action=password_recovery&key=' . $key .
+                    '&login=' . $post_login . '">' . $SETTINGS['cpassman_url'] .
+                    '/index.php?action=password_recovery&key=' . $key . '&login=' . $post_login . '</a>.<br><br>' . langHdl('thku');
+                $textMailAlt = langHdl('forgot_pw_email_altbody_1') . ' ' . langHdl('at_login') . ' : ' . $post_login . ' - ' .
+                    langHdl('index_password') . ' : ' . md5($data['pw']);
 
                 // Check if email has already a key in DB
                 DB::query(
-                    'SELECT * FROM '.prefixTable('misc').' WHERE intitule = %s AND type = %s',
+                    'SELECT * FROM ' . prefixTable('misc') . ' WHERE intitule = %s AND type = %s',
                     $post_login,
                     'password_recovery'
                 );
@@ -771,14 +776,14 @@ function mainQuery($SETTINGS)
                     true
                 );
 
-                echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
+                echo '[{"error":"' . $ret['error'] . '" , "message":"' . $ret['message'] . '"}]';
             } else {
                 // no one has this email ... alert
-                echo '[{"error":"error_email" , "message":"'.langHdl('forgot_my_pw_error_email_not_exist').'"}]';
+                echo '[{"error":"error_email" , "message":"' . langHdl('forgot_my_pw_error_email_not_exist') . '"}]';
             }
             break;
 
-        // Send to user his new pw if key is conform
+            // Send to user his new pw if key is conform
         case 'recovery_generate_new_password':
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
@@ -793,7 +798,7 @@ function mainQuery($SETTINGS)
             // check if key is okay
             $data = DB::queryFirstRow(
                 'SELECT valeur
-                FROM '.prefixTable('misc').'
+                FROM ' . prefixTable('misc') . '
                 WHERE intitule = %s AND type = %s',
                 $login,
                 'password_recovery'
@@ -815,7 +820,7 @@ function mainQuery($SETTINGS)
                     prefixTable('users'),
                     array(
                         'pw' => $newPw,
-                        ),
+                    ),
                     'login = %s',
                     $login
                 );
@@ -829,7 +834,7 @@ function mainQuery($SETTINGS)
                 );
                 // Get email
                 $dataUser = DB::queryFirstRow(
-                    'SELECT email FROM '.prefixTable('users').' WHERE login = %s',
+                    'SELECT email FROM ' . prefixTable('users') . ' WHERE login = %s',
                     $login
                 );
 
@@ -838,10 +843,10 @@ function mainQuery($SETTINGS)
                 $ret = json_decode(
                     sendEmail(
                         langHdl('forgot_pw_email_subject_confirm'),
-                        langHdl('forgot_pw_email_body').' '.$newPwNotCrypted,
+                        langHdl('forgot_pw_email_body') . ' ' . $newPwNotCrypted,
                         $dataUser['email'],
                         $SETTINGS,
-                        strip_tags(langHdl('forgot_pw_email_body')).' '.$newPwNotCrypted
+                        strip_tags(langHdl('forgot_pw_email_body')) . ' ' . $newPwNotCrypted
                     ),
                     true
                 );
@@ -853,7 +858,7 @@ function mainQuery($SETTINGS)
                 }
             }
             break;
-        /*
+            /*
          * Store the personal saltkey
          */
         case 'store_personal_saltkey':
@@ -881,7 +886,8 @@ function mainQuery($SETTINGS)
                 $_SESSION['user_settings']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
-                if (isset($_SESSION['user_settings']['encrypted_psk']) === false
+                if (
+                    isset($_SESSION['user_settings']['encrypted_psk']) === false
                     || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
                 ) {
                     // Check if security level is reach (if enabled)
@@ -908,7 +914,7 @@ function mainQuery($SETTINGS)
                         prefixTable('users'),
                         array(
                             'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk'],
-                            ),
+                        ),
                         'id = %i',
                         $_SESSION['user_id']
                     );
@@ -949,7 +955,7 @@ function mainQuery($SETTINGS)
                     // Store PSK
                     $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
                     setcookie(
-                        'TeamPass_PFSK_'.md5($_SESSION['user_id']),
+                        'TeamPass_PFSK_' . md5($_SESSION['user_id']),
                         $user_key_encoded,
                         (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
@@ -976,7 +982,7 @@ function mainQuery($SETTINGS)
             );
 
             break;
-        /*
+            /*
          * Change the personal saltkey
          */
         case 'change_personal_saltkey':
@@ -998,7 +1004,7 @@ function mainQuery($SETTINGS)
             // Get key from user
             $userInfo = DB::queryfirstrow(
                 'SELECT encrypted_psk
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $_SESSION['user_id']
             );
@@ -1081,7 +1087,7 @@ function mainQuery($SETTINGS)
                 prefixTable('users'),
                 array(
                     'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
-                    ),
+                ),
                 'id = %i',
                 $_SESSION['user_id']
             );
@@ -1093,8 +1099,8 @@ function mainQuery($SETTINGS)
             // Build list of items to be re-encrypted
             $rows = DB::query(
                 'SELECT i.id as id, i.pw as pw
-                FROM '.prefixTable('items').' as i
-                INNER JOIN '.prefixTable('log_items').' as l ON (i.id=l.id_item)
+                FROM ' . prefixTable('items') . ' as i
+                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
                 WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
                 '1',
                 $_SESSION['user_id'],
@@ -1106,14 +1112,14 @@ function mainQuery($SETTINGS)
                     if (empty($list)) {
                         $list = $record['id'];
                     } else {
-                        $list .= ','.$record['id'];
+                        $list .= ',' . $record['id'];
                     }
                 }
             }
 
             // change salt
             setcookie(
-                'TeamPass_PFSK_'.md5($_SESSION['user_id']),
+                'TeamPass_PFSK_' . md5($_SESSION['user_id']),
                 $_SESSION['user_settings']['session_psk'],
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
@@ -1129,7 +1135,7 @@ function mainQuery($SETTINGS)
             );
             break;
 
-        /*
+            /*
          * Reset the personal saltkey
          */
         case 'reset_personal_saltkey':
@@ -1161,8 +1167,8 @@ function mainQuery($SETTINGS)
                     // delete all previous items of this user
                     $rows = DB::query(
                         'SELECT i.id as id
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id=l.id_item)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
                         WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
                         '1',
                         $_SESSION['user_id'],
@@ -1182,7 +1188,7 @@ function mainQuery($SETTINGS)
                                 prefixTable('items'),
                                 array(
                                     'pw' => '',
-                                    ),
+                                ),
                                 'id = %i',
                                 $record['id']
                             );
@@ -1197,7 +1203,7 @@ function mainQuery($SETTINGS)
                         prefixTable('users'),
                         array(
                             'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
-                            ),
+                        ),
                         'id = %i',
                         $_SESSION['user_id']
                     );
@@ -1207,7 +1213,7 @@ function mainQuery($SETTINGS)
 
                     // change salt
                     setcookie(
-                        'TeamPass_PFSK_'.md5($_SESSION['user_id']),
+                        'TeamPass_PFSK_' . md5($_SESSION['user_id']),
                         $_SESSION['user_settings']['session_psk'],
                         time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
@@ -1218,7 +1224,7 @@ function mainQuery($SETTINGS)
                 }
             }
             break;
-        /*
+            /*
          * Change the user's language
          */
         case 'change_user_language':
@@ -1235,7 +1241,7 @@ function mainQuery($SETTINGS)
                     prefixTable('users'),
                     array(
                         'user_language' => $language,
-                        ),
+                    ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
@@ -1246,7 +1252,7 @@ function mainQuery($SETTINGS)
                 echo 'done';
             }
             break;
-        /*
+            /*
          * Send emails not sent
          */
         case 'send_waiting_emails':
@@ -1255,16 +1261,17 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            if (isset($SETTINGS['enable_send_email_on_user_login'])
+            if (
+                isset($SETTINGS['enable_send_email_on_user_login'])
                 && $SETTINGS['enable_send_email_on_user_login'] === '1'
             ) {
                 $row = DB::queryFirstRow(
-                    'SELECT valeur FROM '.prefixTable('misc').' WHERE type = %s AND intitule = %s',
+                    'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
                     'cron',
                     'sending_emails'
                 );
                 if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
-                    $rows = DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status != %s', 'sent');
+                    $rows = DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status != %s', 'sent');
                     foreach ($rows as $record) {
                         // Send email
                         $ret = json_decode(
@@ -1288,7 +1295,7 @@ function mainQuery($SETTINGS)
                             prefixTable('emails'),
                             array(
                                 'status' => $status,
-                                ),
+                            ),
                             'timestamp = %s',
                             $record['timestamp']
                         );
@@ -1299,7 +1306,7 @@ function mainQuery($SETTINGS)
                     prefixTable('misc'),
                     array(
                         'valeur' => time(),
-                        ),
+                    ),
                     'intitule = %s AND type = %s',
                     'sending_emails',
                     'cron'
@@ -1307,7 +1314,7 @@ function mainQuery($SETTINGS)
             }
             break;
 
-        /*
+            /*
          * Store error
          */
         case 'store_error':
@@ -1322,7 +1329,7 @@ function mainQuery($SETTINGS)
             }
             break;
 
-        /*
+            /*
          * Generate a password generic
          */
         case 'generate_password':
@@ -1352,7 +1359,8 @@ function mainQuery($SETTINGS)
             $size = (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT);
             $generator->setLength(($size <= 0) ? 10 : $size);
 
-            if (null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
+            if (
+                null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === 'true'
             ) {
                 $generator->setSymbols(true);
@@ -1374,12 +1382,12 @@ function mainQuery($SETTINGS)
                 'encode'
             );
             break;
-        /*
+            /*
          * Check if user exists and send back if psk is set
          */
         case 'check_login_exists':
             $data = DB::query(
-                'SELECT login, psk FROM '.prefixTable('users').'
+                'SELECT login, psk FROM ' . prefixTable('users') . '
                 WHERE login = %i',
                 stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT))
             );
@@ -1389,17 +1397,18 @@ function mainQuery($SETTINGS)
                 $userOk = true;
             }
 
-            echo '[{"login" : "'.$userOk.'", "psk":"0"}]';
+            echo '[{"login" : "' . $userOk . '", "psk":"0"}]';
             break;
-        /*
+            /*
          * Make statistics on item
          */
         case 'item_stat':
-            if (null !== filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING)
+            if (
+                null !== filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === 'item'
             ) {
                 $data = DB::queryfirstrow(
-                    'SELECT view FROM '.prefixTable('statistics').' WHERE scope = %s AND item_id = %i',
+                    'SELECT view FROM ' . prefixTable('statistics') . ' WHERE scope = %s AND item_id = %i',
                     'item',
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
@@ -1427,7 +1436,7 @@ function mainQuery($SETTINGS)
             }
 
             break;
-        /*
+            /*
          * Refresh list of last items seen
          */
         case 'refresh_list_items_seen':
@@ -1440,8 +1449,8 @@ function mainQuery($SETTINGS)
             $arr_html = array();
             $rows = DB::query(
                 'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
-                FROM '.prefixTable('log_items').' AS l
-                RIGHT JOIN '.prefixTable('items').' AS i ON (l.id_item = i.id)
+                FROM ' . prefixTable('log_items') . ' AS l
+                RIGHT JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
                 WHERE l.action = %s AND l.id_user = %i
                 ORDER BY l.date DESC
                 LIMIT 0, 100',
@@ -1470,10 +1479,11 @@ function mainQuery($SETTINGS)
 
             // get wainting suggestions
             $nb_suggestions_waiting = 0;
-            if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
+            if (
+                isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
                 && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
             ) {
-                DB::query('SELECT * FROM '.prefixTable('suggestion'));
+                DB::query('SELECT * FROM ' . prefixTable('suggestion'));
                 $nb_suggestions_waiting = DB::count();
             }
 
@@ -1487,7 +1497,7 @@ function mainQuery($SETTINGS)
             );
             break;
 
-        /*
+            /*
          * Generates a KEY with CRYPT
          */
         case 'generate_new_key':
@@ -1497,10 +1507,10 @@ function mainQuery($SETTINGS)
             $pwdlib = new PasswordLib\PasswordLib();
             // generate key
             $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
-            echo '[{"key" : "'.htmlentities($key, ENT_QUOTES).'"}]';
+            echo '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
             break;
 
-        /*
+            /*
          * Generates a TOKEN with CRYPT
          */
         case 'save_token':
@@ -1509,7 +1519,9 @@ function mainQuery($SETTINGS)
                 null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                $SETTINGS
             );
 
             // store in DB
@@ -1524,10 +1536,10 @@ function mainQuery($SETTINGS)
                 )
             );
 
-            echo '[{"token" : "'.$token.'"}]';
+            echo '[{"token" : "' . $token . '"}]';
             break;
 
-        /*
+            /*
          * Create list of timezones
          */
         case 'generate_timezones_list':
@@ -1539,7 +1551,7 @@ function mainQuery($SETTINGS)
             echo json_encode($array);
             break;
 
-        /*
+            /*
          * Check if suggestions are existing
          */
         case 'is_existings_suggestions':
@@ -1550,21 +1562,21 @@ function mainQuery($SETTINGS)
 
             if ($_SESSION['user_manager'] === '1' || $_SESSION['is_admin'] === '1') {
                 $count = 0;
-                DB::query('SELECT * FROM '.$pre.'items_change');
+                DB::query('SELECT * FROM ' . $pre . 'items_change');
                 $count += DB::count();
-                DB::query('SELECT * FROM '.$pre.'suggestion');
+                DB::query('SELECT * FROM ' . $pre . 'suggestion');
                 $count += DB::count();
 
-                echo '[ { "error" : "" , "count" : "'.$count.'" , "show_sug_in_menu" : "0"} ]';
+                echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
             } elseif (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
-                echo '[ { "error" : "" , "count" : "'.$_SESSION['nb_item_change_proposals'].'" , "show_sug_in_menu" : "1"} ]';
+                echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
             } else {
                 echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
             }
 
             break;
 
-        /*
+            /*
          * Check if suggestions are existing
          */
         case 'sending_statistics':
@@ -1573,7 +1585,8 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            if (isset($SETTINGS['send_statistics_items']) === true
+            if (
+                isset($SETTINGS['send_statistics_items']) === true
                 && isset($SETTINGS['send_stats']) === true
                 && isset($SETTINGS['send_stats_time']) === true
                 && (int) $SETTINGS['send_stats'] === 1
@@ -1591,9 +1604,9 @@ function mainQuery($SETTINGS)
                         $tmp = '';
                         foreach ($stats_data[$data] as $key => $value) {
                             if (empty($tmp)) {
-                                $tmp = $key.'-'.$value;
+                                $tmp = $key . '-' . $value;
                             } else {
-                                $tmp .= ','.$key.'-'.$value;
+                                $tmp .= ',' . $key . '-' . $value;
                             }
                         }
                         $statsToSend[$data] = $tmp;
@@ -1601,9 +1614,9 @@ function mainQuery($SETTINGS)
                         $tmp = '';
                         foreach ($stats_data[$data] as $key => $value) {
                             if (empty($tmp)) {
-                                $tmp = $key.'-'.$value;
+                                $tmp = $key . '-' . $value;
                             } else {
-                                $tmp .= ','.$key.'-'.$value;
+                                $tmp .= ',' . $key . '-' . $value;
                             }
                         }
                         $statsToSend[$data] = $tmp;
@@ -1632,7 +1645,7 @@ function mainQuery($SETTINGS)
                     prefixTable('misc'),
                     array(
                         'valeur' => time(),
-                        ),
+                    ),
                     'type = %s AND intitule = %s',
                     'admin',
                     'send_stats_time'
@@ -1652,7 +1665,7 @@ function mainQuery($SETTINGS)
 
             break;
 
-        /*
+            /*
          * delete a file
          */
         case 'file_deletion':
@@ -1665,7 +1678,7 @@ function mainQuery($SETTINGS)
 
             break;
 
-        /*
+            /*
          * Generate BUG report
          */
         case 'generate_bug_report':
@@ -1689,8 +1702,8 @@ function mainQuery($SETTINGS)
                     if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
                         $url_found = substr($line, 19, strlen($line) - 22);
                         $tmp = parse_url($url_found);
-                        $anonym_url = $tmp['scheme'].'://<anonym_url>'.$tmp['path'];
-                        $line = "'cpassman_url' => '".$anonym_url."\n";
+                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
                     }
 
                     // Anonymize all urls
@@ -1715,7 +1728,7 @@ function mainQuery($SETTINGS)
             $teampass_errors = '';
             $rows = DB::query(
                 'SELECT label, date AS error_date
-                FROM '.prefixTable('log_system')."
+                FROM ' . prefixTable('log_system') . "
                 WHERE `type` LIKE 'error'
                 ORDER BY `date` DESC
                 LIMIT 0, 10"
@@ -1723,10 +1736,10 @@ function mainQuery($SETTINGS)
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
                     if (empty($teampass_errors) === true) {
-                        $teampass_errors = ' * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+                        $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['error_date']) . ' - ' . $record['label'];
                     } else {
                         $teampass_errors .= '
- * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+ * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['error_date']) . ' - ' . $record['label'];
                     }
                 }
             }
@@ -1745,39 +1758,39 @@ Tell us what should happen
 Tell us what happens instead
 
 ### Server configuration
-**Operating system**: '.php_uname().'
+**Operating system**: ' . php_uname() . '
 
-**Web server:** '.$_SERVER['SERVER_SOFTWARE'].'
+**Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** '.mysqli_get_server_info($link).'
+**Database:** ' . mysqli_get_server_info($link) . '
 
-**PHP version:** '.PHP_VERSION.'
+**PHP version:** ' . PHP_VERSION . '
 
-**Teampass version:** '.TP_VERSION_FULL.'
+**Teampass version:** ' . TP_VERSION_FULL . '
 
 **Teampass configuration file:**
 ```
-'.$list_of_options.'
+' . $list_of_options . '
 ```
 
 **Updated from an older Teampass or fresh install:**
 
 ### Client configuration
 
-**Browser:** '.filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING).' - '.filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING).'
+**Browser:** ' . filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING) . ' - ' . filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING) . '
 
-**Operating system:** '.filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING).' - '.filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING).'bits
+**Operating system:** ' . filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING) . ' - ' . filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING) . 'bits
 
 ### Logs
 
 #### Web server error log
 ```
-'.$err['message'].' - '.$err['file'].' ('.$err['line'].')
+' . $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')
 ```
 
 #### Teampass 10 last system errors
 ```
-'.$teampass_errors.'
+' . $teampass_errors . '
 ```
 
 #### Log from the web-browser developer console (CTRL + SHIFT + i)
@@ -1796,40 +1809,40 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-            case 'update_user_field':
-                // Check KEY
-                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                    echo '[ { "error" : "key_not_conform" } ]';
-                    break;
-                }
+        case 'update_user_field':
+            // Check KEY
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
 
-                // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    'decode'
-                );
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
 
-                // Prepare variables
-                $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
-                $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
-                $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
+            // Prepare variables
+            $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
+            $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
+            $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
 
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        $field => $new_value,
-                        ),
-                    'id = %i',
-                    $user_id
-                );
+            DB::update(
+                prefixTable('users'),
+                array(
+                    $field => $new_value,
+                ),
+                'id = %i',
+                $user_id
+            );
 
-                // Update session
-                if ($field === 'user_api_key') {
-                    $_SESSION['user_settings']['api-key'] = $new_value;
-                }
+            // Update session
+            if ($field === 'user_api_key') {
+                $_SESSION['user_settings']['api-key'] = $new_value;
+            }
             break;
 
-        /*
+            /*
             * get_teampass_settings
             */
         case 'get_teampass_settings':
@@ -1849,7 +1862,7 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-        /*
+            /*
          * User's password has to be initialized
          */
         case 'initialize_user_password':
@@ -1879,7 +1892,7 @@ Insert the log here and especially the answer of the query that failed.
                 // Get user info
                 $userData = DB::queryFirstRow(
                     'SELECT email
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
                 );
@@ -1975,7 +1988,7 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-        /*
+            /*
         * user_sharekeys_reencryption_start
         */
         case 'user_sharekeys_reencryption_start':
@@ -1997,13 +2010,13 @@ Insert the log here and especially the answer of the query that failed.
                 // Check if user exists
                 DB::queryFirstRow(
                     'SELECT *
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
                 );
                 if (DB::count() > 0) {
                     // Include libraries
-                    include_once $SETTINGS['cpassman_dir'].'/sources/aes.functions.php';
+                    include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // CLear old sharekeys
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
@@ -2044,7 +2057,7 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-        /*
+            /*
         * user_sharekeys_reencryption_next
         */
         case 'user_sharekeys_reencryption_next':
@@ -2068,13 +2081,13 @@ Insert the log here and especially the answer of the query that failed.
                 // Check if user exists
                 $userInfo = DB::queryFirstRow(
                     'SELECT public_key
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
                 );
                 if (DB::count() > 0) {
                     // Include libraries
-                    include_once $SETTINGS['cpassman_dir'].'/sources/aes.functions.php';
+                    include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // WHAT STEP TO PERFORM?
                     if ($post_action === 'step1') {
@@ -2083,15 +2096,15 @@ Insert the log here and especially the answer of the query that failed.
                         // Loop on items
                         $rows = DB::query(
                             'SELECT id, pw
-                            FROM '.prefixTable('items').'
+                            FROM ' . prefixTable('items') . '
                             WHERE perso = 0
-                            LIMIT '.$post_start.', '.$post_length
+                            LIMIT ' . $post_start . ', ' . $post_length
                         );
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_items').'
+                                FROM ' . prefixTable('sharekeys_items') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['id'],
                                 $_SESSION['user_id']
@@ -2117,7 +2130,7 @@ Insert the log here and especially the answer of the query that failed.
                         // SHould we change step?
                         DB::query(
                             'SELECT *
-                            FROM '.prefixTable('items').'
+                            FROM ' . prefixTable('items') . '
                             WHERE perso = 0'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
@@ -2133,15 +2146,15 @@ Insert the log here and especially the answer of the query that failed.
                         // Loop on logs
                         $rows = DB::query(
                             'SELECT increment_id
-                            FROM '.prefixTable('log_items').'
+                            FROM ' . prefixTable('log_items') . '
                             WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"
-                            LIMIT '.$post_start.', '.$post_length
+                            LIMIT ' . $post_start . ', ' . $post_length
                         );
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_logs').'
+                                FROM ' . prefixTable('sharekeys_logs') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['increment_id'],
                                 $_SESSION['user_id']
@@ -2167,7 +2180,7 @@ Insert the log here and especially the answer of the query that failed.
                         // SHould we change step?
                         DB::query(
                             'SELECT increment_id
-                            FROM '.prefixTable('log_items').'
+                            FROM ' . prefixTable('log_items') . '
                             WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
@@ -2183,15 +2196,15 @@ Insert the log here and especially the answer of the query that failed.
                         // Loop on fields
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('categories_items').'
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE encryption_type = "teampass_aes"
-                            LIMIT '.$post_start.', '.$post_length
+                            LIMIT ' . $post_start . ', ' . $post_length
                         );
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_fields').'
+                                FROM ' . prefixTable('sharekeys_fields') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['id'],
                                 $_SESSION['user_id']
@@ -2217,7 +2230,7 @@ Insert the log here and especially the answer of the query that failed.
                         // SHould we change step?
                         DB::query(
                             'SELECT *
-                            FROM '.prefixTable('categories_items').'
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE encryption_type = "teampass_aes"'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
@@ -2233,14 +2246,14 @@ Insert the log here and especially the answer of the query that failed.
                         // Loop on suggestions
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('suggestion').'
-                            LIMIT '.$post_start.', '.$post_length
+                            FROM ' . prefixTable('suggestion') . '
+                            LIMIT ' . $post_start . ', ' . $post_length
                         );
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_suggestions').'
+                                FROM ' . prefixTable('sharekeys_suggestions') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['id'],
                                 $_SESSION['user_id']
@@ -2266,7 +2279,7 @@ Insert the log here and especially the answer of the query that failed.
                         // SHould we change step?
                         DB::query(
                             'SELECT *
-                            FROM '.prefixTable('suggestion')
+                            FROM ' . prefixTable('suggestion')
                         );
                         $next_start = (int) $post_start + (int) $post_length;
                         if ($next_start > DB::count()) {
@@ -2281,15 +2294,15 @@ Insert the log here and especially the answer of the query that failed.
                         // Loop on files
                         $rows = DB::query(
                             'SELECT id
-                            FROM '.prefixTable('files').'
-                            WHERE status = "'.TP_ENCRYPTION_NAME.'"
-                            LIMIT '.$post_start.', '.$post_length
+                            FROM ' . prefixTable('files') . '
+                            WHERE status = "' . TP_ENCRYPTION_NAME . '"
+                            LIMIT ' . $post_start . ', ' . $post_length
                         ); //aes_encryption
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
                                 'SELECT share_key
-                                FROM '.prefixTable('sharekeys_files').'
+                                FROM ' . prefixTable('sharekeys_files') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['id'],
                                 $_SESSION['user_id']
@@ -2315,8 +2328,8 @@ Insert the log here and especially the answer of the query that failed.
                         // SHould we change step?
                         DB::query(
                             'SELECT *
-                            FROM '.prefixTable('files').'
-                            WHERE status = "'.TP_ENCRYPTION_NAME.'"'
+                            FROM ' . prefixTable('files') . '
+                            WHERE status = "' . TP_ENCRYPTION_NAME . '"'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
                         if ($next_start > DB::count()) {
@@ -2364,7 +2377,7 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-        /*
+            /*
          * Remove personal saltkey
          * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
          */
@@ -2404,7 +2417,8 @@ Insert the log here and especially the answer of the query that failed.
                 $_SESSION['user_settings']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
-                if (isset($_SESSION['user_settings']['encrypted_psk']) === false
+                if (
+                    isset($_SESSION['user_settings']['encrypted_psk']) === false
                     || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
                 ) {
                     // generate it based upon clear psk
@@ -2435,7 +2449,7 @@ Insert the log here and especially the answer of the query that failed.
                     foreach ($_SESSION['personal_visible_groups'] as $folder) {
                         // Get each item in this folder
                         $items = DB::query(
-                            'SELECT id FROM '.prefixTable('items').'
+                            'SELECT id FROM ' . prefixTable('items') . '
                             WHERE id_tree = %i',
                             $folder
                         );
@@ -2445,13 +2459,13 @@ Insert the log here and especially the answer of the query that failed.
 
                                 // Check if this item has a file attached
                                 $files = DB::query(
-                                    'SELECT id, file FROM '.prefixTable('files').'
+                                    'SELECT id, file FROM ' . prefixTable('files') . '
                                     WHERE id_item = %i',
                                     $item['id']
                                 );
                                 foreach ($files as $file) {
                                     if (in_array($file['file'], $filesToTreat) === false) {
-                                        array_push($filesToTreat, 'EncryptedFile_'.$file['file']);
+                                        array_push($filesToTreat, 'EncryptedFile_' . $file['file']);
                                     }
                                 }
                             }
@@ -2484,7 +2498,7 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
-        /*
+            /*
         * Remove personal saltkey
         * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
         */
@@ -2513,7 +2527,7 @@ Insert the log here and especially the answer of the query that failed.
                 // Treat Items
                 $item = DB::queryFirstRow(
                     'SELECT pw
-                    FROM '.prefixTable('items').'
+                    FROM ' . prefixTable('items') . '
                     WHERE id = %i',
                     $filter_items[0]
                 );
@@ -2552,7 +2566,7 @@ Insert the log here and especially the answer of the query that failed.
 
                 // Shift array
                 array_shift($filter_items);
-            // ---
+                // ---
             } elseif (count($filter_files) > 0) {
                 // Treat Files
                 $itemId = $filter_files[0];
@@ -2585,7 +2599,7 @@ Insert the log here and especially the answer of the query that failed.
             );
             break;
 
-        /*
+            /*
             * Remove personal saltkey
             * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
             */
@@ -2616,7 +2630,7 @@ Insert the log here and especially the answer of the query that failed.
             foreach ($_SESSION['personal_visible_groups'] as $folder) {
                 // Get each item in this folder
                 $items = DB::query(
-                    'SELECT id FROM '.prefixTable('items').'
+                    'SELECT id FROM ' . prefixTable('items') . '
                     WHERE id_tree = %i',
                     $folder['id']
                 );

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -16,6 +17,13 @@
  */
 
 return array(
+    'all_fields_mandatory' => 'All fields are mandatory',
+    'history_insert_entry' => 'Insert in History',
+    'clear_form' => 'Clear form',
+    'info_about_history_insertion' => 'Caution - This feature permits you to insert manually an event in the item history log. Once added it will not be possible to remove it. Also notice that your account id will be associated to this new entry.',
+    'select_all' => 'Select all',
+    'unselect_all' => 'Unselect all',
+    'no_data_to_display' => 'No data to display! Either no folder already exists, either you have access to none of them.',
     'server' => 'Server',
     'enable_statistics' => 'Sendinf',
     'data_refreshed' => 'Data refreshed',
@@ -417,6 +425,7 @@ return array(
     'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item#.<br><br><a href=\'#tp_link#\'>Click this link</a> to access the item.<br><br><br>Greetings',
     'index_maintenance_mode' => 'Maintenance mode is enabled. Only administrators can sign in.',
     'index_maintenance_mode_admin' => 'Maintenance mode is enabled. Users cannot sign in.',
+    'at_manual' => 'Manual insertion',
     '---' => '---',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
@@ -621,7 +630,6 @@ return array(
     'settings_insert_manual_entry_item_history' => 'Manual insertions in item history log allowed',
     'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Add entry to history log',
-    'at_manual' => 'Manual action',
     'at_manual_add' => 'Added manually',
     'admin_path_to_upload_folder' => 'Upload folder (full path)',
     'admin_url_to_upload_folder' => 'Upload folder (URL)',
