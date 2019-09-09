@@ -265,8 +265,8 @@ if (($session_validite_pw === null
 ) {
     // case where one-shot viewer
     if (
-        isset($_GET['code']) && empty($_GET['code']) === false
-        && isset($_GET['stamp']) && empty($_GET['stamp']) === false
+        isset($_GET['code']) === true && empty($_GET['code']) === false
+        && isset($_GET['stamp']) === true && empty($_GET['stamp']) === false
     ) {
         include './includes/core/otv.php';
     } else {
