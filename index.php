@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -15,6 +14,7 @@
  *
  * @see      https://www.teampass.net
  */
+
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
 
@@ -258,8 +258,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 <?php
 // display an item in the context of OTV link
 if (($session_validite_pw === null
-        || empty($session_validite_pw) === true
-        || empty($session_user_id) === true)
+    || empty($session_validite_pw) === true
+    || empty($session_user_id) === true)
     && isset($_GET['otv']) === true
     && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === 'true'
 ) {

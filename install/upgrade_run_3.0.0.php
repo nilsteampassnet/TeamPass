@@ -280,6 +280,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'roles_allowed_to_print_select'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'roles_allowed_to_print_select'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'roles_allowed_to_print_select', '')"
+    );
+}
+
 // Convert the roles_allowed_to_print value to an array
 $roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
     $db_link,
@@ -319,7 +328,7 @@ if ((int) $db_count[0] === 0) {
         if ($data['encryption_type'] !== 'teampass_aes') {
             mysqli_query(
                 $db_link,
-                'INSERT INTO `'.$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
+                "INSERT INTO `".$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
                 VALUES (NULL, 'item', '".$data['id']."', '".$data['pw']."');"
             );
         }
@@ -340,7 +349,7 @@ if ((int) $db_count[0] === 0) {
         if ($data['encryption_type'] !== 'teampass_aes') {
             mysqli_query(
                 $db_link,
-                'INSERT INTO `'.$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
+                "INSERT INTO `".$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
                 VALUES (NULL, 'field', '".$data['id']."', '".$data['data']."');"
             );
         }
@@ -362,7 +371,7 @@ if ((int) $db_count[0] === 0) {
         if ($data['encryption_type'] !== 'teampass_aes') {
             mysqli_query(
                 $db_link,
-                'INSERT INTO `'.$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
+                "INSERT INTO `".$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
                 VALUES (NULL, 'log', '".$data['increment_id']."', '".explode('pw :', $data['raison'])[1]."');"
             );
         }
@@ -383,7 +392,7 @@ if ((int) $db_count[0] === 0) {
         if ($data['encryption_type'] !== 'teampass_aes') {
             mysqli_query(
                 $db_link,
-                'INSERT INTO `'.$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
+                "INSERT INTO `".$pre."defuse_passwords` (`increment_id`, `type`, `object_id`, `password`) 
                 VALUES (NULL, 'suggestion', '".$data['id']."', '".$data['pw']."');"
             );
         }
@@ -434,7 +443,7 @@ if (isset($userPassword) === false || empty($userPassword) === true
         // Store fact that admin has migrated
         mysqli_query(
             $db_link,
-            'INSERT INTO `'.$pre."defuse_to_aes_migration` (`increment_id`, `user_id`, `rebuild_performed`, `timestamp`) 
+            "INSERT INTO `".$pre."defuse_to_aes_migration` (`increment_id`, `user_id`, `rebuild_performed`, `timestamp`) 
             VALUES (NULL, '".$user['id']."', 'done', '".date_timestamp_get(date_create())."');"
         );
     } elseif (isset($user['id']) === false) {

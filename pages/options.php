@@ -699,7 +699,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <?php
                                     // Get selected groups
                                     $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
-                                    if ($arrRolesToPrint === 0) {
+                                    if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
                                         $arrRolesToPrint = array();
                                     }
                                     // Get full list
