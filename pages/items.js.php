@@ -7,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -222,7 +222,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         startedItemsListQuery = true;
 
         $('.item-details-card').removeClass('hidden');
-        $('#folders-tree-card').addClass('hidden');
+        $('#folders-tree-card, .columns-position').addClass('hidden');
 
         // refresh selection in jstree
         $('#jstree').jstree('deselect_all');
@@ -427,7 +427,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             // Store last
             // Show copy form
-            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-add').removeClass('hidden');
             // Prepare some data in the form
             if (selectedFolder !== undefined && selectedFolder !== '') {
@@ -456,7 +456,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             savePreviousView('.form-folder-add');
 
             // Show edit form
-            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-add').removeClass('hidden');
             // Prepare some data in the form
             $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolder + "']")
@@ -488,7 +488,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             savePreviousView('.form-folder-copy');
 
             // Show copy form
-            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-copy').removeClass('hidden');
             // Prepare some data in the form
             $('#form-folder-copy-source').val(store.get('teampassApplication').selectedFolder).change();
@@ -516,7 +516,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             savePreviousView('.form-folder-delete');
 
             // Show copy form
-            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-delete').removeClass('hidden');
 
             // Prepare some data in the form
@@ -535,7 +535,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
             // Show import form
-            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+            $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-import').removeClass('hidden');
 
             //
@@ -587,7 +587,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
                 // HIde
-                $('.form-item-copy, #folders-tree-card, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+                $('.form-item-copy, #folders-tree-card, .columns-position, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
                     .addClass('hidden');
                 // Destroy editor
                 if (itemEditor) itemEditor.destroy();
@@ -854,7 +854,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('#form-item-upload-pickfilesList').html('');
 
             // Hide all
-            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
+            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, .columns-position, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
                 .addClass('hidden');
 
             // Show expected one
@@ -919,7 +919,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         );
 
         // Show user
-        $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
+        $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
         $('.form-item-request-access').removeClass('hidden');
     });
 
@@ -961,7 +961,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 } else {
                     // Change view
                     $('.form-item-request-access').addClass('hidden');
-                    $('#folders-tree-card').removeClass('hidden');
+                    $('#folders-tree-card, .columns-position').removeClass('hidden');
 
                     // Inform user
                     alertify
@@ -1145,7 +1145,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
-            function(data) { //decrypt data
+            function(data) {
+                //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
                 if (data.error !== true) {
@@ -1243,15 +1244,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                if (data[0].error !== '') {
-                    // ERROR
-                    alertify
-                        .error(
-                            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[1].error_text,
-                            0
-                        )
-                        .dismissOthers();
-                } else {
+                //decrypt data
+                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                
+                if (data.error !== true) {
                     // Warn user
                     alertify.success('<?php echo langHdl('success'); ?>', 1);
                     // Refresh tree
@@ -1259,10 +1255,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Load list of items
                     ListerItems($('#form-item-copy-destination').val(), '', 0);
                     // Close
-                    closeItemDetailsCard();
+                    $('.item-details-card').removeClass('hidden');
+                    $('.form-item-copy').addClass('hidden');
+                } else {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
                 }
-            },
-            'json'
+            }
         );
     });
 
@@ -1705,7 +1709,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.item-details-card').hasClass('hidden') === false
             ) {
                 $('.item-details-card').removeClass('hidden');
-                $('#folders-tree-card, .form-item-action, .form-item, .form-folder-action, #card-item-expired')
+                $('#folders-tree-card, .columns-position, .form-item-action, .form-item, .form-folder-action, #card-item-expired')
                     .addClass('hidden');
 
                 // Force previous view to folders list
@@ -1736,7 +1740,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (store.get('teampassUser').previousView === '#folders-tree-card' ||
                     $('.item-details-card').hasClass('hidden') === false
                 ) {
-                    $('#folders-tree-card').removeClass('hidden');
+                    $('#folders-tree-card, .columns-position').removeClass('hidden');
                     $('.item-details-card, .form-item-action, .form-item, .form-folder-action, #card-item-expired')
                         .addClass('hidden');
                 } else {
@@ -2354,7 +2358,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
 
         // Loop on all changed fields
-        $('.form-item-control').each(function(i, obj) {
+        $('.form-item-field-custom').each(function(i, obj) {
             if ($(this).data('change-ongoing') === true) {
                 // Create an array with changed inputs
                 arrayQuery.push({
@@ -2392,6 +2396,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // No folder selected
                 alertify
                     .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_selected_folder'); ?>', 10)
+                    .dismissOthers();
+                return false;
+            } else if ($('#form-item-folder option:selected').attr('disabled') === 'disabled') {
+                // Folder is not allowed
+                alertify
+                    .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_folder_not_allowed'); ?>', 10)
                     .dismissOthers();
                 return false;
             } else {
@@ -3271,7 +3281,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     ) {
                         // Show warning to user
                         $('#info_teampass_items_list')
-                            .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
+                            .html('<div class="alert alert-primary text-center col col-10" role="alert">' +
                                 '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('no_item_to_display'); ?></b>' +
                                 '</div>')
                             .removeClass('hidden');
@@ -3869,6 +3879,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
+                // Hide NEW button in case access_level < 30
+                if (store.get('teampassItem').hasAccessLevel === 10) {
+                    $('#item-form-new-button').addClass('hidden');
+                } else {
+                    $('#item-form-new-button').removeClass('hidden');
+                }
+
                 // Uncrypt the pwd
                 if (data.pw !== undefined) {
                     data.pw = atob(data.pw);
@@ -3890,7 +3907,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 );
 
                 // Prepare forms
-                $('#folders-tree-card').addClass('hidden');
+                $('#folders-tree-card, .columns-position').addClass('hidden');
                 if (actionType === 'show') {
                     // Prepare Views
                     $('.item-details-card, #item-details-card-categories').removeClass('hidden');
@@ -4177,29 +4194,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#card-item-misc').html('');
                 if (data.auto_update_pwd_frequency !== '0') {
                     $('#card-item-misc')
-                        .append('<span class="fas fa-shield infotip mr-4" title="<?php
-                                                                                    echo langHdl('auto_update_enabled');
-                                                                                    ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                        .append('<span class="fas fa-shield infotip mr-4" title="<?php echo langHdl('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
                 }
 
                 // Show Notification engaged
                 if (data.notification_status === true) {
                     $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php
-                                                                                                                                                        echo langHdl('notification_engaged');
-                                                                                                                                                        ?>"></span></span>');
+                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span></span>');
                 } else {
                     $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php
-                                                                                                                                                            echo langHdl('notification_not_engaged');
-                                                                                                                                                            ?>"></span></span>');
+                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span></span>');
                 }
 
                 // Prepare counter
                 $('#card-item-misc')
-                    .append('<span class="icon-badge mr-4"><span class="far fa-eye infotip" title="<?php
-                                                                                                    echo langHdl('viewed_number');
-                                                                                                    ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+                    .append('<span class="icon-badge mr-4"><span class="far fa-eye infotip" title="<?php echo langHdl('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
 
                 // Delete after X views
                 if (data.to_be_deleted !== '') {
@@ -4447,7 +4456,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     template: false,
                     showSeconds: true,
                     showMeridian: false,
-                    defaultTime: '01:01:01',
                     showInputs: false,
                     explicitMode: true
                 });
@@ -4479,9 +4487,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('.history').val('');
         })
         .on('click', '#form-item-history-insert', function() {
-            if ($('#form-item-history-label').val() === ''
-                || $('#form-item-history-date').val() === ''
-                || $('#form-item-history-time').val() === ''
+            if ($('#form-item-history-label').val() === '' ||
+                $('#form-item-history-date').val() === '' ||
+                $('#form-item-history-time').val() === ''
             ) {
                 // Inform user
                 alertify
@@ -4504,7 +4512,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                     console.log(data);
                     $('.history').val('');
 
@@ -4846,7 +4854,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     function searchItemsWithTags(criteria) {
         if (criteria !== '') {
-            $('#folders-tree-card').removeClass('hidden');
+            $('#folders-tree-card, .columns-position').removeClass('hidden');
             $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
 
             $('#find_items').val(criteria);

@@ -328,7 +328,7 @@ switch ($post_type) {
 
             // Delete if template related to item
             DB::delete(
-                $pre . 'templates',
+                prefixTable('templates'),
                 'item_id = %i',
                 $item['id']
             );
@@ -424,7 +424,7 @@ switch ($post_type) {
 
         //cycle through
         foreach ($tables as $table) {
-            if (empty($pre) || substr_count($table, $pre) > 0) {
+            if (defined('DB_PREFIX') || substr_count($table, DB_PREFIX) > 0) {
                 // Do query
                 $result = DB::queryRaw('SELECT * FROM ' . $table);
                 $mysqli_result = DB::queryRaw(
@@ -541,7 +541,7 @@ switch ($post_type) {
         // Get filename from database
         $data = DB::queryFirstRow(
             'SELECT valeur
-            FROM ' . $pre . 'misc
+            FROM ' . prefixTable('misc').'
             WHERE increment_id = %i',
             $file
         );
@@ -653,7 +653,7 @@ switch ($post_type) {
             if ($counter == 0) {
                 //Create new at_creation entry
                 $rowTmp = DB::queryFirstRow(
-                    'SELECT date FROM ' . prefixTable('log_items') . ' WHERE id_item=%i ORDER BY date ASC',
+                    'SELECT date, id_user FROM ' . prefixTable('log_items') . ' WHERE id_item=%i ORDER BY date ASC',
                     $item['id']
                 );
                 DB::insert(
@@ -661,7 +661,7 @@ switch ($post_type) {
                     array(
                         'id_item' => $item['id'],
                         'date' => $rowTmp['date'] - 1,
-                        'id_user' => '',
+                        'id_user' => empty($rowTmp['id_user']) === true ? 1 : $rowTmp['id_user'],
                         'action' => 'at_creation',
                         'raison' => '',
                     )
@@ -718,10 +718,20 @@ switch ($post_type) {
 
         $nbFilesDeleted = 0;
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
+        
         //read folder
+        if(is_dir($SETTINGS['path_to_files_folder']) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('file_folder_not_accessible').": ".$SETTINGS['path_to_files_folder'],
+                ),
+                'encode'
+            );
+            break;
+        }
+        
         $dir = opendir($SETTINGS['path_to_files_folder']);
-
         if ($dir !== false) {
             //delete file FILES
             while (false !== ($f = readdir($dir))) {
@@ -738,7 +748,18 @@ switch ($post_type) {
         }
 
         //read folder  UPLOAD
+        if(is_dir($SETTINGS['path_to_upload_folder']) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('file_folder_not_accessible').": ".$SETTINGS['path_to_upload_folder'],
+                ),
+                'encode'
+            );
+            break;
+        }
         $dir = opendir($SETTINGS['path_to_upload_folder']);
+        $nbItemsDeleted = 0;
 
         if ($dir !== false) {
             //delete file

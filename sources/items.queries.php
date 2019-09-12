@@ -7,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -1803,7 +1803,6 @@ if (null !== $post_type) {
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_edit_item'),
-                            'toto' => '1',
                         ),
                         'encode'
                     );
@@ -2003,7 +2002,7 @@ if (null !== $post_type) {
                             'item_id' => $newItemId,
                             'field_id' => $field['field_id'],
                             'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                $cryptedStuff['encrypted'] : $field['value'],
+                                $cryptedStuff['encrypted'] : $field['data'],
                             'data_iv' => '',
                             'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
                                 TP_ENCRYPTION_NAME : 'not_set',
@@ -2134,13 +2133,24 @@ if (null !== $post_type) {
                 include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 updateCacheTable('reload', $SETTINGS, '');
 
-                $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "' . $newItemId . '"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'new_id' => $newItemId
+                    ),
+                    'encode'
+                );
             } else {
                 // no item
-                $returnValues = '[{"error" : "no_item"}, {"error_text" : "No item ID"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_missing_id'),
+                    ),
+                    'encode'
+                );
             }
-            // return data
-            echo $returnValues;
             break;
 
             /*
@@ -3064,12 +3074,12 @@ if (null !== $post_type) {
             // perform a check in case of Read-Only user creating an item in his PF
             if (($_SESSION['user_read_only'] === true
                     && in_array($post_label, $_SESSION['personal_folders']) === false)
-                || (int) $post_access_level >= 20
+                || (int) $post_access_level <= 20
             ) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => langHdl('error_not_allowed_to1'),
                     ),
                     'encode'
                 );

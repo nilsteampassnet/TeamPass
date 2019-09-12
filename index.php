@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -6,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -258,8 +259,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 <?php
 // display an item in the context of OTV link
 if (($session_validite_pw === null
-    || empty($session_validite_pw) === true
-    || empty($session_user_id) === true)
+        || empty($session_validite_pw) === true
+        || empty($session_user_id) === true)
     && isset($_GET['otv']) === true
     && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === 'true'
 ) {
@@ -934,7 +935,8 @@ if (($session_validite_pw === null
     <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
     <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
     <!-- ICHECK -->
-    <link rel="stylesheet" href="./plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+    <link rel="stylesheet" href="./plugins/icheck-material/icheck-material.min.css">
+    <link rel="stylesheet" href="./plugins/icheck-bootstrap/all.css">
     <script type="text/javascript" src="./plugins/icheck-bootstrap/icheck.min.js"></script>
     <!-- bootstrap-add-clear -->
     <!-- <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script> -->

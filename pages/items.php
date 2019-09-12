@@ -7,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -92,7 +92,7 @@ foreach ($rows as $reccord) {
 
 // Is personal SK available
 echo '
-<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? 1 : 0, '" />';
+<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1 && (int) $session_user_admin !== 1 && (int) $session_user_upgrade_needed === 1 ? 1 : 0, '" />';
 
 ?>
 
@@ -282,10 +282,10 @@ echo '
                                     && (int) $SETTINGS['anyone_can_modify'] === 1
                                 ) {
                                     ?>
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input form-item-control flat-blue track-change" id="form-item-anyoneCanModify" <?php
-                                                                                                                                                                    echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                                                                                                                                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
+                                    <div class="form-check mb-3 icheck-material-blue">
+                                        <input type="checkbox" class="form-check-input form-item-control track-change" id="form-item-anyoneCanModify" <?php
+                                                                                                                                                            echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                                                                                                                                                                && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                         <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                     </div>
                                 <?php
@@ -431,8 +431,8 @@ echo '
                                             && $SETTINGS['item_creation_templates'] === '1'
                                         ) {
                                             echo '
-                                            <div class="form-check">
-                                                <input type="checkbox" class="form-check-input form-check-input-template flat-blue form-item-control" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
+                                            <div class="form-check icheck-material-blue">
+                                                <input type="checkbox" class="form-check-input form-check-input-template form-item-control" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
                                                 <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . langHdl('main_template') . '</label>
                                             </div>';
                                         }
@@ -459,7 +459,7 @@ echo '
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><?php echo langHdl('label'); ?></span>
                                         </div>
-                                        <input id="form-item-history-label" type="text" class="form-control form-item-control track-change history" data-change-ongoing="" data-field-name="history-label">
+                                        <input id="form-item-history-label" type="text" class="form-control form-item-control history" data-change-ongoing="" data-field-name="history-label">
                                     </div>
                                 </div>
                                 <div class="row">
@@ -469,7 +469,7 @@ echo '
                                                 <i class="fas fa-calendar"></i>
                                             </span>
                                         </div>
-                                        <input type="text" class="form-control float-right form-item-control track-change datepicker history" id="form-item-history-date" data-change-ongoing="" data-field-name="history-date">
+                                        <input type="text" class="form-control float-right form-item-control datepicker history" id="form-item-history-date" data-change-ongoing="" data-field-name="history-date">
                                     </div>
                                     <div class="col-6 input-group time inline">
                                         <div class="input-group-prepend">
@@ -477,7 +477,7 @@ echo '
                                                 <i class="fas fa-clock"></i>
                                             </span>
                                         </div>
-                                        <input type="text" class="form-control float-right form-item-control track-change timepicker history" id="form-item-history-time" data-change-ongoing="" data-field-name="history-time">
+                                        <input type="text" class="form-control float-right form-item-control timepicker history" id="form-item-history-time" data-change-ongoing="" data-field-name="history-time">
                                     </div>
                                 </div>
                                 <div class="row col-12 mt-3">
@@ -507,33 +507,6 @@ echo '
                         <button type="button" class="btn btn-gray but-back-to-list">
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <!--
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-gray dropdown-toggle" data-toggle="dropdown" role="group">
-                                    <i class="fas fa-bars"></i>
-                                    <span class="caret"></span>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="new"><i class="far fa-plus-square mr-2"></i><?php echo langHdl('new_item'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="edit"><i class="far fa-edit mr-2"></i><?php echo langHdl('item_menu_edi_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-2"></i><?php echo langHdl('item_menu_del_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="copy"><i class="far fa-copy mr-2"></i><?php echo langHdl('item_menu_copy_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="share"><i class="far fa-share-square mr-2"></i><?php echo langHdl('share_item'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="far fa-bell mr-2"></i><?php echo langHdl('notification'); ?></a>
-                                    <?php
-                                    if (
-                                        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
-                                        && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
-                                    ) {
-                                        ?>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="fas fa-volume-up mr-2"></i><?php echo langHdl('item_menu_copy_elem'); ?></a>
-                                    <?php
-                                    }
-                                    ?>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="otv"><i class="far fa-eye mr-2"></i><?php echo langHdl('one_time_view'); ?></a>
-                                </div>
-                            </div>
-                            -->
                     </span>
                     <h3 class="d-inline align-middle" id="card-item-label"></h3>
                     <div class="card-tools">
@@ -550,7 +523,7 @@ echo '
                         </button>
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav">
-                                <li class="nav-item">
+                                <li class="nav-item" id="item-form-new-button">
                                     <a class="text-info tp-action ml-3" href="#" data-item-action="new"><i class="far fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
@@ -1043,12 +1016,12 @@ echo '
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                         <p><?php echo langHdl('notification_message'); ?></p>
                     </div>
-                    <div class="form-group">
-                        <input type="checkbox" class="flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
+                    <div class="form-group icheck-material-blue">
+                        <input type="checkbox" class="form-check-input form-item-control" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('perform'); ?></button>
+                    <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('confirm'); ?></button>
                     <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                 </div>
             </div>
@@ -1173,8 +1146,8 @@ echo '
                         <label><?php echo langHdl('select_folder_to_delete'); ?></label>
                         <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-delete-selection" required></select>
                     </div>
-                    <div class="form-check mb-3 alert alert-warning">
-                        <input type="checkbox" class="form-check-input form-item-control flat-blue mr-2" id="form-folder-confirm-delete" required>
+                    <div class="form-check mb-3 alert alert-warning icheck-material-red">
+                        <input type="checkbox" class="form-check-input form-item-control" id="form-folder-confirm-delete" required>
                         <label class="form-check-label ml-3" for="form-folder-confirm-delete"><i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('folder_delete_confirm'); ?></label>
                     </div>
                 </div>

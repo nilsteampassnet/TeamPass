@@ -7,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -3193,7 +3193,9 @@ function encryptFile($fileInName, $fileInPath)
  */
 function decryptFile($fileName, $filePath, $key)
 {
-    define('FILE_BUFFER_SIZE', 128 * 1024);
+    if (!defined('FILE_BUFFER_SIZE')) {
+        define('FILE_BUFFER_SIZE', 128 * 1024);
+    }
 
     // Includes
     include_once '../includes/config/include.php';

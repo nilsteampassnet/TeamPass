@@ -7,7 +7,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @author    Nils Laumaillé <nils@teamapss.net>
+ * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
@@ -17,6 +17,9 @@
  */
 
 return array(
+    'file_folder_not_accessible' => 'Files folder is not accessible',
+    'error_missing_id' => 'An error occurred. Missing ID ... ?',
+    'error_folder_not_allowed' => 'Selected folder is not allowed',
     'all_fields_mandatory' => 'All fields are mandatory',
     'history_insert_entry' => 'Insert in History',
     'clear_form' => 'Clear form',
