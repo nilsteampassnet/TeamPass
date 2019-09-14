@@ -289,6 +289,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'clipboard_life_duration'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'clipboard_life_duration'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'clipboard_life_duration', '30')"
+    );
+}
+
 // Convert the roles_allowed_to_print value to an array
 $roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
     $db_link,

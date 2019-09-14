@@ -251,6 +251,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     <!-- Altertify -->
     <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css" />
     <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />
+    <!-- Toastr -->
+    <link rel="stylesheet" href="plugins/toastr/toastr.min.css" />
 
 </head>
 
@@ -913,6 +915,8 @@ if (($session_validite_pw === null
     <script src="plugins/adminlte/js/adminlte.min.js"></script>
     <!-- Altertify -->
     <script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>
+    <!-- Toastr -->
+    <script type="text/javascript" src="plugins/toastr/toastr.min.js"></script>
     <!-- STORE.JS -->
     <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
     <!-- aes -->
@@ -1022,6 +1026,24 @@ if (($session_validite_pw === null
     alertify.defaults.theme.ok = "btn btn-primary";
     alertify.defaults.theme.cancel = "btn btn-danger";
     alertify.defaults.theme.input = "form-control";
+
+    toastr.options = {
+        "closeButton": false,
+        "debug": false,
+        "newestOnTop": false,
+        "progressBar": false,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    }
 </script>
 
 

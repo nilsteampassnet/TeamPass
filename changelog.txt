@@ -3,6 +3,8 @@ This version is currently in beta.
 Nevertheless security is ensured and carrefully taken into consideration. Your data are safe running this version.
 If you have upgraded from previous branch 2.x then some features have not yet being implemented.
 
+Clear clipboard requires Firefox config value "dom.events.testing.asyncClipboard" set to "true".
+
 
 // TODO
  - Migrate ldap library to adldap2

@@ -190,7 +190,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     });
     */
 
-
     // Is this a short url
     var queryDict = {},
         showItemOnPageLoad = false,
@@ -3201,8 +3200,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                     return;
                                 }
 
-                                // Notify user to wait
-                                alertify.set('notifier', 'position', 'top-right');
+                                // Warn user that it starts
                                 alertify
                                     .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                                     .dismissOthers();
@@ -3238,6 +3236,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                                 result = atob(data.password);
                                             }
                                         }
+
+                                        // Remove cog
+                                        alertify
+                                            .message('', 1)
+                                            .dismissOthers();
                                     }
                                 });
                                 return result;
@@ -3249,13 +3252,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 e.trigger.dataset.itemId,
                                 e.trigger.dataset.itemLabel
                             );
-
-                            showAlertify(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
-                                2,
-                                'top-right',
-                                'message'
+                            
+                            // Warn user about clipboard clear
+                            alertify.closeAll();
+                            toastr
+                                .warning(
+                                    '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
+                                    '', {
+                                        timeOut: <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input'] * 1000) : 30000; ?>,
+                                        progressBar: true
+                                    }
+                                );
+                            
+                            // Set clipboard eraser
+                            clearClipboardTimeout(
+                                <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input']) : 30; ?>
                             );
+
                             e.clearSelection();
                         });
                     } else if (data.error === 'not_authorized') {
@@ -4168,12 +4181,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 e.trigger.dataset.clipboardId,
                                 $('#card-item-label').text()
                             );
-
-                            showAlertify(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
-                                1,
-                                'top-right',
-                                'message'
+                            
+                            // Warn user about clipboard clear
+                            alertify.closeAll();
+                            toastr
+                                .warning(
+                                    '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
+                                    '', {
+                                        timeOut: <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input'] * 1000) : 30000; ?>,
+                                        progressBar: true
+                                    }
+                                );
+                            
+                            // Set clipboard eraser
+                            clearClipboardTimeout(
+                                <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input']) : 30; ?>
                             );
 
                             e.clearSelection();
@@ -4848,6 +4870,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $('#form-item-password-confirmation').val($('#form-item-password').val());
     });
 
+    /**
+     * 
+     * @param {integer} duration
+     * 
+     */
+    function clearClipboardTimeout(duration) {
+        // Wait for duration
+        $(this).delay(duration * 1000).queue(function() {
+            navigator.clipboard.writeText("Cleared by Teampass").then(function() {
+                // clipboard successfully set
+            }, function() {
+                // clipboard write failed
+            });
+
+            $(this).dequeue();
+        });
+    }
 
     /**
      * On tag badge click, launch the search query

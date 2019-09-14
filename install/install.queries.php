@@ -640,6 +640,7 @@ $SETTINGS = array (';
                             array('admin', 'duo_host', ''),
                             array('admin', 'teampass_version', ''),
                             array('admin', 'roles_allowed_to_print_select', ''),
+                            array('admin', 'clipboard_life_duration', '30'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

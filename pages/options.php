@@ -777,6 +777,18 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="display optimization icon clipboard">
+                            <div class='col-10'>
+                                <?php echo langHdl('clipboard_password_life_duration'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo langHdl('clipboard_password_life_duration_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='text' class='form-control form-control-sm' id='clipboard_life_duration_input' value='<?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? $SETTINGS['clipboard_life_duration_input'] : '30'; ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization description">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_show_description'); ?>
