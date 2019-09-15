@@ -2155,10 +2155,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         filters: {
             mime_types: [
                 <?php
-                if (
-                    isset($SETTINGS['upload_all_extensions_file']) === false
+                if (isset($SETTINGS['upload_all_extensions_file']) === false
                     || (isset($SETTINGS['upload_all_extensions_file']) === true
-                        && $SETTINGS['upload_all_extensions_file'] === '0')
+                    && $SETTINGS['upload_all_extensions_file'] === '0')
                 ) {
                     ?> {
                         title: 'Image files',
@@ -3254,20 +3253,29 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             );
                             
                             // Warn user about clipboard clear
-                            alertify.closeAll();
-                            toastr
-                                .warning(
-                                    '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
-                                    '', {
-                                        timeOut: <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input'] * 1000) : 30000; ?>,
-                                        progressBar: true
-                                    }
+                            if (store.get('teampassSettings').clipboard_life_duration_input === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration_input) === 0) {
+                                showAlertify(
+                                    '<?php echo langHdl('copy_to_clipboard'); ?>',
+                                    2,
+                                    'top-right',
+                                    'message'
                                 );
-                            
-                            // Set clipboard eraser
-                            clearClipboardTimeout(
-                                <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input']) : 30; ?>
-                            );
+                            } else {
+                                alertify.closeAll();
+                                toastr
+                                    .warning(
+                                        '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
+                                        '', {
+                                            timeOut: store.get('teampassSettings').clipboard_life_duration_input * 1000,
+                                            progressBar: true
+                                        }
+                                    );
+                                
+                                // Set clipboard eraser
+                                clearClipboardTimeout(
+                                    store.get('teampassSettings').clipboard_life_duration_input
+                                );
+                            }
 
                             e.clearSelection();
                         });
@@ -4181,22 +4189,31 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 e.trigger.dataset.clipboardId,
                                 $('#card-item-label').text()
                             );
-                            
+
                             // Warn user about clipboard clear
-                            alertify.closeAll();
-                            toastr
-                                .warning(
-                                    '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
-                                    '', {
-                                        timeOut: <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input'] * 1000) : 30000; ?>,
-                                        progressBar: true
-                                    }
+                            if (store.get('teampassSettings').clipboard_life_duration_input === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration_input) === 0) {
+                                showAlertify(
+                                    '<?php echo langHdl('copy_to_clipboard'); ?>',
+                                    2,
+                                    'top-right',
+                                    'message'
                                 );
-                            
-                            // Set clipboard eraser
-                            clearClipboardTimeout(
-                                <?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? ($SETTINGS['clipboard_life_duration_input']) : 30; ?>
-                            );
+                            } else {
+                                alertify.closeAll();
+                                toastr
+                                    .warning(
+                                        '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
+                                        '', {
+                                            timeOut: store.get('teampassSettings').clipboard_life_duration_input * 1000,
+                                            progressBar: true
+                                        }
+                                    );
+                                
+                                // Set clipboard eraser
+                                clearClipboardTimeout(
+                                    store.get('teampassSettings').clipboard_life_duration_input
+                                );
+                            }
 
                             e.clearSelection();
                         });
@@ -4243,9 +4260,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                     // Show icon
                     $('#card-item-misc')
-                        .append('<span class="icon-badge mr-5"><span class="far fa-trash-alt infotip" title="<?php
-                                                                                                                echo langHdl('automatic_deletion_engaged');
-                                                                                                                ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+                        .append('<span class="icon-badge mr-5"><span class="far fa-trash-alt infotip" title="<?php echo langHdl('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
                 }
 
                 // reset password shown info

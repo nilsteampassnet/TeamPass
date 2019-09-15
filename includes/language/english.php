@@ -17,6 +17,9 @@
  */
 
 return array(
+    'clipboard_password_life_duration' => 'Delay before the clipboard is cleared (in seconds)',
+    'clipboard_password_life_duration_tip' => 'Permits to define a delay in seconds before which the password copied in clipboard will be cleared from the browser clipboard. Set to 0 to disable.',
+    'clipboard_will_be_cleared' => 'Password is now in clipboard. It will soon be cleared...',
     'file_folder_not_accessible' => 'Files folder is not accessible',
     'error_missing_id' => 'An error occurred. Missing ID ... ?',
     'error_folder_not_allowed' => 'Selected folder is not allowed',
