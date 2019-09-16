@@ -130,65 +130,67 @@ function checkPage()
         $("#step_res").val("true");
         $("#pop_db").html("");
 
-        function ajaxRequest (tasks) {
-            if (tasks.length > 0) {
-                tsk = tasks[0].split("*");
-                //console.log(tsk);
-                $.ajax({
-                    url: "install.queries.php",
-                    type : "POST",
-                    dataType : "json",
-                    data : {
-                        type:       "step_"+step,
-                        data:       aesEncrypt(data), //
-                        activity:   aesEncrypt(tsk[0]),
-                        task:       aesEncrypt(tsk[1]),
-                        db:         aesEncrypt(JSON.stringify(dbInfo)),
-                        index:      index,
-                        multiple:   multiple,
-                        info:       tsk[0]+"-"+tsk[1]
-                    }
-                })
-                .complete(function(data) {console.log(data)
-                    if (data.responseText === "") {
-						alertify
-							.error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
-							.dismissOthers();
-                    } else {
-                        data = $.parseJSON(data.responseText);
-						//console.log(data)
-                        if (data[0].error === "") {
-                            if (step === "5") {
-                                if (data[0].activity === "table") {
-                                    $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
-                                } else if (data[0].activity === "entry") {
-                                    $("#pop_db").append("<li>Entries <b>"+data[0].task+"</b> were added</li>");
-                                }
-                            } else {
-                                $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
-                            }
+        function doGetJson(task) {
+            tsk = task.split("*");
 
-                            if (data[0].result !== undefined && data[0].result !== "" ) {
-								alertify
-									.message(data[0].result, 10)
-									.dismissOthers();
+            return $.ajax({
+                url: "install.queries.php",
+                type : "POST",
+                dataType : "json",
+                async: false,
+                data : {
+                    type:       "step_"+step,
+                    data:       aesEncrypt(data), //
+                    activity:   aesEncrypt(tsk[0]),
+                    task:       aesEncrypt(tsk[1]),
+                    db:         aesEncrypt(JSON.stringify(dbInfo)),
+                    index:      index,
+                    multiple:   multiple,
+                    info:       tsk[0]+"-"+tsk[1]
+                }
+            })
+            .complete(function(data) {console.log(data)
+                if (data.responseText === "") {
+                    alertify
+                        .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
+                        .dismissOthers();
+                } else {
+                    data = $.parseJSON(data.responseText);
+                    //console.log(data)
+                    if (data[0].error === "") {
+                        if (step === "5") {
+                            if (data[0].activity === "table") {
+                                $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
+                            } else if (data[0].activity === "entry") {
+                                $("#pop_db").append("<li>Entries <b>"+data[0].task+"</b> were added</li>");
                             }
                         } else {
-                            $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>'+data[0].error+"</i></span>");
-														
-                            global_error_on_query = true;
+                            $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
                         }
+
+                        if (data[0].result !== undefined && data[0].result !== "" ) {
+                            alertify
+                                .message(data[0].result, 10)
+                                .dismissOthers();
+                        }
+                    } else {
+                        $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>'+data[0].error+"</i></span>");
+                                                    
+                        global_error_on_query = true;
                     }
-                    index++;
-                    tasks.shift();
-                    ajaxRequest(tasks);
-                });
-            }
-        }
+                }
+                index++;
+            });
+        };
 
-        ajaxRequest(tasks); 
+        var promise = tasks.slice(1)
+            .reduce(
+                (a,b) => a.then(doGetJson.bind(null, b)),
+                doGetJson(tasks[0])
+            );
 
-        setTimeout(function(){
+        promise.then(function(){
+            // do something when all requests are ready
             // all requests are complete
             if ($("#step_res").val() === "false" || global_error_on_query === true) {
                 alertify
@@ -223,7 +225,7 @@ function checkPage()
                     );
                 }
             }
-        }, 1000);
+        });
     } else if (error === "" && multiple === "") {
         tsk = tasks[0].split("*");
 

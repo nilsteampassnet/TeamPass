@@ -84,21 +84,25 @@
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
-                    showAlertify(
+                    toastr.remove();
+                    toastr.error(
                         '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
-                        0,
-                        'top-right',
-                        'error'
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toastr-top-right'
+                        }
                     );
                     return false;
                 }
                 console.log(data)
                 if (data.error === false) {
-                    showAlertify(
+                    toastr.remove();
+                    toastr.success(
                         '<?php echo langHdl('saved'); ?>',
-                        2,
-                        'top-bottom',
-                        'success'
+                        '', {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
                     );
                 }
             }
@@ -123,13 +127,14 @@
         if (requestRunning === true) {
             return false;
         }
+
         requestRunning = true;
 
         var data = {
             "field": field,
             "value": value,
         }
-        console.log(data)
+        console.log(data);
 
         // Store in DB   
         $.post(
@@ -144,21 +149,25 @@
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
-                    showAlertify(
+                    toastr.remove();
+                    toastr.error(
                         '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
-                        0,
-                        'top-right',
-                        'error'
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toastr-top-right'
+                        }
                     );
                     return false;
                 }
                 console.log(data)
                 if (data.error === false) {
-                    showAlertify(
+                    toastr.remove();
+                    toastr.success(
                         '<?php echo langHdl('saved'); ?>',
-                        2,
-                        'top-bottom',
-                        'success'
+                        '', {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
                     );
 
                     // Force page reload in case of encryptClientServer

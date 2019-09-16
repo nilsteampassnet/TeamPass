@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -33,31 +34,32 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
 
 // if no folders are visible then return no results
-if (isset($_SESSION['groupes_visibles']) === false
+if (
+    isset($_SESSION['groupes_visibles']) === false
     || empty($_SESSION['groupes_visibles']) === true
 ) {
-    echo '{"sEcho": '.intval($_GET['sEcho']).' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
+    echo '{"sEcho": ' . intval($_GET['sEcho']) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
 }
 
 //Connect to DB
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -76,13 +78,14 @@ $aSortTypes = array('ASC', 'DESC');
 $sOrder = $sLimit = $sWhere = '';
 $sWhere = 'id_tree IN %ls_idtree'; //limit search to the visible folders
 
-if (isset($_GET['limited']) === false
+if (
+    isset($_GET['limited']) === false
     || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
 ) {
     $folders = $_SESSION['groupes_visibles'];
 } else {
     // Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -92,7 +95,7 @@ if (isset($_GET['limited']) === false
 
 //Get current user "personal folder" ID
 $row = DB::query(
-    'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %i',
+    'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
     intval($_SESSION['user_id'])
 );
 
@@ -102,7 +105,7 @@ $crit = array();
 $listPf = '';
 if (empty($row['id']) === false) {
     $rows = DB::query(
-        'SELECT id FROM '.prefixTable('nested_tree').'
+        'SELECT id FROM ' . prefixTable('nested_tree') . '
         WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
         '1',
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
@@ -116,7 +119,7 @@ if (empty($row['id']) === false) {
             if (empty($listPf)) {
                 $listPf = $record['id'];
             } else {
-                $listPf .= ', '.$record['id'];
+                $listPf .= ', ' . $record['id'];
             }
         }
     }
@@ -126,7 +129,7 @@ if (empty($row['id']) === false) {
 //Paging
 $sLimit = '';
 if (isset($_GET['start']) === true && $_GET['length'] != '-1') {
-    $sLimit = 'LIMIT '.filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT).'';
+    $sLimit = 'LIMIT ' . filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT) . ', ' . filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT) . '';
 }
 
 //Ordering
@@ -139,8 +142,8 @@ if (isset($_GET['order']) === true) {
     } else {
         $sOrder = 'ORDER BY  ';
         if ($_GET['order'][0]['column'] >= 0) {
-            $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-            .filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).', ';
+            $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
+                . filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING) . ', ';
         }
 
         $sOrder = substr_replace($sOrder, '', -2);
@@ -149,7 +152,7 @@ if (isset($_GET['order']) === true) {
         }
     }
 } else {
-    $sOrder = 'ORDER BY '.$aColumns[1].' ASC';
+    $sOrder = 'ORDER BY ' . $aColumns[1] . ' ASC';
 }
 
 // Define criteria
@@ -171,9 +174,9 @@ if (isset($_GET['search']) === true) {
 if (empty($search_criteria) === false) {
     $sWhere .= ' AND (';
     for ($i = 0; $i < count($aColumns); ++$i) {
-        $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
+        $sWhere .= $aColumns[$i] . ' LIKE %ss_' . $i . ' OR ';
     }
-    $sWhere = substr_replace($sWhere, '', -3).') ';
+    $sWhere = substr_replace($sWhere, '', -3) . ') ';
 
     $crit = array(
         'idtree' => array_unique($folders),
@@ -212,13 +215,13 @@ if (empty($listPf) === false) {
     if (empty($sWhere) === false) {
         $sWhere .= ' AND ';
     }
-    $sWhere = 'WHERE '.$sWhere.'id_tree NOT IN %ls_pf ';
+    $sWhere = 'WHERE ' . $sWhere . 'id_tree NOT IN %ls_pf ';
 } else {
-    $sWhere = 'WHERE '.$sWhere;
+    $sWhere = 'WHERE ' . $sWhere;
 }
 
 DB::query(
-    'SELECT id FROM '.prefixTable('cache')."
+    'SELECT id FROM ' . prefixTable('cache') . "
     $sWhere
     $sOrder",
     $crit
@@ -227,7 +230,7 @@ $iTotal = DB::count();
 
 $rows = DB::query(
     'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
-    FROM '.prefixTable('cache')."
+    FROM ' . prefixTable('cache') . "
     $sWhere
     $sOrder
     $sLimit",
@@ -242,7 +245,7 @@ $iFilteredTotal = DB::count();
 if (isset($_GET['type']) === false) {
     $sOutput = '{';
     if (isset($_GET['draw']) === true) {
-        $sOutput .= '"draw": '.intval($_GET['draw']).', ';
+        $sOutput .= '"draw": ' . intval($_GET['draw']) . ', ';
     }
     $sOutput .= '"data": [';
     $sOutputConst = '';
@@ -261,7 +264,7 @@ if (isset($_GET['type']) === false) {
 
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
-                    'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
+                    'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                     $role,
                     $record['id_tree']
                 );
@@ -279,7 +282,7 @@ if (isset($_GET['type']) === false) {
             }
             $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;
             if ($accessLevel === 0) {
-                $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" data-id=\"'.$record['id'].'\">';
+                $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" data-id=\"' . $record['id'] . '\">';
             }
 
             if ((int) $accessLevel === 0) {
@@ -297,7 +300,8 @@ if (isset($_GET['type']) === false) {
 
         // Expiration
         if ($SETTINGS['activate_expiration'] === '1') {
-            if ($record['renewal_period'] > 0
+            if (
+                $record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
                 $expired = 1;
@@ -319,25 +323,25 @@ if (isset($_GET['type']) === false) {
             if (empty($restrictedTo)) {
                 $restrictedTo = $_SESSION['user_id'];
             } else {
-                $restrictedTo .= ','.$_SESSION['user_id'];
+                $restrictedTo .= ',' . $_SESSION['user_id'];
             }
         }
 
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"'.langHdl('open_url_link').'\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;\" style=\"cursor:pointer;\"></i>'.
-            '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"'.langHdl('see_item_title').'\" data-id=\"'.$record['id'].'\" data-perso=\"'.$record['perso'].'\" data-tree-id=\"'.$record['id_tree'].'\" data-expired=\"'.$expired.'\" data-restricted-to=\"'.$restrictedTo.'\" data-rights=\"'.$right.'\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
+            '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . langHdl('see_item_title') . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '", ';
 
         //col2
-        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.stripslashes($record['label']).'</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . stripslashes($record['label']) . '</span>", ';
 
         //col3
-        $sOutputItem .= '"'.str_replace('&amp;', '&', htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)).'", ';
+        $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';
 
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
         $rTmp = DB::queryFirstColumn(
-            'SELECT role_id FROM '.prefixTable('restriction_to_roles').' WHERE item_id = %i',
+            'SELECT role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id = %i',
             $record['id']
         );
         // We considere here that if user has at least one group similar to the object ones
@@ -346,40 +350,33 @@ if (isset($_GET['type']) === false) {
             $restrictedToRole = true;
         }
 
-        if ((
-            $record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
-            ||
-            (
-                empty($record['restricted_to']) === false
-                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false
-            )
-            ||
-            (
-                $restrictedToRole === true
-            )
+        if (($record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
+            || (empty($record['restricted_to']) === false
+                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            || ($restrictedToRole === true)
         ) {
             $getItemInList = false;
         } else {
             $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', '', ' '), strip_tags($record['description']));
             if (strlen($txt) > 50) {
-                $sOutputItem .= '"'.substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50).'", ';
+                $sOutputItem .= '"' . substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50) . '", ';
             } else {
-                $sOutputItem .= '"'.stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)).'", ';
+                $sOutputItem .= '"' . stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)) . '", ';
             }
         }
 
         //col5 - TAGS
-        $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES).'", ';
+        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
 
         // col6 - URL
         if ($record['url'] != '0') {
-            $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
+            $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['url']), ENT_QUOTES) . '", ';
         } else {
             $sOutputItem .= '"", ';
         }
 
         //col7 - Prepare the Treegrid
-        $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'"';
+        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
 
         //Finish the line
         $sOutputItem .= '], ';
@@ -396,13 +393,13 @@ if (isset($_GET['type']) === false) {
     }
     $sOutput .= '], ';
 
-    $sOutput .= '"recordsTotal": '.$iTotal.', ';
-    $sOutput .= '"recordsFiltered": '.$iTotal.' }';
+    $sOutput .= '"recordsTotal": ' . $iTotal . ', ';
+    $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
 
     echo $sOutput;
 } elseif (isset($_GET['type']) && ($_GET['type'] == 'search_for_items' || $_GET['type'] == 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
     $sOutput = '';
     $init_personal_folder = false;
     $arr_data = [];
@@ -426,7 +423,7 @@ if (isset($_GET['type']) === false) {
 
         // Anyone can modify?
         $tmp = DB::queryfirstrow(
-            'SELECT anyone_can_modify FROM '.prefixTable('items').' WHERE id = %i',
+            'SELECT anyone_can_modify FROM ' . prefixTable('items') . ' WHERE id = %i',
             $record['id']
         );
         if (count($tmp) > 0) {
@@ -438,7 +435,8 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['is_result_of_search'] = 1;
 
         if ((int) $SETTINGS['activate_expiration'] === 1) {
-            if ($record['renewal_period'] > 0
+            if (
+                $record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
                 $arr_data[$record['id']]['expired'] = 1;
@@ -459,7 +457,7 @@ if (isset($_GET['type']) === false) {
         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
         $user_is_included_in_role = 0;
         $roles = DB::query(
-            'SELECT role_id FROM '.prefixTable('restriction_to_roles').' WHERE item_id=%i',
+            'SELECT role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id=%i',
             $record['id']
         );
         if (count($roles) > 0) {
@@ -482,7 +480,7 @@ if (isset($_GET['type']) === false) {
             if (empty($restrictedTo)) {
                 $restrictedTo = $_SESSION['user_id'];
             } else {
-                $restrictedTo .= ','.$_SESSION['user_id'];
+                $restrictedTo .= ',' . $_SESSION['user_id'];
             }
         }
 
@@ -491,7 +489,7 @@ if (isset($_GET['type']) === false) {
         // Get log for this item
         $logs = DB::query(
             'SELECT *
-            FROM '.prefixTable('log_items').'
+            FROM ' . prefixTable('log_items') . '
             WHERE id_item = %i AND action = %s AND id_user = %i',
             $record['id'],
             'at_creation',
@@ -510,7 +508,8 @@ if (isset($_GET['type']) === false) {
         $itemIsPersonal = false;
 
         // Let's identify the rights belonging to this ITEM
-        if ((int) $record['perso'] === 1
+        if (
+            (int) $record['perso'] === 1
             && DB::count() > 0
         ) {
             // Case 1 - Is this item personal and user its owner?
@@ -519,9 +518,9 @@ if (isset($_GET['type']) === false) {
             $itemIsPersonal = true;
             $right = 70;
 
-        // ----- END CASE 1 -----
+            // ----- END CASE 1 -----
         } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
-            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+                || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
             && $record['perso'] !== 1
         ) {
@@ -529,8 +528,9 @@ if (isset($_GET['type']) === false) {
             // Allow all rights
             $right = 70;
 
-        // ----- END CASE 3 -----
-        } elseif (empty($record['restricted_to']) === false
+            // ----- END CASE 3 -----
+        } elseif (
+            empty($record['restricted_to']) === false
             && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
@@ -539,8 +539,9 @@ if (isset($_GET['type']) === false) {
             // Allow all rights
             $right = 70;
 
-        // ----- END CASE 4 -----
-        } elseif ($user_is_included_in_role === true
+            // ----- END CASE 4 -----
+        } elseif (
+            $user_is_included_in_role === true
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
         ) {
@@ -548,34 +549,37 @@ if (isset($_GET['type']) === false) {
             // Allow all rights
             $right = 60;
 
-        // ----- END CASE 5 -----
-        } elseif ($record['perso'] !== 1
+            // ----- END CASE 5 -----
+        } elseif (
+            $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 6 - Is user readonly?
             // Allow limited rights
             $right = 10;
 
-        // ----- END CASE 6 -----
-        } elseif ($record['perso'] !== 1
+            // ----- END CASE 6 -----
+        } elseif (
+            $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 7 - Is user readonly?
             // Allow limited rights
             $right = 10;
 
-        // ----- END CASE 7 -----
-        } elseif ($record['perso'] !== 1
+            // ----- END CASE 7 -----
+        } elseif (
+            $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 8 - Is user allowed to access?
             // Allow rights
             $right = 10;
 
-        // ----- END CASE 8 -----
+            // ----- END CASE 8 -----
         } elseif (((empty($record['restricted_to']) === false
-            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
-            || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
+                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+                || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
         ) {
@@ -583,7 +587,7 @@ if (isset($_GET['type']) === false) {
             // If no then Allow none
             $right = 10;
 
-        // ----- END CASE 9 -----
+            // ----- END CASE 9 -----
         } else {
             // Define the access based upon setting on folder
             // 0 -> no access to item
@@ -601,7 +605,7 @@ if (isset($_GET['type']) === false) {
 
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
-                    'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
+                    'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                     $role,
                     $record['id_tree']
                 );
@@ -646,13 +650,14 @@ if (isset($_GET['type']) === false) {
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
-        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true
+        if (
+            isset($SETTINGS['copy_to_clipboard_small_icons']) === true
             && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1
         ) {
             $data_item = DB::queryFirstRow(
                 'SELECT i.pw AS pw, s.share_key AS share_key
-                FROM '.prefixTable('items').' AS i
-                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                 WHERE i.id = %i AND s.user_id = %i',
                 $record['id'],
                 $_SESSION['user_id']
@@ -690,10 +695,12 @@ if (isset($_GET['type']) === false) {
 
     $returnValues = array(
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_STRING),
-        'message' => filter_var(str_replace('%X%', $iTotal, langHdl('find_message')), FILTER_SANITIZE_STRING),
+        'message' => filter_var(
+            str_replace('%X%', $iTotal, langHdl('find_message')),
+            FILTER_SANITIZE_STRING
+        ),
         'total' => (int) $iTotal,
-        'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ?
-            ((int) $_GET['start'] + (int) $_GET['length']) : -1,
+        'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? ((int) $_GET['start'] + (int) $_GET['length']) : -1,
     );
 
     echo prepareExchangedData($returnValues, 'encode');

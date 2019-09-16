@@ -541,7 +541,7 @@ switch ($post_type) {
         // Get filename from database
         $data = DB::queryFirstRow(
             'SELECT valeur
-            FROM ' . prefixTable('misc').'
+            FROM ' . prefixTable('misc') . '
             WHERE increment_id = %i',
             $file
         );
@@ -718,19 +718,19 @@ switch ($post_type) {
 
         $nbFilesDeleted = 0;
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        
+
         //read folder
-        if(is_dir($SETTINGS['path_to_files_folder']) === false) {
+        if (is_dir($SETTINGS['path_to_files_folder']) === false) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('file_folder_not_accessible').": ".$SETTINGS['path_to_files_folder'],
+                    'message' => langHdl('file_folder_not_accessible') . ": " . $SETTINGS['path_to_files_folder'],
                 ),
                 'encode'
             );
             break;
         }
-        
+
         $dir = opendir($SETTINGS['path_to_files_folder']);
         if ($dir !== false) {
             //delete file FILES
@@ -748,11 +748,11 @@ switch ($post_type) {
         }
 
         //read folder  UPLOAD
-        if(is_dir($SETTINGS['path_to_upload_folder']) === false) {
+        if (is_dir($SETTINGS['path_to_upload_folder']) === false) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('file_folder_not_accessible').": ".$SETTINGS['path_to_upload_folder'],
+                    'message' => langHdl('file_folder_not_accessible') . ": " . $SETTINGS['path_to_upload_folder'],
                 ),
                 'encode'
             );
@@ -2570,7 +2570,7 @@ switch ($post_type) {
     case 'save_option_change':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(array('error' => true, 'message' => 'ERR_KEY_NOT_CORRECT'), 'encode');
             break;
         }
         // decrypt and retreive data in JSON format
@@ -2695,7 +2695,7 @@ switch ($post_type) {
         // Encrypt data to return
         echo prepareExchangedData(
             array(
-                'error' => '',
+                'error' => false,
                 'misc' => $counter . ' ; ' . $SETTINGS[$dataReceived['field']],
             ),
             'encode'

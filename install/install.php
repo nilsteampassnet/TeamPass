@@ -1,88 +1,89 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-    <head>
-        <title>TeamPass Installation</title>
-		<meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
-        <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <meta http-equiv="x-ua-compatible" content="ie=edge"/>
 
-        <link rel="stylesheet" href="css/install.css" type="text/css" />
-        <link rel="stylesheet" href="../plugins/fontawesome5/css/all.css">
-        
-        <!-- Theme style -->
-        <link rel="stylesheet" href="../includes/css/adminlte.css">
-        <link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
-        <link rel="stylesheet" href="../plugins/alertifyjs/css/themes/bootstrap.min.css"/>
-    </head>
+<head>
+	<title>TeamPass Installation</title>
+	<meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta http-equiv="x-ua-compatible" content="ie=edge" />
 
-    <body>
-<?php
-// define root path
-$abs_path = rtrim(
-    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
-    '/'
-).substr(
-    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
-    0,
-    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
-);
-if (isset($_SERVER['HTTPS'])) {
-    $protocol = 'https://';
-} else {
-    $protocol = 'http://';
-}
+	<link rel="stylesheet" href="css/install.css" type="text/css" />
+	<link rel="stylesheet" href="../plugins/fontawesome-free/css/all.css">
+
+	<!-- Theme style -->
+	<link rel="stylesheet" href="../plugins/adminlte/css/adminlte.css">
+	<link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css" />
+	<link rel="stylesheet" href="../plugins/alertifyjs/css/themes/bootstrap.min.css" />
+</head>
+
+<body>
+	<?php
+	// define root path
+	$abs_path = rtrim(
+		filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
+		'/'
+	) . substr(
+		filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
+		0,
+		strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
+	);
+	if (isset($_SERVER['HTTPS'])) {
+		$protocol = 'https://';
+	} else {
+		$protocol = 'http://';
+	}
 
 
-$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
-$post_db_host = filter_input(INPUT_POST, 'db_host', FILTER_SANITIZE_STRING);
-if (empty($post_db_host) === true) {
-	$post_db_host = filter_input(INPUT_POST, 'hid_db_host', FILTER_SANITIZE_STRING);
-}
-$post_db_login = filter_input(INPUT_POST, 'db_login', FILTER_SANITIZE_STRING);
-if (empty($post_db_login) === true) {
-	$post_db_login = filter_input(INPUT_POST, 'hid_db_login', FILTER_SANITIZE_STRING);
-}
-$post_db_pwd = filter_input(INPUT_POST, 'db_pwd', FILTER_SANITIZE_STRING);
-if (empty($post_db_pwd) === true) {
-	$post_db_pwd = filter_input(INPUT_POST, 'hid_db_pwd', FILTER_SANITIZE_STRING);
-}
-$post_db_port = filter_input(INPUT_POST, 'db_port', FILTER_SANITIZE_STRING);
-if (empty($post_db_port) === true) {
-	$post_db_port = filter_input(INPUT_POST, 'hid_db_port', FILTER_SANITIZE_STRING);
-}
-$post_db_bdd = filter_input(INPUT_POST, 'db_bdd', FILTER_SANITIZE_STRING);
-if (empty($post_db_bdd) === true) {
-	$post_db_bdd = filter_input(INPUT_POST, 'hid_db_bdd', FILTER_SANITIZE_STRING);
-}
-$post_db_pre = filter_input(INPUT_POST, 'db_pre', FILTER_SANITIZE_STRING);
-if (empty($post_db_pre) === true) {
-	$post_db_pre = filter_input(INPUT_POST, 'hid_db_pre', FILTER_SANITIZE_STRING);
-}
-$post_absolute_path = filter_input(INPUT_POST, 'absolute_path', FILTER_SANITIZE_STRING);
-if (empty($post_absolute_path) === true) {
-	$post_absolute_path = filter_input(INPUT_POST, 'hid_absolute_path', FILTER_SANITIZE_STRING);
-}
-$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
-if (empty($post_url_path) === true) {
-	$post_url_path = filter_input(INPUT_POST, 'hid_url_path', FILTER_SANITIZE_STRING);
-}
-$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
-if (empty($post_sk_path) === true) {
-	$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_STRING);
-}
+	$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
+	$post_db_host = filter_input(INPUT_POST, 'db_host', FILTER_SANITIZE_STRING);
+	if (empty($post_db_host) === true) {
+		$post_db_host = filter_input(INPUT_POST, 'hid_db_host', FILTER_SANITIZE_STRING);
+	}
+	$post_db_login = filter_input(INPUT_POST, 'db_login', FILTER_SANITIZE_STRING);
+	if (empty($post_db_login) === true) {
+		$post_db_login = filter_input(INPUT_POST, 'hid_db_login', FILTER_SANITIZE_STRING);
+	}
+	$post_db_pwd = filter_input(INPUT_POST, 'db_pwd', FILTER_SANITIZE_STRING);
+	if (empty($post_db_pwd) === true) {
+		$post_db_pwd = filter_input(INPUT_POST, 'hid_db_pwd', FILTER_SANITIZE_STRING);
+	}
+	$post_db_port = filter_input(INPUT_POST, 'db_port', FILTER_SANITIZE_STRING);
+	if (empty($post_db_port) === true) {
+		$post_db_port = filter_input(INPUT_POST, 'hid_db_port', FILTER_SANITIZE_STRING);
+	}
+	$post_db_bdd = filter_input(INPUT_POST, 'db_bdd', FILTER_SANITIZE_STRING);
+	if (empty($post_db_bdd) === true) {
+		$post_db_bdd = filter_input(INPUT_POST, 'hid_db_bdd', FILTER_SANITIZE_STRING);
+	}
+	$post_db_pre = filter_input(INPUT_POST, 'db_pre', FILTER_SANITIZE_STRING);
+	if (empty($post_db_pre) === true) {
+		$post_db_pre = filter_input(INPUT_POST, 'hid_db_pre', FILTER_SANITIZE_STRING);
+	}
+	$post_absolute_path = filter_input(INPUT_POST, 'absolute_path', FILTER_SANITIZE_STRING);
+	if (empty($post_absolute_path) === true) {
+		$post_absolute_path = filter_input(INPUT_POST, 'hid_absolute_path', FILTER_SANITIZE_STRING);
+	}
+	$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
+	if (empty($post_url_path) === true) {
+		$post_url_path = filter_input(INPUT_POST, 'hid_url_path', FILTER_SANITIZE_STRING);
+	}
+	$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
+	if (empty($post_sk_path) === true) {
+		$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_STRING);
+	}
 
-// Get some data
-include "../includes/config/include.php";
+	// Get some data
+	include "../includes/config/include.php";
 
-    // # LOADER
-    echo '
+	// # LOADER
+	echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="images/76.gif" /></div>';
-    // # HEADER ##
-    echo '
+	// # HEADER ##
+	echo '
 	<div id="top">
 		<div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
 		<div class="lcol">
-			<span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
+			<span class="header-title">' . strtoupper(TP_TOOL_NAME) . '</span>
 		</div>
 		
         <div id="content">
@@ -109,15 +110,15 @@ include "../includes/config/include.php";
                 </h3>
             </div>
             <div class="card-body">';
-if (!isset($_GET['step']) && !isset($post_step)) {
-    //ETAPE O
-	echo '
+	if (!isset($_GET['step']) && !isset($post_step)) {
+		//ETAPE O
+		echo '
 				<div class="row">
                     <div class="callout callout-warning col-12">
                         <h5><i class="fas fa-info-circle text-warning mr-2"></i>Welcome to Teampass installation</h5>
     
                         <p>This seems to be the 1st time Teampass will be installed on this server.<br>
-						It will proceed with installation of release <b>'.TP_VERSION_FULL.'</b>.</p>
+						It will proceed with installation of release <b>' . TP_VERSION_FULL . '</b>.</p>
                     </div>
 
                     <div class="callout callout-info col-12 mt-3">
@@ -137,13 +138,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 						<p><a class="text-primary" target="_blank" href="https://spdx.org/licenses/GPL-3.0-only.html#licenseText">Read complete license</a>
                     </div>
                 </div>';
-// STEP1
-} elseif ((isset($post_step) && $post_step == 2)
-    || (isset($_GET['step']) && $_GET['step'] == 2)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 1
-	echo '
+		// STEP1
+	} elseif ((isset($post_step) && $post_step == 2)
+		|| (isset($_GET['step']) && $_GET['step'] == 2)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 1
+		echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -153,11 +154,11 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 				<div class="card-body">
 					<div class="form-group">
 						<label>Absolute path to TeamPass folder</label>
-						<input type="text" class="form-control" name="absolute_path" id="absolute_path" class="ui-widget" value="'.$abs_path.'">
+						<input type="text" class="form-control" name="absolute_path" id="absolute_path" class="ui-widget" value="' . $abs_path . '">
 					</div>
 					<div class="form-group">
 						<label>Full URL to TeamPass</label>
-						<input type="text" class="form-control" name="url_path" id="url_path" class="ui-widget" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'">
+						<input type="text" class="form-control" name="url_path" id="url_path" class="ui-widget" value="' . $protocol . $_SERVER['HTTP_HOST'] . substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8) . '">
 					</div>
 				</div>
 			</div>
@@ -197,13 +198,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 			</div>
 		</div>
 	</div>';
-// STEP2
-} elseif ((isset($post_step) && $post_step == 3)
-    || (isset($_GET['step']) && $_GET['step'] == 3)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 2
-	echo '
+		// STEP2
+	} elseif ((isset($post_step) && $post_step == 3)
+		|| (isset($_GET['step']) && $_GET['step'] == 3)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 2
+		echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -240,13 +241,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 		</div>
 	</div>';
 
-// STEP3
-} elseif ((isset($post_step) && $post_step == 4)
-    || (isset($_GET['step']) && $_GET['step'] == 4)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 3
-	echo '
+		// STEP3
+	} elseif ((isset($post_step) && $post_step == 4)
+		|| (isset($_GET['step']) && $_GET['step'] == 4)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 3
+		echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -280,15 +281,15 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 			</div>
 		</div>
 	</div>';
-	
 
-// STEP4
-} elseif ((isset($post_step) && $post_step == 5)
-    || (isset($_GET['step']) && $_GET['step'] == 5)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 4
-	echo '
+
+		// STEP4
+	} elseif ((isset($post_step) && $post_step == 5)
+		|| (isset($_GET['step']) && $_GET['step'] == 5)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 4
+		echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -302,13 +303,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 		</div>
 	</div>';
 
-// STEP5
-} elseif ((isset($post_step) && $post_step == 6)
-    || (isset($_GET['step']) && $_GET['step'] == 6)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 5
-	echo '
+		// STEP5
+	} elseif ((isset($post_step) && $post_step == 6)
+		|| (isset($_GET['step']) && $_GET['step'] == 6)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 5
+		echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -328,13 +329,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 		</div>
 	</div>';
 
-// STEP6
-} elseif ((isset($post_step) && $post_step == 7)
-    || (isset($_GET['step']) && $_GET['step'] == 7)
-    && $post_user_granted === '1'
-) {
-    //ETAPE 6
-	echo '
+		// STEP6
+	} elseif ((isset($post_step) && $post_step == 7)
+		|| (isset($_GET['step']) && $_GET['step'] == 7)
+		&& $post_user_granted === '1'
+	) {
+		//ETAPE 6
+		echo '
 	<div class="row">
 		<div class="callout callout-primary col-12">
 			<h4>Thank you for installing <b>Teampass</b>.</h4>
@@ -362,45 +363,46 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 			</div>
 		</div>
 	</div>';
-}
+	}
 
-echo '	
+	echo '	
 	</div>	
         <div class="card-footer">';
-//buttons
-if (!isset($post_step)) {
-    echo '
+	//buttons
+	if (!isset($post_step)) {
+		echo '
             <input type="button" class="btn btn-primary" id="but_next" target_id="2" class="button" value="START" />
-            <input type="button" class="btn btn-primary" id="but_start" onclick="document.location = \''.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\'" class="button" style="display: none;" value="Start" />';
-} elseif ($post_step == 7) {
-    // Nothong to do
-} else {
-    echo '
-            <input type="button" id="but_launch" onclick="checkPage(\'step'.$post_step.'\')" class="btn btn-primary" value="START" />
-            <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">
+            <input type="button" class="btn btn-primary" id="but_start" onclick="document.location = \'' . $protocol . $_SERVER['HTTP_HOST'] . substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8) . '\'" class="button" style="display: none;" value="Start" />';
+	} elseif ($post_step == 7) {
+		// Nothong to do
+	} else {
+		echo '
+            <input type="button" id="but_launch" onclick="checkPage(\'step' . $post_step . '\')" class="btn btn-primary" value="START" />
+            <input type="button" id="but_next" target_id="' . (intval($post_step) + 1) . '" class="btn btn-primary" value="NEXT" disabled="disabled">
 			<input type="button" class="btn btn-primary" id="but_restart" onclick="document.location = \'install.php\'" class="button" value="RESTART" />';
-}
+	}
 
-echo '
+	echo '
         </div>
 	</form>
 	</div>';
-		
-//FOOTER
-echo '
+
+	//FOOTER
+	echo '
     <div id="footer">
         <div style="width:500px; font-size:16px;">
-            '.TP_TOOL_NAME.' '.TP_VERSION.' <i class="far fa-copyright"></i> copyright 2009-2019
+            ' . TP_TOOL_NAME . ' ' . TP_VERSION . ' <i class="far fa-copyright"></i> copyright 2009-2019
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>
     </div>';
-?>
+	?>
 </body>
+
 </html>
 
-		
-		
+
+
 <script type="text/javascript" src="../includes/js/functions.js"></script>
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script type="text/javascript" src="js/jquery-ui.min.js"></script>
