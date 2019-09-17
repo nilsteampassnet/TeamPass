@@ -1034,7 +1034,7 @@ if (($session_validite_pw === null
         "progressBar": false,
         "positionClass": "toast-bottom-right",
         "preventDuplicates": true,
-        "onclick": "close",
+        "onClick": "close",
         "showDuration": "300",
         "hideDuration": "1000",
         "timeOut": "0",

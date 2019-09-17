@@ -231,7 +231,20 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
 
         // Show details
-        Details(itemIdToShow, 'show', true);
+        $.when(
+            Details(itemIdToShow, 'show', true)
+        ).then(function() {
+            requestRunning = false;
+
+            // Force previous view to Tree folders
+            store.update(
+                'teampassUser',
+                function(teampassUser) {
+                    teampassUser.previousView = '#folders-tree-card';
+                }
+            );
+        });
+
     } else {
         /*// On page load, refresh list of items
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
@@ -657,33 +670,38 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('item-action') === 'edit') {
             console.info('SHOW EDIT ITEM');
-            // Is user allowed
-            if (store.get('teampassItem').item_rights < 40) {
-                toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
-                    '', {
-                        timeOut: 3000
+            $.when(
+                getPrivilegesOnItem(selectedFolderId, 1)
+            ).then(function() {
+                // Is user allowed
+                if (store.get('teampassItem').item_rights < 20) {
+                    toastr.error(
+                        '<?php echo langHdl('error_not_allowed_to'); ?>',
+                        '', {
+                            timeOut: 3000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // Store current view
+                savePreviousView();
+
+                // Store not a new item
+                store.update(
+                    'teampassItem',
+                    function(teampassItem) {
+                        teampassItem.isNewItem = 0
                     }
                 );
-                return false;
-            }
 
-            // Store current view
-            savePreviousView();
+                // Remove validated class
+                $('#form-item').removeClass('was-validated');
 
-            // Store not a new item
-            store.update(
-                'teampassItem',
-                function(teampassItem) {
-                    teampassItem.isNewItem = 0
-                }
-            );
-
-            // Remove validated class
-            $('#form-item').removeClass('was-validated');
-
-            // Now manage edtion
-            showItemEditForm(selectedFolderId);
+                // Now manage edtion
+                showItemEditForm(selectedFolderId);
+            });
 
             //
             // > END <
@@ -1766,12 +1784,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      * @return void
      */
     function closeItemDetailsCard() {
-        console.log('CLOSE - user did a change? ' + userDidAChange)
+        console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView)
         if (userDidAChange === true) {
             toastr
                 .warning(
-                    '<?php echo TP_TOOL_NAME; ?>',
-                    '<?php echo langHdl('changes_ongoing'); ?><br><button type="button" class="btn clear" id="discard-changes"><?php echo langHdl('yes'); ?></button>', {
+                    '<?php echo langHdl('changes_ongoing'); ?><br>' +
+                    '<button type="button" class="btn clear" id="discard-changes"><?php echo langHdl('yes'); ?></button>' +
+                    '<button type="button" class="btn clear ml-2" id="keep-changes"><?php echo langHdl('no'); ?></button>',
+                    '<?php echo langHdl('caution'); ?>', {
                         closeButton: true
                     }
                 );
@@ -2797,50 +2817,50 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     function showItemEditForm(selectedFolderId) {
         console.info('SHOW EDIT ITEM ' + selectedFolderId);
 
-        $.when(
-            getPrivilegesOnItem(selectedFolderId, 0)
-        ).then(function() {
-            // Now read
-            if (store.get('teampassItem').error === true) {
-                toastr.remove();
-                toastr.error(
-                    store.get('teampassItem').message,
-                    '', {
-                        timeOut: 3000
-                    }
-                );
-            } else {
-                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
-                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
-
-                // Show edition form
-                $('.form-item, #form-item-attachments-zone')
-                    .removeClass('hidden');
-                $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action, #item-details-card-categories')
-                    .addClass('hidden');
-
-                // Initial 'user did a change'
-                userDidAChange = false;
-
-                // Force update of simplepassmeter
-                $('#form-item-password').focus();
-                $('#form-item-label').focus();
-
-                // Set type of action
-                $('#form-item-button-save').data('action', 'update_item');
-
-                // Does this folder contain Custom Fields
-                if (store.get('teampassItem').hasCustomCategories.length > 0) {
-                    $('#form-item-field').removeClass('hidden');
-                    $.each(store.get('teampassItem').hasCustomCategories, function(i, category) {
-                        $('#form-item-category-' + category).removeClass('hidden');
-                    })
-                } else {
-                    $('#form-item-field, .form-item-category').addClass('hidden');
+        //$.when(
+        //    getPrivilegesOnItem(selectedFolderId, 0)
+        //).then(function() {
+        // Now read
+        if (store.get('teampassItem').error === true) {
+            toastr.remove();
+            toastr.error(
+                store.get('teampassItem').message,
+                '', {
+                    timeOut: 3000
                 }
-                // ---
+            );
+        } else {
+            $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+            $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+
+            // Show edition form
+            $('.form-item, #form-item-attachments-zone')
+                .removeClass('hidden');
+            $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action, #item-details-card-categories')
+                .addClass('hidden');
+
+            // Initial 'user did a change'
+            userDidAChange = false;
+
+            // Force update of simplepassmeter
+            $('#form-item-password').focus();
+            $('#form-item-label').focus();
+
+            // Set type of action
+            $('#form-item-button-save').data('action', 'update_item');
+
+            // Does this folder contain Custom Fields
+            if (store.get('teampassItem').hasCustomCategories.length > 0) {
+                $('#form-item-field').removeClass('hidden');
+                $.each(store.get('teampassItem').hasCustomCategories, function(i, category) {
+                    $('#form-item-category-' + category).removeClass('hidden');
+                })
+            } else {
+                $('#form-item-field, .form-item-category').addClass('hidden');
             }
-        });
+            // ---
+        }
+        //});
     }
 
 
@@ -3478,7 +3498,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 '</div>')
                             .removeClass('hidden');
 
-                    } else if ((store.get('teampassApplication').userIsReadObly === 1) //&& data.folder_requests_psk == 0
+                    } else if ((store.get('teampassApplication').userIsReadOnly === 1) //&& data.folder_requests_psk == 0
                         ||
                         data.access_level === 10
                     ) {
@@ -3961,7 +3981,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             var itemDisplay = 1;
             var itemOpenEdit = 0;
             var itemReload = 0;
-            var itemRights = 10;
+            var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
         }
 
         userDidAChange = false;
@@ -4000,8 +4020,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Prepare data to be sent
         var data = {
-            'id': itemId,
-            'folder_id': itemTreeId,
+            'id': parseInt(itemId),
+            'folder_id': parseInt(itemTreeId),
             'salt_key_required': itemSk,
             'expired_item': itemExpired,
             'restricted': itemRestricted,
@@ -4023,6 +4043,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                requestRunning = true;
                 console.log("RECEIVED");
                 console.log(data);
 
@@ -4484,6 +4505,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('#div_loading').addClass('hidden');
                 }
                 requestRunning = false;
+
                 return true;
             }
         );
@@ -4948,7 +4970,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Clear memory
         //localStorage.setItem("teampassItem", '');
-        //console.log('Get privilege for folder '+val)
+        console.log('Get privilege for folder ' + val)
 
         return $.post(
             "sources/items.queries.php", {
@@ -5023,7 +5045,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             teampassItem.itemMinimumComplexity = data.complexity === undefined ? '' : data.complexity,
                             teampassItem.itemVisibility = data.visibility === undefined ? '' : data.visibility,
                             teampassItem.id_restricted_to = data.usersList === undefined ? '' : data.usersList,
-                            teampassItem.id_restricted_to_roles = data.rolesList === undefined ? '' : data.rolesList
+                            teampassItem.id_restricted_to_roles = data.rolesList === undefined ? '' : data.rolesList,
+                            teampassItem.item_rights = data.itemAccessRight === undefined ? '' : data.itemAccessRight
                     }
                 );
                 //console.log('Content of teampassItem;')

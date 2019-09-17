@@ -4115,6 +4115,40 @@ if (null !== $post_type) {
                     }
                 }
 
+                $accessLevel = 20;
+                $arrTmp = [];
+                foreach ($_SESSION['user_roles'] as $role) {
+                    //db::debugmode(true);
+                    $access = DB::queryFirstRow(
+                        'SELECT type
+                        FROM ' . prefixTable('roles_values') . '
+                        WHERE role_id = %i AND folder_id = %i',
+                        $role,
+                        $post_id
+                    );
+                    //db::debugmode(false);
+                    if ($access['type'] === 'R') {
+                        array_push($arrTmp, 10);
+                    } elseif ($access['type'] === 'W') {
+                        array_push($arrTmp, 30);
+                    } elseif ($access['type'] === 'ND') {
+                        array_push($arrTmp, 20);
+                    } elseif ($access['type'] === 'NE') {
+                        array_push($arrTmp, 10);
+                    } elseif ($access['type'] === 'NDNE') {
+                        array_push($arrTmp, 15);
+                    } else {
+                        // Ensure to give access Right if allowed folder
+                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                            array_push($arrTmp, 30);
+                        } else {
+                            array_push($arrTmp, 0);
+                        }
+                    }
+                }
+                // 3.0.0.0 - changed  MIN to MAX
+                $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
+
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $post_item_id);
 
@@ -4302,6 +4336,7 @@ if (null !== $post_type) {
                 'rolesList' => $listOptionsForRoles,
                 'setting_restricted_to_roles' => isset($SETTINGS['restricted_to_roles']) === true
                     && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0,
+                'itemAccessRight' => $accessLevel,
             );
             echo prepareExchangedData($returnValues, 'encode');
             break;
@@ -6042,7 +6077,7 @@ if (null !== $post_type) {
                     } else {
                         $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                     }
-                    
+
                     // Prepare action
                     $action = '';
                     $detail = '';
