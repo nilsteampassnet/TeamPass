@@ -51,6 +51,7 @@ $(document).on('change', '#ldap_type', function() {
 });
 
 $(function() {
+    requestRunning = true;
     // Load list of groups
     $("#ldap_new_user_is_administrated_by, #ldap_new_user_role").empty();
     $.post(

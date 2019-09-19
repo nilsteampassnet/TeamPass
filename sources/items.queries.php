@@ -4124,8 +4124,9 @@ if (null !== $post_type) {
                         FROM ' . prefixTable('roles_values') . '
                         WHERE role_id = %i AND folder_id = %i',
                         $role,
-                        $post_id
+                        $post_groupe
                     );
+                    //echo $access['type']." ; ";
                     //db::debugmode(false);
                     if ($access['type'] === 'R') {
                         array_push($arrTmp, 10);

@@ -46,7 +46,7 @@ define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 
 define('DEBUG', true);
-define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
+define('DEBUGLDAP', true); //Can be used in order to debug LDAP authentication
 define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
 
 // Management Pages

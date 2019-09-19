@@ -1050,14 +1050,19 @@ $('#button-password-generate').click(function() {
 /**
  * TRACK CHANGES IN FORM
  */
-$('#form-user .track-change').on('change', function() {
-    if ($(this).val() !== null && $(this).val().length > 0) {
+$('#form-user .track-change')
+    .on('change', function() {
+        if ($(this).val() !== null && $(this).val().length > 0) {
+            userDidAChange = true;
+            $(this).data('change-ongoing', true);
+        } else {
+            $(this).data('change-ongoing', false);
+        }
+    })
+    .on('ifChecked', function() {
         userDidAChange = true;
         $(this).data('change-ongoing', true);
-    } else {
-        $(this).data('change-ongoing', false);
-    }
-});
+    });
 
 //************************************************************* */
 

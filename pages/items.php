@@ -282,7 +282,7 @@ echo '
                                     && (int) $SETTINGS['anyone_can_modify'] === 1
                                 ) {
                                     ?>
-                                    <div class="form-check mb-3 icheck-material-blue">
+                                    <div class="form-check mb-3 icheck-blue">
                                         <input type="checkbox" class="form-check-input form-item-control track-change" id="form-item-anyoneCanModify" <?php
                                                                                                                                                             echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
                                                                                                                                                                 && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
@@ -431,7 +431,7 @@ echo '
                                             && $SETTINGS['item_creation_templates'] === '1'
                                         ) {
                                             echo '
-                                            <div class="form-check icheck-material-blue">
+                                            <div class="form-check icheck-blue">
                                                 <input type="checkbox" class="form-check-input form-check-input-template form-item-control" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
                                                 <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . langHdl('main_template') . '</label>
                                             </div>';
@@ -1016,7 +1016,7 @@ echo '
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                         <p><?php echo langHdl('notification_message'); ?></p>
                     </div>
-                    <div class="form-group icheck-material-blue">
+                    <div class="form-group icheck-blue">
                         <input type="checkbox" class="form-check-input form-item-control" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
                     </div>
                 </div>
@@ -1146,7 +1146,7 @@ echo '
                         <label><?php echo langHdl('select_folder_to_delete'); ?></label>
                         <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-delete-selection" required></select>
                     </div>
-                    <div class="form-check mb-3 alert alert-warning icheck-material-red">
+                    <div class="form-check mb-3 alert alert-warning icheck-red">
                         <input type="checkbox" class="form-check-input form-item-control" id="form-folder-confirm-delete" required>
                         <label class="form-check-label ml-3" for="form-folder-confirm-delete"><i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('folder_delete_confirm'); ?></label>
                     </div>

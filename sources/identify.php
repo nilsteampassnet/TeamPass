@@ -495,7 +495,8 @@ function identifyUser($sentData, $SETTINGS)
             $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
         if ($SETTINGS['ldap_type'] === 'posix-search') {
-            $ret = identifyViaLDAPPosixSearch(
+            $retLDAP = identifyViaLDAPPosixSearch(
+                $username,
                 $data,
                 $ldap_suffix,
                 $passwordClear,
@@ -503,9 +504,9 @@ function identifyUser($sentData, $SETTINGS)
                 $SETTINGS
             );
 
-            if ($ret['error'] === true) {
-                echo json_encode($ret['message']);
-            } elseif ($ret['proceedIdentification'] !== true && $ret['userInLDAP'] === true) {
+            if ($retLDAP['error'] === true) {
+                echo json_encode($retLDAP['message']);
+            } elseif ($retLDAP['proceedIdentification'] !== true && $retLDAP['userInLDAP'] === true) {
                 logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
                 echo prepareExchangedData(
                     array(
@@ -522,11 +523,11 @@ function identifyUser($sentData, $SETTINGS)
                 return false;
             } else {
                 $ldapConnection = true;
-                $user_info_from_ad = $ret['user_info_from_ad'];
-                $proceedIdentification = $ret['proceedIdentification'];
+                $user_info_from_ad = $retLDAP['user_info_from_ad'];
+                $proceedIdentification = $retLDAP['proceedIdentification'];
             }
         } else {
-            $ret = identifyViaLDAPPosix(
+            $retLDAP = identifyViaLDAPPosix(
                 $username,
                 $ldap_suffix,
                 $passwordClear,
@@ -534,9 +535,9 @@ function identifyUser($sentData, $SETTINGS)
                 $SETTINGS
             );
 
-            if ($ret['error'] === true) {
-                echo json_encode($ret['message']);
-            } elseif ($ret['proceedIdentification'] !== true) {
+            if ($retLDAP['error'] === true) {
+                echo json_encode($retLDAP['message']);
+            } elseif ($retLDAP['proceedIdentification'] !== true) {
                 logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
                 echo prepareExchangedData(
                     array(
@@ -552,16 +553,15 @@ function identifyUser($sentData, $SETTINGS)
 
                 return false;
             } else {
-                $auth_username = $ret['auth_username'];
-                $proceedIdentification = $ret['proceedIdentification'];
-                $user_info_from_ad = $ret['user_info_from_ad'];
+                $auth_username = $retLDAP['auth_username'];
+                $proceedIdentification = $retLDAP['proceedIdentification'];
+                $user_info_from_ad = $retLDAP['user_info_from_ad'];
             }
         }
     }
 
     // Check Yubico
-    if (
-        isset($SETTINGS['yubico_authentication'])
+    if (isset($SETTINGS['yubico_authentication']) === true
         && (int) $SETTINGS['yubico_authentication'] === 1
         && ((int) $data['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $data['admin'] === 1))
         && $user_2fa_selection === 'yubico'
@@ -602,7 +602,7 @@ function identifyUser($sentData, $SETTINGS)
             $username,
             $passwordClear,
             $data,
-            $user_info_from_ad,
+            $retLDAP,
             $SETTINGS
         );
 
@@ -1428,7 +1428,8 @@ function identifyUser($sentData, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param array  $data          Username
+ * @param string $username      Username
+ * @param array  $userInfo      User account information
  * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
  * @param int    $counter       User exists in teampass
@@ -1436,7 +1437,7 @@ function identifyUser($sentData, $SETTINGS)
  *
  * @return array
  */
-function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
+function identifyViaLDAPPosixSearch($username, $userInfo, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
@@ -1456,6 +1457,9 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
             $ldapURIs .= 'ldap://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
         }
     }
+
+    // Force
+    $userInfo['login'] = $username;
 
     // Debug
     debugIdentify(
@@ -1499,12 +1503,12 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
             $ldapbind = false;
         }
         if (($SETTINGS['ldap_bind_dn'] === '' && $SETTINGS['ldap_bind_passwd'] === '') || $ldapbind === true) {
-            $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $data['login'] . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
+            $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $userInfo['login'] . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
             $result = ldap_search(
                 $ldapconn,
                 $SETTINGS['ldap_search_base'],
                 $filter,
-                array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
+                array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire', 'memberof')
             );
 
             // Debug
@@ -1545,9 +1549,11 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
 
                 // Should we restrain the search in specified user groups
                 $GroupRestrictionEnabled = false;
+                $commonGroupsLdapVsTeampass = array();
+                $result['commonGroupsLdapVsTeampass'] = array();
                 if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
                     // New way to check User's group membership
-                    $filter_group = 'memberUid=' . $data['login'];
+                    $filter_group = 'memberUid=' . $userInfo['login'];
                     $result_group = ldap_search(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
@@ -1556,25 +1562,41 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
                     );
 
                     if ($result_group) {
-                        $entries = ldap_get_entries($ldapconn, $result_group);
+                        $ldapUserGroups = ldap_get_entries($ldapconn, $result_group);
 
                         // Debug
                         debugIdentify(
                             DEBUGLDAP,
                             DEBUGLDAPFILE,
                             'Search groups appartenance : ' . $SETTINGS['ldap_search_base'] . "\n" .
-                                'Results : ' . print_r($entries, true) . "\n"
+                                'Results : ' . print_r($ldapUserGroups, true) . "\n"
                         );
 
-                        if ($entries['count'] > 0) {
+                        if ($ldapUserGroups['count'] > 0) {
+                            // Get list of roles in Teampass
+                            $rowsTeampassRoles = DB::query(
+                                'SELECT id, title
+                                FROM ' . prefixTable('roles_title') . '
+                                ORDER BY title ASC'
+                            );
+                            
                             // Now check if group fits
-                            for ($i = 0; $i < $entries['count']; ++$i) {
-                                $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
-                                if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                            // Also identify groups in LDAP that exists in Teampass
+                            for ($i = 0; $i < $ldapUserGroups['count']; ++$i) {
+                                $groupName = str_replace(array('CN=', 'cn='), '', ldap_explode_dn($ldapUserGroups[$i]['dn'], 0)[0]);
+                                if ($groupName === $SETTINGS['ldap_usergroup']) {
                                     $GroupRestrictionEnabled = true;
-                                    break;
+                                }
+                                
+                                foreach ($rowsTeampassRoles as $teampassRole) {
+                                    if ($teampassRole['title'] === $groupName) {
+                                        array_push($commonGroupsLdapVsTeampass, $teampassRole['id']);
+                                        break;
+                                    }
                                 }
                             }
+
+                            $result[0]['commonGroupsLdapVsTeampass'] = implode(';', $commonGroupsLdapVsTeampass);
                         }
                     }
 
@@ -1582,37 +1604,43 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
                     debugIdentify(
                         DEBUGLDAP,
                         DEBUGLDAPFILE,
-                        'Group was found : ' . var_export($GroupRestrictionEnabled, true) . "\n"
+                        'Group was found : ' . var_export($GroupRestrictionEnabled, true) . ' -- \n' . var_export($result, true) . "\n"
                     );
                 }
 
                 // Is user in the LDAP?
-                if (
-                    $GroupRestrictionEnabled === true
+                if ($GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                        && (isset($SETTINGS['ldap_usergroup']) === false
-                            || (isset($SETTINGS['ldap_usergroup']) === true
-                                && empty($SETTINGS['ldap_usergroup']) === true)))
+                    && (isset($SETTINGS['ldap_usergroup']) === false
+                    || (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
                     if ($ldapbind === true) {
                         $ldapConnection = true;
 
-                        // Update user's password
-                        $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                        $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
 
-                        // Do things if user exists in TP
-                        if ($counter > 0) {
+                        debugIdentify(
+                            DEBUGLDAP,
+                            DEBUGLDAPFILE,
+                            'User is authenticated on LDAP (meaning credentials are correct in AD)\n\n'
+                        );
+
+                        // Update user's password if it has changed in LDAP
+                        // And if user exists in TP
+                        if ($counter > 0 && $pwdlib->verifyPasswordHash(htmlspecialchars_decode($passwordClear), $userInfo['pw']) === false) {
                             // Update pwd in TP database
                             DB::update(
                                 prefixTable('users'),
                                 array(
-                                    'pw' => $data['pw'],
-                                    'login' => $data['login'],
+                                    'pw' => $hashedPassword,
+                                    'login' => $userInfo['login'],
+                                    'upgrade_needed' => 1,
                                 ),
                                 'id = %i',
-                                $data['id']
+                                $userInfo['id']
                             );
 
                             debugIdentify(
@@ -1637,10 +1665,10 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
                             prefixTable('users'),
                             array(
                                 'pw' => $pwdlib->createPasswordHash($pwdlib->getRandomToken(12)),
-                                'login' => $data['login'],
+                                'login' => $userInfo['login'],
                             ),
                             'id = %i',
-                            $data['id']
+                            $userInfo['id']
                         );
 
                         $ldapConnection = false;
@@ -1677,6 +1705,8 @@ function identifyViaLDAPPosixSearch($data, $ldap_suffix, $passwordClear, $counte
         'user_info_from_ad' => $result,
         'proceedIdentification' => $proceedIdentification,
         'userInLDAP' => $userInLDAP,
+        'userGroups' => $ldapUserGroups,
+        'hashedPassword' => isset($hashedPassword) === true ? $hashedPassword : '',
     );
 }
 
@@ -1843,6 +1873,7 @@ function identifyViaLDAPPosix($data, $ldap_suffix, $passwordClear, $counter, $SE
         'auth_username' => $auth_username,
         'proceedIdentification' => $proceedIdentification,
         'user_info_from_ad' => $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn')),
+        'userGroups' => $ldapUserGroups,
     );
 }
 
@@ -1927,15 +1958,15 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $data, $SETTINGS
 /**
  * Undocumented function.
  *
- * @param string $username          Username
- * @param string $passwordClear     User password in clear
- * @param string $data              Result of query
- * @param string $user_info_from_ad Received data
- * @param array  $SETTINGS          Teampass settings
+ * @param string $username      User name
+ * @param string $passwordClear User password in clear
+ * @param string $userInfo      User account information
+ * @param string $retLDAP       Received data from LDAP
+ * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
-function ldapCreateUser($username, $passwordClear, $data, $user_info_from_ad, $SETTINGS)
+function ldapCreateUser($username, $passwordClear, $userInfo, $retLDAP, $SETTINGS)
 {
     // Generate user keys pair
     $userKeys = generateUserKeys($passwordClear);
@@ -1945,15 +1976,16 @@ function ldapCreateUser($username, $passwordClear, $data, $user_info_from_ad, $S
         prefixTable('users'),
         array(
             'login' => $username,
-            'pw' => $data['pw'],
-            'email' => (isset($user_info_from_ad[0]['mail'][0]) === false) ? '' : $user_info_from_ad[0]['mail'][0],
-            'name' => $user_info_from_ad[0]['givenname'][0],
-            'lastname' => $user_info_from_ad[0]['sn'][0],
+            'pw' => $retLDAP['hashedPassword'],
+            'email' => (isset($retLDAP['user_info_from_ad'][0]['mail'][0]) === false) ? '' : $retLDAP['user_info_from_ad'][0]['mail'][0],
+            'name' => $retLDAP['user_info_from_ad'][0]['givenname'][0],
+            'lastname' => $retLDAP['user_info_from_ad'][0]['sn'][0],
             'admin' => '0',
             'gestionnaire' => '0',
             'can_manage_all_users' => '0',
             'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-            'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
+            'fonction_id' => (empty($retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass']) === false ? $retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass'].';' : '') .
+                (isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0'),
             'groupes_interdits' => '',
             'groupes_visibles' => '',
             'last_pw_change' => time(),

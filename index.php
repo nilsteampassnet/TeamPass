@@ -939,9 +939,9 @@ if (($session_validite_pw === null
     <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
     <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
     <!-- ICHECK -->
-    <link rel="stylesheet" href="./plugins/icheck-material/icheck-material.min.css">
-    <link rel="stylesheet" href="./plugins/icheck-bootstrap/all.css">
-    <script type="text/javascript" src="./plugins/icheck-bootstrap/icheck.min.js"></script>
+    <!--<link rel="stylesheet" href="./plugins/icheck-material/icheck-material.min.css">-->
+    <link rel="stylesheet" href="./plugins/icheck/skins/all.css">
+    <script type="text/javascript" src="./plugins/icheck/icheck.min.js"></script>
     <!-- bootstrap-add-clear -->
     <!-- <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script> -->
 
