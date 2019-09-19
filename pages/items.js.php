@@ -203,7 +203,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     ) {
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Store current view
         savePreviousView();
@@ -1008,6 +1008,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('#folders-tree-card, .columns-position').removeClass('hidden');
 
                     // Inform user
+                    toastr.remove();
                     toastr.info(
                         '<?php echo langHdl('done'); ?>',
                         '', {
@@ -1057,7 +1058,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
 
         var data = {
@@ -1079,8 +1080,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Show error
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban mr-2"></i>' + data.message,
-                        '', {
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
                             timeOut: 5000
                         }
                     );
@@ -1130,7 +1131,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Prepare data
         var data = {
@@ -1184,7 +1185,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     $('#form-item-delete-perform').click(function() {
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1288,7 +1289,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1360,7 +1361,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Show cog
             toastr.remove();
             toastr.info(
-                '<i class="fas fa-cog fa-spin fa-2x"></i>',
+                '<i class="fas fa-circle-notch fa-spin fa-2x"></i>',
             );
 
             // Force user did a change to false
@@ -1459,7 +1460,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1551,7 +1552,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1650,7 +1651,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
 
         var selectedFolders = [],
@@ -1723,7 +1724,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // Show cog
         toastr.remove();
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         var data = {
             'source_folder_id': $('#form-folder-copy-source option:selected').val(),
@@ -1912,14 +1913,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load item info
             Details($(this).closest('tr'), 'show');
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>');
+            toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             console.log('EDIT ME')
             // Set type of action
@@ -2624,7 +2625,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Inform user
                 toastr.remove();
                 toastr.info(
-                    '<?php echo langHdl('opening_folder'); ?><i class="fas fa-cog fa-spin ml-2"></i>'
+                    '<?php echo langHdl('opening_folder'); ?><i class="fas fa-circle-notch fa-spin ml-2"></i>'
                 );
 
                 // CLear tempo var
@@ -3236,7 +3237,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Inform user
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('opening_folder'); ?><i class="fas fa-cog fa-spin ml-2"></i>'
+                '<?php echo langHdl('opening_folder'); ?><i class="fas fa-circle-notch fa-spin ml-2"></i>'
             );
 
             // Prepare data to be sent
@@ -3375,7 +3376,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 // Warn user that it starts
                                 toastr.remove();
                                 toastr.info(
-                                    '<i class="fas fa-cog fa-spin fa-2x"></i>'
+                                    '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
                                 );
 
                                 $.ajax({
@@ -3847,7 +3848,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     // Warn user that it starts
                     toastr.info(
-                        '<i class="fas fa-cog fa-spin fa-2x"></i>'
+                        '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
                     );
 
                     // Hide helper
@@ -4840,7 +4841,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     PreviewImage = function(fileId) {
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('loading_image'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>'
+            '<?php echo langHdl('loading_image'); ?>...<i class="fa fa-circle-notch fa-spin fa-2x ml-2"></i>'
         );
 
         $.post(

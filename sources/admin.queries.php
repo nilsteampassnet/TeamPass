@@ -2389,7 +2389,13 @@ switch ($post_type) {
     case 'save_google_options':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
         // decrypt and retreive data in JSON format
@@ -2467,7 +2473,13 @@ switch ($post_type) {
     case 'save_agses_options':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
         // decrypt and retreive data in JSON format
@@ -2570,7 +2582,13 @@ switch ($post_type) {
     case 'save_option_change':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => true, 'message' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
         // decrypt and retreive data in JSON format
@@ -2705,7 +2723,13 @@ switch ($post_type) {
     case 'get_values_for_statistics':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -2720,7 +2744,13 @@ switch ($post_type) {
     case 'save_sending_statistics':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -2792,174 +2822,16 @@ switch ($post_type) {
         echo '[{"error" : false}]';
         break;
 
-    case 'admin_ldap_test_configuration':
-        // Check
-        if (null === $post_option || empty($post_option) === true) {
-            echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No options" }]';
-            break;
-        }
-
-        require_once 'main.functions.php';
-
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData($post_option, 'decode');
-
-        if (empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) {
-            echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No user credentials" }]';
-            break;
-        }
-
-        $debug_ldap = $ldap_suffix = '';
-
-        //Multiple Domain Names
-        if (strpos(html_entity_decode($dataReceived[0]['username']), '\\') === true) {
-            $ldap_suffix = '@' . substr(html_entity_decode($dataReceived[0]['username']), 0, strpos(html_entity_decode($dataReceived[0]['username']), '\\'));
-            $dataReceived[0]['username'] = substr(html_entity_decode($dataReceived[0]['username']), strpos(html_entity_decode($dataReceived[0]['username']), '\\') + 1);
-        }
-        if ($dataReceived[0]['ldap_type'] === 'posix-search') {
-            $ldapURIs = '';
-            foreach (explode(',', $dataReceived[0]['ldap_domain_controler']) as $domainControler) {
-                if ($dataReceived[0]['ldap_ssl_input'] == 1) {
-                    $ldapURIs .= 'ldaps://' . $domainControler . ':' . $dataReceived[0]['ldap_port'] . ' ';
-                } else {
-                    $ldapURIs .= 'ldap://' . $domainControler . ':' . $dataReceived[0]['ldap_port'] . ' ';
-                }
-            }
-
-            $debug_ldap .= 'LDAP URIs : ' . $ldapURIs . '<br/>';
-            $ldapconn = ldap_connect($ldapURIs);
-
-            if ($dataReceived[0]['ldap_tls_input']) {
-                ldap_start_tls($ldapconn);
-            }
-
-            $debug_ldap .= 'LDAP connection : ' . ($ldapconn ? 'Connected' : 'Failed') . '<br/>';
-
-            if ($ldapconn) {
-                $debug_ldap .= 'DN : ' . $dataReceived[0]['ldap_bind_dn'] . ' -- ' . $dataReceived[0]['ldap_bind_passwd'] . '<br/>';
-                ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
-                ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
-                $ldapbind = ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
-
-                $debug_ldap .= 'LDAP bind : ' . ($ldapbind ? 'Bound' : 'Failed') . '<br/>';
-
-                if ($ldapbind) {
-                    $filter = '(&(' . $dataReceived[0]['ldap_user_attribute'] . '=' . $dataReceived[0]['username'] . ')(objectClass=' . $dataReceived[0]['ldap_object_class'] . '))';
-                    //echo $filter;
-                    $result = ldap_search(
-                        $ldapconn,
-                        $dataReceived[0]['ldap_search_base'],
-                        $filter,
-                        array('dn', 'mail', 'givenname', 'sn', 'uid')
-                    );
-                    if (isset($dataReceived[0]['ldap_usergroup'])) {
-                        $GroupRestrictionEnabled = false;
-                        $filter_group = 'memberUid=' . $dataReceived[0]['username'];
-                        $result_group = ldap_search(
-                            $ldapconn,
-                            $dataReceived[0]['ldap_search_base'],
-                            $filter_group,
-                            array('dn')
-                        );
-
-                        $debug_ldap .= 'Search filter (group): ' . $filter_group . '<br/>' .
-                            'Results : ' . str_replace("\n", '<br>', print_r(ldap_get_entries($ldapconn, $result_group), true)) . '<br/>';
-
-                        if ($result_group) {
-                            $entries = ldap_get_entries($ldapconn, $result_group);
-
-                            if ($entries['count'] > 0) {
-                                // Now check if group fits
-                                for ($i = 0; $i < $entries['count']; ++$i) {
-                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
-                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                        $GroupRestrictionEnabled = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        $debug_ldap .= 'Find user in Group: ' . $GroupRestrictionEnabled . '<br/>';
-                    }
-
-                    $debug_ldap .= 'Search filter : ' . $filter . '<br/>' .
-                        'Results : ' . str_replace("\n", '<br>', print_r(ldap_get_entries($ldapconn, $result), true)) . '<br/>';
-
-                    if (ldap_count_entries($ldapconn, $result)) {
-                        // try auth
-                        $result = ldap_get_entries($ldapconn, $result);
-                        $user_dn = $result[0]['dn'];
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $dataReceived[0]['username_pwd']);
-                        if ($ldapbind) {
-                            $debug_ldap .= 'Successfully connected';
-                        } else {
-                            $debug_ldap .= 'Error - Cannot connect user!';
-                        }
-                    }
-                } else {
-                    $debug_ldap .= 'Error - Could not bind server!';
-                }
-            } else {
-                $debug_ldap .= 'Error - Could not connect to server!';
-            }
-        } else {
-            $debug_ldap .= 'Get all ldap params: <br/>' .
-                '  - base_dn : ' . $dataReceived[0]['ldap_domain_dn'] . '<br/>' .
-                '  - account_suffix : ' . $dataReceived[0]['ldap_suffix'] . '<br/>' .
-                '  - domain_controllers : ' . $dataReceived[0]['ldap_domain_controler'] . '<br/>' .
-                '  - ad_port : ' . $dataReceived[0]['ldap_port'] . '<br/>' .
-                '  - use_ssl : ' . $dataReceived[0]['ldap_ssl_input'] . '<br/>' .
-                '  - use_tls : ' . $dataReceived[0]['ldap_tls_input'] . '<br/>*********<br/>';
-
-            $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
-            $adldap->register();
-
-            // Posix style LDAP handles user searches a bit differently
-            if ($dataReceived[0]['ldap_type'] === 'posix') {
-                $ldap_suffix = ',' . $dataReceived[0]['ldap_suffix'] . ',' . $dataReceived[0]['ldap_domain_dn'];
-            } elseif ($dataReceived[0]['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
-                $ldap_suffix = $dataReceived[0]['ldap_suffix'];
-            }
-            $adldap = new adLDAP\adLDAP(
-                array(
-                    'base_dn' => $dataReceived[0]['ldap_domain_dn'],
-                    'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(',', $dataReceived[0]['ldap_domain_controler']),
-                    'ad_port' => $dataReceived[0]['ldap_port'],
-                    'use_ssl' => $dataReceived[0]['ldap_ssl_input'],
-                    'use_tls' => $dataReceived[0]['ldap_tls_input'],
-                )
-            );
-
-            $debug_ldap .= 'Create new adldap object : ' . $adldap->getLastError() . '<br/><br/>';
-
-            // openLDAP expects an attribute=value pair
-            if ($dataReceived[0]['ldap_type'] === 'posix') {
-                $auth_username = $dataReceived[0]['ldap_user_attribute'] . '=' . $dataReceived[0]['username'];
-            } else {
-                $auth_username = $dataReceived[0]['username'];
-            }
-
-            // authenticate the user
-            if ($adldap->authenticate($auth_username, html_entity_decode($dataReceived[0]['username_pwd']))) {
-                $ldapConnection = 'Successfull';
-            } else {
-                $ldapConnection = 'Not possible to get connected with this user';
-            }
-
-            $debug_ldap .= 'After authenticate : ' . $adldap->getLastError() . '<br/><br/>' .
-                'ldap status : ' . $ldapConnection; //Debug
-        }
-
-        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "' . $antiXss->xss_clean($debug_ldap) . '" }]';
-
-        break;
-
     case 'is_backup_table_existing':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -2978,7 +2850,13 @@ switch ($post_type) {
     case 'get_list_of_roles':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
             break;
         }
 

@@ -28,9 +28,6 @@ function IncreaseSessionTime(messageEnd, duration){
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
                 $("#countdown").css("color","white");
-                alertify
-                    .success(messageEnd, 2)
-                    .dismissOthers();
             } else {
                 $(location).attr("href","index.php?session=expired");
             }

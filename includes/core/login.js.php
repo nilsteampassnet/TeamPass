@@ -54,12 +54,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                             .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + ret[1]);
                     } else {
                         // finally launch identification process inside Teampass.
-                        alertify
-                            .message(
-                                '<i class="fas fa-cog fa-spin fa-lg mr-2"></i><?php echo langHdl('please_wait'); ?>',
-                                0
-                            )
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                        );
 
                         $.post(
                             "sources/identify.php", {
@@ -72,7 +70,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                 $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
 
                                 if (data.error !== false) {
-                                    alertify.message('<?php echo langHdl('done'); ?>', 1).dismissOthers();
+                                    toastr.remove();
+                                    toastr.success(
+                                        '<?php echo langHdl('done'); ?>',
+                                        '', {
+                                            timeOut: 1000
+                                        }
+                                    );
                                     $("#div-2fa-duo-progress")
                                         .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + data.message);
                                 } else {
@@ -217,10 +221,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                 $('#confirm-no-current-password').is(':checked') === false
             ) {
                 // Alert
-                alertify.set('notifier', 'position', 'top-center');
-                alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('current_password_mandatory'); ?>', 5)
-                    .dismissOthers();
+                toastr.remove();
+                toastr.error(
+                    '<?php echo langHdl('current_password_mandatory'); ?>',
+                    '<?php echo langHdl('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
                 return false;
             }
 
@@ -246,14 +254,23 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                     if (data.error !== false) {
                         // Show error
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         // Inform user
-                        alertify
-                            .success('<?php echo langHdl('password_changed'); ?>', 0)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo langHdl('password_changed'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
 
                         // Check if user has a old DEFUSE PSK
                         if (store.get('teampassUser').user_has_psk === true) {
@@ -268,10 +285,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
             );
         } else {
             // Alert
-            alertify.set('notifier', 'position', 'top-center');
-            alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('confirmation_seems_wrong'); ?>', 5)
-                .dismissOthers();
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('confirmation_seems_wrong'); ?>',
+                '<?php echo langHdl('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
         }
     });
 
@@ -280,9 +301,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
         console.log("START RE-ENCRYPTING PERSONAL ITEMS --> " + $('#user-old-defuse-psk').val());
 
         if ($('#user-old-defuse-psk').val() !== '') {
-            alertify
-                .message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info(
+                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            );
 
             // Prepare data
             var data = {
@@ -302,20 +324,26 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                     // Is there an error?
                     if (data.error === true) {
-                        alertify.dismissAll();
-                        alertify
-                            .alert(
-                                '<?php echo langHdl('warning'); ?>',
-                                '<div style="margin:10px 0 10px 15px;">' + data.message + '</div>'
-                            );
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         if (data.items_list.length > 0 || data.files_list.length > 0) {
                             encryptPersonalItems(data.items_list, data.files_list, data.psk);
                         } else {
                             // Finished
-                            alertify
-                                .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
-                                .dismissOthers();
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo langHdl('alert_page_will_reload'); ?>',
+                                '', {
+                                    timeOut: 10000
+                                }
+                            );
                             location.reload();
                         }
 
@@ -346,12 +374,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                                         // Is there an error?
                                         if (data.error === true) {
-                                            alertify.dismissAll();
-                                            alertify
-                                                .alert(
-                                                    '<?php echo langHdl('warning'); ?>',
-                                                    data.message
-                                                );
+                                            toastr.remove();
+                                            toastr.error(
+                                                data.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
+                                                }
+                                            );
                                         } else {
                                             // Loop on items / files
                                             encryptPersonalItems(data.items_list, data.files_list);
@@ -360,9 +390,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                 );
                             } else {
                                 // Finisehd
-                                alertify
-                                    .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
-                                    .dismissOthers();
+                                toastr.remove();
+                                toastr.success(
+                                    '<?php echo langHdl('alert_page_will_reload'); ?>',
+                                    '', {
+                                        timeOut: 10000
+                                    }
+                                );
                                 location.reload();
                             }
                         }
@@ -371,62 +405,76 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
             );
         } else {
             // Alert
-            alertify.set('notifier', 'position', 'top-center');
-            alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('empty_psk'); ?>', 5)
-                .dismissOthers();
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('empty_psk'); ?>',
+                '<?php echo langHdl('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
         }
     });
 
     $(document).on('click', '#but_confirm_forgot_defuse_psk', function() {
         // Is the user sure?
-        alertify
-            .confirm(
-                '<?php echo langHdl('your_attention_is_required'); ?>',
-                '<?php echo langHdl('i_cannot_remember_info'); ?>',
-                function() {
-                    alertify
-                        .message(
-                            '<i class="fas fa-cog fa-spin fa-lg mr-2"></i><?php echo langHdl('please_wait'); ?>',
-                            0
-                        )
-                        .dismissOthers();
+        showModalDialogBox(
+            '#warningModal',
+            '<?php echo langHdl('your_attention_is_required'); ?>',
+            '<?php echo langHdl('i_cannot_remember_info'); ?>',
+            '<?php echo langHdl('confirm'); ?>',
+            '<?php echo langHdl('cancel'); ?>'
+        );
 
-                    // Disable buttons && field
-                    $('.btn-block, #user-old-defuse-psk').attr("disabled", "disabled");
+        // Actions on modal buttons
+        $(document).on('click', '#warningModalButtonAction', function() {
+            // Disable buttons && field
+            $('.btn-block, #user-old-defuse-psk').attr("disabled", "disabled");
 
-                    // Now launch query
-                    $.post(
-                        "sources/main.queries.php", {
-                            type: "user_forgot_his_personal_saltkey",
-                            key: store.get('teampassUser').sessionKey
-                        },
-                        function(data) {
-                            data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
-
-                            // Is there an error?
-                            if (data.error === true) {
-                                alertify.dismissAll();
-                                alertify
-                                    .alert(
-                                        '<?php echo langHdl('warning'); ?>',
-                                        data.message
-                                    );
-                            } else {
-                                // Inform user
-                                alertify
-                                    .success('<?php echo langHdl('done'); ?>. <?php echo langHdl('alert_page_will_reload'); ?>', 10)
-                                    .dismissOthers();
-
-                                location.reload();
-                            }
-                        }
-                    );
+            // Now launch query
+            $.post(
+                "sources/main.queries.php", {
+                    type: "user_forgot_his_personal_saltkey",
+                    key: store.get('teampassUser').sessionKey
                 },
-                function() {
-                    alertify.error('<?php echo langHdl('cancel'); ?>')
+                function(data) {
+                    data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
+
+                    // Is there an error?
+                    if (data.error === true) {
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo langHdl('alert_page_will_reload'); ?>',
+                            '', {
+                                timeOut: 10000
+                            }
+                        );
+
+                        location.reload();
+                    }
                 }
             );
+        });
+        $(document).on('click', '#warningModalButtonClose', function() {
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('cancel'); ?>',
+                '<?php echo langHdl('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        });
     });
 
     /**
@@ -468,7 +516,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
         }
 
         // launch identification
-        showAlertify('<span class="fa fa-cog fa-spin fa-2x"></span>', 0, 'top-center', 'notify');
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+            '', {
+                positionClass: "toast-top-center"
+            }
+        );
 
         // Clear localstorage
         store.remove('teampassApplication');
@@ -500,13 +554,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                     );
                 } catch (e) {
                     // error
-                    alertify
-                        .alert()
-                        .setting({
-                            'label': '<?php echo langHdl('ok'); ?>',
-                            'message': '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('server_answer_error'); ?>'
-                        })
-                        .show();
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('server_answer_error'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                     return false;
                 }
                 console.log(data);
@@ -540,9 +595,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                         mfaData['GACode'] = $('#ga_code').val();
                     } else {
                         $('#ga_code').focus();
-                        alertify
-                            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('ga_bad_code'); ?>', 5)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo langHdl('ga_bad_code'); ?>',
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                         return false;
                     }
                 }
@@ -555,9 +615,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                         mfaData['yubico_user_key'] = $('#yubico_user_key').val();
                     } else {
                         $('#yubico_key').focus();
-                        alertify
-                            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('press_your_yubico_key'); ?>', 5)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('press_your_yubico_key'); ?>',
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                         return false;
                     }
                 }
@@ -627,9 +692,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                             // Maintenance mode is enabled?
                             if (data.error === 'maintenance_mode_enabled') {
-                                alertify
-                                    .warning('<i class="fas fa-ban text-danger fa-lg mr-3"></i><?php echo langHdl('index_maintenance_mode_admin'); ?>', 0)
-                                    .dismissOthers();
+                                toastr.remove();
+                                toastr.warning(
+                                    '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 0
+                                    }
+                                );
                                 return false;
                             }
 
@@ -665,9 +734,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                     $('.login-card-body').addClass('hidden');
                                     $('#confirm-password-level').html(data.password_complexity);
 
-                                    alertify
-                                        .message('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
-                                        .dismissOthers();
+                                    toastr.remove();
+                                    toastr.success(
+                                        '<?php echo langHdl('done'); ?>',
+                                        '', {
+                                            timeOut: 1000
+                                        }
+                                    );
 
                                     return false;
                                 }
@@ -692,16 +765,34 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                 $('#ga_code')
                                     .val('')
                                     .focus();
-                                alertify
-                                    .message('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
-                                    .dismissOthers();
+
+                                toastr.remove();
+                                toastr.success(
+                                    '<?php echo langHdl('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
                             } else if (data.error === true) {
-                                alertify.set('notifier', 'position', 'top-center');
-                                alertify
-                                    .error('<i class="fas fa-ban fa-lg mr-3"></i>' + data.message, 5)
-                                    .dismissOthers();
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 10000,
+                                        progressBar: true,
+                                        positionClass: "toast-top-right"
+                                    }
+                                );
                             } else {
-                                showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right');
+                                toastr.remove();
+                                toastr.error(
+                                    '<?php echo langHdl('error_bad_credentials'); ?>',
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true,
+                                        positionClass: "toast-top-right"
+                                    }
+                                );
                             }
 
                             // Clear Yubico
@@ -712,10 +803,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                     );
                 } else {
                     // No session was found, warn user
-                    alertify.set('notifier', 'position', 'top-center');
-                    alertify
-                        .error('<i class="fa fa-ban fa-lg mr-3"></i>Browser session is now expired. The page will automatically be reloaded now.', 5)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('alert_page_will_reload'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
 
                     // Delay page submit
                     $(this).delay(500).queue(function() {
@@ -750,15 +845,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                     if (data.error !== false) {
                         // Show error
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         // Inform user
-                        alertify
-                            .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
-                            .dismissOthers();
-                        //$("#div_ga_url").show(); -> TODO
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo langHdl('share_sent_ok'); ?>',
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     }
                 }
             );
@@ -793,15 +897,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
                 if (data.error !== false) {
                     // Show error
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                 } else {
                     // Inform user
-                    alertify
-                        .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
-                        .dismissOthers();
-                    //$("#div_ga_url").show(); -> TODO
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('share_sent_ok'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                 }
             }
         );

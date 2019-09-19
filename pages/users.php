@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -16,7 +17,8 @@
  *
  * @see      http://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,17 +35,17 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -63,42 +65,44 @@ $userRoles = explode(';', $_SESSION['fonction_id']);
 // If administrator then all roles are shown
 // else only the Roles the users is associated to.
 if ((int) $_SESSION['is_admin'] === 1) {
-    $optionsManagedBy .= '<option value="0">'.langHdl('administrators_only').'</option>';
+    $optionsManagedBy .= '<option value="0">' . langHdl('administrators_only') . '</option>';
 }
 
 $rows = DB::query(
     'SELECT id, title, creator_id
-    FROM '.prefixTable('roles_title').'
+    FROM ' . prefixTable('roles_title') . '
     ORDER BY title ASC'
 );
 foreach ($rows as $record) {
     if ((int) $_SESSION['is_admin'] === 1 || in_array($record['id'], $_SESSION['user_roles']) === true) {
-        $optionsManagedBy .= '<option value="'.$record['id'].'">'.langHdl('managers_of').' '.addslashes($record['title']).'</option>';
+        $optionsManagedBy .= '<option value="' . $record['id'] . '">' . langHdl('managers_of') . ' ' . addslashes($record['title']) . '</option>';
     }
-    if ((int) $_SESSION['is_admin'] === 1
+    if (
+        (int) $_SESSION['is_admin'] === 1
         || ((int) $_SESSION['user_manager'] === 1
-        && (in_array($record['id'], $userRoles) === true || (int) $record['creator_id'] === (int) $_SESSION['user_id']))
+            && (in_array($record['id'], $userRoles) === true || (int) $record['creator_id'] === (int) $_SESSION['user_id']))
     ) {
-        $optionsRoles .= '<option value="'.$record['id'].'">'.addslashes($record['title']).'</option>';
+        $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
     }
 }
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 $treeDesc = $tree->getDescendants();
 $foldersList = '';
 foreach ($treeDesc as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+    if (
+        in_array($t->id, $_SESSION['groupes_visibles']) === true
         && in_array($t->id, $_SESSION['personal_visible_groups']) === false
     ) {
         $ident = '';
         for ($y = 1; $y < $t->nlevel; ++$y) {
             $ident .= '&nbsp;&nbsp;';
         }
-        $foldersList .= '<option value="'.$t->id.'">'.$ident.htmlspecialchars($t->title, ENT_COMPAT, 'UTF-8').'</option>';
+        $foldersList .= '<option value="' . $t->id . '">' . $ident . htmlspecialchars($t->title, ENT_COMPAT, 'UTF-8') . '</option>';
         $prev_level = $t->nlevel;
     }
 }
@@ -108,13 +112,13 @@ foreach ($treeDesc as $t) {
 <!-- Content Header (Page header) -->
 <div class="content-header">
     <div class="container-fluid">
-    <div class="row mb-2">
-        <div class="col-sm-6">
-        <h1 class="m-0 text-dark">
-        <i class="fas fa-users mr-2"></i><?php echo langHdl('users'); ?>
-        </h1>
-        </div><!-- /.col -->
-    </div><!-- /.row -->
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">
+                    <i class="fas fa-users mr-2"></i><?php echo langHdl('users'); ?>
+                </h1>
+            </div><!-- /.col -->
+        </div><!-- /.row -->
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content-header -->
@@ -132,8 +136,13 @@ foreach ($treeDesc as $t) {
                             <i class="fas fa-share-alt mr-2"></i><?php echo langHdl('propagate'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
-                            <i class="fas fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
-                        </button>
+                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
+                        </button><?php
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] !== 1 ?
+                                        '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
+                            <i class="fas fa-passport mr-2"></i>' . langHdl('ldap_synchronization') . '
+                        </button>' : '';
+                                    ?>
                     </h3>
                 </div>
 
@@ -141,17 +150,17 @@ foreach ($treeDesc as $t) {
                 <div class="card-body form table-responsive" id="users-list">
                     <table id="table-users" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
                         <thead>
-                        <tr>
-                            <th></th>
-                            <th><?php echo langHdl('user_login'); ?></th>
-                            <th><?php echo langHdl('name'); ?></th>
-                            <th><?php echo langHdl('lastname'); ?></th>
-                            <th><?php echo langHdl('managed_by'); ?></th>
-                            <th><?php echo langHdl('functions'); ?></th>
-                            <th width="50px"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
-                            <th width="50px"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
-                            <th width="50px"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
-                        </tr>
+                            <tr>
+                                <th></th>
+                                <th><?php echo langHdl('user_login'); ?></th>
+                                <th><?php echo langHdl('name'); ?></th>
+                                <th><?php echo langHdl('lastname'); ?></th>
+                                <th><?php echo langHdl('managed_by'); ?></th>
+                                <th><?php echo langHdl('functions'); ?></th>
+                                <th width="50px"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
+                                <th width="50px"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
+                                <th width="50px"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
+                            </tr>
                         </thead>
                         <tbody>
 
@@ -162,6 +171,43 @@ foreach ($treeDesc as $t) {
         </div>
     </div>
 
+
+
+    <!-- USER LDAP SYNCHRONIZATION -->
+    <div class="row hidden extra-form" id="row-ldap">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('ldap_synchronization'); ?> <span id="row-logs-title"></span></h3>
+                </div>
+
+                <!-- /.card-header -->
+                <!-- table start -->
+                <div class="card-body">
+                    <div class="row col-12">
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-existing-users">
+                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('list_users'); ?>
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-new-users">
+                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('search_new_users'); ?>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="" id="row-ldap-body">
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="close"><?php echo langHdl('close'); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
     <!-- USER FORM -->
     <div class="row hidden extra-form" id="row-form">
         <div class="col-12">
@@ -169,7 +215,7 @@ foreach ($treeDesc as $t) {
                 <div class="card-header">
                     <h3 class="card-title"><?php echo langHdl('user_definition'); ?></h3>
                 </div>
-                
+
                 <!-- /.card-header -->
                 <!-- form start -->
                 <form role="form" id="form-user">
@@ -283,7 +329,7 @@ foreach ($treeDesc as $t) {
                     </div>
                     <!-- /.card-body -->
                 </form>
-                    
+
                 <div class="card-footer">
                     <button type="button" class="btn btn-primary tp-action" data-action="submit"><?php echo langHdl('submit'); ?></button>
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
@@ -299,24 +345,24 @@ foreach ($treeDesc as $t) {
                 <div class="card-header">
                     <h3 class="card-title"><?php echo langHdl('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
                 </div>
-                
+
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body form" id="user-logs">
                     <table id="table-logs" class="table table-striped" style="width:100%">
                         <thead>
-                        <tr>
-                            <th><?php echo langHdl('date'); ?></th>
-                            <th><?php echo langHdl('activity'); ?></th>
-                            <th><?php echo langHdl('label'); ?></th>
-                        </tr>
+                            <tr>
+                                <th><?php echo langHdl('date'); ?></th>
+                                <th><?php echo langHdl('activity'); ?></th>
+                                <th><?php echo langHdl('label'); ?></th>
+                            </tr>
                         </thead>
                         <tbody>
 
                         </tbody>
                     </table>
                 </div>
-                    
+
                 <div class="card-footer">
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
@@ -331,13 +377,13 @@ foreach ($treeDesc as $t) {
                 <div class="card-header">
                     <h3 class="card-title"><?php echo langHdl('access_rights_for_user'); ?> <span id="row-folders-title"></span></h3>
                 </div>
-                
+
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body" id="row-folders-results">
-                    
+
                 </div>
-                    
+
                 <div class="card-footer">
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
@@ -352,7 +398,7 @@ foreach ($treeDesc as $t) {
                 <div class="card-header">
                     <h3 class="card-title"><?php echo langHdl('propagate_user_rights'); ?></h3>
                 </div>
-                
+
                 <!-- /.card-header -->
                 <div class="card-body">
                     <div class="row">
@@ -394,7 +440,7 @@ foreach ($treeDesc as $t) {
                             <?php echo $optionsRoles; ?>
                         </select>
                     </div>
-                    
+
                 </div>
 
 

@@ -28,11 +28,13 @@ if (
 ) {
     ?>
     <script type="text/javascript">
-        showAlertify(
+        toastr.remove();
+        toastr.info(
             '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
-            0,
-            'top-right'
-        )
+            '<?php echo langHdl('information'); ?>', {
+                timeOut: 0
+            }
+        );
     </script>
 <?php
 }
@@ -90,34 +92,40 @@ if (
     if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').shown_warning_unsuccessful_login === false
     ) {
-        alertify.confirm(
-                '<?php echo langHdl('caution'); ?>',
-                '<i class="fas fa-warning mr-3"></i><?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
-                function() {
-                    store.update(
-                        'teampassUser', {},
-                        function(teampassUser) {
-                            teampassUser.shown_warning_unsuccessful_login = true;
-                        }
-                    );
-                    document.location.href = "index.php?page=profile&tab=timeline";
-                },
-                function() {
-                    // Nothing
-                    store.update(
-                        'teampassUser', {},
-                        function(teampassUser) {
-                            teampassUser.shown_warning_unsuccessful_login = true;
-                        }
-                    );
-                }
-            )
-            .set(
-                'labels', {
-                    ok: '<?php echo langhdl('see_detail'); ?>',
-                    cancel: '<?php echo langhdl('cancel'); ?>'
+        // Prepare modal
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
+            '<?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
+            '<?php echo langHdl('see_detail'); ?>',
+            '<?php echo langHdl('cancel'); ?>'
+        );
+
+        // Actions on modal buttons
+        $(document).on('click', '#warningModalButtonClose', function() {
+            store.update(
+                'teampassUser', {},
+                function(teampassUser) {
+                    teampassUser.shown_warning_unsuccessful_login = true;
                 }
             );
+        });
+        $(document).on('click', '#warningModalButtonAction', function() {
+            // SHow user
+            toastr.remove();
+            toastr.info(
+                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            );
+
+            // Action
+            store.update(
+                'teampassUser', {},
+                function(teampassUser) {
+                    teampassUser.shown_warning_unsuccessful_login = true;
+                }
+            );
+            document.location.href = "index.php?page=profile&tab=timeline";
+        });
     }
 
     // Show tooltips
@@ -147,17 +155,25 @@ if (
                 //NProgress.start();
                 document.location.href = "index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
-                alertify.confirm(
-                    '<?php echo TP_TOOL_NAME; ?>',
+                // Prepare modal
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fas fa-sign-out-alt fa-lg mr-2"></i><?php echo TP_TOOL_NAME; ?>',
                     '<?php echo langHdl('logout_confirm'); ?>',
-                    function() {
-                        alertify.success('<?php echo langHdl('ok'); ?>');
-                        window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
-                    },
-                    function() {
-                        alertify.error('<?php echo langHdl('cancel'); ?>');
-                    }
+                    '<?php echo langHdl('confirm'); ?>',
+                    '<?php echo langHdl('cancel'); ?>'
                 );
+
+                // Actions on modal buttons
+                $(document).on('click', '#warningModalButtonAction', function() {
+                    // SHow user
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                    );
+
+                    window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                });
             }
         }
     });
@@ -172,7 +188,10 @@ if (
      * When clicking save Personal saltkey
      */
     $('#button_save_user_psk').click(function() {
-        alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+        );
 
         // Prepare data
         var data = {
@@ -192,12 +211,14 @@ if (
 
                 // Is there an error?
                 if (data.error === true) {
-                    alertify.dismissAll();
-                    alertify
-                        .alert(
-                            '<?php echo langHdl('warning'); ?>',
-                            data.message
-                        );
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('warning'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                 } else {
                     store.update(
                         'teampassUser',
@@ -213,9 +234,11 @@ if (
                         }
                     )
 
-                    alertify
-                        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('alert_page_will_reload'); ?>'
+                    );
+
                     location.reload();
                 }
             }
@@ -294,11 +317,12 @@ if (
     });
 
     clipboardCopy.on('success', function(e) {
-        showAlertify(
+        toastr.remove();
+        toastr.info(
             '<?php echo langHdl('copy_to_clipboard'); ?>',
-            1,
-            'top-right',
-            'message'
+            '<?php echo langHdl('information'); ?>', {
+                timeOut: 1000
+            }
         );
     });
 
@@ -319,9 +343,10 @@ if (
     // User hits the LAUNCH button for sharekeys re-encryption
     $(document).on('click', '#button_do_sharekeys_reencryption', function() {
         // Start by changing the user password and send it by email
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+        );
 
         $('#dialog-encryption-keys-progress').html('<b><?php echo langHdl('change_login_password'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
@@ -347,9 +372,14 @@ if (
 
                 if (data.error !== false) {
                     // Show error
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
 
                     // Enable buttons
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
@@ -387,13 +417,14 @@ if (
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
-                    alertify
-                        .alert()
-                        .setting({
-                            'label': '<?php echo langHdl('ok'); ?>',
-                            'message': '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('server_answer_error'); ?>'
-                        })
-                        .show();
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('server_answer_error'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                     return false;
                 };
 
@@ -437,18 +468,43 @@ if (
      * @return void
      */
     function showExtendSession() {
-        alertify.prompt(
-            '<?php echo langHdl('index_add_one_hour'); ?>',
-            '<?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>',
-            '<?php echo isset($_SESSION['user_settings']['session_duration']) === true ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60; ?>',
-            function(evt, value) {
-                IncreaseSessionTime('<?php echo langHdl('success'); ?>', value);
-                alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
-            },
-            function() {
-                alertify.error('<?php echo langHdl('cancel'); ?>');
-            }
+        // Prepare modal
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fas fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
+            '<div class="form-group">' +
+            '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
+            '<input type="text" class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user_settings']['session_duration']) === true ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60; ?>">' +
+            '</div>',
+            '<?php echo langHdl('confirm'); ?>',
+            '<?php echo langHdl('cancel'); ?>'
         );
+
+        // Actions on modal buttons
+        $(document).on('click', '#warningModalButtonAction', function() {
+            // SHow user
+            toastr.remove();
+            toastr.info(
+                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            );
+
+            // Perform action
+            $.when(
+                IncreaseSessionTime(
+                    '<?php echo langHdl('success'); ?>',
+                    $('#warningModal-input').val()
+                )
+            ).then(function() {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo langHdl('done'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
+                $('#warningModal').modal('hide');
+            });
+        });
     }
 
     /**
@@ -464,7 +520,7 @@ if (
 
         $('#user_personal_saltkey').focus();
 
-        alertify.dismissAll();
+        toastr.remove();
     }
 
     /**
@@ -503,7 +559,14 @@ if (
                         blink('#menu_button_suggestion', -1, 500, 'ui-state-error');
                     }
                 } else {
-                    alertify.message('<span class="fa fa-ban"></span>' + data.error, 0);
+                    toastr.remove();
+                    toastr.error(
+                        data.error,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                 }
             }
         );
@@ -515,10 +578,11 @@ if (
      * @return void
      */
     function showItemCard(itemDefinition) {
-        // Show cog
-        alertify
-            .message('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-            .dismissOthers();
+        // Show circle-notch
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+        );
 
         if (window.location.href.indexOf('page=items') === -1) {
             location.replace('<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&group=' + itemDefinition.data().itemTreeId + '&id=' + itemDefinition.data().itemId);
@@ -579,9 +643,10 @@ if (
 
         $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
-        alertify
-            .message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+        );
 
         $.post(
             "sources/main.queries.php", {
@@ -594,9 +659,14 @@ if (
                 console.log(data)
                 if (data.error === true) {
                     // error
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 0)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
 
                     // Enable buttons
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
@@ -646,9 +716,14 @@ if (
                     console.log(data)
                     if (data.error === true) {
                         // error
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i>' + data.message, 0)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
 
                         // Enable buttons
                         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
@@ -663,13 +738,35 @@ if (
             // Finished
             $("#dialog-encryption-keys-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
 
-            alertify
-                .success('<?php echo langHdl('done'); ?>', 5)
-                .dismissOthers();
+            toastr.remove();
+            toastr.success(
+                '<?php echo langHdl('done'); ?>',
+                '', {
+                    timeOut: 1000
+                }
+            );
 
             // Enable buttons
             $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
         }
+    }
+
+
+    function showModalDialogBox(
+        modalId,
+        title,
+        body,
+        actionButton,
+        closeButton
+    ) {
+        $(modalId + 'Title').html(title);
+        $(modalId + 'Body').html(body);
+        $(modalId + 'ButtonClose').html(closeButton);
+        $(modalId + 'ButtonAction').html(actionButton);
+        $(modalId).modal({
+            show: true,
+            focus: true
+        });
     }
 
     // This permits to manage the column width of tree/items

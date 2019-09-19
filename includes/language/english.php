@@ -17,6 +17,11 @@
  */
 
 return array(
+    'remove_install_folder' => 'Install folder has to be removed',
+    'list_users' => 'List users',
+    'search_new_users' => 'Search new users',
+    'ldap_synchronization' => 'LDAP synchronization',
+    'in_progress' => 'In progress',
     'clipboard_password_life_duration' => 'Delay before the clipboard is cleared (in seconds)',
     'clipboard_password_life_duration_tip' => 'Permits to define a delay in seconds before which the password copied in clipboard will be cleared from the browser clipboard. Set to 0 to disable.',
     'clipboard_will_be_cleared' => 'Password is now in clipboard. It will soon be cleared...',

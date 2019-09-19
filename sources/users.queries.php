@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -19,7 +20,8 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false
+if (
+    isset($_SESSION['CPM']) === false
     || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
@@ -41,38 +43,41 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_STRING);
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
+if (
+    checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
     || checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false
 ) {
-    if (null === $isprofileupdate
+    if (
+        null === $isprofileupdate
         || $isprofileupdate === false
     ) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-        include $SETTINGS['cpassman_dir'].'/error.php';
+        include $SETTINGS['cpassman_dir'] . '/error.php';
         exit();
     } else {
         // Do special check to allow user to change attributes of his profile
-        if (empty($filtered_newvalue) === true
+        if (
+            empty($filtered_newvalue) === true
             || checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
         ) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include $SETTINGS['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'] . '/error.php';
             exit();
         }
     }
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -98,7 +103,7 @@ $password_do_not_change = 'do_not_change';
 
 if (null !== $post_type) {
     switch ($post_type) {
-        /*
+            /*
          * ADD NEW USER
          */
         case 'add_new_user':
@@ -158,7 +163,7 @@ if (null !== $post_type) {
             // Check if user already exists
             $data = DB::query(
                 'SELECT id, fonction_id, groupes_interdits, groupes_visibles
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE login = %s',
                 $login
             );
@@ -214,7 +219,7 @@ if (null !== $post_type) {
                         'groupes_visibles' => implode(';', $allowed_flds),
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
-                        )
+                    )
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
@@ -227,7 +232,7 @@ if (null !== $post_type) {
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
                             'personal_folder' => '1',
-                            )
+                        )
                     );
                     $tree->rebuild();
                 }
@@ -243,7 +248,7 @@ if (null !== $post_type) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
-                            )
+                        )
                     );
                     $new_folder_id = DB::insertId();
                     // Add complexity
@@ -253,14 +258,14 @@ if (null !== $post_type) {
                             'type' => 'complex',
                             'intitule' => $new_folder_id,
                             'valeur' => 50,
-                            )
+                        )
                     );
                     // Create role
                     DB::insert(
                         prefixTable('roles_title'),
                         array(
                             'title' => $domain,
-                            )
+                        )
                     );
                     $new_role_id = DB::insertId();
                     // Associate new role to new folder
@@ -269,14 +274,14 @@ if (null !== $post_type) {
                         array(
                             'folder_id' => $new_folder_id,
                             'role_id' => $new_role_id,
-                            )
+                        )
                     );
                     // Add the new user to this role
                     DB::update(
                         prefixTable('users'),
                         array(
                             'fonction_id' => is_int($new_role_id),
-                            ),
+                        ),
                         'id=%i',
                         $new_user_id
                     );
@@ -292,7 +297,7 @@ if (null !== $post_type) {
                         'label' => $new_user_id,
                         'value' => uniqidReal(39),
                         'timestamp' => time(),
-                        )
+                    )
                 );
 
                 // get links url
@@ -302,7 +307,7 @@ if (null !== $post_type) {
                 // Send email to new user
                 sendEmail(
                     langHdl('email_subject_new_user'),
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(' '.addslashes($login), addslashes($password), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(' ' . addslashes($login), addslashes($password), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
                     $dataReceived['email'],
                     $SETTINGS
                 );
@@ -333,7 +338,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * Delete the user
          */
         case 'delete_user':
@@ -366,13 +371,14 @@ if (null !== $post_type) {
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -384,7 +390,7 @@ if (null !== $post_type) {
                 );
                 // delete personal folder and subfolders
                 $data = DB::queryfirstrow(
-                    'SELECT id FROM '.prefixTable('nested_tree').'
+                    'SELECT id FROM ' . prefixTable('nested_tree') . '
                     WHERE title = %s AND personal_folder = %i',
                     $post_id,
                     '1'
@@ -397,7 +403,7 @@ if (null !== $post_type) {
                         DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
                         // delete items & logs
                         $items = DB::query(
-                            'SELECT id FROM '.prefixTable('items').'
+                            'SELECT id FROM ' . prefixTable('items') . '
                             WHERE id_tree=%i AND perso = %i',
                             $folder->id,
                             '1'
@@ -440,7 +446,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * UPDATE CAN CREATE ROOT FOLDER RIGHT
          */
         case 'can_create_root_folder':
@@ -454,13 +460,14 @@ if (null !== $post_type) {
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -468,7 +475,7 @@ if (null !== $post_type) {
                     prefixTable('users'),
                     array(
                         'can_create_root_folder' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING),
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -477,12 +484,13 @@ if (null !== $post_type) {
                 echo prepareExchangedData(array('error' => 'not_allowed'), 'encode');
             }
             break;
-        /*
+            /*
          * UPDATE ADMIN RIGHTS FOR USER
          */
         case 'admin':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
+            if (
+                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
                 || $_SESSION['is_admin'] !== '1'
             ) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
@@ -494,13 +502,14 @@ if (null !== $post_type) {
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -510,7 +519,7 @@ if (null !== $post_type) {
                         'admin' => $post_value,
                         'gestionnaire' => $post_value === 1 ? '0' : '0',
                         'read_only' => $post_value === 1 ? '0' : '0',
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -520,7 +529,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(array('error' => 'not_allowed'), 'encode');
             }
             break;
-        /*
+            /*
          * UPDATE MANAGER RIGHTS FOR USER
          */
         case 'gestionnaire':
@@ -536,13 +545,14 @@ if (null !== $post_type) {
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole, can_manage_all_users, gestionnaire
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -552,11 +562,10 @@ if (null !== $post_type) {
                         'gestionnaire' => $post_value,
                         'can_manage_all_users' => ($data_user['can_manage_all_users'] === '0' && $post_value === '1') ? '0' : (
                             ($data_user['can_manage_all_users'] === '0' && $post_value === '0') ? '0' : (
-                            ($data_user['can_manage_all_users'] === '1' && $post_value === '0') ? '0' : '1')
-                        ),
+                                ($data_user['can_manage_all_users'] === '1' && $post_value === '0') ? '0' : '1')),
                         'admin' => $post_value === 1 ? '0' : '0',
                         'read_only' => $post_value === 1 ? '0' : '0',
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -565,7 +574,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(array('error' => 'not_allowed'), 'encode');
             }
             break;
-        /*
+            /*
          * UPDATE READ ONLY RIGHTS FOR USER
          */
         case 'read_only':
@@ -580,13 +589,14 @@ if (null !== $post_type) {
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -596,7 +606,7 @@ if (null !== $post_type) {
                         'read_only' => $post_value,
                         'gestionnaire' => $post_value === 1 ? '0' : '0',
                         'admin' => $post_value === 1 ? 0 : '0',
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -605,7 +615,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(array('error' => 'not_allowed'), 'encode');
             }
             break;
-        /*
+            /*
          * UPDATE CAN MANAGE ALL USERS RIGHTS FOR USER
          * Notice that this role must be also Manager
          */
@@ -622,13 +632,14 @@ if (null !== $post_type) {
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole, gestionnaire
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -639,7 +650,7 @@ if (null !== $post_type) {
                         'gestionnaire' => ($data_user['gestionnaire'] === '0' && $post_value === 1) ? '1' : (($data_user['gestionnaire'] === '1' && $post_value === 1) ? '1' : (($data_user['gestionnaire'] === '1' && $post_value === 0) ? '1' : '0')),
                         'admin' => $post_value === 1 ? '1' : '0',
                         'read_only' => $post_value === 1 ? '1' : '0',
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -648,7 +659,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(array('error' => 'not_allowed'), 'encode');
             }
             break;
-        /*
+            /*
          * UPDATE PERSONNAL FOLDER FOR USER
          */
         case 'personal_folder':
@@ -664,13 +675,14 @@ if (null !== $post_type) {
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole, gestionnaire
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -678,7 +690,7 @@ if (null !== $post_type) {
                     prefixTable('users'),
                     array(
                         'personal_folder' => $post_value === '1' ? '1' : '0',
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -688,7 +700,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * Unlock user
          */
         case 'unlock_account':
@@ -703,13 +715,14 @@ if (null !== $post_type) {
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole, gestionnaire
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -718,7 +731,7 @@ if (null !== $post_type) {
                     array(
                         'disabled' => 0,
                         'no_bad_attempts' => 0,
-                        ),
+                    ),
                     'id = %i',
                     $post_id
                 );
@@ -733,14 +746,14 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
         * Check the domain
         */
         case 'check_domain':
             $return = array();
             // Check if folder exists
             $data = DB::query(
-                'SELECT * FROM '.prefixTable('nested_tree').'
+                'SELECT * FROM ' . prefixTable('nested_tree') . '
                 WHERE title = %s AND parent_id = %i',
                 filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING),
                 '0'
@@ -753,7 +766,7 @@ if (null !== $post_type) {
             }
             // Check if role exists
             $data = DB::query(
-                'SELECT * FROM '.prefixTable('roles_title').'
+                'SELECT * FROM ' . prefixTable('roles_title') . '
                 WHERE title = %s',
                 filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING)
             );
@@ -767,37 +780,39 @@ if (null !== $post_type) {
             echo json_encode($return);
             break;
 
-        /*
+            /*
         * Get logs for a user
         */
         case 'user_log_items':
             $nb_pages = 1;
             $logs = $sql_filter = '';
-            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.langHdl('pages').'&nbsp;:&nbsp;</td>';
+            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>' . langHdl('pages') . '&nbsp;:&nbsp;</td>';
 
             // Prepare POST variables
             $post_nb_items_by_page = filter_input(INPUT_POST, 'nb_items_by_page', FILTER_SANITIZE_NUMBER_INT);
             $post_scope = filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING);
 
             if (filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === 'user_activity') {
-                if (null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)
+                if (
+                    null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)
                     && !empty(filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING))
                     && filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING) !== 'all'
                 ) {
-                    $sql_filter = " AND l.action = '".filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)."'";
+                    $sql_filter = " AND l.action = '" . filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING) . "'";
                 }
                 // get number of pages
                 DB::query(
                     'SELECT *
-                    FROM '.prefixTable('log_items').' as l
-                    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-                    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-                    WHERE l.id_user = %i '.$sql_filter,
+                    FROM ' . prefixTable('log_items') . ' as l
+                    INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
+                    INNER JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+                    WHERE l.id_user = %i ' . $sql_filter,
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
-                if (null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
+                if (
+                    null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
                     && filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) > 1
                 ) {
                     $start = (intval($post_nb_items_by_page)
@@ -808,26 +823,27 @@ if (null !== $post_type) {
                 // launch query
                 $rows = DB::query(
                     'SELECT l.date as date, u.login as login, i.label as label, l.action as action
-                    FROM '.prefixTable('log_items').' as l
-                    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-                    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-                    WHERE l.id_user = %i '.$sql_filter.'
+                    FROM ' . prefixTable('log_items') . ' as l
+                    INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
+                    INNER JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+                    WHERE l.id_user = %i ' . $sql_filter . '
                     ORDER BY date DESC
-                    LIMIT '.intval($start).','.intval($post_nb_items_by_page),
+                    LIMIT ' . intval($start) . ',' . intval($post_nb_items_by_page),
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
             } else {
                 // get number of pages
                 DB::query(
                     'SELECT *
-                    FROM '.prefixTable('log_system').'
+                    FROM ' . prefixTable('log_system') . '
                     WHERE type = %s AND field_1=%i',
                     'user_mngt',
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
-                if (null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
+                if (
+                    null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
                     && filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) > 1
                 ) {
                     $start = (intval($post_nb_items_by_page)
@@ -838,7 +854,7 @@ if (null !== $post_type) {
                 // launch query
                 $rows = DB::query(
                     'SELECT *
-                    FROM '.prefixTable('log_system').'
+                    FROM ' . prefixTable('log_system') . '
                     WHERE type = %s AND field_1 = %i
                     ORDER BY date DESC
                     LIMIT %i, %i',
@@ -852,7 +868,7 @@ if (null !== $post_type) {
             if (isset($counter) && $counter != 0) {
                 $nb_pages = ceil($counter / intval($post_nb_items_by_page));
                 for ($i = 1; $i <= $nb_pages; ++$i) {
-                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$post_scope.'\")\'><span style=\'cursor:pointer;'.(filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) === $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
+                    $pages .= '<td onclick=\'displayLogs(' . $i . ',\"' . $post_scope . '\")\'><span style=\'cursor:pointer;' . (filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) === $i ? 'font-weight:bold;font-size:18px;\'>' . $i : '\'>' . $i) . '</span></td>';
                 }
             }
             $pages .= '</tr></table>';
@@ -861,13 +877,13 @@ if (null !== $post_type) {
                     if ($post_scope === 'user_mngt') {
                         $user = DB::queryfirstrow(
                             'SELECT login
-                            from '.prefixTable('users').'
+                            from ' . prefixTable('users') . '
                             WHERE id=%i',
                             $record['qui']
                         );
                         $user_1 = DB::queryfirstrow(
                             'SELECT login
-                            from '.prefixTable('users').'
+                            from ' . prefixTable('users') . '
                             WHERE id=%i',
                             filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                         );
@@ -877,7 +893,7 @@ if (null !== $post_type) {
                         if ($tmp[0] == 'at_user_initial_pwd_changed') {
                             $label = langHdl('log_user_initial_pwd_changed');
                         } elseif ($tmp[0] == 'at_user_email_changed') {
-                            $label = langHdl('log_user_email_changed').$tmp[1];
+                            $label = langHdl('log_user_email_changed') . $tmp[1];
                         } elseif ($tmp[0] == 'at_user_added') {
                             $label = langHdl('log_user_created');
                         } elseif ($tmp[0] == 'at_user_locked') {
@@ -888,17 +904,17 @@ if (null !== $post_type) {
                             $label = langHdl('log_user_pwd_changed');
                         }
                         // prepare log
-                        $logs .= '<tr><td>'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . '</td><td align=\"center\">' . $label . '</td><td align=\"center\">' . $user['login'] . '</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.langHdl($record['action']).'</td></tr>';
+                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . '</td><td align=\"center\">' . str_replace('"', '\"', $record['label']) . '</td><td align=\"center\">' . $record['login'] . '</td><td align=\"center\">' . langHdl($record['action']) . '</td></tr>';
                     }
                 }
             }
 
-            echo '[ { "table_logs": "'.($logs).'", "pages": "'.($pages).'", "error" : "no" } ]';
+            echo '[ { "table_logs": "' . ($logs) . '", "pages": "' . ($pages) . '", "error" : "no" } ]';
             break;
 
-        /*
+            /*
         * Migrate the Admin PF to User
         */
         case 'migrate_admin_pf':
@@ -920,14 +936,14 @@ if (null !== $post_type) {
             } else {
                 // Get folder id for Admin
                 $admin_folder = DB::queryFirstRow(
-                    'SELECT id FROM '.prefixTable('nested_tree').'
+                    'SELECT id FROM ' . prefixTable('nested_tree') . '
                     WHERE title = %i AND personal_folder = %i',
                     intval($_SESSION['user_id']),
                     '1'
                 );
                 // Get folder id for User
                 $user_folder = DB::queryFirstRow(
-                    'SELECT id FROM '.prefixTable('nested_tree').'
+                    'SELECT id FROM ' . prefixTable('nested_tree') . '
                     WHERE title=%i AND personal_folder = %i',
                     intval($user_id),
                     '1'
@@ -937,21 +953,21 @@ if (null !== $post_type) {
                     // Get each Items in PF
                     $rows = DB::query(
                         'SELECT i.pw, i.label, l.id_user
-                        FROM '.prefixTable('items').' as i
-                        LEFT JOIN '.prefixTable('log_items').' as l ON (l.id_item=i.id)
+                        FROM ' . prefixTable('items') . ' as i
+                        LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item=i.id)
                         WHERE l.action = %s AND i.perso=%i AND i.id_tree=%i',
                         'at_creation',
                         '1',
                         intval($folder->id)
                     );
                     foreach ($rows as $record) {
-                        echo $record['label'].' - ';
+                        echo $record['label'] . ' - ';
                         // Change user
                         DB::update(
                             prefixTable('log_items'),
                             array(
                                 'id_user' => $user_id,
-                                ),
+                            ),
                             'id_item = %i AND id_user $ %i AND action = %s',
                             $record['id'],
                             $user_id,
@@ -965,7 +981,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * delete the timestamp value for specified user => disconnect
          */
         case 'disconnect_user':
@@ -980,13 +996,14 @@ if (null !== $post_type) {
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole, gestionnaire
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_user_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -997,14 +1014,14 @@ if (null !== $post_type) {
                         'timestamp' => '',
                         'key_tempo' => '',
                         'session_end' => '',
-                        ),
+                    ),
                     'id = %i',
                     $post_user_id
                 );
             }
             break;
 
-        /*
+            /*
          * delete the timestamp value for all users
          */
         case 'disconnect_all_users':
@@ -1016,7 +1033,7 @@ if (null !== $post_type) {
 
             // Do
             $rows = DB::query(
-                'SELECT id FROM '.prefixTable('users').'
+                'SELECT id FROM ' . prefixTable('users') . '
                 WHERE timestamp != %s AND admin != %i',
                 '',
                 '1'
@@ -1025,13 +1042,14 @@ if (null !== $post_type) {
                 // Get info about user to delete
                 $data_user = DB::queryfirstrow(
                     'SELECT admin, isAdministratedByRole, gestionnaire
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $record['id']
                 );
 
                 // Is this user allowed to do this?
-                if ((int) $_SESSION['is_admin'] === 1
+                if (
+                    (int) $_SESSION['is_admin'] === 1
                     || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                     || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
                 ) {
@@ -1041,14 +1059,14 @@ if (null !== $post_type) {
                             'timestamp' => '',
                             'key_tempo' => '',
                             'session_end' => '',
-                            ),
+                        ),
                         'id = %i',
                         intval($record['id'])
                     );
                 }
             }
             break;
-        /*
+            /*
          * Get user info
          */
         case 'get_user_info':
@@ -1078,13 +1096,14 @@ if (null !== $post_type) {
             // Get info about user
             $rowUser = DB::queryfirstrow(
                 'SELECT *
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']) === true)
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && $rowUser['admin'] !== '1')
             ) {
@@ -1095,7 +1114,7 @@ if (null !== $post_type) {
                 $arrFldAllowed = array();
 
                 //Build tree
-                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
                 $tree->register();
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -1106,11 +1125,12 @@ if (null !== $post_type) {
                 // array of roles for actual user
                 $my_functions = explode(';', $_SESSION['fonction_id']);
 
-                $rows = DB::query('SELECT id,title,creator_id FROM '.prefixTable('roles_title'));
+                $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
                 foreach ($rows as $record) {
-                    if ((int) $_SESSION['is_admin'] === 1
+                    if (
+                        (int) $_SESSION['is_admin'] === 1
                         || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                        && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
+                            && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
                     ) {
                         if (in_array($record['id'], $users_functions)) {
                             $selected = 'selected';
@@ -1141,7 +1161,7 @@ if (null !== $post_type) {
                 $rolesList = array();
                 $managedBy = array();
                 $selected = '';
-                $rows = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
+                $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
                 foreach ($rows as $reccord) {
                     $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
                 }
@@ -1172,7 +1192,7 @@ if (null !== $post_type) {
                         array_push(
                             $managedBy,
                             array(
-                                'title' => langHdl('managers_of').' '.$fonction['title'],
+                                'title' => langHdl('managers_of') . ' ' . $fonction['title'],
                                 'id' => $fonction['id'],
                                 'selected' => $selected,
                             )
@@ -1224,7 +1244,8 @@ if (null !== $post_type) {
                 $userAllowFolders = explode(';', $rowUser['groupes_visibles']);
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
-                    if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+                    if (
+                        in_array($t->id, $_SESSION['groupes_visibles']) === true
                         && in_array($t->id, $_SESSION['personal_visible_groups']) === false
                     ) {
                         $selected = '';
@@ -1253,9 +1274,9 @@ if (null !== $post_type) {
 
                 // get USER STATUS
                 if ($rowUser['disabled'] == 1) {
-                    $arrData['info'] = langHdl('user_info_locked').'<br><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.langHdl('user_info_unlock_question').'</label><br><input type="checkbox"  value="delete" id="account_delete" class="chk mr-2" name="2" onclick="confirmDeletion()">label for="2">'.langHdl('user_info_delete_question').'</label>';
+                    $arrData['info'] = langHdl('user_info_locked') . '<br><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">' . langHdl('user_info_unlock_question') . '</label><br><input type="checkbox"  value="delete" id="account_delete" class="chk mr-2" name="2" onclick="confirmDeletion()">label for="2">' . langHdl('user_info_delete_question') . '</label>';
                 } else {
-                    $arrData['info'] = langHdl('user_info_active').'<br><input type="checkbox" value="lock" class="chk">&nbsp;'.langHdl('user_info_lock_question');
+                    $arrData['info'] = langHdl('user_info_active') . '<br><input type="checkbox" value="lock" class="chk">&nbsp;' . langHdl('user_info_lock_question');
                 }
 
                 $arrData['error'] = false;
@@ -1296,7 +1317,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * EDIT user
          */
         case 'store_user_changes':
@@ -1371,7 +1392,8 @@ if (null !== $post_type) {
             // Manage user password change
             // This can occur only if user changes his own password
             // In other case, next condition must be wrong
-            if (isset($post_password) === true
+            if (
+                isset($post_password) === true
                 && $post_password !== $password_do_not_change
                 && $post_id === $_SESSION['user_id']
             ) {
@@ -1389,25 +1411,26 @@ if (null !== $post_type) {
 
             // Empty user
             if (empty($post_login) === true) {
-                echo '[ { "error" : "'.langHdl('error_empty_data').'" } ]';
+                echo '[ { "error" : "' . langHdl('error_empty_data') . '" } ]';
                 break;
             }
 
             // User has email?
             if (empty($post_email) === true) {
-                echo '[ { "error" : "'.langHdl('error_no_email').'" } ]';
+                echo '[ { "error" : "' . langHdl('error_no_email') . '" } ]';
                 break;
             }
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -1421,7 +1444,7 @@ if (null !== $post_type) {
                     );
                     // delete personal folder and subfolders
                     $data = DB::queryfirstrow(
-                        'SELECT id FROM '.prefixTable('nested_tree').'
+                        'SELECT id FROM ' . prefixTable('nested_tree') . '
                         WHERE title = %s AND personal_folder = %i',
                         $post_id,
                         '1'
@@ -1434,7 +1457,7 @@ if (null !== $post_type) {
                             DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
                             // delete items & logs
                             $items = DB::query(
-                                'SELECT id FROM '.prefixTable('items').'
+                                'SELECT id FROM ' . prefixTable('items') . '
                                 WHERE id_tree=%i AND perso = %i',
                                 $folder->id,
                                 '1'
@@ -1455,7 +1478,7 @@ if (null !== $post_type) {
                 } else {
                     // Get old data about user
                     $oldData = DB::queryfirstrow(
-                        'SELECT * FROM '.prefixTable('users').'
+                        'SELECT * FROM ' . prefixTable('users') . '
                         WHERE id = %i',
                         $post_id
                     );
@@ -1484,7 +1507,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
+                        logEvents('user_mngt', 'at_user_email_changed:' . $oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                     }
 
                     if ((int) $oldData['disabled'] !== (int) $post_user_disabled) {
@@ -1510,7 +1533,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * UPDATE CAN CREATE ROOT FOLDER RIGHT
          */
         case 'user_edit_login':
@@ -1543,13 +1566,14 @@ if (null !== $post_type) {
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -1566,7 +1590,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * IS LOGIN AVAILABLE?
          */
         case 'is_login_available':
@@ -1592,7 +1616,7 @@ if (null !== $post_type) {
             }
 
             DB::queryfirstrow(
-                'SELECT * FROM '.prefixTable('users').'
+                'SELECT * FROM ' . prefixTable('users') . '
                 WHERE login = %s',
                 filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING)
             );
@@ -1607,7 +1631,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * GET USER FOLDER RIGHT
          */
         case 'user_folders_rights':
@@ -1641,14 +1665,14 @@ if (null !== $post_type) {
             $arrData = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // get User info
             $rowUser = DB::queryFirstRow(
                 'SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
@@ -1667,7 +1691,7 @@ if (null !== $post_type) {
                 // refine folders based upon roles
                 $rows = DB::query(
                     'SELECT folder_id, type
-                    FROM '.prefixTable('roles_values').'
+                    FROM ' . prefixTable('roles_values') . '
                     WHERE role_id IN %ls
                     ORDER BY folder_id ASC',
                     $arrData['functions']
@@ -1696,7 +1720,7 @@ if (null !== $post_type) {
                             // get folder name
                             $row = DB::queryFirstRow(
                                 'SELECT title, nlevel, id
-                                FROM '.prefixTable('nested_tree').'
+                                FROM ' . prefixTable('nested_tree') . '
                                 WHERE id = %i',
                                 $fld['id']
                             );
@@ -1709,37 +1733,37 @@ if (null !== $post_type) {
 
                             // manage right icon
                             if ($fld['type'] == 'W') {
-                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="'.langHdl('write').'"></i>'.
-                                '<i class="fas fa-edit infotip text-success mr-2" title="'.langHdl('edit').'"></i>'.
-                                '<i class="fas fa-eraser infotip text-success" title="'.langHdl('delete').'"></i>';
+                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="' . langHdl('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . langHdl('edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-success" title="' . langHdl('delete') . '"></i>';
                             } elseif ($fld['type'] == 'ND') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
-                                '<i class="fas fa-edit infotip text-success mr-2" title="'.langHdl('edit').'"></i>'.
-                                '<i class="fas fa-eraser infotip text-danger" title="'.langHdl('no_delete').'"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . langHdl('edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
                             } elseif ($fld['type'] == 'NE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
-                                '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
-                                '<i class="fas fa-eraser infotip text-success" title="'.langHdl('delete').'"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-success" title="' . langHdl('delete') . '"></i>';
                             } elseif ($fld['type'] == 'NDNE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
-                                '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
-                                '<i class="fas fa-eraser infotip text-danger" title="'.langHdl('no_delete').'"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
                             } else {
                                 $color = '#FEBC11';
                                 $allowed = 'R';
                                 $title = langHdl('read');
-                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="'.langHdl('read').'"></i>';
+                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . langHdl('read') . '"></i>';
                             }
 
-                            $html .= '<tr><td>'.$ident.$row['title'].
-                                ' <small>['.$row['id'].']</small></td><td>'.$label.'</td></tr>';
+                            $html .= '<tr><td>' . $ident . $row['title'] .
+                                ' <small>[' . $row['id'] . ']</small></td><td>' . $label . '</td></tr>';
                             break;
                         }
                     }
                 }
 
-                $html_full = '<table id="table-folders" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%"><tbody>'.
-                   $html.'</tbody></table>';
+                $html_full = '<table id="table-folders" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%"><tbody>' .
+                    $html . '</tbody></table>';
             } else {
                 $html_full = '';
             }
@@ -1755,7 +1779,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
          * GET LIST OF USERS
          */
         case 'get_list_of_users_for_sharing':
@@ -1785,7 +1809,7 @@ if (null !== $post_type) {
             if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
                 $rows = DB::query(
                     'SELECT *
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE admin = %i AND isAdministratedByRole IN %ls',
                     '0',
                     array_filter($_SESSION['user_roles'])
@@ -1793,7 +1817,7 @@ if (null !== $post_type) {
             } else {
                 $rows = DB::query(
                     'SELECT *
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE admin = %i',
                     '0'
                 );
@@ -1805,7 +1829,7 @@ if (null !== $post_type) {
                 $groupIds = [];
                 foreach (explode(';', $record['fonction_id']) as $group) {
                     $tmp = DB::queryfirstrow(
-                        'SELECT id, title FROM '.prefixTable('roles_title').'
+                        'SELECT id, title FROM ' . prefixTable('roles_title') . '
                         WHERE id = %i',
                         $group
                     );
@@ -1815,7 +1839,7 @@ if (null !== $post_type) {
 
                 // Get managed_by
                 $managedBy = DB::queryfirstrow(
-                    'SELECT id, title FROM '.prefixTable('roles_title').'
+                    'SELECT id, title FROM ' . prefixTable('roles_title') . '
                     WHERE id = %i',
                     $record['isAdministratedByRole']
                 );
@@ -1825,7 +1849,7 @@ if (null !== $post_type) {
                 $foldersAllowedIds = [];
                 foreach (explode(';', $record['groupes_visibles']) as $role) {
                     $tmp = DB::queryfirstrow(
-                        'SELECT id, title FROM '.prefixTable('nested_tree').'
+                        'SELECT id, title FROM ' . prefixTable('nested_tree') . '
                         WHERE id = %i',
                         $role
                     );
@@ -1838,7 +1862,7 @@ if (null !== $post_type) {
                 $foldersForbiddenIds = [];
                 foreach (explode(';', $record['groupes_interdits']) as $role) {
                     $tmp = DB::queryfirstrow(
-                        'SELECT id, title FROM '.prefixTable('nested_tree').'
+                        'SELECT id, title FROM ' . prefixTable('nested_tree') . '
                         WHERE id = %i',
                         $role
                     );
@@ -1882,7 +1906,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * UPDATE USERS RIGHTS BY SHARING
          */
         case 'update_users_rights_sharing':
@@ -1924,7 +1948,8 @@ if (null !== $post_type) {
             $post_user_rootfolder = filter_var(htmlspecialchars_decode($dataReceived['user_rootfolder']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check send values
-            if (empty($post_source_id) === true
+            if (
+                empty($post_source_id) === true
                 || $post_destination_ids === 0
             ) {
                 // error
@@ -1933,19 +1958,21 @@ if (null !== $post_type) {
 
             // Get info about user
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_source_id
             );
 
             // Is this user allowed to do this?
-            if ((int) $_SESSION['is_admin'] === 1
+            if (
+                (int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 foreach ($post_destination_ids as $dest_user_id) {
                     // Is this user allowed to do this?
-                    if ((int) $_SESSION['is_admin'] === 1
+                    if (
+                        (int) $_SESSION['is_admin'] === 1
                         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                         || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
                     ) {
@@ -1963,7 +1990,7 @@ if (null !== $post_type) {
                                 'personal_folder' => $post_user_personalfolder,
                                 'can_manage_all_users' => $post_user_hr,
                                 'admin' => $post_user_admin,
-                                ),
+                            ),
                             'id = %i',
                             $dest_user_id
                         );
@@ -1972,7 +1999,7 @@ if (null !== $post_type) {
             }
             break;
 
-        /*
+            /*
          * UPDATE USER PROFILE
          */
         case 'user_profile_update':
@@ -1989,7 +2016,8 @@ if (null !== $post_type) {
             }
 
             // Check user
-            if (isset($_SESSION['user_id']) === false
+            if (
+                isset($_SESSION['user_id']) === false
                 || empty($_SESSION['user_id']) === true
             ) {
                 echo prepareExchangedData(
@@ -2018,7 +2046,7 @@ if (null !== $post_type) {
                         'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING),
                         'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING),
                         'agses-usercardid' => filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT),
-                        ),
+                    ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
@@ -2043,7 +2071,7 @@ if (null !== $post_type) {
             );
             break;
 
-        //CASE where refreshing table
+            //CASE where refreshing table
         case 'save_user_change':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -2096,7 +2124,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * STORE USER LOCATION
          */
         case 'save_user_location':
@@ -2116,12 +2144,13 @@ if (null !== $post_type) {
             if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'refresh') {
                 $record = DB::queryFirstRow(
                     'SELECT user_ip_lastdate
-                    FROM '.prefixTable('users').'
+                    FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $_SESSION['user_id']
                 );
 
-                if (empty($record['user_ip_lastdate']) === true
+                if (
+                    empty($record['user_ip_lastdate']) === true
                     || (time() - $record['user_ip_lastdate']) > $SETTINGS_EXT['one_day_seconds']
                 ) {
                     echo prepareExchangedData(
@@ -2141,7 +2170,7 @@ if (null !== $post_type) {
                         array(
                             'user_ip' => $post_location,
                             'user_ip_lastdate' => time(),
-                            ),
+                        ),
                         'id = %i',
                         $_SESSION['user_id']
                     );
@@ -2155,13 +2184,41 @@ if (null !== $post_type) {
                     );
                     break;
                 }
-            } else {
-            }
+            } else { }
 
             echo prepareExchangedData(
                 array(
                     'refresh' => '',
-                    'error' => '',
+                    'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+            /*
+            * STORE USER LOCATION
+            */
+        case 'get_list_of_users_in_ldap':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+
+
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
                 ),
                 'encode'
             );
@@ -2176,13 +2233,14 @@ if (null !== $post_type) {
 
     // Get info about user
     $data_user = DB::queryfirstrow(
-        'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $value[1]
     );
 
     // Is this user allowed to do this?
-    if ((int) $_SESSION['is_admin'] === 1
+    if (
+        (int) $_SESSION['is_admin'] === 1
         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
         || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
         || ($_SESSION['user_id'] === $value[1])
@@ -2195,20 +2253,19 @@ if (null !== $post_type) {
         if (in_array(
             $value[0],
             array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'user_api_key', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
-        )
-        ) {
+        )) {
             DB::update(
                 prefixTable('users'),
                 array(
                     $value[0] => $post_newValue,
-                    ),
+                ),
                 'id = %i',
                 $value[1]
             );
             // update LOG
             logEvents(
                 'user_mngt',
-                'at_user_new_'.$value[0].':'.$value[1],
+                'at_user_new_' . $value[0] . ':' . $value[1],
                 $_SESSION['user_id'],
                 $_SESSION['login'],
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
@@ -2240,13 +2297,14 @@ if (null !== $post_type) {
 
     // Get info about user
     $data_user = DB::queryfirstrow(
-        'SELECT admin, isAdministratedByRole FROM '.prefixTable('users').'
+        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $value[1]
     );
 
     // Is this user allowed to do this?
-    if ((int) $_SESSION['is_admin'] === 1
+    if (
+        (int) $_SESSION['is_admin'] === 1
         || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
         || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
         || ($_SESSION['user_id'] === $value[1])
@@ -2255,7 +2313,7 @@ if (null !== $post_type) {
             prefixTable('users'),
             array(
                 'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT),
-                ),
+            ),
             'id = %i',
             $id[1]
         );
@@ -2286,13 +2344,12 @@ function evaluateFolderAccesLevel($new_val, $existing_val)
         'R' => 10,
     );
 
-    $current_level_points =empty($existing_val) === true ? 0 : $levels[$existing_val];
+    $current_level_points = empty($existing_val) === true ? 0 : $levels[$existing_val];
     $new_level_points = empty($new_val) === true ? 0 : $levels[$new_val];
 
     // check if new is > to current one (always keep the highest level)
     if (($new_val === 'ND' && $existing_val === 'NE')
-        ||
-        ($new_val === 'NE' && $existing_val === 'ND')
+        || ($new_val === 'NE' && $existing_val === 'ND')
     ) {
         return 'NDNE';
     } else {

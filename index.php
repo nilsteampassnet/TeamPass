@@ -896,6 +896,25 @@ if (($session_validite_pw === null
 
     ?>
 
+    <!-- Modal -->
+    <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="Caution" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalTitle"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="warningModalBody">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" id="warningModalButtonClose"></button>
+                    <button type="button" class="btn btn-primary" id="warningModalButtonAction"></button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 

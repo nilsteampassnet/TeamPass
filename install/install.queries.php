@@ -758,6 +758,7 @@ $SETTINGS = array (';
                             `public_key` TEXT NOT NULL DEFAULT 'none',
                             `private_key` TEXT NOT NULL DEFAULT 'none',
                             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
+                            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
