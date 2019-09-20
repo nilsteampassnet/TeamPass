@@ -138,9 +138,9 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button><?php
-                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] !== 1 ?
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
-                            <i class="fas fa-passport mr-2"></i>' . langHdl('ldap_synchronization') . '
+                            <i class="fas fa-address-card mr-2"></i>' . langHdl('ldap_synchronization') . '
                         </button>' : '';
                                     ?>
                     </h3>

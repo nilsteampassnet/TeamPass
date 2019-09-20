@@ -933,7 +933,7 @@ if (($session_validite_pw === null
     <!-- AdminLTE -->
     <script src="plugins/adminlte/js/adminlte.min.js"></script>
     <!-- Altertify -->
-    <script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>
+    <!--<script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>-->
     <!-- Toastr -->
     <script type="text/javascript" src="plugins/toastr/toastr.min.js"></script>
     <!-- STORE.JS -->
@@ -987,7 +987,10 @@ if (($session_validite_pw === null
         <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
         <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
         <!-- CKEDITOR -->
-        <script src="./plugins/ckeditor/ckeditor.js"></script>
+        <!--<script src="./plugins/ckeditor/ckeditor.js"></script>-->
+        <!-- SUMMERNOTE -->
+        <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
+        <script src="./plugins/summernote/summernote-bs4.min.js"></script>
         <!-- date-picker -->
         <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
         <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
@@ -1041,10 +1044,10 @@ if (($session_validite_pw === null
 
 <script type="text/javascript">
     //override defaults
-    alertify.defaults.transition = "slide";
+    /*alertify.defaults.transition = "slide";
     alertify.defaults.theme.ok = "btn btn-primary";
     alertify.defaults.theme.cancel = "btn btn-danger";
-    alertify.defaults.theme.input = "form-control";
+    alertify.defaults.theme.input = "form-control";*/
 
     toastr.options = {
         "closeButton": false,

@@ -210,19 +210,23 @@ function aesDecrypt(text, key)
  */
 function jsonErrorHdl(message)
 {
-    //Display    
-    var pre = document.createElement('pre');
-    //custom style.
-    pre.style.maxHeight = "400px";
-    pre.style.margin = "0";
-    pre.style.padding = "24px";
-    pre.style.whiteSpace = "pre-wrap";
-    pre.style.textAlign = "justify";
-    pre.appendChild(document.createTextNode(
-        message
-    ));
     //show as confirm
-    alertify.alert().set({labels:{ok:'Accept', cancel: 'Decline'}, padding: false});
+    // Prepare modal
+    showModalDialogBox(
+        '#warningModal',
+        '<i class="fas fa-warning fa-lg warning mr-2"></i>Caution',
+        message,
+        '',
+        'Close'
+    );
+
+    // Actions on modal buttons
+    $(document).on('click', '#warningModalButtonClose', function() {
+        
+    });
+    $(document).on('click', '#warningModalButtonAction', function() {
+        // SHow user
+    });
     return false;
 }
 
@@ -293,46 +297,6 @@ function blink(elem, times, speed, klass)
     }
 }
 
-function showAlertify(msg, delay = '', position = '', type = '')
-{
-    alertify.set(
-        'notifier',
-        'position',
-        position === '' ? 'top-center' : position
-    );
-
-    if (type === 'warning' || type === '') {
-        alertify
-            .warning(
-                msg,
-                delay === '' ? 5 : delay
-            )
-            .dismissOthers();
-    } else if (type === 'success') {
-        alertify
-            .success(
-                msg,
-                delay === '' ? 5 : delay
-            )
-            .dismissOthers();
-    } else if (type === 'message') {
-        alertify
-            .message(
-                msg,
-                delay === '' ? 5 : delay
-            )
-            .dismissOthers();
-    } else if (type === 'notify') {
-        alertify
-            .notify(
-                msg,
-                delay === '' ? 5 : delay
-            )
-            .dismissOthers();
-    }
-    
-}
-
 /**
  * 
  * @param string data Crypted string
@@ -366,9 +330,14 @@ function decodeQueryReturn(data, key)
         data = prepareExchangedData(data , "decode", key);
     } catch (e) {
         // error
-        alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.error(
+            'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
+            'Error', {
+                timeOut: 5000,
+                progressBar: true
+            }
+        );
         return false;
     }
 
@@ -457,4 +426,42 @@ function browserSession(action, name, data)
             });
         }
     }
+}
+
+/**
+ * 
+ * @param {string} modalId 
+ * @param {string} title 
+ * @param {string} body 
+ * @param {string} actionButton 
+ * @param {string} closeButton 
+ * @param {string} size 
+ */
+function showModalDialogBox(
+    modalId,
+    title,
+    body,
+    actionButton,
+    closeButton,
+    size = ''
+) {
+    $(modalId + 'Title').html(title);
+    $(modalId + 'Body').html(body);
+    $(modalId + 'ButtonClose').html(closeButton);
+    $(modalId + 'ButtonAction').html(actionButton);
+    if (actionButton === '') {
+        $(modalId + 'ButtonAction').addClass('hidden');
+    } else {
+        $(modalId + 'ButtonAction').removeClass('hidden');
+    }
+    if (size !== '') {
+        $(modalId + ' div:first').addClass('modal-xl');
+    } else {
+        $(modalId + ' div:first').removeClass('modal-xl');
+    }
+    $(modalId).modal({
+        show: true,
+        focus: true
+    });
+    $(modalId).modal('handleUpdate');
 }

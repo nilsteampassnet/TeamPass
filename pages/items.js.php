@@ -54,8 +54,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         quick_icon_query_status = true,
         first_group = 1,
         folderSearchCriteria = $('#jstree_search').val(),
-        itemEditor,
-        itemEditorSuggestion,
         userDidAChange = false,
         userUploadedFile = false,
         selectedFolder = false,
@@ -202,8 +200,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         queryDict['id'] !== undefined && queryDict['id'] !== ''
     ) {
         // Show cog
-        toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.remove();
+        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Store current view
         savePreviousView();
@@ -385,6 +383,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     // Manage folders action
     $('.tp-action').click(function() {
+        // SHow user
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>');
+
         if ($(this).data('folder-action') === 'refresh') {
             // Force refresh
             store.update(
@@ -404,34 +406,38 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     teampassApplication.jstreeForceRefresh = 0
                 }
             );
+            toastr.remove();
 
             //
             // > END <
             //
         } else if ($(this).data('folder-action') === 'expand') {
             $('#jstree').jstree('open_all');
+            toastr.remove();
 
             //
             // > END <
             //
         } else if ($(this).data('folder-action') === 'collapse') {
             $('#jstree').jstree('close_all');
+            toastr.remove();
 
             //
             // > END <
             //
         } else if ($(this).data('folder-action') === 'add') {
             console.info('SHOW ADD FOLDER');
+            toastr.remove();
 
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 30 &&
                 store.get('teampassUser').can_create_root_folder === 0
             ) {
-                toastr.remove();
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -459,12 +465,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('folder-action') === 'edit') {
             console.info('SHOW EDIT FOLDER');
+            toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 20) {
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -494,12 +502,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('folder-action') === 'copy') {
             console.info('SHOW COPY FOLDER');
+            toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 20) {
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -525,12 +535,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('folder-action') === 'delete') {
             console.info('SHOW DELETE FOLDER');
+            toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 30) {
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -567,7 +579,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('item-action') === 'new') {
             console.info('SHOW NEW ITEM');
-
             // Store current view
             savePreviousView();
 
@@ -587,25 +598,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 );
 
-                /*
-                // Check if personal SK is needed and set
-                if (store.get('teampassApplication').personalSaltkeyRequired === 1
-                    && (store.get('teampassUser').pskDefinedInDatabase !== 1
-                    || store.get('teampassUser').pskSetForSession === ''
-                    || store.get('teampassUser').pskSetForSession === undefined)
-                    && store.get('teampassItem').folderIsPersonal === 1
-                ) {
-                    // SHow PSK form
-                    showPersonalSKDialog();
-
-                    // Clear ongoing request status
-                    requestRunning = false;
-
-                    // Finished
-                    return false;
-                }
-                */
-
                 // Show Visibility and minimum complexity
                 $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
@@ -614,7 +606,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.form-item-copy, #folders-tree-card, .columns-position, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
                     .addClass('hidden');
                 // Destroy editor
-                if (itemEditor) itemEditor.destroy();
+                $('#form-item-description').summernote('destroy');
+
                 // Clean select2 lists
                 $('.select2').val('');
                 /*if ($('.select2') !== null) {console.log($('.select2').length)
@@ -632,18 +625,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#form-item-password').focus();
                 $('#form-item-label').focus();
                 // Prepare editor
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-description'), {
-                            toolbar: ['heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link', 'undo', 'redo']
-                        }
-                    )
-                    .then(editor => {
-                        itemEditor = editor;
-                    })
-                    .catch(error => {
-                        console.log(error);
-                    });
+                $('#form-item-description').summernote({
+                    toolbar: [
+                        ['style', ['style']],
+                        ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                        ['fontsize', ['fontsize']],
+                        ['color', ['color']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['insert', ['link', 'picture']],
+                        //['height', ['height']],
+                        ['view', ['codeview']]
+                    ],
+                    codeviewFilter: true,
+                    codeviewIframeFilter: true
+                });
+
                 // Set folder
                 $('#form-item-folder').val(selectedFolderId).change();
                 // Select tab#1
@@ -663,6 +659,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
                 // Update variable
                 userDidAChange = false;
+
+                toastr.remove();
             });
 
             //
@@ -675,10 +673,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             ).then(function() {
                 // Is user allowed
                 if (store.get('teampassItem').item_rights < 20) {
+                    toastr.remove();
                     toastr.error(
                         '<?php echo langHdl('error_not_allowed_to'); ?>',
                         '', {
-                            timeOut: 3000,
+                            timeOut: 5000,
                             progressBar: true
                         }
                     );
@@ -721,9 +720,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#form-item-copy-destination').val($('#form-item-folder').val()).change();
             } else {
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 5000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
             }
@@ -735,10 +735,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Is user allowed
             var levels = [50, 70];
             if (levels.includes(store.get('teampassItem').item_rights) === false) {
+                toastr.remove();
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -753,10 +755,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
                 $('.form-item-delete, .item-details-card-menu').removeClass('hidden');
             } else {
+                toastr.remove();
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 5000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
             }
@@ -816,9 +820,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             if (levels.includes(store.get('teampassItem').item_rights) === false) {
                 toastr.remove();
                 toastr.error(
-                    '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_not_allowed_to'); ?>',
+                    '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
-                        timeOut: 3000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -970,9 +975,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if ($('#form-item-request-access-reason').val() === '') {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban mr-2"></i><?php echo langHdl('error_provide_reason'); ?>',
+                '<?php echo langHdl('error_provide_reason'); ?>',
                 '', {
-                    timeOut: 5000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
             return false;
@@ -997,9 +1003,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Show error
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban mr-2"></i>' + data.message,
+                        data.message,
                         '', {
-                            timeOut: 5000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                 } else {
@@ -1082,7 +1089,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.error(
                         data.message,
                         '<?php echo langHdl('caution'); ?>', {
-                            timeOut: 5000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                 } else {
@@ -1103,7 +1111,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     // Inform user
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1154,9 +1162,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Show error
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban mr-2"></i>' + data.message,
+                        data.message,
                         '', {
-                            timeOut: 5000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                 } else {
@@ -1213,7 +1222,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
                     // Warn user
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1228,7 +1237,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 }
             }
@@ -1253,8 +1266,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.form-item, .item-details-card, .form-item-action').removeClass('hidden');
                     $('.form-item-share, .item-details-card-menu').addClass('hidden');
                     // Warn user
+                    toastr.remove();
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1265,7 +1279,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 }
             },
@@ -1282,14 +1300,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if ($('#form-item-copy-new-label').val() === '') {
             toastr.remove();
             toastr.error(
-                '<i class = "fas fa-ban fa-lg mr-3" >< /i><?php echo langHdl('error_field_is_mandatory'); ?>',
+                '<?php echo langHdl('error_field_is_mandatory'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
             );
             return false;
         }
 
         // Show cog
-        toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.remove();
+        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1316,7 +1338,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (data.error !== true) {
                     // Warn user
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1332,7 +1354,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 }
             }
@@ -1353,7 +1379,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#form-item-server-password').val() === ''
             ) {
                 toastr.error(
-                    '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>'
+                    '<?php echo langHdl('error_field_is_mandatory'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
                 );
                 return false;
             }
@@ -1389,12 +1419,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     if (data.error === true) {
                         toastr.remove();
                         toastr.error(
-                            '<i class="fas fa-ban fa-lg mr-3"></i>' + data.message
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
                         );
                     } else {
                         // Warn user
                         toastr.success(
-                            '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                            '<?php echo langHdl('success'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1419,12 +1453,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     if (data[0].error != "") {
                         toastr.remove();
                         toastr.error(
-                            '<i class="fas fa-ban fa-lg mr-3"></i>' + data[0].error
+                            data[0].error,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
                         );
                     } else {
                         $('#form-item-server-cron-frequency').val(0).change();
                         toastr.success(
-                            '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                            '<?php echo langHdl('success'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1449,9 +1487,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Send alert to user
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('form_presents_inconsistencies'); ?>',
+                '<?php echo langHdl('form_presents_inconsistencies'); ?>',
                 '', {
-                    timeOut: 10000
+                    timeOut: 10000,
+                    progressBar: true
                 }
             );
 
@@ -1472,7 +1511,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'password': $('#form-item-suggestion-password').val(),
             'email': $('#form-item-suggestion-email').val(),
             'url': $('#form-item-suggestion-url').val(),
-            'description': itemEditorSuggestion.getData(),
+            'description': $('#form-item-suggestion-description').summernote('code'),
             'comment': $('#form-item-suggestion-comment').val(),
             'folder_id': selectedFolderId,
             'item_id': store.get('teampassItem').id
@@ -1493,19 +1532,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 } else {
                     // Warn user
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
                     );
                     // Clear form
-                    $('.form-item-suggestion').val('');
-                    itemEditorSuggestion.setData('');
+                    $('.form-item-suggestion').html('');
+
                     // Collapse form
                     $('.card-item-extra').collapse('toggle');
                 }
@@ -1527,9 +1570,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Send alert to user
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('form_presents_inconsistencies'); ?>',
+                '<?php echo langHdl('form_presents_inconsistencies'); ?>',
                 '', {
-                    timeOut: 10000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
 
@@ -1541,9 +1585,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('#form-folder-add-label').addClass('is-invalid');
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_only_numbers_in_folder_name'); ?>',
+                '<?php echo langHdl('error_only_numbers_in_folder_name'); ?>',
                 '', {
-                    timeOut: 5000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
 
@@ -1581,7 +1626,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 } else {
                     // Refresh list of folders
@@ -1614,7 +1663,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Warn user
                     toastr.remove();
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                        '<?php echo langHdl('success'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1638,13 +1687,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if ($('#form-folder-confirm-delete').is(':checked') === false) {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('please_confirm'); ?>'
+                '<?php echo langHdl('please_confirm'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
             );
             return false;
         } else if ($('#form-folder-delete-selection option:selected').text() === '<?php echo $_SESSION['login']; ?>') {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_not_allowed_to'); ?>'
+                '<?php echo langHdl('error_not_allowed_to'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
             );
             return false;
         }
@@ -1675,7 +1732,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // ERROR
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-warning fa-lg mr-2"></i>' + data.message,
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 } else {
                     // Refresh list of folders
@@ -1710,13 +1771,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if ($("#form-folder-copy-source").val() === "" || $("#form-folder-copy-destination").val() === "") {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('error_must_enter_all_fields'); ?>'
+                '<?php echo langHdl('error_must_enter_all_fields'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
             );
             return false;
         } else if ($("#form-folder-copy-source").val() === $("#form-folder-copy-destination").val()) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('error_source_and_destination_are_equal'); ?>'
+                '<?php echo langHdl('error_source_and_destination_are_equal'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
             );
             return false;
         }
@@ -1748,6 +1817,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.remove();
                     toastr.error(
                         data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                 } else {
                     // Refresh list of folders
@@ -1871,12 +1944,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //$('#form-item-buttons').removeClass('sticky-footer');
 
                 // Destroy editors
-                if (itemEditor) {
-                    itemEditor.destroy();
-                }
-                if (itemEditorSuggestion) {
-                    itemEditorSuggestion.destroy();
-                }
+                $('#form-item-description').summernote('destroy');
+                $('#form-item-suggestion-description').summernote('destroy');
 
                 // Show loading
                 $('.overlay').removeClass('hidden');
@@ -2336,8 +2405,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' - ' + file.percent + '%');
     });
     uploader_attachments.bind('Error', function(up, err) {
+        toastr.remove();
         toastr.error(
-            err.message + (err.file ? ', File: ' + err.file.name : '')
+            err.message + (err.file ? ', File: ' + err.file.name : ''),
+            '', {
+                timeOut: 5000,
+                progressBar: true
+            }
         );
 
         up.refresh(); // Reposition Flash/Silverlight
@@ -2348,7 +2422,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             .html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
         toastr
             .info(
-                '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('success'); ?>',
+                '<?php echo langHdl('success'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -2384,9 +2458,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         } else {
             toastr.remove();
             toastr.warning(
-                '<i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('no_file_to_upload'); ?>',
+                '<?php echo langHdl('no_file_to_upload'); ?>',
                 '', {
-                    timeOut: 3000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
         }
@@ -2428,7 +2503,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.error(
                 '<?php echo langHdl('error_no_action_identified'); ?>',
                 '', {
-                    timeOut: 10000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
             return false;
@@ -2440,7 +2516,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.error(
                 '<?php echo langHdl('no_change_performed'); ?>',
                 '', {
-                    timeOut: 3000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
             return false;
@@ -2455,17 +2532,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.error(
                 '<?php echo langHdl('form_presents_inconsistencies'); ?>',
                 '', {
-                    timeOut: 10000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
 
             return false;
-        }
-
-        // Check if description has changed
-        if ($('#form-item-description').val().localeCompare(itemEditor.getData()) !== 0) {
-            $('#form-item-description').val(itemEditor.getData());
-            $('#form-item-description').data('change-ongoing', true);
         }
 
         // Loop on all changed fields
@@ -2493,7 +2565,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 toastr.error(
                     '<?php echo langHdl('error_label'); ?>',
                     '', {
-                        timeOut: 10000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -2505,7 +2578,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 toastr.error(
                     '<?php echo langHdl('error_tags'); ?>',
                     '', {
-                        timeOut: 10000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -2517,7 +2591,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 toastr.error(
                     '<?php echo langHdl('error_no_selected_folder'); ?>',
                     '', {
-                        timeOut: 10000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -2527,7 +2602,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 toastr.error(
                     '<?php echo langHdl('error_folder_not_allowed'); ?>',
                     '', {
-                        timeOut: 10000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -2587,17 +2663,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.error(
                         '<?php echo langHdl('error_field_is_mandatory'); ?>',
                         '', {
-                            timeOut: 5000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                     return false;
                 }
-
                 //prepare data
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': itemEditor.getData() !== "<p>&nbsp;</p>" ? itemEditor.getData() : '',
+                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? $('#form-item-description').summernote('code') : '',
                     'diffusion_list': diffusion,
                     'folder': parseInt($('#form-item-folder').val()),
                     'email': $('#form-item-email').val(),
@@ -2658,7 +2734,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             toastr.error(
                                 'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
                                 '', {
-                                    timeOut: 20000
+                                    timeOut: 5000,
+                                    progressBar: true
                                 }
                             );
                             return false;
@@ -2670,7 +2747,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             toastr.error(
                                 data.message,
                                 '', {
-                                    timeOut: 10000
+                                    timeOut: 5000,
+                                    progressBar: true
                                 }
                             );
                             return false;
@@ -2756,7 +2834,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.error(
                 '<?php echo langHdl('nothing_to_save'); ?>',
                 '', {
-                    timeOut: 2000,
+                    timeOut: 5000,
                     progressBar: true
                 }
             );
@@ -2827,7 +2905,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.error(
                 store.get('teampassItem').message,
                 '', {
-                    timeOut: 3000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
         } else {
@@ -2859,6 +2938,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             } else {
                 $('#form-item-field, .form-item-category').addClass('hidden');
             }
+            toastr.remove();
             // ---
         }
         //});
@@ -2943,7 +3023,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.info(
                         data.message,
                         '', {
-                            timeOut: 3000,
+                            timeOut: 5000,
                             progressBar: true
                         }
                     );
@@ -3031,7 +3111,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 } else {
                     toastr.remove();
                     toastr.error(
-                        data.message
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                     return false;
                 }
@@ -3109,7 +3193,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 } else {
                     toastr.remove();
                     toastr.error(
-                        data.message
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                     return false;
                 }
@@ -3277,7 +3365,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     if (data.error === true) {
                         toastr.remove();
                         toastr.error(
-                            data.message
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
                         );
                         return false;
                     }
@@ -3367,7 +3459,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                     toastr.error(
                                         '<?php echo langHdl('empty_psk'); ?>',
                                         '', {
-                                            timeOut: 3000
+                                            timeOut: 5000,
+                                            progressBar: true
                                         }
                                     );
                                     return;
@@ -3840,7 +3933,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         toastr.error(
                             '<?php echo langHdl('error_not_allowed_to'); ?>',
                             '', {
-                                timeOut: 3000
+                                timeOut: 5000,
+                                progressBar: true
                             }
                         );
                         return false;
@@ -3876,7 +3970,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 toastr.error(
                                     data.message,
                                     '', {
-                                        timeOut: 3000
+                                        timeOut: 5000,
+                                        progressBar: true
                                     }
                                 );
                                 ui.draggable.removeClass('hidden');
@@ -3997,7 +4092,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.warning(
                 '<?php echo langHdl('no_item_to_display'); ?>',
                 '', {
-                    timeOut: 3000
+                    timeOut: 5000,
+                    progressBar: true
                 }
             );
 
@@ -4051,7 +4147,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        data.message
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                     requestRunning = false;
                     return false;
@@ -4060,19 +4160,15 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 ) {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('error_not_allowed_to'); ?>'
+                        '<?php echo langHdl('error_not_allowed_to'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
                     );
                     requestRunning = false;
                     return false;
                 }
-
-                toastr.remove();
-                toastr.info(
-                    '<?php echo langHdl('done'); ?>',
-                    '', {
-                        timeOut: 1000
-                    }
-                );
 
                 // Store scroll position
                 userScrollPosition = $(window).scrollTop();
@@ -4090,7 +4186,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.error(
                         '<?php echo langHdl('not_allowed_to_see_pw'); ?>',
                         '<?php echo langHdl('warning'); ?>', {
-                            timeOut: 3000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
 
@@ -4180,48 +4277,59 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#form-item-label').focus();
 
                 // Editor for description field
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-description'), {
-                            toolbar: ['heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link', 'undo', 'redo']
-                        }
-                    )
-                    .then(editor => {
-                        editor.setData(data.description);
-                        $('#form-item-description').val(editor.getData());
-
-                        // On change
-                        editor.model.document.on('change', () => {
-                            if (userDidAChange === false) {
-                                userDidAChange = true;
-                                $('#form-item-description').data('change-ongoing', true);
-
-                                // SHow button in sticky footer
-                                //$('#form-item-buttons').addClass('sticky-footer');
+                $('#form-item-description')
+                    .html(data.description)
+                    .summernote({
+                        toolbar: [
+                            ['style', ['style']],
+                            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                            ['fontsize', ['fontsize']],
+                            ['color', ['color']],
+                            ['para', ['ul', 'ol', 'paragraph']],
+                            ['insert', ['link', 'picture']],
+                            //['height', ['height']],
+                            ['view', ['codeview']]
+                        ],
+                        codeviewFilter: true,
+                        codeviewIframeFilter: true,
+                        callbacks: {
+                            onChange: function(contents, $editable) {
+                                console.log('Editor onChange:' + userDidAChange + " - " + requestRunning);
+                                if (userDidAChange === false && requestRunning === false) {
+                                    console.log('onChange:', contents, $editable);
+                                    userDidAChange = true;
+                                    $('#form-item-description').data('change-ongoing', true);
+                                }
                             }
-                        });
-
-                        // Define variable name
-                        itemEditor = editor;
-                    })
-                    .catch(error => {
-                        console.log(error);
-                    });
-
-                ClassicEditor
-                    .create(
-                        document.querySelector('#form-item-suggestion-description'), {
-                            toolbar: ['heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link', 'undo', 'redo']
                         }
-                    )
-                    .then(editor => {
-                        editor.setData(data.description);
-                        $('#form-item-suggestion-description').val(editor.getData());
-                        itemEditorSuggestion = editor;
-                    })
-                    .catch(error => {
-                        console.log(error);
                     });
+
+                $('#form-item-suggestion-description')
+                    .html(data.description)
+                    .summernote({
+                        toolbar: [
+                            ['style', ['style']],
+                            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                            ['fontsize', ['fontsize']],
+                            ['color', ['color']],
+                            ['para', ['ul', 'ol', 'paragraph']],
+                            ['insert', ['link', 'picture']],
+                            //['height', ['height']],
+                            ['view', ['codeview']]
+                        ],
+                        codeviewFilter: true,
+                        codeviewIframeFilter: true,
+                        callbacks: {
+                            onChange: function(contents, $editable) {
+                                if (userDidAChange === false && requestRunning === false) {
+                                    console.log('onChange:', contents, $editable);
+                                    userDidAChange = true;
+                                    $('#form-item-suggestion-description').data('change-ongoing', true);
+                                }
+                            }
+                        }
+                    });
+
 
                 //prepare nice list of users / groups
                 var html_users = '',
@@ -4507,6 +4615,15 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
                 requestRunning = false;
 
+                // Inform user
+                toastr.remove();
+                toastr.info(
+                    '<?php echo langHdl('done'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
+
                 return true;
             }
         );
@@ -4739,7 +4856,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 toastr.error(
                     '<?php echo langHdl('all_fields_mandatory'); ?>',
                     '<?php echo langHdl('warning'); ?>', {
-                        timeOut: 5000
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
                 return false;
@@ -4811,7 +4929,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         toastr.error(
                             data.message,
                             '', {
-                                timeOut: 3000
+                                timeOut: 5000,
+                                progressBar: true
                             }
                         );
                     } else {
@@ -4862,7 +4981,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.error(
                         data.message,
                         '', {
-                            timeOut: 3000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                 } else {
@@ -4873,6 +4993,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     //Set the image src
                     imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
+                    imageTag.attr("class", "img-fluid");
+
+                    //When the image has loaded, display the dialog
+                    showModalDialogBox(
+                        '#warningModal',
+                        data.filename,
+                        $(imageDialog).html(),
+                        '',
+                        'Close',
+                        'modal-xl'
+                    );
 
                     toastr.remove();
                     toastr.info(
@@ -4882,20 +5013,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         }
                     );
 
-                    //When the image has loaded, display the dialog
-                    var pre = document.createElement('pre');
-                    pre.style.textAlign = "center";
-                    $(pre).append($(imageDialog).html());
-                    alertify
-                        .alert(pre)
-                        .set({
-                            label: '<?php echo langHdl('close'); ?>',
-                            closable: false,
-                            padding: false,
-                            title: data.filename,
-                            resizable: true,
-                        })
-                        .resizeTo('90%', '250px');
+
+                    /*
+                                        var pre = document.createElement('pre');
+                                        pre.style.textAlign = "center";
+                                        $(pre).append($(imageDialog).html());
+                                        alertify
+                                            .alert(pre)
+                                            .set({
+                                                label: '<?php echo langHdl('close'); ?>',
+                                                closable: false,
+                                                padding: false,
+                                                title: data.filename,
+                                                resizable: true,
+                                            })
+                                            .resizeTo('90%', '250px');*/
                 }
             }
         );
@@ -5091,7 +5223,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     toastr.error(
                         data.error_msg,
                         '<?php echo langHdl('error'); ?>', {
-                            timeOut: 10000
+                            timeOut: 5000,
+                            progressBar: true
                         }
                     );
                     return false;
@@ -5112,24 +5245,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     $('#item-button-password-copy').click(function() {
         $('#form-item-password-confirmation').val($('#form-item-password').val());
     });
-
-    /**
-     * 
-     * @param {integer} duration
-     * 
-     */
-    function clearClipboardTimeout(duration) {
-        // Wait for duration
-        $(this).delay(duration * 1000).queue(function() {
-            navigator.clipboard.writeText("Cleared by Teampass").then(function() {
-                // clipboard successfully set
-            }, function() {
-                // clipboard write failed
-            });
-
-            $(this).dequeue();
-        });
-    }
 
     /**
      * On tag badge click, launch the search query

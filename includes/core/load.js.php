@@ -113,9 +113,7 @@ if (
         $(document).on('click', '#warningModalButtonAction', function() {
             // SHow user
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             // Action
             store.update(
@@ -751,24 +749,6 @@ if (
         }
     }
 
-
-    function showModalDialogBox(
-        modalId,
-        title,
-        body,
-        actionButton,
-        closeButton
-    ) {
-        $(modalId + 'Title').html(title);
-        $(modalId + 'Body').html(body);
-        $(modalId + 'ButtonClose').html(closeButton);
-        $(modalId + 'ButtonAction').html(actionButton);
-        $(modalId).modal({
-            show: true,
-            focus: true
-        });
-    }
-
     // This permits to manage the column width of tree/items
     $(document).on('click', '.columns-position', function() {
         var colLeft = $('#folders-tree-card').find('.column-left'),
@@ -795,4 +775,24 @@ if (
             $("#but_identify_user").click();
         }
     });
+
+
+
+    /**
+     * 
+     * @param {integer} duration
+     * 
+     */
+    function clearClipboardTimeout(duration) {
+        // Wait for duration
+        $(this).delay(duration * 1000).queue(function() {
+            navigator.clipboard.writeText("Cleared by Teampass").then(function() {
+                // clipboard successfully set
+            }, function() {
+                // clipboard write failed
+            });
+
+            $(this).dequeue();
+        });
+    }
 </script>

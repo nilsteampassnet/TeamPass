@@ -4337,7 +4337,7 @@ if (null !== $post_type) {
                 'rolesList' => $listOptionsForRoles,
                 'setting_restricted_to_roles' => isset($SETTINGS['restricted_to_roles']) === true
                     && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0,
-                'itemAccessRight' => $accessLevel,
+                'itemAccessRight' => isset($accessLevel) === true ? $accessLevel : '',
             );
             echo prepareExchangedData($returnValues, 'encode');
             break;

@@ -167,9 +167,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         ],
         'preDrawCallback': function() {
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
             // Tooltips
@@ -324,9 +322,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'edit') {
             // SHow user
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // EDIT EXISTING USER
             $('#row-list, #group-create-special-folder, #group-delete-user').addClass('hidden');
@@ -457,73 +453,78 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'submit') {
             // Manage case of delete
             if ($('#form-delete-user-confirm').prop('checked') === true) {
-                alertify.confirm(
-                    '<?php echo langHdl('please_confirm'); ?>',
+                // Prepare modal
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fas fa-user-minus fa-lg warning mr-2"></i><?php echo langHdl('please_confirm'); ?>',
                     '<?php echo langHdl('please_confirm_user_deletion'); ?>',
-                    function() {
-                        var data = {
-                            'user_id': store.get('teampassApplication').formUserId,
-                        }
-                        // Send query to server
-                        $.post(
-                            'sources/users.queries.php', {
-                                type: 'delete_user',
-                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                key: "<?php echo $_SESSION['key']; ?>"
-                            },
-                            function(data) {
-                                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                                console.log(data);
-
-                                if (data.error !== false) {
-                                    // Show error
-                                    toastr.remove();
-                                    toastr.error(
-                                        data.message,
-                                        '<?php echo langHdl('caution'); ?>', {
-                                            timeOut: 5000,
-                                            progressBar: true
-                                        }
-                                    );
-
-                                    // clear form fields
-                                    $(".clear-me").val('');
-                                    $('.select2').val('').change();
-                                    //$('#privilege-user').iCheck('check');
-                                    $('.form-check-input')
-                                        .iCheck('disable')
-                                        .iCheck('uncheck');
-
-                                    // refresh table content
-                                    oTable.ajax.reload();
-
-                                    // Show list of users
-                                    $('#row-form').addClass('hidden');
-                                    $('#row-list').removeClass('hidden');
-                                } else {
-                                    // Inform user
-                                    toastr.remove();
-                                    toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
-                                        '', {
-                                            timeOut: 1000
-                                        }
-                                    );
-                                }
-                            }
-                        );
-                    },
-                    function() {
-                        toastr.remove();
-                        toastr.warning(
-                            '<?php echo langHdl('cancel'); ?>',
-                            '', {
-                                timeOut: 3000,
-                                progressBar: true
-                            }
-                        );
-                    }
+                    '<?php echo langHdl('confirm'); ?>',
+                    '<?php echo langHdl('cancel'); ?>'
                 );
+
+                // Actions on modal buttons
+                $(document).on('click', '#warningModalButtonClose', function() {
+                    // Nothing
+                });
+                $(document).on('click', '#warningModalButtonAction', function() {
+                    // SHow user
+                    toastr.remove();
+                    toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+                    // Action
+                    var data = {
+                        'user_id': store.get('teampassApplication').formUserId,
+                    }
+                    // Send query to server
+                    $.post(
+                        'sources/users.queries.php', {
+                            type: 'delete_user',
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key: "<?php echo $_SESSION['key']; ?>"
+                        },
+                        function(data) {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            console.log(data);
+
+                            if (data.error !== false) {
+                                // Show error
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+
+                                // clear form fields
+                                $(".clear-me").val('');
+                                $('.select2').val('').change();
+                                //$('#privilege-user').iCheck('check');
+                                $('.form-check-input')
+                                    .iCheck('disable')
+                                    .iCheck('uncheck');
+
+                                // refresh table content
+                                oTable.ajax.reload();
+
+                                // Show list of users
+                                $('#row-form').addClass('hidden');
+                                $('#row-list').removeClass('hidden');
+                            } else {
+                                // Inform user
+                                toastr.remove();
+                                toastr.success(
+                                    '<?php echo langHdl('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
+                            }
+                        }
+                    );
+                });
+
                 return false;
             }
 
@@ -582,31 +583,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     return false;
                 }
 
-                /*
-                // Passwords are ok?
-                if ($('#form-password').val() !== $('#form-password').val()) {
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('password_confirmation_is_different'); ?>', 3)
-                        .dismissOthers();
-                    return false;
-                } else if ($('#form-password').val().length <= 5) {
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('password_too_short'); ?>', 3)
-                        .dismissOthers();
-                    return false;
-                } else if ($('#form-login-conform').val() === false) {
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('error_user_exists'); ?>', 3)
-                        .dismissOthers();
-                    return false;
-                }
-                */
-
                 // SHow user
                 toastr.remove();
-                toastr.info(
-                    '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-                );
+                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 //prepare data
                 var data = {
@@ -720,9 +699,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             );
         } else if ($(this).data('action') === 'qrcode') {
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // This sends a GA Code by email to user
             data = {
@@ -818,9 +795,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 ],
                 'preDrawCallback': function() {
                     toastr.remove();
-                    toastr.info(
-                        '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-                    );
+                    toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                 },
                 'drawCallback': function() {
                     // Tooltips
@@ -848,9 +823,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             $('#row-folders-results').html('');
 
@@ -900,9 +873,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('#users-list')
                 .removeClass('hidden');
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             oTable.ajax.reload();
             //
             // --- END
@@ -913,9 +884,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load list of users
             $.post(
@@ -968,9 +937,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'do-propagate') {
             // Show spinner
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
 
             // destination users
@@ -1066,9 +1033,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'ldap-existing-users') {
             // FIND ALL USERS IN LDAP
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             $('#row-ldap-body')
                 .addClass('overlay')
@@ -1127,43 +1092,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $('#propagate-user-allowed').html($(selectedOption).data('folders-allowed'));
         $('#propagate-user-fordidden').html($(selectedOption).data('folders-forbidden'));
     });
-
-
-    /**
-     * GENERATE PASSWORD
-     */
-    /*
-    $('#button-password-generate').click(function() {
-        $.post(
-            'sources/main.queries.php',
-            {
-                type        : 'generate_password',
-                size        : 10,
-                secure_pwd  : 'true',
-                key         : "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
-                
-                if (data.error == 'true') {
-                    // error
-                    alertify
-                        .alert()
-                        .setting({
-                            'label' : '<?php echo langHdl('error'); ?>',
-                            'message' : '<i class="fas fa-info-circle mr-2"></i>' + data.error_msg
-                        })
-                        .show(); 
-                    return false;
-                } else {
-                    $('#form-password, #form-confirm').val(data.key);
-                }
-                $('#form-password').focus();
-            }
-       );
-    });
-    */
 
 
     /**

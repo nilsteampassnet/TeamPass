@@ -59,9 +59,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         console.log($(this).data('action'))
         if ($(this).data('action') === 'ldap-test-config') {
             toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-cog fa-spin fa-2x ml-3"></i>'
-            );
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             var data = {
                 'username': $('#ldap-test-config-username').val(),
