@@ -20,8 +20,7 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
+if (isset($_SESSION['CPM']) === false
     || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
@@ -111,8 +110,14 @@ switch ($post_type) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
 
-        if (empty($dataReceived['password']) || empty($dataReceived['username'])) {
-            echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No user credentials" }]';
+        if (empty($dataReceived['password']) === true || empty($dataReceived['username']) === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('credentials_cannot_be_empty'),
+                ),
+                'encode'
+            );
             break;
         }
 
@@ -123,48 +128,48 @@ switch ($post_type) {
             $ldap_suffix = '@' . substr(html_entity_decode($dataReceived['username']), 0, strpos(html_entity_decode($dataReceived['username']), '\\'));
             $dataReceived['username'] = substr(html_entity_decode($dataReceived['username']), strpos(html_entity_decode($dataReceived['username']), '\\') + 1);
         }
-        if ($dataReceived['ldap_type'] === 'posix-search') {
+        if ($SETTINGS['ldap_type'] === 'posix-search') {
             $ldapURIs = '';
-            foreach (explode(',', $dataReceived['ldap_domain_controler']) as $domainControler) {
-                if ($dataReceived['ldap_ssl_input'] == 1) {
-                    $ldapURIs .= 'ldaps://' . $domainControler . ':' . $dataReceived['ldap_port'] . ' ';
+            foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
+                if ((int) $SETTINGS['ldap_ssl'] === 1) {
+                    $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
                 } else {
-                    $ldapURIs .= 'ldap://' . $domainControler . ':' . $dataReceived['ldap_port'] . ' ';
+                    $ldapURIs .= 'ldap://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
                 }
             }
 
             $debug_ldap .= 'LDAP URIs : ' . $ldapURIs . '<br/>';
             $ldapconn = ldap_connect($ldapURIs);
 
-            if ($dataReceived['ldap_tls_input']) {
+            if ($SETTINGS['ldap_ssl']) {
                 ldap_start_tls($ldapconn);
             }
 
             $debug_ldap .= 'LDAP connection : ' . ($ldapconn ? 'Connected' : 'Failed') . '<br/>';
 
             if ($ldapconn) {
-                $debug_ldap .= 'DN : ' . $dataReceived['ldap_bind_dn'] . ' -- ' . $dataReceived['ldap_bind_passwd'] . '<br/>';
+                $debug_ldap .= 'DN : ' . $SETTINGS['ldap_bind_dn'] . ' -- ' . $SETTINGS['ldap_bind_passwd'] . '<br/>';
                 ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
                 ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
-                $ldapbind = ldap_bind($ldapconn, $dataReceived['ldap_bind_dn'], $dataReceived['ldap_bind_passwd']);
+                $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
 
                 $debug_ldap .= 'LDAP bind : ' . ($ldapbind ? 'Bound' : 'Failed') . '<br/>';
 
                 if ($ldapbind) {
-                    $filter = '(&(' . $dataReceived['ldap_user_attribute'] . '=' . $dataReceived['username'] . ')(objectClass=' . $dataReceived['ldap_object_class'] . '))';
+                    $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $dataReceived['username'] . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
                     //echo $filter;
                     $result = ldap_search(
                         $ldapconn,
-                        $dataReceived['ldap_search_base'],
+                        $SETTINGS['ldap_search_base'],
                         $filter,
-                        array('dn', 'mail', 'givenname', 'sn', 'uid')
+                        array('dn', 'mail', 'givenname', 'sn', 'uid', 'name', 'displayname')
                     );
-                    if (isset($dataReceived['ldap_usergroup'])) {
+                    if (isset($SETTINGS['ldap_usergroup'])) {
                         $GroupRestrictionEnabled = false;
                         $filter_group = 'memberUid=' . $dataReceived['username'];
                         $result_group = ldap_search(
                             $ldapconn,
-                            $dataReceived['ldap_search_base'],
+                            $SETTINGS['ldap_search_base'],
                             $filter_group,
                             array('dn')
                         );
@@ -197,7 +202,7 @@ switch ($post_type) {
                         // try auth
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $dataReceived['username_pwd']);
+                        $ldapbind = @ldap_bind($ldapconn, $user_dn, $dataReceived['password']);
                         if ($ldapbind) {
                             $debug_ldap .= 'Successfully connected';
                         } else {
@@ -212,38 +217,38 @@ switch ($post_type) {
             }
         } else {
             $debug_ldap .= 'Get all ldap params: <br/>' .
-                '  - base_dn : ' . $dataReceived['ldap_domain_dn'] . '<br/>' .
-                '  - account_suffix : ' . $dataReceived['ldap_suffix'] . '<br/>' .
-                '  - domain_controllers : ' . $dataReceived['ldap_domain_controler'] . '<br/>' .
-                '  - ad_port : ' . $dataReceived['ldap_port'] . '<br/>' .
-                '  - use_ssl : ' . $dataReceived['ldap_ssl_input'] . '<br/>' .
-                '  - use_tls : ' . $dataReceived['ldap_tls_input'] . '<br/>*********<br/>';
+                '  - base_dn : ' . $SETTINGS['ldap_domain_dn'] . '<br/>' .
+                '  - account_suffix : ' . $SETTINGS['ldap_suffix'] . '<br/>' .
+                '  - domain_controllers : ' . $SETTINGS['ldap_domain_controler'] . '<br/>' .
+                '  - ad_port : ' . $SETTINGS['ldap_port'] . '<br/>' .
+                '  - use_ssl : ' . $SETTINGS['ldap_ssl_input'] . '<br/>' .
+                '  - use_tls : ' . $SETTINGS['ldap_ssl'] . '<br/>*********<br/>';
 
             $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
             $adldap->register();
 
             // Posix style LDAP handles user searches a bit differently
-            if ($dataReceived['ldap_type'] === 'posix') {
-                $ldap_suffix = ',' . $dataReceived['ldap_suffix'] . ',' . $dataReceived['ldap_domain_dn'];
-            } elseif ($dataReceived['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
-                $ldap_suffix = $dataReceived['ldap_suffix'];
+            if ($SETTINGS['ldap_type'] === 'posix') {
+                $ldap_suffix = ',' . $SETTINGS['ldap_suffix'] . ',' . $SETTINGS['ldap_domain_dn'];
+            } elseif ($SETTINGS['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
+                $ldap_suffix = $SETTINGS['ldap_suffix'];
             }
             $adldap = new adLDAP\adLDAP(
                 array(
-                    'base_dn' => $dataReceived['ldap_domain_dn'],
+                    'base_dn' => $SETTINGS['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(',', $dataReceived['ldap_domain_controler']),
-                    'ad_port' => $dataReceived['ldap_port'],
-                    'use_ssl' => $dataReceived['ldap_ssl_input'],
-                    'use_tls' => $dataReceived['ldap_tls_input'],
+                    'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
+                    'ad_port' => $SETTINGS['ldap_port'],
+                    'use_ssl' => $SETTINGS['ldap_ssl_input'],
+                    'use_tls' => $SETTINGS['ldap_ssl'],
                 )
             );
 
             $debug_ldap .= 'Create new adldap object : ' . $adldap->getLastError() . '<br/><br/>';
 
             // openLDAP expects an attribute=value pair
-            if ($dataReceived['ldap_type'] === 'posix') {
-                $auth_username = $dataReceived['ldap_user_attribute'] . '=' . $dataReceived['username'];
+            if ($SETTINGS['ldap_type'] === 'posix') {
+                $auth_username = $SETTINGS['ldap_user_attribute'] . '=' . $dataReceived['username'];
             } else {
                 $auth_username = $dataReceived['username'];
             }
@@ -259,7 +264,13 @@ switch ($post_type) {
                 'ldap status : ' . $ldapConnection; //Debug
         }
 
-        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "' . $antiXss->xss_clean($debug_ldap) . '" }]';
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $antiXss->xss_clean($debug_ldap),
+            ),
+            'encode'
+        );
 
         break;
 }

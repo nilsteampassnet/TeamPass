@@ -126,9 +126,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $('#role-details').html('');
 
         // Show spinner
-        alertify
-            .message('<?php echo langHdl('loading_data'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Build matrix
         $.post(
@@ -142,9 +141,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data);
                 if (data.error !== false) {
                     // Show error
-                    alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
                 } else {
                     // Build html
                     var newHtml = '',
@@ -224,9 +228,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('#folders-depth').val('all').change();
 
                     // Inform user
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
 
                     // Now check if role comparision is enabled
                     if ($('#folders-compare').val() !== '') {
@@ -243,9 +251,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             operationOngoin = true;
 
             // Show spinner
-            alertify
-                .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -268,9 +275,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     }
                     operationOngoin = false;
 
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
                 }
             );
         }
@@ -281,9 +292,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             operationOngoin = true;
 
             // Show spinner
-            alertify
-                .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -306,9 +316,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     }
                     operationOngoin = false;
 
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
                 }
             );
         }
@@ -424,9 +438,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             // STORE ROLE CHANGES
 
             // Show spinner
-            alertify
-                .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -451,12 +464,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     if (data.error === true) {
                         // ERROR
-                        alertify
-                            .error(
-                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                                0
-                            )
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         if (store.get('teampassApplication').formUserAction === 'edit_role') {
                             // Adapt card header
@@ -498,9 +513,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         $('#form-role-label').val('');
 
                         // OK
-                        alertify
-                            .success('<?php echo langHdl('done'); ?>', 1)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
                     }
                 }
             );
@@ -562,9 +581,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             // Store the new access rights for the selected folder(s)
 
             // Show spinner
-            alertify
-                .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Get list of selected folders
             var selectedFolders = [];
@@ -611,19 +629,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     if (data.error === true) {
                         // ERROR
-                        alertify
-                            .error(
-                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                                0
-                            )
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         refreshMatrix($('#roles-list').val());
 
                         // OK
-                        alertify
-                            .success('<?php echo langHdl('done'); ?>', 1)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
                     }
                 }
             );
@@ -635,9 +659,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             }
 
             // Show spinner
-            alertify
-                .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -657,12 +680,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     if (data.error === true) {
                         // ERROR
-                        alertify
-                            .error(
-                                '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                                0
-                            )
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         // Manage change in select
                         $("#roles-list").select2("destroy");
@@ -680,9 +705,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         $('#form-role-delete').iCheck('uncheck');
 
                         // OK
-                        alertify
-                            .success('<?php echo langHdl('done'); ?>', 1)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
                     }
                 }
             );
@@ -739,9 +768,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $('#table-role-details tr').find('th:last-child, td:last-child').addClass('hidden');
         } else {
             // Show spinner
-            alertify
-                .message('<?php echo langHdl('loading_data'); ?>...<i class="fa fa-cog fa-spin fa-2x ml-2"></i>', 0)
-                .dismissOthers();
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load the rights for this folder
             $.post(
@@ -754,9 +782,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                     if (data.error !== false) {
                         // Show error
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
                     } else {
                         buildRoleCompare(data.matrix);
 
@@ -769,9 +802,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         );
 
                         // Inform user
-                        alertify
-                            .success('<?php echo langHdl('done'); ?>', 1)
-                            .dismissOthers();
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
                     }
                 }
             );

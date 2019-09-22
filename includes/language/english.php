@@ -17,6 +17,10 @@
  */
 
 return array(
+    'user_groups' => 'Groups',
+    'credentials_not_correct' => 'Credentials are not correct',
+    'credentials_cannot_be_empty' => 'Credentials cannot be empty',
+    'output' => 'Output',
     'remove_install_folder' => 'Install folder has to be removed',
     'list_users' => 'List users',
     'search_new_users' => 'Search new users',

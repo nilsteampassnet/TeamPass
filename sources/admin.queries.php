@@ -2847,48 +2847,48 @@ switch ($post_type) {
 
         break;
 
-    case 'get_list_of_roles':
-        // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        $json = array();
-        array_push(
-            $json,
-            array(
-                'id' => 0,
-                'title' => langHdl('god'),
-                'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
-                'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
-            )
-        );
-
-        $rows = DB::query(
-            'SELECT id, title
-            FROM ' . prefixTable('roles_title') . '
-            ORDER BY title ASC'
-        );
-        foreach ($rows as $record) {
+        case 'get_list_of_roles':
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+    
+            $json = array();
             array_push(
                 $json,
                 array(
-                    'id' => $record['id'],
-                    'title' => addslashes($record['title']),
-                    'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
-                    'selected_role' => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
+                    'id' => 0,
+                    'title' => langHdl('god'),
+                    'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
+                    'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
                 )
             );
-        }
-
-        echo prepareExchangedData($json, 'encode');
-
-        break;
+    
+            $rows = DB::query(
+                'SELECT id, title
+                FROM ' . prefixTable('roles_title') . '
+                ORDER BY title ASC'
+            );
+            foreach ($rows as $record) {
+                array_push(
+                    $json,
+                    array(
+                        'id' => $record['id'],
+                        'title' => addslashes($record['title']),
+                        'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
+                        'selected_role' => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
+                    )
+                );
+            }
+    
+            echo prepareExchangedData($json, 'encode');
+    
+            break;
 }

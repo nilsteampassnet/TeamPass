@@ -76,7 +76,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                     console.log(data);
 
-                    if (data.error === false) {
+                    if (data.error === true) {
                         // Show error
                         toastr.remove();
                         toastr.error(
@@ -87,6 +87,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                             }
                         );
                     } else {
+                        $('#ldap-test-config-results-text').html(data.message);
+                        $('#ldap-test-config-results').removeClass('hidden');
+
                         // Inform user
                         toastr.remove();
                         toastr.success(
@@ -98,6 +101,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     }
                 }
             );
+            // ---
+            // END
+            // ---
         }
     });
 

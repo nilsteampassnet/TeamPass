@@ -1173,6 +1173,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.form-item-share').addClass('hidden');
 
                     // Inform user
+                    toastr.remove();
                     toastr.info(
                         '<?php echo langHdl('done'); ?>',
                         '', {

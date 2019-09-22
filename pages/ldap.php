@@ -323,15 +323,15 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                         <!-- form start -->
                         <form role='form-horizontal'>
                             <div class='card-body'>
-                                <ul class="nav nav-tabs" id="" role="tablist">
-                                    <li class="nav-item">
-                                        <a class="nav-link active" id="test-tab" data-toggle="tab" href="#test" role="tab" aria-controls="test" aria-selected="true">
-                                            <i class="fas fa-vial mr-2"></i><?php echo langHdl('ldap_test_config'); ?>
+                                <ul class='nav nav-tabs' id='' role='tablist'>
+                                    <li class='nav-item'>
+                                        <a class='nav-link active' id='test-tab' data-toggle='tab' href='#test' role='tab' aria-controls='test' aria-selected='true'>
+                                            <i class='fas fa-vial mr-2'></i><?php echo langHdl('ldap_test_config'); ?>
                                         </a>
                                     </li>
                                 </ul>
-                                <div class="tab-content mt-2" id="">
-                                    <div class="tab-pane fade show active" id="test" role="tabpanel" aria-labelledby="test-tab">
+                                <div class='tab-content mt-2' id=''>
+                                    <div class='tab-pane fade show active' id='test' role='tabpanel' aria-labelledby='test-tab'>
                                         <div class='row mb-2'>
                                             <div class='col-8'>
                                                 <?php echo langHdl('ldap_test_username'); ?>
@@ -348,9 +348,17 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                                 <input type='text' class='form-control form-control-sm' id='ldap-test-config-pwd' value=''>
                                             </div>
                                         </div>
+                                        <div class='card mb-2 hidden info' id='ldap-test-config-results'>
+                                            <div class='card-header'>
+                                                <?php echo langHdl('output'); ?>
+                                            </div>
+                                            <div class='card-body'>
+                                                <p class='card-text' id='ldap-test-config-results-text'></p>
+                                            </div>
+                                        </div>
                                         <div class='row mb-2'>
-                                            <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-test-config">
-                                                <i class="fas fa-cog mr-2"></i><?php echo langHdl('perform'); ?>
+                                            <button type='button' class='btn btn-primary btn-sm tp-action mr-2' data-action='ldap-test-config'>
+                                                <i class='fas fa-cog mr-2'></i><?php echo langHdl('perform'); ?>
                                             </button>
                                         </div>
                                     </div>

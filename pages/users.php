@@ -193,8 +193,21 @@ foreach ($treeDesc as $t) {
                         </button>
                     </div>
                     <div class="row">
-                        <div class="" id="row-ldap-body">
-
+                        <div class="">
+                            <div class="card-body table-responsive p-0">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 30px"></th>
+                                            <th style="width: 15%"><i class="fas fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
+                                            <th style="width: 20%"><i class="fas fa-user mr-1"></i><?php echo langHdl('name'); ?></th>
+                                            <th style="width: 25%"><i class="fas fa-envelope mr-1"></i><?php echo langHdl('email'); ?></th>
+                                            <th style=""><i class="fas fa-users mr-1"></i><?php echo langHdl('user_groups'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="row-ldap-body">
+                                    </tbody>
+                                </table>
                         </div>
                     </div>
                 </div>

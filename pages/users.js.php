@@ -1047,6 +1047,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 function(data) {
                     //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    console.log(data.entries)
 
                     if (data.error === true) {
                         // ERROR
@@ -1059,8 +1060,39 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             }
                         );
                     } else {
-                        $('#row-ldap-body').html(data.message);
+                        // loop on users list
+                        var html = '',
+                            groupsNumber = 0,
+                            userLogin;
+                        $.each(data.entries, function(i, entry) {
+                            userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
+                            html += '<tr>' +
+                                '<td>' + '' + '</td>' +
+                                '<td>' + userLogin + '</td>' +
+                                '<td>' + (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '' ) + '</td>' +
+                                '<td>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '' ) + '</td>' +
+                                '<td>';
+                            groupsNumber = 0;
+                            $.each(entry.memberof, function(j, group) {
+                                var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
+                                if (regex !== null) {
+                                    html += regex[0].replace('cn=', '').replace(',', '')+', ';
+                                    groupsNumber ++;
+                                }
+                            });
+                            html += '</td>';
+                            
+                            $.each(JSON.parse(data.users), function(i, v) {
+                                if (v.login === userLogin) {
+                                    html += '<td>Yes</td>';
+                                    return;
+                                }
+                            });
 
+                            html += '</tr>';
+                        });
+                        $('#row-ldap-body').html(html);
+                        
                         $('#row-ldap-body').removeClass('overlay');
 
                         // Inform user
