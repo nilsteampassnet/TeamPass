@@ -962,7 +962,7 @@ if (($session_validite_pw === null
     <link rel="stylesheet" href="./plugins/icheck/skins/all.css">
     <script type="text/javascript" src="./plugins/icheck/icheck.min.js"></script>
     <!-- bootstrap-add-clear -->
-    <!-- <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script> -->
+    <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script>
 
     <?php
     if ($menuAdmin === true) {
@@ -1015,9 +1015,13 @@ if (($session_validite_pw === null
         <script type="text/javascript" src="./plugins/datatables/plugins/select.js"></script>
         <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
         <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
-        <!-- daterange picker -->
+        <!-- dater picker -->
         <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
         <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+        <!-- daterange picker -->
+        <link rel="stylesheet" href="./plugins/bootstrap-daterangepicker/daterangepicker.css">
+        <script src="./plugins/bootstrap-daterangepicker/moment.min.js"></script>
+        <script src="./plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
         <!-- SlimScroll -->
         <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
         <!-- FastClick -->

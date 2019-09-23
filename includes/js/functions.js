@@ -239,32 +239,48 @@ function jsonErrorHdl(message)
  */
 function prepareExchangedData(data, type, key)
 {
-    var jsonResult;
+    //console.log("_____________");
+    //console.log(stripHtml(data));
+    //console.log("_____________ ");
     if (type === "decode") {
-        if ($("#encryptClientServer").val() === "0") {
+        if (parseInt($("#encryptClientServer").val()) === 0) {
             try {
                 return $.parseJSON(data);
             }
             catch (e) {
-                return "Error: " + jsonErrorHdl(e);
+                return jsonErrorHdl((data));
             }
         } else {
             try {
                 return $.parseJSON(aesDecrypt(data, key));
             }
             catch (e) {
-                return "Error: " + jsonErrorHdl(e);
+                return jsonErrorHdl((data));
             }
         }
     } else if (type === "encode") {
-        if ($("#encryptClientServer").val() === "0") {
-            return data;
+        if (parseInt($("#encryptClientServer").val()) === 0) {
+            return stripHtml(data);//data;
         } else {
             return aesEncrypt(data, key);
         }
     } else {
         return false;
     }
+}
+
+/**
+ * Returns the text from a HTML string
+ * 
+ * @param {html} String The html string
+ */
+function stripHtml(html){
+    // Create a new div element
+    var temporalDivElement = document.createElement("div");
+    // Set the HTML content with the providen
+    temporalDivElement.innerHTML = html;
+    // Retrieve the text property of the element (cross-browser support)
+    return temporalDivElement.textContent || temporalDivElement.innerText || "";
 }
 
 

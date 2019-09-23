@@ -189,7 +189,7 @@ foreach ($treeDesc as $t) {
                             <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('list_users'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-new-users">
-                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('search_new_users'); ?>
+                            <i class="fas fa-wrench mr-2"></i><?php echo langHdl('synchronize_in_teampass'); ?>
                         </button>
                     </div>
                     <div class="row">
@@ -208,16 +208,16 @@ foreach ($treeDesc as $t) {
                                     <tbody id="row-ldap-body">
                                     </tbody>
                                 </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="card-footer">
-                    <button type="button" class="btn btn-default float-right tp-action" data-action="close"><?php echo langHdl('close'); ?></button>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-default float-right tp-action" data-action="close"><?php echo langHdl('close'); ?></button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     </div>
     </div>
 

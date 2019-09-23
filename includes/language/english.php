@@ -17,6 +17,7 @@
  */
 
 return array(
+    'synchronize_in_teampass' => 'Synchronize in Teampass',
     'user_groups' => 'Groups',
     'credentials_not_correct' => 'Credentials are not correct',
     'credentials_cannot_be_empty' => 'Credentials cannot be empty',

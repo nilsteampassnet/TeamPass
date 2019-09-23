@@ -2216,8 +2216,21 @@ if (null !== $post_type) {
             $dataReceived = prepareExchangedData($post_data, 'decode');
 
             $usersInfo = array();
-
+            $entries = array();
+            $teampassRoles = array();
             $debug_ldap = $ldap_suffix = '';
+
+            // Get list of existing Roles in Teampass
+            $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
+            foreach ($rows as $record) {
+                array_push(
+                    $teampassRoles,
+                    array(
+                        'id' => $record['id'],
+                        'title' => $record['title']
+                    )
+                );
+            }
 
             //Multiple Domain Names
             if (strpos(html_entity_decode($dataReceived['username']), '\\') === true) {
@@ -2262,9 +2275,28 @@ if (null !== $post_type) {
                             $filter,
                             array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberOf', 'name', 'displayname', 'cn')
                         );
-                        
+
                         if (false !== $result) {
                             $entries = ldap_get_entries($ldapconn, $result);
+
+                            // Loop in entries and for each user:
+                            // 1- check what are the roles they have in Teampass
+                            // 2- get the ID of the user if exists in Teampass
+                            for ($i = 0; $i < $entries['count']; ++$i) {
+                                $entry = $entries[$i][0];
+                                if (null !== $entry) { }
+                            }
+
+
+                            function whatever($array, $key, $val)
+                            {
+                                foreach ($array as $item)
+                                    if (isset($item[$key]) && $item[$key] == $val)
+                                        return true;
+                                return false;
+                            }
+
+                            //
                         }
 
                         // Check if users are in Teampass users table
@@ -2290,7 +2322,7 @@ if (null !== $post_type) {
 
 
 
-/*
+                        /*
                         if (isset($SETTINGS['ldap_usergroup'])) {
                             $GroupRestrictionEnabled = false;
                             $filter_group = 'memberUid=' . $dataReceived['username'];
@@ -2349,8 +2381,8 @@ if (null !== $post_type) {
                     '  - account_suffix : ' . $SETTINGS['ldap_suffix'] . '<br/>' .
                     '  - domain_controllers : ' . $SETTINGS['ldap_domain_controler'] . '<br/>' .
                     '  - ad_port : ' . $SETTINGS['ldap_port'] . '<br/>' .
-                    '  - use_ssl : ' . $SETTINGS['ldap_ssl_input'] . '<br/>' .
-                    '  - use_tls : ' . $SETTINGS['ldap_ssl'] . '<br/>*********<br/>';
+                    '  - use_ssl : ' . $SETTINGS['ldap_ssl'] . '<br/>' .
+                    '  - use_tls : ' . $SETTINGS['ldap_tls'] . '<br/>*********<br/>';
 
                 $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
                 $adldap->register();
@@ -2367,8 +2399,8 @@ if (null !== $post_type) {
                         'account_suffix' => $ldap_suffix,
                         'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
                         'ad_port' => $SETTINGS['ldap_port'],
-                        'use_ssl' => $SETTINGS['ldap_ssl_input'],
-                        'use_tls' => $SETTINGS['ldap_ssl'],
+                        'use_ssl' => $SETTINGS['ldap_ssl'],
+                        'use_tls' => $SETTINGS['ldap_tls'],
                     )
                 );
 

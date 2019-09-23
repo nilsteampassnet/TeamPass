@@ -1020,6 +1020,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('.form').addClass('hidden');
             $('#row-ldap').removeClass('hidden');
 
+            refreshListUsersLDAP();
+
             //
             // --- END
             //
@@ -1031,81 +1033,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // --- END
             //
         } else if ($(this).data('action') === 'ldap-existing-users') {
-            // FIND ALL USERS IN LDAP
-            toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-            $('#row-ldap-body')
-                .addClass('overlay')
-                .html('');
-
-            $.post(
-                "sources/users.queries.php", {
-                    type: "get_list_of_users_in_ldap",
-                    key: "<?php echo $_SESSION['key']; ?>"
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                    console.log(data.entries)
-
-                    if (data.error === true) {
-                        // ERROR
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '<?php echo langHdl('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        // loop on users list
-                        var html = '',
-                            groupsNumber = 0,
-                            userLogin;
-                        $.each(data.entries, function(i, entry) {
-                            userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
-                            html += '<tr>' +
-                                '<td>' + '' + '</td>' +
-                                '<td>' + userLogin + '</td>' +
-                                '<td>' + (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '' ) + '</td>' +
-                                '<td>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '' ) + '</td>' +
-                                '<td>';
-                            groupsNumber = 0;
-                            $.each(entry.memberof, function(j, group) {
-                                var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
-                                if (regex !== null) {
-                                    html += regex[0].replace('cn=', '').replace(',', '')+', ';
-                                    groupsNumber ++;
-                                }
-                            });
-                            html += '</td>';
-                            
-                            $.each(JSON.parse(data.users), function(i, v) {
-                                if (v.login === userLogin) {
-                                    html += '<td>Yes</td>';
-                                    return;
-                                }
-                            });
-
-                            html += '</tr>';
-                        });
-                        $('#row-ldap-body').html(html);
-                        
-                        $('#row-ldap-body').removeClass('overlay');
-
-                        // Inform user
-                        toastr.remove();
-                        toastr.success(
-                            '<?php echo langHdl('done'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
-                    }
-                }
-            );
+            refreshListUsersLDAP();
 
             //
             // --- END
@@ -1312,6 +1240,89 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 .removeClass('hidden');
             $('#table-users thead th:eq(' + (columnId - 1) + ')').width(initialColumnWidth)
         }
+    }
+
+    /**
+     * Refreshing list of users from LDAP
+     *
+     * @return void
+     */
+    function refreshListUsersLDAP() {
+        // FIND ALL USERS IN LDAP
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        $('#row-ldap-body')
+            .addClass('overlay')
+            .html('');
+
+        $.post(
+            "sources/users.queries.php", {
+                type: "get_list_of_users_in_ldap",
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data.entries)
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // loop on users list
+                    var html = '',
+                        groupsNumber = 0,
+                        userLogin;
+                    $.each(data.entries, function(i, entry) {
+                        userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
+                        html += '<tr>' +
+                            '<td>' + '' + '</td>' +
+                            '<td>' + userLogin + '</td>' +
+                            '<td>' + (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</td>' +
+                            '<td>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</td>' +
+                            '<td>';
+                        groupsNumber = 0;
+                        $.each(entry.memberof, function(j, group) {
+                            var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
+                            if (regex !== null) {
+                                html += regex[0].replace('cn=', '').replace(',', '') + ', ';
+                                groupsNumber++;
+                            }
+                        });
+                        html += '</td>';
+
+                        $.each(JSON.parse(data.users), function(i, v) {
+                            if (v.login === userLogin) {
+                                html += '<td>Yes</td>';
+                                return;
+                            }
+                        });
+
+                        html += '</tr>';
+                    });
+                    $('#row-ldap-body').html(html);
+
+                    $('#row-ldap-body').removeClass('overlay');
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
     }
 
 
