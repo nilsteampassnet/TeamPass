@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author        Nils Laumaillé <nils@teampass.net>
  *
@@ -30,12 +31,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.database', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -48,14 +49,14 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
 
 //Connect to DB
-include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -83,7 +84,7 @@ $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 // Construction de la requ?te en fonction du type de valeur
 if (null !== $post_type) {
     switch ($post_type) {
-        //CASE list of recycled elements
+            //CASE list of recycled elements
         case 'recycled_bin_elements':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -110,7 +111,7 @@ if (null !== $post_type) {
             $arrFolders = array();
             $rows = DB::query(
                 'SELECT valeur, intitule
-                FROM '.prefixTable('misc').'
+                FROM ' . prefixTable('misc') . '
                 WHERE type  = %s',
                 'folder_deleted'
             );
@@ -131,10 +132,10 @@ if (null !== $post_type) {
                 'SELECT u.login as login, u.name as name, u.lastname as lastname,
                 i.id as id, i.label as label,
                 i.id_tree as id_tree, l.date as date, n.title as folder_title
-                FROM '.prefixTable('log_items').' as l
-                INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-                INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-                INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree=n.id)
+                FROM ' . prefixTable('log_items') . ' as l
+                INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
+                INNER JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+                INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree=n.id)
                 WHERE i.inactif = %i
                 AND l.action = %s',
                 1,
@@ -156,7 +157,7 @@ if (null !== $post_type) {
                             'label' => $record['label'],
                             'date' => date($SETTINGS['date_format'], $record['date']),
                             'login' => $record['login'],
-                            'name' => $record['name'].' '.$record['lastname'],
+                            'name' => $record['name'] . ' ' . $record['lastname'],
                             'folder_label' => $record['folder_title'],
                             'folder_deleted' => $thisFolder,
                         )
@@ -177,7 +178,7 @@ if (null !== $post_type) {
             );
             break;
 
-        //CASE list of recycled elements
+            //CASE list of recycled elements
         case 'restore_selected_objects':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -211,10 +212,10 @@ if (null !== $post_type) {
             foreach ($post_folders as $folderId) {
                 $data = DB::queryfirstrow(
                     'SELECT valeur
-                    FROM '.prefixTable('misc')."
+                    FROM ' . prefixTable('misc') . "
                     WHERE type = 'folder_deleted'
                     AND intitule = %s",
-                    'f'.$folderId
+                    'f' . $folderId
                 );
                 if ((int) $data['valeur'] !== 0) {
                     $folderData = explode(', ', $data['valeur']);
@@ -240,7 +241,7 @@ if (null !== $post_type) {
                         prefixTable('misc'),
                         'type = %s AND intitule = %s',
                         'folder_deleted',
-                        'f'.$folderId
+                        'f' . $folderId
                     );
 
                     // Restore all items in this folder
@@ -256,7 +257,7 @@ if (null !== $post_type) {
                     // Get list of all items in thos folder
                     $items = DB::query(
                         'SELECT id
-                        FROM '.prefixTable('items').'
+                        FROM ' . prefixTable('items') . '
                         WHERE id_tree = %i',
                         $folderId
                     );
@@ -308,7 +309,7 @@ if (null !== $post_type) {
             );
             break;
 
-        /*
+            /*
         * CASE purging logs
         */
         case 'purge_logs':
@@ -352,15 +353,16 @@ if (null !== $post_type) {
             );
 
             // Check conditions
-            if (empty($post_date_from) === false
+            if (
+                empty($post_date_from) === false
                 && empty($post_date_to) === false
                 && empty($post_log_type) === false
                 && (isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1)
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_items').' WHERE action=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_items') . ' WHERE action=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'at_shown',
                         $post_date_from,
                         $post_date_to
@@ -376,8 +378,8 @@ if (null !== $post_type) {
                     );
                 } elseif ($post_log_type === 'connections') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_system').' WHERE type=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'user_connection',
                         $post_date_from,
                         $post_date_to
@@ -393,8 +395,8 @@ if (null !== $post_type) {
                     );
                 } elseif ($post_log_type === 'errors') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_system').' WHERE type=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'error',
                         $post_date_from,
                         $post_date_to
@@ -410,8 +412,8 @@ if (null !== $post_type) {
                     );
                 } elseif ($post_log_type === 'copy') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_items').' WHERE action=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_items') . ' WHERE action=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'at_copy',
                         $post_date_from,
                         $post_date_to
@@ -427,8 +429,8 @@ if (null !== $post_type) {
                     );
                 } elseif ($post_log_type === 'admin') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_system').' WHERE type=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'admin_action',
                         $post_date_from,
                         $post_date_to
@@ -444,8 +446,8 @@ if (null !== $post_type) {
                     );
                 } elseif ($post_log_type === 'failed') {
                     DB::query(
-                        'SELECT * FROM '.prefixTable('log_system').' WHERE type=%s '.
-                        'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
+                            'AND date BETWEEN %i AND %i',
                         'failed_auth',
                         $post_date_from,
                         $post_date_to
@@ -463,7 +465,6 @@ if (null !== $post_type) {
                     $counter = 0;
                 }
 
-                echo '[{"status" : "ok", "nb":"'.$counter.'"}]';
                 // send data
                 echo prepareExchangedData(
                     array(

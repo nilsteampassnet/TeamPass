@@ -48,8 +48,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     //<![CDATA[
 
     // Init
-    var oTableItems,
-        oTableConnections,
+    var oTableConnections,
         oTableItems,
         oTableFailed,
         oTableCopy,
@@ -128,9 +127,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
 
     //Launch the datatables pluggin
     oTableConnections = $('#table-connections').dataTable({
+        'retrieve': false,
+        'orderCellsTop': true,
+        'fixedHeader': true,
         'paging': true,
-        'searching': true,
         'sPaginationType': 'listbox',
+        'searching': true,
         'order': [
             [1, 'asc']
         ],
@@ -142,9 +144,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'autoWidth': true,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=connections',
-            /*data: function(d) {
-                d.letter = _alphabetSearch
-            }*/
+            data: function() {
+                // Nothing
+            }
         },
         'language': {
             'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt'
@@ -172,7 +174,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
      */
     function showFailed() {
         oTableFailed = $('#table-failed').dataTable({
-            'retrieve': true,
+            'retrieve': false,
+            'orderCellsTop': true,
+            'fixedHeader': true,
             'paging': true,
             'sPaginationType': 'listbox',
             'searching': true,
@@ -218,7 +222,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
      */
     function showErrors() {
         oTableErrors = $('#table-errors').dataTable({
-            'retrieve': true,
+            'retrieve': false,
+            'orderCellsTop': true,
+            'fixedHeader': true,
             'paging': true,
             'sPaginationType': 'listbox',
             'searching': true,
@@ -264,7 +270,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
      */
     function showCopy() {
         oTableCopy = $('#table-copy').dataTable({
-            'retrieve': true,
+            'retrieve': false,
+            'orderCellsTop': true,
+            'fixedHeader': true,
             'paging': true,
             'sPaginationType': 'listbox',
             'searching': true,
@@ -310,7 +318,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
      */
     function showAdmin() {
         oTableAdmin = $('#table-admin').dataTable({
-            'retrieve': true,
+            'retrieve': false,
+            'orderCellsTop': true,
+            'fixedHeader': true,
             'paging': true,
             'sPaginationType': 'listbox',
             'searching': true,
@@ -405,7 +415,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         });
 
         oTableItems = $('#table-items').DataTable({
-            'retrieve': true,
+            'retrieve': false,
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
@@ -462,11 +472,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     $('#purge-date-range')
         .daterangepicker({
             locale: {
-                format: '<?php echo $SETTINGS['date_format']; ?>',
+                format: '<?php echo str_replace(array('Y', 'm', 'd'), array('YYYY', 'MM', 'DD'), $SETTINGS['date_format']); ?>',
                 applyLabel: '<?php echo langHdl('apply'); ?>',
                 cancelLabel: '<?php echo langHdl('cancel'); ?>',
-                fromLabel: '<?php echo langHdl('from'); ?>',
-                toLabel: '<?php echo langHdl('to'); ?>',
             }
         })
         .bind('keypress', function(e) {
@@ -521,7 +529,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo langHdl('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -534,7 +542,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                             oTableAdmin.ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'connections') {
                             oTableConnections.ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'Ffailed') {
+                        } else if (store.get('teampassApplication').logData === 'Failed') {
                             oTableFailed.ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'items') {
                             oTableItems.ajax.reload();
