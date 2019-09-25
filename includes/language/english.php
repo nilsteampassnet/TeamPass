@@ -17,6 +17,13 @@
  */
 
 return array(
+    'user_must_have_login_and_email' => 'User must have a login and an email',
+    'user_has_this_role_in_teampass' => 'User has this role in Teampass',
+    'select_role_to_create' => 'Select role to create',
+    'adding_ldap_role_to_teampass' => 'You can decide to create a role in Teampass coming from your Active Directory. This will permit to associate user to this role in Teampass.',
+    'add_user_to_role' => 'Add this role to the user in Teampass',
+    'add_user_in_teampass' => 'Add user in Teampass',
+    'synchronized' => 'Synchronized',
     'synchronize_in_teampass' => 'Synchronize in Teampass',
     'user_groups' => 'Groups',
     'credentials_not_correct' => 'Credentials are not correct',

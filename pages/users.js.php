@@ -1038,6 +1038,74 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'ldap-add-role') {
+            $('#ldap-users-table').addClass('hidden');
+            $('#ldap-new-role').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close-new-role') {
+            $('#ldap-users-table').removeClass('hidden');
+            $('#ldap-new-role').addClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'add-new-role') {
+            if ($('#ldap-new-role-selection').val() === '') {
+                // ERROR
+                toastr.remove();
+                toastr.error(
+                    '<?php echo langHdl('error_field_is_mandatory'); ?>',
+                    '<?php echo langHdl('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                // Add new role to Teampass
+
+                // Prepare data
+                var data = {
+                    'label': $('#ldap-new-role-selection').val(),
+                    'complexity': $('#ldap-new-role-complexity').val(),
+                    'allowEdit': 0,
+                    'action': 'add_folder'
+                }
+                $.post(
+                    'sources/roles.queries.php', {
+                        type: 'change_role_definition',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        console.log(data);
+
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo langHdl('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#ldap-new-role-selection').val('');
+                            $('#ldap-users-table').removeClass('hidden');
+                            $('#row-ldap-body').html('');
+                            $('#ldap-new-role').addClass('hidden');
+
+                            refreshListUsersLDAP();
+                        }
+                    }
+                );
+                
+            }
         }
     });
 
@@ -1264,7 +1332,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                console.log(data.entries)
+                console.log(data)
 
                 if (data.error === true) {
                     // ERROR
@@ -1280,37 +1348,72 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // loop on users list
                     var html = '',
                         groupsNumber = 0,
-                        userLogin;
+                        userLogin,
+                        group;
+                    var entry;
                     $.each(data.entries, function(i, entry) {
                         userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
-                        html += '<tr>' +
-                            '<td>' + '' + '</td>' +
-                            '<td>' + userLogin + '</td>' +
-                            '<td>' + (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</td>' +
-                            '<td>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</td>' +
-                            '<td>';
-                        groupsNumber = 0;
-                        $.each(entry.memberof, function(j, group) {
-                            var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
-                            if (regex !== null) {
-                                html += regex[0].replace('cn=', '').replace(',', '') + ', ';
-                                groupsNumber++;
-                            }
-                        });
-                        html += '</td>';
+                        // CHeck if not empty
+                        if (userLogin !== '') {
+                            html += '<tr>' +
+                                '<td>' + userLogin +
+                                '</td>' +
+                                '<td>' +
+                                    '<i class="fas fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                    '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
+                                    (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
+                                    '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
+                                    '"></i>' +
+                                '</td>' +
+                                '<td>' + (entry.teampass !== undefined && entry.teampass.id !== undefined ? '<i class="fas fa-toggle-on text-info mr-1 text-center"></i>' : '<i class="fas fa-toggle-off mr-1 text-center"></i>') + '</td>' +
+                                '<td>';
+                            groupsNumber = 0;
+                            $.each(entry.memberof, function(j, group) {
+                                var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
+                                if (regex !== null) {
+                                    group = regex[0].replace('cn=', '').replace(',', '');
+                                    // Check if this user has this group in Teampass
+                                    if (entry.teampass !== undefined && entry.teampass.groups.filter(p => p.title === group).length > 0) {
+                                        html += group + '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo langHdl('user_has_this_role_in_teampass'); ?>"></i><br>';
+                                    } else {
+                                        // Check if this group exists in Teampass and propose to add it
+                                        tmp = data.teampassGroups.filter(p => p.title === group);
+                                        if (tmp.length > 0 && entry.teampass !== undefined) {
+                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo langHdl('add_user_to_role'); ?>" data-user-id="' + entry.teampass.id + '" data-role-id="' + tmp[0].id + '"></i><br>';
+                                        } else {
+                                            html += group + '<br>';
+                                        }
+                                    }
+                                    groupsNumber++;
+                                }
+                            });
+                            html += '</td><td>';
 
-                        $.each(JSON.parse(data.users), function(i, v) {
-                            if (v.login === userLogin) {
-                                html += '<td>Yes</td>';
-                                return;
-                            }
-                        });
+                            // Action icons
+                            html += (entry.teampass === undefined ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + entry.mail[0] + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + entry.sn[0] + '"></i>' : '');
 
-                        html += '</tr>';
+                            html += '</td></tr>';
+                        }
                     });
+
                     $('#row-ldap-body').html(html);
 
                     $('#row-ldap-body').removeClass('overlay');
+
+                    $('.infotip').tooltip('update');
+                    
+                    // Build list box of new roles that could be created
+                    $('#ldap-new-role-selection')
+                        .empty()
+                        .append('<option value="">--- <?php echo langHdl('select'); ?> ---</option>');
+                    $.each(data.adGroups, function(i, group) {
+                        tmp = data.teampassGroups.filter(p => p.title === group);
+                        if (tmp.length === 0) {
+                            $('#ldap-new-role-selection').append(
+                                '<option value="' + group + '">' + group + '</option>'
+                            );
+                        }
+                    });
 
                     // Inform user
                     toastr.remove();
@@ -1324,6 +1427,142 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             }
         );
     }
+
+    /**
+     * Permits to add a role to a Teampass user
+     *
+     * @return void
+     */
+    function addRoleToUser()
+    {
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $('.selected-role').data('user-id'),
+            'field': 'fonction_id',
+            'value': $('.selected-role').data('role-id'),
+            'context': 'add_one_role_to_user'
+        };
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon
+                    $('.selected-role')
+                        .removeClass('fas fa-user-graduate text-primary pointer action-add-role-to-user')
+                        .addClass('far fa-check-circle text-success')
+                        .prop('title', '<?php echo langHdl('user_has_this_role_in_teampass'); ?>');
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+                $('.selected-role').removeClass('selected-role');
+            }
+        );
+    }
+
+    $(document).on('click', '.action-add-role-to-user', function() {
+        $(this).addClass('selected-role');
+        
+        toastr.warning(
+            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo langHdl('please_confirm'); ?></button>',
+            '<?php echo langHdl('info'); ?>',
+            {
+                positionClass: 'toast-top-center',
+                closeButton: true
+            }
+        );
+    });
+
+
+    /**
+     * Permits to add an AD user in Teampass
+     *
+     * @return void
+     */
+    function addUserInTeampass()
+    {
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        
+        // prepare data
+        var data = {
+            'login': $('.selected-user').data('user-login'),
+            'name': $('.selected-user').data('user-name'),
+            'lastname': $('.selected-user').data('user-lastname'),
+            'email': $('.selected-user').data('user-email'),
+        };
+        console.log(data)
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'add_user_from_ldap',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    refreshListUsersLDAP()
+                }
+            }
+        );
+    }
+
+    $(document).on('click', '.add-user-icon', function() {
+        $(this).addClass('selected-user');
+        
+        toastr.warning(
+            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addUserInTeampass()"><?php echo langHdl('please_confirm'); ?></button>',
+            '<?php echo langHdl('add_user_in_teampass'); ?>',
+            {
+                positionClass: 'toast-top-center',
+                closeButton: true
+            }
+        );
+    });
+
+    
 
 
 

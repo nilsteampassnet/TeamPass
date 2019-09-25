@@ -217,7 +217,9 @@ function jsonErrorHdl(message)
         '<i class="fas fa-warning fa-lg warning mr-2"></i>Caution',
         message,
         '',
-        'Close'
+        'Close',
+        true,
+        true
     );
 
     // Actions on modal buttons
@@ -451,7 +453,8 @@ function browserSession(action, name, data)
  * @param {string} body 
  * @param {string} actionButton 
  * @param {string} closeButton 
- * @param {string} size 
+ * @param {string} xlSize 
+ * @param {string} warningModal 
  */
 function showModalDialogBox(
     modalId,
@@ -459,7 +462,8 @@ function showModalDialogBox(
     body,
     actionButton,
     closeButton,
-    size = ''
+    xlSize = false,
+    warningModal = false
 ) {
     $(modalId + 'Title').html(title);
     $(modalId + 'Body').html(body);
@@ -470,10 +474,15 @@ function showModalDialogBox(
     } else {
         $(modalId + 'ButtonAction').removeClass('hidden');
     }
-    if (size !== '') {
+    if (xlSize === true) {
         $(modalId + ' div:first').addClass('modal-xl');
     } else {
         $(modalId + ' div:first').removeClass('modal-xl');
+    }
+    if (warningModal === true) {
+        $(modalId + ':eq(1)').addClass('bg-warning');
+    } else {
+        $(modalId + ':eq(1)').removeClass('bg-warning');
     }
     $(modalId).modal({
         show: true,

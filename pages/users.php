@@ -185,24 +185,53 @@ foreach ($treeDesc as $t) {
                 <!-- table start -->
                 <div class="card-body">
                     <div class="row col-12">
-                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-existing-users">
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="ldap-existing-users">
                             <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('list_users'); ?>
                         </button>
-                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-new-users">
-                            <i class="fas fa-wrench mr-2"></i><?php echo langHdl('synchronize_in_teampass'); ?>
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="ldap-add-role">
+                            <i class="fas fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
                         </button>
                     </div>
                     <div class="row">
-                        <div class="">
-                            <div class="card-body table-responsive p-0">
+                        <div class="col-12">
+                            <div class="card hidden mt-4 mb-5 card-info" id="ldap-new-role">
+                                <div class="card-header">
+                                    <i class="fas fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
+                                </div>
+                                <div class="card-body">
+                                    <div class="callout callout-info">
+                                        <i class="fas fa-info-circle text-info mr-2"></i><?php echo langHdl('adding_ldap_role_to_teampass'); ?>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="ldap-new-role-selection"><?php echo langHdl('select_role_to_create'); ?></label>
+                                        <select  class="form-control form-item-control" style="width:100%;" id="ldap-new-role-selection"></select>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="ldap-new-role-complexity"><?php echo langHdl('complexity'); ?></label>
+                                        <select id="ldap-new-role-complexity" class="form-control form-item-control" style="width:100%;">
+                                            <?php
+                                            foreach (TP_PW_COMPLEXITY as $entry) {
+                                                echo '
+                                            <option value="' . $entry[0] . '">' . addslashes($entry[1]) . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button type="button" class="btn btn-default float-left tp-action btn-info" data-action="add-new-role"><?php echo langHdl('submit'); ?></button>
+                                    <button type="button" class="btn btn-default float-right tp-action" data-action="close-new-role"><?php echo langHdl('close'); ?></button>
+                                </div>
+                            </div>
+                            <div class="card-body table-responsive p-0" id="ldap-users-table">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th style="width: 30px"></th>
-                                            <th style="width: 15%"><i class="fas fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
-                                            <th style="width: 20%"><i class="fas fa-user mr-1"></i><?php echo langHdl('name'); ?></th>
-                                            <th style="width: 25%"><i class="fas fa-envelope mr-1"></i><?php echo langHdl('email'); ?></th>
-                                            <th style=""><i class="fas fa-users mr-1"></i><?php echo langHdl('user_groups'); ?></th>
+                                            <th style="width: 25%;"><i class="fas fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
+                                            <th style="width: 60px; text-align:center;"><i class="fas fa-info infotip pointer" title="<?php echo langHdl('more_information'); ?>"></i></th>
+                                            <th style="width: 60px;"><i class="fas fa-sync-alt infotip pointer" title="<?php echo langHdl('synchronized'); ?>"></i></th>
+                                            <th style=""><i class="fas fa-graduation-cap mr-1"></i><?php echo langHdl('roles'); ?></th>
+                                            <th style="width: 15%;"><i class="fas fa-wrench mr-1"></i><?php echo langHdl('action'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="row-ldap-body">

@@ -2101,6 +2101,33 @@ if (null !== $post_type) {
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
             $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
+            $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_STRING);
+
+            // If
+            if (empty($post_context) === false && $post_context = 'add_one_role_to_user') {
+                $data_user = DB::queryfirstrow(
+                    'SELECT fonction_id
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_user_id
+                );
+
+                if ($data_user) {
+                    // Ensure array is unique
+                    $post_new_value = str_replace(',', ';', $data_user['fonction_id']).';'.$post_new_value;
+                    $post_new_value = implode(';', array_unique(explode(';', $post_new_value)));
+                } else {
+                    // User not found
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('user_not_exists'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            }
 
             DB::update(
                 prefixTable('users'),
@@ -2110,17 +2137,15 @@ if (null !== $post_type) {
                 'id = %i',
                 $post_user_id
             );
-            $return = '';
-
-            $return = array(
-                'error' => false,
-                'message' => '',
-                'return' => $return,
-            );
 
             // send data
-            //echo prepareExchangedData($return, 'encode');
-            echo json_encode($return);
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => ''
+                ),
+                'encode'
+            );
 
             break;
 
@@ -2218,6 +2243,7 @@ if (null !== $post_type) {
             $usersInfo = array();
             $entries = array();
             $teampassRoles = array();
+            $adRoles = array();
             $debug_ldap = $ldap_suffix = '';
 
             // Get list of existing Roles in Teampass
@@ -2273,7 +2299,7 @@ if (null !== $post_type) {
                             $ldapconn,
                             $SETTINGS['ldap_search_base'],
                             $filter,
-                            array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberOf', 'name', 'displayname', 'cn')
+                            array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire')
                         );
 
                         if (false !== $result) {
@@ -2283,39 +2309,53 @@ if (null !== $post_type) {
                             // 1- check what are the roles they have in Teampass
                             // 2- get the ID of the user if exists in Teampass
                             for ($i = 0; $i < $entries['count']; ++$i) {
-                                $entry = $entries[$i][0];
-                                if (null !== $entry) { }
-                            }
+                                // Build the list of all groups in AD
+                                $parsr = ($entries[$i]['memberof']);
+                                for ($j = 0; $j < count($entries[$i]['memberof']); ++$j) {
+                                    if (empty($entries[$i]['memberof'][$j]) === false) {
+                                        $adGroup = substr($entries[$i]['memberof'][$j], 3, strpos($entries[$i]['memberof'][$j], ',')-3);
+                                        if (in_array($adGroup, $adRoles) === false) {
+                                            array_push($adRoles, $adGroup);
+                                        }
+                                    }
+                                }
 
-
-                            function whatever($array, $key, $val)
-                            {
-                                foreach ($array as $item)
-                                    if (isset($item[$key]) && $item[$key] == $val)
-                                        return true;
-                                return false;
-                            }
-
-                            //
-                        }
-
-                        // Check if users are in Teampass users table
-                        if ($entries['count'] > 0) {
-                            // Now check if group fits
-                            for ($i = 0; $i < $entries['count']; ++$i) {
-                                $user = DB::query(
-                                    'SELECT id FROM ' . prefixTable('users') . '
-                                    WHERE login = %s',
-                                    $entries[$i][$SETTINGS['ldap_user_attribute']][0]
-                                );
-                                if (DB::count() > 0) {
-                                    array_push(
-                                        $usersInfo,
-                                        array(
-                                            'login' => $entries[$i][$SETTINGS['ldap_user_attribute']][0],
-                                            'id' => $user[0]['id'],
-                                        )
+                                // Is user in Teampass ?
+                                $userLogin = $entries[$i][$SETTINGS['ldap_user_attribute']][0];
+                                if (null !== $userLogin) {
+                                    // Get his ID
+                                    $user = DB::queryfirstrow(
+                                        'SELECT id, fonction_id 
+                                        FROM ' . prefixTable('users') . '
+                                        WHERE login = %s',
+                                        $userLogin
                                     );
+                                    if (DB::count() > 0) {
+                                        $entries[$i]['teampass'] = array(
+                                            'id' => $user['id'],
+                                            'groups' => array()
+                                        );
+
+                                        if (empty($user['fonction_id']) === false) {
+                                            foreach(explode(';', $user['fonction_id']) as $group) {
+                                                $entry = DB::queryfirstrow(
+                                                    'SELECT title
+                                                    FROM ' . prefixTable('roles_title') . '
+                                                    WHERE id = %i',
+                                                    $group
+                                                );
+                                                if ($entry) {
+                                                    array_push(
+                                                        $entries[$i]['teampass']['groups'],
+                                                        array(
+                                                            'id' => $group,
+                                                            'title' => $entry['title']
+                                                        )
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2427,9 +2467,166 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => false,
-                    'message' => ($debug_ldap),
+                    //'message' => ($debug_ldap),
                     'entries' => $entries,
-                    'users' => json_encode($usersInfo)
+                    'users' => json_encode($usersInfo),
+                    'adGroups' => $adRoles,
+                    'teampassGroups' => $teampassRoles
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * ADD USER FROM LDAP
+         */
+        case 'add_user_from_ldap':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
+            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
+            $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
+
+
+            // Empty user
+            if (empty($post_login) === true || empty($post_email) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('user_must_have_login_and_email'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // Check if user already exists
+            $data = DB::query(
+                'SELECT id, fonction_id, groupes_interdits, groupes_visibles
+                FROM ' . prefixTable('users') . '
+                WHERE login = %s',
+                $post_login
+            );
+
+            if (DB::count() === 0) {
+                // check if admin role is set. If yes then check if originator is allowed
+                if ((int) $_SESSION['user_admin'] !== 1 && (int) $_SESSION['gestionnaire'] !== 1) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_empty_data'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                // load passwordLib library
+                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                $pwdlib->register();
+                $pwdlib = new PasswordLib\PasswordLib();
+
+                // Prepare variables
+                $password = generateQuickPassword(12, true);
+                $hashedPassword = $pwdlib->createPasswordHash($password);
+                if ($pwdlib->verifyPasswordHash($password, $hashedPassword) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_user_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Insert user in DB
+            DB::insert(
+                prefixTable('users'),
+                array(
+                    'login' => $post_login,
+                    'pw' => $hashedPassword,
+                    'email' => $post_email,
+                    'name' => $post_name,
+                    'lastname' => $post_lastname,
+                    'admin' => '0',
+                    'gestionnaire' => '0',
+                    'can_manage_all_users' => '0',
+                    'personal_folder' =>(int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
+                    'fonction_id' => '',
+                    'groupes_interdits' => '',
+                    'groupes_visibles' => '',
+                    'last_pw_change' => time(),
+                    'user_language' => $SETTINGS['default_language'],
+                    'encrypted_psk' => '',
+                    'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                    'public_key' => '',
+                    'private_key' => '',
+                    'auth_type' => 'ldap'
+                )
+            );
+            $newUserId = DB::insertId();
+
+            // Create the API key
+            DB::insert(
+                prefixTable('api'),
+                array(
+                    'type' => 'user',
+                    'label' => $newUserId,
+                    'value' => uniqidReal(39),
+                    'timestamp' => time(),
+                )
+            );
+
+            // Create personnal folder
+            if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1) {
+                DB::insert(
+                    prefixTable('nested_tree'),
+                    array(
+                        'parent_id' => '0',
+                        'title' => $newUserId,
+                        'bloquer_creation' => '0',
+                        'bloquer_modification' => '0',
+                        'personal_folder' => '1',
+                    )
+                );
+
+                // Rebuild tree
+                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree->rebuild();
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'message' => '',
+                    'error' => false,
                 ),
                 'encode'
             );

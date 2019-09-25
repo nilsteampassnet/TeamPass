@@ -650,7 +650,7 @@ function identifyUser($sentData, $SETTINGS)
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                    'error' => 'user_not_exists2',
+                    'error' => 'user_not_exists2 '.$passwordClear,
                     'message' => langHdl('error_bad_credentials'),
                 ),
                 'encode'
