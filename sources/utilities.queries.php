@@ -56,7 +56,7 @@ header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
 
 //Connect to DB
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }

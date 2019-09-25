@@ -48,12 +48,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     //<![CDATA[
 
     // Init
-    var oTableConnections,
-        oTableItems,
-        oTableFailed,
-        oTableCopy,
-        oTableAdmin,
-        oTableErrors;
+    var oTableConnections;
+    var oTableItems;
+    var oTableFailed;
+    var oTableCopy;
+    var oTableAdmin;
+    var oTableErrors;
 
 
     // Prepare tooltips
@@ -144,8 +144,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'autoWidth': true,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=connections',
-            data: function() {
-                // Nothing
+            data: function(filter) {
+                var val = $("select", "#table-items_filter").val();
+                filter.search.column = val;
+                return filter;
             }
         },
         'language': {
@@ -537,17 +539,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     } else {
                         // Reload table
                         if (store.get('teampassApplication').logData === 'errors') {
-                            oTableErrors.ajax.reload();
+                            oTableErrors.api().ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'admin') {
-                            oTableAdmin.ajax.reload();
+                            oTableAdmin.api().ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'connections') {
-                            oTableConnections.ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'Failed') {
-                            oTableFailed.ajax.reload();
+                            oTableConnections.api().ajax.reload();
+                        } else if (store.get('teampassApplication').logData === 'failed') {
+                            oTableFailed.api().ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'items') {
-                            oTableItems.ajax.reload();
+                            oTableItems.api().ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'copy') {
-                            oTableCopy.ajax.reload();
+                            oTableCopy.api().ajax.reload();
                         }
                     }
                 }

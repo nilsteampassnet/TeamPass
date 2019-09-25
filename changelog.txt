@@ -8,8 +8,6 @@ Clear clipboard requires Firefox config value "dom.events.testing.asyncClipboard
 
 // TODO
  - Improve LDAP
- - LDAP test
- - LDAP synchronization of users and roles
  - API update
  - Update server password
  - Suggestion
