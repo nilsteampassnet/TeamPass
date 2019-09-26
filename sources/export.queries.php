@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  *
@@ -17,7 +18,8 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false
+if (
+    isset($_SESSION['CPM']) === false
     || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
@@ -39,26 +41,26 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // No time limit
 set_time_limit(0);
 
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 error_reporting(E_ERROR);
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
@@ -70,12 +72,12 @@ DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
 
 // Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+$tree = new Tree\NestedTree\NestedTree($pre . 'nested_tree', 'id', 'parent_id', 'title');
 
 // User's language loading
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
 
 // Prepare POST variables
 $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
@@ -95,7 +97,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
 //Manage type of action asked
 if (null !== $post_type) {
     switch ($post_type) {
-        //CASE export in CSV format
+            //CASE export in CSV format
         case 'export_to_csv_format':
             //Init
             $full_listing = array();
@@ -118,16 +120,17 @@ if (null !== $post_type) {
             $items_id_list = array();
 
             foreach (json_decode(html_entity_decode($post_ids)) as $id) {
-                if (in_array($id, $_SESSION['forbiden_pfs']) === false
+                if (
+                    in_array($id, $_SESSION['forbiden_pfs']) === false
                     && in_array($id, $_SESSION['groupes_visibles']) === true
                 ) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
                             i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
                             i.email as email,l.date as date, i.pw_iv as pw_iv,n.renewal_period as renewal_period
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
                         AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -143,17 +146,15 @@ if (null !== $post_type) {
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
                             if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
-                                || (
-                                    in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
+                                || (in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
                                     && (empty($record['restricted_to']) === true
-                                    || (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true))
-                                )
+                                        || (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true)))
                             ) {
                                 // Run query
                                 $dataItem = DB::queryfirstrow(
                                     'SELECT i.pw AS pw, s.share_key AS share_key
-                                    FROM '.prefixTable('items').' AS i
-                                    INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                                    FROM ' . prefixTable('items') . ' AS i
+                                    INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
                                     $_SESSION['user_id'],
                                     $record['id']
@@ -177,8 +178,8 @@ if (null !== $post_type) {
                                 $arr_kbs = [];
                                 $rows_kb = DB::query(
                                     'SELECT b.label, b.id
-                                    FROM '.prefixTable('kb_items').' AS a
-                                    INNER JOIN '.prefixTable('kb').' AS b ON (a.kb_id = b.id)
+                                    FROM ' . prefixTable('kb_items') . ' AS a
+                                    INNER JOIN ' . prefixTable('kb') . ' AS b ON (a.kb_id = b.id)
                                     WHERE a.item_id = %i',
                                     $record['id']
                                 );
@@ -190,7 +191,7 @@ if (null !== $post_type) {
                                 $arr_tags = [];
                                 $rows_tag = DB::query(
                                     'SELECT tag
-                                    FROM '.prefixTable('tags').'
+                                    FROM ' . prefixTable('tags') . '
                                     WHERE item_id = %i',
                                     $record['id']
                                 );
@@ -200,10 +201,10 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                     'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF - 8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                     'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
                                     'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
@@ -237,17 +238,17 @@ if (null !== $post_type) {
                 $tmp .= array2csv($value);
             }
 
-            echo '[{"content":"'.base64_encode($tmp).'"}]';
+            echo '[{"content":"' . base64_encode($tmp) . '"}]';
             break;
 
-        /*
+            /*
          * PDF - step 1 - Prepare database
          */
         case 'initialize_export_table':
-            DB::query('TRUNCATE TABLE '.prefixTable('export'));
+            DB::query('TRUNCATE TABLE ' . prefixTable('export'));
             break;
 
-        /*
+            /*
          * PDF - step 2 - Export the items inside database
          */
         case 'export_to_pdf_format':
@@ -270,7 +271,8 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_ids = filter_var_array($dataReceived['ids'], FILTER_SANITIZE_NUMBER_INT);
 
-            if (in_array($post_id, $_SESSION['forbiden_pfs']) === false
+            if (
+                in_array($post_id, $_SESSION['forbiden_pfs']) === false
                 && in_array($post_id, $_SESSION['groupes_visibles']) === true
             ) {
                 // get path
@@ -287,9 +289,9 @@ if (null !== $post_type) {
                     'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
                         l.date as date, i.pw_iv as pw_iv,
                         n.renewal_period as renewal_period
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
                         AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -309,16 +311,15 @@ if (null !== $post_type) {
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
                         if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                            ||
-                            (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                            || (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
                         ) {
                             //exclude this case
                         } else {
                             // Run query
                             $dataItem = DB::queryfirstrow(
                                 'SELECT i.pw AS pw, s.share_key AS share_key
-                                FROM '.prefixTable('items').' AS i
-                                INNER JOIN '.prefixTable('sharekeys_items').' AS s ON (s.object_id = i.id)
+                                FROM ' . prefixTable('items') . ' AS i
+                                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
                                 $_SESSION['user_id'],
                                 $record['id']
@@ -342,8 +343,8 @@ if (null !== $post_type) {
                             $arr_kbs = '';
                             $rows_kb = DB::query(
                                 'SELECT b.label, b.id
-                                FROM '.prefixTable('kb_items').' AS a
-                                INNER JOIN '.prefixTable('kb').' AS b ON (a.kb_id = b.id)
+                                FROM ' . prefixTable('kb_items') . ' AS a
+                                INNER JOIN ' . prefixTable('kb') . ' AS b ON (a.kb_id = b.id)
                                 WHERE a.item_id = %i',
                                 $record['id']
                             );
@@ -351,7 +352,7 @@ if (null !== $post_type) {
                                 if (empty($arr_kbs)) {
                                     $arr_kbs = $rec_kb['label'];
                                 } else {
-                                    $arr_kbs .= ' | '.$rec_kb['label'];
+                                    $arr_kbs .= ' | ' . $rec_kb['label'];
                                 }
                             }
 
@@ -359,7 +360,7 @@ if (null !== $post_type) {
                             $arr_tags = '';
                             $rows_tag = DB::query(
                                 'SELECT tag
-                                FROM '.prefixTable('tags').'
+                                FROM ' . prefixTable('tags') . '
                                 WHERE item_id = %i',
                                 $record['id']
                             );
@@ -367,7 +368,7 @@ if (null !== $post_type) {
                                 if (empty($arr_tags)) {
                                     $arr_tags = $rec_tag['tag'];
                                 } else {
-                                    $arr_tags .= ' '.$rec_tag['tag'];
+                                    $arr_tags .= ' ' . $rec_tag['tag'];
                                 }
                             }
 
@@ -434,7 +435,7 @@ if (null !== $post_type) {
             header('Content-type: application/pdf');
 
             // query
-            $rows = DB::query('SELECT * FROM '.prefixTable('export'));
+            $rows = DB::query('SELECT * FROM ' . prefixTable('export'));
             $counter = DB::count();
             if ($counter > 0) {
                 // print
@@ -445,7 +446,7 @@ if (null !== $post_type) {
                 $prev_path = '';
 
                 //Prepare the PDF file
-                include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
+                include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/Tfpdf/fpdf.php';
 
                 $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
                 $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null, 3);
@@ -526,34 +527,35 @@ if (null !== $post_type) {
                 logEvents('pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
 
                 //clean table
-                DB::query('TRUNCATE TABLE '.prefixTable('export'));
+                DB::query('TRUNCATE TABLE ' . prefixTable('export'));
 
                 // Send back the file in Blob
                 echo $pdf->Output(null, 'I');
             }
             break;
 
-        //CASE export in HTML format
+            //CASE export in HTML format
         case 'export_to_html_format':
             // step 1:
             // - prepare export file
             // - get full list of objects id to export
-            include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
             $idsList = array();
             $objNumber = 0;
 
             foreach (explode(';', $post_ids) as $id) {
-                if (in_array($id, $_SESSION['forbiden_pfs']) === false
+                if (
+                    in_array($id, $_SESSION['forbiden_pfs']) === false
                     && in_array($id, $_SESSION['groupes_visibles']) === true
                     && (in_array($id, $_SESSION['no_access_folders']) === false)
                 ) {
                     // count elements to display
                     $result = DB::query(
                         'SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                    INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                    FROM ' . prefixTable('items') . ' as i
+                    INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -567,16 +569,11 @@ if (null !== $post_type) {
                     foreach ($result as $record) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         if (((in_array($id, $_SESSION['personal_visible_groups']) === true
-                            && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to'])
-                            && empty($record['restricted_to']) === false)
-                            ||
-                            (empty($record['restricted_to']) === false
-                            && in_array($_SESSION['user_id'], $restricted_users_array) === false)
-                            ||
-                            (in_array($id, $_SESSION['groupes_visibles']))
-                            ) && (
-                            in_array($record['id'], $idsList) === false
-                            )
+                                && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to'])
+                                && empty($record['restricted_to']) === false)
+                                || (empty($record['restricted_to']) === false
+                                    && in_array($_SESSION['user_id'], $restricted_users_array) === false)
+                                || (in_array($id, $_SESSION['groupes_visibles']))) && (in_array($record['id'], $idsList) === false)
                         ) {
                             array_push($idsList, $record['id']);
                             ++$objNumber;
@@ -585,14 +582,14 @@ if (null !== $post_type) {
                 }
             }
 
-                // prepare export file
-                //save the file
-                $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
-                //print_r($full_listing);
-                $outstream = fopen($SETTINGS['path_to_files_folder'].$html_file, 'w');
-                fwrite(
-                    $outstream,
-                    '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+            // prepare export file
+            //save the file
+            $html_file = '/teampass_export_' . time() . '_' . generateKey() . '.html';
+            //print_r($full_listing);
+            $outstream = fopen($SETTINGS['path_to_files_folder'] . $html_file, 'w');
+            fwrite(
+                $outstream,
+                '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
     <title>TeamPass Off-line mode</title>
@@ -609,12 +606,12 @@ if (null !== $post_type) {
     </style>
     </head>
     <body>
-    <input type="hidden" id="generation_date" value="'.GibberishAES::enc(time(), $post_pdf_password).'" />
+    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(time(), $post_pdf_password) . '" />
     <div id="header">
-    '.$SETTINGS_EXT['tool_name'].' - Off Line mode
+    ' . TP_TOOL_NAME . ' - Off Line mode
     </div>
     <div style="margin:10px; font-size:9px;">
-    <i>This page was generated by <b>'.$_SESSION['name'].' '.$_SESSION['lastname'].'</b>, the '.date('Y/m/d H:i:s').'.</i>
+    <i>This page was generated by <b>' . $_SESSION['name'] . ' ' . $_SESSION['lastname'] . '</b>, the ' . date('Y/m/d H:i:s') . '.</i>
     <span id="info_page" style="margin-left:20px; font-weight:bold; font-size: 14px; color:red;"></span>
     </div>
     <div id="information"></div>
@@ -625,14 +622,14 @@ if (null !== $post_type) {
     <div>
     <table id="itemsTable">
         <thead><tr>
-            <th style="width:15%;">'.$LANG['label'].'</th>
-            <th style="width:10%;">'.$LANG['pw'].'</th>
-            <th style="width:30%;">'.$LANG['description'].'</th>
-            <th style="width:5%;">'.$LANG['user_login'].'</th>
-            <th style="width:20%;">'.$LANG['url'].'</th>
+            <th style="width:15%;">' . $LANG['label'] . '</th>
+            <th style="width:10%;">' . $LANG['pw'] . '</th>
+            <th style="width:30%;">' . $LANG['description'] . '</th>
+            <th style="width:5%;">' . $LANG['user_login'] . '</th>
+            <th style="width:20%;">' . $LANG['url'] . '</th>
         </tr></thead>
         <tbody id="itemsTable_tbody">'
-                );
+            );
 
             fclose($outstream);
 
@@ -640,7 +637,7 @@ if (null !== $post_type) {
             //echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
             break;
 
-        //CASE export in HTML format - Iteration loop
+            //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
             // do checks ... if fails, return an error
             if (null === $post_idTree || null === $post_idsList) {
@@ -649,26 +646,27 @@ if (null !== $post_type) {
             }
 
             // exclude this folder if not allowed
-            if (in_array($post_idTree, $_SESSION['forbiden_pfs']) === true
+            if (
+                in_array($post_idTree, $_SESSION['forbiden_pfs']) === true
                 || in_array($post_idTree, $_SESSION['groupes_visibles']) === false
                 || (in_array($post_idTree, $_SESSION['no_access_folders']) === true)
             ) {
-                echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
+                echo '[{"loop":"true", "number":"' . $post_number . '", "cpt":"' . $post_cpt . '", "file":"' . $post_file . '", "idsList":"' . $post_idsList . '" , "file_link":"' . $post_file_link . '"}]';
                 break;
             }
 
             $full_listing = array();
             $items_id_list = array();
-            include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
             $rows = DB::query(
                 'SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
                 l.date as date, i.pw_iv as pw_iv,
                 n.renewal_period as renewal_period
-            FROM '.prefixTable('items').' as i
-            INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-            INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+            FROM ' . prefixTable('items') . ' as i
+            INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+            INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
             WHERE i.inactif = %i
             AND i.id_tree= %i
             AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -727,7 +725,7 @@ if (null !== $post_type) {
             }
 
             //save in export file
-            $outstream = fopen($post_file.'.txt', 'a');
+            $outstream = fopen($post_file . '.txt', 'a');
 
             $lineType = 'line1';
             $idTree = '';
@@ -761,13 +759,13 @@ if (null !== $post_type) {
                         if (empty($arboHtml)) {
                             $arboHtml = $arboHtml_tmp;
                         } else {
-                            $arboHtml .= ' » '.$arboHtml_tmp;
+                            $arboHtml .= ' » ' . $arboHtml_tmp;
                         }
                     }
                     fputs(
                         $outstream,
                         '
-        <tr class="path"><td colspan="5">'.$arboHtml.'</td></tr>'
+        <tr class="path"><td colspan="5">' . $arboHtml . '</td></tr>'
                     );
                     $idTree = $elem['id_tree'];
                 }
@@ -776,12 +774,12 @@ if (null !== $post_type) {
                 fputs(
                     $outstream,
                     '
-        <tr class="'.$lineType.'">
-            <td>'.addslashes($elem['label']).'</td>
-            <td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
-            <td>'.$desc.'</td>
-            <td align="center">'.$login.'</td>
-            <td align="center">'.$url.'</td>
+        <tr class="' . $lineType . '">
+            <td>' . addslashes($elem['label']) . '</td>
+            <td align="center"><span class="span_pw" id="span_' . $elem['id'] . '"><a href="#" onclick="decryptme(' . $elem['id'] . ', \'' . $encPw . '\');return false;">Decrypt </a></span><input type="hidden" id="hide_' . $elem['id'] . '" value="' . $encPw . '" /></td>
+            <td>' . $desc . '</td>
+            <td align="center">' . $login . '</td>
+            <td align="center">' . $url . '</td>
             </tr>'
                 );
             }
@@ -789,21 +787,21 @@ if (null !== $post_type) {
             fclose($outstream);
 
             // send back and continue
-            echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
+            echo '[{"loop":"true", "number":"' . $post_number . '", "cpt":"' . $post_cpt . '", "file":"' . $post_file . '", "idsList":"' . $post_idsList . '" , "file_link":"' . $post_file_link . '"}]';
             break;
 
-                //CASE export in HTML format - Iteration loop
+            //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
             // Load includes
-            include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
             // read the content of the temporary file
-            $handle = fopen($post_file.'.txt', 'r');
-            $contents = fread($handle, filesize($post_file.'.txt'));
+            $handle = fopen($post_file . '.txt', 'r');
+            $contents = fread($handle, filesize($post_file . '.txt'));
             fclose($handle);
-            if (is_file($post_file.'.txt')) {
-                unlink($post_file.'.txt');
+            if (is_file($post_file . '.txt')) {
+                unlink($post_file . '.txt');
             }
 
             // Encrypt its content
@@ -814,7 +812,7 @@ if (null !== $post_type) {
                 if (empty($encrypted_text) === true) {
                     $encrypted_text = GibberishAES::enc($chunk, $post_pdf_password);
                 } else {
-                    $encrypted_text .= '|#|#|'.GibberishAES::enc($chunk, $post_pdf_password);
+                    $encrypted_text .= '|#|#|' . GibberishAES::enc($chunk, $post_pdf_password);
                 }
             }
 
@@ -827,9 +825,9 @@ if (null !== $post_type) {
         </table></div>
         <input type="button" value="Hide all" onclick="hideAll()" />
         <div id="footer" style="text-align:center;">
-            <a href="https://teampass.net/about/" target="_blank" style="">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
+            <a href="https://teampass.net/about/" target="_blank" style="">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION_FULL . '&nbsp;' . TP_COPYRIGHT . '</a>
         </div>
-        <div id="enc_html" style="display:none;">'.$encrypted_text.'</div>
+        <div id="enc_html" style="display:none;">' . $encrypted_text . '</div>
         </body>
     </html>
     <script type="text/javascript">
@@ -935,9 +933,9 @@ if (null !== $post_type) {
 
             fclose($outstream);
 
-            echo '[{"text":"<a href=\''.
-                $post_file_link.
-                '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+            echo '[{"text":"<a href=\'' .
+                $post_file_link .
+                '\' target=\'_blank\'>' . $LANG['pdf_download'] . '</a>"}]';
             break;
     }
 }

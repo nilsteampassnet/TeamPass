@@ -2114,7 +2114,7 @@ if (null !== $post_type) {
 
                 if ($data_user) {
                     // Ensure array is unique
-                    $post_new_value = str_replace(',', ';', $data_user['fonction_id']).';'.$post_new_value;
+                    $post_new_value = str_replace(',', ';', $data_user['fonction_id']) . ';' . $post_new_value;
                     $post_new_value = implode(';', array_unique(explode(';', $post_new_value)));
                 } else {
                     // User not found
@@ -2176,7 +2176,7 @@ if (null !== $post_type) {
 
                 if (
                     empty($record['user_ip_lastdate']) === true
-                    || (time() - $record['user_ip_lastdate']) > $SETTINGS_EXT['one_day_seconds']
+                    || (time() - $record['user_ip_lastdate']) > TP_ONE_DAY_SECONDS
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -2313,7 +2313,7 @@ if (null !== $post_type) {
                                 $parsr = ($entries[$i]['memberof']);
                                 for ($j = 0; $j < count($entries[$i]['memberof']); ++$j) {
                                     if (empty($entries[$i]['memberof'][$j]) === false) {
-                                        $adGroup = substr($entries[$i]['memberof'][$j], 3, strpos($entries[$i]['memberof'][$j], ',')-3);
+                                        $adGroup = substr($entries[$i]['memberof'][$j], 3, strpos($entries[$i]['memberof'][$j], ',') - 3);
                                         if (in_array($adGroup, $adRoles) === false) {
                                             array_push($adRoles, $adGroup);
                                         }
@@ -2337,7 +2337,7 @@ if (null !== $post_type) {
                                         );
 
                                         if (empty($user['fonction_id']) === false) {
-                                            foreach(explode(';', $user['fonction_id']) as $group) {
+                                            foreach (explode(';', $user['fonction_id']) as $group) {
                                                 $entry = DB::queryfirstrow(
                                                     'SELECT title
                                                     FROM ' . prefixTable('roles_title') . '
@@ -2478,7 +2478,7 @@ if (null !== $post_type) {
 
             break;
 
-        /*
+            /*
          * ADD USER FROM LDAP
          */
         case 'add_user_from_ldap':
@@ -2577,7 +2577,7 @@ if (null !== $post_type) {
                     'admin' => '0',
                     'gestionnaire' => '0',
                     'can_manage_all_users' => '0',
-                    'personal_folder' =>(int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
+                    'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
                     'fonction_id' => '',
                     'groupes_interdits' => '',
                     'groupes_visibles' => '',

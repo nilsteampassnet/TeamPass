@@ -110,7 +110,7 @@ switch ($post_type) {
     case 'cpm_status':
         $text = '<ul>';
         $error = '';
-        if (!isset($SETTINGS_EXT['admin_no_info']) || (isset($SETTINGS_EXT['admin_no_info']) && $SETTINGS_EXT['admin_no_info'] == 0)) {
+        if (TP_ADMIN_NO_INFO === false) {
             if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
                 // Get info about Teampass
                 if (
@@ -140,8 +140,8 @@ switch ($post_type) {
                     $json_array = json_decode($json, true);
 
                     // About version
-                    $text .= '<li><u>' . $LANG['your_version'] . '</u> : ' . $SETTINGS_EXT['version'];
-                    if (floatval($SETTINGS_EXT['version']) < floatval($json_array['info']['version'])) {
+                    $text .= '<li><u>' . $LANG['your_version'] . '</u> : ' . TP_VERSION_FULL;
+                    if (floatval(TP_VERSION_FULL) < floatval($json_array['info']['version'])) {
                         $text .= '&nbsp;&nbsp;<b>' . $LANG['please_update'] . '</b>';
                     }
                     $text .= '</li>';
@@ -877,7 +877,7 @@ switch ($post_type) {
 
         // Perform
         include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        $ret = handleConfigFile('rebuild');
+        $ret = handleConfigFile('rebuild', $SETTINGS);
 
         // Log
         logEvents(
@@ -2373,7 +2373,7 @@ switch ($post_type) {
             $SETTINGS[$key] = $value;
 
             // save change in config file
-            handleConfigFile('update', $key, $value);
+            handleConfigFile('update', $SETTINGS, $key, $value);
         }
 
         // send data
@@ -2461,7 +2461,7 @@ switch ($post_type) {
             $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
 
             // save change in config file
-            handleConfigFile('update', 'ga_website_name', $SETTINGS['ga_website_name']);
+            handleConfigFile('update', $SETTINGS, 'ga_website_name', $SETTINGS['ga_website_name']);
         } else {
             $SETTINGS['ga_website_name'] = '';
         }
@@ -2708,7 +2708,7 @@ switch ($post_type) {
         $SETTINGS[$dataReceived['field']] = $dataReceived['value'];
 
         // save change in config file
-        handleConfigFile('rebuild', $dataReceived['field'], $dataReceived['value']);
+        handleConfigFile('rebuild', $SETTINGS, $dataReceived['field'], $dataReceived['value']);
 
         // Encrypt data to return
         echo prepareExchangedData(
@@ -2784,7 +2784,7 @@ switch ($post_type) {
         }
 
         // save change in config file
-        handleConfigFile('update', 'send_stats', $SETTINGS['send_stats']);
+        handleConfigFile('update', $SETTINGS, 'send_stats', $SETTINGS['send_stats']);
 
         // send statistics items
         if (null !== $post_list) {
@@ -2816,7 +2816,7 @@ switch ($post_type) {
         }
 
         // save change in config file
-        handleConfigFile('update', 'send_statistics_items', $SETTINGS['send_statistics_items']);
+        handleConfigFile('update', $SETTINGS, 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
         echo '[{"error" : false}]';
@@ -2847,48 +2847,48 @@ switch ($post_type) {
 
         break;
 
-        case 'get_list_of_roles':
-            // Check KEY and rights
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-    
-            $json = array();
+    case 'get_list_of_roles':
+        // Check KEY and rights
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $json = array();
+        array_push(
+            $json,
+            array(
+                'id' => 0,
+                'title' => langHdl('god'),
+                'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
+                'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
+            )
+        );
+
+        $rows = DB::query(
+            'SELECT id, title
+                FROM ' . prefixTable('roles_title') . '
+                ORDER BY title ASC'
+        );
+        foreach ($rows as $record) {
             array_push(
                 $json,
                 array(
-                    'id' => 0,
-                    'title' => langHdl('god'),
-                    'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
-                    'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
+                    'id' => $record['id'],
+                    'title' => addslashes($record['title']),
+                    'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
+                    'selected_role' => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
                 )
             );
-    
-            $rows = DB::query(
-                'SELECT id, title
-                FROM ' . prefixTable('roles_title') . '
-                ORDER BY title ASC'
-            );
-            foreach ($rows as $record) {
-                array_push(
-                    $json,
-                    array(
-                        'id' => $record['id'],
-                        'title' => addslashes($record['title']),
-                        'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
-                        'selected_role' => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
-                    )
-                );
-            }
-    
-            echo prepareExchangedData($json, 'encode');
-    
-            break;
+        }
+
+        echo prepareExchangedData($json, 'encode');
+
+        break;
 }

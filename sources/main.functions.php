@@ -749,7 +749,6 @@ function identUser(
     $readOnlyFolders = array();
     $noAccessPersonalFolders = array();
     $restrictedFoldersForItems = array();
-    $foldersEditableByRole = array();
     $foldersLimited = array();
     $foldersLimitedFull = array();
     $allowedFoldersByRoles = array();
@@ -778,8 +777,8 @@ function identUser(
     $readOnlyFolders = array_unique($readOnlyFolders);
 
     // Clean arrays
-    foreach ($readOnlyFolders as $key => $val) {
-        if (in_array($readOnlyFolders[$key], $allowedFoldersByRoles) === true) {
+    foreach ($allowedFoldersByRoles as $value) {
+        if (($key = array_search($value, $readOnlyFolders)) !== false) {
             unset($readOnlyFolders[$key]);
         }
     }
@@ -1558,7 +1557,7 @@ function utf8Converter($array)
 {
     array_walk_recursive(
         $array,
-        function (&$item, $key) {
+        function (&$item) {
             if (mb_detect_encoding($item, 'utf-8', true) === false) {
                 $item = utf8_encode($item);
             }
@@ -2081,16 +2080,18 @@ function noHTML($input, $encoding = 'UTF-8')
 
 /**
  * handleConfigFile().
- *
  * permits to handle the Teampass config file
  * $action accepts "rebuild" and "update"
+ *
+ * @param string $action   Action to perform
+ * @param array  $SETTINGS Teampass settings
+ * @param string $field    Field to refresh
+ * @param string $value    Value to set
+ * @return void
  */
-function handleConfigFile($action, $field = null, $value = null)
+function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 {
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-
-    $tp_config_file = '../includes/config/tp.config.php';
+    $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
@@ -2854,7 +2855,6 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
     );
 }
 
-//--------------------------------
 
 /**
  * Perform a Query.
@@ -2993,50 +2993,6 @@ function encryptPrivateKey($userPwd, $userPrivateKey)
     }
 }
 
-/**
- * Performs an AES encryption of the.
- *
- * @param string $userPwd        User password
- * @param string $userPrivateKey User private key
- *
- * @return string
- */
-/*function encryptData($userPwd, $userPrivateKey)
-{
-    if (empty($userPwd) === false) {
-        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
-
-        // Load classes
-        $cipher = new Crypt_AES();
-
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
-
-        return $cipher->decrypt(base64_decode($userPrivateKey));
-    }
-}
-*/
-
-/**
- * Generate a key.
- *
- * @param int $length Length of the key to generate
- *
- * @return string
- */
-/*
-function randomStr($length)
-{
-    $keyspace = str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    $pieces = [];
-    $max = mb_strlen($keyspace, '8bit') - 1;
-    for ($i = 0; $i < $length; ++$i) {
-        $pieces[] = $keyspace[random_int(0, $max)];
-    }
-
-    return implode('', $pieces);
-}
-*/
 
 /**
  * Encrypts a string using AES.
@@ -3224,10 +3180,10 @@ function decryptFile($fileName, $filePath, $key)
 }
 
 /**
- * Undocumented function.
+ * Generate a simple password
  *
- * @param int $length Length of password
- *
+ * @param integer $length          Length of string
+ * @param boolean $symbolsincluded Allow symbols
  * @return string
  */
 function generateQuickPassword($length = 16, $symbolsincluded = true)

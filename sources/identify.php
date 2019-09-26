@@ -472,8 +472,7 @@ function identifyUser($sentData, $SETTINGS)
     $proceedIdentification = false;
     $userPasswordVerified = false;
     $ldapConnection = false;
-    $logError = array();
-    $user_info_from_ad = '';
+    //$user_info_from_ad = '';
     $return = '';
 
     // Prepare LDAP connection if set up
@@ -491,7 +490,6 @@ function identifyUser($sentData, $SETTINGS)
             $retLDAP = identifyViaLDAPPosixSearch(
                 $username,
                 $userInfo,
-                $ldap_suffix,
                 $passwordClear,
                 $counter,
                 $SETTINGS
@@ -516,7 +514,7 @@ function identifyUser($sentData, $SETTINGS)
                 return false;
             } else {
                 $ldapConnection = true;
-                $user_info_from_ad = $retLDAP['user_info_from_ad'];
+                //$user_info_from_ad = $retLDAP['user_info_from_ad'];
                 $proceedIdentification = $retLDAP['proceedIdentification'];
             }
         } else {
@@ -546,9 +544,9 @@ function identifyUser($sentData, $SETTINGS)
 
                 return false;
             } else {
-                $auth_username = $retLDAP['auth_username'];
+                //$auth_username = $retLDAP['auth_username'];
                 $proceedIdentification = $retLDAP['proceedIdentification'];
-                $user_info_from_ad = $retLDAP['user_info_from_ad'];
+                //$user_info_from_ad = $retLDAP['user_info_from_ad'];
             }
         }
     }
@@ -561,8 +559,6 @@ function identifyUser($sentData, $SETTINGS)
         && $user_2fa_selection === 'yubico'
     ) {
         $ret = yubicoMFACheck(
-            $username,
-            $ldap_suffix,
             $dataReceived,
             $userInfo,
             $SETTINGS
@@ -650,7 +646,7 @@ function identifyUser($sentData, $SETTINGS)
                     'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
                     'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
                     'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                    'error' => 'user_not_exists2 '.$passwordClear,
+                    'error' => 'user_not_exists2 ' . $passwordClear,
                     'message' => langHdl('error_bad_credentials'),
                 ),
                 'encode'
@@ -708,12 +704,12 @@ function identifyUser($sentData, $SETTINGS)
             $_SESSION['autoriser'] = true;
             $_SESSION['pwd_attempts'] = 0;
 
-            // Debug
+            /*// Debug
             debugIdentify(
                 DEBUGDUO,
                 DEBUGDUOFILE,
                 "User's token: " . $key . "\n"
-            );
+            );*/
 
             // Check if any unsuccessfull login tries exist
             $arrAttempts = array();
@@ -1266,14 +1262,13 @@ function identifyUser($sentData, $SETTINGS)
  *
  * @param string $username      Username
  * @param array  $userInfo      User account information
- * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
  * @param int    $counter       User exists in teampass
  * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
-function identifyViaLDAPPosixSearch($username, $userInfo, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
+function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
@@ -1717,15 +1712,13 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 /**
  * Undocumented function.
  *
- * @param string       $username     Username
- * @param string       $ldap_suffix  Suffix
  * @param string|array $dataReceived Received data
  * @param string       $userInfo         Result of query
  * @param array        $SETTINGS     Teampass settings
  *
  * @return array
  */
-function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $userInfo, $SETTINGS)
+function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
@@ -1797,13 +1790,12 @@ function yubicoMFACheck($username, $ldap_suffix, $dataReceived, $userInfo, $SETT
  *
  * @param string $username      User name
  * @param string $passwordClear User password in clear
- * @param string $userInfo      User account information
  * @param string $retLDAP       Received data from LDAP
  * @param array  $SETTINGS      Teampass settings
  *
  * @return array
  */
-function ldapCreateUser($username, $passwordClear, $userInfo, $retLDAP, $SETTINGS)
+function ldapCreateUser($username, $passwordClear, $retLDAP, $SETTINGS)
 {
     // Generate user keys pair
     $userKeys = generateUserKeys($passwordClear);

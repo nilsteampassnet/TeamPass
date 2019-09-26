@@ -243,72 +243,12 @@ function mainQuery($SETTINGS)
                     break;
                 }
 
-                /*
-                // Get a string with the old pw array
-                $lastPw = explode(';', $_SESSION['last_pw']);
-                // if size is bigger then clean the array
-                if (sizeof($lastPw) > $SETTINGS['number_of_used_pw']
-                    && $SETTINGS['number_of_used_pw'] > 0
-                ) {
-                    for ($x_counter = 0; $x_counter < $SETTINGS['number_of_used_pw']; ++$x_counter) {
-                        unset($lastPw[$x_counter]);
-                    }
-                    // reinit SESSION
-                    $_SESSION['last_pw'] = implode(';', $lastPw);
-                // specific case where admin setting "number_of_used_pw"
-                } elseif ($SETTINGS['number_of_used_pw'] == 0) {
-                    $_SESSION['last_pw'] = '';
-                    $lastPw = array();
-                }
-
-                // check if new pw is different that old ones
-                if (in_array($post_new_password_hashed, $lastPw) && count($lastPw) > 0) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('password_already_used'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // update old pw with new pw
-                if (sizeof($lastPw) == ($SETTINGS['number_of_used_pw'] + 1)) {
-                    unset($lastPw[0]);
-                } else {
-                    array_push($lastPw, $post_new_password_hashed);
-                }
-                // create a list of last pw based on the table
-                $oldPw = '';
-                foreach ($lastPw as $elem) {
-                    if (!empty($elem)) {
-                        if (empty($oldPw)) {
-                            $oldPw = $elem;
-                        } else {
-                            $oldPw .= ';'.$elem;
-                        }
-                    }
-                }
-                */
-
                 // update sessions
-                //$_SESSION['last_pw'] = $oldPw;
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
                 if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true) {
-                    /*// Should we reset the privateKey?
-                    if ((int) $post_reset_private_key === 1) {
-                        $userKeys = generateUserKeys($post_new_password);
-                        $_SESSION['user']['public_key'] = $userKeys['public_key'];
-                        $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
-                        $special_action = 'reset_private_key';
-                    } else {
-                        $special_action = 'none';
-                        $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
-                    }*/
                     $special_action = 'none';
                     if ($post_change_request === 'reset_user_password_expected') {
                         $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
@@ -320,7 +260,7 @@ function mainQuery($SETTINGS)
                         array(
                             'pw' => $post_new_password_hashed,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                            'last_pw' => $oldPw,
+                            'last_pw' => $post_current_password,
                             'special' => $special_action,
                             'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
                         ),
@@ -1590,7 +1530,7 @@ function mainQuery($SETTINGS)
                 && isset($SETTINGS['send_stats']) === true
                 && isset($SETTINGS['send_stats_time']) === true
                 && (int) $SETTINGS['send_stats'] === 1
-                && ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
+                && ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
             ) {
                 // get statistics data
                 $stats_data = getStatisticsData($SETTINGS);
@@ -1656,7 +1596,7 @@ function mainQuery($SETTINGS)
                 $SETTINGS['send_stats_time'] = time();
 
                 // save change in config file
-                handleConfigFile('update', 'send_stats_time', $SETTINGS['send_stats_time']);
+                handleConfigFile('update', $SETTINGS, 'send_stats_time', $SETTINGS['send_stats_time']);
 
                 echo '[ { "error" : "" , "done" : "1"} ]';
             } else {
@@ -1743,6 +1683,8 @@ function mainQuery($SETTINGS)
                     }
                 }
             }
+
+            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
 
             // Now prepare text
             $txt = '### Steps to reproduce
@@ -2568,9 +2510,6 @@ Insert the log here and especially the answer of the query that failed.
                 array_shift($filter_items);
                 // ---
             } elseif (count($filter_files) > 0) {
-                // Treat Files
-                $itemId = $filter_files[0];
-
                 // Shift array
                 array_shift($filter_files);
             }

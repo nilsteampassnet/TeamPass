@@ -530,7 +530,7 @@ $SETTINGS = array (';
                             array('admin', 'maintenance_mode', '1'),
                             array('admin', 'enable_sts', '0'),
                             array('admin', 'encryptClientServer', '1'),
-                            array('admin', 'cpassman_version', $SETTINGS_EXT['version']),
+                            array('admin', 'cpassman_version', TP_VERSION_FULL),
                             array('admin', 'ldap_mode', '0'),
                             array('admin', 'ldap_type', '0'),
                             array('admin', 'ldap_suffix', '0'),

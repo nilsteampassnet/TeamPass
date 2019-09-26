@@ -35,20 +35,26 @@ $post_pw = filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
-  <div class="login-logo">',
+    <div class="login-logo">',
     (isset($SETTINGS['custom_logo']) === true
         && empty($SETTINGS['custom_logo']) === false) ?
         '
-    <img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="margin-bottom:40px;" />' : '',
+        <img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="margin-bottom:40px;" />' : '',
     '
-    <a href="#"><b>' . TP_TOOL_NAME . '</b></a>
-  </div>
-  <!-- /.login-logo -->
-<div class="card">
-    <div class="card-body login-card-body">
-        <p class="login-box-msg">' . langHdl('index_get_identified') . '</p>
+        <a href="#"><b>' . TP_TOOL_NAME . '</b></a>
+    </div>
 
-        <div>
+    <!-- /.login-logo -->
+    <div class="card">
+        <div class="card-header text-center">
+            <h3>',
+    (isset($SETTINGS['custom_login_text']) === true
+        && empty($SETTINGS['custom_login_text']) === false) ? $SETTINGS['custom_login_text'] : langHdl('index_get_identified'),
+    '
+            </h3>
+        </div>
+
+        <div class="card-body login-card-body1">
             <div class="input-group has-feedback mb-2">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
@@ -69,10 +75,10 @@ if (
         $username = $_SERVER['PHP_AUTH_USER'];
     }
     echo '
-          <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_STRING), '" readonly>';
+            <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_STRING), '" readonly>';
 } else {
     echo '
-          <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '">';
+            <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '">';
 }
 
 echo '
@@ -101,11 +107,6 @@ echo '
 
 // 2FA auth selector
 echo '
-        <!--<input type="hidden" id="2fa_agses" class="user-mfa" value="', isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_duo" class="user-mfa" value="', isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_google" class="user-mfa" value="', isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ? 1 : 0, '" />
-        <input type="hidden" id="2fa_yubico" class="user-mfa" value="', isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ? 1 : 0, '" />
-        -->
         <input type="hidden" id="2fa_user_selection" value="',
     (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : ''),
     '" />
@@ -113,47 +114,27 @@ echo '
     null !== $post_sig_response ? $post_sig_response : '',
     '" />
         <div class="row mb-3 hidden" id="2fa_methods_selector">
-          <div class="col-12">
-            <h8 class="login-box-msg">' . langHdl('2fa_authentication_selector') . '</h8>
-            <div class="2fa-methods text-center mt-2">
-            ',
+            <div class="col-12">
+                <h8 class="login-box-msg">' . langHdl('2fa_authentication_selector') . '</h8>
+                <div class="2fa-methods text-center mt-2">',
     isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
-        '<label for="select2fa-google">Google</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google" data-mfa="google">' : '',
-    '
-                ',
-    isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1 ?
-        '<label for="select2fa-agses">Agses</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-agses" data-mfa="agses">' : '',
-    '
-                ',
+        '
+                    <label for="select2fa-google">Google</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google" data-mfa="google">' : '',
+    '',
     isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
-        '<label for="select2fa-duo">Duo Security</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo">' : '',
-    '
-                ',
+        '
+                    <label for="select2fa-duo">Duo Security</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo">' : '',
+    '',
     isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
-        '<label for="select2fa-yubico">Yubico</label>
-                <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico">' : '',
+        '
+                    <label for="select2fa-yubico">Yubico</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico">' : '',
     '
+                </div>
             </div>
-          </div>
         </div>';
-
-// AGSES
-if (isset($SETTINGS['agses_authentication_enabled']) === true && (int) $SETTINGS['agses_authentication_enabled'] === 1) {
-    echo '
-        <div id="div-2fa-agses" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '' : 'hidden', '">
-            <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
-                ' . langHdl('user_profile_agses_card_id') . ': &nbsp;
-                <input type="text" size="12" id="agses_cardid">
-            </div>
-            <div id="agses_flickercode_div" style="text-align:center; display:none;">
-                <canvas id="axs_canvas"></canvas>
-            </div>
-            <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="' . langHdl('index_agses_key') . '" />
-        </div>';
-}
 
 // DUO box
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
@@ -198,21 +179,21 @@ if (
 <script>
 var seconds = 1;
 function updateLogonButton(timeToGo){
-document.getElementById("but_identify_user").value = "' . langHdl('duration_login_attempt') . ' " + timeToGo;
+    document.getElementById("but_identify_user").value = "' . langHdl('duration_login_attempt') . ' " + timeToGo;
 }
 $( window ).on( "load", function() {
-updateLogonButton(seconds);
-setInterval(function() {
-  seconds--;
-  if (seconds >= 0) {
-      updateLogonButton(seconds);
-  } else if(seconds === 0) {
-      launchIdentify("", "' . $nextUrl . '");
-  }
-  updateLogonButton(seconds);
-},
-1000
-);
+    updateLogonButton(seconds);
+    setInterval(function() {
+        seconds--;
+        if (seconds >= 0) {
+            updateLogonButton(seconds);
+        } else if(seconds === 0) {
+            launchIdentify("", "' . $nextUrl . '");
+        }
+        updateLogonButton(seconds);
+    },
+    1000
+    );
 });
 </script>';
 }
@@ -250,12 +231,9 @@ echo '
         </div>
     </div>';
 
-/*
-// No forgot link any more - not secure - must go through Admin or Managers
-*/
+
 
 echo '
-    </div>
     <!-- /.login-card-body -->
 
     <div class="card-body confirm-password-card-body hidden">
