@@ -1,15 +1,20 @@
-/**
- * @file 		  upgrade.js
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     (c) 2009-2011 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
- *
+/*
+ * Teampass - a collaborative passwords manager.
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      upgrade.js
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
+
 
 // Function - do a pause during javascript execution
 function pauseInExecution(millis)

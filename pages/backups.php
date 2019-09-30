@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      backups.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'backups', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Decrypt key
 $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
@@ -70,7 +73,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                     <div class='card-header'>
                         <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
                     </div>
-                    
+
                     <div class='card-body'>
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
@@ -83,7 +86,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="oneshot" role="tabpanel" aria-labelledby="oneshot-tab">
-                                
+
                                 <div class="mt-4">
                                     <div class="callout callout-info">
                                         <h4><?php echo langHdl('admin_action_db_backup'); ?></h4>
@@ -98,7 +101,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                 </div>
                                                 <div class="col-9">
                                                     <div class="input-group mb-0">
-                                                        <input type="text" class="form-control form-control-sm" id="onthefly-backup-key" value="<?php echo $localEncryptionKey;?>">
+                                                        <input type="text" class="form-control form-control-sm" id="onthefly-backup-key" value="<?php echo $localEncryptionKey; ?>">
                                                         <div class="input-group-append">
                                                             <button class="btn btn-outline-secondary btn-no-click infotip key-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
                                                         </div>
@@ -110,7 +113,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                             </div>
                                             <div class="row mt-3">
                                                 <button class="btn btn-info ml-1 start" data-action="onthefly-backup"><?php echo langHdl('perform_backup'); ?></button>
-                                            </div>                               
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -128,7 +131,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
                                                 </div>
                                                 <div class="col-9">
-                                                    <input type="text" class="form-control form-control-sm" id="onthefly-restore-key" value="<?php echo $localEncryptionKey;?>">
+                                                    <input type="text" class="form-control form-control-sm" id="onthefly-restore-key" value="<?php echo $localEncryptionKey; ?>">
                                                 </div>
                                             </div>
                                             <div class="row mt-1">
@@ -145,7 +148,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                             </div>
                                             <div class="row mt-3">
                                                 <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo langHdl('perform_restore'); ?></button>
-                                            </div>                               
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -161,6 +164,6 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                 </div>
             </div>
         </div>
-    
+
     </div>
 </div>

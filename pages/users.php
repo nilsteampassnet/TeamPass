@@ -2,21 +2,22 @@
 
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      users.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -138,7 +139,7 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button><?php
-                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 ?
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1  && (int) $_SESSION['is_admin'] === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
                             <i class="fas fa-address-card mr-2"></i>' . langHdl('ldap_synchronization') . '
                         </button>' : '';
@@ -204,7 +205,7 @@ foreach ($treeDesc as $t) {
                                     </div>
                                     <div class="form-group row">
                                         <label for="ldap-new-role-selection"><?php echo langHdl('select_role_to_create'); ?></label>
-                                        <select  class="form-control form-item-control" style="width:100%;" id="ldap-new-role-selection"></select>
+                                        <select class="form-control form-item-control" style="width:100%;" id="ldap-new-role-selection"></select>
                                     </div>
                                     <div class="form-group row">
                                         <label for="ldap-new-role-complexity"><?php echo langHdl('complexity'); ?></label>

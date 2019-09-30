@@ -1,19 +1,23 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @author    Nils Laumaillé <nils@teampass.net>
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      aes.functions.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      https://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -31,12 +35,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -49,14 +53,14 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
 
 // Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 //$link->set_charset(DB_ENCODING);
 
@@ -66,7 +70,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLA
 
 if (null !== $post_type) {
     switch ($post_type) {
-        /*
+            /*
         * CASE
         * creating a new user's public/private keys
         */
@@ -82,7 +86,7 @@ if (null !== $post_type) {
             // Get user info
             $userInfo = DB::queryFirstRow(
                 'SELECT id, public_key, private_key
-                FROM '.prefixTable('users').'
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_user_id
             );
@@ -100,7 +104,7 @@ if (null !== $post_type) {
                 'id = %i',
                 $post_user_id
             );
-        break;
+            break;
     }
 }
 
@@ -128,12 +132,11 @@ function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTI
     // Create objectkey for each item
     $rows = DB::query(
         'SELECT id, pw
-        FROM '.prefixTable('items').'
+        FROM ' . prefixTable('items') . '
         WHERE perso = 0',
         $post_item_id
     );
-    foreach ($rows as $record) {
-    }
+    foreach ($rows as $record) { }
 }
 
 /**
@@ -147,7 +150,7 @@ function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTI
 function deleteUserObjetsKeys($user_id, $SETTINGS)
 {
     // Its goal is to adapt all user Items object key
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
     // Remove all existing object keys
     DB::delete(

@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      fields.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'fields', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -73,7 +76,7 @@ $tree->rebuild();
                     <div class='card-header'>
                         <h3 class='card-title'><?php echo langHdl('configuration'); ?></h3>
                     </div>
-                    
+
                     <div class='card-body'>
 
                         <div class='row mb-2'>
@@ -110,12 +113,12 @@ $tree->rebuild();
                 <div class='card card-primary'>
                     <div class='card-header'>
                         <h3 class='card-title'><?php echo langHdl('definition'); ?>
-                        <button class="btn btn-default mr-2" id="button-new-category">
-                            <i class="far fa-plus-square mr-1"></i><?php echo langHdl('category'); ?>
-                        </button>
-                        <button class="btn btn-default mr-2" id="button-new-field">
-                            <i class="far fa-plus-square mr-1"></i><?php echo langHdl('field'); ?>
-                        </button>
+                            <button class="btn btn-default mr-2" id="button-new-category">
+                                <i class="far fa-plus-square mr-1"></i><?php echo langHdl('category'); ?>
+                            </button>
+                            <button class="btn btn-default mr-2" id="button-new-field">
+                                <i class="far fa-plus-square mr-1"></i><?php echo langHdl('field'); ?>
+                            </button>
                         </h3>
                     </div>
 
@@ -140,27 +143,27 @@ $tree->rebuild();
                                 <div class="form-group">
                                     <label><?php echo langHdl('folders'); ?></label>
                                     <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-category-folders">
-                                <?php
-                                $folders = $tree->getDescendants();
-                                foreach ($folders as $folder) {
-                                    DB::query(
-                                        'SELECT * FROM '.prefixTable('nested_tree').'
+                                        <?php
+                                        $folders = $tree->getDescendants();
+                                        foreach ($folders as $folder) {
+                                            DB::query(
+                                                'SELECT * FROM ' . prefixTable('nested_tree') . '
                                         WHERE personal_folder = %i AND id = %i',
-                                        '0',
-                                        $folder->id
-                                    );
-                                    $counter = DB::count();
-                                    if ($counter > 0) {
-                                        $ident = '';
-                                        for ($x = 1; $x < $folder->nlevel; ++$x) {
-                                            $ident .= '-';
+                                                '0',
+                                                $folder->id
+                                            );
+                                            $counter = DB::count();
+                                            if ($counter > 0) {
+                                                $ident = '';
+                                                for ($x = 1; $x < $folder->nlevel; ++$x) {
+                                                    $ident .= '-';
+                                                }
+                                                echo '
+                                        <option value="' . $folder->id . '">' . $ident . '&nbsp;' . str_replace('&', '&amp;', $folder->title) . '</option>';
+                                            }
                                         }
-                                        echo '
-                                        <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace('&', '&amp;', $folder->title).'</option>';
-                                    }
-                                }
-                                ?>
-                                </select>
+                                        ?>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label><?php echo langHdl('position'); ?></label>
@@ -185,13 +188,13 @@ $tree->rebuild();
                                 <div class="form-group">
                                     <label><?php echo langHdl('type'); ?></label>
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-field-type">
-                                <?php
-                                // Build list of Types
-                                echo '<option value="">-- '.langHdl('select').' --</option>'.
-                                '<option value="text">'.langHdl('text').'</option>'.
-                                '<option value="textarea">'.langHdl('textarea').'</option>';
-                                ?>
-                                </select>
+                                        <?php
+                                        // Build list of Types
+                                        echo '<option value="">-- ' . langHdl('select') . ' --</option>' .
+                                            '<option value="text">' . langHdl('text') . '</option>' .
+                                            '<option value="textarea">' . langHdl('textarea') . '</option>';
+                                        ?>
+                                    </select>
                                 </div>
 
                                 <div class="form-group">
@@ -215,19 +218,19 @@ $tree->rebuild();
                                 <div class="form-group">
                                     <label><?php echo langHdl('restrict_visibility_to'); ?></label>
                                     <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-field-roles">
-                                <?php
-                                // Build list of Roles
-                                echo '<option value="all">'.langHdl('every_roles').'</option>';
-                                $rows = DB::query(
-                                    'SELECT id, title
-                                    FROM '.prefixTable('roles_title').'
+                                        <?php
+                                        // Build list of Roles
+                                        echo '<option value="all">' . langHdl('every_roles') . '</option>';
+                                        $rows = DB::query(
+                                            'SELECT id, title
+                                    FROM ' . prefixTable('roles_title') . '
                                     ORDER BY title ASC'
-                                );
-                                foreach ($rows as $record) {
-                                    echo '<option value="'.$record['id'].'">'.addslashes($record['title']).'</option>';
-                                }
-                                ?>
-                                </select>
+                                        );
+                                        foreach ($rows as $record) {
+                                            echo '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
+                                        }
+                                        ?>
+                                    </select>
                                 </div>
 
                                 <div class="form-group hidden" id="form-field-category-div">
@@ -250,7 +253,7 @@ $tree->rebuild();
                         <div class="callout callout-info hidden" id="fields-message">
                         </div>
                     </div>
-                    
+
 
                     <div class="overlay" id="table-loading">
                         <i class="fas fa-refresh fa-spin"></i>

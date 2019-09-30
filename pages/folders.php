@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      folders.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
@@ -49,12 +52,12 @@ if (defined('TP_PW_COMPLEXITY') === false) {
         'TP_PW_COMPLEXITY',
         array(
             0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
         )
     );
 }
@@ -62,15 +65,15 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 $complexityHtml = '<div id="hidden-select-complexity" class="hidden"><select id="select-complexity" class="form-control form-item-control save-me">';
 $complexitySelect = '';
 foreach (TP_PW_COMPLEXITY as $level) {
-    $complexitySelect .= '<option value="'.$level[0].'">'.$level[1].'</option>';
+    $complexitySelect .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
 }
-$complexityHtml .= $complexitySelect.'</select></div>';
+$complexityHtml .= $complexitySelect . '</select></div>';
 
 // Prepare folders
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -79,20 +82,21 @@ $tst = $tree->getDescendants();
 
 // prepare options list
 $prev_level = 0;
-$droplist = '<option value="na">---'.langHdl('select').'---</option>';
+$droplist = '<option value="na">---' . langHdl('select') . '---</option>';
 if ((int) $_SESSION['is_admin'] === 1 || (int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['can_create_root_folder'] === 1) {
-    $droplist .= '<option value="0">'.langHdl('root').'</option>';
+    $droplist .= '<option value="0">' . langHdl('root') . '</option>';
 }
 foreach ($tst as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+    if (
+        in_array($t->id, $_SESSION['groupes_visibles']) === true
         && in_array($t->id, $_SESSION['personal_visible_groups']) === false
     ) {
-        $droplist .= '<option value="'.$t->id.'">'.addslashes($t->title);
+        $droplist .= '<option value="' . $t->id . '">' . addslashes($t->title);
         $text = '';
         foreach ($tree->getPath($t->id, false) as $fld) {
-            $text .= empty($text) === true ? '     ['.$fld->title : ' > '.$fld->title;
+            $text .= empty($text) === true ? '     [' . $fld->title : ' > ' . $fld->title;
         }
-        $droplist .= (empty($text) === true ? '' : $text.'</i>]').'</option>';
+        $droplist .= (empty($text) === true ? '' : $text . '</i>]') . '</option>';
     }
 }
 
@@ -101,13 +105,13 @@ foreach ($tst as $t) {
 <!-- Content Header (Page header) -->
 <div class="content-header">
     <div class="container-fluid">
-    <div class="row mb-2">
-        <div class="col-sm-6">
-        <h1 class="m-0 text-dark">
-        <i class="fa fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
-        </h1>
-        </div><!-- /.col -->
-    </div><!-- /.row -->
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">
+                    <i class="fa fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
+                </h1>
+            </div><!-- /.col -->
+        </div><!-- /.row -->
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content-header -->
@@ -138,13 +142,13 @@ foreach ($tst as $t) {
                                 </select>
                             </div>
                             <div class="input-group input-group-sm col-4">
-                                    <div class="input-group-prepend">
-                                        <div class="input-group-text">
-                                            <i class="fas fa-search"></i>
-                                        </div>
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="fas fa-search"></i>
                                     </div>
-                                    <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">
                                 </div>
+                                <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -165,7 +169,7 @@ foreach ($tst as $t) {
                                 <div class="form-group">
                                     <label for="new-parent"><?php echo langHdl('parent'); ?></label>
                                     <select id="new-parent" class="form-control form-item-control select2 no-root" style="width:100%;">
-                                    <?php echo $droplist; ?>
+                                        <?php echo $droplist; ?>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -196,7 +200,7 @@ foreach ($tst as $t) {
                                 </div>
                             </div>
                             <!-- /.card-body -->
-                            
+
                             <div class="card-footer">
                                 <button type="button" class="btn btn-primary tp-action" data-action="new-submit"><?php echo langHdl('submit'); ?></button>
                                 <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
@@ -230,7 +234,7 @@ foreach ($tst as $t) {
                                 </div>
                             </div>
                             <!-- /.card-body -->
-                            
+
                             <div class="card-footer">
                                 <button type="button" class="btn btn-danger disabled tp-action" data-action="delete-submit" id="delete-submit"><?php echo langHdl('confirm'); ?></button>
                                 <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
@@ -246,15 +250,15 @@ foreach ($tst as $t) {
                 <div class="card-body form table-responsive1" id="folders-list">
                     <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
-                        <tr>
-                            <th scope="col" width="80px"></th>
-                            <th scope="col" min-width="200px"><?php echo langHdl('group'); ?></th>
-                            <th scope="col" min-width="200px"><?php echo langHdl('group_parent'); ?></th>
-                            <th scope="col" width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
-                            <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
-                            <th scope="col" width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
-                            <th scope="col" width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
-                        </tr>
+                            <tr>
+                                <th scope="col" width="80px"></th>
+                                <th scope="col" min-width="200px"><?php echo langHdl('group'); ?></th>
+                                <th scope="col" min-width="200px"><?php echo langHdl('group_parent'); ?></th>
+                                <th scope="col" width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration') . ' ' . langHdl('group_pw_duration_tip'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                            </tr>
                         </thead>
                         <tbody>
 

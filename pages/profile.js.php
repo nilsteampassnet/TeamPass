@@ -2,21 +2,22 @@
 
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      profile.js.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -180,11 +181,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
-                    $("#div_loading").addClass("hidden");
-                    $("#request_ongoing").val("");
-                    $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
-                    $("#div_dialog_message").dialog("open");
-
                     toastr.remove();
                     toastr.error(
                         'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,

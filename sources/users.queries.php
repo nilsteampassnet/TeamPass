@@ -1,22 +1,22 @@
 <?php
-
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      users.queries.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -60,7 +60,7 @@ if (
     } else {
         // Do special check to allow user to change attributes of his profile
         if (
-            empty($filtered_newvalue) === true
+            $isprofileupdate === false
             || checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
         ) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -2046,10 +2046,21 @@ if (null !== $post_type) {
                         'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING),
                         'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING),
                         'agses-usercardid' => filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT),
+                        'name' => filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING),
+                        'lastname' => filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING)
                     ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
+
+                // Update SETTINGS
+                $_SESSION['user_settings']['usertimezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_STRING);
+                $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
+                $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+                $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
+                $_SESSION['user_settings']['treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
+                $_SESSION['user_settings']['agses-usercardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
+                $_SESSION['user_settings']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(

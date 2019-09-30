@@ -2,19 +2,22 @@
 
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @author    Nils Laumaillé <nils@teampass.net>
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      items.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      https://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -524,22 +527,22 @@ echo '
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav">
                                 <li class="nav-item" id="item-form-new-button">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="new"><i class="far fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="far fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="edit"><i class="far fa-edit mr-1"></i><small><?php echo langHdl('edit'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="far fa-edit mr-1"></i><small><?php echo langHdl('edit'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-1"></i><small><?php echo langHdl('delete'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-1"></i><small><?php echo langHdl('delete'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="copy"><i class="far fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="far fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-info tp-action ml-3" href="#" data-item-action="notify"><i class="far fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="far fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
                                 </li>
                                 <?php
                                 if (
@@ -548,7 +551,7 @@ echo '
                                 ) {
                                     ?>
                                     <li class="nav-item">
-                                        <a class="text-info tp-action ml-3" href="#" data-item-action="server"><i class="fas fa-server mr-1"></i><small><?php echo langHdl('server'); ?></small></a>
+                                        <a class="text-navy tp-action ml-3" href="#" data-item-action="server"><i class="fas fa-server mr-1"></i><small><?php echo langHdl('server'); ?></small></a>
                                     </li>
                                 <?php
                                 }
@@ -558,7 +561,7 @@ echo '
                                 ) {
                                     ?>
                                     <li class="nav-item">
-                                        <a class="text-info tp-action ml-3" href="#" data-item-action="otv"><i class="fab fa-slideshare mr-1"></i><small><?php echo langHdl('one_time_view'); ?></small></a>
+                                        <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fab fa-slideshare mr-1"></i><small><?php echo langHdl('one_time_view'); ?></small></a>
                                     </li>
                                 <?php
                                 }
@@ -651,7 +654,7 @@ echo '
         <div class="row hidden item-details-card" id="item-details-card-categories">
             <div class="col-12">
                 <div class="card card-default">
-                    <div class="card-header bg-gray">
+                    <div class="card-header bg-gray-dark">
                         <h3 class="card-title pointer" data-widget="collapse">
                             <i class="fas fa-random mr-2"></i><?php echo langHdl('categories'); ?>
                         </h3>
@@ -694,7 +697,7 @@ echo '
     <div class="row hidden item-details-card item-card-attachments">
         <div class="col-12">
             <div class="card card-default collapsed-card collapseme">
-                <div class="card-header bg-gray">
+                <div class="card-header bg-gray-dark">
                     <h3 class="card-title pointer" data-widget="collapse">
                         <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
                     </h3>
@@ -713,7 +716,7 @@ echo '
     <div class="row hidden item-details-card">
         <div class="col-12">
             <div class="card card-default collapsed-card collapseme">
-                <div class="card-header bg-gray">
+                <div class="card-header bg-gray-dark">
                     <h3 class="card-title pointer" data-widget="collapse">
                         <i class="fas fa-history mr-2"></i><?php echo langHdl('history'); ?>
                     </h3>
@@ -837,7 +840,7 @@ echo '
         <div class="row hidden form-item-server form-item-action">
             <div class="col-12">
                 <div class="card card-primary">
-                    <div class="card-header">
+                    <div class="card-header bg-navy">
                         <h5>
                             <i class="fas fa-server mr-2"></i><?php echo langHdl('update_server_password'); ?>
                         </h5>
@@ -1297,7 +1300,11 @@ echo '
                         <!-- /.table -->
                     </div>
 
-                    <div class="form-group row justify-content-md-center hidden" id="info_teampass_items_list"></div>
+                    <div class="form-group row justify-content-md-center" id="info_teampass_items_list">
+                        <div class="alert alert-info text-center col col-10" role="alert">
+                            <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('please_select_a_folder'); ?></b>
+                        </div>
+                    </div>
                     <!-- /.mail-box-messages -->
                 </div>
                 <!-- /.card-body -->

@@ -1,21 +1,23 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      checks.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 require_once 'SecureHandler.php';
 
 // Load config
@@ -29,7 +31,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 
 /*
 Handle CASES
@@ -49,7 +51,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
 
             // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'].';'.filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
         }
 
         break;
@@ -63,7 +65,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 function curPage($SETTINGS)
 {
     // Load libraries
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Parse the url
@@ -116,11 +118,11 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     );
 
     // Load
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
     // Load libraries
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
@@ -131,18 +133,19 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     $pageVisited = array($pageVisited);
 
     // Securize language
-    if (null === $superGlobal->get('user_language', 'SESSION')
+    if (
+        null === $superGlobal->get('user_language', 'SESSION')
         || empty($superGlobal->get('user_language', 'SESSION')) === true
     ) {
         $superGlobal->put('user_language', 'english', 'SESSION');
     }
 
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION').'.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION') . '.php';
     include_once 'SplClassLoader.php';
     include_once 'main.functions.php';
 
     // Connect to mysql server
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -155,7 +158,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 
     // load user's data
     $data = DB::queryfirstrow(
-        'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM '.prefixTable('users').' WHERE id = %i',
+        'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ' . prefixTable('users') . ' WHERE id = %i',
         $userId
     );
 
@@ -164,7 +167,8 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         return false;
     }
 
-    if ((int) $data['admin'] === 1
+    if (
+        (int) $data['admin'] === 1
         && isInArray($pageVisited, $pagesRights['admin']) === true
     ) {
         return true;

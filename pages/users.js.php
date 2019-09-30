@@ -2,21 +2,22 @@
 
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2018 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      users.js.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -1104,7 +1105,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                     }
                 );
-                
+
             }
         }
     });
@@ -1359,11 +1360,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 '<td>' + userLogin +
                                 '</td>' +
                                 '<td>' +
-                                    '<i class="fas fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
-                                    '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
-                                    (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
-                                    '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
-                                    '"></i>' +
+                                '<i class="fas fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
+                                (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
+                                '"></i>' +
                                 '</td>' +
                                 '<td>' + (entry.teampass !== undefined && entry.teampass.id !== undefined ? '<i class="fas fa-toggle-on text-info mr-1 text-center"></i>' : '<i class="fas fa-toggle-off mr-1 text-center"></i>') + '</td>' +
                                 '<td>';
@@ -1401,7 +1402,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $('#row-ldap-body').removeClass('overlay');
 
                     $('.infotip').tooltip('update');
-                    
+
                     // Build list box of new roles that could be created
                     $('#ldap-new-role-selection')
                         .empty()
@@ -1433,8 +1434,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      *
      * @return void
      */
-    function addRoleToUser()
-    {
+    function addRoleToUser() {
         toastr.remove();
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
@@ -1491,11 +1491,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
     $(document).on('click', '.action-add-role-to-user', function() {
         $(this).addClass('selected-role');
-        
+
         toastr.warning(
             '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo langHdl('please_confirm'); ?></button>',
-            '<?php echo langHdl('info'); ?>',
-            {
+            '<?php echo langHdl('info'); ?>', {
                 positionClass: 'toast-top-center',
                 closeButton: true
             }
@@ -1508,11 +1507,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      *
      * @return void
      */
-    function addUserInTeampass()
-    {
+    function addUserInTeampass() {
         toastr.remove();
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-        
+
         // prepare data
         var data = {
             'login': $('.selected-user').data('user-login'),
@@ -1551,18 +1549,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
     $(document).on('click', '.add-user-icon', function() {
         $(this).addClass('selected-user');
-        
+
         toastr.warning(
             '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addUserInTeampass()"><?php echo langHdl('please_confirm'); ?></button>',
-            '<?php echo langHdl('add_user_in_teampass'); ?>',
-            {
+            '<?php echo langHdl('add_user_in_teampass'); ?>', {
                 positionClass: 'toast-top-center',
                 closeButton: true
             }
         );
     });
 
-    
+
 
 
 

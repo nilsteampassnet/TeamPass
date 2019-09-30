@@ -2,19 +2,22 @@
 
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @author    Nils Laumaillé <nils@teampass.net>
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      items.js.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      https://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -3569,7 +3572,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     ) {
                         // Show warning to user
                         $('#info_teampass_items_list')
-                            .html('<div class="alert alert-primary text-center col col-10" role="alert">' +
+                            .html('<div class="alert alert-info text-center col col-10" role="alert">' +
                                 '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('no_item_to_display'); ?></b>' +
                                 '</div>')
                             .removeClass('hidden');
@@ -3588,7 +3591,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     } else if (data.error === 'not_authorized' || data.access_level === '') {
                         // Show warning to user
                         $('#info_teampass_items_list')
-                            .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
+                            .html('<div class="alert alert-info text-center col col-lg-10" role="alert">' +
                                 '<i class="fas fa-warning mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?></b>' +
                                 '</div>')
                             .removeClass('hidden');

@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      utilities.renewal.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.renewal', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 ?>
 
@@ -85,12 +88,14 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                         </div>
                         <div>
                             <table class="table table-striped" id="table-renewal" style="width:100%;">
-                                <thead><tr>
-                                    <th style=""></th>
-                                    <th style=""><?php echo langHdl('label'); ?></th>
-                                    <th style=""><?php echo langHdl('expiration_date'); ?></th>
-                                    <th style=""><?php echo langHdl('folder'); ?></th>
-                                </tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th style=""></th>
+                                        <th style=""><?php echo langHdl('label'); ?></th>
+                                        <th style=""><?php echo langHdl('expiration_date'); ?></th>
+                                        <th style=""><?php echo langHdl('folder'); ?></th>
+                                    </tr>
+                                </thead>
                             </table>
                         </div>
                     </div>

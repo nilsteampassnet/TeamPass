@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      emails.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'emails', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 ?>
 <!-- Content Header (Page header) -->
@@ -50,7 +53,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                <i class="fas fa-envelope mr-2"></i><?php echo langHdl('emails'); ?>
+                    <i class="fas fa-envelope mr-2"></i><?php echo langHdl('emails'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -129,9 +132,9 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                             </div>
                             <div class="col-7 mb-0">
                                 <select class='form-control form-control-sm' id='email_security'>
-                                    <option value="none"<?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] == 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
-                                    <option value="ssl"<?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'ssl' ? ' selected' : ''; ?>>SSL</option>
-                                    <option value="tls"<?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'tls' ? ' selected' : ''; ?>>TLS</option>
+                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] == 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
+                                    <option value="ssl" <?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'ssl' ? ' selected' : ''; ?>>SSL</option>
+                                    <option value="tls" <?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'tls' ? ' selected' : ''; ?>>TLS</option>
                                 </select>
                             </div>
                         </div>
@@ -158,7 +161,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <div class="col-12">
                 <div class="card card-primary">
@@ -178,7 +181,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 </div>
             </div>
         </div>
-        
+
         <div class="row">
             <div class="col-12">
                 <div class="card card-primary">
@@ -188,11 +191,11 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
                     <div class="card-body">
                         <div id="unsent-emails">
-                        <?php
-                        DB::query('SELECT * FROM '.prefixTable('emails').' WHERE status = %s OR status = %s', 'not_sent', '');
+                            <?php
+                            DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
 
-                        echo str_replace('#nb_emails#', DB::count(), langHdl('email_send_backlog'));
-                        ?>
+                            echo str_replace('#nb_emails#', DB::count(), langHdl('email_send_backlog'));
+                            ?>
                         </div>
 
                         <button class="btn btn-primary button mt-3" data-action="send-waiting-emails">
@@ -209,8 +212,4 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 
     </div>
-</div>
-
-
-
-
+    </div>

@@ -1,22 +1,23 @@
 <?php
-
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
+ * ---
+ * @file      english.php
+ * @project   Teampass
+ * ---
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      https://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
+ * @copyright 2009 - 2019 Nils Laumaillé, Teampass.net
  */
 
 return array(
+    'please_select_a_folder' => 'Please select a folder',
     'user_must_have_login_and_email' => 'User must have a login and an email',
     'user_has_this_role_in_teampass' => 'User has this role in Teampass',
     'select_role_to_create' => 'Select role to create',

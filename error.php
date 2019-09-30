@@ -1,21 +1,23 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      error.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- *
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ * ---
+ * @see       https://www.teampass.net
  */
+
+
 if (file_exists('../sources/SecureHandler.php')) {
     include_once '../sources/SecureHandler.php';
 } elseif (file_exists('./sources/SecureHandler.php')) {
@@ -40,17 +42,18 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
+if (
+    null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired'
 ) {
     //Include files
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
     // connect to DB
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -69,7 +72,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
         DB::update(
-            DB_PREFIX.'users',
+            DB_PREFIX . 'users',
             array(
                 'key_tempo' => '',
             ),
@@ -83,7 +86,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';
     $errorCode = '';
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
         $errorCode = 'ERROR NOT ALLOWED';
@@ -94,25 +97,25 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
         $errorCode = 'ERROR NOT ALLOWED';
     } ?>
-<!-- Main content -->
-<section class="content">
-      <div class="error-page" style="width:100%;">
-        <h2 class="headline text-danger">500</h2>
+    <!-- Main content -->
+    <section class="content">
+        <div class="error-page" style="width:100%;">
+            <h2 class="headline text-danger">500</h2>
 
-        <div class="error-content">
-          <h3><i class="fa fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
+            <div class="error-content">
+                <h3><i class="fa fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
 
-          <p>
-            For security reason, you have been disconnected. Click to <a href="index.php">log in</a>.
-          </p>
+                <p>
+                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>>log in</a>.
+                </p>
 
+            </div>
+            <!-- /.error-content -->
         </div>
-        <!-- /.error-content -->
-      </div>
-      <!-- /.error-page -->
+        <!-- /.error-page -->
     </section>
     <!-- /.content -->
-    <?php
+<?php
 }
 
 // erase session table

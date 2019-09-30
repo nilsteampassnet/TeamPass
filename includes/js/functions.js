@@ -1,3 +1,21 @@
+/*
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      functions.js
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
+ */
+
+
 /**
  * @package       functions.js
  * @author        Nils Laumaillé <nils@teampass.net>
@@ -287,42 +305,13 @@ function stripHtml(html){
 
 
 /**
- * Make blinking an HMLT element
- * @param  {[type]} elem  [description]
- * @param  {[type]} times [description]
- * @param  {[type]} speed [description]
- * @param  {[type]} klass [description]
- * @return {[type]}       [description]
- */
-function blink(elem, times, speed, klass)
-{
-    if (times > 0 || times < 0) {
-        if ($(elem).hasClass(klass)) {
-            $(elem).removeClass(klass);
-        } else {
-            $(elem).addClass(klass);
-        }
-    }
-
-    clearTimeout(function() { blink(elem, times, speed, klass); });
-
-    if (times > 0 || times < 0) {
-        $(this).delay(speed).queue(function() {
-            blink(elem, times, speed, klass);
-            $(this).dequeue();
-        });
-        times-= .5;
-    }
-}
-
-/**
  * 
  * @param string data Crypted string
  * @param string key  Session key
  */
 function unCryptData(data, key)
 {
-    if (data.substr(0, 7) === 'crypted') {
+    if (data !== undefined && data.substr(0, 7) === 'crypted') {
         var uncryptedData = prepareExchangedData(
             data.substr(7),
             'decode',
@@ -360,58 +349,6 @@ function decodeQueryReturn(data, key)
     }
 
     return data;
-}
-
-/**
- * 
- */
-function teampassStorage1(storageName, type, fieldNames)
-{
-    // Create if not existing
-    if (localStorage.getItem(storageName)  === null) {
-        localStorage.setItem(storageName, JSON.stringify([]));
-    }
-    var storage = (localStorage.getItem(storageName) === '') ? {} : JSON.parse(localStorage.getItem(storageName));
-
-    if (type === 'update') {
-        console.log('--- CONTENU DE STORAGE '+storageName)
-        console.log(storage)
-        // Loop
-        $.each(fieldNames, function(key, value) {
-            storage[key] = value;
-        });
-        console.log(storage)
-              
-        // Update in storage
-        localStorage.setItem(
-            storageName,
-            JSON.stringify(storage)
-        );
-        console.info('--- '+storageName+" was UPDATED")
-        return true;
-    } else if (type === 'get') {
-        console.info('--- GET from'+storageName)
-        console.log(storage)
-        /*if (fieldNames.length === 1 && storage[fieldNames] !== undefined) {
-            var ret = storage[fieldNames]
-        } else {*/
-            var ret = [];
-            
-            // Loop
-            $.each(fieldNames, function(index, value) {
-                console.log('>>'+storage[value]);
-                if (storage[value] !== undefined) {
-                    ret[value] = storage[value];
-                } else {
-                    ret[value] = '';
-                }
-            });
-        //}
-        console.log(ret)
-        return ret;
-    } else {
-        
-    }
 }
 
 /**

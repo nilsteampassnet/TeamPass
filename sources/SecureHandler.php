@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Encrypt PHP session data for the internal PHP save handlers
  *
@@ -8,6 +9,8 @@
  * @author    Enrico Zimuel (enrico@zimuel.it)
  * @copyright MIT License
  */
+
+
 namespace PHPSecureSession;
 
 use SessionHandler;

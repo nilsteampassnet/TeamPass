@@ -1,22 +1,25 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
- *
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * @category  Teampass
- *
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
-*
- * @version   GIT: <git_id>
- *
- * @see      http://www.teampass.net
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      actions.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
@@ -33,15 +36,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'ldap', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // LDAP type currently loaded
 $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
@@ -73,26 +76,25 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                     <!-- /.card-header -->
                     <!-- form start -->
                     <div class='card-body'>
-                        
+
                         <div class="row">
                             <div class="col-12">
                                 <span class="fa-stack mr-3 infotip pointer button-action" data-action="config-file" title="<?php echo langHdl('launch'); ?>">
                                     <i class="fas fa-square fa-stack-2x"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
-                                <?php 
+                                <?php
                                 echo langHdl('rebuild_config_file');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_rebuild_config_file'
                                 );
-                                $tmp = langHdl('last_execution').' '.
-                                    date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                $tmp = langHdl('last_execution') . ' ' .
+                                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                 $tmp .= $data['field_1'] === 'success' ?
-                                '<i class="fas fa-check ml-2 text-success"></i>' :
-                                '<i class="fas fa-times ml-2 text-danger"></i>';
+                                    '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 ?>
                                 <span class="ml-3 text-muted" id="config-file-result"><?php echo $tmp; ?></span>
                                 <small class='form-text text-muted'>
@@ -109,22 +111,21 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_check_pf');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_check_pf'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
                                 ?>
-                                
+
                                 <span class="ml-3 text-muted" id="personal-folder-result"><?php echo $tmp; ?></span>
                             </div>
                         </div>
@@ -137,17 +138,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_db_clean_items');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_db_clean_items'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
@@ -167,17 +167,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_db_optimize');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_db_optimize'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
@@ -194,17 +193,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_purge_old_files');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_purge_old_files'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
@@ -224,17 +222,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_reload_cache_table');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_reload_cache_table'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
@@ -255,17 +252,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_change_salt_key');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_change_sk'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
@@ -286,17 +282,16 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </span>
                                 <?php echo langHdl('admin_action_attachments_cryption');
                                 $data = DB::queryfirstrow(
-                                    'SELECT field_1, date FROM '.prefixTable('log_system').'
+                                    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
                                     WHERE label = %s
                                     ORDER BY id DESC',
                                     'admin_action_change_file_encryption'
                                 );
                                 if (DB::count() > 0) {
-                                    $tmp = langHdl('last_execution').' '.
-                                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $data['date']);
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
                                     $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' :
-                                    '<i class="fas fa-times ml-2 text-danger"></i>';
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
                                 } else {
                                     $tmp = langHdl('never_performed');
                                 }
