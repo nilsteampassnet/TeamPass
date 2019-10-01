@@ -71,6 +71,186 @@ $post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', 
 $post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
 $post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
 
+
+// Do we need to rewrite the settings.php file?
+if (defined("DB_PASSWD") === false) {
+	$settingsFile = '../includes/config/settings.php';
+	if (null !== SECUREPATH) {
+		//Do a copy of the existing file
+		if (!copy(
+			$settingsFile,
+			$settingsFile . '.' . date(
+				'Y_m_d_H_i_s',
+				mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+			)
+		)) {
+			echo 'document.getElementById("but_next").disabled = "disabled";';
+			echo 'alertify.warning("Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", 0).dismissOthers();';
+			exit;
+		} else {
+			unlink($settingsFile);
+		}
+		
+		// CHeck if old sk.php exists.
+		// If yes then get keys to database and delete it
+		if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+			$filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
+			if (file_exists($filename)) {
+				include_once $filename;
+				unlink($filename);
+
+				// AKEY
+				$tmp = mysqli_num_rows(mysqli_query(
+					$db_link,
+					"SELECT INTO `" . $pre . "misc`
+					WHERE type = 'duoSecurity' AND intitule = 'akey'"
+				));
+				if ($tmp == 0) {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
+					);
+				} else {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
+					);
+				}
+
+				// SKEY
+				$tmp = mysqli_num_rows(mysqli_query(
+					$db_link,
+					"SELECT INTO `" . $pre . "misc`
+					WHERE type = 'duoSecurity' AND intitule = 'skey'"
+				));
+				if ($tmp == 0) {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+					);
+				} else {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+					);
+				}
+
+				// IKEY
+				$tmp = mysqli_num_rows(mysqli_query(
+					$db_link,
+					"SELECT INTO `" . $pre . "misc`
+					WHERE type = 'duoSecurity' AND intitule = 'ikey'"
+				));
+				if ($tmp == 0) {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+					);
+				} else {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+					);
+				}
+
+				// HOST
+				$tmp = mysqli_num_rows(mysqli_query(
+					$db_link,
+					"SELECT INTO `" . $pre . "misc`
+					WHERE type = 'duoSecurity' AND intitule = 'host'"
+				));
+				if ($tmp == 0) {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . $server . "', 'duoSecurity', 'host')"
+					);
+				} else {
+					mysqli_query(
+						$db_link,
+						"INSERT INTO `" . $pre . "misc`
+						(`valeur`, `type`, `intitule`)
+						VALUES ('" . $server . "', 'duoSecurity', 'host')"
+					);
+				}
+			}
+		}
+
+		// Ensure DB is read as UTF8
+		if (DB_ENCODING === "") {
+			define('DB_ENCODING', "utf8");
+		}
+
+		// Now create new file if needed
+		if (defined('DB_HOST') === false) {
+			$file_handled = fopen($settingsFile, 'w');
+			
+			$settingsTxt = '<?php
+// DATABASE connexion parameters
+define("DB_HOST", "' . $server . '");
+define("DB_USER", "' . $user . '");
+define("DB_PASSWD", "' . $pass . '");
+define("DB_NAME", "' . $database . '");
+define("DB_PREFIX", "' . $pre . '");
+define("DB_PORT", "' . $port . '");
+define("DB_ENCODING", "' . $encoding . '");
+define("SECUREPATH", "' . SECUREPATH . '");';
+
+		if (defined('IKEY') === true) $settingsTxt .= '
+define("IKEY", "' . IKEY . '");';
+		else $settingsTxt .= '
+define("IKEY", "");';
+		if (defined('SKEY') === true) $settingsTxt .= '
+define("SKEY", "' . SKEY . '");';
+		else $settingsTxt .= '
+define("SKEY", "");';
+		if (defined('AKEY') === true) $settingsTxt .= '
+define("AKEY", "' . AKEY . '");';
+		else $settingsTxt .= '
+define("AKEY", "");';
+		if (defined('HOST') === true) $settingsTxt .= '
+define("HOST", "' . HOST . '");';
+		else $settingsTxt .= '
+define("HOST", "");';
+
+
+			$settingsTxt .= '
+
+if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
+}
+';
+
+			$fileCreation = fwrite(
+				$file_handled,
+				utf8_encode($settingsTxt)
+			);
+
+			fclose($file_handled);
+			if ($fileCreation === false) {
+				echo 'document.getElementById("but_next").disabled = "disabled";';
+				echo 'alertify.warning("Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.", 0).dismissOthers();';
+				exit;
+			}
+		}
+	}
+}
+include $settingsFile;
+
+
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
 $server = DB_HOST;
@@ -96,12 +276,10 @@ if (mysqli_connect(
     $res = 'Connection is successful';
     $db_link->set_charset(DB_ENCODING);
 } else {
-    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
+    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()." ; ".DB_HOST);
     echo 'document.getElementById("but_next").disabled = "disabled";';
-    echo 'document.getElementById("res_".$post_type).innerHTML = "' . $res . '";';
-    echo 'document.getElementById("loader").style.display = "none";';
-
-    return false;
+	echo 'alertify.error("' . $res . '", 0).dismissOthers();';
+    exit;
 }
 
 // Load libraries
@@ -200,12 +378,14 @@ if (isset($post_type)) {
                     $superGlobal->put('user_id', $user_info['id'], 'SESSION');
                     $userArray = array(mysqli_escape_string($db_link, stripslashes($post_login)), $post_pwd, $user_info['id']);
                     echo 'document.getElementById("infotmp").value = "' . base64_encode(json_encode($userArray)) . '";';
+					echo 'alertify.success("Done", 1).dismissOthers();';
                 } else {
                     echo '$("#but_next").attr("disabled", "disabled");';
                     echo '$("#res_step0").html("This user is not allowed!").removeClass("hidden");';
                     echo 'document.getElementById("user_granted").value = "0";';
                     echo 'document.getElementById("infotmp").value = "";';
                     $superGlobal->put('user_granted', false, 'SESSION');
+					echo 'alertify.success("Done", 1).dismissOthers();';
                 }
             }
 
@@ -703,10 +883,10 @@ define("DB_PREFIX", "' . DB_PREFIX . '");
 define("DB_PORT", "' . DB_PORT . '");
 define("DB_ENCODING", "' . DB_ENCODING . '");
 define("SECUREPATH", "' . SECUREPATH . '");
-define("IKEY", "' . null !== IKEY ? IKEY : "" . '");
-define("SKEY", "' . null !== SKEY ? SKEY : "" . '");
-define("AKEY", "' . null !== AKEY ? AKEY : "" . '");
-define("HOST", "' . null !== HOST ? HOST : "" . '");
+define("IKEY", "' , defined(IKEY) === true ? IKEY : "" , '");
+define("SKEY", "' , defined(SKEY) === true ? SKEY : "" , '");
+define("AKEY", "' , defined(AKEY) === true ? AKEY : "" , '");
+define("HOST", "' , defined(HOST) === true ? HOST : "" , '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);

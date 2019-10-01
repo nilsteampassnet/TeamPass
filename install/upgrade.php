@@ -555,7 +555,7 @@ echo '
 <!-- Bootstrap -->
 <script src="../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- AdminLTE -->
-<script src="../dist/js/adminlte.js"></script>
+<script src="../plugins/adminlte/js/adminlte.min.js"></script>
 <!-- Altertify -->
 <script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
 
@@ -598,7 +598,10 @@ function Check(step)
 {
     if (step != "") {
         var upgrade_file = "upgrade_ajax.php";
-        if (step === "step0" && document.getElementById("user_login").value !== "" && document.getElementById("user_pwd").value !== "") {
+        if (step === "step0") {
+			if (document.getElementById("user_login").value === "" || document.getElementById("user_pwd").value === "") {
+				return false;
+			}
             var data = "type="+step+
             "&login="+escape(document.getElementById("user_login").value)+
             "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
@@ -613,8 +616,7 @@ function Check(step)
             alertify
                 .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                 .dismissOthers();
-        } else
-        if (step === "step2") {
+        } else if (step === "step2") {
             var maintenance = 1;
             if ($("#no_maintenance_mode").is(':checked')) {
                 maintenance = 0;
@@ -627,22 +629,19 @@ function Check(step)
             alertify
                 .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                 .dismissOthers();
-        } else
-        if (step === "step3") {
+        } else if (step === "step3") {
             var data = "type="+step+
             "&prefix_before_convert="+document.getElementById("prefix_before_convert").checked;
             alertify
                 .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                 .dismissOthers();
-        } else
-        if (step === "step4") {
+        } else if (step === "step4") {
             upgrade_file = "";
             var data = "type="+step;
             timeTaken = getTime();
             manageUpgradeScripts("0");
 
-        } else
-        if (step === "step5") {
+        } else if (step === "step5") {
             //document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
             if (document.getElementById("sk_path") == null)
                 var data = "type="+step+"&url_path="+document.getElementById("url_path").value;

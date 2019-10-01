@@ -286,7 +286,7 @@ echo '
                                 ) {
                                     ?>
                                     <div class="form-check mb-3 icheck-blue">
-                                        <input type="checkbox" class="form-check-input form-item-control track-change" id="form-item-anyoneCanModify" <?php
+                                        <input type="checkbox" class="form-check-input form-item-control track-change flat-blue" id="form-item-anyoneCanModify" <?php
                                                                                                                                                             echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
                                                                                                                                                                 && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                         <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
@@ -435,7 +435,7 @@ echo '
                                         ) {
                                             echo '
                                             <div class="form-check icheck-blue">
-                                                <input type="checkbox" class="form-check-input form-check-input-template form-item-control" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
+                                                <input type="checkbox" class="form-check-input form-check-input-template form-item-control flat-blue" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
                                                 <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . langHdl('main_template') . '</label>
                                             </div>';
                                         }
@@ -700,6 +700,7 @@ echo '
                 <div class="card-header bg-gray-dark">
                     <h3 class="card-title pointer" data-widget="collapse">
                         <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
+                        <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
                     </h3>
                 </div>
                 <!-- /.card-header -->
@@ -719,6 +720,7 @@ echo '
                 <div class="card-header bg-gray-dark">
                     <h3 class="card-title pointer" data-widget="collapse">
                         <i class="fas fa-history mr-2"></i><?php echo langHdl('history'); ?>
+                        <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
                     </h3>
                     <!-- /.card-tools -->
                 </div>
@@ -1019,8 +1021,8 @@ echo '
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                         <p><?php echo langHdl('notification_message'); ?></p>
                     </div>
-                    <div class="form-group icheck-blue">
-                        <input type="checkbox" class="form-check-input form-item-control" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
+                    <div class="form-group">
+                        <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
                     </div>
                 </div>
                 <div class="card-footer">
@@ -1150,7 +1152,7 @@ echo '
                         <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-delete-selection" required></select>
                     </div>
                     <div class="form-check mb-3 alert alert-warning icheck-red">
-                        <input type="checkbox" class="form-check-input form-item-control" id="form-folder-confirm-delete" required>
+                        <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-folder-confirm-delete" required>
                         <label class="form-check-label ml-3" for="form-folder-confirm-delete"><i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('folder_delete_confirm'); ?></label>
                     </div>
                 </div>
