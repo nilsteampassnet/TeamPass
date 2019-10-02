@@ -3321,7 +3321,7 @@ function filterString($field)
     $field = filter_var(trim($field), FILTER_SANITIZE_STRING);
     if (empty($field) === false) {
         // Load AntiXSS
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+        include_once '../includes/libraries/protect/AntiXSS/AntiXSS.php';
         $antiXss = new voku\helper\AntiXSS();
         // Return
         return $antiXss->xss_clean($field);
