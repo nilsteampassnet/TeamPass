@@ -61,7 +61,7 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
         && (int) $SETTINGS['log_connections'] === 1
     ) {
         include_once '../../sources/main.functions.php';
-        logEvents('user_connection', 'disconnection', $user_id, @$_SESSION['login']);
+        logEvents($SETTINGS, 'user_connection', 'disconnection', $user_id, @$_SESSION['login']);
     }
 }
 

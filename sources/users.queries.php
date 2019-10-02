@@ -313,6 +313,7 @@ if (null !== $post_type) {
                 );
                 // update LOG
                 logEvents(
+                    $SETTINGS,
                     'user_mngt',
                     'at_user_added',
                     $_SESSION['user_id'],
@@ -424,7 +425,7 @@ if (null !== $post_type) {
                 deleteUserObjetsKeys($post_id, $SETTINGS);
 
                 // update LOG
-                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
 
                 //Send back
                 echo prepareExchangedData(
@@ -737,6 +738,7 @@ if (null !== $post_type) {
                 );
                 // update LOG
                 logEvents(
+                    $SETTINGS,
                     'user_mngt',
                     'at_user_unlocked',
                     $_SESSION['user_id'],
@@ -1474,7 +1476,7 @@ if (null !== $post_type) {
                         $tree->rebuild();
                     }
                     // update LOG
-                    logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
                 } else {
                     // Get old data about user
                     $oldData = DB::queryfirstrow(
@@ -1507,12 +1509,12 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents('user_mngt', 'at_user_email_changed:' . $oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                     }
 
                     if ((int) $oldData['disabled'] !== (int) $post_user_disabled) {
                         // update LOG
-                        logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                        logEvents($SETTINGS, 'user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -2683,6 +2685,7 @@ if (null !== $post_type) {
             );
             // update LOG
             logEvents(
+                $SETTINGS,
                 'user_mngt',
                 'at_user_new_' . $value[0] . ':' . $value[1],
                 $_SESSION['user_id'],

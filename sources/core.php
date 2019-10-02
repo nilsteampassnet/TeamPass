@@ -67,8 +67,7 @@ $superGlobal = new protect\SuperGlobal\SuperGlobal();
 $get_group = $superGlobal->get('group', 'GET');
 
 // Redirect needed?
-if (
-    isset($_SERVER['HTTPS']) === true
+if (isset($_SERVER['HTTPS']) === true
     && $_SERVER['HTTPS'] !== 'on'
     && isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
@@ -260,7 +259,7 @@ if (
         && isset($_SESSION['login']) === true
         && empty($_SESSION['login']) === false
     ) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 
     // erase session table
@@ -338,7 +337,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
 
         //Log into DB the user's disconnection
         if (isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+            logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
         }
 
         syslog(

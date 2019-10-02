@@ -526,7 +526,7 @@ if (null !== $post_type) {
                 }
 
                 //log
-                logEvents('pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
+                logEvents($SETTINGS, 'pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
 
                 //clean table
                 DB::query('TRUNCATE TABLE ' . prefixTable('export'));

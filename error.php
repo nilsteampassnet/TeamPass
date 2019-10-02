@@ -83,7 +83,7 @@ if (
 
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';

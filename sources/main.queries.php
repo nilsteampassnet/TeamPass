@@ -270,7 +270,7 @@ function mainQuery($SETTINGS)
                         $post_user_id
                     );
                     // update LOG
-                    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
 
                     // Send back
                     echo prepareExchangedData(
@@ -344,7 +344,7 @@ function mainQuery($SETTINGS)
                                     );
 
                                     // update LOG
-                                    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
+                                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
 
                                     // Send back
                                     echo prepareExchangedData(
@@ -464,7 +464,7 @@ function mainQuery($SETTINGS)
             // Do treatment
             if ($counter === 0) {
                 // Not a registered user !
-                logEvents('failed_auth', 'user_not_exists', '', stripslashes($login), stripslashes($login));
+                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($login), stripslashes($login));
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -479,7 +479,7 @@ function mainQuery($SETTINGS)
                 && $post_demand_origin !== 'users_management_list'
             ) {
                 // checked the given password
-                logEvents('failed_auth', 'user_password_not_correct', '', stripslashes($login), stripslashes($login));
+                logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($login), stripslashes($login));
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -567,7 +567,7 @@ function mainQuery($SETTINGS)
                     }
 
                     // Log event
-                    logEvents('user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($login));
+                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($login));
 
                     // send mail?
                     if ((int) $post_send_mail === 1) {
@@ -1035,7 +1035,7 @@ function mainQuery($SETTINGS)
             );
 
             // Log event
-            logEvents('user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             // Change encryption
             // Build list of items to be re-encrypted
@@ -1151,7 +1151,7 @@ function mainQuery($SETTINGS)
                     );
 
                     // Log event
-                    logEvents('user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
                     // change salt
                     setcookie(
@@ -1162,7 +1162,7 @@ function mainQuery($SETTINGS)
                     );
 
                     // Log event
-                    logEvents('user_mngt', 'at_user_psk_reseted', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_reseted', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                 }
             }
             break;
@@ -1263,6 +1263,7 @@ function mainQuery($SETTINGS)
             if (!empty($_SESSION['user_id'])) {
                 // update DB
                 logEvents(
+                    $SETTINGS,
                     'error',
                     urldecode(filter_input(INPUT_POST, 'error', FILTER_SANITIZE_STRING)),
                     $_SESSION['user_id'],

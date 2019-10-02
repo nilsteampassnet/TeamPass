@@ -261,7 +261,8 @@ switch ($post_type) {
 
         // Log
         logEvents(
-            'system',
+            $SETTINGS,
+            '$SETTINGS,system',
             'admin_action_check_pf',
             $_SESSION['user_id'],
             $_SESSION['login'],
@@ -366,6 +367,7 @@ switch ($post_type) {
 
         // Log
         logEvents(
+            $SETTINGS,
             'system',
             'admin_action_db_clean_items',
             $_SESSION['user_id'],
@@ -502,7 +504,7 @@ switch ($post_type) {
             $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
 
             //update LOG
-            logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
+            logEvents($SETTINGS, 'admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
 
             echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $_SESSION['key'] . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
         }
@@ -672,6 +674,7 @@ switch ($post_type) {
 
         // Log
         logEvents(
+            $SETTINGS,
             'system',
             'admin_action_db_optimize',
             $_SESSION['user_id'],
@@ -778,6 +781,7 @@ switch ($post_type) {
 
         // Log
         logEvents(
+            $SETTINGS,
             'system',
             'admin_action_purge_old_files',
             $_SESSION['user_id'],
@@ -831,6 +835,7 @@ switch ($post_type) {
 
         // Log
         logEvents(
+            $SETTINGS,
             'system',
             'admin_action_reload_cache_table',
             $_SESSION['user_id'],
@@ -882,6 +887,7 @@ switch ($post_type) {
 
         // Log
         logEvents(
+            $SETTINGS,
             'system',
             'admin_action_rebuild_config_file',
             $_SESSION['user_id'],
@@ -1073,7 +1079,7 @@ switch ($post_type) {
             'admin'
         );
         //log
-        logEvents('system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
 
         // get number of items to change
         DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i', 0);
@@ -1802,6 +1808,7 @@ switch ($post_type) {
 
                     //update LOG
                     logEvents(
+                        $SETTINGS,
                         'admin_action',
                         'Emails backlog',
                         $_SESSION['user_id'],
@@ -1872,7 +1879,7 @@ switch ($post_type) {
         }
 
         //update LOG
-        logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
         echo prepareExchangedData(
             array(
@@ -2072,6 +2079,7 @@ switch ($post_type) {
 
             //update LOG
             logEvents(
+                $SETTINGS,
                 'admin_action',
                 'attachments_encryption_changed',
                 $_SESSION['user_id'],

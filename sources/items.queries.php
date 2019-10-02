@@ -3090,7 +3090,7 @@ if (null !== $post_type) {
             }
 
             // Check that user can access this item
-            $granted = accessToItemIsGranted($post_item_id);
+            $granted = accessToItemIsGranted($post_item_id, $SETTINGS);
             if ($granted !== true) {
                 echo prepareExchangedData(
                     array(

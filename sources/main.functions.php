@@ -22,7 +22,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
 }
 
 // Load config if $SETTINGS not defined
-if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
     if (file_exists('../includes/config/tp.config.php')) {
         include_once '../includes/config/tp.config.php';
     } elseif (file_exists('./includes/config/tp.config.php')) {
@@ -46,17 +46,34 @@ header('Cache-Control: no-cache, must-revalidate');
  */
 function langHdl($string)
 {
-    // Clean the string to convert
-    $string = trim($string);
+    if (empty($string) === true) {
+        // Manage error
+        return 'ERROR in language strings!';
+    }
 
-    if (empty($string) === true || isset($_SESSION['teampass']['lang'][$string]) === false) {
+    // Load superglobal
+    if (file_exists('../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    } elseif (file_exists('./includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    } elseif (file_exists('../../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once '../../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    } else {
+        throw new Exception("Error file '/includes/libraries/protect/SuperGlobal/SuperGlobal.php' not exists", 1);
+    }
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get language string
+    $session_language = $superGlobal->get(trim($string), 'SESSION', true);
+
+    if (isset($session_language) === false) {
         // Manage error
         return 'ERROR in language strings!';
     } else {
         return str_replace(
             array('"', "'"),
             array('&quot;', '&apos;'),
-            $_SESSION['teampass']['lang'][$string]
+            $session_language
         );
     }
 }
@@ -198,7 +215,7 @@ function encrypt($decrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
-    if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
@@ -240,7 +257,7 @@ function decrypt($encrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
-    if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         include_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
@@ -319,6 +336,8 @@ function testHex2Bin($val)
  */
 function cryption($message, $ascii_key, $type, $SETTINGS)
 {
+    $ascii_key = (empty($ascii_key) === true) ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
+
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
@@ -336,20 +355,13 @@ function cryption($message, $ascii_key, $type, $SETTINGS)
     include_once $path . 'KeyProtectedByPassword.php';
     include_once $path . 'Core.php';
 
-    // init
-    $err = '';
-    if (empty($ascii_key) === true) {
-        $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
-    }
-
-    //echo $path.' -- '.$message.' ;; '.$ascii_key.' --- ';
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
     try {
         if ($type === 'encrypt') {
             $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
-        } elseif ($type === 'decrypt') {
+        } else if ($type === 'decrypt') {
             $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
         }
     } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
@@ -576,6 +588,10 @@ function identifyUserRights(
     //load ClassLoader
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -617,7 +633,7 @@ function identifyUserRights(
             'timestamp' => time(),
         ),
         'id=%i',
-        $_SESSION['user_id']
+        $superGlobal->get('user_id', 'SESSION')
     );
 }
 
@@ -641,6 +657,15 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['list_folders_limited'] = array();
     $_SESSION['no_access_folders'] = array();
 
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get superglobals
+    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
+    $globalsVisibleFolders = $superGlobal->get('groupes_visibles', 'SESSION');
+    $globalsPersonalVisibleFolders = $superGlobal->get('personal_visible_groups', 'SESSION');
+
     // Get list of Folders
     $rows = DB::query('SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
@@ -652,29 +677,28 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['forbiden_pfs'] = array();
     $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
     $where->add('personal_folder=%i', 1);
-    if (
-        isset($SETTINGS['enable_pf_feature']) === true
+    if (isset($SETTINGS['enable_pf_feature']) === true
         && (int) $SETTINGS['enable_pf_feature'] === 1
     ) {
-        $where->add('title=%s', $_SESSION['user_id']);
+        $where->add('title=%s', $globalsUserId);
         $where->negateLast();
     }
     // Get ID of personal folder
     $persfld = DB::queryfirstrow(
         'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %s',
-        $_SESSION['user_id']
+        $globalsUserId
     );
     if (empty($persfld['id']) === false) {
-        if (in_array($persfld['id'], $_SESSION['groupes_visibles']) === false) {
-            array_push($_SESSION['groupes_visibles'], $persfld['id']);
-            array_push($_SESSION['personal_visible_groups'], $persfld['id']);
+        if (in_array($persfld['id'], $globalsVisibleFolders) === false) {
+            array_push($globalsVisibleFolders, $persfld['id']);
+            array_push($globalsPersonalVisibleFolders, $persfld['id']);
             // get all descendants
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
             $tst = $tree->getDescendants($persfld['id']);
             foreach ($tst as $t) {
-                array_push($_SESSION['groupes_visibles'], $t->id);
-                array_push($_SESSION['personal_visible_groups'], $t->id);
+                array_push($globalsVisibleFolders, $t->id);
+                array_push($globalsPersonalVisibleFolders, $t->id);
             }
         }
     }
@@ -755,6 +779,14 @@ function identUser(
     $foldersLimitedFull = array();
     $allowedFoldersByRoles = array();
 
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get superglobals
+    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
+    $globalsPersonalFolders = $superGlobal->get('personal_folder', 'SESSION');
+
     // Ensure consistency in array format
     $noAccessFolders = convertToArray($noAccessFolders);
     $userRoles = convertToArray($userRoles);
@@ -820,9 +852,8 @@ function identUser(
     }
 
     // Get list of Personal Folders
-    if (
-        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
-        && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
+    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+        && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
     ) {
         $persoFld = DB::queryfirstrow(
             'SELECT id
@@ -852,9 +883,8 @@ function identUser(
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
-    if (
-        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
-        && isset($_SESSION['personal_folder']) === true && (int) $_SESSION['personal_folder'] === 1
+    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+        && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
     ) {
         $where->add('title=%s', $_SESSION['user_id']);
         $where->negateLast();
@@ -883,27 +913,31 @@ function identUser(
     }
 
     // Return data
-    $_SESSION['all_non_personal_folders'] = $allowedFolders;
-    $_SESSION['groupes_visibles'] = array_merge($allowedFolders, $personalFolders);
-    $_SESSION['read_only_folders'] = $readOnlyFolders;
-    $_SESSION['no_access_folders'] = $noAccessFolders;
-    $_SESSION['personal_folders'] = $personalFolders;
-    $_SESSION['list_folders_limited'] = $foldersLimited;
-    $_SESSION['list_folders_editable_by_role'] = $allowedFoldersByRoles;
-    $_SESSION['list_restricted_folders_for_items'] = $restrictedFoldersForItems;
-    $_SESSION['forbiden_pfs'] = $noAccessPersonalFolders;
-    $_SESSION['all_folders_including_no_access'] = array_merge(
-        $allowedFolders,
-        $personalFolders,
-        $noAccessFolders,
-        $readOnlyFolders
+    $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
+    $superGlobal->put('groupes_visibles', array_merge($allowedFolders, $personalFolders), 'SESSION');
+    $superGlobal->put('read_only_folders', $readOnlyFolders, 'SESSION');
+    $superGlobal->put('no_access_folders', $noAccessFolders, 'SESSION');
+    $superGlobal->put('personal_folders', $personalFolders, 'SESSION');
+    $superGlobal->put('list_folders_limited', $foldersLimited, 'SESSION');
+    $superGlobal->put('list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
+    $superGlobal->put('list_restricted_folders_for_items', $restrictedFoldersForItems, 'SESSION');
+    $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
+    $superGlobal->put(
+        'all_folders_including_no_access',
+        array_merge(
+            $allowedFolders,
+            $personalFolders,
+            $noAccessFolders,
+            $readOnlyFolders
+        ),
+        'SESSION'
     );
 
     // Folders and Roles numbers
     DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
-    $_SESSION['nb_folders'] = DB::count();
+    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
     DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
-    $_SESSION['nb_roles'] = DB::count();
+    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
 
     // check if change proposals on User's items
     if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
@@ -913,11 +947,11 @@ function identUser(
             LEFT JOIN ' . prefixTable('log_items') . ' AS i ON (c.item_id = i.id_item)
             WHERE i.action = %s AND i.id_user = %i',
             'at_creation',
-            $_SESSION['user_id']
+            $globalsUserId
         );
-        $_SESSION['nb_item_change_proposals'] = DB::count();
+        $superGlobal->put('nb_item_change_proposals', DB::count(), 'SESSION');
     } else {
-        $_SESSION['nb_item_change_proposals'] = 0;
+        $superGlobal->put('nb_item_change_proposals', 0, 'SESSION');
     }
 
     return true;
@@ -1145,6 +1179,13 @@ function cacheTableUpdate($SETTINGS, $ident = null)
 function cacheTableAdd($SETTINGS, $ident = null)
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get superglobals
+    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1218,7 +1259,7 @@ function cacheTableAdd($SETTINGS, $ident = null)
             'restricted_to' => (isset($data['restricted_to']) && empty($data['restricted_to']) === false) ? $data['restricted_to'] : '0',
             'login' => isset($data['login']) ? $data['login'] : '',
             'folder' => implode(' » ', $folder),
-            'author' => $_SESSION['user_id'],
+            'author' => $globalsUserId,
             'timestamp' => $data['date'],
         )
     );
@@ -1523,7 +1564,7 @@ function isDate($date)
 }
 
 /**
- * isUTF8().
+ * Check if isUTF8().
  *
  * @return int is the string in UTF8 format
  */
@@ -1592,6 +1633,13 @@ function prepareExchangedData($data, $type, $key = null)
         }
     }
 
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get superglobals
+    $globalsKey = $superGlobal->get('key', 'SESSION');
+
     //load ClassLoader
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     //Load AES
@@ -1599,15 +1647,14 @@ function prepareExchangedData($data, $type, $key = null)
     $aes->register();
 
     if ($key !== null) {
-        $_SESSION['key'] = $key;
+        $superGlobal->put('key', $key, 'SESSION');
     }
 
     if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        if (
-            isset($SETTINGS['encryptClientServer'])
+        if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_encode(
@@ -1620,13 +1667,12 @@ function prepareExchangedData($data, $type, $key = null)
                     $data,
                     JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
                 ),
-                $_SESSION['key'],
+                $globalsKey,
                 256
             );
         }
     } elseif ($type === 'decode' && is_array($data) === false) {
-        if (
-            isset($SETTINGS['encryptClientServer'])
+        if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
@@ -1637,7 +1683,7 @@ function prepareExchangedData($data, $type, $key = null)
             return json_decode(
                 Encryption\Crypt\aesctr::decrypt(
                     $data,
-                    $_SESSION['key'],
+                    $globalsKey,
                     256
                 ),
                 true
@@ -1758,25 +1804,25 @@ function send_syslog($message, $host, $port, $component = 'teampass')
 }
 
 /**
- * logEvents().
+ * Permits to log events into DB
  *
- * permits to log events into DB
+ * @param array  $SETTINGS Teampass settings
+ * @param string $type     Type
+ * @param string $label    Label
+ * @param string $who      Who
+ * @param string $login    Login
+ * @param string $field_1  Field
  *
- * @param string $type
- * @param string $label
- * @param string $field_1
+ * @return void
  */
-function logEvents($type, $label, $who, $login = null, $field_1 = null)
+function logEvents($SETTINGS, $type, $label, $who, $login = null, $field_1 = null)
 {
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-
     if (empty($who)) {
         $who = getClientIpServer();
     }
 
     // include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -1786,8 +1832,6 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     DB::insert(
         prefixTable('log_system'),
@@ -1918,11 +1962,19 @@ function logItems(
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
-    if (
-        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
+        // Load superglobal
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    
+        // Get superglobals
+        $globalsLastname = $superGlobal->get('lastname', 'SESSION');
+        $globalsName = $superGlobal->get('name', 'SESSION');
+        $globalsNotifiedEmails = $superGlobal->get('listNotificationEmails', 'SESSION');
+
         // Get info about item
         $dataItem = DB::queryfirstrow(
             'SELECT id, id_tree, label
@@ -1941,13 +1993,13 @@ function notifyOnChange($item_id, $action, $SETTINGS)
                 'body' => str_replace(
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
-                        addslashes($_SESSION['name'] . ' ' . $_SESSION['lastname']),
+                        addslashes($globalsName . ' ' . $globalsLastname),
                         addslashes($item_label),
                         $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $item_id,
                     ),
                     langHdl('email_on_open_notification_mail')
                 ),
-                'receivers' => $_SESSION['listNotificationEmails'],
+                'receivers' => $_globalsNotifiedEmails,
                 'status' => '',
             )
         );
@@ -1964,6 +2016,15 @@ function notifyOnChange($item_id, $action, $SETTINGS)
  */
 function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
 {
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get superglobals
+    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
+    $globalsLastname = $superGlobal->get('lastname', 'SESSION');
+    $globalsName = $superGlobal->get('name', 'SESSION');
+
     // send email to user that what to be notified
     $notification = DB::queryOneColumn(
         'email',
@@ -1972,7 +2033,7 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
         $item_id,
-        $_SESSION['user_id']
+        $globalsUserId
     );
 
     if (DB::count() > 0) {
@@ -1994,7 +2055,7 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
                 'subject' => langHdl('email_subject_item_updated'),
                 'body' => str_replace(
                     array('#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'),
-                    array($label, $path, $item_id, $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $htmlChanges),
+                    array($label, $path, $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges),
                     langHdl('email_body_item_updated')
                 ),
                 'receivers' => implode(',', $notification),
@@ -2513,10 +2574,8 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
  *
  * @param int $item_id ID of item
  */
-function accessToItemIsGranted($item_id)
+function accessToItemIsGranted($item_id, $SETTINGS)
 {
-    global $SETTINGS;
-
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
@@ -2535,8 +2594,7 @@ function accessToItemIsGranted($item_id)
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (
-            isset($session_list_restricted_folders_for_items[$data['id_tree']])
+        if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
             && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
             return 'ERR_FOLDER_NOT_ALLOWED';
@@ -2665,8 +2723,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
     // Is LDAP connection ready?
     if ($ldapconn !== false) {
         // Should we bind the connection?
-        if (
-            empty($SETTINGS['ldap_bind_dn']) === false
+        if (empty($SETTINGS['ldap_bind_dn']) === false
             && empty($SETTINGS['ldap_bind_passwd']) === false
         ) {
             $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
@@ -2696,8 +2753,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
 
                 // Should we restrain the search in specified user groups
                 $GroupRestrictionEnabled = false;
-                if (
-                    isset($SETTINGS['ldap_usergroup']) === true
+                if (isset($SETTINGS['ldap_usergroup']) === true
                     && empty($SETTINGS['ldap_usergroup']) === false
                 ) {
                     // New way to check User's group membership
@@ -2726,12 +2782,11 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                 }
 
                 // Is user in the LDAP?
-                if (
-                    $GroupRestrictionEnabled === true
+                if ($GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                        && (isset($SETTINGS['ldap_usergroup']) === false
-                            || (isset($SETTINGS['ldap_usergroup']) === true
-                                && empty($SETTINGS['ldap_usergroup']) === true)))
+                    && (isset($SETTINGS['ldap_usergroup']) === false
+                    || (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
@@ -2830,8 +2885,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $user_found = true;
 
         // Is user in allowed group
-        if (
-            isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
@@ -2879,8 +2933,6 @@ function performDBQuery($SETTINGS, $fields, $table)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     // Insert log in DB
     return DB::query(
@@ -3184,6 +3236,7 @@ function decryptFile($fileName, $filePath, $key)
  *
  * @param integer $length          Length of string
  * @param boolean $symbolsincluded Allow symbols
+ *
  * @return string
  */
 function generateQuickPassword($length = 16, $symbolsincluded = true)
@@ -3196,12 +3249,12 @@ function generateQuickPassword($length = 16, $symbolsincluded = true)
         array('#', '_', '-', '@', '$', '+', '&') : array();
 
     $res = array_merge($small_letters, $big_letters, $digits, $symbols);
-    $c = count($res);
+    $count = count($res);
     // first variant
 
     $random_string = '';
     for ($i = 0; $i < $length; ++$i) {
-        $random_string .= $res[random_int(0, $c - 1)];
+        $random_string .= $res[random_int(0, $count - 1)];
     }
 
     return $random_string;
@@ -3216,6 +3269,8 @@ function generateQuickPassword($length = 16, $symbolsincluded = true)
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
+ *
+ * @return coid
  */
 function storeUsersShareKey(
     $object_name,
@@ -3244,10 +3299,17 @@ function storeUsersShareKey(
         'object_id = %i',
         $post_object_id
     );
+    
+    // Superglobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-    if (
-        (int) $post_folder_is_personal === 1
-        && in_array($post_folder_id, $_SESSION['personal_folders']) === true
+    // Prepare superGlobal variables
+    $sessionPpersonaFolders = $superGlobal->get('personal_folders', 'SESSION');
+    $sessionUserId = $superGlobal->get('user_id', 'SESSION');
+
+    if ((int) $post_folder_is_personal === 1
+        && in_array($post_folder_id, $sessionPpersonaFolders) === true
     ) {
         // If this is a personal object
         // Only create the sharekey for user
@@ -3255,7 +3317,7 @@ function storeUsersShareKey(
             $object_name,
             array(
                 'object_id' => $post_object_id,
-                'user_id' => $_SESSION['user_id'],
+                'user_id' => $sessionUserId,
                 'share_key' => encryptUserObjectKey($objectKey, $_SESSION['user']['public_key']),
             )
         );

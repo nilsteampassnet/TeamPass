@@ -57,9 +57,12 @@ class SuperGlobal
      * @param  string $type Type of super global
      * @return mixed
      */
-    public static function get($key, $type)
+    public static function get($key, $type, $lang = false)
     {
         if ($type === 'SESSION') {
+			if ($lang === true) {
+				return (isset($_SESSION['teampass']['lang'][$key]) === true ? $_SESSION['teampass']['lang'][$key] : null);
+			}
             return (isset($_SESSION[$key]) === true ? $_SESSION[$key] : null);
         } elseif ($type === 'SERVER') {
             return (isset($_SERVER[$key]) === true ? filter_var($_SERVER[$key], FILTER_SANITIZE_STRING) : null);

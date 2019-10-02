@@ -192,6 +192,7 @@ if (null !== $post_type) {
 
                 //update LOG
                 logEvents(
+                    $SETTINGS,
                     'admin_action',
                     'dataBase backup',
                     $_SESSION['user_id'],

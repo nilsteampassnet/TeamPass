@@ -448,7 +448,7 @@ function identifyUser($sentData, $SETTINGS)
 
     // User doesn't exist then stop
     if ($counter === 0) {
-        logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         echo prepareExchangedData(
             array(
                 'error' => 'user_not_exists',
@@ -500,7 +500,7 @@ function identifyUser($sentData, $SETTINGS)
             if ($retLDAP['error'] === true) {
                 echo json_encode($retLDAP['message']);
             } elseif ($retLDAP['proceedIdentification'] !== true && $retLDAP['userInLDAP'] === true) {
-                logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
                 echo prepareExchangedData(
                     array(
                         'value' => '',
@@ -531,7 +531,7 @@ function identifyUser($sentData, $SETTINGS)
             if ($retLDAP['error'] === true) {
                 echo json_encode($retLDAP['message']);
             } elseif ($retLDAP['proceedIdentification'] !== true && (int) $SETTINGS['ldap_and_local_authentication'] !== 1) {
-                logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
                 echo prepareExchangedData(
                     array(
                         'value' => '',
@@ -589,7 +589,7 @@ function identifyUser($sentData, $SETTINGS)
         );
 
         if ($ret['error'] === true) {
-            logEvents('failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             echo prepareExchangedData(
                 $ret,
                 'encode'
@@ -744,7 +744,7 @@ function identifyUser($sentData, $SETTINGS)
                 isset($SETTINGS['log_connections']) === true
                 && (int) $SETTINGS['log_connections'] === 1
             ) {
-                logEvents('user_connection', 'connection', $userInfo['id'], stripslashes($username));
+                logEvents($SETTINGS, 'user_connection', 'connection', $userInfo['id'], stripslashes($username));
             }
             // Save account in SESSION
             $_SESSION['login'] = stripslashes($username);
@@ -1101,7 +1101,7 @@ function identifyUser($sentData, $SETTINGS)
                     isset($SETTINGS['log_connections']) === true
                     && (int) $SETTINGS['log_connections'] === 1
                 ) {
-                    logEvents('user_locked', 'connection', $userInfo['id'], stripslashes($username));
+                    logEvents($SETTINGS, 'user_locked', 'connection', $userInfo['id'], stripslashes($username));
                 }
             }
             DB::update(
@@ -2012,6 +2012,7 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
                 $userPasswordVerified = false;
 
                 logEvents(
+                    $SETTINGS,
                     'failed_auth',
                     'user_password_not_correct',
                     '',

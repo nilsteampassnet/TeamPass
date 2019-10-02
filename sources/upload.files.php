@@ -28,7 +28,7 @@ if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
 }
 
 // Load config if $SETTINGS not defined
-if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
     if (file_exists('../includes/config/tp.config.php')) {
         include_once '../includes/config/tp.config.php';
     } elseif (file_exists('./includes/config/tp.config.php')) {
