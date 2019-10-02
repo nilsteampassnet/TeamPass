@@ -67,6 +67,8 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+$antiXss = new voku\helper\AntiXSS();
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
@@ -124,13 +126,13 @@ $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (isset($_GET['language']) === true) {
+if (null !== $antiXss->xss_clean($_GET['language'])) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         'SELECT flag, name
         FROM ' . prefixTable('languages') . '
         WHERE name = %s',
-        filter_var($_GET['language'], FILTER_SANITIZE_STRING)
+        $antiXss->xss_clean($_GET['language'])
     );
     $superGlobal->put('user_language', $dataLanguage['name'], 'SESSION');
     $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');

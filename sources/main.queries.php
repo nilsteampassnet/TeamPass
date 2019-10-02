@@ -109,7 +109,7 @@ function mainQuery($SETTINGS)
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // Connect to mysql server
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }

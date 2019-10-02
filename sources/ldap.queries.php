@@ -85,7 +85,7 @@ $aes->register();
 
 // Load AntiXSS
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
+$antiXss = new voku\helper\AntiXSS();
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);

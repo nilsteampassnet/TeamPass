@@ -39,7 +39,7 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === tr
 
 // Load AntiXSS
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
+$antiXss = new voku\helper\AntiXSS();
 
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
@@ -327,7 +327,7 @@ function identifyUser($sentData, $SETTINGS)
 
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -1274,7 +1274,7 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -1559,7 +1559,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -1724,7 +1724,7 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
     $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);

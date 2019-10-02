@@ -2257,7 +2257,7 @@ function prepareFileWithDefuse(
 ) {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     // Protect against bad inputs
     if (is_array($source_file) === true || is_array($target_file) === true) {
@@ -2443,7 +2443,7 @@ function fileDelete($file, $SETTINGS)
 {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
+    $antiXss = new voku\helper\AntiXSS();
 
     $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
@@ -3305,27 +3305,5 @@ function isBase64($str)
         return true;
     }
 
-    return false;
-}
-
-/**
- * Verifies the $_GET parameters
- *
- * @param string $parameter What to check
- * @param string $value     Should we check it against a value
- *
- * @return void
- */
-function urlGetVerification($parameter, $value = '')
-{
-    if (isset($_GET[$parameter]) === true
-        && filter_var($_GET[$parameter], FILTER_SANITIZE_STRING) === true
-    ) {
-        if (empty($value) === true) {
-            return true;
-        } else if ($_GET[$parameter] === $value) {
-            return true;
-        }
-    }
     return false;
 }
