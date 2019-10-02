@@ -262,10 +262,10 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 <?php
 // display an item in the context of OTV link
 if (($session_validite_pw === null
-        || empty($session_validite_pw) === true
-        || empty($session_user_id) === true)
+    || empty($session_validite_pw) === true
+    || empty($session_user_id) === true)
     && isset($_GET['otv']) === true
-    && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === 'true'
+    && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) !== false
 ) {
     // case where one-shot viewer
     if (
@@ -288,10 +288,11 @@ if (($session_validite_pw === null
         );
         include $SETTINGS['cpassman_dir'] . '/error.php';
     }
-} elseif (
-    $session_validite_pw !== null
+} elseif ($session_validite_pw !== null
     && $session_validite_pw === true
+    && isset($_GET['page']) === true
     && empty($_GET['page']) === false
+    && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
     && empty($session_user_id) === false
 ) {
     // Do some template preparation
@@ -772,51 +773,52 @@ if (($session_validite_pw === null
                 <!-- /.ENCRYPTION KEYS GENERATION -->
 
                 <?php
-                    if ($session_initial_url !== null && empty($session_initial_url) === false) {
-                        include $session_initial_url;
-                    } elseif ($_GET['page'] == 'items') {
-                        // SHow page with Items
-                        if (($session_user_admin !== 1)
-                            || ($session_user_admin === 1
-                                && TP_ADMIN_FULL_RIGHT === false)
-                        ) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/items.php';
-                        } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                            include $SETTINGS['cpassman_dir'] . '/error.php';
-                        }
-                    } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
-                        // Define if user is allowed to see management pages
-                        if ($session_user_admin === 1) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
-                        } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
-                            if (($_GET['page'] !== 'manage_main' && $_GET['page'] !== 'manage_settings')) {
-                                include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
-                            } else {
-                                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                                include $SETTINGS['cpassman_dir'] . '/error.php';
-                            }
-                        } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                            include $SETTINGS['cpassman_dir'] . '/error.php';
-                        }
-                    } elseif (isset($_GET['page']) === true) {
-                        include $SETTINGS['cpassman_dir'] . '/pages/' . $_GET['page'] . '.php';
-                    } else {
-                        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
-                        //include $SETTINGS['cpassman_dir'].'/error.php';
-                    }
-
-                    // Case where login attempts have been identified
-                    if (
-                        isset($_SESSION['unsuccessfull_login_attempts']) === true
-                        && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
-                        && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+                if ($session_initial_url !== null && empty($session_initial_url) === false) {
+                    include $session_initial_url;
+                } elseif ($_GET['page'] == 'items') {
+                    // SHow page with Items
+                    if (($session_user_admin !== 1)
+                        || ($session_user_admin === 1
+                        && TP_ADMIN_FULL_RIGHT === false)
                     ) {
-                        ?>
-                    <input type="hidden" id="user-login-attempts" value="1">
-                <?php
-                    } ?>
+                        include $SETTINGS['cpassman_dir'] . '/pages/items.php';
+                    } else {
+                        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                        include $SETTINGS['cpassman_dir'] . '/error.php';
+                    }
+                } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
+                    // Define if user is allowed to see management pages
+                    if ($session_user_admin === 1) {
+                        include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                    } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
+                        if (($_GET['page'] !== 'manage_main' && $_GET['page'] !== 'manage_settings')) {
+                            include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                        } else {
+                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                            include $SETTINGS['cpassman_dir'] . '/error.php';
+                        }
+                    } else {
+                        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                        include $SETTINGS['cpassman_dir'] . '/error.php';
+                    }
+                } elseif (isset($_GET['page']) === true
+                    && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
+                ) {
+                    include $SETTINGS['cpassman_dir'] . '/pages/' . $_GET['page'] . '.php';
+                } else {
+                    $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
+                    //include $SETTINGS['cpassman_dir'].'/error.php';
+                }
+
+                // Case where login attempts have been identified
+                if (isset($_SESSION['unsuccessfull_login_attempts']) === true
+                    && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+                    && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+                ) {
+                    ?>
+                <input type="hidden" id="user-login-attempts" value="1">
+                    <?php
+                } ?>
 
             </div>
             <!-- /.content-wrapper -->

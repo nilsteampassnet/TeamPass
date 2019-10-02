@@ -15,42 +15,30 @@
  * @see       https://www.teampass.net
  */
 
-
-/**
- * @package       functions.js
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- */
-
+var hourInMinutes = 60;
 
 /**
 *   Add 1 hour to session duration
 **/
-function IncreaseSessionTime(messageEnd, duration){
-    duration = duration || 60;
+function IncreaseSessionTime(duration)
+{
+    duration = duration || hourInMinutes;
     $.post(
-        "sources/main.queries.php",
+        'sources/main.queries.php',
         {
-        type     : "increase_session_time",
-        duration : parseInt(duration) * 60
+            type     : 'increase_session_time',
+            duration : parseInt(duration, 2) * hourInMinutes
         },
-        function(data){
-            if (data[0].new_value !== "expired") {
-                $("#temps_restant").val(data[0].new_value);
-                $("#date_end_session").val(data[0].new_value);
-                $("#countdown").css("color","white");
+        function(data) {
+            if (data[0].new_value !== 'expired') {
+                $('#temps_restant').val(data[0].new_value);
+                $('#date_end_session').val(data[0].new_value);
+                $('#countdown').css('color', 'white');
             } else {
-                $(location).attr("href","index.php?session=expired");
+                $(location).attr('href', 'index.php?session=expired');
             }
         },
-        "json"
+        'json'
     );
 }
 
@@ -59,45 +47,46 @@ function IncreaseSessionTime(messageEnd, duration){
 **/
 function countdown()
 {
-    var DayTill;
-    var theDay =  $("#temps_restant").val();
-    var today = new Date(); //Create an Date Object that contains today's date.
-    var second = Math.floor(theDay - (today.getTime()/1000));
-    var minute = Math.floor(second/60); //Devide "second" into 60 to get the minute
-    var hour = Math.floor(minute/60); //Devide "minute" into 60 to get the hour
-    var CHour= hour % 24; //Correct hour, after devide into 24, the remainder deposits here.
-    if (CHour<10) {
-        CHour = "0" + CHour;
+    let DayTill;
+    let theDay =  $('#temps_restant').val();
+    let today = new Date(); // Create an Date Object that contains today's date.
+    let second = Math.floor(theDay - (today.getTime() / 1000));
+    let minute = Math.floor(second / hourInMinutes); // Devide 'second' into 60 to get the minute
+    let hour = Math.floor(minute / hourInMinutes); // Devide 'minute' into 60 to get the hour
+    let CHour= hour % 24; // Correct hour, after devide into 24, the remainder deposits here.
+    if (CHour < 10) {
+        CHour = '0' + CHour;
     }
-    var CMinute= minute % 60; //Correct minute, after devide into 60, the remainder deposits here.
-    if (CMinute<10) {
-        CMinute = "0" + CMinute;
+    let CMinute= minute % hourInMinutes; // Correct minute, after devide into 60, the remainder deposits here.
+    if (CMinute < 10) {
+        CMinute = '0' + CMinute;
     }
-    var CSecond= second % 60; //Correct second, after devide into 60, the remainder deposits here.
-    if (CSecond<10) {
-        CSecond = "0" + CSecond;
+    let CSecond= second % hourInMinutes; // Correct second, after devide into 60, the remainder deposits here.
+    if (CSecond < 10) {
+        CSecond = '0' + CSecond;
     }
-    DayTill = CHour+":"+CMinute+":"+CSecond;
+    DayTill = CHour+':'+CMinute+':'+CSecond;
 
     // Session will soon be closed
-    if (DayTill === "00:00:50") {
+    if (DayTill === '00:00:50') {
         showExtendSession();
-        $("#countdown").css("color","red");
+        $('#countdown').css('color','red');
     }
 
     // Manage end of session
-    if ($("#temps_restant").val() !== "" && DayTill <= "00:00:00" && $("#please_login").val() !== "1") {
-        $("#please_login").val("1");
-        $(location).attr('href',"index.php?session=expired");
+    if ($('#temps_restant').val() !== '' && DayTill <= '00:00:00' && parseInt($('#please_login').val()) !== 1) {
+        $('#please_login').val('1');
+        $(location).attr('href','index.php?session=expired');
     }
 
     //Rewrite the string to the correct information.
-    if ($("#countdown")) {
-        $("#countdown").html(DayTill); //Make the particular form chart become "Daytill"
+    if ($('#countdown')) {
+        $('#countdown').html(DayTill); // Make the particular form chart become 'Daytill'
     }
 
-    //Create the timer "counter" that will automatic restart function countdown() again every second.
-    $(this).delay(1000).queue(function() {
+    //Create the timer 'counter' that will automatic restart function countdown() again every second.
+    $(this).delay(1000).queue(function()
+    {
         countdown();
         $(this).dequeue();
     });
@@ -107,27 +96,27 @@ function countdown()
 /**
 *   Generate a random string
 **/
-function CreateRandomString(size,type){
-    var chars = "";
+function CreateRandomString(size,type) {
+    let chars = '';
 
     // CHoose what kind of string we want
-    if (type === "num") {
-        chars = "0123456789";
-    } else if (type === "num_no_0") {
-        chars = "123456789";
-    } else if (type === "alpha") {
-        chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-    } else if (type === "secure") {
-        chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz&#@;!+-$*%";
+    if (type === 'num') {
+        chars = '0123456789';
+    } else if (type === 'num_no_0') {
+        chars = '123456789';
+    } else if (type === 'alpha') {
+        chars = 'ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz';
+    } else if (type === 'secure') {
+        chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz&#@;!+-$*%';
     } else {
-        chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+        chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz';
     }
 
-    //generate it
-    var randomstring = "";
-    for (var i=0; i<size; i++) {
-        var rnum = Math.floor(Math.random() * chars.length);
-        randomstring += chars.substring(rnum,rnum+1);
+    // Generate it
+    let randomstring = '';
+    for (let i=0; i<size; i++) {
+        let rnum = Math.floor(Math.random() * chars.length);
+        randomstring += chars.substring(rnum, rnum+1);
     }
 
     //return
@@ -138,9 +127,9 @@ function CreateRandomString(size,type){
 /**
 *
 **/
-function unsanitizeString(string){
-    if(string !== "" && string !== null){
-        string = string.replace(/\\/g,"").replace(/&#92;/g,"\\").replace(/&quot;/g, '"');
+function unsanitizeString(string) {
+    if(string !== "" && string !== null) {
+        string = string.replace(/\\/g,"").replace(/&#92;/g, "\\").replace(/&quot;/g, '"');
     }
     return string;
 }
@@ -148,7 +137,7 @@ function unsanitizeString(string){
 /**
 *   Clean up a string and delete any scripting tags
 **/
-function sanitizeString(string){
+function sanitizeString(string) {
     if(string !== "" && string !== null && string !== undefined) {
         string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
         string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
@@ -159,23 +148,23 @@ function sanitizeString(string){
 /**
 *   Send email
 **/
-function SendMail(category, contentEmail, keySent, message){
+function SendMail(category, contentEmail, keySent, message) {
     $.post(
-        "sources/items.queries.php",
+        'sources/items.queries.php',
         {
-            type    : "send_email",
+            type    : 'send_email',
             cat     : category,
             content : contentEmail,
             key     : keySent
         },
-        function(data){
-            if (typeof data[0].error !== "undefined" && data[0].error !== "") {
+        function(data) {
+            if (typeof data[0].error !== 'undefined' && data[0].error !== '') {
                 message = data[0].message;
             }
-            $("#div_dialog_message_text").html(message);
-            $("#div_dialog_message").dialog("open");
+            $('#div_dialog_message_text').html(message);
+            $('#div_dialog_message').dialog('open');
         },
-        "json"
+        'json'
     );
 }
 
@@ -184,7 +173,7 @@ function SendMail(category, contentEmail, keySent, message){
 *   Checks if URL has expected format
 **/
 function validateURL(url) {
-    var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+    let urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     return urlregex.test(url);
 }
 
@@ -259,11 +248,8 @@ function jsonErrorHdl(message)
  */
 function prepareExchangedData(data, type, key)
 {
-    //console.log("_____________");
-    //console.log(stripHtml(data));
-    //console.log("_____________ ");
-    if (type === "decode") {
-        if (parseInt($("#encryptClientServer").val()) === 0) {
+    if (type === 'decode') {
+        if (parseInt($('#encryptClientServer').val()) === 0) {
             try {
                 return $.parseJSON(data);
             }
@@ -278,8 +264,8 @@ function prepareExchangedData(data, type, key)
                 return jsonErrorHdl((data));
             }
         }
-    } else if (type === "encode") {
-        if (parseInt($("#encryptClientServer").val()) === 0) {
+    } else if (type === 'encode') {
+        if (parseInt($('#encryptClientServer').val()) === 0) {
             return stripHtml(data);//data;
         } else {
             return aesEncrypt(data, key);
@@ -294,13 +280,13 @@ function prepareExchangedData(data, type, key)
  * 
  * @param {html} String The html string
  */
-function stripHtml(html){
+function stripHtml(html) {
     // Create a new div element
-    var temporalDivElement = document.createElement("div");
+    let temporalDivElement = document.createElement('div');
     // Set the HTML content with the providen
     temporalDivElement.innerHTML = html;
     // Retrieve the text property of the element (cross-browser support)
-    return temporalDivElement.textContent || temporalDivElement.innerText || "";
+    return temporalDivElement.textContent || temporalDivElement.innerText || '';
 }
 
 
@@ -312,7 +298,7 @@ function stripHtml(html){
 function unCryptData(data, key)
 {
     if (data !== undefined && data.substr(0, 7) === 'crypted') {
-        var uncryptedData = prepareExchangedData(
+        let uncryptedData = prepareExchangedData(
             data.substr(7),
             'decode',
             key

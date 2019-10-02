@@ -17,7 +17,7 @@
  */
 
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -491,7 +491,6 @@ if (
             // Perform action
             $.when(
                 IncreaseSessionTime(
-                    '<?php echo langHdl('success'); ?>',
                     $('#warningModal-input').val()
                 )
             ).then(function() {
