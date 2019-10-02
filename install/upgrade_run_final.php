@@ -35,9 +35,14 @@ if (!file_exists("../includes/config/settings.php")) {
     exit;
 }
 
+require_once '../includes/language/english.php';
+require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
+require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once 'tp.functions.php';
+require_once 'libs/aesctr.php';
+require_once '../includes/config/tp.config.php';
 require_once '../sources/SplClassLoader.php';
 
 $finish = 0;
@@ -70,99 +75,12 @@ if (mysqli_connect(
         $database,
         $port
     );
+	$db_link->set_charset(DB_ENCODING);
 } else {
     $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "next":"", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
     mysqli_close($db_link);
     exit();
-}
-
-//Update CACHE table -> this will be the last task during update
-if ($post_type === "reload_cache_table" || empty($post_type)) {
-    //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree($pre . "nested_tree", 'id', 'parent_id', 'title');
-
-    // truncate table
-    mysqli_query($db_link, "TRUNCATE TABLE ".$pre."cache");
-
-    // reload table
-    $rows = mysqli_query(
-        $db_link,
-        "SELECT *
-        FROM ".$pre."items as i
-        INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-        AND l.action = 'at_creation'
-        AND i.inactif = 0"
-    );
-    foreach ($rows as $record) {
-        // Get all TAGS
-        $tags = "";
-        $itemTags = mysqli_query(
-            $db_link,
-            "SELECT tag FROM ".$pre."tags WHERE item_id=".intval($record['id'])
-        );
-        $itemTags = mysqli_fetch_array($itemTags);
-        foreach ($itemTags as $itemTag) {
-            if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag']." ";
-            }
-        }
-        // Get renewal period
-        $resNT = mysqli_query(
-            $db_link,
-            "SELECT renewal_period FROM ".$pre."nested_tree WHERE id=".intval($record['id_tree'])
-        );
-        $resNT = mysqli_fetch_array($resNT);
-
-        // form id_tree to full foldername
-        $folder = "";
-        $arbo = $tree->getPath($record['id_tree'], true);
-        foreach ($arbo as $elem) {
-            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
-                $elem->title = $_SESSION['login'];
-            }
-            if (empty($folder)) {
-                $folder = stripslashes($elem->title);
-            } else {
-                $folder .= " » ".stripslashes($elem->title);
-            }
-        }
-
-        // temp data
-        if (!isset($record['login'])) {
-            $record['login'] = "";
-        }
-        if (!isset($resNT['renewal_period'])) {
-            $resNT['renewal_period'] = "0";
-        }
-
-        // store data
-        $res = mysqli_query(
-            $db_link,
-            "INSERT INTO `".$pre."cache`
-            (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`, `renewal_period`, `timestamp`) VALUES (
-            '".$record['id']."',
-            '".addslashes($record['label'])."',
-            '".addslashes($record['description'])."',
-            '".$tags."',
-            '".$record['id_tree']."',
-            '".$record['perso']."',
-            '".$record['restricted_to']."',
-            '".$record['login']."',
-            '".$folder."',
-            '".$record['id_user']."',
-            '".$resNT['renewal_period']."',
-            '".$record['date']."'
-            )"
-        );
-        if (mysqli_error($db_link)) {
-            echo $res;
-        }
-    }
-
-    $finish = 1;
 }
 
 
@@ -211,7 +129,25 @@ if (TP_VERSION === "2.1.27") {
     //
     //
 } else if (TP_VERSION === "3.0.0") {
-    // Nothin to do yet
+    // Update some values in database
+	mysqli_query(
+		$db_link,
+		"UPDATE ".$pre."misc
+		SET `valeur` = '".TP_VERSION_FULL."'
+		WHERE type = 'admin' AND intitule = 'teampass_version'"
+	);
+	
+	mysqli_query(
+		$db_link,
+		"DELETE FROM ".$pre."misc
+		WHERE type = 'admin' AND intitule = 'migration_to_2127'"
+	);
+	
+	mysqli_query(
+		$db_link,
+		"DELETE FROM ".$pre."misc
+		WHERE type = 'admin' AND intitule = 'cpassman_version'"
+	);
 }
 
 
@@ -230,35 +166,21 @@ if (file_exists($tp_config_file)) {
         unlink($tp_config_file);
     }
 }
-$file_handler = fopen($tp_config_file, 'w');
-$config_text = "";
-$any_settings = false;
-
+// regenerate
+$data = array();
+$data[0] = "<?php\n";
+$data[1] = "global \$SETTINGS;\n";
+$data[2] = "\$SETTINGS = array (\n";
 $result = mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE `type` = 'admin'");
 while ($row = mysqli_fetch_assoc($result)) {
-    // append new setting in config file
-    $config_text .= "
-    '".$row['intitule']."' => '".$row['valeur']."',";
-    if ($any_settings === false) {
-        $any_settings = true;
-    }
+	array_push($data, "    '" . $row['intitule'] . "' => '" . addslashes($row['valeur']) . "',\n");
 }
+array_push($data, ");\n");
+$data = array_unique($data);
+
 mysqli_free_result($result);
-
 // write to config file
-if ($any_settings === true) {
-    $result = fwrite(
-        $file_handler,
-        utf8_encode(
-            "<?php
-global \$SETTINGS;
-\$SETTINGS = array (" . $config_text."
-    );"
-        )
-    );
-}
-fclose($file_handler);
-
+file_put_contents($tp_config_file, implode('', isset($data) ? $data : array()));
 
 // FINISHED
-echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';
+echo '[{"finish":"1" , "next":"'.$next.'", "error":""}]';

@@ -2106,8 +2106,6 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-    //$link->set_charset(DB_ENCODING);
 
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy

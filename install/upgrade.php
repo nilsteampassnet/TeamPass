@@ -322,7 +322,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
                         </div>
                         <div>
-                            <span id="dump_result" style="margin-top:4px;"></span>
+                            <span id="dump_result" style="margin-top:4px;" class="card card-info"></span>
                         </div>
                     </div>
                 </div>
@@ -1027,6 +1027,7 @@ function launch_database_dump() {
             type      : "perform_database_dump"
         },
         function(data) {
+			console.log(data)
             if (data[0].error !== "") {
                 // ERROR
                 $("#dump_result").html(data[0].error);
@@ -1036,8 +1037,8 @@ function launch_database_dump() {
                     .dismissOthers();
             } else {
                 // DONE
-                $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in folder <b>' + data[0].file + '</b></div>');
-
+                $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in folder <b>' + data[0].filename + '</b></div>');
+				$('#but_next').attr("disabled", false);
                 alertify
                     .success('Success', 1)
                     .dismissOthers();

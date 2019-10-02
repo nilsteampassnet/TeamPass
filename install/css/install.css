@@ -2,7 +2,9 @@ body{
     width: 1000px;
     margin-left: auto;
     margin-right: auto;
-    background-image: url(../../includes/images/otv-wall-1.jpg);
+    background-image: url(../../includes/images/install_background.jpg);
+	-webkit-background-size: cover;
+	background-size: cover;
     font-family: sans-serif;
 }
 
@@ -24,6 +26,7 @@ body{
 .header-title{
 	font-size: 42px;
 	letter-spacing: 10px;
+	color: #84AAB7;
 }
 
 .header-title-small{

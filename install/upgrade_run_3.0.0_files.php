@@ -72,6 +72,7 @@ if (mysqli_connect(
         $database,
         $port
     );
+	$db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
@@ -146,7 +147,7 @@ while ($file_info = mysqli_fetch_array($rows)) {
         // Force all files to be encrypted
         if ($file_info['status'] === 'encrypted') {
             // load PhpEncryption library
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+            /*include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
@@ -154,7 +155,7 @@ while ($file_info = mysqli_fetch_array($rows)) {
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';*/
 
             // get KEY
             $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');

@@ -207,7 +207,7 @@ define("DB_NAME", "' . $database . '");
 define("DB_PREFIX", "' . $pre . '");
 define("DB_PORT", "' . $port . '");
 define("DB_ENCODING", "' . $encoding . '");
-define("SECUREPATH", "' . SECUREPATH . '");';
+define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");';
 
 		if (defined('IKEY') === true) $settingsTxt .= '
 define("IKEY", "' . IKEY . '");';
@@ -276,7 +276,7 @@ if (mysqli_connect(
     $res = 'Connection is successful';
     $db_link->set_charset(DB_ENCODING);
 } else {
-    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()." ; ".DB_HOST);
+    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo 'document.getElementById("but_next").disabled = "disabled";';
 	echo 'alertify.error("' . $res . '", 0).dismissOthers();';
     exit;
@@ -1115,10 +1115,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             }
 
             fclose($fp);
-
-            return false;
+			
+			echo '[{ "error" : "" , "filename" : "'.$backup_file_name.'"}]';
 
             break;
     }
 }
-//echo 'document.getElementById("but_next").disabled = "";';
+//
