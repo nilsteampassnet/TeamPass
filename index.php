@@ -126,13 +126,13 @@ $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (null !== $antiXss->xss_clean($_GET['language'])) {
+if (filterString($_GET['language']) !== false) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         'SELECT flag, name
         FROM ' . prefixTable('languages') . '
         WHERE name = %s',
-        $antiXss->xss_clean($_GET['language'])
+        $_GET['language']
     );
     $superGlobal->put('user_language', $dataLanguage['name'], 'SESSION');
     $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');
