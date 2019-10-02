@@ -126,7 +126,10 @@ $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (filterString($_GET['language']) !== false) {
+if (isset($_GET['language']) === true
+    && empty($_) === false
+    && filter_var(trim($_GET['language']), FILTER_SANITIZE_STRING) !== false
+) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         'SELECT flag, name
@@ -172,7 +175,7 @@ if (filterString($_GET['language']) !== false) {
         $session_user_language = $SETTINGS['default_language'];
     }
 } elseif ($session_user_language === '0') {
-    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
+    $superGlobal->put('user_language', $SETTINGS['default_lang uage'], 'SESSION');
     $session_user_language = $SETTINGS['default_language'];
 }
 
@@ -267,11 +270,11 @@ if (($session_validite_pw === null
     || empty($session_validite_pw) === true
     || empty($session_user_id) === true)
     && isset($_GET['otv']) === true
-    && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) !== false
+    && empty($_GET['otv']) === false
+    && filter_var(trim($_GET['otv']), FILTER_SANITIZE_STRING) !== false
 ) {
     // case where one-shot viewer
-    if (
-        isset($_GET['code']) === true && empty($_GET['code']) === false
+    if (isset($_GET['code']) === true && empty($_GET['code']) === false
         && isset($_GET['stamp']) === true && empty($_GET['stamp']) === false
     ) {
         include './includes/core/otv.php';
@@ -320,20 +323,20 @@ if (($session_validite_pw === null
                         <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
                     </li>
                     <?php
-                        if (empty($_GET['page']) === false && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items') {
-                            ?>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                    <?php
-                        } ?>
+                    if (empty($_GET['page']) === false && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items') {
+                        ?>
+                    <li class="nav-item d-none d-sm-inline-block">
+                        <a class="nav-link" href="#">
+                            <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item d-none d-sm-inline-block">
+                        <a class="nav-link" href="#">
+                            <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
+                        </a>
+                    </li>
+                        <?php
+                    } ?>
                 </ul>
 
                 <!-- Right navbar links -->
@@ -455,15 +458,14 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
-                                }
+                            }
 
-                                // Favourites menu
-                                if (
-                                    isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
-                                    && ($session_user_admin === 0 || ($session_user_admin === 1
-                                        && TP_ADMIN_FULL_RIGHT === false))
-                                ) {
-                                    echo '
+                            // Favourites menu
+                            if (isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
+                                && ($session_user_admin === 0 || ($session_user_admin === 1
+                                && TP_ADMIN_FULL_RIGHT === false))
+                            ) {
+                                echo '
                     <li class="nav-item">
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '', '">
                         <i class="nav-icon fas fa-star"></i>
@@ -489,11 +491,10 @@ if (($session_validite_pw === null
         }
     */
                                 // SUGGESTION menu
-                                if (
-                                    isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
-                                    && $session_user_manager === 1
-                                ) {
-                                    echo '
+                            if (isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
+                                && $session_user_manager === 1
+                            ) {
+                                echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '', '">
                         <i class="nav-icon fas fa-lightbulb"></i>
@@ -588,14 +589,13 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
-                                }
+                            }
 
-                                if (
-                                    $session_user_admin === 1
-                                    || $session_user_manager === 1
-                                    || $session_user_human_resources === 1
-                                ) {
-                                    echo '
+                            if ($session_user_admin === 1
+                                || $session_user_manager === 1
+                                || $session_user_human_resources === 1
+                            ) {
+                                echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '', '">
                         <i class="nav-icon fas fa-folder-open"></i>
@@ -777,7 +777,10 @@ if (($session_validite_pw === null
                 <?php
                 if ($session_initial_url !== null && empty($session_initial_url) === false) {
                     include $session_initial_url;
-                } elseif ($_GET['page'] == 'items') {
+                } elseif (isset($_GET['page']) === true
+                    && empty($_GET['page']) === false
+                    && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items'
+                ) {
                     // SHow page with Items
                     if (($session_user_admin !== 1)
                         || ($session_user_admin === 1
@@ -793,7 +796,11 @@ if (($session_validite_pw === null
                     if ($session_user_admin === 1) {
                         include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                     } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
-                        if (($_GET['page'] !== 'manage_main' && $_GET['page'] !== 'manage_settings')) {
+                        if (isset($_GET['page']) === true
+                            && empty($_GET['page']) === false
+                            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_main'
+                            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_settings'
+                        ) {
                             include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                         } else {
                             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -868,12 +875,15 @@ if (($session_validite_pw === null
         echo '
 <input type="hidden" id="temps_restant" value="', isset($_SESSION['sessionDuration']) ? $_SESSION['sessionDuration'] : '', '" />';
     } elseif ((empty($session_user_id) === false
-            && $session_user_id !== null)
+        && $session_user_id !== null)
         || empty($session_user_id) === true
         || $session_user_id === null
     ) {
         // case where user not logged and can't access a direct link
-        if (empty($_GET['page']) === false) {
+        if (isset($_GET['page']) === true
+            && empty($_GET['page']) === false
+            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
+        ) {
             $superGlobal->put(
                 'initialUrl',
                 filter_var(
