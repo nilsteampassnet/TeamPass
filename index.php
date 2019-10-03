@@ -699,7 +699,7 @@ if (($session_validite_pw === null
                                             : ''; ?>
                                 </h6>
 
-                                <input class="form-control form-control-lg" type="password" placeholder="<?php echo langHdl('personal_salt_key'); ?>" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
+                                <input class="form-control form-control-lg" type="password" placeholder="<?php echo langHdl('personal_salt_key'); ?>" value="<?php echo isset($_SESSION['user']['clear_psk']) ? (string) $_SESSION['user']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
 
                                 <div class="text-center" style="margin: 10px 0 0 40%;">
                                     <?php
@@ -821,8 +821,8 @@ if (($session_validite_pw === null
 
                 // Case where login attempts have been identified
                 if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-                    && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
-                    && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+                    && $_SESSION['unsuccessfull_login_attempts_nb'] !== 0
+                    && $_SESSION['unsuccessfull_login_attempts_shown'] === false
                 ) {
                     ?>
                 <input type="hidden" id="user-login-attempts" value="1">

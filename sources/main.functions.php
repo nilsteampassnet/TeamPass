@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -17,7 +18,7 @@
  */
 
 
-if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -64,7 +65,7 @@ function langHdl($string)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get language string
-    $session_language = $superGlobal->get(trim($string), 'SESSION', true);
+    $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
 
     if (isset($session_language) === false) {
         // Manage error
@@ -211,7 +212,7 @@ function decryptOld($text, $personalSalt = '')
  *
  * @param string $decrypted
  */
-function encrypt($decrypted, $personalSalt = '')
+/*function encrypt($decrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
@@ -247,13 +248,14 @@ function encrypt($decrypted, $personalSalt = '')
     // We're done!
     return base64_encode($ivBase64 . $encrypted . $mac . $pbkdf2Salt);
 }
+/*
 
 /**
  * decrypt().
  *
  * decrypt a crypted string
  */
-function decrypt($encrypted, $personalSalt = '')
+/*function decrypt($encrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
@@ -292,6 +294,7 @@ function decrypt($encrypted, $personalSalt = '')
     // Yay!
     return $decrypted;
 }
+*/
 
 /**
  * genHash().
@@ -646,20 +649,22 @@ function identifyUserRights(
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
-    $groupesVisibles = array();
-    $_SESSION['personal_folders'] = array();
-    $_SESSION['groupes_visibles'] = array();
-    $_SESSION['no_access_folders'] = array();
-    $_SESSION['personal_visible_groups'] = array();
-    $_SESSION['read_only_folders'] = array();
-    $_SESSION['list_restricted_folders_for_items'] = array();
-    $_SESSION['list_folders_editable_by_role'] = array();
-    $_SESSION['list_folders_limited'] = array();
-    $_SESSION['no_access_folders'] = array();
-
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Init
+    $groupesVisibles = array();
+    $superGlobal->put('personal_folders', array(), 'SESSION');
+    $superGlobal->put('groupes_visibles', array(), 'SESSION');
+    $superGlobal->put('no_access_folders', array(), 'SESSION');
+    $superGlobal->put('personal_visible_groups', array(), 'SESSION');
+    $superGlobal->put('read_only_folders', array(), 'SESSION');
+    $superGlobal->put('list_restricted_folders_for_items', array(), 'SESSION');
+    $superGlobal->put('list_folders_editable_by_role', array(), 'SESSION');
+    $superGlobal->put('list_folders_limited', array(), 'SESSION');
+    $superGlobal->put('no_access_folders', array(), 'SESSION');
+    $superGlobal->put('forbiden_pfs', array(), 'SESSION');
 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
@@ -671,13 +676,14 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     foreach ($rows as $record) {
         array_push($groupesVisibles, $record['id']);
     }
-    $_SESSION['groupes_visibles'] = $groupesVisibles;
-    $_SESSION['all_non_personal_folders'] = $groupesVisibles;
+    $superGlobal->put('groupes_visibles', $groupesVisibles, 'SESSION');
+    $superGlobal->put('all_non_personal_folders', $groupesVisibles, 'SESSION');
+
     // Exclude all PF
-    $_SESSION['forbiden_pfs'] = array();
     $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
     $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) === true
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true
         && (int) $SETTINGS['enable_pf_feature'] === 1
     ) {
         $where->add('title=%s', $globalsUserId);
@@ -714,14 +720,14 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($tmp, $record['id']);
         }
     }
-    $_SESSION['fonction_id'] = implode(';', $tmp);
+    $superGlobal->put('fonction_id', implode(';', $tmp), 'SESSION');
+    $superGlobal->put('is_admin', 1, 'SESSION');
 
-    $_SESSION['is_admin'] = 1;
     // Check if admin has created Folders and Roles
     DB::query('SELECT * FROM ' . prefixTable('nested_tree') . '');
-    $_SESSION['nb_folders'] = DB::count();
+    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
     DB::query('SELECT * FROM ' . prefixTable('roles_title'));
-    $_SESSION['nb_roles'] = DB::count();
+    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
 }
 
 /**
@@ -763,14 +769,20 @@ function identUser(
     $SETTINGS,
     $tree
 ) {
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Init
+    $superGlobal->put('groupes_visibles', array(), 'SESSION');
+    $superGlobal->put('personal_folders', array(), 'SESSION');
+    $superGlobal->put('no_access_folders', array(), 'SESSION');
+    $superGlobal->put('personal_visible_groups', array(), 'SESSION');
+    $superGlobal->put('read_only_folders', array(), 'SESSION');
+    $superGlobal->put('fonction_id', $userRoles, 'SESSION');
+    $superGlobal->put('is_admin', 0, 'SESSION');
+
     // init
-    $_SESSION['groupes_visibles'] = array();
-    $_SESSION['personal_folders'] = array();
-    $_SESSION['no_access_folders'] = array();
-    $_SESSION['personal_visible_groups'] = array();
-    $_SESSION['read_only_folders'] = array();
-    $_SESSION['fonction_id'] = $userRoles;
-    $_SESSION['is_admin'] = '0';
     $personalFolders = array();
     $readOnlyFolders = array();
     $noAccessPersonalFolders = array();
@@ -778,10 +790,6 @@ function identUser(
     $foldersLimited = array();
     $foldersLimitedFull = array();
     $allowedFoldersByRoles = array();
-
-    // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
@@ -822,7 +830,7 @@ function identUser(
     $rows = DB::query(
         'SELECT id, id_tree FROM ' . prefixTable('items') . '
         WHERE restricted_to LIKE %ss AND inactif = %s',
-        $_SESSION['user_id'] . ';',
+        $globalsUserId . ';',
         '0'
     );
     foreach ($rows as $record) {
@@ -852,27 +860,27 @@ function identUser(
     }
 
     // Get list of Personal Folders
-    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
     ) {
         $persoFld = DB::queryfirstrow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND personal_folder = %i',
-            $_SESSION['user_id'],
+            $globalsUserId,
             1
         );
         if (empty($persoFld['id']) === false) {
             if (in_array($persoFld['id'], $allowedFolders) === false) {
                 array_push($personalFolders, $persoFld['id']);
                 array_push($allowedFolders, $persoFld['id']);
-                //array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
+
                 // get all descendants
                 $ids = $tree->getChildren($persoFld['id'], false);
                 foreach ($ids as $ident) {
                     if ((int) $ident->personal_folder === 1) {
                         array_push($allowedFolders, $ident->id);
-                        //array_push($_SESSION['personal_visible_groups'], $ident->id);
                         array_push($personalFolders, $ident->id);
                     }
                 }
@@ -883,10 +891,11 @@ function identUser(
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+    if (
+        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
     ) {
-        $where->add('title=%s', $_SESSION['user_id']);
+        $where->add('title=%s', $globalsUserId);
         $where->negateLast();
     }
     $persoFlds = DB::query(
@@ -1095,6 +1104,10 @@ function cacheTableUpdate($SETTINGS, $ident = null)
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
+    // Load superglobal
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -1163,7 +1176,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
             'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
             'login' => isset($data['login']) ? $data['login'] : '',
             'folder' => implode(' » ', $folder),
-            'author' => $_SESSION['user_id'],
+            'author' => $superGlobal->get('user_id', 'SESSION'),
         ),
         'id = %i',
         $ident
@@ -1179,7 +1192,7 @@ function cacheTableUpdate($SETTINGS, $ident = null)
 function cacheTableAdd($SETTINGS, $ident = null)
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    
+
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -1654,7 +1667,8 @@ function prepareExchangedData($data, $type, $key = null)
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        if (isset($SETTINGS['encryptClientServer'])
+        if (
+            isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_encode(
@@ -1672,7 +1686,8 @@ function prepareExchangedData($data, $type, $key = null)
             );
         }
     } elseif ($type === 'decode' && is_array($data) === false) {
-        if (isset($SETTINGS['encryptClientServer'])
+        if (
+            isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
@@ -1962,14 +1977,15 @@ function logItems(
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
-    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+    if (
+        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
         // Load superglobal
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    
+
         // Get superglobals
         $globalsLastname = $superGlobal->get('lastname', 'SESSION');
         $globalsName = $superGlobal->get('name', 'SESSION');
@@ -2594,7 +2610,8 @@ function accessToItemIsGranted($item_id, $SETTINGS)
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
+        if (
+            isset($session_list_restricted_folders_for_items[$data['id_tree']])
             && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
             return 'ERR_FOLDER_NOT_ALLOWED';
@@ -2723,7 +2740,8 @@ function ldapPosixSearch($username, $password, $SETTINGS)
     // Is LDAP connection ready?
     if ($ldapconn !== false) {
         // Should we bind the connection?
-        if (empty($SETTINGS['ldap_bind_dn']) === false
+        if (
+            empty($SETTINGS['ldap_bind_dn']) === false
             && empty($SETTINGS['ldap_bind_passwd']) === false
         ) {
             $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
@@ -2753,7 +2771,8 @@ function ldapPosixSearch($username, $password, $SETTINGS)
 
                 // Should we restrain the search in specified user groups
                 $GroupRestrictionEnabled = false;
-                if (isset($SETTINGS['ldap_usergroup']) === true
+                if (
+                    isset($SETTINGS['ldap_usergroup']) === true
                     && empty($SETTINGS['ldap_usergroup']) === false
                 ) {
                     // New way to check User's group membership
@@ -2782,11 +2801,12 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                 }
 
                 // Is user in the LDAP?
-                if ($GroupRestrictionEnabled === true
+                if (
+                    $GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                    && (isset($SETTINGS['ldap_usergroup']) === false
-                    || (isset($SETTINGS['ldap_usergroup']) === true
-                    && empty($SETTINGS['ldap_usergroup']) === true)))
+                        && (isset($SETTINGS['ldap_usergroup']) === false
+                            || (isset($SETTINGS['ldap_usergroup']) === true
+                                && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
@@ -2885,7 +2905,8 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $user_found = true;
 
         // Is user in allowed group
-        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (
+            isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
@@ -3299,7 +3320,7 @@ function storeUsersShareKey(
         'object_id = %i',
         $post_object_id
     );
-    
+
     // Superglobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -3308,7 +3329,8 @@ function storeUsersShareKey(
     $sessionPpersonaFolders = $superGlobal->get('personal_folders', 'SESSION');
     $sessionUserId = $superGlobal->get('user_id', 'SESSION');
 
-    if ((int) $post_folder_is_personal === 1
+    if (
+        (int) $post_folder_is_personal === 1
         && in_array($post_folder_id, $sessionPpersonaFolders) === true
     ) {
         // If this is a personal object

@@ -196,8 +196,8 @@ if (null !== $post_type) {
             }
 
             // check if psk is set
-            if (isset($_SESSION['user_settings']['encrypted_psk']) === false
-                || empty($_SESSION['user_settings']['encrypted_psk']) === true
+            if (isset($_SESSION['user']['encrypted_psk']) === false
+                || empty($_SESSION['user']['encrypted_psk']) === true
             ) {
                 echo prepareExchangedData(
                     array(

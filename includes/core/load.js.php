@@ -453,7 +453,7 @@ if (
                             teampassUser['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
                             teampassUser['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
                             teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
-                            teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>;
+                            teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
                             teampassUser['can_create_root_folder'] = <?php echo isset($_SESSION['can_create_root_folder']) === true ? (int) $_SESSION['can_create_root_folder'] : 0; ?>;
                         }
                     );
@@ -474,7 +474,7 @@ if (
             '<i class="fas fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
             '<div class="form-group">' +
             '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
-            '<input type="text" class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user_settings']['session_duration']) === true ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60; ?>">' +
+            '<input type="text" class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user']['session_duration']) === true ? (int) $_SESSION['user']['session_duration'] / 60 : 60; ?>">' +
             '</div>',
             '<?php echo langHdl('confirm'); ?>',
             '<?php echo langHdl('cancel'); ?>'

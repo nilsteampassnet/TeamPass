@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager
  *
@@ -19,9 +20,9 @@ namespace protect\SuperGlobal;
 
 // Start session in case its not
 if (session_id() === '') {
-    include_once __DIR__.'/../../../../sources/SecureHandler.php';
+    include_once __DIR__ . '/../../../../sources/SecureHandler.php';
     session_name('teampass_session');
-session_start();
+    session_start();
 }
 
 /**
@@ -32,14 +33,27 @@ class SuperGlobal
     /**
      * Sets a variable
      *
-     * @param  string $key   Key to use
+     * @param  string $key         Key to use
      * @param  string|array $value Value to put
-     * @param  string $type  Type of super global
+     * @param  string $type        Type of super global
+     * @param  string $special     Is this a special superglobal definition
      * @return void
      */
-    public static function put($key, $value, $type)
+    public static function put($key, $value, $type, $special = false)
     {
         if ($type === 'SESSION') {
+            if ($special === 'lang') {
+                $_SESSION['teampass']['lang'][$key] = $value;
+            } else if ($special === 'user') {
+                $_SESSION['user'][$key] = $value;
+                return (isset($_SESSION['user'][$key]) === true ? $_SESSION['user'][$key] : null);
+            } else if ($special === 'arr_roles') {
+                $_SESSION['arr_roles'][$key] = $value;
+            } else if ($special === 'arr_roles_full') {
+                $_SESSION['arr_roles_full'][$key] = $value;
+            } else if ($special === 'latest_items_tab') {
+                $_SESSION['latest_items_tab'][$key] = $value;
+            }
             $_SESSION[$key] = $value;
         } elseif ($type === 'SERVER') {
             $_SERVER[$key] = $value;
@@ -53,16 +67,25 @@ class SuperGlobal
     /**
      * Returns a variable
      *
-     * @param  string $key  Key to use
-     * @param  string $type Type of super global
+     * @param  string $key     Key to use
+     * @param  string $type    Type of super global
+     * @param  string $special Is this a special superglobal definition
      * @return mixed
      */
-    public static function get($key, $type, $lang = false)
+    public static function get($key, $type, $special = false)
     {
         if ($type === 'SESSION') {
-			if ($lang === true) {
-				return (isset($_SESSION['teampass']['lang'][$key]) === true ? $_SESSION['teampass']['lang'][$key] : null);
-			}
+            if ($special === 'lang') {
+                return (isset($_SESSION['teampass']['lang'][$key]) === true ? $_SESSION['teampass']['lang'][$key] : null);
+            } else if ($special === 'user') {
+                return (isset($_SESSION['user'][$key]) === true ? $_SESSION['user'][$key] : null);
+            } else if ($special === 'arr_roles') {
+                return (isset($_SESSION['arr_roles'][$key]) === true ? $_SESSION['arr_roles'][$key] : null);
+            } else if ($special === 'arr_roles_full') {
+                return (isset($_SESSION['arr_roles_full'][$key]) === true ? $_SESSION['arr_roles_full'][$key] : null);
+            } else if ($special === 'latest_items_tab') {
+                return (isset($_SESSION['latest_items_tab'][$key]) === true ? $_SESSION['latest_items_tab'][$key] : null);
+            }
             return (isset($_SESSION[$key]) === true ? $_SESSION[$key] : null);
         } elseif ($type === 'SERVER') {
             return (isset($_SERVER[$key]) === true ? filter_var($_SERVER[$key], FILTER_SANITIZE_STRING) : null);
@@ -89,7 +112,7 @@ class SuperGlobal
         } elseif ($type === 'SERVER') {
             unset($_GET[$key]);
         } elseif ($type === 'COOKIE') {
-            setcookie($_COOKIE[$key], "", time()-3600);
+            setcookie($_COOKIE[$key], "", time() - 3600);
         }
     }
 }

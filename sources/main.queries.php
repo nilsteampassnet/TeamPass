@@ -825,12 +825,12 @@ function mainQuery($SETTINGS)
             // manage store
             if ($filter_psk !== '') {
                 // store in session the cleartext for psk
-                $_SESSION['user_settings']['clear_psk'] = $filter_psk;
+                $_SESSION['user']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
                 if (
-                    isset($_SESSION['user_settings']['encrypted_psk']) === false
-                    || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
+                    isset($_SESSION['user']['encrypted_psk']) === false
+                    || (isset($_SESSION['user']['encrypted_psk']) === true && empty($_SESSION['user']['encrypted_psk']) === true)
                 ) {
                     // Check if security level is reach (if enabled)
                     if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
@@ -849,13 +849,13 @@ function mainQuery($SETTINGS)
                         }
                     }
                     // generate it based upon clear psk
-                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
+                    $_SESSION['user']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
 
                     // store it in DB
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk'],
+                            'encrypted_psk' => $_SESSION['user']['encrypted_psk'],
                         ),
                         'id = %i',
                         $_SESSION['user_id']
@@ -865,7 +865,7 @@ function mainQuery($SETTINGS)
                 // check if psk is correct.
                 $user_key_encoded = defuse_validate_personal_key(
                     $filter_psk,
-                    $_SESSION['user_settings']['encrypted_psk']
+                    $_SESSION['user']['encrypted_psk']
                 );
 
                 if (strpos($user_key_encoded, 'Error ') !== false) {
@@ -895,7 +895,7 @@ function mainQuery($SETTINGS)
                         }
                     }
                     // Store PSK
-                    $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
+                    $_SESSION['user']['session_psk'] = $user_key_encoded;
                     setcookie(
                         'TeamPass_PFSK_' . md5($_SESSION['user_id']),
                         $user_key_encoded,
@@ -1001,7 +1001,7 @@ function mainQuery($SETTINGS)
                 break;
             } else {
                 // Store PSK
-                $_SESSION['user_settings']['encrypted_oldpsk'] = $userInfo['encrypted_psk'];
+                $_SESSION['user']['encrypted_oldpsk'] = $userInfo['encrypted_psk'];
             }
 
             // Check if security level is reach (if enabled)
@@ -1022,13 +1022,13 @@ function mainQuery($SETTINGS)
             }
 
             // generate the new encrypted psk based upon clear psk
-            $_SESSION['user_settings']['session_psk'] = defuse_generate_personal_key($post_psk);
+            $_SESSION['user']['session_psk'] = defuse_generate_personal_key($post_psk);
 
             // store it in DB
             DB::update(
                 prefixTable('users'),
                 array(
-                    'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
+                    'encrypted_psk' => $_SESSION['user']['session_psk'],
                 ),
                 'id = %i',
                 $_SESSION['user_id']
@@ -1062,7 +1062,7 @@ function mainQuery($SETTINGS)
             // change salt
             setcookie(
                 'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                $_SESSION['user_settings']['session_psk'],
+                $_SESSION['user']['session_psk'],
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );
@@ -1138,13 +1138,13 @@ function mainQuery($SETTINGS)
                     }
 
                     // generate the new encrypted psk based upon clear psk
-                    $_SESSION['user_settings']['session_psk'] = defuse_generate_personal_key($post_psk);
+                    $_SESSION['user']['session_psk'] = defuse_generate_personal_key($post_psk);
 
                     // store it in DB
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
+                            'encrypted_psk' => $_SESSION['user']['session_psk'],
                         ),
                         'id = %i',
                         $_SESSION['user_id']
@@ -1156,7 +1156,7 @@ function mainQuery($SETTINGS)
                     // change salt
                     setcookie(
                         'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                        $_SESSION['user_settings']['session_psk'],
+                        $_SESSION['user']['session_psk'],
                         time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
@@ -1783,7 +1783,7 @@ Insert the log here and especially the answer of the query that failed.
 
             // Update session
             if ($field === 'user_api_key') {
-                $_SESSION['user_settings']['api-key'] = $new_value;
+                $_SESSION['user']['api-key'] = $new_value;
             }
             break;
 
@@ -2359,23 +2359,23 @@ Insert the log here and especially the answer of the query that failed.
             // manage store
             if ($filter_psk !== '') {
                 // store in session the cleartext for psk
-                $_SESSION['user_settings']['clear_psk'] = $filter_psk;
+                $_SESSION['user']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
                 if (
-                    isset($_SESSION['user_settings']['encrypted_psk']) === false
-                    || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
+                    isset($_SESSION['user']['encrypted_psk']) === false
+                    || (isset($_SESSION['user']['encrypted_psk']) === true && empty($_SESSION['user']['encrypted_psk']) === true)
                 ) {
                     // generate it based upon clear psk
-                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
+                    $_SESSION['user']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
                 }
 
                 // check if psk is correct.
                 $user_key_encoded = defuse_validate_personal_key(
                     $filter_psk,
-                    $_SESSION['user_settings']['encrypted_psk']
+                    $_SESSION['user']['encrypted_psk']
                 );
-                //echo $filter_psk.' -- '.$_SESSION['user_settings']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
+                //echo $filter_psk.' -- '.$_SESSION['user']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
                 //break;
 
                 if (strpos($user_key_encoded, 'Error ') !== false) {
@@ -2566,7 +2566,7 @@ Insert the log here and especially the answer of the query that failed.
                 'id = %i',
                 $_SESSION['user_id']
             );
-            $_SESSION['user_settings']['encrypted_psk'] = '';
+            $_SESSION['user']['encrypted_psk'] = '';
 
             // Clear all password personal items
             foreach ($_SESSION['personal_visible_groups'] as $folder) {

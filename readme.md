@@ -1,6 +1,8 @@
 # Teampass
 
-**NOT TO BE USED IN PRODUCTION -- ONLY FOR TESTING PURPOSE**
+**This release is a beta version.**
+
+**Only English language is available. Don't change the language!**
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c1709641128d42d1ac6ec7fad3cb921c)](https://www.codacy.com/app/nilsteampassnet/TeamPass?utm_source=github.com&utm_medium=referral&utm_content=nilsteampassnet/TeamPass&utm_campaign=badger)
 

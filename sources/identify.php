@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -237,21 +238,21 @@ if ($post_type === 'identify_duo_user') {
     );*/
 
     // increment counter of login attempts
-    if (empty($_SESSION['pwd_attempts'])) {
-        $_SESSION['pwd_attempts'] = 1;
+    if (empty($sessionPwdAttempts)) {
+        $sessionPwdAttempts = 1;
     } else {
-        ++$_SESSION['pwd_attempts'];
+        ++$sessionPwdAttempts;
     }
 
     // manage brute force
-    if ($_SESSION['pwd_attempts'] <= 3) {
+    if ($sessionPwdAttempts <= 3) {
         // identify the user through Teampass process
         identifyUser(
             $post_data,
             $SETTINGS
         );
-    } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $_SESSION['pwd_attempts'] > 3) {
-        $_SESSION['pwd_attempts'] = 1;
+    } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $sessionPwdAttempts > 3) {
+        $sessionPwdAttempts = 1;
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -264,9 +265,9 @@ if ($post_type === 'identify_duo_user') {
         echo prepareExchangedData(
             array(
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
                 'error' => true,
                 'message' => langHdl('error_bad_credentials_more_than_3_times'),
             ),
@@ -334,7 +335,11 @@ function identifyUser($sentData, $SETTINGS)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare GET variables
-    $session_user_language = $superGlobal->get('user_language', 'SESSION');
+    $sessionUserLanguage = $superGlobal->get('user_language', 'SESSION');
+    $sessionKey = $superGlobal->get('key', 'SESSION');
+    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
 
     // Debug
     debugIdentify(
@@ -356,10 +361,10 @@ function identifyUser($sentData, $SETTINGS)
     DB::$encoding = DB_ENCODING;
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $sessionUserLanguage . '.php';
 
     // decrypt and retreive data in JSON format
-    $dataReceived = prepareExchangedData($sentData, 'decode', $_SESSION['key']);
+    $dataReceived = prepareExchangedData($sentData, 'decode', $sessionKey);
     /*echo $sentData;
     echo " ;; ";
     echo $dataReceived;
@@ -400,9 +405,9 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '2fa_not_set',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
                 'error' => '2fa_not_set',
                 'message' => langHdl('2fa_credential_not_correct'),
             ),
@@ -453,9 +458,9 @@ function identifyUser($sentData, $SETTINGS)
             array(
                 'error' => 'user_not_exists',
                 'message' => langHdl('error_bad_credentials'),
-                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             ),
             'encode'
         );
@@ -504,9 +509,9 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                        'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_not_exists7',
                         'message' => langHdl('error_bad_credentials'),
                     ),
@@ -535,9 +540,9 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                        'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_not_exists8',
                         'message' => langHdl('error_bad_credentials'),
                     ),
@@ -627,9 +632,9 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => langHdl('remove_install_folder'),
             ),
@@ -645,9 +650,9 @@ function identifyUser($sentData, $SETTINGS)
             echo prepareExchangedData(
                 array(
                     'value' => '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => 'user_not_exists2 ' . $passwordClear,
                     'message' => langHdl('error_bad_credentials'),
                 ),
@@ -703,8 +708,8 @@ function identifyUser($sentData, $SETTINGS)
                 && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
                 && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
         ) {
-            $_SESSION['autoriser'] = true;
-            $_SESSION['pwd_attempts'] = 0;
+            $superGlobal->put('autoriser', true, 'SESSION');
+            $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
             /*// Debug
             debugIdentify(
@@ -714,7 +719,7 @@ function identifyUser($sentData, $SETTINGS)
             );*/
 
             // Check if any unsuccessfull login tries exist
-            $arrAttempts = array();
+            //$arrAttempts = array();
             $rows = DB::query(
                 'SELECT date
                 FROM ' . prefixTable('log_system') . "
@@ -726,18 +731,20 @@ function identifyUser($sentData, $SETTINGS)
                 $userInfo['last_connexion'],
                 time()
             );
-            $arrAttempts['nb'] = DB::count();
-            $arrAttempts['shown'] = DB::count() === 0 ? true : false;
-            $arrAttempts['attempts'] = array();
+            //$arrAttempts['nb'] = DB::count();
+            //$arrAttempts['shown'] = DB::count() === 0 ? true : false;
+            $arrAttempts = array();
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
                     array_push(
-                        $arrAttempts['attempts'],
+                        $arrAttempts,
                         date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date'])
                     );
                 }
             }
-            $_SESSION['user_settings']['unsuccessfull_login_attempts'] = $arrAttempts;
+            $superGlobal->put('unsuccessfull_login_attempts_list', $arrAttempts, 'SESSION', 'user');
+            $superGlobal->put('unsuccessfull_login_attempts_shown', DB::count() === 0 ? true : false, 'SESSION', 'user');
+            $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
 
             // Log into DB the user's connection
             if (
@@ -747,111 +754,105 @@ function identifyUser($sentData, $SETTINGS)
                 logEvents($SETTINGS, 'user_connection', 'connection', $userInfo['id'], stripslashes($username));
             }
             // Save account in SESSION
-            $_SESSION['login'] = stripslashes($username);
-            $_SESSION['name'] = stripslashes($userInfo['name']);
-            $_SESSION['lastname'] = stripslashes($userInfo['lastname']);
-            $_SESSION['user_id'] = $userInfo['id'];
-            $_SESSION['user_admin'] = $userInfo['admin'];
-            $_SESSION['user_manager'] = $userInfo['gestionnaire'];
-            $_SESSION['user_can_manage_all_users'] = $userInfo['can_manage_all_users'];
-            $_SESSION['user_read_only'] = $userInfo['read_only'];
-            $_SESSION['last_pw_change'] = $userInfo['last_pw_change'];
-            $_SESSION['last_pw'] = $userInfo['last_pw'];
-            $_SESSION['can_create_root_folder'] = $userInfo['can_create_root_folder'];
-            //$_SESSION['key'] = $key;
-            $_SESSION['personal_folder'] = $userInfo['personal_folder'];
-            $_SESSION['user_language'] = $userInfo['user_language'];
-            $_SESSION['user_email'] = $userInfo['email'];
-            $_SESSION['user_ga'] = $userInfo['ga'];
-            $_SESSION['user_avatar'] = $userInfo['avatar'];
-            $_SESSION['user_avatar_thumb'] = $userInfo['avatar_thumb'];
-            $_SESSION['user_upgrade_needed'] = $userInfo['upgrade_needed'];
-            $_SESSION['user_force_relog'] = $userInfo['force-relog'];
+            $superGlobal->put('login', stripslashes($username), 'SESSION');
+            $superGlobal->put('name', stripslashes($userInfo['name']), 'SESSION');
+            $superGlobal->put('lastname', stripslashes($userInfo['lastname']), 'SESSION');
+            $superGlobal->put('user_id', $userInfo['id'], 'SESSION');
+            $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
+            $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
+            $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
+            $superGlobal->put('user_read_only', $userInfo['read_only'], 'SESSION');
+            $superGlobal->put('last_pw_change', $userInfo['last_pw_change'], 'SESSION');
+            $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
+            $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');
+            $superGlobal->put('personal_folder', $userInfo['personal_folder'], 'SESSION');
+            $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION');
+            $superGlobal->put('user_email', $userInfo['email'], 'SESSION');
+            $superGlobal->put('user_ga', $userInfo['ga'], 'SESSION');
+            $superGlobal->put('user_avatar', $userInfo['avatar'], 'SESSION');
+            $superGlobal->put('user_avatar_thumb', $userInfo['avatar_thumb'], 'SESSION');
+            $superGlobal->put('user_upgrade_needed', $userInfo['upgrade_needed'], 'SESSION');
+            $superGlobal->put('user_force_relog', $userInfo['force-relog'], 'SESSION');
             // get personal settings
             if (!isset($userInfo['treeloadstrategy']) || empty($userInfo['treeloadstrategy'])) {
                 $userInfo['treeloadstrategy'] = 'full';
             }
-            $_SESSION['user_settings']['treeloadstrategy'] = $userInfo['treeloadstrategy'];
-            $_SESSION['user_settings']['agses-usercardid'] = $userInfo['agses-usercardid'];
-            $_SESSION['user_settings']['user_language'] = $userInfo['user_language'];
-            $_SESSION['user_settings']['encrypted_psk'] = $userInfo['encrypted_psk'];
-            $_SESSION['user_settings']['usertimezone'] = $userInfo['usertimezone'];
-            $_SESSION['user_settings']['session_duration'] = $dataReceived['duree_session'] * 60;
-            $_SESSION['user_settings']['api-key'] = $userInfo['user_api_key'];
+            $superGlobal->put('treeloadstrategy', $userInfo['treeloadstrategy'], 'SESSION', 'user');
+            $superGlobal->put('agses-usercardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
+            $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
+            $superGlobal->put('encrypted_psk', $userInfo['encrypted_psk'], 'SESSION', 'user');
+            $superGlobal->put('usertimezone', $userInfo['usertimezone'], 'SESSION', 'user');
+            $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
+            $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
 
             // manage session expiration
-            $_SESSION['sessionDuration'] = (int) (time() + $_SESSION['user_settings']['session_duration']);
+            $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
 
             /*
             * CHECK PASSWORD VALIDITY
             * Don't take into consideration if LDAP in use
             */
             if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
-                $_SESSION['validite_pw'] = true;
-                $_SESSION['last_pw_change'] = true;
+                $superGlobal->put('validite_pw', true, 'SESSION');
+                $superGlobal->put('last_pw_change', true, 'SESSION');
             } else {
                 if (isset($userInfo['last_pw_change']) === true) {
                     if ((int) $SETTINGS['pw_life_duration'] === 0) {
-                        $_SESSION['numDaysBeforePwExpiration'] = 'infinite';
-                        $_SESSION['validite_pw'] = true;
+                        $superGlobal->put('user_force_relog', 'infinite', 'SESSION');
+                        $superGlobal->put('validite_pw', true, 'SESSION');
                     } else {
-                        $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
-                            (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
+                        $superGlobal->put(
+                            'numDaysBeforePwExpiration',
+                            $SETTINGS['pw_life_duration'] - round(
+                                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $superGlobal->get('last_pw_change', 'SESSION')) / (24 * 60 * 60)
+                            ),
+                            'SESSION'
                         );
-                        if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
-                            $_SESSION['validite_pw'] = false;
+                        if ($superGlobal->get('numDaysBeforePwExpiration', 'SESSION') <= 0) {
+                            $superGlobal->put('validite_pw', false, 'SESSION');
                         } else {
-                            $_SESSION['validite_pw'] = true;
+                            $superGlobal->put('validite_pw', true, 'SESSION');
                         }
                     }
                 } else {
-                    $_SESSION['validite_pw'] = false;
-                }
-            }
-
-            /* If this option is set user password MD5 is used as personal SALTKey */
-            if (
-                isset($SETTINGS['use_md5_password_as_salt']) &&
-                $SETTINGS['use_md5_password_as_salt'] == 1
-            ) {
-                $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
-                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], '');
-                if ($tmp !== false) {
-                    setcookie(
-                        'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                        $tmp,
-                        time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                        '/'
-                    );
+                    $superGlobal->put('validite_pw', false, 'SESSION');
                 }
             }
 
             if (empty($userInfo['last_connexion'])) {
-                $_SESSION['last_connection'] = time();
+                $superGlobal->put('last_connection', time(), 'SESSION');
             } else {
-                $_SESSION['last_connection'] = $userInfo['last_connexion'];
+                $superGlobal->put('last_connection', $userInfo['last_connexion'], 'SESSION');
             }
 
-            if (!empty($userInfo['latest_items'])) {
-                $_SESSION['latest_items'] = explode(';', $userInfo['latest_items']);
+            if (empty($userInfo['latest_items']) === false) {
+                $superGlobal->put('latest_items', explode(';', $userInfo['latest_items']), 'SESSION');
             } else {
-                $_SESSION['latest_items'] = array();
+                $superGlobal->put('latest_items', array(), 'SESSION');
             }
-            if (!empty($userInfo['favourites'])) {
-                $_SESSION['favourites'] = explode(';', $userInfo['favourites']);
+            if (empty($userInfo['favourites']) === false) {
+                $superGlobal->put('favourites', explode(';', $userInfo['favourites']), 'SESSION');
             } else {
-                $_SESSION['favourites'] = array();
+                $superGlobal->put('favourites', array(), 'SESSION');
             }
 
-            if (!empty($userInfo['groupes_visibles'])) {
-                $_SESSION['groupes_visibles'] = implode(';', $userInfo['groupes_visibles']);
+            if (empty($userInfo['groupes_visibles']) === false) {
+                $superGlobal->put(
+                    'groupes_visibles',
+                    implode(';', $userInfo['groupes_visibles']),
+                    'SESSION'
+                );
             } else {
-                $_SESSION['groupes_visibles'] = array();
+                $superGlobal->put('groupes_visibles', array(), 'SESSION');
             }
-            if (!empty($userInfo['groupes_interdits'])) {
-                $_SESSION['no_access_folders'] = implode(';', $userInfo['groupes_interdits']);
+            if (empty($userInfo['groupes_interdits']) === false) {
+                $superGlobal->put(
+                    'no_access_folders',
+                    implode(';', $userInfo['groupes_visibles']),
+                    'SESSION'
+                );
             } else {
-                $_SESSION['no_access_folders'] = array();
+                $superGlobal->put('no_access_folders', array(), 'SESSION');
             }
             // User's roles
             if (strpos($userInfo['fonction_id'], ',') !== -1) {
@@ -863,60 +864,68 @@ function identifyUser($sentData, $SETTINGS)
                         'fonction_id' => $userInfo['fonction_id'],
                     ),
                     'id = %i',
-                    $_SESSION['user_id']
+                    $superGlobal->get('user_id', 'SESSION')
                 );
             }
-            $_SESSION['fonction_id'] = $userInfo['fonction_id'];
-            $_SESSION['user_roles'] = array_filter(explode(';', $userInfo['fonction_id']));
+            $superGlobal->put('fonction_id', $userInfo['fonction_id'], 'SESSION');
+            $superGlobal->put('user_roles', array_filter(explode(';', $userInfo['fonction_id'])), 'SESSION');
 
             // build array of roles
-            $_SESSION['user_pw_complexity'] = 0;
-            $_SESSION['arr_roles'] = array();
-            foreach ($_SESSION['user_roles'] as $role) {
+            $superGlobal->put('user_pw_complexity', 0, 'SESSION');
+            $superGlobal->put('arr_roles', array(), 'SESSION');
+            foreach ($superGlobal->get('user_roles', 'SESSION') as $role) {
                 $resRoles = DB::queryFirstRow(
                     'SELECT title, complexity
                     FROM ' . prefixTable('roles_title') . '
                     WHERE id=%i',
                     $role
                 );
-                $_SESSION['arr_roles'][$role] = array(
-                    'id' => $role,
-                    'title' => $resRoles['title'],
+                $superGlobal->put(
+                    $role,
+                    array(
+                        'id' => $role,
+                        'title' => $resRoles['title'],
+                    ),
+                    'SESSION',
+                    'arr_roles'
                 );
                 // get highest complexity
-                if (intval($_SESSION['user_pw_complexity']) < intval($resRoles['complexity'])) {
-                    $_SESSION['user_pw_complexity'] = $resRoles['complexity'];
+                if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($resRoles['complexity'])) {
+                    $superGlobal->put('user_pw_complexity', $resRoles['complexity'], 'SESSION');
                 }
             }
 
             // build complete array of roles
-            $_SESSION['arr_roles_full'] = array();
+            $superGlobal->put('arr_roles_full', array(), 'SESSION');
             $rows = DB::query('SELECT id, title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
             foreach ($rows as $record) {
-                $_SESSION['arr_roles_full'][$record['id']] = array(
-                    'id' => $record['id'],
-                    'title' => $record['title'],
+                $superGlobal->put(
+                    $record['id'],
+                    array(
+                        'id' => $record['id'],
+                        'title' => $record['title'],
+                    ),
+                    'SESSION',
+                    'arr_roles_full'
                 );
             }
             // Set some settings
-            $_SESSION['user']['find_cookie'] = false;
             $SETTINGS['update_needed'] = '';
 
             // User signature keys
-            $_SESSION['user']['public_key'] = $userInfo['public_key'];
+            $superGlobal->put('public_key', $userInfo['public_key'], 'SESSION', 'user');
             if (is_null($userInfo['private_key']) === true || empty($userInfo['private_key']) === true || $userInfo['private_key'] === 'none') {
                 // No keys have been generated yet
                 // Create them
                 $userKeys = generateUserKeys($passwordClear);
-                $_SESSION['user']['public_key'] = $userKeys['public_key'];
-                $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
+                $superGlobal->put('private_key', $userKeys['private_key_clear'], 'SESSION', 'user');
                 $arrayUserKeys = array(
                     'public_key' => $userKeys['public_key'],
                     'private_key' => $userKeys['private_key'],
                 );
             } else {
                 // Uncrypt private key
-                $_SESSION['user']['private_key'] = decryptPrivateKey($passwordClear, $userInfo['private_key']);
+                $superGlobal->put('private_key', decryptPrivateKey($passwordClear, $userInfo['private_key']), 'SESSION', 'user');
                 $arrayUserKeys = [];
             }
 
@@ -925,12 +934,12 @@ function identifyUser($sentData, $SETTINGS)
                 prefixTable('users'),
                 array_merge(
                     array(
-                        'key_tempo' => $_SESSION['key'],
+                        'key_tempo' => $superGlobal->get('key', 'SESSION'),
                         'last_connexion' => time(),
                         'timestamp' => time(),
                         'disabled' => 0,
                         'no_bad_attempts' => 0,
-                        'session_end' => $_SESSION['sessionDuration'],
+                        'session_end' => $superGlobal->get('sessionDuration', 'SESSION'),
                         'user_ip' => $dataReceived['client'],
                     ),
                     $arrayUserKeys
@@ -950,7 +959,7 @@ function identifyUser($sentData, $SETTINGS)
             if ($user_initial_creation_through_ldap === false) {
                 identifyUserRights(
                     implode(';', $userInfo['groupes_visibles']),
-                    $_SESSION['no_access_folders'],
+                    $superGlobal->get('no_access_folders', 'SESSION'),
                     $userInfo['admin'],
                     $userInfo['fonction_id'],
                     $SETTINGS
@@ -958,26 +967,27 @@ function identifyUser($sentData, $SETTINGS)
             } else {
                 // is new LDAP user. Show only his personal folder
                 if ($SETTINGS['enable_pf_feature'] === '1') {
-                    $_SESSION['personal_visible_groups'] = array($userInfo['id']);
-                    $_SESSION['personal_folders'] = array($userInfo['id']);
+                    $superGlobal->put('personal_visible_groups', array($userInfo['id']), 'SESSION');
+                    $superGlobal->put('personal_folders', array($userInfo['id']), 'SESSION');
                 } else {
-                    $_SESSION['personal_visible_groups'] = array();
-                    $_SESSION['personal_folders'] = array();
+                    $superGlobal->put('personal_visible_groups', array(), 'SESSION');
+                    $superGlobal->put('personal_folders', array(), 'SESSION');
                 }
-                $_SESSION['all_non_personal_folders'] = array();
-                $_SESSION['groupes_visibles'] = array();
-                $_SESSION['read_only_folders'] = array();
-                $_SESSION['list_folders_limited'] = '';
-                $_SESSION['list_folders_editable_by_role'] = array();
-                $_SESSION['list_restricted_folders_for_items'] = array();
-                $_SESSION['nb_folders'] = 1;
-                $_SESSION['nb_roles'] = 0;
+                $superGlobal->put('all_non_personal_folders', array(), 'SESSION');
+                $superGlobal->put('groupes_visibles', array(), 'SESSION');
+                $superGlobal->put('read_only_folders', array(), 'SESSION');
+                $superGlobal->put('list_folders_limited', '', 'SESSION');
+                $superGlobal->put('list_folders_editable_by_role', array(), 'SESSION');
+                $superGlobal->put('list_restricted_folders_for_items', array(), 'SESSION');
+                $superGlobal->put('nb_folders', 1, 'SESSION');
+                $superGlobal->put('nb_roles', 0, 'SESSION');
             }
             // Get some more elements
-            $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
+            $superGlobal->put('screenHeight', $dataReceived['screenHeight'], 'SESSION');
             // Get last seen items
-            $_SESSION['latest_items_tab'][] = '';
-            foreach ($_SESSION['latest_items'] as $item) {
+            $superGlobal->put('latest_items_tab', array(), 'SESSION');
+            $superGlobal->put('nb_roles', 0, 'SESSION');
+            foreach ($superGlobal->get('latest_items', 'SESSION') as $item) {
                 if (!empty($item)) {
                     $dataLastItems = DB::queryFirstRow(
                         'SELECT id,label,id_tree
@@ -985,10 +995,15 @@ function identifyUser($sentData, $SETTINGS)
                         WHERE id=%i',
                         $item
                     );
-                    $_SESSION['latest_items_tab'][$item] = array(
-                        'id' => $item,
-                        'label' => $dataLastItems['label'],
-                        'url' => 'index.php?page=items&amp;group=' . $dataLastItems['id_tree'] . '&amp;id=' . $item,
+                    $superGlobal->put(
+                        $item,
+                        array(
+                            'id' => $item,
+                            'label' => $dataLastItems['label'],
+                            'url' => 'index.php?page=items&amp;group=' . $dataLastItems['id_tree'] . '&amp;id=' . $item,
+                        ),
+                        'SESSION',
+                        'latest_items_tab'
                     );
                 }
             }
@@ -998,7 +1013,7 @@ function identifyUser($sentData, $SETTINGS)
             if (
                 isset($SETTINGS['enable_send_email_on_user_login'])
                 && (int) $SETTINGS['enable_send_email_on_user_login'] === 1
-                && (int) $_SESSION['user_admin'] !== 1
+                && (int) $sessionAdmin !== 1
             ) {
                 // get all Admin users
                 $receivers = '';
@@ -1023,9 +1038,9 @@ function identifyUser($sentData, $SETTINGS)
                                 '#tp_time#',
                             ),
                             array(
-                                ' ' . $_SESSION['login'] . ' (IP: ' . getClientIpServer() . ')',
-                                date($SETTINGS['date_format'], $_SESSION['last_connection']),
-                                date($SETTINGS['time_format'], $_SESSION['last_connection']),
+                                ' ' . $superGlobal->get('login', 'SESSION') . ' (IP: ' . getClientIpServer() . ')',
+                                date($SETTINGS['date_format'], $superGlobal->get('last_connection', 'SESSION')),
+                                date($SETTINGS['time_format'], $superGlobal->get('last_connection', 'SESSION')),
                             ),
                             $LANG['email_body_on_user_login']
                         ),
@@ -1052,7 +1067,7 @@ function identifyUser($sentData, $SETTINGS)
             }
 
             /*
-            $_SESSION['initial_url'] = '';
+            $sessionUrl = '';
             if ($SETTINGS['cpassman_dir'] === '..') {
                 $SETTINGS['cpassman_dir'] = '.';
             }
@@ -1062,25 +1077,23 @@ function identifyUser($sentData, $SETTINGS)
             echo prepareExchangedData(
                 array(
                     'value' => $return,
-                    'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => 'user_is_locked',
                     'message' => langHdl('account_is_locked'),
-                    'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-                    'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                    'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                     'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                    'private_key_conform' => isset($_SESSION['user']['private_key']) === true
-                        && empty($_SESSION['user']['private_key']) === false
-                        && $_SESSION['user']['private_key'] !== 'none' ? true : false,
-                    'session_key' => $_SESSION['key'],
-                    'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
-                    //'debug' => $_SESSION['user']['private_key'],
-                    'can_create_root_folder' => isset($_SESSION['can_create_root_folder']) ? (int) $_SESSION['can_create_root_folder'] : '',
-                    //'action_on_login' => isset($userInfo['special']) === true ? base64_encode($userInfo['special']) : '',
-                    'shown_warning_unsuccessful_login' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'],
-                    'nb_unsuccessful_logins' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'],
+                    'private_key_conform' => null !==$superGlobal->get('private_key', 'SESSION', 'user')
+                        && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                        && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
+                    'session_key' => $superGlobal->get('key', 'SESSION'),
+                    'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
+                    'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                    'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                    'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
                 ),
                 'encode'
             );
@@ -1107,7 +1120,7 @@ function identifyUser($sentData, $SETTINGS)
             DB::update(
                 prefixTable('users'),
                 array(
-                    'key_tempo' => $_SESSION['key'],
+                    'key_tempo' => $superGlobal->get('key', 'SESSION'),
                     'disabled' => $userIsLocked,
                     'no_bad_attempts' => $nbAttempts,
                 ),
@@ -1119,66 +1132,49 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => $return,
-                        'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                        'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_is_locked',
                         'message' => langHdl('account_is_locked'),
-                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                        'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                        'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                         'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                        'private_key_conform' => (isset($_SESSION['user']['private_key']) === true
-                            && empty($_SESSION['user']['private_key']) === false
-                            && $_SESSION['user']['private_key'] !== 'none') ? true : false,
-                        'session_key' => $_SESSION['key'],
-                        'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
-                        'can_create_root_folder' => isset($_SESSION['can_create_root_folder']) ? (int) $_SESSION['can_create_root_folder'] : '',
-                        //'debug' => $_SESSION['user']['private_key'],
-                        //'action_on_login' => isset($userInfo['special']) === true ? base64_encode($userInfo['special']) : '',
-                        'shown_warning_unsuccessful_login' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'],
-                        'nb_unsuccessful_logins' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'],
+                        'private_key_conform' => (null !== $superGlobal->get('user_id', 'SESSION')
+                            && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                            && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none') ? true : false,
+                        'session_key' => $superGlobal->get('key', 'SESSION'),
+                        'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
+                        'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                        'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
                     ),
                     'encode'
                 );
 
                 return false;
-                /*} elseif ($SETTINGS['nb_bad_authentication'] === '0') {
-                return json_encode(
-                    array(
-                        'value' => $return,
-                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
-                        'error' => 'user_not_exists',
-                        'message' => langHdl('error_bad_credentials'),
-                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
-                    )
-                );*/
             } else {
                 echo prepareExchangedData(
                     array(
                         'value' => $return,
-                        'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
-                        'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                        'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                        'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                        'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                        'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_not_exists3',
                         'message' => langHdl('error_bad_credentials'),
-                        'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-                        'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                        'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                        'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                         'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                        'private_key_conform' => isset($_SESSION['user']['private_key']) === true
-                            && empty($_SESSION['user']['private_key']) === false
-                            && $_SESSION['user']['private_key'] !== 'none' ? true : false,
-                        'session_key' => $_SESSION['key'],
-                        'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
-                        'can_create_root_folder' => isset($_SESSION['can_create_root_folder']) ? (int) $_SESSION['can_create_root_folder'] : '',
-                        //'debug' => $_SESSION['user']['private_key'],
-                        //'action_on_login' => isset($userInfo['special']) === true ? base64_encode($userInfo['special']) : '',
-                        'shown_warning_unsuccessful_login' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'],
-                        'nb_unsuccessful_logins' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'],
+                        'private_key_conform' => (null !== $superGlobal->get('user_id', 'SESSION')
+                            && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                            && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none') ? true : false,
+                        'session_key' => $superGlobal->get('key', 'SESSION'),
+                        'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
+                        'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                        'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
                     ),
                     'encode'
                 );
@@ -1188,8 +1184,8 @@ function identifyUser($sentData, $SETTINGS)
         }
     } else {
         // manage bruteforce
-        if ($_SESSION['pwd_attempts'] > 2) {
-            $_SESSION['next_possible_pwd_attempts'] = time() + 10;
+        if ($sessionPwdAttempts > 2) {
+            $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
         }
 
         if ($user_initial_creation_through_ldap === true) {
@@ -1198,25 +1194,23 @@ function identifyUser($sentData, $SETTINGS)
             echo prepareExchangedData(
                 array(
                     'value' => $return,
-                    'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
-                    'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : '',
-                    'initial_url' => isset($_SESSION['initial_url']) === true ? $_SESSION['initial_url'] : '',
-                    'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                    'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => 'user_not_exists4',
                     'message' => langHdl('error_bad_credentials'),
-                    'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-                    'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+                    'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                    'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                     'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                    'private_key_conform' => isset($_SESSION['user']['private_key']) === true
-                        && empty($_SESSION['user']['private_key']) === false
-                        && $_SESSION['user']['private_key'] !== 'none' ? true : false,
-                    'session_key' => $_SESSION['key'],
-                    'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
-                    'can_create_root_folder' => isset($_SESSION['can_create_root_folder']) ? (int) $_SESSION['can_create_root_folder'] : '',
-                    //'debug' => $_SESSION['user']['private_key'],
-                    //'action_on_login' => isset($userInfo['special']) === true ? base64_encode($userInfo['special']) : '',
-                    'shown_warning_unsuccessful_login' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'],
-                    'nb_unsuccessful_logins' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'],
+                    'private_key_conform' => (null !== $superGlobal->get('user_id', 'SESSION')
+                        && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                        && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none') ? true : false,
+                    'session_key' => $superGlobal->get('key', 'SESSION'),
+                    'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
+                    'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                    'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                    'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
                 ),
                 'encode'
             );
@@ -1236,24 +1230,23 @@ function identifyUser($sentData, $SETTINGS)
     echo prepareExchangedData(
         array(
             'value' => $return,
-            'user_id' => isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : '',
-            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-            'initial_url' => @$_SESSION['initial_url'],
-            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+            'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+            'initial_url' => @$sessionUrl,
+            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
             'error' => false,
             'message' => '',
-            'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
-            'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+            'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+            'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-            'private_key_conform' => isset($_SESSION['user']['private_key']) === true
-                && empty($_SESSION['user']['private_key']) === false
-                && $_SESSION['user']['private_key'] !== 'none' ? true : false,
-            'session_key' => $_SESSION['key'],
-            'has_psk' => empty($_SESSION['user_settings']['encrypted_psk']) === false ? true : false,
-            'can_create_root_folder' => isset($_SESSION['can_create_root_folder']) ? (int) $_SESSION['can_create_root_folder'] : '',
-            //'action_on_login' => isset($userInfo['special']) === true ? base64_encode($userInfo['special']) : '',
-            'shown_warning_unsuccessful_login' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['shown'],
-            'nb_unsuccessful_logins' => $_SESSION['user_settings']['unsuccessfull_login_attempts']['nb'],
+            'private_key_conform' => (null !== $superGlobal->get('user_id', 'SESSION')
+                && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none') ? true : false,
+            'session_key' => $superGlobal->get('key', 'SESSION'),
+            'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
+            'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+            'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+            'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
         ),
         'encode'
     );
@@ -1371,9 +1364,9 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                         'error' => true,
                         'message' => array(
                             'value' => '',
-                            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                            'initial_url' => @$_SESSION['initial_url'],
-                            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                            'initial_url' => @$sessionUrl,
+                            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
                             'error' => 'user_not_exists5',
                             'message' => langHdl('error_bad_credentials'),
                         ),
@@ -1642,9 +1635,9 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
             return array(
                 'error' => true,
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
                 'error' => 'user_not_exists6',
                 'message' => langHdl('error_bad_credentials'),
             );
@@ -1747,9 +1740,9 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
             return array(
                 'error' => true,
                 'value' => '',
-                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
                 'error' => 'no_user_yubico_credentials',
                 'message' => '',
             );
@@ -1770,9 +1763,9 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
         return array(
             'error' => true,
             'value' => '',
-            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($_SESSION['user_admin']) : '',
-            'initial_url' => @$_SESSION['initial_url'],
-            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+            'initial_url' => @$sessionUrl,
+            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
             'error' => 'bad_user_yubico_credentials',
             'message' => langHdl('yubico_bad_code'),
         );
@@ -1914,9 +1907,9 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 
             $firstTime = array(
                 'value' => '<img src="' . $new_2fa_qr . '">',
-                'user_admin' => isset($_SESSION['user_admin']) ? (int) $_SESSION['user_admin'] : 0,
-                'initial_url' => @$_SESSION['initial_url'],
-                'pwd_attempts' => (int) $_SESSION['pwd_attempts'],
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => @$sessionUrl,
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => false,
                 'message' => $mfaMessage,
                 'mfaStatus' => $mfaStatus,

@@ -346,8 +346,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
+            if ((isset($_SESSION['user']['create_item_without_password']) === true
+                && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) ||
                 empty($item['pwd']) === false
             ) {
@@ -1050,8 +1050,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                         // Handle case where pw is empty
                         // if not allowed then warn user
-                        if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
+                        if ((isset($_SESSION['user']['create_item_without_password']) === true
+                            && (int) $_SESSION['user']['create_item_without_password'] !== 1
                             ) ||
                             empty($item[KP_PASSWORD]) === false
                         ) {

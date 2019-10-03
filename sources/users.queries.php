@@ -929,7 +929,7 @@ if (null !== $post_type) {
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
 
-            if (!isset($_SESSION['user_settings']['clear_psk']) || $_SESSION['user_settings']['clear_psk'] == '') {
+            if (!isset($_SESSION['user']['clear_psk']) || $_SESSION['user']['clear_psk'] == '') {
                 echo '[ { "error" : "no_sk" } ]';
             } elseif ($salt_user == '') {
                 echo '[ { "error" : "no_sk_user" } ]';
@@ -2056,13 +2056,13 @@ if (null !== $post_type) {
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_settings']['usertimezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['usertimezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_STRING);
                 $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
                 $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
                 $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $_SESSION['user_settings']['treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
-                $_SESSION['user_settings']['agses-usercardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
-                $_SESSION['user_settings']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['agses-usercardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
+                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -2694,17 +2694,17 @@ if (null !== $post_type) {
             );
             // refresh SESSION if requested
             if ($value[0] === 'treeloadstrategy') {
-                $_SESSION['user_settings']['treeloadstrategy'] = $post_newValue;
+                $_SESSION['user']['treeloadstrategy'] = $post_newValue;
             } elseif ($value[0] === 'usertimezone') {
                 // special case for usertimezone where session needs to be updated
-                $_SESSION['user_settings']['usertimezone'] = $post_newValue;
+                $_SESSION['user']['usertimezone'] = $post_newValue;
             } elseif ($value[0] === 'userlanguage') {
                 // special case for user_language where session needs to be updated
-                $_SESSION['user_settings']['user_language'] = $post_newValue;
+                $_SESSION['user']['user_language'] = $post_newValue;
                 $_SESSION['user_language'] = $post_newValue;
             } elseif ($value[0] === 'agses-usercardid') {
                 // special case for agsescardid where session needs to be updated
-                $_SESSION['user_settings']['agses-usercardid'] = $post_newValue;
+                $_SESSION['user']['agses-usercardid'] = $post_newValue;
             } elseif ($value[0] === 'email') {
                 // store email change in session
                 $_SESSION['user_email'] = $post_newValue;

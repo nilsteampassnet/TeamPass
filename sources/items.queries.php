@@ -185,8 +185,8 @@ if (null !== $post_type) {
                         FILTER_SANITIZE_STRING
                     )
                 );
-                $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
-                    && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
+                $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
+                    && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -259,8 +259,8 @@ if (null !== $post_type) {
                 // is pwd empty?
                 if (
                     empty($post_password)
-                    && isset($_SESSION['user_settings']['create_item_without_password']) == true
-                    && $_SESSION['user_settings']['create_item_without_password'] !== '1'
+                    && isset($_SESSION['user']['create_item_without_password']) == true
+                    && $_SESSION['user']['create_item_without_password'] !== '1'
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -287,7 +287,7 @@ if (null !== $post_type) {
                 /*// Check PSK is set
                 if (
                     (int) $post_folder_is_personal === 1
-                    && (isset($_SESSION['user_settings']['session_psk']) === false
+                    && (isset($_SESSION['user']['session_psk']) === false
                         || empty($post_password) === true)
                 ) {
                     echo prepareExchangedData(
@@ -377,8 +377,8 @@ if (null !== $post_type) {
                 ) {
                     // Handle case where pw is empty
                     // if not allowed then warn user
-                    if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1) ||
+                    if ((isset($_SESSION['user']['create_item_without_password']) === true
+                            && (int) $_SESSION['user']['create_item_without_password'] !== 1) ||
                         empty($post_password) === false
                     ) {
                         // NEW ENCRYPTION
@@ -824,8 +824,8 @@ if (null !== $post_type) {
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_id = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-                $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
-                    && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
+                $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
+                    && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $post_restricted_to = filter_var_array(
                     $dataReceived['restricted_to'],
@@ -873,8 +873,8 @@ if (null !== $post_type) {
                 // Check PWD EMPTY
                 if (
                     empty($pw) === true
-                    && isset($_SESSION['user_settings']['create_item_without_password']) === true
-                    && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1
+                    && isset($_SESSION['user']['create_item_without_password']) === true
+                    && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -1046,8 +1046,8 @@ if (null !== $post_type) {
                     }
 
                     // encrypt PW
-                    if ((isset($_SESSION['user_settings']['create_item_without_password']) === true
-                            && (int) $_SESSION['user_settings']['create_item_without_password'] !== 1)
+                    if ((isset($_SESSION['user']['create_item_without_password']) === true
+                            && (int) $_SESSION['user']['create_item_without_password'] !== 1)
                         || empty($post_password) === false
                     ) {
                         //-----
@@ -2174,7 +2174,7 @@ if (null !== $post_type) {
             }
 
             // Step #1
-            $_SESSION['user_settings']['show_step2'] = false;
+            $_SESSION['user']['show_step2'] = false;
 
             // Decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
@@ -2183,8 +2183,8 @@ if (null !== $post_type) {
             $post_id = filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var(($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
             $post_salt_key_required = filter_var(($dataReceived['salt_key_required']), FILTER_SANITIZE_STRING);
-            $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
-                && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
+            $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
+                && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
             $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_NUMBER_INT);
             $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_STRING);
             $post_page = filter_var(($dataReceived['page']), FILTER_SANITIZE_STRING);
@@ -2728,7 +2728,7 @@ if (null !== $post_type) {
             $arrData['timestamp'] = time();
 
             // Set temporary session variable to allow step2
-            $_SESSION['user_settings']['show_step2'] = true;
+            $_SESSION['user']['show_step2'] = true;
 
             // Error
             $arrData['error'] = '';
@@ -2743,7 +2743,7 @@ if (null !== $post_type) {
         */
         case 'showDetailsStep2':
             // Is this query expected (must be run after a step1 and not standalone)
-            if ($_SESSION['user_settings']['show_step2'] !== true) {
+            if ($_SESSION['user']['show_step2'] !== true) {
                 // Check KEY and rights
                 if ($post_key !== $_SESSION['key']) {
                     echo prepareExchangedData(
@@ -3027,7 +3027,7 @@ if (null !== $post_type) {
                 $returnArray['setting_restricted_to_roles'] = isset($SETTINGS['restricted_to_roles']) === true
                     && $SETTINGS['restricted_to_roles'] === '1' ? 1 : 0;
 
-                $_SESSION['user_settings']['show_step2'] = false;
+                $_SESSION['user']['show_step2'] = false;
 
                 echo prepareExchangedData(
                     $returnArray,
@@ -3496,7 +3496,7 @@ if (null !== $post_type) {
 
                 /*
                 // check if this folder is a PF. If yes check if saltket is set
-                if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf === true) {
+                if ((!isset($_SESSION['user']['encrypted_psk']) || empty($_SESSION['user']['encrypted_psk'])) && $folderIsPf === true) {
                     $showError = 'is_pf_but_no_saltkey';
                 }
                 */

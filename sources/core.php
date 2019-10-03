@@ -170,9 +170,9 @@ if (isset($languagesList) === false) {
     }
 }
 
-if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['user_settings']['usertimezone'] !== 'not_defined') {
+if (isset($_SESSION['user']['usertimezone']) === true && $_SESSION['user']['usertimezone'] !== 'not_defined') {
     // use user timezone
-    date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
+    date_default_timezone_set($_SESSION['user']['usertimezone']);
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
     // use server timezone
     date_default_timezone_set('UTC');
@@ -306,7 +306,7 @@ if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
 ) {
     // Only defuse key
     if (substr($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], 0, 3) === 'def') {
-        $_SESSION['user_settings']['session_psk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
+        $_SESSION['user']['session_psk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
     } else {
         // Remove old cookie
         unset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])]);
