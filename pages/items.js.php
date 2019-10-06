@@ -110,6 +110,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'url': './sources/tree.php',
                     'dataType': 'json',
                     'data': function(node) {
+                        console.log(node)
                         return {
                             'id': node.id.split('_')[1],
                             'force_refresh': store.get('teampassApplication') !== undefined ?

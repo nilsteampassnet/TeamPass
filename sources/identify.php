@@ -21,7 +21,7 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -308,6 +308,8 @@ if ($post_type === 'identify_duo_user') {
  *
  * @param string $sentData Credentials
  * @param array  $SETTINGS Teamapss settings
+ *
+ * @return boolean
  */
 function identifyUser($sentData, $SETTINGS)
 {
@@ -371,8 +373,7 @@ function identifyUser($sentData, $SETTINGS)
     print_r($dataReceived);*/
 
     // prepare variables
-    if (
-        isset($SETTINGS['enable_http_request_login']) === true
+    if (isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['enable_http_request_login'] === 1
         && isset($_SERVER['PHP_AUTH_USER']) === true
         && isset($SETTINGS['maintenance_mode']) === true
@@ -398,8 +399,8 @@ function identifyUser($sentData, $SETTINGS)
 
     // Check 2FA
     if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
+        || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
         echo prepareExchangedData(
@@ -483,8 +484,7 @@ function identifyUser($sentData, $SETTINGS)
     $return = '';
 
     // Prepare LDAP connection if set up
-    if (
-        isset($SETTINGS['ldap_mode'])
+    if (isset($SETTINGS['ldap_mode'])
         && (int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
     ) {
@@ -559,8 +559,7 @@ function identifyUser($sentData, $SETTINGS)
     }
 
     // Check Yubico
-    if (
-        isset($SETTINGS['yubico_authentication']) === true
+    if (isset($SETTINGS['yubico_authentication']) === true
         && (int) $SETTINGS['yubico_authentication'] === 1
         && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
         && $user_2fa_selection === 'yubico'
@@ -580,8 +579,7 @@ function identifyUser($sentData, $SETTINGS)
     }
 
     // check GA code
-    if (
-        isset($SETTINGS['google_authentication']) === true
+    if (isset($SETTINGS['google_authentication']) === true
         && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $user_2fa_selection === 'google'
@@ -672,8 +670,7 @@ function identifyUser($sentData, $SETTINGS)
         );
 
         // Manage Maintenance mode
-        if (
-            isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
+        if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
             && (int) $userInfo['admin'] === 0
         ) {
             echo prepareExchangedData(
@@ -697,16 +694,16 @@ function identifyUser($sentData, $SETTINGS)
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
         if ((isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 0
-                && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
+            && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
             || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
-                && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
+            && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
             || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 2
-                && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
+            && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
             || (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
-                && $username == 'admin' && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
+            && $username == 'admin' && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
             || (isset($SETTINGS['ldap_and_local_authentication']) === true && (int) $SETTINGS['ldap_and_local_authentication'] === 1
-                && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
-                && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
+            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
+            && $userPasswordVerified === true && (int) $userInfo['disabled'] === 0)
         ) {
             $superGlobal->put('autoriser', true, 'SESSION');
             $superGlobal->put('pwd_attempts', 0, 'SESSION');
@@ -747,8 +744,7 @@ function identifyUser($sentData, $SETTINGS)
             $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
 
             // Log into DB the user's connection
-            if (
-                isset($SETTINGS['log_connections']) === true
+            if (isset($SETTINGS['log_connections']) === true
                 && (int) $SETTINGS['log_connections'] === 1
             ) {
                 logEvents($SETTINGS, 'user_connection', 'connection', $userInfo['id'], stripslashes($username));
@@ -1010,8 +1006,7 @@ function identifyUser($sentData, $SETTINGS)
             // send back the random key
             $return = $dataReceived['randomstring'];
             // Send email
-            if (
-                isset($SETTINGS['enable_send_email_on_user_login'])
+            if (isset($SETTINGS['enable_send_email_on_user_login'])
                 && (int) $SETTINGS['enable_send_email_on_user_login'] === 1
                 && (int) $sessionAdmin !== 1
             ) {
@@ -1104,14 +1099,12 @@ function identifyUser($sentData, $SETTINGS)
             // check if user is locked
             $userIsLocked = false;
             $nbAttempts = intval($userInfo['no_bad_attempts'] + 1);
-            if (
-                $SETTINGS['nb_bad_authentication'] > 0
+            if ($SETTINGS['nb_bad_authentication'] > 0
                 && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
             ) {
                 $userIsLocked = true;
                 // log it
-                if (
-                    isset($SETTINGS['log_connections']) === true
+                if (isset($SETTINGS['log_connections']) === true
                     && (int) $SETTINGS['log_connections'] === 1
                 ) {
                     logEvents($SETTINGS, 'user_locked', 'connection', $userInfo['id'], stripslashes($username));
@@ -1148,7 +1141,7 @@ function identifyUser($sentData, $SETTINGS)
                         'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
                         'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                         'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
+                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
                     ),
                     'encode'
                 );
@@ -1174,7 +1167,7 @@ function identifyUser($sentData, $SETTINGS)
                         'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
                         'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                         'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
+                        'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
                     ),
                     'encode'
                 );
@@ -1210,7 +1203,7 @@ function identifyUser($sentData, $SETTINGS)
                     'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
                     'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                     'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                    'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
+                    'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
                 ),
                 'encode'
             );
@@ -1231,9 +1224,9 @@ function identifyUser($sentData, $SETTINGS)
         array(
             'value' => $return,
             'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-            'initial_url' => @$sessionUrl,
-            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+            'user_admin' => isset($sessionAdmin) ? (int) $antiXss->xss_clean($sessionAdmin) : '',
+            'initial_url' => $antiXss->xss_clean($sessionUrl),
+            'pwd_attempts' => $antiXss->xss_clean($sessionPwdAttempts),
             'error' => false,
             'message' => '',
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
@@ -1246,7 +1239,7 @@ function identifyUser($sentData, $SETTINGS)
             'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
             'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
             'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-            'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION','user'),
+            'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
         ),
         'encode'
     );
@@ -1438,9 +1431,9 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                 if (
                     $GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                        && (isset($SETTINGS['ldap_usergroup']) === false
-                            || (isset($SETTINGS['ldap_usergroup']) === true
-                                && empty($SETTINGS['ldap_usergroup']) === true)))
+                    && (isset($SETTINGS['ldap_usergroup']) === false
+                    || (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
@@ -1540,7 +1533,7 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
 /**
  * Undocumented function.
  *
- * @param string $userInfo          Username
+ * @param string $userInfo      Username
  * @param string $ldap_suffix   Suffix
  * @param string $passwordClear Password
  * @param int    $counter       User exists in teampass
@@ -1617,8 +1610,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
     // Authenticate the user
     if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
         // Is user in allowed group
-        if (
-            isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
@@ -1708,7 +1700,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
  * Undocumented function.
  *
  * @param string|array $dataReceived Received data
- * @param string       $userInfo         Result of query
+ * @param string       $userInfo     Result of query
  * @param array        $SETTINGS     Teampass settings
  *
  * @return array
@@ -1852,7 +1844,7 @@ function ldapCreateUser($username, $passwordClear, $retLDAP, $SETTINGS)
  * Undocumented function.
  *
  * @param string       $username     Username
- * @param string       $userInfo         Result of query
+ * @param string       $userInfo     Result of query
  * @param string|array $dataReceived DataReceived
  * @param array        $SETTINGS     Teampass settings
  *
@@ -1860,8 +1852,7 @@ function ldapCreateUser($username, $passwordClear, $retLDAP, $SETTINGS)
  */
 function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 {
-    if (
-        isset($dataReceived['GACode']) === true
+    if (isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
         // load library
@@ -1946,7 +1937,7 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
  * Undocumented function.
  *
  * @param string       $passwordClear Password in clear
- * @param array|string $userInfo          Array of user data
+ * @param array|string $userInfo      Array of user data
  * @param array|string $dataReceived  Received data
  * @param string       $username      User name
  * @param array        $SETTINGS      Teampass settings
@@ -1965,8 +1956,7 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
     $pwdlib = new PasswordLib\PasswordLib();
 
     // Check if old encryption used
-    if (
-        crypt($passwordClear, $userInfo['pw']) === $userInfo['pw']
+    if (crypt($passwordClear, $userInfo['pw']) === $userInfo['pw']
         && empty($userInfo['pw']) === false
     ) {
         $userPasswordVerified = true;
@@ -2025,6 +2015,8 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
  * @param bool   $enabled text1
  * @param string $dbgFile text2
  * @param string $text    text3
+ *
+ * @return void
  */
 function debugIdentify($enabled, $dbgFile, $text)
 {

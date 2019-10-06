@@ -1977,8 +1977,7 @@ function logItems(
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
-    if (
-        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
@@ -2015,7 +2014,7 @@ function notifyOnChange($item_id, $action, $SETTINGS)
                     ),
                     langHdl('email_on_open_notification_mail')
                 ),
-                'receivers' => $_globalsNotifiedEmails,
+                'receivers' => $globalsNotifiedEmails,
                 'status' => '',
             )
         );
