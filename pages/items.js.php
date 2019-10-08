@@ -67,6 +67,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true;
 
+    var debugJavascript = true;
 
 
     // Manage memory
@@ -110,7 +111,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'url': './sources/tree.php',
                     'dataType': 'json',
                     'data': function(node) {
-                        console.log(node)
+                        if (debugJavascript === true) console.log(node)
                         return {
                             'id': node.id.split('_')[1],
                             'force_refresh': store.get('teampassApplication') !== undefined ?
@@ -128,20 +129,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         })
         // On node select
         .bind('select_node.jstree', function(e, data) {
-            /*if (initialPageLoad === true
-                || store.get('teampassApplication') === undefined
-                || store.get('teampassApplication').selectedFolder === undefined
-                || store.get('teampassApplication').selectedFolder === ''
-            ) {*/
-            console.log('JSTREE BIND')
+            if (debugJavascript === true) console.log('JSTREE BIND')
             selectedFolder = $('#jstree').jstree('get_selected', true)[0];
             selectedFolderId = selectedFolder.id.split('_')[1];
-            console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
-            console.log(selectedFolder);
-
-            /*store.each(function(value, key) {
-                console.log(key, '==', value)
-            });*/
+            if (debugJavascript === true) console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
+            if (debugJavascript === true) console.log(selectedFolder);
 
             store.update(
                 'teampassApplication',
@@ -160,7 +152,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             }
 
             initialPageLoad = false;
-            //}
         })
         // Search in tree
         .bind('search.jstree', function(e, data) {
@@ -183,14 +174,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         .blur(function() {
             $(this).val(folderSearchCriteria);
         });
-
-
-    /*
-    // TODO : delete after DEBUG
-    store.each(function(value, key) {
-        console.log(key, '==', value)
-    });
-    */
 
     // Is this a short url
     var queryDict = {},
@@ -250,10 +233,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     } else {
         /*// On page load, refresh list of items
         selectedFolder = $('#jstree').jstree('get_selected', true)[0];
-        console.log(selectedFolder);
+        if (debugJavascript === true) console.log(selectedFolder);
         selectedFolderId = selectedFolder.id.split('_')[1];
-        console.info('SELECTED NODE ' + selectedFolderId);
-        console.log(selectedFolder);
+        if (debugJavascript === true) console.info('SELECTED NODE ' + selectedFolderId);
+        if (debugJavascript === true) console.log(selectedFolder);
 
         
 
@@ -429,7 +412,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('folder-action') === 'add') {
-            console.info('SHOW ADD FOLDER');
+            if (debugJavascript === true) console.info('SHOW ADD FOLDER');
             toastr.remove();
 
             // Check privileges
@@ -467,7 +450,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('folder-action') === 'edit') {
-            console.info('SHOW EDIT FOLDER');
+            if (debugJavascript === true) console.info('SHOW EDIT FOLDER');
             toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 20) {
@@ -504,7 +487,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('folder-action') === 'copy') {
-            console.info('SHOW COPY FOLDER');
+            if (debugJavascript === true) console.info('SHOW COPY FOLDER');
             toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 20) {
@@ -537,7 +520,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('folder-action') === 'delete') {
-            console.info('SHOW DELETE FOLDER');
+            if (debugJavascript === true) console.info('SHOW DELETE FOLDER');
             toastr.remove();
             // Check privileges
             if (store.get('teampassItem').hasAccessLevel < 30) {
@@ -567,7 +550,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
         } else if ($(this).data('folder-action') === 'import') {
             // IMPORT ITEMS
-            console.info('SHOW IMPORT ITEMS');
+            if (debugJavascript === true) console.info('SHOW IMPORT ITEMS');
             toastr.remove();
 
             // Store current view
@@ -582,7 +565,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'new') {
-            console.info('SHOW NEW ITEM');
+            if (debugJavascript === true) console.info('SHOW NEW ITEM');
             toastr.remove();
             // Store current view
             savePreviousView();
@@ -615,7 +598,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Clean select2 lists
                 $('.select2').val('');
-                /*if ($('.select2') !== null) {console.log($('.select2').length)
+                /*if ($('.select2') !== null) {if (debugJavascript === true) console.log($('.select2').length)
                     $('.select2').change();
                 }*/
                 // Do some form cleaning
@@ -672,7 +655,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'edit') {
-            console.info('SHOW EDIT ITEM');
+            if (debugJavascript === true) console.info('SHOW EDIT ITEM');
             $.when(
                 getPrivilegesOnItem(selectedFolderId, 1)
             ).then(function() {
@@ -711,11 +694,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'copy') {
-            console.info('SHOW COPY ITEM');
+            if (debugJavascript === true) console.info('SHOW COPY ITEM');
             toastr.remove();
             // Store current view
             savePreviousView('.form-item-copy');
-            
+
             if (store.get('teampassItem').user_can_modify === 1) {
                 // Show copy form
                 $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
@@ -756,7 +739,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Store current view
             savePreviousView('.form-item-delete');
 
-            console.info('SHOW DELETE ITEM');
+            if (debugJavascript === true) console.info('SHOW DELETE ITEM');
             if (store.get('teampassItem').user_can_modify === 1) {
                 // Show delete form
                 $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
@@ -776,7 +759,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'share') {
-            console.info('SHOW SHARE ITEM');
+            if (debugJavascript === true) console.info('SHOW SHARE ITEM');
             toastr.remove();
 
             // Store current view
@@ -790,7 +773,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'notify') {
-            console.info('SHOW NOTIFY ITEM');
+            if (debugJavascript === true) console.info('SHOW NOTIFY ITEM');
             toastr.remove();
 
             // Store current view
@@ -805,7 +788,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'otv') {
-            console.info('SHOW OTV ITEM');
+            if (debugJavascript === true) console.info('SHOW OTV ITEM');
             toastr.remove();
 
             // Store current view
@@ -823,7 +806,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         } else if ($(this).data('item-action') === 'server') {
-            console.info('SHOW SERVER UPDATE ITEM');
+            if (debugJavascript === true) console.info('SHOW SERVER UPDATE ITEM');
             toastr.remove();
 
             // Is user allowed
@@ -903,7 +886,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        if (debugJavascript === true) console.log(data);
                     }
                 );
             }
@@ -952,7 +935,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      * Click on perform IMPORT
      */
     $(document).on('click', '#form-item-import-perform', function() {
-        console.log('START IMPORT');
+        if (debugJavascript === true) console.log('START IMPORT');
     });
 
 
@@ -1011,7 +994,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -1062,8 +1045,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     $('#form-item-folder').change(function() {
         if ($(this).val() !== null && store.get('teampass-folders') !== undefined) {
-            //console.log('teampass-folders');
-            //console.log(store.get('teampass-folders'))
+            //if (debugJavascript === true) console.log('teampass-folders');
+            //if (debugJavascript === true) console.log(store.get('teampass-folders'))
             var folders = JSON.parse(store.get('teampass-folders'));
             $('#card-item-visibility').html(folders[$(this).val()].visibilityRoles);
             $('#card-item-minimum-complexity').html(folders[$(this).val()].complexity.text);
@@ -1429,7 +1412,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    console.log(data)
+                    if (debugJavascript === true) console.log(data)
                     //check if format error
                     if (data.error === true) {
                         toastr.remove();
@@ -1577,8 +1560,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     $('#form-folder-add-perform').click(function() {
         var form = $('#form-folder-add');
-        console.log(form[0]);
-        console.log(form[0].checkValidity());
+        if (debugJavascript === true) console.log(form[0]);
+        if (debugJavascript === true) console.log(form[0].checkValidity());
         if (form[0].checkValidity() === false) {
             form.addClass('was-validated');
 
@@ -1624,7 +1607,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
             'id': selectedFolderId,
         }
-        console.log(data);
+        if (debugJavascript === true) console.log(data);
 
         // Launch action
         $.post(
@@ -1730,7 +1713,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             data = {
                 'selectedFolders': [$('#form-folder-delete-selection option:selected').val()]
             }
-        console.log(data)
+        if (debugJavascript === true) console.log(data)
 
         // Launch action
         $.post(
@@ -1873,7 +1856,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      * @return void
      */
     function closeItemDetailsCard() {
-        console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView)
+        if (debugJavascript === true) console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView)
         if (userDidAChange === true) {
             toastr
                 .warning(
@@ -1981,7 +1964,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             }
 
-            console.log('Edit for closed');
+            if (debugJavascript === true) console.log('Edit for closed');
         }
 
 
@@ -2007,7 +1990,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
             toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            console.log('EDIT ME')
+            if (debugJavascript === true) console.log('EDIT ME')
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
 
@@ -2034,7 +2017,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         .on('change', '.form-check-input-template', function() {
             $('.form-check-input-template').not(this).prop('checked', false);
             userDidAChange = true;
-            console.log('> ' + userDidAChange)
+            if (debugJavascript === true) console.log('> ' + userDidAChange)
         });
 
     $('.form-check-input-template').on('ifChecked', function() {
@@ -2496,7 +2479,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $("#form-item-hidden-pickFilesNumber").val(
                 parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1
             );
-            //console.log(file);
+            //if (debugJavascript === true) console.log(file);
         });
         up.refresh(); // Reposition Flash/Silverlight
     });
@@ -2567,8 +2550,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 });
             }
         });
-        console.log('CHANGED FIELDS')
-        console.log(arrayQuery);
+        if (debugJavascript === true) console.log('CHANGED FIELDS')
+        if (debugJavascript === true) console.log(arrayQuery);
 
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
@@ -2669,7 +2652,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         $(this).val() === '' &&
                         $('#form-item-field-' + $(this).data('field-name')).parent().hasClass('hidden') === false
                     ) {
-                        //console.log($(this))
+                        //if (debugJavascript === true) console.log($(this))
                         errorExit = true;
                         return false;
                     }
@@ -2712,8 +2695,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId,
                 };
-                console.log('SAVING DATA');
-                console.log(data);
+                if (debugJavascript === true) console.log('SAVING DATA');
+                if (debugJavascript === true) console.log(data);
                 // Inform user
                 toastr.remove();
                 toastr.info(
@@ -2756,8 +2739,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             );
                             return false;
                         }
-                        console.log('RETURNED DATA');
-                        console.log(data)
+                        if (debugJavascript === true) console.log('RETURNED DATA');
+                        if (debugJavascript === true) console.log(data)
                         if (data.error === true) {
                             toastr.remove();
                             toastr.error(
@@ -2845,7 +2828,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             userUploadedFile = false;
             closeItemDetailsCard();
         } else {
-            console.info('NOTHING TO SAVE');
+            if (debugJavascript === true) console.info('NOTHING TO SAVE');
             toastr.remove();
             toastr.error(
                 '<?php echo langHdl('nothing_to_save'); ?>',
@@ -2910,7 +2893,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
     function showItemEditForm(selectedFolderId) {
-        console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
 
         //$.when(
         //    getPrivilegesOnItem(selectedFolderId, 0)
@@ -3016,7 +2999,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     icon_favorite;
 
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data)
+                if (debugJavascript === true) console.log(data)
 
                 // Ensure correct div is not hidden
                 $('#info_teampass_items_list').addClass('hidden');
@@ -3069,7 +3052,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                console.log(data)
+                if (debugJavascript === true) console.log(data)
                 //check if format error
                 if (data.error !== true) {
                     // Build html lists
@@ -3112,7 +3095,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .end()
                         .append(html_visible);
                     $(".no-root option[value='0']").remove();
-                    //console.log(html_visible);
+                    //if (debugJavascript === true) console.log(html_visible);
                     // Store in teampassUser
                     store.update(
                         'teampassUser',
@@ -3151,10 +3134,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         if (action === 'clear') {
             sending = JSON.stringify(folders.map(a => a.id));
-            console.log(sending)
+            if (debugJavascript === true) console.log(sending)
         } else if (action === 'update') {
             sending = JSON.stringify([folders]);
-            console.log(sending)
+            if (debugJavascript === true) console.log(sending)
         }
         // 
         $.post(
@@ -3263,7 +3246,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     function ListerItems(groupe_id, restricted, start, stop_listing_current_folder) {
         var me = $(this);
         stop_listing_current_folder = stop_listing_current_folder || '0';
-        console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id)
+        if (debugJavascript === true) console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id)
 
         // case where we should stop listing the items
         if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').itemsListStop === 1) {
@@ -3371,8 +3354,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     //get data
                     data = decodeQueryReturn(retData, '<?php echo $_SESSION['key']; ?>');
 
-                    console.log('LIST ITEMS');
-                    console.log(data);
+                    if (debugJavascript === true) console.log('LIST ITEMS');
+                    if (debugJavascript === true) console.log(data);
 
                     // reset doubleclick prevention
                     requestRunning = false;
@@ -3692,7 +3675,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     function sList(data) {
-        //console.log(data);
+        //if (debugJavascript === true) console.log(data);
         var counter = 0;
         $.each(data, function(i, value) {
             var new_line = '',
@@ -3803,7 +3786,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     $(document).on('click', '.open-folder', function() {
         if ($(this).data('tree-id') !== undefined) {
-            //console.log($(this).data('tree-id'))
+            //if (debugJavascript === true) console.log($(this).data('tree-id'))
 
             // Prepare
             store.update(
@@ -3979,7 +3962,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             //decrypt data
                             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
-                            console.log(data)
+                            if (debugJavascript === true) console.log(data)
 
                             if (data.error === true) {
                                 toastr.remove();
@@ -4019,7 +4002,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 },
                 function(data) {
                     data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     // *** restricted_to_list ***
                     $('#form-item-restrictedto')
                         .find('option').remove().end()
@@ -4054,18 +4037,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      *
      */
     function Details(itemDefinition, actionType, hotlink = false) {
-        console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ')
+        if (debugJavascript === true) console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ')
 
         // Store current view
         savePreviousView();
 
         /*store.each(function(value, key) {
-            console.log(key, '==', value)
+            if (debugJavascript === true) console.log(key, '==', value)
         })*/
-        console.log("Request is running: " + requestRunning)
+        if (debugJavascript === true) console.log("Request is running: " + requestRunning)
         // If a request is already launched, then kill new.
         /*if (requestRunning === true) {
-            console.log('ABORT')
+            if (debugJavascript === true) console.log('ABORT')
             //request.abort();
             return false;
         }*/
@@ -4128,7 +4111,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     teampassApplication.lastItemSeen = parseInt(itemId);
                 }
             );
-            console.log("Last seen item " + store.get('teampassApplication').lastItemSeen)
+            if (debugJavascript === true) console.log("Last seen item " + store.get('teampassApplication').lastItemSeen)
         }
 
         // Prepare data to be sent
@@ -4143,8 +4126,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'rights': itemRights,
         };
 
-        console.log("SEND");
-        console.log(data);
+        if (debugJavascript === true) console.log("SEND");
+        if (debugJavascript === true) console.log(data);
 
         //Send query
         $.post(
@@ -4157,8 +4140,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
                 requestRunning = true;
-                console.log("RECEIVED");
-                console.log(data);
+                if (debugJavascript === true) console.log("RECEIVED");
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error === true) {
                     toastr.remove();
@@ -4310,9 +4293,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         codeviewIframeFilter: true,
                         callbacks: {
                             onChange: function(contents, $editable) {
-                                console.log('Editor onChange:' + userDidAChange + " - " + requestRunning);
+                                if (debugJavascript === true) console.log('Editor onChange:' + userDidAChange + " - " + requestRunning);
                                 if (userDidAChange === false && requestRunning === false) {
-                                    console.log('onChange:', contents, $editable);
+                                    if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
                                     $('#form-item-description').data('change-ongoing', true);
                                 }
@@ -4338,7 +4321,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         callbacks: {
                             onChange: function(contents, $editable) {
                                 if (userDidAChange === false && requestRunning === false) {
-                                    console.log('onChange:', contents, $editable);
+                                    if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
                                     $('#form-item-suggestion-description').data('change-ongoing', true);
                                 }
@@ -4660,8 +4643,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
-                console.log('RECEIVED STEP2')
-                console.log(data);
+                if (debugJavascript === true) console.log('RECEIVED STEP2')
+                if (debugJavascript === true) console.log(data);
 
                 // Attachments
                 if (data.attachments.length === 0) {
@@ -4789,8 +4772,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         function(data) {
                             //decrypt data
                             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                            console.info('History:');
-                            console.log(data);
+                            if (debugJavascript === true) console.info('History:');
+                            if (debugJavascript === true) console.log(data);
                             if (data.error === '') {
                                 var html = '',
                                     nbHistoryEvents = 0;
@@ -4861,7 +4844,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     /*,
                                     function(data) {
                                         data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                                        console.log(data);
+                                        if (debugJavascript === true) console.log(data);
                                     }*/
                 );
             }
@@ -4905,7 +4888,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     $('.history').val('');
 
                     // Inform user
@@ -4947,7 +4930,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 function(data) {
                     //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     //check if format error
                     if (data.error === true) {
@@ -4999,7 +4982,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                //console.log(data);
+                //if (debugJavascript === true) console.log(data);
 
                 //check if format error
                 if (data.error === true) {
@@ -5130,7 +5113,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Clear memory
         //localStorage.setItem("teampassItem", '');
-        console.log('Get privilege for folder ' + val)
+        if (debugJavascript === true) console.log('Get privilege for folder ' + val)
 
         return $.post(
             "sources/items.queries.php", {
@@ -5143,8 +5126,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
-                console.info('GET COMPLEXITY LEVEL');
-                console.log(data);
+                if (debugJavascript === true) console.info('GET COMPLEXITY LEVEL');
+                if (debugJavascript === true) console.log(data);
                 var executionStatus = true;
 
                 if (data.error === false) {
@@ -5209,8 +5192,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             teampassItem.item_rights = data.itemAccessRight === undefined ? '' : data.itemAccessRight
                     }
                 );
-                //console.log('Content of teampassItem;')
-                //console.log(store.get('teampassItem'))
+                //if (debugJavascript === true) console.log('Content of teampassItem;')
+                //if (debugJavascript === true) console.log(store.get('teampassItem'))
             }
         );
     }
@@ -5218,7 +5201,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     $('.password-generate').click(function() {
         var elementId = $(this).data('id');
         $('#' + elementId).focus();
-        console.log(elementId)
+        if (debugJavascript === true) console.log(elementId)
 
         // If no criteria is set then do secure
         var secure_pwd = false;
@@ -5243,7 +5226,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                //console.log(data)
+                //if (debugJavascript === true) console.log(data)
                 if (data.error == "true") {
                     // error
                     toastr.remove();
@@ -5320,7 +5303,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     var actionFromUrl = currentTeampassUrl.searchParams.get('action');
     if (actionFromUrl !== undefined && atob(actionFromUrl) === 'reset_private_key') {
         // Case where we need to re-encrypt all share keys
-        console.log("ACTION RE-ENCRYPTION OF SHAREKEYS");
+        if (debugJavascript === true) console.log("ACTION RE-ENCRYPTION OF SHAREKEYS");
 
         $('#dialog-encryption-keys').removeClass('hidden');    
 
