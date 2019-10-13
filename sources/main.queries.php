@@ -1212,9 +1212,16 @@ function mainQuery($SETTINGS)
                     'cron',
                     'sending_emails'
                 );
-                if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
-                    $rows = DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status != %s', 'sent');
+                
+                if ((int) (time() - $row['valeur']) >= 300 || (int) $row['valeur'] === 0) {
+                    $rows = DB::query(
+                        'SELECT *
+                        FROM ' . prefixTable('emails') .
+                        ' WHERE status != %s',
+                        'sent'
+                    );
                     foreach ($rows as $record) {
+                        echo $record['increment_id']." >> ";
                         // Send email
                         $ret = json_decode(
                             sendEmail(
@@ -1225,6 +1232,8 @@ function mainQuery($SETTINGS)
                             ),
                             true
                         );
+                        print_r( $ret);
+                        echo " ;; ";
 
                         if ($ret['error'] === 'error_mail_not_send') {
                             $status = 'not_sent';

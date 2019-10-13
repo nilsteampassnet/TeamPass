@@ -187,7 +187,7 @@ echo '
                                 </div>
                                 <!-- DESCRIPTION -->
                                 <div class="mb-3">
-                                    <textarea id="form-item-description" class="form-item-control w-100 clear-me-html track-change" data-field-name="description" data-change-ongoing=""></textarea>
+                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html track-change" data-field-name="description" data-change-ongoing=""></div>
                                 </div>
                                 <!-- LOGIN -->
                                 <div class="input-group mb-3">

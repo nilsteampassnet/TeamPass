@@ -1461,7 +1461,9 @@ function sendEmail(
 
         // Prepare for each person
         foreach (array_filter(explode(',', $email)) as $dest) {
-            $mail->addAddress($dest);
+            if (empty($dest) === false) {
+                $mail->addAddress($dest);
+            }
         }
 
         // Prepare HTML
@@ -1472,7 +1474,7 @@ function sendEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-
+        $silent=false;
         // send email
         if ($mail->send()) {
             if ($silent === false) {

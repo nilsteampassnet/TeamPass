@@ -333,15 +333,18 @@ function buildNodeTree(
                         array(
                             'id' => 'li_' . $node->id,
                             'parent' => $parent,
-                            'label' => $parent,
-                            'level' => $parent,
+                            'text' => $text,
                             'children' => $childrenNb == 0 ? false : true,
-                            'text' => str_replace('"', '&quot;', $text),
                             'li_attr' => array(
                                 'class' => 'jstreeopen',
                                 'title' => 'ID [' . $node->id . '] ' . $title,
                             ),
-                            'onclick' => "ListerItems($node->id, $restricted, 0, 1)",
+                            'a_attr' => array(
+                                'id' => 'fld_' . $node->id,
+                                'class' => $folderClass,
+                                'onclick' => 'ListerItems(' . $node->id . ', ' . $restricted . ', 0, 1)',
+                                'data-title' => $node->title,
+                            ),
                         )
                     );
                 } elseif ($show_but_block === true) {
@@ -349,14 +352,13 @@ function buildNodeTree(
                         $ret_json,
                         array(
                             'id' => 'li_' . $node->id,
-                            'parent' => $parent,
+                            'parent' =>  $parent,
                             'children' => $childrenNb == 0 ? false : true,
                             'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>' . $text,
                             'li_attr' => array(
                                 'class' => '',
                                 'title' => 'ID [' . $node->id . '] ' . langHdl('no_access'),
                             ),
-                            'onclick' => ListerItems($node->id, $restricted, 0, 1),
                         )
                     );
                 }

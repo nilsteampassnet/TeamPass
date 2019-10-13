@@ -850,6 +850,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             element = '.item-details-card';
         }
 
+        console.log('>>> '+element+' -- '+newElement)
+
+        if (element === '.item-details-card') element = '#folders-tree-card';
+
         // Store current view
         store.update(
             'teampassUser',
@@ -1059,10 +1063,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     $('#form-item-notify-perform').click(function() {
         var form = $('#form-item-notify');
-
-        // Show cog
-        toastr.remove();
-        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
 
         var data = {
@@ -4276,6 +4276,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#form-item-label').focus();
 
                 // Editor for description field
+                console.log('>>>> create summernote')
                 $('#form-item-description')
                     .html(data.description)
                     .summernote({
@@ -4301,7 +4302,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 }
                             }
                         }
-                    });
+                    })
+                    //.summernote('editor.insertText', data.description);
 
                 $('#form-item-suggestion-description')
                     .html(data.description)
