@@ -487,6 +487,7 @@ function identifyUser($sentData, $SETTINGS)
     if (isset($SETTINGS['ldap_mode'])
         && (int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
+        && $userInfo['auth_type'] !== 'local'
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') === true) {

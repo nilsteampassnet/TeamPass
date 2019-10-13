@@ -782,11 +782,13 @@ if (($session_validite_pw === null
                     && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items'
                 ) {
                     // SHow page with Items
-                    if (($session_user_admin !== 1)
-                        || ($session_user_admin === 1
+                    if ((int) $session_user_admin !== 1
+                        || ((int) $session_user_admin === 1
                         && TP_ADMIN_FULL_RIGHT === false)
                     ) {
                         include $SETTINGS['cpassman_dir'] . '/pages/items.php';
+                    } elseif ((int) $session_user_admin === 1) {
+                        include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
                     } else {
                         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                         include $SETTINGS['cpassman_dir'] . '/error.php';
