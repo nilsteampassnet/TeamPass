@@ -686,10 +686,3 @@ if (null !== $post_step) {
 }
 
 echo '[{"finish":"1" , "next":"'.$next.'", "error":""}]';
-/*
-if ($next >= $total) {
-    $finish = 1;
-}
-
-echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';
-*/

@@ -2085,16 +2085,16 @@ function notifyChangesToSubscribers($item_id, $label, $changes, $SETTINGS)
 /**
  * Returns the Item + path.
  *
- * @param int    $id_tree
- * @param string $label
- * @param array  $SETTINGS
+ * @param int    $id_tree  Node id
+ * @param string $label    Label
+ * @param array  $SETTINGS TP settings
  *
  * @return string
  */
 function geItemReadablePath($id_tree, $label, $SETTINGS)
 {
     // Class loader
-    require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -2159,14 +2159,15 @@ function noHTML($input, $encoding = 'UTF-8')
 }
 
 /**
- * handleConfigFile().
- * permits to handle the Teampass config file
+ * 
+ * Permits to handle the Teampass config file
  * $action accepts "rebuild" and "update"
  *
  * @param string $action   Action to perform
  * @param array  $SETTINGS Teampass settings
  * @param string $field    Field to refresh
  * @param string $value    Value to set
+ *
  * @return void
  */
 function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
@@ -2208,6 +2209,7 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
         }
         array_push($data, ");\n");
         $data = array_unique($data);
+        // ---
     } elseif ($action === 'update' && empty($field) === false) {
         $data = file($tp_config_file);
         $inc = 0;
@@ -2235,11 +2237,13 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
     return true;
 }
 
-/*
-** Permits to replace &#92; to permit correct display
-*/
+
 /**
- * @param string $input
+ * Permits to replace &#92; to permit correct display
+ *
+ * @param string $input Some text
+ *
+ * @return string
  */
 function handleBackslash($input)
 {
@@ -2347,57 +2351,29 @@ function prepareFileWithDefuse(
     $target_file = $antiXss->xss_clean($target_file);
 
     if (empty($password) === true || is_null($password) === true) {
-        /*
-        File encryption/decryption is done with the SALTKEY
-         */
-
-        // get KEY
+        // get KEY to define password
         $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
+        $password = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+    }
 
-        // Now perform action on the file
-        $err = '';
-        if ($type === 'decrypt') {
-            // Decrypt file
-            $err = defuseFileDecrypt(
-                $source_file,
-                $target_file,
-                $SETTINGS,
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-            );
-            // ---
-        } elseif ($type === 'encrypt') {
-            // Encrypt file
-            $err = defuseFileEncrypt(
-                $source_file,
-                $target_file,
-                $SETTINGS,
-                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-            );
-        }
-    } else {
-        /*
-        File encryption/decryption is done with special password and not the SALTKEY
-         */
-
-        $err = '';
-        if ($type === 'decrypt') {
-            // Decrypt file
-            $err = defuseFileDecrypt(
-                $source_file,
-                $target_file,
-                $SETTINGS,
-                $password
-            );
-            // ---
-        } elseif ($type === 'encrypt') {
-            // Encrypt file
-            $err = defuseFileEncrypt(
-                $source_file,
-                $target_file,
-                $SETTINGS,
-                $password
-            );
-        }
+    $err = '';
+    if ($type === 'decrypt') {
+        // Decrypt file
+        $err = defuseFileDecrypt(
+            $source_file,
+            $target_file,
+            $SETTINGS,
+            $password
+        );
+        // ---
+    } elseif ($type === 'encrypt') {
+        // Encrypt file
+        $err = defuseFileEncrypt(
+            $source_file,
+            $target_file,
+            $SETTINGS,
+            $password
+        );
     }
 
     // return error
@@ -2612,11 +2588,9 @@ function accessToItemIsGranted($item_id, $SETTINGS)
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
         if (
-            isset($session_list_restricted_folders_for_items[$data['id_tree']])
-            && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
+            isset($session_list_restricted_folders_for_items[$data['id_tree']]) === true
+            && in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']]) === false
         ) {
-            return 'ERR_FOLDER_NOT_ALLOWED';
-        } else {
             return 'ERR_FOLDER_NOT_ALLOWED';
         }
     }
@@ -2813,18 +2787,10 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
                     if ($ldapbind === true) {
                         $ldapConnection = true;
-                    } else {
-                        $ldapConnection = false;
                     }
                 }
-            } else {
-                $ldapConnection = false;
             }
-        } else {
-            $ldapConnection = false;
         }
-    } else {
-        $ldapConnection = false;
     }
 
     return array(
@@ -2912,14 +2878,10 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
                 $ldapConnection = true;
-            } else {
-                $ldapConnection = false;
             }
         } else {
             $ldapConnection = true;
         }
-    } else {
-        $ldapConnection = false;
     }
 
     return array(
@@ -3292,7 +3254,7 @@ function generateQuickPassword($length = 16, $symbolsincluded = true)
  * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
  *
- * @return coid
+ * @return void
  */
 function storeUsersShareKey(
     $object_name,
@@ -3329,6 +3291,7 @@ function storeUsersShareKey(
     // Prepare superGlobal variables
     $sessionPpersonaFolders = $superGlobal->get('personal_folders', 'SESSION');
     $sessionUserId = $superGlobal->get('user_id', 'SESSION');
+    $sessionUserPublicKey = $superGlobal->get('public_key', 'SESSION', 'user');
 
     if (
         (int) $post_folder_is_personal === 1
@@ -3341,7 +3304,7 @@ function storeUsersShareKey(
             array(
                 'object_id' => $post_object_id,
                 'user_id' => $sessionUserId,
-                'share_key' => encryptUserObjectKey($objectKey, $_SESSION['user']['public_key']),
+                'share_key' => encryptUserObjectKey($objectKey, $sessionUserPublicKey),
             )
         );
     } else {
@@ -3410,7 +3373,7 @@ function filterString($field)
         $antiXss = new voku\helper\AntiXSS();
         // Return
         return $antiXss->xss_clean($field);
-    } else {
-        return false;
     }
+
+    return false;
 }
