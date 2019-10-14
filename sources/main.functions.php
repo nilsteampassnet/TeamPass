@@ -1474,7 +1474,7 @@ function sendEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-        $silent=false;
+        $silent = false;
         // send email
         if ($mail->send()) {
             if ($silent === false) {
@@ -1979,7 +1979,8 @@ function logItems(
  */
 function notifyOnChange($item_id, $action, $SETTINGS)
 {
-    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+    if (
+        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
         && $action === 'at_shown'
     ) {
@@ -3375,5 +3376,128 @@ function filterString($field)
         return $antiXss->xss_clean($field);
     }
 
+    return false;
+}
+
+/**
+ * Connect to LDAP server
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return boolean||array
+ */
+function ldapConnect($SETTINGS)
+{
+    // return if ldap not enabled
+    if ((int) $SETTINGS['ldap_mode'] === 1) {
+        return false;
+    }
+
+    if ($SETTINGS['ldap_type'] === 'posix-search') {
+        // LDAP with posix search
+        $ldapURIs = '';
+        foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
+            if ($SETTINGS['ldap_ssl'] == 1) {
+                $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
+            } else {
+                $ldapURIs .= 'ldap://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
+            }
+        }
+        // Connect
+        $ldapconn = ldap_connect($ldapURIs);
+
+        // Case of LDAP over TLS
+        if ($SETTINGS['ldap_tls']) {
+            ldap_start_tls($ldapconn);
+        }
+
+        // Set options
+        ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+
+        // Is LDAP connection ready?
+        if ($ldapconn !== false) {
+            // Should we bind the connection?
+            if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
+                return ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+            }
+        }
+
+        return false;
+    } else { }
+}
+
+/**
+ * CHeck if provided credentials are allowed on server
+ *
+ * @param string $login    User Login
+ * @param string $password User Pwd
+ * @param array $SETTINGS  Teampass settings
+ *
+ * @return boolean||array
+ */
+function ldapCheckUserPassword($login, $password, $SETTINGS)
+{
+    $ldapconn = ldapConnect($SETTINGS);
+    if ($ldapconn) {
+        if ($SETTINGS['ldap_type'] === 'posix-search') {
+            // LDAP with posix search
+            $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $login . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
+            $result = ldap_search(
+                $ldapconn,
+                $SETTINGS['ldap_search_base'],
+                $filter,
+                array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire', 'memberof')
+            );
+
+            // Check if user was found in AD
+            if (ldap_count_entries($ldapconn, $result) > 0) {
+                // Get user's info and especially the DN
+                $userLDAPInfo = ldap_get_entries($ldapconn, $result);
+
+                // Try to auth inside LDAP
+                if (ldap_bind($ldapconn, $userLDAPInfo[0]['dn'], $password) === true) {
+                    return true;
+                }
+            }
+        } else {
+            $adldap = new SplClassLoader('adLDAP', $SETTINGS['cpassman_dir'] . '/includes/libraries/LDAP');
+            $adldap->register();
+            $ldap_suffix = '';
+
+            // Posix style LDAP handles user searches a bit differently
+            if ($SETTINGS['ldap_type'] === 'posix') {
+                $ldap_suffix = ',' . $SETTINGS['ldap_suffix'] . ',' . $SETTINGS['ldap_domain_dn'];
+            } elseif ($SETTINGS['ldap_type'] === 'windows') {
+                //Multiple Domain Names
+                $ldap_suffix = $SETTINGS['ldap_suffix'];
+            }
+
+            // Ensure no double commas exist in ldap_suffix
+            $ldap_suffix = str_replace(',,', ',', $ldap_suffix);
+
+            // Create LDAP connection
+            $adldap = new adLDAP\adLDAP(
+                array(
+                    'base_dn' => $SETTINGS['ldap_domain_dn'],
+                    'account_suffix' => $ldap_suffix,
+                    'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
+                    'ad_port' => $SETTINGS['ldap_port'],
+                    'use_ssl' => $SETTINGS['ldap_ssl'],
+                    'use_tls' => $SETTINGS['ldap_tls'],
+                )
+            );
+
+            // OpenLDAP expects an attribute=value pair
+            if ($SETTINGS['ldap_type'] === 'posix') {
+                $login = $SETTINGS['ldap_user_attribute'] . '=' . $login;
+            }
+
+            // Authenticate the user
+            if ($adldap->authenticate($login, html_entity_decode($password))) {
+                return true;
+            }
+        }
+    }
     return false;
 }

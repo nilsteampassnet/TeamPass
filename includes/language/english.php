@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -17,6 +18,7 @@
  */
 
 return array(
+    'fill_in_fields_and_hit_launch' => 'Define new password and hit Launch button',
     'please_select_a_folder' => 'Please select a folder',
     'user_must_have_login_and_email' => 'User must have a login and an email',
     'user_has_this_role_in_teampass' => 'User has this role in Teampass',

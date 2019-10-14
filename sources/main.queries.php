@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -1212,16 +1213,16 @@ function mainQuery($SETTINGS)
                     'cron',
                     'sending_emails'
                 );
-                
+
                 if ((int) (time() - $row['valeur']) >= 300 || (int) $row['valeur'] === 0) {
                     $rows = DB::query(
                         'SELECT *
                         FROM ' . prefixTable('emails') .
-                        ' WHERE status != %s',
+                            ' WHERE status != %s',
                         'sent'
                     );
                     foreach ($rows as $record) {
-                        echo $record['increment_id']." >> ";
+                        echo $record['increment_id'] . " >> ";
                         // Send email
                         $ret = json_decode(
                             sendEmail(
@@ -1232,7 +1233,7 @@ function mainQuery($SETTINGS)
                             ),
                             true
                         );
-                        print_r( $ret);
+                        print_r($ret);
                         echo " ;; ";
 
                         if ($ret['error'] === 'error_mail_not_send') {
@@ -1841,41 +1842,57 @@ Insert the log here and especially the answer of the query that failed.
             // Variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
+            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+            $post_self_change = filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING);
+            $emailError = false;
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Get user info
                 $userData = DB::queryFirstRow(
-                    'SELECT email
+                    'SELECT email, auth_type, login
                     FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
                 );
                 if (DB::count() > 0 && empty($userData['email']) === false) {
-                    // Generate new password
-                    $newPassword = generateQuickPassword();
+                    // If user pwd is empty then generate a new one and send it to user
+                    if (isset($post_user_password) === false || empty($post_user_password) === true) {
+                        // Generate new password
+                        $post_user_password = generateQuickPassword();
 
-                    // Send email to user
-                    $emailError = false;
-                    try {
-                        sendEmail(
-                            langHdl('email_new_user_password'),
-                            str_replace(
-                                array('#tp_password#'),
-                                array($newPassword),
-                                langHdl('email_new_user_password_body')
-                            ),
-                            $userData['email'],
-                            $SETTINGS,
-                            ''
-                        );
-                    } catch (Exception $e) {
-                        $emailError = $e;
+                        // Send email to user
+                        try {
+                            sendEmail(
+                                langHdl('email_new_user_password'),
+                                str_replace(
+                                    array('#tp_password#'),
+                                    array($post_user_password),
+                                    langHdl('email_new_user_password_body')
+                                ),
+                                $userData['email'],
+                                $SETTINGS,
+                                ''
+                            );
+                        } catch (Exception $e) {
+                            $emailError = $e;
+                        }
                     }
 
-                    if ($emailError === false) {
+                    // If LDAP enabled, then
+                    // check that this password is correct
+                    $continue = true;
+                    if ($userData['email'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
+                        $continue = ldapCheckUserPassword(
+                            $userData['login'],
+                            $post_user_password,
+                            $SETTINGS
+                        );
+                    }
+
+                    if ($emailError === false && $continue === true) {
                         // Only change if email is successfull
                         // GEnerate new keys
-                        $userKeys = generateUserKeys($newPassword);
+                        $userKeys = generateUserKeys($post_user_password);
 
                         // load passwordLib library
                         $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -1887,7 +1904,7 @@ Insert the log here and especially the answer of the query that failed.
                             prefixTable('users'),
                             array(
                                 'special' => $post_special,
-                                'pw' => $pwdlib->createPasswordHash($newPassword),
+                                'pw' => $pwdlib->createPasswordHash($post_user_password),
                                 'public_key' => $userKeys['public_key'],
                                 'private_key' => $userKeys['private_key'],
                             ),
@@ -1900,7 +1917,7 @@ Insert the log here and especially the answer of the query that failed.
                             array(
                                 'error' => false,
                                 'message' => '',
-                                'debug' => $newPassword,
+                                'debug' => $post_user_password,
                             ),
                             'encode'
                         );
@@ -1911,6 +1928,7 @@ Insert the log here and especially the answer of the query that failed.
                                 'error' => true,
                                 'message' => $emailError,
                                 'debug' => '',
+                                'self_change' => $post_self_change,
                             ),
                             'encode'
                         );
@@ -1959,6 +1977,7 @@ Insert the log here and especially the answer of the query that failed.
 
             $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
+            $post_self_change = filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING);
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Check if user exists
@@ -1973,7 +1992,9 @@ Insert the log here and especially the answer of the query that failed.
                     include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // CLear old sharekeys
-                    deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                    if ($post_self_change === false) {
+                        deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                    }
 
                     // Continu with next step
                     echo prepareExchangedData(
@@ -1983,6 +2004,7 @@ Insert the log here and especially the answer of the query that failed.
                             'step' => 'step1',
                             'userId' => $post_user_id,
                             'start' => 0,
+                            'self_change' => $post_self_change,
                         ),
                         'encode'
                     );
@@ -2030,6 +2052,7 @@ Insert the log here and especially the answer of the query that failed.
             $post_start = filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT);
             $post_length = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
             $post_action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
+            $post_self_change = filter_var($_POST['self_change'], FILTER_SANITIZE_STRING);
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Check if user exists
@@ -2057,7 +2080,7 @@ Insert the log here and especially the answer of the query that failed.
                         foreach ($rows as $record) {
                             // Get itemKey from current user
                             $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key
+                                'SELECT share_key, increment_id
                                 FROM ' . prefixTable('sharekeys_items') . '
                                 WHERE object_id = %i AND user_id = %i',
                                 $record['id'],
@@ -2071,14 +2094,25 @@ Insert the log here and especially the answer of the query that failed.
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                             // Save the key in DB
-                            DB::insert(
-                                prefixTable('sharekeys_items'),
-                                array(
-                                    'object_id' => (int) $record['id'],
-                                    'user_id' => (int) $post_user_id,
-                                    'share_key' => $share_key_for_item,
-                                )
-                            );
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_items'),
+                                    array(
+                                        'object_id' => (int) $record['id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_items'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
                         }
 
                         // SHould we change step?
@@ -2121,14 +2155,25 @@ Insert the log here and especially the answer of the query that failed.
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                             // Save the key in DB
-                            DB::insert(
-                                prefixTable('sharekeys_logs'),
-                                array(
-                                    'object_id' => (int) $record['increment_id'],
-                                    'user_id' => (int) $post_user_id,
-                                    'share_key' => $share_key_for_item,
-                                )
-                            );
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_logs'),
+                                    array(
+                                        'object_id' => (int) $record['increment_id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_logs'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
                         }
 
                         // SHould we change step?
@@ -2171,14 +2216,25 @@ Insert the log here and especially the answer of the query that failed.
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                             // Save the key in DB
-                            DB::insert(
-                                prefixTable('sharekeys_fields'),
-                                array(
-                                    'object_id' => (int) $record['id'],
-                                    'user_id' => (int) $post_user_id,
-                                    'share_key' => $share_key_for_item,
-                                )
-                            );
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_fields'),
+                                    array(
+                                        'object_id' => (int) $record['id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_fields'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
                         }
 
                         // SHould we change step?
@@ -2220,14 +2276,25 @@ Insert the log here and especially the answer of the query that failed.
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                             // Save the key in DB
-                            DB::insert(
-                                prefixTable('sharekeys_suggestions'),
-                                array(
-                                    'object_id' => (int) $record['id'],
-                                    'user_id' => (int) $post_user_id,
-                                    'share_key' => $share_key_for_item,
-                                )
-                            );
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_suggestions'),
+                                    array(
+                                        'object_id' => (int) $record['id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_suggestions'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
                         }
 
                         // SHould we change step?
@@ -2269,14 +2336,25 @@ Insert the log here and especially the answer of the query that failed.
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
                             // Save the key in DB
-                            DB::insert(
-                                prefixTable('sharekeys_files'),
-                                array(
-                                    'object_id' => (int) $record['id'],
-                                    'user_id' => (int) $post_user_id,
-                                    'share_key' => $share_key_for_item,
-                                )
-                            );
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_files'),
+                                    array(
+                                        'object_id' => (int) $record['id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_files'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
                         }
 
                         // SHould we change step?
@@ -2302,6 +2380,7 @@ Insert the log here and especially the answer of the query that failed.
                             'step' => $post_action,
                             'start' => $next_start,
                             'userId' => $post_user_id,
+                            'self_change' => $post_self_change,
                         ),
                         'encode'
                     );
@@ -2328,283 +2407,6 @@ Insert the log here and especially the answer of the query that failed.
                 );
                 break;
             }
-
-            break;
-
-            /*
-         * Remove personal saltkey
-         * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
-         */
-        case 'convert_items_with_personal_saltkey_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-
-            // Check if we have a publick key
-            if (isset($_SESSION['user']['public_key']) === false || empty($_SESSION['user']['public_key']) === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('public_key_is_missing'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // manage store
-            if ($filter_psk !== '') {
-                // store in session the cleartext for psk
-                $_SESSION['user']['clear_psk'] = $filter_psk;
-
-                // check if encrypted_psk is in database. If not, add it
-                if (
-                    isset($_SESSION['user']['encrypted_psk']) === false
-                    || (isset($_SESSION['user']['encrypted_psk']) === true && empty($_SESSION['user']['encrypted_psk']) === true)
-                ) {
-                    // generate it based upon clear psk
-                    $_SESSION['user']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
-                }
-
-                // check if psk is correct.
-                $user_key_encoded = defuse_validate_personal_key(
-                    $filter_psk,
-                    $_SESSION['user']['encrypted_psk']
-                );
-                //echo $filter_psk.' -- '.$_SESSION['user']['encrypted_psk'].' -- '.$user_key_encoded.' ;; ';
-                //break;
-
-                if (strpos($user_key_encoded, 'Error ') !== false) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('bad_psk'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    // Build the list of items to convert
-                    $itemsToTreat = array();
-                    $filesToTreat = array();
-                    foreach ($_SESSION['personal_visible_groups'] as $folder) {
-                        // Get each item in this folder
-                        $items = DB::query(
-                            'SELECT id FROM ' . prefixTable('items') . '
-                            WHERE id_tree = %i',
-                            $folder
-                        );
-                        foreach ($items as $item) {
-                            if (in_array($item['id'], $itemsToTreat) === false) {
-                                array_push($itemsToTreat, $item['id']);
-
-                                // Check if this item has a file attached
-                                $files = DB::query(
-                                    'SELECT id, file FROM ' . prefixTable('files') . '
-                                    WHERE id_item = %i',
-                                    $item['id']
-                                );
-                                foreach ($files as $file) {
-                                    if (in_array($file['file'], $filesToTreat) === false) {
-                                        array_push($filesToTreat, 'EncryptedFile_' . $file['file']);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Now perform the personal items password convertion
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'psk' => $user_key_encoded,
-                            'items_list' => $itemsToTreat,
-                            'files_list' => $filesToTreat,
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('psk_required'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            break;
-
-            /*
-        * Remove personal saltkey
-        * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
-        */
-        case 'convert_items_with_personal_saltkey_progress':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-            $filter_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_STRING);
-            $filter_files = filter_var_array($dataReceived['files'], FILTER_SANITIZE_STRING);
-
-            // Treat Objects conversion
-            if (count($filter_items) > 0) {
-                // Treat Items
-                $item = DB::queryFirstRow(
-                    'SELECT pw
-                    FROM ' . prefixTable('items') . '
-                    WHERE id = %i',
-                    $filter_items[0]
-                );
-
-                // Decrypt with Defuse
-                $passwd = cryption(
-                    $item['pw'],
-                    $filter_psk,
-                    'decrypt',
-                    $SETTINGS
-                );
-
-                // Encrypt with Object Key
-                $cryptedStuff = doDataEncryption($passwd['string']);
-
-                // Store new password in DB
-                DB::update(
-                    prefixTable('items'),
-                    array(
-                        'pw' => $cryptedStuff['encrypted'],
-                        'encryption_type' => 'teampass_aes',
-                    ),
-                    'id = %i',
-                    $filter_items[0]
-                );
-
-                // Store the sharekey
-                DB::insert(
-                    prefixTable('sharekeys_items'),
-                    array(
-                        'object_id' => $filter_items[0],
-                        'user_id' => $_SESSION['user_id'],
-                        'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $_SESSION['user']['public_key']),
-                    )
-                );
-
-                // Shift array
-                array_shift($filter_items);
-                // ---
-            } elseif (count($filter_files) > 0) {
-                // Shift array
-                array_shift($filter_files);
-            }
-
-            // If conversion is finished
-            if (count($filter_items) === 0 && count($filter_files) === 0) {
-                // Clear psk field for the user in DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'encrypted_psk' => '',
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'items_list' => $filter_items,
-                    'files_list' => $filter_files,
-                ),
-                'encode'
-            );
-            break;
-
-            /*
-            * Remove personal saltkey
-            * THIS FUNCTION SHOULD BE REMOVED IN THE FUTURE
-            */
-        case 'user_forgot_his_personal_saltkey':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // Clear psk field for the user in DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'encrypted_psk' => '',
-                ),
-                'id = %i',
-                $_SESSION['user_id']
-            );
-            $_SESSION['user']['encrypted_psk'] = '';
-
-            // Clear all password personal items
-            foreach ($_SESSION['personal_visible_groups'] as $folder) {
-                // Get each item in this folder
-                $items = DB::query(
-                    'SELECT id FROM ' . prefixTable('items') . '
-                    WHERE id_tree = %i',
-                    $folder['id']
-                );
-                foreach ($items as $item) {
-                    DB::update(
-                        prefixTable('items'),
-                        array(
-                            'pw' => '',
-                            'complexity_level' => -1,
-                        ),
-                        'id = %i',
-                        $item['id']
-                    );
-                }
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
-                'encode'
-            );
 
             break;
     }

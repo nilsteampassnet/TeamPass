@@ -126,7 +126,8 @@ $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (isset($_GET['language']) === true
+if (
+    isset($_GET['language']) === true
     && empty($_) === false
     && filter_var(trim($_GET['language']), FILTER_SANITIZE_STRING) !== false
 ) {
@@ -267,14 +268,15 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 <?php
 // display an item in the context of OTV link
 if (($session_validite_pw === null
-    || empty($session_validite_pw) === true
-    || empty($session_user_id) === true)
+        || empty($session_validite_pw) === true
+        || empty($session_user_id) === true)
     && isset($_GET['otv']) === true
     && empty($_GET['otv']) === false
     && filter_var(trim($_GET['otv']), FILTER_SANITIZE_STRING) !== false
 ) {
     // case where one-shot viewer
-    if (isset($_GET['code']) === true && empty($_GET['code']) === false
+    if (
+        isset($_GET['code']) === true && empty($_GET['code']) === false
         && isset($_GET['stamp']) === true && empty($_GET['stamp']) === false
     ) {
         include './includes/core/otv.php';
@@ -293,7 +295,8 @@ if (($session_validite_pw === null
         );
         include $SETTINGS['cpassman_dir'] . '/error.php';
     }
-} elseif ($session_validite_pw !== null
+} elseif (
+    $session_validite_pw !== null
     && $session_validite_pw === true
     && isset($_GET['page']) === true
     && empty($_GET['page']) === false
@@ -323,20 +326,20 @@ if (($session_validite_pw === null
                         <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
                     </li>
                     <?php
-                    if (empty($_GET['page']) === false && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items') {
-                        ?>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a class="nav-link" href="#">
-                            <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item d-none d-sm-inline-block">
-                        <a class="nav-link" href="#">
-                            <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
-                        </a>
-                    </li>
-                        <?php
-                    } ?>
+                        if (empty($_GET['page']) === false && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items') {
+                            ?>
+                        <li class="nav-item d-none d-sm-inline-block">
+                            <a class="nav-link" href="#">
+                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item d-none d-sm-inline-block">
+                            <a class="nav-link" href="#">
+                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
+                            </a>
+                        </li>
+                    <?php
+                        } ?>
                 </ul>
 
                 <!-- Right navbar links -->
@@ -355,6 +358,9 @@ if (($session_validite_pw === null
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="profile">
                                     <i class="fas fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
+                                </a>
+                                <a class="dropdown-item user-menu" href="#" data-name="password-change">
+                                    <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
@@ -458,14 +464,15 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
-                            }
+                                }
 
-                            // Favourites menu
-                            if (isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
-                                && ($session_user_admin === 0 || ($session_user_admin === 1
-                                && TP_ADMIN_FULL_RIGHT === false))
-                            ) {
-                                echo '
+                                // Favourites menu
+                                if (
+                                    isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
+                                    && ($session_user_admin === 0 || ($session_user_admin === 1
+                                        && TP_ADMIN_FULL_RIGHT === false))
+                                ) {
+                                    echo '
                     <li class="nav-item">
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '', '">
                         <i class="nav-icon fas fa-star"></i>
@@ -491,10 +498,11 @@ if (($session_validite_pw === null
         }
     */
                                 // SUGGESTION menu
-                            if (isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
-                                && $session_user_manager === 1
-                            ) {
-                                echo '
+                                if (
+                                    isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
+                                    && $session_user_manager === 1
+                                ) {
+                                    echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '', '">
                         <i class="nav-icon fas fa-lightbulb"></i>
@@ -589,13 +597,14 @@ if (($session_validite_pw === null
                         </p>
                         </a>
                     </li>';
-                            }
+                                }
 
-                            if ($session_user_admin === 1
-                                || $session_user_manager === 1
-                                || $session_user_human_resources === 1
-                            ) {
-                                echo '
+                                if (
+                                    $session_user_admin === 1
+                                    || $session_user_manager === 1
+                                    || $session_user_human_resources === 1
+                                ) {
+                                    echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '', '">
                         <i class="nav-icon fas fa-folder-open"></i>
@@ -760,8 +769,24 @@ if (($session_validite_pw === null
                                     <i class="icon fas fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
                                 </div>
+                                <div class="input-group mb-3 ask-for-new-password hidden">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-password">
+                                    <div class="input-group-append" style="margin: 0px;">
+                                        <span class="input-group-text" id="profile-password-strength"></span>
+                                        <input type="hidden" id="profile-password-complex" />
+                                    </div>
+                                </div>
+                                <div class="input-group mb-3 ask-for-new-password hidden">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-password-confirm">
+                                </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-encryption-keys-progress">
-                                    <?php echo langHdl('hit_launch_to_start'); ?>
+                                    <?php echo langHdl('fill_in_fields_and_hit_launch'); ?>
                                 </div>
                             </div>
                         </div>
@@ -775,61 +800,66 @@ if (($session_validite_pw === null
                 <!-- /.ENCRYPTION KEYS GENERATION -->
 
                 <?php
-                if ($session_initial_url !== null && empty($session_initial_url) === false) {
-                    include $session_initial_url;
-                } elseif (isset($_GET['page']) === true
-                    && empty($_GET['page']) === false
-                    && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items'
-                ) {
-                    // SHow page with Items
-                    if ((int) $session_user_admin !== 1
-                        || ((int) $session_user_admin === 1
-                        && TP_ADMIN_FULL_RIGHT === false)
+                    if ($session_initial_url !== null && empty($session_initial_url) === false) {
+                        include $session_initial_url;
+                    } elseif (
+                        isset($_GET['page']) === true
+                        && empty($_GET['page']) === false
+                        && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === 'items'
                     ) {
-                        include $SETTINGS['cpassman_dir'] . '/pages/items.php';
-                    } elseif ((int) $session_user_admin === 1) {
-                        include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
-                    } else {
-                        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                        include $SETTINGS['cpassman_dir'] . '/error.php';
-                    }
-                } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
-                    // Define if user is allowed to see management pages
-                    if ($session_user_admin === 1) {
-                        include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
-                    } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
-                        if (isset($_GET['page']) === true
-                            && empty($_GET['page']) === false
-                            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_main'
-                            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_settings'
+                        // SHow page with Items
+                        if (
+                            (int) $session_user_admin !== 1
+                            || ((int) $session_user_admin === 1
+                                && TP_ADMIN_FULL_RIGHT === false)
                         ) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                            include $SETTINGS['cpassman_dir'] . '/pages/items.php';
+                        } elseif ((int) $session_user_admin === 1) {
+                            include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
                         } else {
                             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
+                    } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
+                        // Define if user is allowed to see management pages
+                        if ($session_user_admin === 1) {
+                            include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                        } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
+                            if (
+                                isset($_GET['page']) === true
+                                && empty($_GET['page']) === false
+                                && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_main'
+                                && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_settings'
+                            ) {
+                                include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                            } else {
+                                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                                include $SETTINGS['cpassman_dir'] . '/error.php';
+                            }
+                        } else {
+                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                            include $SETTINGS['cpassman_dir'] . '/error.php';
+                        }
+                    } elseif (
+                        isset($_GET['page']) === true
+                        && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
+                    ) {
+                        include $SETTINGS['cpassman_dir'] . '/pages/' . $_GET['page'] . '.php';
                     } else {
-                        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                        include $SETTINGS['cpassman_dir'] . '/error.php';
+                        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
+                        //include $SETTINGS['cpassman_dir'].'/error.php';
                     }
-                } elseif (isset($_GET['page']) === true
-                    && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
-                ) {
-                    include $SETTINGS['cpassman_dir'] . '/pages/' . $_GET['page'] . '.php';
-                } else {
-                    $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
-                    //include $SETTINGS['cpassman_dir'].'/error.php';
-                }
 
-                // Case where login attempts have been identified
-                if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-                    && $_SESSION['unsuccessfull_login_attempts_nb'] !== 0
-                    && $_SESSION['unsuccessfull_login_attempts_shown'] === false
-                ) {
-                    ?>
-                <input type="hidden" id="user-login-attempts" value="1">
-                    <?php
-                } ?>
+                    // Case where login attempts have been identified
+                    if (
+                        isset($_SESSION['unsuccessfull_login_attempts']) === true
+                        && $_SESSION['unsuccessfull_login_attempts_nb'] !== 0
+                        && $_SESSION['unsuccessfull_login_attempts_shown'] === false
+                    ) {
+                        ?>
+                    <input type="hidden" id="user-login-attempts" value="1">
+                <?php
+                    } ?>
 
             </div>
             <!-- /.content-wrapper -->
@@ -877,12 +907,13 @@ if (($session_validite_pw === null
         echo '
 <input type="hidden" id="temps_restant" value="', isset($_SESSION['sessionDuration']) ? $_SESSION['sessionDuration'] : '', '" />';
     } elseif ((empty($session_user_id) === false
-        && $session_user_id !== null)
+            && $session_user_id !== null)
         || empty($session_user_id) === true
         || $session_user_id === null
     ) {
         // case where user not logged and can't access a direct link
-        if (isset($_GET['page']) === true
+        if (
+            isset($_GET['page']) === true
             && empty($_GET['page']) === false
             && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
         ) {

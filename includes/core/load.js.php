@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -17,7 +18,7 @@
  */
 
 
-if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -151,6 +152,35 @@ if (
                 showPersonalSKDialog();
             } else if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
+            } else if ($(this).data('name') === 'password-change') {
+                console.log('show password change')
+                // HIde
+                $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
+
+                // Show passwords inputs and form
+                $('#dialog-encryption-keys, .ask-for-new-password').removeClass('hidden');
+
+                $('#sharekeys_reencryption_target_user').val(store.get('teampassUser').user_id);
+
+                // Actions
+                $(document).on('change', '#dialog-encryption-keys .form-control', function() {
+                    if ($('#profile-password-confirm').val() === $('#profile-password').val()) {
+                        if ($('#profile-password-complex').val() >= store.get('teampassSettings').personal_saltkey_security_level) {
+                            $('#button_do_sharekeys_reencryption').removeClass('hidden');
+                        } else {
+                            $('#button_do_sharekeys_reencryption').addClass('hidden');
+                            toastr.remove();
+                            toastr.warning(
+                                '<?php echo langHdl('complexity_level_not_reached'); ?>',
+                                '<?php echo langHdl('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        }
+                    }
+                });
+                // ----
             } else if ($(this).data('name') === 'profile') {
                 //NProgress.start();
                 document.location.href = "index.php?page=profile";
@@ -246,9 +276,9 @@ if (
     });
 
     // For Personal Saltkey
-    $("#user_personal_saltkey").simplePassMeter({
+    $("#profile-password").simplePassMeter({
         "requirements": {},
-        "container": "#psk_strength",
+        "container": "#profile-password-strength",
         "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
         "ratings": [{
                 "minScore": 0,
@@ -287,13 +317,13 @@ if (
             }
         ]
     });
-    $("#user_personal_saltkey").bind({
+    $("#profile-password").bind({
         "score.simplePassMeter": function(jQEvent, score) {
-            $("#psk_strength_value").val(score);
+            $("#profile-password-complex").val(score);
         }
     }).change({
         "score.simplePassMeter": function(jQEvent, score) {
-            $("#psk_strength_value").val(score);
+            $("#profile-password-complex").val(score);
         }
     });
 
@@ -353,12 +383,18 @@ if (
         // Disable buttons
         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').attr('disabled', 'disabled');
 
-        // This sends a new password by email to user
+        // Manage 2 cases
+        // One is when an admin asks
+        // Second is when user asks
         data = {
             'user_id': $('#sharekeys_reencryption_target_user').val(),
-            'special': 'password_change_expected',
+            'special': '',
+            'password': $('.ask-for-new-password').hasClass('hidden') === true ? '' : $('#profile-password').val(),
+            'self_change': true,
         }
-
+        console.log(data)
+        // If LDAP is enabled, then check that this password is correct
+        // Before starting with changing it in Teampass
         $.post(
             'sources/main.queries.php', {
                 type: 'initialize_user_password',
@@ -385,7 +421,7 @@ if (
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                 } else {
                     // Inform user
-                    userShareKeysReencryption($('#sharekeys_reencryption_target_user').val());
+                    userShareKeysReencryption($('#sharekeys_reencryption_target_user').val(), true);
                 }
             }
         );
@@ -637,7 +673,7 @@ if (
 
 
 
-    function userShareKeysReencryption(userId = null) {
+    function userShareKeysReencryption(userId = null, self_change = false) {
         console.log('USER SHAREKEYS RE-ENCRYPTION START');
 
         $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -651,6 +687,7 @@ if (
             "sources/main.queries.php", {
                 type: "user_sharekeys_reencryption_start",
                 userId: userId,
+                self_change: self_change,
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -672,13 +709,13 @@ if (
                     return false;
                 } else {
                     // Start looping on all steps of re-encryption
-                    userShareKeysReencryptionNext(data.userId, data.step, data.start);
+                    userShareKeysReencryptionNext(data.userId, data.step, data.start, self_change);
                 }
             }
         );
     }
 
-    function userShareKeysReencryptionNext(userId, step, start) {
+    function userShareKeysReencryptionNext(userId, step, start, self_change = false) {
         var stepText = '';
 
         // Prepare progress string
@@ -729,7 +766,7 @@ if (
                         return false;
                     } else {
                         // Start looping on all steps of re-encryption
-                        userShareKeysReencryptionNext(data.userId, data.step, data.start);
+                        userShareKeysReencryptionNext(data.userId, data.step, data.start, self_change);
                     }
                 }
             );

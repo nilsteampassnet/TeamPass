@@ -194,19 +194,6 @@ foreach ($_SESSION['user_roles'] as $role) {
                                 <a class="nav-link<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" href="#timeline" data-toggle="tab">Timeline</a>
                             </li>
                             <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                                    <?php echo langHdl('actions'); ?> <span class="caret"></span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <?php
-                                    if (isset($SETTINGS['duo']) === false || (int) $SETTINGS['duo'] === 0) {
-                                        echo '
-                                    <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">' . langHdl('index_change_pw') . '</a>';
-                                    }
-                                    ?>
-                                </div>
-                            </li>
                         </ul>
                     </div><!-- /.card-header -->
                     <div class="card-body">
@@ -472,38 +459,6 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     </div>
                                 </form>
 
-                            </div>
-
-
-                            <!-- CHANGE PW -->
-                            <div class="tab-pane" id="tab_change_pw">
-                                <h3 class="card-title mb-3"><?php echo langHdl('index_change_pw'); ?></h3>
-                                <div class="card card-info card-outline">
-                                    <div class="card-body">
-                                        <?php echo langHdl('changing_pw_purpose'); ?>
-                                    </div>
-                                </div>
-                                <form class="needs-validation" novalidate onsubmit="return false;">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
-                                        </div>
-                                        <input type="password" class="form-control" id="profile-password">
-                                        <div class="input-group-append">
-                                            <span class="input-group-text" id="profile-password-strength"></span>
-                                            <input type="hidden" id="profile-password-complex" />
-                                        </div>
-                                    </div>
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
-                                        </div>
-                                        <input type="password" class="form-control" id="profile-password-confirm">
-                                    </div>
-                                    <div class="form-group">
-                                        <button type="button" class="btn btn-info" id="profile-save-password-change"><?php echo langHdl('perform'); ?></button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
                     </div>

@@ -108,36 +108,6 @@ if (null !== $post_type) {
     }
 }
 
-/**
- * Undocumented function.
- *
- * @param [type] $user_id
- * @param [type] $private_key
- * @param [type] $public_key
- * @param [type] $SETTINGS
- *
- * @return void
- */
-function changeUserObjectKeyForItems($user_id, $private_key, $public_key, $SETTINGS)
-{
-    // Its goal is to adapt all user Items object key
-
-    // Remove all existing object keys
-    DB::delete(
-        prefixTable('sharekeys_items'),
-        'user_id = %i',
-        $user_id
-    );
-
-    // Create objectkey for each item
-    $rows = DB::query(
-        'SELECT id, pw
-        FROM ' . prefixTable('items') . '
-        WHERE perso = 0',
-        $post_item_id
-    );
-    foreach ($rows as $record) { }
-}
 
 /**
  * Delete all objects keys for one user.
