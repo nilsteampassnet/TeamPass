@@ -3389,10 +3389,10 @@ function filterString($field)
 function ldapConnect($SETTINGS)
 {
     // return if ldap not enabled
-    if ((int) $SETTINGS['ldap_mode'] === 1) {
+    if ((int) $SETTINGS['ldap_mode'] === 0) {
         return false;
     }
-
+    
     if ($SETTINGS['ldap_type'] === 'posix-search') {
         // LDAP with posix search
         $ldapURIs = '';
@@ -3419,7 +3419,9 @@ function ldapConnect($SETTINGS)
         if ($ldapconn !== false) {
             // Should we bind the connection?
             if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
-                return ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+                if (ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd'])) {
+                    return $ldapconn;
+                };
             }
         }
 
@@ -3432,7 +3434,7 @@ function ldapConnect($SETTINGS)
  *
  * @param string $login    User Login
  * @param string $password User Pwd
- * @param array $SETTINGS  Teampass settings
+ * @param array  $SETTINGS Teampass settings
  *
  * @return boolean||array
  */
@@ -3449,12 +3451,12 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
                 $filter,
                 array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire', 'memberof')
             );
-
+            
             // Check if user was found in AD
             if (ldap_count_entries($ldapconn, $result) > 0) {
                 // Get user's info and especially the DN
                 $userLDAPInfo = ldap_get_entries($ldapconn, $result);
-
+                
                 // Try to auth inside LDAP
                 if (ldap_bind($ldapconn, $userLDAPInfo[0]['dn'], $password) === true) {
                     return true;

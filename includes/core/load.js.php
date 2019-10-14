@@ -417,6 +417,8 @@ if (
                         }
                     );
 
+                    $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
                     // Enable buttons
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                 } else {
@@ -704,6 +706,8 @@ if (
                         }
                     );
 
+                    $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
                     // Enable buttons
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                     return false;
@@ -729,6 +733,8 @@ if (
             stepText = '<?php echo langHdl('fields'); ?>';
         } else if (step === 'step5') {
             stepText = '<?php echo langHdl('files'); ?>';
+        } else if (step === 'step6') {
+            stepText = '<?php echo langHdl('personal_items'); ?>';
         }
 
         if (step !== 'finished') {
@@ -776,14 +782,13 @@ if (
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
                 '', {
-                    timeOut: 1000
+                    timeOut: 4000
                 }
             );
 
-            // Enable buttons
-            $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+            window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
         }
     }
 

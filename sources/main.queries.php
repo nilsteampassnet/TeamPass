@@ -1881,7 +1881,7 @@ Insert the log here and especially the answer of the query that failed.
                     // If LDAP enabled, then
                     // check that this password is correct
                     $continue = true;
-                    if ($userData['email'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
+                    if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
                         $continue = ldapCheckUserPassword(
                             $userData['login'],
                             $post_user_password,
@@ -1926,7 +1926,7 @@ Insert the log here and especially the answer of the query that failed.
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => $emailError,
+                                'message' => $continue === false ? langHdl('password_doesnot_correspond_to_ldap_one') : $emailError,
                                 'debug' => '',
                                 'self_change' => $post_self_change,
                             ),
@@ -1977,7 +1977,7 @@ Insert the log here and especially the answer of the query that failed.
 
             $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
-            $post_self_change = filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING);
+            $post_self_change = filter_var($_POST['self_change'], FILTER_SANITIZE_STRING);
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Check if user exists
@@ -2362,6 +2362,68 @@ Insert the log here and especially the answer of the query that failed.
                             'SELECT *
                             FROM ' . prefixTable('files') . '
                             WHERE status = "' . TP_ENCRYPTION_NAME . '"'
+                        );
+                        $next_start = (int) $post_start + (int) $post_length;
+                        if ($next_start > DB::count()) {
+                            $post_action = 'step6';
+                            $next_start = 0;
+                        }
+                        // ---
+                        // ---
+                    } elseif ($post_action === 'step6') {
+                        // STEP 6 - PERSONAL ITEMS
+                        //
+                        // Loop on persoanl items
+                        $rows = DB::query(
+                            'SELECT id, pw
+                            FROM ' . prefixTable('items') . '
+                            WHERE perso = 1 AND id_tree IN %ls
+                            LIMIT ' . $post_start . ', ' . $post_length,
+                            $_SESSION['personal_folders']
+                        );
+                        foreach ($rows as $record) {
+                            // Get itemKey from current user
+                            $currentUserKey = DB::queryFirstRow(
+                                'SELECT share_key, increment_id
+                                FROM ' . prefixTable('sharekeys_items') . '
+                                WHERE object_id = %i AND user_id = %i',
+                                $record['id'],
+                                $_SESSION['user_id']
+                            );
+
+                            // Decrypt itemkey with admin key
+                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                            // Encrypt Item key
+                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+
+                            // Save the key in DB
+                            if ($post_self_change === false) {
+                                DB::insert(
+                                    prefixTable('sharekeys_items'),
+                                    array(
+                                        'object_id' => (int) $record['id'],
+                                        'user_id' => (int) $post_user_id,
+                                        'share_key' => $share_key_for_item,
+                                    )
+                                );
+                            } else {
+                                DB::update(
+                                    prefixTable('sharekeys_items'),
+                                    array(
+                                        'share_key' => $share_key_for_item,
+                                    ),
+                                    'increment_id = %i',
+                                    $currentUserKey['increment_id']
+                                );
+                            }
+                        }
+
+                        // SHould we change step?
+                        DB::query(
+                            'SELECT *
+                            FROM ' . prefixTable('items') . '
+                            WHERE perso = 0'
                         );
                         $next_start = (int) $post_start + (int) $post_length;
                         if ($next_start > DB::count()) {
