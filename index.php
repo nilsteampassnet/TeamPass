@@ -123,6 +123,7 @@ $session_nb_roles = $superGlobal->get('nb_roles', 'SESSION');
 $session_initial_url = $superGlobal->get('initial_url', 'SESSION');
 $server_request_uri = $superGlobal->get('REQUEST_URI', 'SERVER');
 $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
+$session_auth_type = $superGlobal->get('auth_type', 'SESSION', 'user');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
@@ -359,9 +360,14 @@ if (($session_validite_pw === null
                                 <a class="dropdown-item user-menu" href="#" data-name="profile">
                                     <i class="fas fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
                                 </a>
+                                <?php
+                                if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
+                                    ?>
                                 <a class="dropdown-item user-menu" href="#" data-name="password-change">
                                     <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
                                 </a>
+                                    <?php
+                                } ?>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
                                     <i class="fas fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
@@ -755,7 +761,7 @@ if (($session_validite_pw === null
 
 
                 <!-- ENCRYPTION KEYS GENERATION -->
-                <div class="card card-warning m-2 hidden" id="dialog-encryption-keys">
+                <div class="card card-warning m-3 hidden" id="dialog-encryption-keys">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-bullhorn mr-2"></i>
@@ -765,9 +771,25 @@ if (($session_validite_pw === null
                     <div class="card-body">
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
-                                <div class="mb-2 alert alert-info">
+                                <div class="mb-2 alert alert-info" id="warning-text-changing-password">
                                     <i class="icon fas fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
+                                </div>
+                                <div class="mb-2 alert alert-info ask-for-previous-password hidden">
+                                    <i class="icon fas fa-info mr-2"></i>
+                                    <?php echo langHdl('ldap_password_change_warning'); ?>
+                                </div>
+                                <div class="input-group mb-3 ask-for-previous-password hidden">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_previous_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-previous-password">
+                                </div>
+                                <div class="input-group mb-3 ask-for-previous-password hidden">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-current-password">
                                 </div>
                                 <div class="input-group mb-3 ask-for-new-password hidden">
                                     <div class="input-group-prepend">

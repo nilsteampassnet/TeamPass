@@ -717,11 +717,12 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                                         teampassUser.user_has_psk = data.has_psk;
                                         teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
                                         teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
+                                        teampassUser.special = data.special;
                                     }
                                 );
 
                                 // Check if 1st connection
-                                if (data.first_connection === true ||
+                                /*if (data.first_connection === true ||
                                     data.password_change_expected === true ||
                                     data.private_key_conform === false
                                 ) {
@@ -745,7 +746,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                                     );
 
                                     return false;
-                                }
+                                }*/
 
                                 //redirection for admin is specific
                                 if (parseInt(data.user_admin) === 1) {

@@ -18,6 +18,11 @@
  */
 
 return array(
+    'provide_your_current_password' => 'Provide your current password',
+    'current_password' => 'Current password',
+    'password_is_not_correct' => 'This password is not correct',
+    'ldap_password_change_warning' => 'Your login password has changed since last connection. It is requested to re-encrypt all the keys using this new password. For this operation, please fill in the next field with your previous ldap password. The operation can take several minutes.',
+    'provide_your_previous_password' => 'Provide your previous password',
     'password_doesnot_correspond_to_ldap_one' => 'This password does not correspond to the one defined in LDAP',
     'personal_items' => 'Personal items',
     'logout_on_going' => 'You will now be logout. Use your new password for being connected from now.',

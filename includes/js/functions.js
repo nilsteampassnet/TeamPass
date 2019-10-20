@@ -15,7 +15,7 @@
  * @see       https://www.teampass.net
  */
 
-var hourInMinutes = 60;
+let hourInMinutes = 60;
 
 /**
 *   Add 1 hour to session duration
@@ -48,21 +48,24 @@ function IncreaseSessionTime(duration)
 function countdown()
 {
     let DayTill;
+    let hoursInDay = 24;
+    let limitTen = 10;
+    let oneSecondsMs = 1000;
     let theDay =  $('#temps_restant').val();
     let today = new Date(); // Create an Date Object that contains today's date.
-    let second = Math.floor(theDay - (today.getTime() / 1000));
+    let second = Math.floor(theDay - (today.getTime() / oneSecondsMs));
     let minute = Math.floor(second / hourInMinutes); // Devide 'second' into 60 to get the minute
     let hour = Math.floor(minute / hourInMinutes); // Devide 'minute' into 60 to get the hour
-    let CHour= hour % 24; // Correct hour, after devide into 24, the remainder deposits here.
-    if (CHour < 10) {
+    let CHour= hour % hoursInDay; // Correct hour, after devide into 24, the remainder deposits here.
+    if (CHour < limitTen) {
         CHour = '0' + CHour;
     }
     let CMinute= minute % hourInMinutes; // Correct minute, after devide into 60, the remainder deposits here.
-    if (CMinute < 10) {
+    if (CMinute < limitTen) {
         CMinute = '0' + CMinute;
     }
     let CSecond= second % hourInMinutes; // Correct second, after devide into 60, the remainder deposits here.
-    if (CSecond < 10) {
+    if (CSecond < limitTen) {
         CSecond = '0' + CSecond;
     }
     DayTill = CHour+':'+CMinute+':'+CSecond;

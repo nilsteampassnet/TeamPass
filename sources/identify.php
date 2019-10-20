@@ -503,9 +503,7 @@ function identifyUser($sentData, $SETTINGS)
                 $SETTINGS
             );
 
-            if ($retLDAP['error'] === true) {
-                echo json_encode($retLDAP['message']);
-            } elseif ($retLDAP['proceedIdentification'] !== true && $retLDAP['userInLDAP'] === true) {
+            if ($retLDAP['error'] === true || ($retLDAP['proceedIdentification'] !== true && $retLDAP['userInLDAP'] === true)) {
                 logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
                 echo prepareExchangedData(
                     array(
@@ -513,7 +511,7 @@ function identifyUser($sentData, $SETTINGS)
                         'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                         'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                         'pwd_attempts' => (int) $sessionPwdAttempts,
-                        'error' => 'user_not_exists7',
+                        'error' => 'bad_password',
                         'message' => langHdl('error_bad_credentials'),
                     ),
                     'encode'
@@ -709,6 +707,14 @@ function identifyUser($sentData, $SETTINGS)
             $superGlobal->put('autoriser', true, 'SESSION');
             $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
+            // Reload user info
+            $userInfo = DB::queryFirstRow(
+                'SELECT *
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $userInfo['id']
+            );
+
             /*// Debug
             debugIdentify(
                 DEBUGDUO,
@@ -781,6 +787,8 @@ function identifyUser($sentData, $SETTINGS)
             $superGlobal->put('usertimezone', $userInfo['usertimezone'], 'SESSION', 'user');
             $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
             $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
+            $superGlobal->put('auth_type', $userInfo['auth_type'], 'SESSION', 'user');
+            $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
 
             // manage session expiration
             $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
@@ -963,7 +971,7 @@ function identifyUser($sentData, $SETTINGS)
                 );
             } else {
                 // is new LDAP user. Show only his personal folder
-                if ($SETTINGS['enable_pf_feature'] === '1') {
+                if ((int) $SETTINGS['enable_pf_feature'] === 1) {
                     $superGlobal->put('personal_visible_groups', array($userInfo['id']), 'SESSION');
                     $superGlobal->put('personal_folders', array($userInfo['id']), 'SESSION');
                 } else {
@@ -1090,6 +1098,7 @@ function identifyUser($sentData, $SETTINGS)
                     'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                     'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
                     'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                    'special' => $userInfo['special'],
                 ),
                 'encode'
             );
@@ -1143,6 +1152,7 @@ function identifyUser($sentData, $SETTINGS)
                         'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                         'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
                         'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                        'special' => $userInfo['special'],
                     ),
                     'encode'
                 );
@@ -1169,6 +1179,7 @@ function identifyUser($sentData, $SETTINGS)
                         'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                         'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
                         'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                        'special' => $userInfo['special'],
                     ),
                     'encode'
                 );
@@ -1205,6 +1216,7 @@ function identifyUser($sentData, $SETTINGS)
                     'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                     'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
                     'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                    'special' => $userInfo['special'],
                 ),
                 'encode'
             );
@@ -1241,6 +1253,7 @@ function identifyUser($sentData, $SETTINGS)
             'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
             'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
             'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+            'special' => $userInfo['special'],
         ),
         'encode'
     );
@@ -1458,7 +1471,8 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                                 array(
                                     'pw' => $hashedPassword,
                                     'login' => $userInfo['login'],
-                                    'upgrade_needed' => 1,
+                                    'upgrade_needed' => 0,
+                                    'special' => 'ldap_password_has_changed_do_reencryption',
                                 ),
                                 'id = %i',
                                 $userInfo['id']
@@ -1481,12 +1495,25 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                             'User not granted - bad password?\n\n'
                         );
 
+                        // Store last password
+                        if ($userInfo['special'] !== 'cleared_password_with_random_value') {
+                            DB::update(
+                                prefixTable('users'),
+                                array(
+                                    'last_pw' => $userInfo['pw'],
+                                ),
+                                'id = %i',
+                                $userInfo['id']
+                            );
+                        }
+                        
                         // CLear the password in database with random token
                         DB::update(
                             prefixTable('users'),
                             array(
                                 'pw' => $pwdlib->createPasswordHash($pwdlib->getRandomToken(12)),
                                 'login' => $userInfo['login'],
+                                'special' => 'cleared_password_with_random_value',
                             ),
                             'id = %i',
                             $userInfo['id']
@@ -1494,6 +1521,18 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
 
                         $ldapConnection = false;
                         $userInLDAP = false;
+
+                        return array(
+                            'error' => true,
+                            'message' => array(
+                                'value' => '',
+                                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
+                                'initial_url' => @$sessionUrl,
+                                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                                'error' => 'ldap_bad_password',
+                                'message' => langHdl('error_bad_credentials'),
+                            ),
+                        );
                     }
                 } else {
                     $ldapConnection = false;
@@ -1973,7 +2012,6 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
             $userInfo['id']
         );
     }
-    //echo $passwordClear." - ".$userInfo['pw']." - ".$pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw'])." ;; ";
     // check the given password
     if ($userPasswordVerified !== true) {
         if ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === true) {
@@ -2007,6 +2045,7 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
         }
     }
 
+    //echo $passwordClear." - ".$userInfo['pw']." - ".$pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw'])." -- ".$userPasswordVerified." ;; ";
     return $userPasswordVerified;
 }
 

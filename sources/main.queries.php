@@ -1816,6 +1816,191 @@ Insert the log here and especially the answer of the query that failed.
             echo prepareExchangedData($SETTINGS, 'encode');
 
             break;
+            
+
+            /*
+            * test_current_user_password_is_correct
+            *
+            * Check if we can decrypt one password
+            */
+        case 'test_current_user_password_is_correct':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            // Variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+
+
+            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                // Check if user exists
+                $userInfo = DB::queryFirstRow(
+                    'SELECT public_key, private_key, public_key
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (DB::count() > 0) {
+                    // Get one item
+                    $record = DB::queryFirstRow(
+                        'SELECT id, pw
+                        FROM ' . prefixTable('items') . '
+                        WHERE perso = 0'
+                    );
+
+                    // Get itemKey from current user
+                    $currentUserKey = DB::queryFirstRow(
+                        'SELECT share_key, increment_id
+                        FROM ' . prefixTable('sharekeys_items') . '
+                        WHERE object_id = %i AND user_id = %i',
+                        $record['id'],
+                        $post_user_id
+                    );
+
+                    // Decrypt itemkey with user key
+                    // use old password to decrypt private_key
+                    $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
+                    $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
+                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                    if (empty(base64_decode($itemKey)) === false) {
+                        // GOOD password
+                        echo prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => '',
+                                'debug' => '',
+                            ),
+                            'encode'
+                        );
+            
+                        break;
+                    }
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('password_is_not_correct'),
+                    'debug' => base64_decode($itemKey),
+                ),
+                'encode'
+            );
+
+            break;
+
+            /*
+         * User's public/private keys change
+         */
+        case 'change_public_private_keys':
+            // Allowed?
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            // Variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
+            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+            $emailError = false;
+
+            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                // Get user info
+                $userData = DB::queryFirstRow(
+                    'SELECT email, auth_type, login
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (DB::count() > 0) {
+                    // If LDAP enabled, then
+                    // check that this password is correct
+                    $continue = true;
+                    if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
+                        $continue = ldapCheckUserPassword(
+                            $userData['login'],
+                            $post_user_password,
+                            $SETTINGS
+                        );
+                    
+                        if ($continue === true) {
+                            // GEnerate new keys
+                            $userKeys = generateUserKeys($post_user_password);
+
+                            // Update user account
+                            DB::update(
+                                prefixTable('users'),
+                                array(
+                                    'special' => $post_special,
+                                    'public_key' => $userKeys['public_key'],
+                                    'private_key' => $userKeys['private_key'],
+                                ),
+                                'id = %i',
+                                $post_user_id
+                            );
+
+                            // Return
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => false,
+                                    'message' => '',
+                                    'debug' => $post_user_password,
+                                ),
+                                'encode'
+                            );
+                        } else {
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => langHdl('password_is_not_correct'),
+                                    'debug' => base64_decode($itemKey),
+                                ),
+                                'encode'
+                            );
+                        }
+                    }
+                }
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_user'),
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            break;
 
             /*
          * User's password has to be initialized

@@ -249,7 +249,6 @@ foreach ($treeDesc as $t) {
             </div>
         </div>
     </div>
-    </div>
 
     <!-- USER FORM -->
     <div class="row hidden extra-form" id="row-form">
@@ -267,11 +266,11 @@ foreach ($treeDesc as $t) {
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="form-name"><?php echo langHdl('name'); ?></label>
-                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-name">
+                                    <input type="text" class="form-control clear-me required track-change" id="form-name">
                                 </div>
                                 <div class="form-group">
                                     <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
-                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-lastname">
+                                    <input type="text" class="form-control clear-me required track-change" id="form-lastname">
                                 </div>
                                 <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('login'); ?></label>

@@ -90,11 +90,27 @@ if (
 
     // Countdown
     countdown();
-
-    // If login attempts experimented
+    
     if (store.get('teampassUser') !== undefined &&
+        store.get('teampassUser').special === 'ldap_password_has_changed_do_reencryption'
+    ) {
+        // Now we need to perform re-encryption due to LDAP password change
+        console.log('show password change')
+        // HIde
+        $('.content-header, .content, #button_do_sharekeys_reencryption, #warning-text-changing-password').addClass('hidden');
+
+        // Show passwords inputs and form
+        $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
+
+        $('#sharekeys_reencryption_target_user').val(store.get('teampassUser').user_id);
+
+        $('#button_do_sharekeys_reencryption').removeClass('hidden');
+        
+        // ---
+    } else if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').shown_warning_unsuccessful_login === false
     ) {
+        // If login attempts experimented
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
@@ -128,6 +144,8 @@ if (
             document.location.href = "index.php?page=profile&tab=timeline";
         });
     }
+
+
 
     // Show tooltips
     $('.infotip').tooltip();
@@ -383,50 +401,133 @@ if (
         // Disable buttons
         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').attr('disabled', 'disabled');
 
-        // Manage 2 cases
-        // One is when an admin asks
-        // Second is when user asks
-        data = {
-            'user_id': $('#sharekeys_reencryption_target_user').val(),
-            'special': '',
-            'password': $('.ask-for-new-password').hasClass('hidden') === true ? '' : $('#profile-password').val(),
-            'self_change': true,
-        }
-        console.log(data)
-        // If LDAP is enabled, then check that this password is correct
-        // Before starting with changing it in Teampass
-        $.post(
-            'sources/main.queries.php', {
-                type: 'initialize_user_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
-                console.log('new pwd: ' + data.debug)
-
-                if (data.error !== false) {
-                    // Show error
-                    toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '<?php echo langHdl('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-
-                    $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
-
-                    // Enable buttons
-                    $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
-                } else {
-                    // Inform user
-                    userShareKeysReencryption($('#sharekeys_reencryption_target_user').val(), true);
-                }
+        // Case where LDAP user with new password (from AD)
+        if ($('.ask-for-previous-password').hasClass('hidden') === false) {
+            // Test if previous password is correct
+            data = {
+                'user_id': $('#sharekeys_reencryption_target_user').val(),
+                'password': $('#profile-previous-password').val(),
             }
-        );
+            console.log(data)
+            // If LDAP is enabled, then check that this password is correct
+            // Before starting with changing it in Teampass
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'test_current_user_password_is_correct',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+                    console.log('new pwd: ' + data.debug)
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
+                        // Enable buttons
+                        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                    } else {
+                        // Now change user public/private keys
+                        data = {
+                            'user_id': $('#sharekeys_reencryption_target_user').val(),
+                            'special': 'none',
+                            'password': $('#profile-current-password').val(),
+                        }
+                        console.log(data)
+                        // If LDAP is enabled, then check that this password is correct
+                        // Before starting with changing it in Teampass
+                        $.post(
+                            'sources/main.queries.php', {
+                                type: 'change_public_private_keys',
+                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key: "<?php echo $_SESSION['key']; ?>"
+                            },
+                            function(data) {
+                                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                console.log(data);
+                                console.log('new pwd: ' + data.debug)
+
+                                if (data.error !== false) {
+                                    // Show error
+                                    toastr.remove();
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true
+                                        }
+                                    );
+
+                                    $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
+                                    // Enable buttons
+                                    $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                                } else {
+                                    // Inform user
+                                    userShareKeysReencryption($('#sharekeys_reencryption_target_user').val(), true);
+                                }
+                            }
+                        );
+                    }
+                }
+            );
+        } else {
+            // Manage 2 cases
+            // One is when an admin asks
+            // Second is when user asks
+            data = {
+                'user_id': $('#sharekeys_reencryption_target_user').val(),
+                'special': '',
+                'password': $('.ask-for-new-password').hasClass('hidden') === true ? '' : $('#profile-password').val(),
+                'self_change': true,
+            }
+            console.log(data)
+            // If LDAP is enabled, then check that this password is correct
+            // Before starting with changing it in Teampass
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'initialize_user_password',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+                    console.log('new pwd: ' + data.debug)
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
+                        // Enable buttons
+                        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                    } else {
+                        // Inform user
+                        userShareKeysReencryption($('#sharekeys_reencryption_target_user').val(), true);
+                    }
+                }
+            );
+        }
     });
 
     // Manage close button for button_close_sharekeys_reencryption
@@ -493,6 +594,8 @@ if (
                             teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
                             teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
                             teampassUser['can_create_root_folder'] = <?php echo isset($_SESSION['can_create_root_folder']) === true ? (int) $_SESSION['can_create_root_folder'] : 0; ?>;
+                            teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
+                            teampassUser['special'] = "<?php echo isset($_SESSION['user']['special']) === true ? $_SESSION['user']['special'] : 'none'; ?>";
                         }
                     );
                 }

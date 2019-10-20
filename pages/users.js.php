@@ -331,12 +331,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('.form-check-input').iCheck('enable');
 
             // Personal folder
-            if (store.get('teampassSettings').enable_pf_feature === '0') {
+            if (parseInt(store.get('teampassSettings').enable_pf_feature) === 0) {
                 $('#form-create-personal-folder').iCheck('disable');
             }
 
             // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
-            if (store.get('teampassUser').user_admin === 1) {
+            if (parseInt(store.get('teampassUser').user_admin) === 1) {
                 $('input[type=radio].only-admin').iCheck('enable');
             } else {
                 $('input[type=radio].only-admin').iCheck('disable');
