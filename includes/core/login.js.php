@@ -49,7 +49,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                 function(data) {
                     console.log("After identify_duo_user_check:");
                     console.log(data);
-                    var ret = data[0].resp.split("|");
+                    var ret = data[0].authenticated_username.split("|");
                     if (ret[0] === "ERR") {
                         $("#div-2fa-duo-progress")
                             .addClass('alert alert-info ')
@@ -60,15 +60,14 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                         toastr.info(
                             '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
                         );
-
+                        
                         $.post(
                             "sources/identify.php", {
                                 type: "identify_user",
-                                data: prepareExchangedData(window.atob($("#duo_data").val()), "encode", "<?php echo $_SESSION['key']; ?>")
+                                data: prepareExchangedData(window.atob($("#duo_data").val()), "encode", "<?php echo $_SESSION['key']; ?>"), //window.atob($("#duo_data").val())
                             },
                             function(receivedData) {
-                                var data = JSON.parse(receivedData);
-
+                                var data = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
                                 $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
 
                                 if (data.error !== false) {
@@ -506,15 +505,13 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
 
         // 2FA method
         var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
-
+console.log(user2FaMethod)
         if (user2FaMethod !== "") {
             if ((user2FaMethod === "yubico" && $("#yubico_key").val() === "") ||
-                (user2FaMethod === "google" && $("#ga_code").val() === "")
+                (user2FaMethod === "otp" && $("#ga_code").val() === "")
             ) {
                 return false;
             }
-        } else {
-
         }
 
         // launch identification
@@ -575,8 +572,8 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                 if ($(".2fa_selector_select").length > 1) {
                     mfaMethod = $(".2fa_selector_select:checked").data('mfa');
                 } else {
-                    if (data.google === true) {
-                        mfaMethod = 'google';
+                    if (data.otp === true) {
+                        mfaMethod = 'otp';
                     } else if (data.duo === true) {
                         mfaMethod = 'duo';
                     } else if (data.yubico === true) {
@@ -590,9 +587,9 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                     $('#2fa_methods_selector').removeClass('hidden');
                 }
 
-
+                
                 // Google 2FA
-                if (mfaMethod === 'google' && data.google === true) {
+                if (mfaMethod === 'otp' && data.google === true) {
                     if ($('#ga_code').val() !== undefined && $('#ga_code').val() !== '') {
                         mfaData['GACode'] = $('#ga_code').val();
                     } else {
@@ -676,6 +673,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
             },
             function(check_data) {
                 if (parseInt(check_data) === 1) {
+                    console.log(data);
                     //send query
                     $.post(
                         "sources/identify.php", {
@@ -721,33 +719,6 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                                     }
                                 );
 
-                                // Check if 1st connection
-                                /*if (data.first_connection === true ||
-                                    data.password_change_expected === true ||
-                                    data.private_key_conform === false
-                                ) {
-                                    // Show field for current password
-                                    if (data.password_change_expected === true ||
-                                        data.private_key_conform === false
-                                    ) {
-                                        $('#current-user-password-div').removeClass('hidden');
-                                    }
-
-                                    $('.confirm-password-card-body').removeClass('hidden');
-                                    $('.login-card-body').addClass('hidden');
-                                    $('#confirm-password-level').html(data.password_complexity);
-
-                                    toastr.remove();
-                                    toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
-                                        '', {
-                                            timeOut: 1000
-                                        }
-                                    );
-
-                                    return false;
-                                }*/
-
                                 //redirection for admin is specific
                                 if (parseInt(data.user_admin) === 1) {
                                     window.location.href = 'index.php?page=admin';
@@ -776,7 +747,17 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                                         timeOut: 1000
                                     }
                                 );
-                            } else if (data.error === true) {
+                            /*} else if (data.error === "bad_user_yubico_credentials") {
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 10000,
+                                        progressBar: true,
+                                        positionClass: "toast-top-right"
+                                    }
+                                );*/
+                            } else if (data.error === true || data.error !== '') {
                                 toastr.remove();
                                 toastr.error(
                                     data.message,
@@ -800,7 +781,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
 
                             // Clear Yubico
                             if ($("#yubico_key").length > 0) {
-                                $("#yubico_key").val("");
+                                $("#yubico_key, #yubico_user_id, #yubico_user_key").val("");
                             }
                         }
                     );
@@ -939,7 +920,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
             $('#2fa_methods_selector').removeClass('hidden');
 
             // At least 2 2FA methods have to be shown
-            var loginButMethods = ['google', 'agses', 'duo'];
+            var loginButMethods = ['otp', 'agses', 'duo'];
 
             // Show methods
             $("#2fa_selector").removeClass("hidden");
@@ -963,7 +944,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                 .click(function() {
                     $('.div-2fa-method').addClass('hidden');
 
-                    var twofaMethod = $(this).text().toLowerCase();
+                    var twofaMethod = $(this).text().toLowerCase();console.log(twofaMethod)
 
                     // Save user choice
                     $('#2fa_user_selection').val(twofaMethod);
@@ -979,7 +960,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                     }
 
                     // Make focus
-                    if (twofaMethod === 'google') {
+                    if (twofaMethod === 'otp') {
                         $('#ga_code').focus();
                     } else if (twofaMethod === 'yubico') {
                         $('#yubico_key').focus();
@@ -992,7 +973,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
             $('#2fa_methods_selector').addClass('hidden');
             // One 2FA method is expected
             if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
-                $('#div-2fa-google').removeClass('hidden');
+                $('#div-2fa-otp').removeClass('hidden');
             } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
                 $('#div-2fa-yubico').removeClass('hidden');
             }

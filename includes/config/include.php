@@ -47,7 +47,7 @@ define('TEAMPASS_URL', 'https://teampass.net');
 
 define('DEBUG', true);
 define('DEBUGLDAP', true); //Can be used in order to debug LDAP authentication
-define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
+define('DEBUGDUO', true); //Can be used in order to debug DUO authentication
 
 // Management Pages
 $mngPages = array(

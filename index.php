@@ -127,8 +127,7 @@ $session_auth_type = $superGlobal->get('auth_type', 'SESSION', 'user');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (
-    isset($_GET['language']) === true
+if (isset($_GET['language']) === true
     && empty($_) === false
     && filter_var(trim($_GET['language']), FILTER_SANITIZE_STRING) !== false
 ) {
@@ -254,8 +253,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     <link rel="stylesheet" href="includes/css/teampass.css">
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" type="text/css" href="plugins/font-source-sans-pro">
+    <!-- Google Font: Source Sans Pro
+    <link rel="stylesheet" type="text/css" href="plugins/font-source-sans-pro"> -->
     <!-- Altertify -->
     <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css" />
     <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />

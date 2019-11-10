@@ -340,6 +340,7 @@ function testHex2Bin($val)
 function cryption($message, $ascii_key, $type, $SETTINGS)
 {
     $ascii_key = (empty($ascii_key) === true) ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
+    $err = false;
 
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -3501,5 +3502,81 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
             }
         }
     }
+    return false;
+}
+
+
+/**
+ * Removes from DB all sharekeys of this user
+ *
+ * @param integer $userId   User's id
+ * @param array   $SETTINGS Teampass settings
+ *
+ * @return void
+ */
+function deleteUserObjetsKeys($userId, $SETTINGS)
+{
+    // include librairies & connect to DB
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+
+    // Remove all item sharekeys items
+    DB::delete(
+        prefixTable('sharekeys_items'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys
+    DB::delete(
+        prefixTable('sharekeys'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys
+    DB::delete(
+        prefixTable('sharekeys'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys files
+    DB::delete(
+        prefixTable('sharekeys_files'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys fields
+    DB::delete(
+        prefixTable('sharekeys_fields'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys logs
+    DB::delete(
+        prefixTable('sharekeys_logs'),
+        'user_id != %i',
+        $userId
+    );
+
+    // Remove all item sharekeys suggestions
+    DB::delete(
+        prefixTable('sharekeys_suggestions'),
+        'user_id != %i',
+        $userId
+    );
+
     return false;
 }

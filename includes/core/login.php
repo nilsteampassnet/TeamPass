@@ -88,7 +88,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && !(isset($SETTINGS['maintenance_mode']) === true
-        && (int) $SETTINGS['maintenance_mode'] === 1))) {
+    && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
@@ -120,18 +120,18 @@ echo '
                 <div class="2fa-methods text-center mt-2">',
     isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
         '
-                    <label for="select2fa-google">Google</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google" data-mfa="google">' : '',
+                    <label for="select2fa-otp">OTP</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="otp" data-button-color="lightblue">' : '',
     '',
     isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
         '
                     <label for="select2fa-duo">Duo Security</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo">' : '',
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo" data-button-color="lightblue">' : '',
     '',
     isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
         '
                     <label for="select2fa-yubico">Yubico</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico">' : '',
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico" data-button-color="lightblue">' : '',
     '
                 </div>
             </div>
@@ -153,28 +153,33 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
 // Google Authenticator code
 if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
-        <div id="div-2fa-google" class="mb-3 div-2fa-method hidden">
+        <div id="div-2fa-otp" class="mb-3 div-2fa-method hidden">
             <div class="row">
-                <div class="col-3">
-                    <img src="includes/images/2fa_google_auth.png">
+                <div class="col-1">
+                </div>
+                <div class="col-8">
+                    <img src="includes/images/otp.png">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-1">
                 </div>
                 <div class="col-8">
                     <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
                 </div>
                 <div class="col-1">
-                    <span class="fa fa-envelope-o form-control-feedback pointer infotip" title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></span>
+                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info" title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></i>
                 </div>
             </div>
             <div id="div-2fa-google-qr" class="row mt-2 "></div>
         </div>';
 }
 
-if (
-    isset($SETTINGS['enable_http_request_login']) === true
+if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && (isset($SETTINGS['maintenance_mode']) === false
-        && (int) $SETTINGS['maintenance_mode'] === 1)
+    && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
     echo '
 <script>

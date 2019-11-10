@@ -1393,6 +1393,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Action icons
                             html += (entry.teampass === undefined ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + entry.mail[0] + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + entry.sn[0] + '"></i>' : '');
 
+                            // Only of not admin
+                            if (userLogin !== 'admin') {
+                                html += (entry.teampass.auth === 'ldap' ? '<i class="fas fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo langHdl('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fas fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo langHdl('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
+                            }
+
                             html += '</td></tr>';
                         }
                     });
@@ -1547,17 +1552,83 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         );
     }
 
-    $(document).on('click', '.add-user-icon', function() {
-        $(this).addClass('selected-user');
+    /**
+     * Permits to change the auth type of the user
+     *
+     * @return void
+     */
+    function changeUserAuthType(auth) {
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-        toastr.warning(
-            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addUserInTeampass()"><?php echo langHdl('please_confirm'); ?></button>',
-            '<?php echo langHdl('add_user_in_teampass'); ?>', {
-                positionClass: 'toast-top-center',
-                closeButton: true
+        // prepare data
+        var data = {
+            'id': $('.selected-user').data('user-id'),
+            'auth_type': auth
+        };
+        console.log(data)
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'change_user_auth_type',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    refreshListUsersLDAP()
+                }
             }
         );
-    });
+    }
+
+    $(document)
+        .on('click', '.add-user-icon', function() {
+            $(this).addClass('selected-user');
+
+            toastr.warning(
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addUserInTeampass()"><?php echo langHdl('please_confirm'); ?></button>',
+                '<?php echo langHdl('add_user_in_teampass'); ?>', {
+                    positionClass: 'toast-top-center',
+                    closeButton: true
+                }
+            );
+        })
+        .on('click', '.auth-ldap', function() {
+            $(this).addClass('selected-user');
+
+            toastr.warning(
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'ldap\')"><?php echo langHdl('please_confirm'); ?></button>',
+                '<?php echo langHdl('change_authentification_type_to_ldap'); ?>', {
+                    positionClass: 'toast-top-center',
+                    closeButton: true
+                }
+            );
+        })
+        .on('click', '.auth-local', function() {
+            $(this).addClass('selected-user');
+
+            toastr.warning(
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'local\')"><?php echo langHdl('please_confirm'); ?></button>',
+                '<?php echo langHdl('change_authentification_type_to_local'); ?>', {
+                    positionClass: 'toast-top-center',
+                    closeButton: true
+                }
+            );
+        });
 
 
 

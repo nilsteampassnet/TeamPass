@@ -2338,7 +2338,7 @@ if (null !== $post_type) {
                                 if (null !== $userLogin) {
                                     // Get his ID
                                     $user = DB::queryfirstrow(
-                                        'SELECT id, fonction_id 
+                                        'SELECT id, fonction_id, auth_type
                                         FROM ' . prefixTable('users') . '
                                         WHERE login = %s',
                                         $userLogin
@@ -2346,7 +2346,8 @@ if (null !== $post_type) {
                                     if (DB::count() > 0) {
                                         $entries[$i]['teampass'] = array(
                                             'id' => $user['id'],
-                                            'groups' => array()
+                                            'groups' => array(),
+                                            'auth' => $user['auth_type'],
                                         );
 
                                         if (empty($user['fonction_id']) === false) {
@@ -2634,6 +2635,80 @@ if (null !== $post_type) {
                 $tree->register();
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'message' => '',
+                    'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+            /*
+         * CHANGE USER AUTHENTICATION TYPE
+         */
+        case 'change_user_auth_type':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_auth = filter_var($dataReceived['auth_type'], FILTER_SANITIZE_STRING);
+
+
+            // Empty user
+            if (empty($post_id) === true || empty($post_id) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // Check if user already exists
+            $data = DB::query(
+                'SELECT id
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_id
+            );
+
+            if (DB::count() > 0) {
+                // Change authentication type in DB
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'auth_type' => $post_auth,
+                    ),
+                    'id = %i',
+                    $post_id
+                );
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             echo prepareExchangedData(

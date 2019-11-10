@@ -67,11 +67,11 @@ $(function() {
                 $("head").append(cssLink);
                 $("#div-2fa-duo-progress")
                     .removeClass('alert alert-info ')
-                    .html('<iframe id="duo_iframe" style="margin-left:10px;" frameborder="0" data-host="<?php echo $_GLOBALS['HOST']; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
+                    .html('<iframe id="duo_iframe" style="margin-left:10px;" frameborder="0" data-host="<?php echo $SETTINGS['duo_host']; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
 
                 // loading the DUO iframe
                 Duo.init({
-                    'host': "<?php echo $_GLOBALS['HOST']; ?>",
+                    'host': "<?php echo $SETTINGS['duo_host']; ?>",
                     'sig_request': data[0].sig_request,
                     'post_action': "index.php?type=duo_check&"+data[0].csrfp_token+"="+data[0].csrfp_key+"&post_type=duo"
                 });

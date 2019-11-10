@@ -18,6 +18,10 @@
  */
 
 return array(
+    'change_authentification_type_to_ldap' => 'Change authentication type to LDAP',
+    'change_authentification_type_to_local' => 'Change authentication type to Teampass local database',
+    'ldap_user_password_is_used_for_authentication' => 'User password in LDAP is used for authentication',
+    'local_user_password_is_used_for_authentication' => 'User password in Teampass is used for authentication',
     'provide_your_current_password' => 'Provide your current password',
     'current_password' => 'Current password',
     'password_is_not_correct' => 'This password is not correct',

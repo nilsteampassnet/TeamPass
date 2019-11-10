@@ -137,23 +137,25 @@ if ($post_type === 'identify_duo_user') {
 
     // load library
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(
-        $_GLOBALS['IKEY'],
-        $_GLOBALS['SKEY'],
-        $_GLOBALS['AKEY'],
+    $authenticated_username = Duo::verifyResponse(
+        $SETTINGS['duo_ikey'],
+        $SETTINGS['duo_skey'],
+        $SETTINGS['duo_akey'],
         $post_sig_response
     );
 
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "\n\n-----\n\n" .
-            'sig response : ' . $post_sig_response . "\n" .
-            'resp : ' . $resp . "\n"
-    );
-
+    if (DEBUGDUO === true) {
+        debugIdentify(
+            DEBUGDUO,
+            DEBUGDUOFILE,
+            "\n\n-----\n\n" .
+                'sig response : ' . $post_sig_response . "\n" .
+                'resp : ' . $authenticated_username . "\n"
+        );
+    }
+    
     // return the response (which should be the user name)
-    if ($resp === $post_login) {
+    if ($authenticated_username === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
             // is user in Teampass?
@@ -165,64 +167,14 @@ if ($post_type === 'identify_duo_user') {
             );
 
             if (DB::count() === 0) {
-                // Get LDAP info for this user
-                $ldap_info_user = json_decode(connectLDAP($post_login, $post_pwd, $SETTINGS));
-
-                if ($ldap_info_user->{'user_found'} === true && $ldap_info_user->{'auth_success'} === true) {
-                    // load passwordLib library
-                    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-                    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                    $pwdlib->register();
-                    $pwdlib = new PasswordLib\PasswordLib();
-
-                    // Generate user keys pair
-                    $userKeys = generateUserKeys($post_pwd);
-
-                    // save an account in database
-                    DB::insert(
-                        prefixTable('users'),
-                        array(
-                            'login' => $post_login,
-                            'pw' => $pwdlib->createPasswordHash($post_pwd),
-                            'email' => $ldap_info_user->{'email'},
-                            'name' => $ldap_info_user->{'name'},
-                            'lastname' => $ldap_info_user->{'lastname'},
-                            'admin' => '0',
-                            'gestionnaire' => '0',
-                            'can_manage_all_users' => '0',
-                            'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-                            'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
-                            'groupes_interdits' => '',
-                            'groupes_visibles' => '',
-                            'last_pw_change' => time(),
-                            'user_language' => $SETTINGS['default_language'],
-                            'encrypted_psk' => '',
-                            'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
-                            'public_key' => $userKeys['public_key'],
-                            'private_key' => $userKeys['private_key'],
-                        )
-                    );
-                    $newUserId = DB::insertId();
-                    // Create personnal folder
-                    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
-                        DB::insert(
-                            prefixTable('nested_tree'),
-                            array(
-                                'parent_id' => '0',
-                                'title' => $newUserId,
-                                'bloquer_creation' => '0',
-                                'bloquer_modification' => '0',
-                                'personal_folder' => '1',
-                            )
-                        );
-                    }
-                }
+                // Ask your administrator to create your account in Teampass
+                // TODO
             }
         }
 
-        echo '[{"resp" : "' . $resp . '"}]';
+        echo '[{"authenticated_username" : "' . $authenticated_username . '"}]';
     } else {
-        echo '[{"resp" : "' . $resp . '"}]';
+        echo '[{"authenticated_username" : "' . $authenticated_username . '"}]';
     }
     // ---
     // ---
@@ -231,18 +183,22 @@ if ($post_type === 'identify_duo_user') {
     // NORMAL IDENTICATION STEP
     //--------
 
-    // decrypt and retreive data in JSON format
-    /*$dataReceived = prepareExchangedData(
-        $post_data,
-        'decode'
-    );*/
+    
+    // Load superGlobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Prepare GET variables
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
 
     // increment counter of login attempts
-    if (empty($sessionPwdAttempts)) {
+    if (empty($sessionPwdAttempts) === true) {
         $sessionPwdAttempts = 1;
     } else {
         ++$sessionPwdAttempts;
     }
+    
+    $superGlobal->put('pwd_attempts', $sessionPwdAttempts, 'SESSION');
 
     // manage brute force
     if ($sessionPwdAttempts <= 3) {
@@ -252,7 +208,7 @@ if ($post_type === 'identify_duo_user') {
             $SETTINGS
         );
     } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $sessionPwdAttempts > 3) {
-        $sessionPwdAttempts = 1;
+        $sessionPwdAttempts = 0;
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -260,14 +216,14 @@ if ($post_type === 'identify_duo_user') {
         );
     } else {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
-
+        
         // Encrypt data to return
         echo prepareExchangedData(
             array(
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-                'initial_url' => @$sessionUrl,
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => langHdl('error_bad_credentials_more_than_3_times'),
             ),
@@ -346,12 +302,26 @@ function identifyUser($sentData, $SETTINGS)
     // Brute force management
     if ($sessionPwdAttempts > 2) {
         $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
+        $superGlobal->put('pwd_attempts', 0, 'SESSION');
+
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        echo prepareExchangedData(
+            array(
+                'value' => 'bruteforce_wait',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => 0,
+                'error' => true,
+                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+            ),
+            'encode'
+        );
+
         return false;
     }
 
     // Manage Maintenance mode
-    if (
-        isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
+    if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
         && (int) $userInfo['admin'] === 0
     ) {
         echo prepareExchangedData(
@@ -389,13 +359,17 @@ function identifyUser($sentData, $SETTINGS)
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $sessionUserLanguage . '.php';
-
+    //echo $dataReceived." -->".empty($sessionKey)."<-- ".$sessionKey." ** " ;
     // decrypt and retreive data in JSON format
-    $dataReceived = prepareExchangedData($sentData, 'decode', $sessionKey);
-
+    if (empty($sessionKey)=== true) {
+        $dataReceived = $sentData;
+    } else {
+        $dataReceived = prepareExchangedData($sentData, 'decode', $sessionKey);
+        $superGlobal->put('key', $sessionKey, 'SESSION');
+    }
+    
     // prepare variables
-    if (
-        isset($SETTINGS['enable_http_request_login']) === true
+    if (isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['enable_http_request_login'] === 1
         && isset($_SERVER['PHP_AUTH_USER']) === true
         && isset($SETTINGS['maintenance_mode']) === true
@@ -419,16 +393,16 @@ function identifyUser($sentData, $SETTINGS)
 
     // Check 2FA
     if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
+        || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
         echo prepareExchangedData(
             array(
                 'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-                'initial_url' => @$sessionUrl,
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => '2fa_not_set',
                 'message' => langHdl('2fa_credential_not_correct'),
             ),
@@ -474,7 +448,6 @@ function identifyUser($sentData, $SETTINGS)
 
     // User doesn't exist then stop
     if ($counter === 0) {
-        $sessionPwdAttempts++;
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         echo prepareExchangedData(
             array(
@@ -502,8 +475,7 @@ function identifyUser($sentData, $SETTINGS)
     $return = '';
 
     // Prepare LDAP connection if set up
-    if (
-        isset($SETTINGS['ldap_mode']) === true
+    if (isset($SETTINGS['ldap_mode']) === true
         && (int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
         && $userInfo['auth_type'] !== 'local'
@@ -551,6 +523,8 @@ function identifyUser($sentData, $SETTINGS)
                     'encode'
                 );
                 return false;
+            } elseif (isset($retLDAP['hashedPassword']) === true && empty($retLDAP['hashedPassword']) === false) {
+                $userInfo['pw'] = $retLDAP['hashedPassword'];
             }
         } else {
             $retLDAP = identifyViaLDAPPosix(
@@ -594,8 +568,7 @@ function identifyUser($sentData, $SETTINGS)
     }
 
     // Check Yubico
-    if (
-        isset($SETTINGS['yubico_authentication']) === true
+    if (isset($SETTINGS['yubico_authentication']) === true
         && (int) $SETTINGS['yubico_authentication'] === 1
         && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
         && $user_2fa_selection === 'yubico'
@@ -605,8 +578,8 @@ function identifyUser($sentData, $SETTINGS)
             $userInfo,
             $SETTINGS
         );
-
-        if ($ret['error'] === true) {
+        
+        if ($ret['error'] !== "") {
             echo prepareExchangedData(
                 $ret,
                 'encode'
@@ -616,11 +589,10 @@ function identifyUser($sentData, $SETTINGS)
     }
 
     // check GA code
-    if (
-        isset($SETTINGS['google_authentication']) === true
+    if (isset($SETTINGS['google_authentication']) === true
         && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-        && $user_2fa_selection === 'google'
+        && $user_2fa_selection === 'otp'
     ) {
         $ret = googleMFACheck(
             $username,
@@ -628,8 +600,8 @@ function identifyUser($sentData, $SETTINGS)
             $dataReceived,
             $SETTINGS
         );
-
-        if ($ret['error'] === true) {
+        
+        if ($ret['error'] !== false) {
             logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             echo prepareExchangedData(
                 $ret,
@@ -651,7 +623,7 @@ function identifyUser($sentData, $SETTINGS)
             }
         }
     }
-
+    
     // Debug
     debugIdentify(
         DEBUGDUO,
@@ -666,7 +638,7 @@ function identifyUser($sentData, $SETTINGS)
             array(
                 'value' => '',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
-                'initial_url' => @$sessionUrl,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => langHdl('remove_install_folder'),
@@ -1089,7 +1061,7 @@ function identifyUser($sentData, $SETTINGS)
                 'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
                 'message' => langHdl('account_is_locked'),
                 'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
@@ -1113,14 +1085,12 @@ function identifyUser($sentData, $SETTINGS)
         // check if user is locked
         $userIsLocked = false;
         $nbAttempts = intval($userInfo['no_bad_attempts'] + 1);
-        if (
-            $SETTINGS['nb_bad_authentication'] > 0
+        if ($SETTINGS['nb_bad_authentication'] > 0
             && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
         ) {
             $userIsLocked = true;
             // log it
-            if (
-                isset($SETTINGS['log_connections']) === true
+            if (isset($SETTINGS['log_connections']) === true
                 && (int) $SETTINGS['log_connections'] === 1
             ) {
                 logEvents($SETTINGS, 'user_locked', 'connection', $userInfo['id'], stripslashes($username));
@@ -1144,7 +1114,7 @@ function identifyUser($sentData, $SETTINGS)
                     'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
                     'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'pwd_attempts' => 0,
                     'error' => 'user_is_locked',
                     'message' => langHdl('account_is_locked'),
                     'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
@@ -1199,14 +1169,14 @@ function identifyUser($sentData, $SETTINGS)
         "\n\n----\n" .
             'Identified : ' . filter_var($return, FILTER_SANITIZE_STRING) . "\n\n"
     );
-
+    
     echo prepareExchangedData(
         array(
             'value' => $return,
             'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
             'user_admin' => isset($sessionAdmin) ? (int) $antiXss->xss_clean($sessionAdmin) : '',
             'initial_url' => $antiXss->xss_clean($sessionUrl),
-            'pwd_attempts' => $antiXss->xss_clean($sessionPwdAttempts),
+            'pwd_attempts' => 0,
             'error' => false,
             'message' => '',
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
@@ -1337,9 +1307,9 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                         'error' => true,
                         'message' => array(
                             'value' => '',
-                            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-                            'initial_url' => @$sessionUrl,
-                            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                            'pwd_attempts' => (int) $sessionPwdAttempts,
                             'error' => 'user_not_exists5',
                             'message' => langHdl('error_bad_credentials'),
                         ),
@@ -1408,12 +1378,11 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                 }
 
                 // Is user in the LDAP?
-                if (
-                    $GroupRestrictionEnabled === true
+                if ($GroupRestrictionEnabled === true
                     || ($GroupRestrictionEnabled === false
-                        && (isset($SETTINGS['ldap_usergroup']) === false
-                            || (isset($SETTINGS['ldap_usergroup']) === true
-                                && empty($SETTINGS['ldap_usergroup']) === true)))
+                    && (isset($SETTINGS['ldap_usergroup']) === false
+                    || (isset($SETTINGS['ldap_usergroup']) === true
+                    && empty($SETTINGS['ldap_usergroup']) === true)))
                 ) {
                     // Try to auth inside LDAP
                     $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
@@ -1590,8 +1559,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
     // Authenticate the user
     if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
         // Is user in allowed group
-        if (
-            isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
@@ -1608,9 +1576,9 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
             return array(
                 'error' => true,
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-                'initial_url' => @$sessionUrl,
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => 'user_not_exists6',
                 'message' => langHdl('error_bad_credentials'),
             );
@@ -1713,9 +1681,9 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
             return array(
                 'error' => true,
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-                'initial_url' => @$sessionUrl,
-                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => 'no_user_yubico_credentials',
                 'message' => '',
             );
@@ -1736,9 +1704,9 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
         return array(
             'error' => true,
             'value' => '',
-            'user_admin' => isset($sessionAdmin) ? /* @scrutinizer ignore-type */ (int) $antiXss->xss_clean($sessionAdmin) : '',
-            'initial_url' => @$sessionUrl,
-            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($sessionPwdAttempts),
+            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+            'pwd_attempts' => (int) $sessionPwdAttempts,
             'error' => 'bad_user_yubico_credentials',
             'message' => langHdl('yubico_bad_code'),
         );
@@ -1833,8 +1801,7 @@ function ldapCreateUser($username, $passwordClear, $retLDAP, $SETTINGS)
  */
 function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 {
-    if (
-        isset($dataReceived['GACode']) === true
+    if (isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
         // load library
@@ -1880,8 +1847,8 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 
             $firstTime = array(
                 'value' => '<img src="' . $new_2fa_qr . '">',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => @$sessionUrl,
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => false,
                 'message' => $mfaMessage,
@@ -1938,8 +1905,7 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
     $pwdlib = new PasswordLib\PasswordLib();
 
     // Check if old encryption used
-    if (
-        crypt($passwordClear, $userInfo['pw']) === $userInfo['pw']
+    if (crypt($passwordClear, $userInfo['pw']) === $userInfo['pw']
         && empty($userInfo['pw']) === false
     ) {
         $userPasswordVerified = true;
