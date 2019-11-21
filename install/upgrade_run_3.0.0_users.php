@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -59,8 +60,7 @@ if (mysqli_connect(
     $pass,
     $database,
     $port
-)
-) {
+)) {
     $db_link = mysqli_connect(
         $server,
         $user,
@@ -68,10 +68,10 @@ if (mysqli_connect(
         $database,
         $port
     );
-	$db_link->set_charset(DB_ENCODING);
+    $db_link->set_charset(DB_ENCODING);
 } else {
-    $res = 'Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error());
-    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
     mysqli_close($db_link);
     exit();
 }
@@ -82,7 +82,7 @@ $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_NUMBER_INT);
 
 if (null !== $post_step) {
     switch ($post_step) {
-        /*
+            /*
         * CASE
         * creating a new user's public/private keys
         */
@@ -94,9 +94,9 @@ if (null !== $post_step) {
                 $users = mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre.'users
+                    FROM ' . $pre . 'users
                     WHERE (public_key = "none" OR public_key = "")
-                    AND id NOT IN ('.OTV_USER_ID.','.SSH_USER_ID.','.API_USER_ID.')'
+                    AND id NOT IN (' . OTV_USER_ID . ',' . SSH_USER_ID . ',' . API_USER_ID . ')'
                 );
                 while ($user = mysqli_fetch_array($users)) {
                     array_push($listOfUsers, $user['id']);
@@ -116,8 +116,8 @@ if (null !== $post_step) {
                     mysqli_query(
                         $db_link,
                         'SELECT pw, public_key, private_key
-                        FROM '.$pre.'users
-                        WHERE id = '.(int) $post_number
+                        FROM ' . $pre . 'users
+                        WHERE id = ' . (int) $post_number
                     )
                 );
 
@@ -134,7 +134,7 @@ if (null !== $post_step) {
                     $c = count($res);
                     // first variant
 
-                    $random_string_lenght = 15;
+                    $random_string_lenght = 20;
                     $random_string = '';
                     for ($i = 0; $i < $random_string_lenght; ++$i) {
                         $random_string .= $res[random_int(0, $c - 1)];
@@ -152,67 +152,65 @@ if (null !== $post_step) {
                     // Store
                     mysqli_query(
                         $db_link,
-                        'UPDATE '.$pre."users
-                        SET public_key = '".$userKeys['public_key']."',
-                        private_key = '".$userKeys['private_key']."',
-                        last_connexion = '',
+                        'UPDATE ' . $pre . "users
+                        SET public_key = '" . $userKeys['public_key'] . "',
+                        private_key = '" . $userKeys['private_key'] . "',
                         upgrade_needed = 1,
-                        pw = '".$pwdlib->createPasswordHash($random_string)."',
-                        special = 'password_change_expected'
-                        WHERE id = ".$post_number
+                        special = 'user_keys_to_be_changed',
+                        WHERE id = " . $post_number
                     );
 
                     // Remove all sharekeys if exists
                     mysqli_query(
                         $db_link,
                         'DELETE  
-                        FROM '.$pre.'sharekeys_items
-                        WHERE user_id = '.(int) $userInfo['id']
+                        FROM ' . $pre . 'sharekeys_items
+                        WHERE user_id = ' . (int) $userInfo['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
-                        FROM '.$pre.'sharekeys_logs
-                        WHERE user_id = '.(int) $userInfo['id']
+                        FROM ' . $pre . 'sharekeys_logs
+                        WHERE user_id = ' . (int) $userInfo['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
-                        FROM '.$pre.'sharekeys_fields
-                        WHERE user_id = '.(int) $userInfo['id']
+                        FROM ' . $pre . 'sharekeys_fields
+                        WHERE user_id = ' . (int) $userInfo['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
-                        FROM '.$pre.'sharekeys_suggestions
-                        WHERE user_id = '.(int) $userInfo['id']
+                        FROM ' . $pre . 'sharekeys_suggestions
+                        WHERE user_id = ' . (int) $userInfo['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
-                        FROM '.$pre.'sharekeys_files
-                        WHERE user_id = '.(int) $userInfo['id']
+                        FROM ' . $pre . 'sharekeys_files
+                        WHERE user_id = ' . (int) $userInfo['id']
                     );
 
                     $usersArray = array(
                         'id' => $post_number,
-                        'pwd' => $random_string,
+                        'otp' => $random_string,
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
                     );
                 }
 
                 // Return
-                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "'.base64_encode(json_encode($usersArray)).'" , "number":"'.((int) $post_number + 1).'" , "loop_finished" : "false" , "rest" : "'.base64_encode(json_encode($listOfUsers)).'"}]';
+                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "false" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
             } else {
                 // No more user to treat
-                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * creating user's items keys
         */
@@ -233,8 +231,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT private_key
-                    FROM '.$pre.'users
-                    WHERE id = '.(int) $adminId
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $adminId
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
@@ -244,7 +242,7 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT count(*)
-                    FROM '.$pre.'items
+                    FROM ' . $pre . 'items
                     WHERE perso = 0'
                 )
             );
@@ -256,9 +254,9 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT id, pw, encryption_type 
-                    FROM '.$pre.'items
+                    FROM ' . $pre . 'items
                     WHERE perso = 0
-                    LIMIT '.$post_start.', '.$post_count_in_loop
+                    LIMIT ' . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -267,8 +265,8 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'SELECT share_key
-                            FROM '.$pre.'sharekeys_items
-                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
+                            FROM ' . $pre . 'sharekeys_items
+                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 
@@ -281,20 +279,20 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre.'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `' . $pre . 'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                     );
                 }
 
-                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
+                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
-                echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * creating user's logs keys
         */
@@ -315,8 +313,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT private_key
-                    FROM '.$pre.'users
-                    WHERE id = '.(int) $adminId
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $adminId
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
@@ -326,7 +324,7 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT increment_id
-                    FROM '.$pre."log_items
+                    FROM ' . $pre . "log_items
                     WHERE raison LIKE 'at_pw :%' AND encryption_type = 'teampass_aes'"
                 )
             );
@@ -338,9 +336,9 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT increment_id
-                    FROM '.$pre."log_items
+                    FROM ' . $pre . "log_items
                     WHERE raison LIKE 'at_pw :%' AND encryption_type = 'teampass_aes'
-                    LIMIT ".$post_start.', '.$post_count_in_loop
+                    LIMIT " . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -349,8 +347,8 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'SELECT share_key
-                            FROM '.$pre.'sharekeys_logs
-                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
+                            FROM ' . $pre . 'sharekeys_logs
+                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 
@@ -363,20 +361,20 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre.'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `' . $pre . 'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                     );
                 }
 
-                echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
+                echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
-                echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * creating user's fields keys
         */
@@ -397,8 +395,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT private_key
-                    FROM '.$pre.'users
-                    WHERE id = '.(int) $adminId
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $adminId
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
@@ -408,7 +406,7 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre.'categories_items'
+                    FROM ' . $pre . 'categories_items'
                 )
             );
 
@@ -417,9 +415,9 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT id, data, encryption_type
-                    FROM '.$pre.'categories_items
+                    FROM ' . $pre . 'categories_items
                     //TODO WHERE encryption_type = "teampass_aes"
-                    LIMIT '.$post_start.', '.$post_count_in_loop
+                    LIMIT ' . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -428,8 +426,8 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'SELECT share_key
-                            FROM '.$pre.'sharekeys_fields
-                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
+                            FROM ' . $pre . 'sharekeys_fields
+                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 
@@ -448,20 +446,20 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre.'sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `' . $pre . 'sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                     );
                 }
 
-                echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
+                echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
-                echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * creating user's Suggestion keys
         */
@@ -482,8 +480,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT private_key
-                    FROM '.$pre.'users
-                    WHERE id = '.(int) $adminId
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $adminId
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
@@ -493,7 +491,7 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre.'suggestion'
+                    FROM ' . $pre . 'suggestion'
                 )
             );
 
@@ -504,8 +502,8 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre.'suggestion
-                    LIMIT '.$post_start.', '.$post_count_in_loop
+                    FROM ' . $pre . 'suggestion
+                    LIMIT ' . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -514,8 +512,8 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'SELECT share_key
-                            FROM '.$pre.'sharekeys_suggestions
-                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
+                            FROM ' . $pre . 'sharekeys_suggestions
+                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 
@@ -534,20 +532,20 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre.'sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `' . $pre . 'sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                     );
                 }
 
-                echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
+                echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
-                echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * creating user's FILES keys
         */
@@ -568,8 +566,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT private_key
-                    FROM '.$pre.'users
-                    WHERE id = '.(int) $adminId
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $adminId
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
@@ -579,7 +577,7 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre.'files'
+                    FROM ' . $pre . 'files'
                 )
             );
 
@@ -588,9 +586,9 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM '.$pre."files
+                    FROM ' . $pre . "files
                     WHERE status = ''.TP_ENCRYPTION_NAME.''
-                    LIMIT ".$post_start.', '.$post_count_in_loop
+                    LIMIT " . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
@@ -599,8 +597,8 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'SELECT share_key
-                            FROM '.$pre.'sharekeys_files
-                            WHERE object_id = '.(int) $item['id'].' AND user_id = '.(int) $adminId
+                            FROM ' . $pre . 'sharekeys_files
+                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 
@@ -619,20 +617,20 @@ if (null !== $post_step) {
                     // Save the key in DB
                     mysqli_query(
                         $db_link,
-                        'INSERT INTO `'.$pre.'sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,'.(int) $item['id'].','.(int) $userInfo['id'].",'".$share_key_for_item."')"
+                        'INSERT INTO `' . $pre . 'sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                     );
                 }
 
-                echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "false"}]';
+                echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
-                echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"'.$post_number.'" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
             exit();
-        break;
+            break;
 
-        /*
+            /*
         * CASE
         * Sending email to user
         */
@@ -653,19 +651,19 @@ if (null !== $post_step) {
                     mysqli_query(
                         $db_link,
                         'SELECT email
-                        FROM '.$pre.'users
-                        WHERE id = '.(int) $user['id']
+                        FROM ' . $pre . 'users
+                        WHERE id = ' . (int) $user['id']
                     )
                 );
                 if (empty($userEmail['email']) === false) {
                     // Send email
                     try {
                         sendEmail(
-                            '[Teampass] Login credential change',
+                            '[Teampass] Your One Time Code',
                             str_replace(
                                 array('#tp_password#'),
-                                array($user['pwd']),
-                                'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has decided to reset your current password. Next time you will connect to Teampass, please use:<br><br><b>#tp_password#</b><br><br>We highly encourage you to change this password once connected.<br><br>Cheers'
+                                array($user['otp']),
+                                'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has performed an update which includes a change of encryption protocol. During your next login in Teampass, a One Time Code will be asked in order to re-encrypt your data.<br><br>Please use on demand (it is unique for your account):<br><br><b>#tp_password#</b><br><br>This process might take a couple of minutes depending of the number of items existing in the database.<br><br>Cheers'
                             ),
                             $userEmail['email'],
                             $SETTINGS,
@@ -673,7 +671,7 @@ if (null !== $post_step) {
                             true
                         );
                     } catch (Exception $e) {
-                        console.log(e);
+                        console . log(e);
                     }
                 }
             }
@@ -681,8 +679,8 @@ if (null !== $post_step) {
             echo '[{"finish":"1" , "next":"", "error":"" , "data" : "" , "number":"" , "loop_finished" : "true"}]';
 
             exit();
-        break;
+            break;
     }
 }
 
-echo '[{"finish":"1" , "next":"'.$next.'", "error":""}]';
+echo '[{"finish":"1" , "next":"' . $next . '", "error":""}]';

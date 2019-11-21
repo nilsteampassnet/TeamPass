@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -2715,6 +2716,97 @@ if (null !== $post_type) {
                 array(
                     'message' => '',
                     'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+            /*
+         * CHANGE USER PRIVATE KEY WITH OTC / PWD
+         */
+        case 'change_user_privkey_with_otc':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_INTEGER);
+            $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+            $post_otc = filter_var($dataReceived['otc'], FILTER_SANITIZE_STRING);
+
+
+            // Empty user
+            if (empty($post_userid) === true || empty($post_password) === true || empty($post_otc) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('data_are_missing'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+
+            // Check if user already exists
+            $userInfo = DB::query(
+                'SELECT id, private_key, public_key
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_userid
+            );
+            if (DB::count() === 0) {
+                // Error - user not exists
+                echo prepareExchangedData(
+                    array(
+                        'message' => langHdl('user_not_exists'),
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Encrypte private key with user password
+            // and not the OTC
+
+            // Uncrypt private key with OTC
+            $userPrivateKey = decryptPrivateKey($post_otc, $userInfo['private_key']);
+            // Crypt it with user's password
+            $userPrivateKeyEncrypted = encryptPrivateKey(
+                $post_password,
+                $userPrivateKey
+            );
+            // Save it in session
+            $superGlobal->put('private_key', $userPrivateKey, 'SESSION', 'user');
+
+            // Update table
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'private_key' => $userPrivateKeyEncrypted,
+                ),
+                'id=%i',
+                $userInfo['id']
+            );
+
+            // Send back
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
                 ),
                 'encode'
             );

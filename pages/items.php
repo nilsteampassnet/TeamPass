@@ -92,11 +92,6 @@ foreach ($rows as $reccord) {
         $listRoles .= ';' . $reccord['id'] . '#' . $reccord['title'];
     }
 }
-
-// Is personal SK available
-echo '
-<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1 && (int) $session_user_admin !== 1 && (int) $session_user_upgrade_needed === 1 ? 1 : 0, '" />';
-
 ?>
 
 <!-- Content Header (Page header) -->
@@ -287,8 +282,8 @@ echo '
                                     ?>
                                     <div class="form-check mb-3 icheck-blue">
                                         <input type="checkbox" class="form-check-input form-item-control track-change flat-blue" id="form-item-anyoneCanModify" <?php
-                                                                                                                                                            echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                                                                                                                                                && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
+                                                                                                                                                                    echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                                                                                                                                                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                         <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                     </div>
                                 <?php

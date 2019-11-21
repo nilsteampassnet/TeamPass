@@ -18,6 +18,11 @@
  */
 
 return array(
+    'one_time_code_expected' => 'One-Time-Code expected',
+    'data_are_missing' => 'Expected data are missing',
+    'your_keys_need_to_be_upgraded' => 'Your encrypted keys need to be upgraded',
+    'one_time_code' => 'One-Time-Code',
+    'provide_personal_one_time_code' => 'Please provide the One-Time-Code you received by email',
     'change_authentification_type_to_ldap' => 'Change authentication type to LDAP',
     'change_authentification_type_to_local' => 'Change authentication type to Teampass local database',
     'ldap_user_password_is_used_for_authentication' => 'User password in LDAP is used for authentication',

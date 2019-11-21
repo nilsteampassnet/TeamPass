@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -28,7 +29,6 @@ $_SESSION['CPM'] = 1;
 $post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);
 
 $scripts_list = array(
-    
     array('upgrade_run_3.0.0_users.php', 'user_id'),
 );
 $param = '';
@@ -39,4 +39,4 @@ if (intval($post_file_number) >= count($scripts_list)) {
 } else {
     $finished = 0;
 }
-echo '[{"finish":"'.$finished.'", "scriptname":"'.$scripts_list[$post_file_number][0].'", "parameter":"'.$scripts_list[$post_file_number][1].'"}]';
+echo '[{"finish":"' . $finished . '", "scriptname":"' . $scripts_list[$post_file_number][0] . '", "parameter":"' . $scripts_list[$post_file_number][1] . '"}]';

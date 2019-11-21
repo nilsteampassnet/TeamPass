@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -17,7 +18,7 @@
  */
 
 
-if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -60,30 +61,103 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
                         toastr.info(
                             '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
                         );
-                        
+
                         $.post(
                             "sources/identify.php", {
                                 type: "identify_user",
-                                data: prepareExchangedData(window.atob($("#duo_data").val()), "encode", "<?php echo $_SESSION['key']; ?>"), //window.atob($("#duo_data").val())
+                                data: prepareExchangedData(window.atob($("#duo_data").val()), "encode", "<?php echo $_SESSION['key']; ?>"),
                             },
                             function(receivedData) {
                                 var data = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
                                 $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
 
                                 if (data.error !== false) {
+                                    // Show error
                                     toastr.remove();
-                                    toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
-                                        '', {
-                                            timeOut: 1000
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true
                                         }
                                     );
-                                    $("#div-2fa-duo-progress")
-                                        .html('<i class="fas fa-exclamation-triangle text-danger mr-2"></i>' + data.message);
+                                    // ---
+                                } else if (data.message === 'ask_for_otc') {
+                                    // Manage the case where the user keys OTC is asked
+                                    $('#user-one-time-code-card-body').removeClass('hidden');
+                                    $('#but_identify_user').addClass('hidden');
+                                    $('#login, #pw').addAttribute('disabled');
+
+                                    toastr.remove();
+                                    toastr.warning(
+                                        '<?php echo langHdl('one_time_code_expected'); ?>',
+                                        '', {
+                                            timeOut: 5000
+                                        }
+                                    );
+
+                                    // User clicks on button
+                                    $(document).on('click', '#but_confirm_otc', function() {
+                                        // OTC is mandatory
+                                        if ($('#user-one-time-code').val() === '') {
+                                            return false;
+                                        }
+
+                                        toastr.remove();
+                                        toastr.info(
+                                            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                                        );
+
+                                        // Change the User's Private key
+                                        parameters = {
+                                            'user_id': data.user_id,
+                                            'password': $('#pw').val(),
+                                            'otc': $('#user-one-time-code').val(),
+                                        }
+                                        $.post(
+                                            "sources/users.queries.php", {
+                                                type: "change_user_privkey_with_otc",
+                                                key: store.get('teampassUser').sessionKey,
+                                                data: prepareExchangedData(parameters, "encode", "<?php echo $_SESSION['key']; ?>"),
+                                            },
+                                            function(receivedData) {
+                                                receivedData = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
+
+                                                if (receivedData.error !== false) {
+                                                    // Show error
+                                                    toastr.remove();
+                                                    toastr.error(
+                                                        receivedData.message,
+                                                        '<?php echo langHdl('caution'); ?>', {
+                                                            timeOut: 5000,
+                                                            progressBar: true
+                                                        }
+                                                    );
+                                                } else {
+                                                    // redirection for admin is specific
+                                                    if (data.user_admin !== 1) {
+                                                        setTimeout(
+                                                            function() {
+                                                                window.location.href = "index.php?page=items";
+                                                            },
+                                                            1
+                                                        );
+                                                    } else {
+                                                        setTimeout(
+                                                            function() {
+                                                                window.location.href = "index.php?page=manage_main";
+                                                            },
+                                                            1
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                        );
+                                    });
+
+                                    // ---
                                 } else {
-                                    //redirection for admin is specific
-                                    $("#div-2fa-duo-progress")
-                                        .html('<i class="fas fa-info-circle text-info mr-2"></i><?php echo langHdl('please_wait'); ?>');
+                                    // redirection for admin is specific
                                     if (data.user_admin !== 1) {
                                         setTimeout(
                                             function() {
@@ -505,7 +579,7 @@ if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
 
         // 2FA method
         var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
-console.log(user2FaMethod)
+        console.log(user2FaMethod)
         if (user2FaMethod !== "") {
             if ((user2FaMethod === "yubico" && $("#yubico_key").val() === "") ||
                 (user2FaMethod === "otp" && $("#ga_code").val() === "")
@@ -587,7 +661,7 @@ console.log(user2FaMethod)
                     $('#2fa_methods_selector').removeClass('hidden');
                 }
 
-                
+
                 // Google 2FA
                 if (mfaMethod === 'otp' && data.google === true) {
                     if ($('#ga_code').val() !== undefined && $('#ga_code').val() !== '') {
@@ -747,16 +821,16 @@ console.log(user2FaMethod)
                                         timeOut: 1000
                                     }
                                 );
-                            /*} else if (data.error === "bad_user_yubico_credentials") {
-                                toastr.remove();
-                                toastr.error(
-                                    data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 10000,
-                                        progressBar: true,
-                                        positionClass: "toast-top-right"
-                                    }
-                                );*/
+                                /*} else if (data.error === "bad_user_yubico_credentials") {
+                                    toastr.remove();
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 10000,
+                                            progressBar: true,
+                                            positionClass: "toast-top-right"
+                                        }
+                                    );*/
                             } else if (data.error === true || data.error !== '') {
                                 toastr.remove();
                                 toastr.error(
@@ -944,7 +1018,8 @@ console.log(user2FaMethod)
                 .click(function() {
                     $('.div-2fa-method').addClass('hidden');
 
-                    var twofaMethod = $(this).text().toLowerCase();console.log(twofaMethod)
+                    var twofaMethod = $(this).text().toLowerCase();
+                    console.log(twofaMethod)
 
                     // Save user choice
                     $('#2fa_user_selection').val(twofaMethod);

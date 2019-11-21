@@ -1635,7 +1635,7 @@ function utf8Converter($array)
  *
  * @return string|array
  */
-function prepareExchangedData($data, $type, $key = null)
+function prepareExchangedData($SETTINGS, $data, $type, $key = null)
 {
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
         if (file_exists('../includes/config/tp.config.php')) {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -88,7 +89,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && !(isset($SETTINGS['maintenance_mode']) === true
-    && (int) $SETTINGS['maintenance_mode'] === 1))) {
+        && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
@@ -175,11 +176,12 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
         </div>';
 }
 
-if (isset($SETTINGS['enable_http_request_login']) === true
+if (
+    isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && (isset($SETTINGS['maintenance_mode']) === false
-    && (int) $SETTINGS['maintenance_mode'] === 1)
+        && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
     echo '
 <script>
@@ -233,15 +235,37 @@ echo '
         <div class="row mb-3 mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">' . langHdl('log_in') . '</button>
+                
+                <!-- In case of upgrade, the user has to provide his One Time Code -->
+                <div class="card-body user-one-time-code-card-body hidden">
+                    <h5 class="login-box-msg">' . langHdl('provide_personal_one_time_code') . '</h5>
+
+                    <div class="input-group has-feedback mb-2 mt-4">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-unlock-alt"></i></span>
+                        </div>
+                        <input type="password" id="user-one-time-code" class="form-control" placeholder="' . langHdl('one_time_code') . '">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button id="but_confirm_otc" class="btn btn-primary btn-block">' . langHdl('confirm') . '</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- /end -->
+
             </div>
         </div>
     </div>';
 
 
-
+// 
 echo '
-    <!-- /.login-card-body -->
+    <!-- /.login-card-body -->';
 
+// In case of password change
+echo '
     <div class="card-body confirm-password-card-body hidden">
         <h5 class="login-box-msg">' . langHdl('new_password_required') . '</h5>
 
