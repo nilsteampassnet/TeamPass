@@ -1185,7 +1185,7 @@ function identifyUser($sentData, $SETTINGS)
             'initial_url' => $antiXss->xss_clean($sessionUrl),
             'pwd_attempts' => 0,
             'error' => false,
-            'message' => (isset($superGlobal->get('user_upgrade_needed', 'SESSION', 'user')) === true && (int) $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') === 1) ? 'ask_for_otc' : '',
+            'message' => (null !== $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') && (int) $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') === 1) ? 'ask_for_otc' : '',
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
