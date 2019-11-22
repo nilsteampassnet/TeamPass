@@ -850,7 +850,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             element = '.item-details-card';
         }
 
-        console.log('>>> '+element+' -- '+newElement)
+        console.log('>>> ' + element + ' -- ' + newElement)
 
         if (element === '.item-details-card') element = '#folders-tree-card';
 
@@ -4303,7 +4303,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             }
                         }
                     })
-                    //.summernote('editor.insertText', data.description);
+                //.summernote('editor.insertText', data.description);
 
                 $('#form-item-suggestion-description')
                     .html(data.description)
@@ -4811,7 +4811,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo $_SESSION['user_language_code']; ?>'
+                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
                 });
 
                 // Prepare datePicker
@@ -4819,7 +4819,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     format: '<?php echo str_replace(array('Y', 'M'), array('yyyy', 'mm'), $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo $_SESSION['user_language_code']; ?>'
+                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
                 });
 
                 // Prepare Date range picker with time picker

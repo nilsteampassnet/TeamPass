@@ -2797,6 +2797,8 @@ if (null !== $post_type) {
                 prefixTable('users'),
                 array(
                     'private_key' => $userPrivateKeyEncrypted,
+                    'special' => '',
+                    'upgrade_needed' => 0,
                 ),
                 'id=%i',
                 $userInfo['id']

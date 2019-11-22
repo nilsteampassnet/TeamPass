@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      AntiXSS.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
+ */
+
+
+
 declare(strict_types=1);
 
 namespace voku\helper;
@@ -1351,18 +1370,18 @@ final class AntiXSS
         }
 
         return '&lt;' . $matches['start'] . $matches['content'] . $matches['end'] // encode opening brace
-               // encode captured opening or closing brace to prevent recursive vectors:
-               . \str_replace(
-                   [
-                       '>',
-                       '<',
-                   ],
-                   [
-                       '&gt;',
-                       '&lt;',
-                   ],
-                   $matches['rest']
-               );
+            // encode captured opening or closing brace to prevent recursive vectors:
+            . \str_replace(
+                [
+                    '>',
+                    '<',
+                ],
+                [
+                    '&gt;',
+                    '&lt;',
+                ],
+                $matches['rest']
+            );
     }
 
     /**

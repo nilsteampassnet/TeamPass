@@ -40,10 +40,9 @@ echo '
     <div class="login-logo">',
     (isset($SETTINGS['custom_logo']) === true
         && empty($SETTINGS['custom_logo']) === false) ?
-        '
-        <img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="margin-bottom:40px;" />' : '',
+        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center;" />' : '',
     '
-        <a href="#"><b>' . TP_TOOL_NAME . '</b></a>
+    <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo"><b>' . TP_TOOL_NAME . '</b>
     </div>
 
     <!-- /.login-logo -->

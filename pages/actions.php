@@ -79,8 +79,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="config-file" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="config-file" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php
@@ -105,8 +105,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="personal-folder" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="personal-folder" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_check_pf');
@@ -132,8 +132,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="remove-orphans" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="remove-orphans" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_db_clean_items');
@@ -161,8 +161,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="optimize-db" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="optimize-db" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_db_optimize');
@@ -187,8 +187,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="purge-files" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="purge-files" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_purge_old_files');
@@ -216,8 +216,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="reload-cache" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="reload-cache" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_reload_cache_table');
@@ -246,8 +246,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                         <!--
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="change-sk" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="change-sk" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_change_salt_key');
@@ -276,8 +276,8 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="file-encryption" title="<?php echo langHdl('launch'); ?>">
-                                    <i class="fas fa-square fa-stack-2x"></i>
+                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="file-encryption" title="<?php echo langHdl('start'); ?>">
+                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
                                 </span>
                                 <?php echo langHdl('admin_action_attachments_cryption');
@@ -305,7 +305,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         <input type="radio" class="form-radio-input form-control mr-1" id="attachments-decrypt" name="encryption_type">
                                         <label class="form-radio-label pointer mr-3" for="attachments-decrypt"><?php echo langHdl('decrypt'); ?></label>
                                         <button class="btn btn-default button-action" data-action="launch-action-on-attachments">
-                                            <?php echo langHdl('launch'); ?>
+                                            <?php echo langHdl('start'); ?>
                                         </button>
                                     </div>                                        
                                     <div class="form-group mt-2 hidden" id="file-encryption-progress"></div>

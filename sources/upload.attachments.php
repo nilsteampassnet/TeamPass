@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -20,7 +21,8 @@
 require_once './SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
@@ -37,19 +39,21 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
 //check for session
 if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
-    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
+    //session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
+    session_regenerate_id(true);
 } elseif (isset($_GET['PHPSESSID'])) {
-    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
+    //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
+    session_regenerate_id(true);
 } else {
     handleUploadError('No Session was found.');
 }
@@ -64,7 +68,7 @@ $post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_I
 $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
 
 // load functions
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Get parameters
 $chunk = isset($_REQUEST['chunk']) ? (int) $_REQUEST['chunk'] : 0;
@@ -77,8 +81,8 @@ if (null === $post_user_token) {
     exit();
 } else {
     //Connect to mysql server
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -92,7 +96,8 @@ if (null === $post_user_token) {
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 
-    if (isset($_SESSION[$post_user_token])
+    if (
+        isset($_SESSION[$post_user_token])
         && ($chunk < $chunks - 1)
         && $_SESSION[$post_user_token] >= 0
     ) {
@@ -101,14 +106,15 @@ if (null === $post_user_token) {
             prefixTable('tokens'),
             array(
                 'end_timestamp' => time() + 10,
-                ),
+            ),
             'user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
     } else {
         // create a session if several files to upload
-        if (isset($_SESSION[$post_user_token]) === false
+        if (
+            isset($_SESSION[$post_user_token]) === false
             || empty($_SESSION[$post_user_token])
             || $_SESSION[$post_user_token] === '0'
         ) {
@@ -119,7 +125,7 @@ if (null === $post_user_token) {
                 prefixTable('tokens'),
                 array(
                     'end_timestamp' => time() + 30,
-                    ),
+                ),
                 'user_id = %i AND token = %s',
                 $_SESSION['user_id'],
                 $post_user_token
@@ -136,7 +142,7 @@ if (null === $post_user_token) {
         // check if token is expired
         $data = DB::queryFirstRow(
             'SELECT end_timestamp
-            FROM '.prefixTable('tokens').'
+            FROM ' . prefixTable('tokens') . '
             WHERE user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
@@ -161,12 +167,12 @@ if (null === $post_user_token) {
     }
 
     // Load Settings
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
 }
 
 // HTTP headers for no cache etc
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
@@ -211,21 +217,22 @@ if (!isset($_FILES['file'])) {
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
+$file_name = preg_replace('[^' . $valid_chars_regex . ']', '', strtolower(basename($_FILES['file']['name'])));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    handleAttachmentError('Invalid file name: '.$file_name.'.', 114);
+    handleAttachmentError('Invalid file name: ' . $file_name . '.', 114);
 }
 
 // Validate file extension
 $ext = strtolower(getFileExtension($_REQUEST['name']));
-if (in_array(
-    $ext,
-    explode(
-        ',',
-        $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
-        ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
-    )
-) === false
+if (
+    in_array(
+        $ext,
+        explode(
+            ',',
+            $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
+                ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
+        )
+    ) === false
 ) {
     handleAttachmentError('Invalid file extension.', 115);
 }
@@ -235,24 +242,24 @@ set_time_limit(5 * 60);
 
 // Clean the fileName for security reasons
 $fileInfo = pathinfo($fileName);
-$fileName = base64_encode($fileInfo['filename']).'.'.$fileInfo['extension'];
+$fileName = base64_encode($fileInfo['filename']) . '.' . $fileInfo['extension'];
 $fileFullSize = 0;
 
 // Make sure the fileName is unique but only if chunking is disabled
-if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
+if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
     $ext = strrpos($fileName, '.');
     $fileNameA = substr($fileName, 0, $ext);
     $fileNameB = substr($fileName, $ext);
 
     $count = 1;
-    while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
+    while (file_exists($targetDir . DIRECTORY_SEPARATOR . $fileNameA . '_' . $count . $fileNameB)) {
         ++$count;
     }
 
-    $fileName = $fileNameA.'_'.$count.$fileNameB;
+    $fileName = $fileNameA . '_' . $count . $fileNameB;
 }
 
-$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
+$filePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
 
 // Create target dir
 if (file_exists($targetDir) === false) {
@@ -266,10 +273,11 @@ if (file_exists($targetDir) === false) {
 // Remove old temp files
 if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($file = readdir($dir)) !== false) {
-        $tmpfilePath = $targetDir.DIRECTORY_SEPARATOR.$file;
+        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
 
         // Remove temp file if it is older than the max age and is not the current file
-        if (preg_match('/\.part$/', $file)
+        if (
+            preg_match('/\.part$/', $file)
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
@@ -307,11 +315,9 @@ if (strpos($contentType, 'multipart') !== false) {
                     fwrite($out, $buff);
                 }
             } else {
-                die(
-                    '{"jsonrpc" : "2.0",
+                die('{"jsonrpc" : "2.0",
                     "error" : {"code": 101, "message": "Failed to open input stream."},
-                    "id" : "id"}'
-                );
+                    "id" : "id"}');
             }
             fclose($in);
             fclose($out);
@@ -360,7 +366,8 @@ $newFile = encryptFile($fileName, $targetDir);
 // Case ITEM ATTACHMENTS - Store to database
 if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     // Check case of new item
-    if (isset($post_isNewItem) === true
+    if (
+        isset($post_isNewItem) === true
         && (int) $post_isNewItem === 1
         && empty($post_randomId) === false
     ) {
@@ -372,7 +379,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         array(
             'id_item' => $post_itemId,
             'name' => $fileName,
-            'size' => $fileFullSize, //$_FILES['file']['size'],
+            'size' => $fileFullSize,
             'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],
             'file' => $newFile['fileHash'],
@@ -385,7 +392,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     // Is this item a personal one?
     $dataItem = DB::queryFirstRow(
         'SELECT perso
-        FROM '.prefixTable('items').'
+        FROM ' . prefixTable('items') . '
         WHERE id = %i',
         $post_itemId
     );
@@ -394,8 +401,8 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         // This is a public object
         $users = DB::query(
             'SELECT id, public_key
-            FROM '.prefixTable('users').'
-            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
+            FROM ' . prefixTable('users') . '
+            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '")
             AND public_key != ""'
         );
         foreach ($users as $user) {
@@ -421,9 +428,10 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     }
 
     // Log upload into databse
-    if (isset($post_isNewItem) === false
+    if (
+        isset($post_isNewItem) === false
         || (isset($post_isNewItem) === true
-        && ($post_isNewItem === false || (int) $post_isNewItem !== 1))
+            && ($post_isNewItem === false || (int) $post_isNewItem !== 1))
     ) {
         DB::insert(
             prefixTable('log_items'),
@@ -432,14 +440,14 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
                 'date' => time(),
                 'id_user' => $_SESSION['user_id'],
                 'action' => 'at_modification',
-                'raison' => 'at_add_file : '.$fileName.':'.$newID,
+                'raison' => 'at_add_file : ' . $fileName . ':' . $newID,
             )
         );
     }
 }
 
 // Return JSON-RPC response
-die('{"jsonrpc" : "2.0", "result" : null, "id" : "'.$newID.'"}');
+die('{"jsonrpc" : "2.0", "result" : null, "id" : "' . $newID . '"}');
 
 /**
  * Undocumented function.
@@ -449,5 +457,5 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "'.$newID.'"}');
  */
 function handleAttachmentError($message, $code)
 {
-    echo '{"jsonrpc" : "2.0", "error" : {"code": '.htmlentities($code, ENT_QUOTES).', "message": "'.htmlentities($message, ENT_QUOTES).'"}, "id" : "id"}';
+    echo '{"jsonrpc" : "2.0", "error" : {"code": ' . htmlentities($code, ENT_QUOTES) . ', "message": "' . htmlentities($message, ENT_QUOTES) . '"}, "id" : "id"}';
 }

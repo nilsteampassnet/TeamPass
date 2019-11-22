@@ -2498,7 +2498,9 @@ function debugTeampass($text)
 function fileDelete($file, $SETTINGS)
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/ASCII.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/UTF8.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     $file = $antiXss->xss_clean($file);
@@ -3156,12 +3158,13 @@ function encryptFile($fileInName, $fileInPath)
 
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
-    $cipher->disablePadding();
+    //$cipher->disablePadding();
 
     // Encrypt the file content
     $plaintext = file_get_contents(
         filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
     );
+
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
@@ -3393,7 +3396,7 @@ function ldapConnect($SETTINGS)
     if ((int) $SETTINGS['ldap_mode'] === 0) {
         return false;
     }
-    
+
     if ($SETTINGS['ldap_type'] === 'posix-search') {
         // LDAP with posix search
         $ldapURIs = '';
@@ -3452,12 +3455,12 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
                 $filter,
                 array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire', 'memberof')
             );
-            
+
             // Check if user was found in AD
             if (ldap_count_entries($ldapconn, $result) > 0) {
                 // Get user's info and especially the DN
                 $userLDAPInfo = ldap_get_entries($ldapconn, $result);
-                
+
                 // Try to auth inside LDAP
                 if (ldap_bind($ldapconn, $userLDAPInfo[0]['dn'], $password) === true) {
                     return true;

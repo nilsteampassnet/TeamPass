@@ -223,8 +223,9 @@
 }
 
 .login-logo {
-    letter-spacing: 10px;
+    letter-spacing: 4px;
     font-size: 40pt;
+    color: #64616d;
 }
 
 .img-modal {

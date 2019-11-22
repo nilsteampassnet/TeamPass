@@ -18,6 +18,7 @@
  */
 
 return array(
+    'start' => 'Start',
     'one_time_code_expected' => 'One-Time-Code expected',
     'data_are_missing' => 'Expected data are missing',
     'your_keys_need_to_be_upgraded' => 'Your encrypted keys need to be upgraded',

@@ -127,7 +127,8 @@ $session_auth_type = $superGlobal->get('auth_type', 'SESSION', 'user');
 $pageSel = $superGlobal->get('page', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (isset($_GET['language']) === true
+if (
+    isset($_GET['language']) === true
     && empty($_) === false
     && filter_var(trim($_GET['language']), FILTER_SANITIZE_STRING) !== false
 ) {
@@ -360,13 +361,13 @@ if (($session_validite_pw === null
                                     <i class="fas fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
                                 </a>
                                 <?php
-                                if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
-                                    ?>
-                                <a class="dropdown-item user-menu" href="#" data-name="password-change">
-                                    <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
-                                </a>
-                                    <?php
-                                } ?>
+                                    if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
+                                        ?>
+                                    <a class="dropdown-item user-menu" href="#" data-name="password-change">
+                                        <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
+                                    </a>
+                                <?php
+                                    } ?>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
                                     <i class="fas fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
@@ -387,9 +388,9 @@ if (($session_validite_pw === null
             <!-- Main Sidebar Container -->
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
-                <a href="index.php" class="brand-link">
-                    <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                    <span class="brand-text font-weight-light">Teampass</span>
+                <a href="<?php echo $SETTINGS['cpassman_url'] . "/index.php?page=items"; ?>" class="brand-link">
+                    <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo" class="brand-image">
+                    <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
 
                 <!-- Sidebar -->

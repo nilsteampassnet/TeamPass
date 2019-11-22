@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -20,7 +21,8 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
@@ -41,11 +43,11 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
 }
 
@@ -59,7 +61,7 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
 }
 
 // load functions
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Prepare POST variables
 $post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
@@ -94,7 +96,7 @@ if (null === $post_user_token) {
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
-            'SELECT end_timestamp FROM '.prefixTable('tokens').' WHERE user_id = %i AND token = %s',
+            'SELECT end_timestamp FROM ' . prefixTable('tokens') . ' WHERE user_id = %i AND token = %s',
             $_SESSION['user_id'],
             $post_user_token
         );
@@ -116,12 +118,12 @@ if (null === $post_user_token) {
 
 // HTTP headers for no cache etc
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
 if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') {
-    $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';
+    $targetDir = $SETTINGS['cpassman_dir'] . '/includes/avatars';
 } else {
     $targetDir = $SETTINGS['path_to_files_folder'];
 }
@@ -159,11 +161,13 @@ set_time_limit(5 * 60);
 // Validate the upload
 if (isset($_FILES['file']) === false) {
     handleUploadError('No upload found in $_FILES for Filedata');
-} elseif (isset($_FILES['file']['error']) === true
+} elseif (
+    isset($_FILES['file']['error']) === true
     && $_FILES['file']['error'] != 0
 ) {
     handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
-} elseif (isset($_FILES['file']['tmp_name']) === false
+} elseif (
+    isset($_FILES['file']['tmp_name']) === false
     || @is_uploaded_file($_FILES['file']['tmp_name']) === false
 ) {
     handleUploadError('Upload failed is_uploaded_file test.');
@@ -173,7 +177,7 @@ if (isset($_FILES['file']) === false) {
 
 // Validate file name (for our purposes we'll just remove invalid characters)
 $file_name = preg_replace(
-    '/[^'.$valid_chars_regex.'\.]/',
+    '/[^' . $valid_chars_regex . '\.]/',
     '',
     filter_var(
         strtolower(basename($_FILES['file']['name'])),
@@ -181,7 +185,7 @@ $file_name = preg_replace(
     )
 );
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    handleUploadError('Invalid file name: '.$file_name.'.');
+    handleUploadError('Invalid file name: ' . $file_name . '.');
 }
 
 // Validate file extension
@@ -190,41 +194,42 @@ $ext = strtolower(
         filter_var($_FILES['file']['name'], FILTER_SANITIZE_STRING)
     )
 );
-if (in_array(
-    $ext,
-    explode(
-        ',',
-        $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
-        ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
-    )
-) === false
+if (
+    in_array(
+        $ext,
+        explode(
+            ',',
+            $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
+                ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
+        )
+    ) === false
 ) {
     handleUploadError('Invalid file extension.');
 }
 
 // is destination folder writable
 if (is_writable($SETTINGS['path_to_files_folder']) === false) {
-    handleUploadError('Not enough permissions on folder '.$SETTINGS['path_to_files_folder'].'.');
+    handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
 }
 
 // Clean the fileName for security reasons
 $fileName = preg_replace('/[^\w\.]+/', '_', $fileName);
-$fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($fileName)));
+$fileName = preg_replace('/[^' . $valid_chars_regex . '\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
-if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
+if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
     $fileNameA = substr($fileName, 0, strlen($ext));
     $fileNameB = substr($fileName, strlen($ext));
 
     $count = 1;
-    while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
+    while (file_exists($targetDir . DIRECTORY_SEPARATOR . $fileNameA . '_' . $count . $fileNameB)) {
         ++$count;
     }
 
-    $fileName = $fileNameA.'_'.$count.$fileNameB;
+    $fileName = $fileNameA . '_' . $count . $fileNameB;
 }
 
-$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
+$filePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
@@ -238,10 +243,11 @@ if (!file_exists($targetDir)) {
 // Remove old temp files
 if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($file = readdir($dir)) !== false) {
-        $tmpfilePath = $targetDir.DIRECTORY_SEPARATOR.$file;
+        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
 
         // Remove temp file if it is older than the max age and is not the current file
-        if (preg_match('/\.part$/', $file)
+        if (
+            preg_match('/\.part$/', $file)
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
@@ -277,21 +283,17 @@ if (strpos($contentType, 'multipart') !== false) {
                     fwrite($out, $buff);
                 }
             } else {
-                die(
-                    '{"jsonrpc" : "2.0",
+                die('{"jsonrpc" : "2.0",
                     "error" : {"code": 101, "message": "Failed to open input stream."},
-                    "id" : "id"}'
-                );
+                    "id" : "id"}');
             }
             fclose($in);
             fclose($out);
             fileDelete($_FILES['file']['tmp_name'], $SETTINGS);
         } else {
-            die(
-                '{"jsonrpc" : "2.0",
+            die('{"jsonrpc" : "2.0",
                 "error" : {"code": 102, "message": "Failed to open output stream."},
-                "id" : "id"}'
-            );
+                "id" : "id"}');
         }
     } else {
         die('{"jsonrpc" : "2.0", "error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}');
@@ -332,7 +334,7 @@ $newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SET
 
 //Connect to mysql server
 //require_once '../../includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
 DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
@@ -342,13 +344,14 @@ DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 //$link->set_charset(DB_ENCODING);
 
-if (null !== ($post_type_upload)
+if (
+    null !== ($post_type_upload)
     && empty($post_type_upload) === false
     && $post_type_upload === 'import_items_from_csv'
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName
     );
 
     // Add in DB
@@ -363,6 +366,7 @@ if (null !== ($post_type_upload)
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -370,12 +374,13 @@ if (null !== ($post_type_upload)
     );
 
     exit();
-} elseif (null !== ($post_type_upload)
+} elseif (
+    null !== ($post_type_upload)
     && $post_type_upload === 'import_items_from_keepass'
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName
     );
 
     // Add in DB
@@ -390,6 +395,7 @@ if (null !== ($post_type_upload)
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -397,7 +403,8 @@ if (null !== ($post_type_upload)
     );
 
     exit();
-} elseif (null !== ($post_type_upload)
+} elseif (
+    null !== ($post_type_upload)
     && $post_type_upload === 'upload_profile_photo'
 ) {
     // get file extension
@@ -406,35 +413,36 @@ if (null !== ($post_type_upload)
     // rename the file
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext
     );
 
     // make thumbnail
     makeThumbnail(
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'_thumb'.'.'.$ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '_thumb' . '.' . $ext,
         40
     );
 
     // get current avatar and delete it
-    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM '.prefixTable('users').' WHERE id=%i', $_SESSION['user_id']);
-    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar'], $SETTINGS);
-    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb'], $SETTINGS);
+    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $_SESSION['user_id']);
+    fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar'], $SETTINGS);
+    fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar_thumb'], $SETTINGS);
 
     // store in DB the new avatar
     DB::query(
-        'UPDATE '.prefixTable('users')."
-        SET avatar='".$newFileName.'.'.$ext."', avatar_thumb='".$newFileName.'_thumb'.'.'.$ext."'
+        'UPDATE ' . prefixTable('users') . "
+        SET avatar='" . $newFileName . '.' . $ext . "', avatar_thumb='" . $newFileName . '_thumb' . '.' . $ext . "'
         WHERE id=%i",
         $_SESSION['user_id']
     );
 
     // store in session
-    $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
-    $_SESSION['user_avatar_thumb'] = $newFileName.'_thumb'.'.'.$ext;
+    $_SESSION['user_avatar'] = $newFileName . '.' . $ext;
+    $_SESSION['user_avatar_thumb'] = $newFileName . '_thumb' . '.' . $ext;
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS,
         array(
             'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
             'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
@@ -443,12 +451,13 @@ if (null !== ($post_type_upload)
     );
 
     exit();
-} elseif (null !== ($post_type_upload)
+} elseif (
+    null !== ($post_type_upload)
     && $post_type_upload === 'restore_db'
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName
     );
 
     // Add in DB
@@ -463,6 +472,7 @@ if (null !== ($post_type_upload)
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),
