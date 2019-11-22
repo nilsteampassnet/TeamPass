@@ -748,13 +748,17 @@ if (
         $('#dialog-bug-report-text').html('');
         $('#dialog-bug-report').removeClass('hidden');
 
+        // Scroll to top
+        $(window).scrollTop(0);
+
         var data = {
             'browser_name': platform.name,
             'browser_version': platform.version,
             'os': platform.os.family,
             'os_archi': platform.os.architecture,
+            'current_page': window.location.href.substring(window.location.href.lastIndexOf("/")+1),
         }
-
+        
         $.post(
             "sources/main.queries.php", {
                 type: 'generate_bug_report',

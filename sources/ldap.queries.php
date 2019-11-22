@@ -84,7 +84,7 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Load AntiXSS
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
 $antiXss = new voku\helper\AntiXSS();
 
 // Prepare POST variables

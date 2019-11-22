@@ -1639,7 +1639,7 @@ function mainQuery($SETTINGS)
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-
+            
             // Read config file
             $list_of_options = '';
             $url_found = '';
@@ -1700,7 +1700,10 @@ function mainQuery($SETTINGS)
             $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
 
             // Now prepare text
-            $txt = '### Steps to reproduce
+            $txt = '### Page on which it happened
+'.filter_input(INPUT_POST, 'current_page', FILTER_SANITIZE_STRING).'
+
+### Steps to reproduce
 1.
 2.
 3.

@@ -1,4 +1,20 @@
 <?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @file      UTF8.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2019 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
+ */
 
 declare(strict_types=1);
 
@@ -4860,7 +4876,7 @@ final class UTF8
                 $replacement_char_helper = 'none';
             }
 
-            if (self::$SUPPORT['mbstring'] === false) {
+            if (isset(self::$SUPPORT['mbstring']) === false || self::$SUPPORT['mbstring'] === false) {
                 // if there is no native support for "mbstring",
                 // then we need to clean the string before ...
                 $str = self::clean($str);

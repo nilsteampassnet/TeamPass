@@ -41,7 +41,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 function redirect($url)
 {
     // Load AntiXSS
-    include_once '../includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once '../includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect

@@ -67,7 +67,7 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
 $antiXss = new voku\helper\AntiXSS();
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {

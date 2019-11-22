@@ -39,7 +39,7 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === tr
 }
 
 // Load AntiXSS
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
 $antiXss = new voku\helper\AntiXSS();
 
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -285,7 +285,7 @@ function identifyUser($sentData, $SETTINGS)
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     // Load superGlobals
@@ -1216,7 +1216,7 @@ function identifyUser($sentData, $SETTINGS)
 function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     // load passwordLib library
@@ -1501,7 +1501,7 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
 function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     // load passwordLib library
@@ -1666,7 +1666,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
