@@ -112,19 +112,14 @@ if (isset($_SERVER['HTTPS'])) {
     $protocol = 'http://';
 }
 
-// LOADER
-echo '
-    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
-        <img src="images/76.gif" />
-    </div>';
 
 // HEADER
 echo '
-    <div id="top">
+    <div id="top" class="center-screen">
         <div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
 		<div class="lcol">
 			<span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
-			<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>
+			<!--<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>-->
 		</div>
     <div id="content">
         <form name="install" method="post" action="">
@@ -155,7 +150,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         <h5>Information</h5>
     
                         <p>Upgrade process is about to start. This will upgrade Teampass database to version '.TP_VERSION_FULL.'.</p>
-                        <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a new password for each user that doesn\'t have such key pair. If this happens, the user will receive the new password by email so please ensure that email settings are correctly set before starting this upgrade.</p>
+                        <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a One-Time-Code for each user and send by email. It will be requested on first login. Please ensure your users have filled in their email with a valid value.</p>
                     </div>
 
                     <div class="callout callout-info col-12">
@@ -163,9 +158,10 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     
                         <p>
                         <ul>
-                            <li>Create a dump of your database</li>
-                            <li>Perform a zip of the current Teampass folder</li>
-                            <li>Refer to <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a>.</li>
+                            <li><i class="fas fa-exclamation-circle mr-2 text-danger"></i>Ensure to clear your browser cache (keyboard: <i>CTRL + F5</i>)</li>
+                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a dump of your database</li>
+                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Perform a zip of the current Teampass folder</li>
+                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Refer to <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a>.</li>
                         </ul>
                         </p>
                     </div>
@@ -490,7 +486,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         echo '
         <div class="alert alert-warning mt-4">
             <i class="fa fa-exclamation-circle text-danger mr-2 fa-lg"></i>This upgrade was a heavy one. Indeed we have changed the encryption of your data to make them safer now as they don\'t rely anymore on a key.<br>
-            This forced us to change the users password and they received it by email. For any reason, they did not received it, you as an admin, can change it from the users management page.
+            This forced us to encode your users data with a One-Time-Code that they did receive by email. For any reason, they did not received it, you as an admin, can change it from the users management page.
         </div>';
     }
 
@@ -531,7 +527,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px; font-size:16px;">
-            '.TP_TOOL_NAME.' '.TP_VERSION_FULL.' &#169; copyright 2009-2019
+            '.TP_TOOL_NAME.' '.TP_VERSION_FULL.' &#169; copyright 2009-'.date("Y").'
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>
@@ -652,7 +648,10 @@ function Check(step)
                 .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                 .dismissOthers();
         }
-        if (upgrade_file !== "") httpRequest(upgrade_file, data);
+        if (upgrade_file !== "") {
+			console.log(data);
+			httpRequest(upgrade_file, data);
+		}
     }
 }
 
@@ -685,7 +684,7 @@ function manageUpgradeScripts(file_number)
                     .success('Done with initialization phase', 3)
                     .dismissOthers();
 
-                migrateUsersToV3('step1', '', 0, createRandomId(), 0, false);
+                migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false);
             }
         },
         "json"
@@ -697,7 +696,7 @@ var usersList = [],
     usersRestList = [];
 /**
     * We need to migrate all users
-    * This will change the users password
+    * This will change the users encryption and generate a OTC
     *
     * @return void
     */
@@ -715,8 +714,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
     if (data !== '' && step === 'step1') {
         newData = JSON.parse(window.atob(data));
     }
-    console.log(usersList)
-    console.log(step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData)
+    //console.log("TO DO : "+step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData.id)
 
     if (step === 'step1') {
         userInfo = '';
@@ -726,10 +724,18 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         if (newData !== '') {
             usersList.push(newData);
         }
+		//console.log('List of users');
+		//console.log(JSON.stringify(usersList))
         
-        number = usersRestList[0];
-        usersRestList.shift();
-        
+		if (usersRestList.length > 0) {
+			number = usersRestList[0];
+			usersRestList.shift();
+		} else if (number !== 'init') {
+			number = 'end';
+		}
+		//console.log('List of next users');
+		//console.log(JSON.stringify(usersRestList) + " ; Number = "+number)
+		
         rand_number = createRandomId();
         $("#step4_progress").html("<div>" + getTime() + " - <span id='user_"+rand_number+"'>Treating User account ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
         // --
@@ -839,31 +845,36 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
             // Prepare user information                
             userInfo = {
                 'id' : usersList[number].id,
-                'pwd' : usersList[number].pwd,
+                'otp' : usersList[number].otp,
                 'public_key' : usersList[number].public_key,
                 'private_key' : usersList[number].private_key,
             };
         }
     }
     // Migrate if needed all account to new AES encryption
+	//console.log('Posting number = '+number);
     $.post(
         "upgrade_run_3.0.0_users.php",
         {
             step : step,
-            number : number,
+            number : number === 'init' ? '' : number,
             userInfo : window.btoa(JSON.stringify(userInfo)),
             start : loop_start,
             count_in_loop : count_in_loop,
             info : $('#infotmp').val(),
+			extra : number === 'end' ? 'all_users_created' : '',
         },
         function(data) {
-            //console.log(data);
+            //console.log(data[0]);
+			//console.log(JSON.parse(window.atob(data[0].rest)));
+			//console.log(JSON.parse(window.atob(data[0].data)));
             previousStep = step;
 
             if (data[0].finish !== "1") {
                 // Manage list of users that is provide on number = 0
-                if (parseInt(number) === 0 && step === 'step1') {
+                if ((number) === 'init' && step === 'step1') {
                     usersRestList =  JSON.parse(window.atob(data[0].rest));
+					console.log("USERLIST = "+usersRestList);
                 }
 
                 // loop

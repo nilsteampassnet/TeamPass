@@ -65,6 +65,19 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 // Include files
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+
+// Quick major version check -> upgrade needed?
+if (isset($SETTINGS['cpassman_version']) === true && version_compare(TP_VERSION, $SETTINGS['cpassman_version']) > 0) {
+	// Perform redirection
+	if (headers_sent()) {
+        echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+    } else {
+        header('Location: install/upgrade.php');
+    }
+    // Now either way, we should stop processing further
+    exit();
+}
+
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
@@ -1089,13 +1102,13 @@ if (($session_validite_pw === null
         <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
         <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
         <!-- daterange picker -->
-        <link rel="stylesheet" href="./plugins/bootstrap-daterangepicker/daterangepicker.css">
-        <script src="./plugins/bootstrap-daterangepicker/moment.min.js"></script>
-        <script src="./plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+        <link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker.css">
+        <script src="./plugins/daterangepicker/moment.min.js"></script>
+        <script src="./plugins/daterangepicker/daterangepicker.js"></script>
         <!-- SlimScroll -->
         <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
         <!-- FastClick -->
-        <script src="./plugins/fastclick/fastclick.js"></script>
+        <script src="./plugins/fastclick/fastclick.min.js"></script>
     <?php
     } elseif ($pageSel === 'profile') {
         ?>

@@ -79,6 +79,7 @@ if (mysqli_connect(
 $post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_NUMBER_INT);
+$post_extra = filter_input(INPUT_POST, 'extra', FILTER_SANITIZE_STRING);
 
 if (null !== $post_step) {
     switch ($post_step) {
@@ -89,7 +90,7 @@ if (null !== $post_step) {
         case 'step1':
             // Manage initial case that permit to catch the list of users to treat.
             $listOfUsers = array();
-            if (empty($post_number) === true && $post_step === 'step1') {
+            if (empty($post_number) === true && $post_step === 'step1' && $post_extra !== 'all_users_created') {
                 // Count users
                 $users = mysqli_query(
                     $db_link,
@@ -110,7 +111,7 @@ if (null !== $post_step) {
             }
 
             // Treat the 1st user in the list
-            if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false)) {
+            if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false && $post_extra !== 'all_users_created')) {
                 // Get info about user
                 $userQuery = mysqli_fetch_array(
                     mysqli_query(
@@ -156,10 +157,10 @@ if (null !== $post_step) {
                         SET public_key = '" . $userKeys['public_key'] . "',
                         private_key = '" . $userKeys['private_key'] . "',
                         upgrade_needed = 1,
-                        special = 'user_keys_to_be_changed',
+                        special = 'otc_is_required_on_next_login'
                         WHERE id = " . $post_number
                     );
-
+					
                     // Remove all sharekeys if exists
                     mysqli_query(
                         $db_link,
@@ -201,10 +202,10 @@ if (null !== $post_step) {
                 }
 
                 // Return
-                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "false" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
+                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "'.(count($listOfUsers) === 0 ? "true" : "false").'" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
             } else {
                 // No more user to treat
-                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true" , "rest" : ""}]';
             }
 
             exit();

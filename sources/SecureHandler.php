@@ -51,7 +51,7 @@ class SecureHandler extends SessionHandler
      */
     public function open($save_path, $session_name)
     {
-        $this->key = $this->getKey('KEY_'.$session_name);
+        $this->key = $this->getKey('KEY_' . $session_name);
         return parent::open($save_path, $session_name);
     }
 
@@ -63,6 +63,9 @@ class SecureHandler extends SessionHandler
     public function read($session_id)
     {
         $data = parent::read($session_id);
+        if (is_null($data)) {
+            $data = '';  //use empty string instead of null!
+        }
         return empty($data) ? '' : $this->decrypt($data, $this->key);
     }
 
@@ -98,11 +101,11 @@ class SecureHandler extends SessionHandler
         // Authentication
         $hmac = hash_hmac(
             'SHA256',
-            $block_iv.$ciphertext,
+            $block_iv . $ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );
-        return $hmac.$block_iv.$ciphertext;
+        return $hmac . $block_iv . $ciphertext;
     }
 
     /**
@@ -120,7 +123,7 @@ class SecureHandler extends SessionHandler
         // Authentication
         $hmacNew = hash_hmac(
             'SHA256',
-            $block_iv.$ciphertext,
+            $block_iv . $ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );

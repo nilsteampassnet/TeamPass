@@ -245,11 +245,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 				echo 'alertify.warning("Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.", 0).dismissOthers();';
 				exit;
 			}
+			include $settingsFile;
 		}
 	}
 }
-include $settingsFile;
-
 
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
@@ -389,15 +388,15 @@ if (isset($post_type)) {
                 }
             }
 
-            //echo 'document.getElementById("loader").style.display = "none";';
             break;
 
         case 'step1':
             $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
 
             if (intval($session_user_granted) !== 1) {
-                echo 'document.getElementById("res_step1").innerHTML = "User not connected anymore!";';
-                echo 'document.getElementById("loader").style.display = "none";';
+				echo '$("#but_next").attr("disabled", "disabled");';
+				echo 'alertify.error("User not connected anymore!", 0).dismissOthers();';
+                echo '$("#user_granted").val("0");';
                 break;
             }
 
@@ -745,10 +744,10 @@ if (isset($post_type)) {
                 break;
             }
 
-            // If settings.php file contains SECUREPATH then remove it from the file
+            // If settings.php file doesn't contain DB_HOST then regenerate it
             $settingsFile = '../includes/config/settings.php';
             include_once $settingsFile;
-            if (null !== SECUREPATH) {
+            if (defined('DB_HOST') === false) {
                 //Do a copy of the existing file
                 if (!copy(
                     $settingsFile,
@@ -877,7 +876,6 @@ if (isset($post_type)) {
 define("DB_HOST", "' . DB_HOST . '");
 define("DB_USER", "' . DB_USER . '");
 define("DB_PASSWD", "' . defuse_return_decrypted(DB_PASSWD) . '");
-//define("DB_PASSWD", "' . DB_PASSWD . '");
 define("DB_NAME", "' . DB_NAME . '");
 define("DB_PREFIX", "' . DB_PREFIX . '");
 define("DB_PORT", "' . DB_PORT . '");
