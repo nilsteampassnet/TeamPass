@@ -2737,15 +2737,15 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
+			
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
+			
 
             // Prepare variables
-            $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_INTEGER);
+            $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
             $post_otc = filter_var($dataReceived['otc'], FILTER_SANITIZE_STRING);
-
 
             // Empty user
             if (empty($post_userid) === true || empty($post_password) === true || empty($post_otc) === true) {
@@ -2761,7 +2761,7 @@ if (null !== $post_type) {
 
 
             // Check if user already exists
-            $userInfo = DB::query(
+            $userInfo = DB::queryfirstrow(
                 'SELECT id, private_key, public_key
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -2778,7 +2778,7 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
+			
             // Encrypte private key with user password
             // and not the OTC
 
@@ -2790,7 +2790,7 @@ if (null !== $post_type) {
                 $userPrivateKey
             );
             // Save it in session
-            $superGlobal->put('private_key', $userPrivateKey, 'SESSION', 'user');
+			$_SESSION['user']['private_key'] = $userPrivateKey;
 
             // Update table
             DB::update(

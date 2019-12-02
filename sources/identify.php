@@ -1197,6 +1197,8 @@ function identifyUser($sentData, $SETTINGS)
             'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
             'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
             'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+            'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? $userInfo['upgrade_needed'] : 0,
+            'special' => isset($userInfo['special']) === true ? $userInfo['special'] : 0,
         ),
         'encode'
     );

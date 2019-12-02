@@ -650,13 +650,13 @@ foreach ($rows as $reccord) {
             <div class="col-12">
                 <div class="card card-default">
                     <div class="card-header bg-gray-dark">
-                        <h3 class="card-title pointer" data-widget="collapse">
+                        <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-fields">
                             <i class="fas fa-random mr-2"></i><?php echo langHdl('categories'); ?>
                         </h3>
                         <!-- /.card-tools -->
                     </div>
                     <!-- /.card-header -->
-                    <div class="card-body" id="card-item-fields">
+                    <div class="card-body collapse show" id="card-item-fields">
                         <?php
                             foreach ($_SESSION['item_fields'] as $elem) {
                                 echo '
@@ -691,15 +691,15 @@ foreach ($rows as $reccord) {
 
     <div class="row hidden item-details-card item-card-attachments">
         <div class="col-12">
-            <div class="card card-default collapsed-card collapseme">
+            <div class="card card-default collapsed">
                 <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" data-widget="collapse">
+                    <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-attachments">
                         <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
                         <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
                     </h3>
                 </div>
                 <!-- /.card-header -->
-                <div class="card-body clear-me-html" id="card-item-attachments">
+                <div class="card-body collapse clear-me-html" id="card-item-attachments">
                 </div>
                 <!-- /.card-body -->
                 <div class="overlay">
@@ -711,16 +711,16 @@ foreach ($rows as $reccord) {
 
     <div class="row hidden item-details-card">
         <div class="col-12">
-            <div class="card card-default collapsed-card collapseme">
+            <div class="card card-default collapsed">
                 <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" data-widget="collapse">
+                    <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-history">
                         <i class="fas fa-history mr-2"></i><?php echo langHdl('history'); ?>
                         <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
                     </h3>
                     <!-- /.card-tools -->
                 </div>
                 <!-- /.card-header -->
-                <div class="card-body" id="card-item-history">
+                <div class="card-body collapse" id="card-item-history">
                 </div>
                 <!-- /.card-body -->
                 <div class="overlay">
@@ -748,7 +748,7 @@ foreach ($rows as $reccord) {
                         <!-- /.card-tools -->
                     </div>
                     <!-- /.card-header -->
-                    <div class="card-body">
+                    <div class="card-body collapse show">
                         <form id="form-item-suggestion" class="needs-validation" novalidate onsubmit="return false;">
                             <div class="alert alert-info">
                                 <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
@@ -1265,7 +1265,7 @@ foreach ($rows as $reccord) {
                                     </button>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col">
                                 <div class="input-group input-group-sm">
                                     <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find_items">
                                     <div class="input-group-append">

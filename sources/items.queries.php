@@ -2539,6 +2539,7 @@ if (null !== $post_type) {
                         WHERE id_folder=%i',
                         $post_folder_id
                     );
+					
                     if (DB::count() > 0) {
                         foreach ($rows_tmp as $row) {
                             array_push($arrCatList, (int) $row['id_category']);
@@ -2558,13 +2559,14 @@ if (null !== $post_type) {
                         foreach ($rows_tmp as $row) {
                             // Uncrypt data
                             // Get the object key for the user
+							//db::debugmode(true);
                             $userKey = DB::queryFirstRow(
                                 'SELECT share_key
                                 FROM ' . prefixTable('sharekeys_fields') . '
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
                                 $row['id']
-                            );
+                            );//db::debugmode(false);
                             if (DB::count() === 0) {
                                 // Not encrypted
                                 $fieldText['string'] = $row['data'];

@@ -1548,7 +1548,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.form-item-suggestion').html('');
 
                     // Collapse form
-                    $('.card-item-extra').collapse('toggle');
+                    //$('.card-item-extra').collapse('toggle');
                 }
             }
         );
@@ -1924,7 +1924,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html, .card-item-field-value').html('');
                 $('.form-check-input').attr('checked', '');
-                $('.card-item-extra').collapse();
+                //$('.card-item-extra').collapse();
+				$('.collapse').removeClass('show');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo langHdl('none'); ?>');
@@ -1950,7 +1951,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.overlay').removeClass('hidden');
 
                 // Collapse accordion
-                $('.collapseme').addClass('collapsed-card');
+                //$('.collapseme').addClass('collapsed-card');
 
                 // Restore scroll position
                 $(window).scrollTop(userScrollPosition);
@@ -3514,9 +3515,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 e.trigger.dataset.itemId,
                                 e.trigger.dataset.itemLabel
                             );
-
+							
                             // Warn user about clipboard clear
-                            if (store.get('teampassSettings').clipboard_life_duration_input === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration_input) === 0) {
+                            if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo langHdl('copy_to_clipboard'); ?>',
@@ -3531,14 +3532,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 toastr.warning(
                                     '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
                                     '', {
-                                        timeOut: store.get('teampassSettings').clipboard_life_duration_input * 1000,
+                                        timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
                                         progressBar: true
                                     }
                                 );
 
                                 // Set clipboard eraser
                                 clearClipboardTimeout(
-                                    store.get('teampassSettings').clipboard_life_duration_input
+                                    store.get('teampassSettings').clipboard_life_duration
                                 );
                             }
 
@@ -4505,7 +4506,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             );
 
                             // Warn user about clipboard clear
-                            if (store.get('teampassSettings').clipboard_life_duration_input === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration_input) === 0) {
+                            if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo langHdl('copy_to_clipboard'); ?>',
@@ -4519,14 +4520,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 toastr.warning(
                                     '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
                                     '', {
-                                        timeOut: store.get('teampassSettings').clipboard_life_duration_input * 1000,
+                                        timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
                                         progressBar: true
                                     }
                                 );
 
                                 // Set clipboard eraser
                                 clearClipboardTimeout(
-                                    store.get('teampassSettings').clipboard_life_duration_input
+                                    store.get('teampassSettings').clipboard_life_duration
                                 );
                             }
 
@@ -4654,7 +4655,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('#card-item-attachments')
                         .html('<?php echo langHdl('no_attachment'); ?>')
                         .parent()
-                        .addClass('collapsed-card');
+                        .addClass('collapsed');
                 } else {
                     var html = '',
                         htmlFull = '',
@@ -4796,7 +4797,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             }
 
                             // Collapse History
-                            $('#card-item-history').closest().addClass('collapsed-card');
+                            $('#card-item-history').closest().addClass('collapsed');
 
                             // Hide loading state
                             $('#card-item-history').nextAll().addClass('hidden');
@@ -4831,7 +4832,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     showInputs: false,
                     explicitMode: true
                 });
-
+				
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
                     'item_id': store.get('teampassItem').id,

@@ -160,7 +160,7 @@ if (null !== $post_step) {
                         special = 'otc_is_required_on_next_login'
                         WHERE id = " . $post_number
                     );
-					
+
                     // Remove all sharekeys if exists
                     mysqli_query(
                         $db_link,
@@ -202,7 +202,7 @@ if (null !== $post_step) {
                 }
 
                 // Return
-                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "'.(count($listOfUsers) === 0 ? "true" : "false").'" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
+                echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "' . (count($listOfUsers) === 0 ? "true" : "false") . '" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
             } else {
                 // No more user to treat
                 echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true" , "rest" : ""}]';
@@ -417,7 +417,7 @@ if (null !== $post_step) {
                     $db_link,
                     'SELECT id, data, encryption_type
                     FROM ' . $pre . 'categories_items
-                    //TODO WHERE encryption_type = "teampass_aes"
+                    WHERE encryption_type = "' . TP_ENCRYPTION_NAME . '"
                     LIMIT ' . $post_start . ', ' . $post_count_in_loop
                 );
 
@@ -434,12 +434,6 @@ if (null !== $post_step) {
 
                     // Decrypt itemkey with admin key
                     $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
-
-                    // Decrypt password
-                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
-
-                    // Encrypt with Password
-                    //$cryptedStuff = doDataEncryption($itemPwd);
 
                     // Encrypt Item key
                     $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
@@ -587,9 +581,9 @@ if (null !== $post_step) {
                 $rows = mysqli_query(
                     $db_link,
                     'SELECT id
-                    FROM ' . $pre . "files
-                    WHERE status = ''.TP_ENCRYPTION_NAME.''
-                    LIMIT " . $post_start . ', ' . $post_count_in_loop
+                    FROM ' . $pre . 'files
+                    WHERE status = "' . TP_ENCRYPTION_NAME . '"
+                    LIMIT ' . $post_start . ', ' . $post_count_in_loop
                 );
 
                 while ($item = mysqli_fetch_array($rows)) {
