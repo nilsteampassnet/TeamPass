@@ -66,6 +66,7 @@ $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NU
 $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 $post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
 $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
+$post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);
 
 // load functions
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -390,13 +391,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
 
     // Store the key for users
     // Is this item a personal one?
-    $dataItem = DB::queryFirstRow(
-        'SELECT perso
-        FROM ' . prefixTable('items') . '
-        WHERE id = %i',
-        $post_itemId
-    );
-    if ((int) $dataItem['perso'] === 0) {
+    if ((int) $post_isPersonal === 0) {
         // It is not a personal item objectKey
         // This is a public object
         $users = DB::query(

@@ -21,6 +21,7 @@
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
@@ -28,6 +29,17 @@ if (
 ) {
     die('Hacking attempt...');
 }
+
+/*
+//check for session
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
+    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
+} elseif (isset($_GET['PHPSESSID'])) {
+    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
+} else {
+    handleUploadError('No Session was found.');
+}
+*/
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -49,15 +61,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();
-}
-
-//check for session
-if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
-    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
-} elseif (isset($_GET['PHPSESSID'])) {
-    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
-} else {
-    handleUploadError('No Session was found.');
 }
 
 // load functions
@@ -333,7 +336,6 @@ if (!$chunks || $chunk == $chunks - 1) {
 $newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
 //Connect to mysql server
-//require_once '../../includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
@@ -342,7 +344,6 @@ DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 if (
     null !== ($post_type_upload)
@@ -366,7 +367,6 @@ if (
 
     // return info
     echo prepareExchangedData(
-        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -395,7 +395,6 @@ if (
 
     // return info
     echo prepareExchangedData(
-        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -442,7 +441,6 @@ if (
 
     // return info
     echo prepareExchangedData(
-        $SETTINGS,
         array(
             'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
             'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
@@ -472,7 +470,6 @@ if (
 
     // return info
     echo prepareExchangedData(
-        $SETTINGS,
         array(
             'operation_id' => DB::insertId(),
         ),

@@ -2391,6 +2391,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     itemId: store.get('teampassItem').id,
                     type_upload: 'item_attachments',
                     isNewItem: store.get('teampassItem').isNewItem,
+                    isPersonal: store.get('teampassItem').folderIsPersonal,
                     edit_item: false,
                     user_token: store.get('teampassApplication').attachmentToken,
                     randomId: store.get('teampassApplication').uploadedFileId,
@@ -5117,6 +5118,20 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // Clear memory
         //localStorage.setItem("teampassItem", '');
         if (debugJavascript === true) console.log('Get privilege for folder ' + val)
+			
+		if (val === "") {
+			toastr.remove();
+			toastr.error(
+				'<?php echo langHdl('error'); ?>',
+				'<?php echo langHdl('data_inconsistency'); ?>',
+				{
+					timeOut: 5000,
+					positionClass: 'toast-top-right',
+					progressBar: true
+				}
+			);
+			return false;
+		}
 
         return $.post(
             "sources/items.queries.php", {

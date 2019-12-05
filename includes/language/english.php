@@ -18,7 +18,9 @@
  */
 
 return array(
+    'provide_current_psk_and_click_launch' => 'Provide your current personal saltkey and click button Launch',
     'start' => 'Start',
+    'data_inconsistency' => 'Data inconsistency found. Please reload the page!',
     'one_time_code_expected' => 'One-Time-Code expected',
     'data_are_missing' => 'Expected data are missing',
     'your_keys_need_to_be_upgraded' => 'Your encrypted keys need to be upgraded',
@@ -123,7 +125,7 @@ return array(
     'change_login_password' => 'Change login password',
     'current_password_mandatory' => 'Current password is mandatory',
     'current_password' => 'Current password',
-    'objects_encryption_explanation' => 'By changing password, all objects keys need to be regenerated. Those keys guarantee your access to the encrypted objects stored in Teampass. Please wait until the process reached the final step. This could take several minutes depending on the number of objects.',
+    'objects_encryption_explanation' => 'Teampass has been upgraded to a new version which includes a new encryption protocol. It expects from you to re-encrypt your personal items. For this, you need to provide your current Personal Salt Key (PSK). Once odne, please click on button Launch and wait until the process reached the final step. This could take several minutes depending on the number of objects.',
     'objects_encryption_progress' => 'Objects encryption keys progress',
     'description_has_changed' => 'Description has changed',
     'number_of_folders_imported' => 'Number of Folders imported',

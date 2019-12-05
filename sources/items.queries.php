@@ -952,6 +952,7 @@ if (null !== $post_type) {
                 );
 
                 // Does the user has the sharekey
+				db::debugmode(true);
                 DB::query(
                     'SELECT *
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -4120,41 +4121,6 @@ if (null !== $post_type) {
                     }
                 }
 
-                $accessLevel = 20;
-                $arrTmp = [];
-                foreach ($_SESSION['user_roles'] as $role) {
-                    //db::debugmode(true);
-                    $access = DB::queryFirstRow(
-                        'SELECT type
-                        FROM ' . prefixTable('roles_values') . '
-                        WHERE role_id = %i AND folder_id = %i',
-                        $role,
-                        $post_groupe
-                    );
-                    //echo $access['type']." ; ";
-                    //db::debugmode(false);
-                    if ($access['type'] === 'R') {
-                        array_push($arrTmp, 10);
-                    } elseif ($access['type'] === 'W') {
-                        array_push($arrTmp, 30);
-                    } elseif ($access['type'] === 'ND') {
-                        array_push($arrTmp, 20);
-                    } elseif ($access['type'] === 'NE') {
-                        array_push($arrTmp, 10);
-                    } elseif ($access['type'] === 'NDNE') {
-                        array_push($arrTmp, 15);
-                    } else {
-                        // Ensure to give access Right if allowed folder
-                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
-                            array_push($arrTmp, 30);
-                        } else {
-                            array_push($arrTmp, 0);
-                        }
-                    }
-                }
-                // 3.0.0.0 - changed  MIN to MAX
-                $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
-
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $post_item_id);
 
@@ -4253,7 +4219,7 @@ if (null !== $post_type) {
 
             if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
                 $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
-                //$folder_is_personal = $data['personal_folder'];
+                $folder_is_personal = (int) $data['personal_folder'];
 
                 // Prepare Item actual visibility (what Users/Roles can see it)
                 $rows = DB::query(
@@ -4282,7 +4248,7 @@ if (null !== $post_type) {
                     WHERE id = %s',
                     $post_groupe
                 );
-                //$folder_is_personal = $data_pf['personal_folder'];
+                $folder_is_personal = (int) $data_pf['personal_folder'];
                 $visibilite = $_SESSION['name'] . ' ' . $_SESSION['lastname'] . ' (' . $_SESSION['login'] . ')';
             }
 
@@ -4330,6 +4296,46 @@ if (null !== $post_type) {
                     }
                 }
             }
+			
+			// Get access level for this folder
+			$accessLevel = 20;
+			if ($folder_is_personal === 0) {
+				$arrTmp = [];
+				foreach ($_SESSION['user_roles'] as $role) {
+					//db::debugmode(true);
+					$access = DB::queryFirstRow(
+						'SELECT type
+						FROM ' . prefixTable('roles_values') . '
+						WHERE role_id = %i AND folder_id = %i',
+						$role,
+						$post_groupe
+					);
+					//echo $access['type']." ; ";
+					//db::debugmode(false);
+					if ($access['type'] === 'R') {
+						array_push($arrTmp, 10);
+					} elseif ($access['type'] === 'W') {
+						array_push($arrTmp, 30);
+					} elseif ($access['type'] === 'ND') {
+						array_push($arrTmp, 20);
+					} elseif ($access['type'] === 'NE') {
+						array_push($arrTmp, 10);
+					} elseif ($access['type'] === 'NDNE') {
+						array_push($arrTmp, 15);
+					} else {
+						// Ensure to give access Right if allowed folder
+						if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+							array_push($arrTmp, 30);
+						} else {
+							array_push($arrTmp, 0);
+						}
+					}
+				}
+				// 3.0.0.0 - changed  MIN to MAX
+				$accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
+			} elseif ($folder_is_personal === 1) {
+				$accessLevel = 30;
+			}
 
             $returnValues = array(
                 'folderId' => (int) $post_groupe,
@@ -4337,7 +4343,7 @@ if (null !== $post_type) {
                 'val' => (int) $data['valeur'],
                 'visibility' => $visibilite,
                 'complexity' => $complexity,
-                //'personal' => $folder_is_personal,
+                'personal' => $folder_is_personal,
                 'usersList' => $listOptionsForUsers,
                 'rolesList' => $listOptionsForRoles,
                 'setting_restricted_to_roles' => isset($SETTINGS['restricted_to_roles']) === true

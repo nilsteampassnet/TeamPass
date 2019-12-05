@@ -108,12 +108,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             BeforeUpload: function(up, file) {
                 // Show spinner
-                alertify
-                    .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                    .dismissOthers();
+				toastr.remove();
+				toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo $_SESSION['user_id']; ?>",
+                    "PHPSESSID": "<?php echo session_id(); ?>",
                     "type_upload": "import_items_from_csv",
                     "user_token": store.get('teampassApplication').uploadedFileId
                 };
@@ -123,16 +122,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                    alertify
-                        .error(
-                            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                            10
-                        )
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '', {
+                            timeOut: 10000,
+                            progressBar: true
+                        }
+                    );
                 } else {
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        data.message, {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
 
                     $('#import-csv-attach-pickfile-csv-text')
                         .text(file.name + ' (' + plupload.formatSize(file.size) + ')');
@@ -244,9 +250,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     //Permits to upload passwords from CSV file
     function ImportCSV() {
         // Show spinner
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x mr-2"></i><?php echo langHdl('reading_file'); ?>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
+		
 
         // Perform query
         $.post(
@@ -269,12 +275,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 );
 
                 if (data.error == "bad_structure") {
-                    alertify
-                        .error(
-                            '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                            10
-                        )
-                        .dismissOthers();
+					toastr.remove();
+					toastr.error(
+						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+						'', {
+							timeOut: 10000,
+							closeButton: true,
+							progressBar: true
+						}
+					);
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -315,9 +324,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     // Show number of items
                     $('#csv-items-number').html(data.number);
 
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        data.message, {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
                 }
             }
         );
@@ -326,29 +340,27 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     //get list of items checked by user
     function launchCSVItemsImport() {
         // Show spinner
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x mr-2"></i><?php echo langHdl('please_wait'); ?>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('please_wait'); ?>');
 
         // Init
         var items = '',
             arrItems = [];
 
         // Get data checked
-        $(".icheckbox_flat-blue").each(function() {
-            if ($(this).attr('aria-checked') === 'true' && $(this).find('.csv-item')) {
-                var checkbox = $(this).find('.csv-item');
-                if ($(checkbox).attr('id') !== undefined) {
-                    var elem = $(checkbox).attr("id").split("-");
+        $(".flat-blue").each(function() {
+            if ($(this).is(':checked') === true && $(this).hasClass('csv-item') === true) {
+                if ($(this).attr('id') !== undefined) {
+                    var elem = $(this).attr("id").split("-");
                     // Exclude previously imported items
                     if ($("#importcsv-" + elem[1]).iCheck("disabled") !== true) {
                         arrItems.push({
-                            label: $(checkbox).data('label'),
-                            login: $(checkbox).data('login'),
-                            pwd: $(checkbox).data('pwd'),
-                            url: $(checkbox).data('url'),
-                            comment: $(checkbox).data('comment'),
-                            row: $(checkbox).data('row'),
+                            label: $(this).data('label'),
+                            login: $(this).data('login'),
+                            pwd: $(this).data('pwd'),
+                            url: $(this).data('url'),
+                            comment: $(this).data('comment'),
+                            row: $(this).data('row'),
                         })
                     }
                 }
@@ -356,12 +368,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         });
 
         if (arrItems.length === 0) {
-            alertify
-                .error(
-                    '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
-                    10
-                )
-                .dismissOthers();
+			toastr.remove();
+			toastr.error(
+				'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
+				'', {
+					timeOut: 10000,
+					closeButton: true,
+					progressBar: true
+				}
+			);
             return false;
         }
 
@@ -384,12 +399,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                    alertify
-                        .error(
-                            '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                            10
-                        )
-                        .dismissOthers();
+					toastr.remove();
+					toastr.error(
+						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+						'', {
+							timeOut: 10000,
+							closeButton: true,
+							progressBar: true
+						}
+					);
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -401,9 +419,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     });
 
                     // Show
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        data.message, {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
                 }
             }
         );
@@ -459,12 +482,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             BeforeUpload: function(up, file) {
                 // Show spinner
-                alertify
-                    .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-                    .dismissOthers();
+				toastr.remove();
+				toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo $_SESSION['user_id']; ?>",
+                    "PHPSESSID": "<?php echo session_id(); ?>",
                     "type_upload": "import_items_from_keepass",
                     "user_token": store.get('teampassApplication').uploadedFileId
                 };
@@ -474,16 +496,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                    alertify
-                        .error(
-                            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                            10
-                        )
-                        .dismissOthers();
+					toastr.remove();
+					toastr.error(
+						'<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+						'', {
+							timeOut: 10000,
+							closeButton: true,
+							progressBar: true
+						}
+					);
                 } else {
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        data.message, {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
 
                     $('#import-keepass-attach-pickfile-keepass-text')
                         .text(file.name + ' (' + plupload.formatSize(file.size) + ')');
@@ -521,9 +551,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     function launchKeepassItemsImport() {
         // Show spinner
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x mr-2"></i><?php echo langHdl('reading_file'); ?>', 0)
-            .dismissOthers();
+        toastr.remove();
+        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
 
         data = {
             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
@@ -544,12 +573,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                    alertify
-                        .error(
-                            '<i class="fa fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                            10
-                        )
-                        .dismissOthers();
+					toastr.remove();
+					toastr.error(
+						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+						'', {
+							timeOut: 10000,
+							closeButton: true,
+							progressBar: true
+						}
+					);
 
                     $('#import-feedback').addClass('hidden');
                     $('#import-feedback div').html('');
@@ -559,9 +591,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('#import-feedback').removeClass('hidden');
 
                     // Show
-                    alertify
-                        .success('<?php echo langHdl('done'); ?>', 1)
-                        .dismissOthers();
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        data.message, {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
 
                     // Clear form
                     $('.keepass-setup').addClass('hidden');

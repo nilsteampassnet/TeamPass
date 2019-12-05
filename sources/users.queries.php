@@ -2792,13 +2792,31 @@ if (null !== $post_type) {
             // Save it in session
 			$_SESSION['user']['private_key'] = $userPrivateKey;
 
+            // Check if this user has some private items.
+            // If yes then upgrade needed for them
+            // If no then upgrade is now finished
+            DB::query(
+                'SELECT id
+                FROM ' . prefixTable('items') . '
+                WHERE id_tree IN %ls',
+                $_SESSION['personal_folders']
+            );
+
+            if (DB::count() === 0) {
+                $upgrade_needed = 0;
+                $special_status = 'none';
+            } else {
+                $upgrade_needed = 1;
+                $special_status = 'private_items_to_encrypt';
+            }
+
             // Update table
             DB::update(
                 prefixTable('users'),
                 array(
                     'private_key' => $userPrivateKeyEncrypted,
-                    'special' => '',
-                    'upgrade_needed' => 0,
+                    'special' => $special_status,
+                    'upgrade_needed' => $upgrade_needed,
                 ),
                 'id=%i',
                 $userInfo['id']

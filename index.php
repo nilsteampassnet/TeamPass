@@ -821,7 +821,7 @@ if (($session_validite_pw === null
                                     <input type="password" class="form-control" id="profile-password-confirm">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-encryption-keys-progress">
-                                    <?php echo langHdl('fill_in_fields_and_hit_launch'); ?>
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
@@ -833,6 +833,42 @@ if (($session_validite_pw === null
                     </div>
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
+				
+				
+				<!-- ENCRYPTION PERSONAL ITEMS GENERATION -->
+                <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-2 alert alert-info" id="warning-text-changing-password">
+                                    <i class="icon fas fa-info mr-2"></i>
+                                    <?php echo langHdl('objects_encryption_explanation'); ?>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('personal_salt_key'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="user-current-defuse-psk">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="user-current-defuse-psk-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
+				
 
                 <?php
                     if ($session_initial_url !== null && empty($session_initial_url) === false) {

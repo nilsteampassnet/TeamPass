@@ -1639,6 +1639,9 @@ function mainQuery($SETTINGS)
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+			
+			// Get data
+			$post_data = json_decode(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_URL), true);
             
             // Read config file
             $list_of_options = '';
@@ -1701,7 +1704,7 @@ function mainQuery($SETTINGS)
 
             // Now prepare text
             $txt = '### Page on which it happened
-'.filter_input(INPUT_POST, 'current_page', FILTER_SANITIZE_STRING).'
+'.$post_data['current_page'].'
 
 ### Steps to reproduce
 1.
@@ -1735,9 +1738,9 @@ Tell us what happens instead
 
 ### Client configuration
 
-**Browser:** ' . filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING) . ' - ' . filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING) . '
+**Browser:** ' . $post_data['browser_name'] . ' - ' . $post_data['browser_version'] . '
 
-**Operating system:** ' . filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING) . ' - ' . filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING) . 'bits
+**Operating system:** ' . $post_data['os'] . ' - ' . $post_data['os_archi'] . 'bits
 
 ### Logs
 
@@ -2659,5 +2662,206 @@ Insert the log here and especially the answer of the query that failed.
             }
 
             break;
+
+            /*
+        * user_psk_reencryption
+        */
+        case 'user_psk_reencryption':
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_start = filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT);
+            $post_length = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
+			$next_step = '';
+			
+			// decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+
+            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                // Check if user exists
+                $userInfo = DB::queryFirstRow(
+                    'SELECT public_key, encrypted_psk
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (DB::count() > 0) {
+					// check if psk is correct.
+					if (empty($userInfo['encrypted_psk']) === false) {
+						$user_key_encoded = defuse_validate_personal_key(
+							$dataReceived['userPsk'],
+							$userInfo['encrypted_psk']
+						);					
+					}
+					
+					if (strpos($user_key_encoded, "Error ") !== false) {
+						echo prepareExchangedData(
+							array(
+								'error' => true,
+								'message' => langHdl('bad_psk'),
+							),
+							'encode'
+						);
+						break;
+					} else {					
+						// Loop on persoanl items
+						$rows = DB::query(
+							'SELECT id, pw
+							FROM ' . prefixTable('items') . '
+							WHERE perso = 1 AND id_tree IN %ls
+							LIMIT ' . $post_start . ', ' . $post_length,
+							$_SESSION['personal_folders']
+						);
+						$countUserPersonalItems = DB::count();
+						foreach ($rows as $record) {
+							if ($record['encryption_type'] !== 'teampass_aes') {
+								// Decrypt with Defuse
+								$passwd = cryption(
+									$record['pw'],
+									$user_key_encoded,
+									'decrypt',
+									$SETTINGS
+								);
+
+								// Encrypt with Object Key
+								$cryptedStuff = doDataEncryption($passwd['string']);
+
+								// Store new password in DB
+								DB::update(
+									prefixTable('items'),
+									array(
+										'pw' => $cryptedStuff['encrypted'],
+										'encryption_type' => 'teampass_aes',
+									),
+									'id = %i',
+									$record['id']
+								);
+
+								// Insert in DB the new object key for this item by user
+								DB::insert(
+									prefixTable('sharekeys_items'),
+									array(
+										'object_id' => $record['id'],
+										'user_id' => $post_user_id,
+										'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
+									)
+								);
+								
+								
+								// Does this item has Files?
+								// Loop on files
+								$rows = DB::query(
+									'SELECT id, file
+									FROM ' . prefixTable('files') . '
+									WHERE status != %s
+									AND id_item = %i',
+									TP_ENCRYPTION_NAME,
+									$record['id']
+								);
+								//aes_encryption
+								foreach ($rows as $record) {
+									// Now decrypt the file
+									prepareFileWithDefuse(
+										'decrypt',
+										$SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+										$SETTINGS['path_to_upload_folder'].'/'.$record['file'].'.delete',
+										$dataReceived['userPsk']
+									);
+									
+									// Encrypt the file
+									$encryptedFile = encryptFile($record['file'].'.delete', $SETTINGS['path_to_upload_folder']);
+									
+									DB::update(
+										prefixTable('files'),
+										array(
+											'file' => $encryptedFile['fileHash'],
+											'status' => TP_ENCRYPTION_NAME,
+										),
+										'id = %i',
+										$record['id']
+									);
+									
+									// Save key
+									DB::insert(
+										prefixTable('sharekeys_files'),
+										array(
+											'object_id' => $record['id'],
+											'user_id' => $_SESSION['user_id'],
+											'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
+										)
+									);
+
+									// Unlink original file
+									unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']);
+								}
+							}
+						}
+					}
+
+					// SHould we change step?
+					$next_start = (int) $post_start + (int) $post_length;
+					if ($next_start > $countUserPersonalItems) {
+						// Now update user
+						DB::update(
+							prefixTable('users'),
+							array(
+								'special' => 'none',
+								'upgrade_needed' => 0,
+								'encrypted_psk' => '',
+							),
+							'id = %i',
+							$post_user_id
+						);
+						
+						$next_step = 'finished';
+						$next_start = 0;
+					}
+					
+					// Continu with next step
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'step' => $next_step,
+                            'start' => $next_start,
+                            'userId' => $post_user_id
+                        ),
+                        'encode'
+                    );
+                    break;
+				} else {
+                    // Nothing to do
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_no_user'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            } else {
+                // Nothing to do
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_user'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
     }
 }

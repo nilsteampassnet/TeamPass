@@ -143,8 +143,77 @@ if (
             );
             document.location.href = "index.php?page=profile&tab=timeline";
         });
-    }
+    } else if (store.get('teampassUser') !== undefined &&
+        store.get('teampassUser').special === 'private_items_to_encrypt'
+    ) {
+		// If user has to re-encrypt his personal item passwords
+		$('#dialog-encryption-personal-items-after-upgrade').removeClass('hidden');
+		$('.content, .content-header').addClass('hidden');
+		
+		// Actions on modal buttons
+        $(document).on('click', '#button_do_personal_items_reencryption', function() {
+            // SHow user
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>');
+			
+			defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0);
+			
+			function defusePskRemoval(userId, step, start)
+			{
+				if (step === 'psk') {
+					// Inform user
+					$("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
+						'... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
+					var data = {'userPsk' : $('#user-current-defuse-psk').val()};
+					// Do query
+					$.post(
+						"sources/main.queries.php", {
+							type: "user_psk_reencryption",
+							'start': start,
+							'length': 200,
+							userId: userId,
+							data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+							key: '<?php echo $_SESSION['key']; ?>'
+						},
+						function(data) {
+							data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+							console.log(data)
+							if (data.error === true) {
+								// error
+								toastr.remove();
+								toastr.error(
+									data.message,
+									'<?php echo langHdl('caution'); ?>', {
+										timeOut: 5000,
+										progressBar: true
+									}
+								);
+
+								// Enable buttons
+								$("#user-current-defuse-psk-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+								$('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+								return false;
+							} else {
+								// Start looping on all steps of re-encryption
+								defusePskRemoval(data.userId, data.step, data.start);
+							}
+						}
+					);
+				} else {
+					// Finished
+					$("#user-current-defuse-psk-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+
+					toastr.remove();
+				}
+			}
+
+        });
+        $(document).on('click', '#button_close_personal_items_reencryption', function() {
+            $('#dialog-encryption-personal-items-after-upgrade').addClass('hidden');
+			$('.content, .content-header').removeClass('hidden');
+        });
+	}
 
 
     // Show tooltips
@@ -595,7 +664,7 @@ if (
                             teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
                             teampassUser['can_create_root_folder'] = <?php echo isset($_SESSION['can_create_root_folder']) === true ? (int) $_SESSION['can_create_root_folder'] : 0; ?>;
                             teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
-                            teampassUser['special'] = "<?php echo isset($_SESSION['user']['special']) === true ? $_SESSION['user']['special'] : 'none'; ?>";
+                            teampassUser['special'] = '<?php echo isset($_SESSION['user']['special']) === true ? $_SESSION['user']['special'] : 'none'; ?>';
                         }
                     );
                 }

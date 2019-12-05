@@ -132,25 +132,6 @@ foreach ($tst as $t) {
                             <i class="fa fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button>
                     </h3>
-                    <div class="callout callout-info mt-3">
-                        <div class="callout-body row">
-                            <div class="input-group input-group-sm col-8">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text"><?php echo langHdl('only_display_folders_to_depth'); ?></div>
-                                </div>
-                                <select class="form-control form-control-sm w-10" id="folders-depth">
-                                </select>
-                            </div>
-                            <div class="input-group input-group-sm col-4">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text">
-                                        <i class="fas fa-search"></i>
-                                    </div>
-                                </div>
-                                <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="card-body form hidden" id="folder-new">
@@ -247,7 +228,30 @@ foreach ($tst as $t) {
                     <h3 class="card-title" id="folders-alphabet"></h3>
                 </div>-->
                 <!-- /.card-header -->
+				
+				
+                    
+				
                 <div class="card-body form table-responsive1" id="folders-list">
+					<div class="callout callout-info mt-3">
+                        <div class="callout-body row">
+                            <div class="input-group input-group-sm col-8">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text"><?php echo langHdl('only_display_folders_to_depth'); ?></div>
+                                </div>
+                                <select class="form-control form-control-sm w-10" id="folders-depth">
+                                </select>
+                            </div>
+                            <div class="input-group input-group-sm col-4">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                </div>
+                                <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">
+                            </div>
+                        </div>
+                    </div>
                     <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
                             <tr>

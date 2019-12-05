@@ -380,7 +380,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefixTable('sharekeys_items'),
                 $personalFolder,
                 filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
-                $newID,
+                $newId,
                 $cryptedStuff['objectKey'],
                 $SETTINGS
             );
