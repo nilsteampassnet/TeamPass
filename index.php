@@ -274,7 +274,8 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />
     <!-- Toastr -->
     <link rel="stylesheet" href="plugins/toastr/toastr.min.css" />
-
+    <!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="<?php echo $SETTINGS['favicon'];?>"/>
 </head>
 
 
