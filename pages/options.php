@@ -786,7 +786,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='clipboard_life_duration_input' value='<?php echo isset($SETTINGS['clipboard_life_duration_input']) === true ? $SETTINGS['clipboard_life_duration_input'] : '30'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='clipboard_life_duration' value='<?php echo isset($SETTINGS['clipboard_life_duration']) === true ? $SETTINGS['clipboard_life_duration'] : '30'; ?>'>
                             </div>
                         </div>
 

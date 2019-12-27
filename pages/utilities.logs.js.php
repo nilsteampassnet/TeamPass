@@ -515,7 +515,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                 'dateStart': dateRange[0].trim(),
                 'dateEnd': dateRange[1].trim(),
             }
-
+            console.log(data);
             // Send query
             $.post(
                 "sources/utilities.queries.php", {
@@ -552,6 +552,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                         } else if (store.get('teampassApplication').logData === 'copy') {
                             oTableCopy.api().ajax.reload();
                         }
+                        $('#checkbox-purge-confirm').iCheck('uncheck')
                     }
                 }
             );

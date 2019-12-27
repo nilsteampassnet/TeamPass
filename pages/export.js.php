@@ -74,7 +74,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 $unselectAll = $(
                     '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-square mr-1"></i><?php echo langHdl('unselect_all'); ?></button>'
                 ),
-                $btnContainer = $('<div style="margin-top:3px;">').append($selectAll).append($unselectAll);
+                $btnContainer = $('<div style="margin:3px 0px 3px 0px;">').append($selectAll).append($unselectAll);
             if (!this.$element.prop("multiple")) {
                 // this isn't a multi-select -> don't add the buttons!
                 return $rendered;
@@ -84,7 +84,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 var $results = $rendered.find('.select2-results__option[aria-selected=false]');
                 $results.each(function() {
                     self.trigger('select', {
-                        data: $(this).data('data')
+                        data: Utils.GetData(this, 'data')
                     });
                 });
                 self.trigger('close');
@@ -93,7 +93,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 var $results = $rendered.find('.select2-results__option[aria-selected=true]');
                 $results.each(function() {
                     self.trigger('unselect', {
-                        data: $(this).data('data')
+                        data: Utils.GetData(this, 'data')
                     });
                 });
                 self.trigger('close');

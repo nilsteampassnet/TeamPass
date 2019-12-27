@@ -952,7 +952,7 @@ if (null !== $post_type) {
                 );
 
                 // Does the user has the sharekey
-				db::debugmode(true);
+				//db::debugmode(true);
                 DB::query(
                     'SELECT *
                     FROM ' . prefixTable('sharekeys_items') . '

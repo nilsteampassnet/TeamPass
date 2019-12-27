@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -16,7 +15,6 @@
  * ---
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -3453,19 +3451,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 // Send query and get password
                                 var result = '',
                                     error = false;
-
-                                if (store.get('teampassUser').pskSetForSession === '') {
-                                    // ERROR
-                                    toastr.remove();
-                                    toastr.error(
-                                        '<?php echo langHdl('empty_psk'); ?>',
-                                        '', {
-                                            timeOut: 5000,
-                                            progressBar: true
-                                        }
-                                    );
-                                    return;
-                                }
 
                                 // Warn user that it starts
                                 toastr.remove();

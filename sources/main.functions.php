@@ -1375,7 +1375,7 @@ function getStatisticsData($SETTINGS)
         'stat_kb' => $SETTINGS['enable_kb'],
         'stat_pf' => $SETTINGS['enable_pf_feature'],
         'stat_fav' => $SETTINGS['enable_favourites'],
-        'stat_teampassversion' => $SETTINGS['cpassman_version'],
+        'stat_teampassversion' => TP_VERSION_FULL,
         'stat_ldap' => $SETTINGS['ldap_mode'],
         'stat_agses' => $SETTINGS['agses_authentication_enabled'],
         'stat_duo' => $SETTINGS['duo'],
@@ -1637,16 +1637,14 @@ function utf8Converter($array)
  */
 function prepareExchangedData($data, $type, $key = null)
 {
-    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-        if (file_exists('../includes/config/tp.config.php')) {
-            include '../includes/config/tp.config.php';
-        } elseif (file_exists('./includes/config/tp.config.php')) {
-            include './includes/config/tp.config.php';
-        } elseif (file_exists('../../includes/config/tp.config.php')) {
-            include '../../includes/config/tp.config.php';
-        } else {
-            throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-        }
+    if (file_exists('../includes/config/tp.config.php')) {
+        include '../includes/config/tp.config.php';
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include '../../includes/config/tp.config.php';
+    } else {
+        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
 
     // Load superglobal
@@ -1720,7 +1718,13 @@ function prepareExchangedData($data, $type, $key = null)
 function makeThumbnail($src, $dest, $desired_width)
 {
     /* read the source image */
-    $source_image = imagecreatefrompng($src);
+    if(is_file($src) === true && mime_content_type($src) === 'image/png'){
+        $source_image = imagecreatefrompng($src);
+    } else {
+        return "Error: Not a valid PNG file! It's type is ".mime_content_type($src);
+    }
+    
+    // Get height and width
     $width = imagesx($source_image);
     $height = imagesy($source_image);
 
@@ -2341,6 +2345,8 @@ function prepareFileWithDefuse(
 ) {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/ASCII.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/UTF8.php';
     $antiXss = new voku\helper\AntiXSS();
 
     // Protect against bad inputs

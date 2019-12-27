@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -380,6 +381,7 @@ if (null !== $post_type) {
                         $post_date_to
                     );
                 } elseif ($post_log_type === 'connections') {
+                    db::debugmode(true);
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
                             'AND date BETWEEN %i AND %i',

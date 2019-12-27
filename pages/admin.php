@@ -137,12 +137,15 @@ if (isset($SETTINGS['send_statistics_items'])) {
                                 $show = false;
                                 $cnt = 0;
                                 foreach ($tab as $cle => $val) {
-                                    if ($cnt < 19) {
-                                        echo $val . '<br />';
-                                        ++$cnt;
-                                    } elseif ($cnt === 19) {
-                                        echo '...<br /><br /><b><a href="changelog.txt" target="_blank"><span class="fa fa-book"></span>' . langHdl('readme_open') . '</a></b>';
-                                        break;
+                                    if (strpos(trim($val), '/*') === 0 || strpos(trim($val), '*') === 0) {
+                                    } else {
+                                        if ($cnt < 19) {
+                                            echo $val . '<br />';
+                                            ++$cnt;
+                                        } elseif ($cnt === 19) {
+                                            echo '...<br /><br /><b><a href="changelog.txt" target="_blank"><span class="fa fa-book"></span>' . langHdl('readme_open') . '</a></b>';
+                                            break;
+                                        }
                                     }
                                 }
                             }

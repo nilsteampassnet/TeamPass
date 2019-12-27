@@ -222,6 +222,12 @@
     color:white;
 }
 
+.menu-footer {
+    position: fixed;
+    padding-bottom: 10px;
+    bottom: 0px;
+}
+
 .login-logo {
     letter-spacing: 4px;
     font-size: 40pt;

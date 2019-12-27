@@ -416,11 +416,17 @@ if (
     );
 
     // make thumbnail
-    makeThumbnail(
+    $ret = makeThumbnail(
         $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
         $targetDir . DIRECTORY_SEPARATOR . $newFileName . '_thumb' . '.' . $ext,
         40
     );
+
+    if (empty($ret) === false) {
+        echo $ret;
+    
+        exit();
+    }
 
     // get current avatar and delete it
     $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $_SESSION['user_id']);

@@ -409,7 +409,7 @@ if (($session_validite_pw === null
                 <!-- Sidebar -->
                 <div class="sidebar">
                     <!-- Sidebar Menu -->
-                    <nav class="mt-2">
+                    <nav class="mt-2" style="margin-bottom:20px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
                                 if ($session_user_admin === 0 || TP_ADMIN_FULL_RIGHT === false) {
@@ -651,10 +651,7 @@ if (($session_validite_pw === null
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
                         <i class="nav-icon fas fa-cubes"></i>
-                        <p>
-                            ' . langHdl('admin_views') . '
-                            <i class="fas fa-angle-left right"></i>
-                        </p>
+                        <p>' . langHdl('admin_views') . '<i class="fas fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                           <li class="nav-item">
@@ -687,10 +684,8 @@ if (($session_validite_pw === null
                         </ul>
                     </nav>
                     <!-- /.sidebar-menu -->
-                </div>
-                <!-- /.sidebar -->
-                <div class="footer">
-                    <div class="ml-3" id="sidebar-footer">
+                <div class="menu-footer" style="">
+                    <div class="" id="sidebar-footer">
                         <i class="fas fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
                                                                                                 @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']) . ' - ' .
                                                                                                 @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
@@ -700,6 +695,8 @@ if (($session_validite_pw === null
                         <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
                     </div>
                 </div>
+                </div>
+                <!-- /.sidebar -->
             </aside>
 
             <!-- Content Wrapper. Contains page content -->

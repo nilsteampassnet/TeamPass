@@ -27,7 +27,7 @@ function IncreaseSessionTime(duration)
         'sources/main.queries.php',
         {
             type     : 'increase_session_time',
-            duration : parseInt(duration, 2) * hourInMinutes
+            duration : parseInt(duration, 10) * hourInMinutes
         },
         function(data) {
             if (data[0].new_value !== 'expired') {

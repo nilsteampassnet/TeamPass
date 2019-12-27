@@ -280,7 +280,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         );
 
                         // Warn user about clipboard clear
-                        if (store.get('teampassSettings').clipboard_life_duration_input === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration_input) === 0) {
+                        if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                             toastr.remove();
                             toastr.info(
                                 '<?php echo langHdl('copy_to_clipboard'); ?>',
@@ -295,14 +295,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             toastr.warning(
                                 '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
                                 '', {
-                                    timeOut: store.get('teampassSettings').clipboard_life_duration_input * 1000,
+                                    timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
                                     progressBar: true
                                 }
                             );
 
                             // Set clipboard eraser
                             clearClipboardTimeout(
-                                store.get('teampassSettings').clipboard_life_duration_input
+                                store.get('teampassSettings').clipboard_life_duration
                             );
                         }
 
