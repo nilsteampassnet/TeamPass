@@ -774,7 +774,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col2
         if ($record['label'] === 'user_password_not_correct' || $record['label'] === 'user_not_exists') {
-            $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).' - '.$record['field_1'].'", ';
+            $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).' - '.htmlspecialchars(stripslashes($record['field_1']),ENT_QUOTES).'", ';
         } else {
             $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
         }
