@@ -115,7 +115,7 @@ $post_iFolderId = filter_input(INPUT_POST, 'iFolderId', FILTER_SANITIZE_NUMBER_I
 // Do asked action
 if (null !== $post_type) {
     switch ($post_type) {
-            /*
+        /*
         * CASE
         * creating a new ITEM
         */
@@ -197,10 +197,9 @@ if (null !== $post_type) {
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
-                if (
-                    $_SESSION['user_read_only'] === true
+                if ($_SESSION['user_read_only'] === true
                     && (in_array($post_folder_id, $_SESSION['personal_folders']) === false
-                        || $post_folder_is_personal !== 1)
+                    || $post_folder_is_personal !== 1)
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -214,8 +213,7 @@ if (null !== $post_type) {
 
                 // Is author authorized to create in this folder
                 if (count($_SESSION['list_folders_limited']) > 0) {
-                    if (
-                        in_array($post_folder_id, array_keys($_SESSION['list_folders_limited'])) === false
+                    if (in_array($post_folder_id, array_keys($_SESSION['list_folders_limited'])) === false
                         && in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                         && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     ) {

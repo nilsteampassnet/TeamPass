@@ -2576,62 +2576,67 @@ Insert the log here and especially the answer of the query that failed.
                     } elseif ($post_action === 'step6') {
                         // STEP 6 - PERSONAL ITEMS
                         //
-                        // Loop on persoanl items
-                        $rows = DB::query(
-                            'SELECT id, pw
-                            FROM ' . prefixTable('items') . '
-                            WHERE perso = 1 AND id_tree IN %ls
-                            LIMIT ' . $post_start . ', ' . $post_length,
-                            $_SESSION['personal_folders']
-                        );
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key, increment_id
-                                FROM ' . prefixTable('sharekeys_items') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['id'],
-                                $_SESSION['user_id']
-                            );
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_items'),
-                                    array(
-                                        'object_id' => (int) $record['id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                DB::update(
-                                    prefixTable('sharekeys_items'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('items') . '
-                            WHERE perso = 0'
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
+                        // IF USER IS NOT THE SAME
+                        if ((int) $post_user_id === (int) $_SESSION['user_id']) {
                             $post_action = 'finished';
-                            $next_start = 0;
+                        } else {
+                            // Loop on persoanl items
+                            $rows = DB::query(
+                                'SELECT id, pw
+                                FROM ' . prefixTable('items') . '
+                                WHERE perso = 1 AND id_tree IN %ls
+                                LIMIT ' . $post_start . ', ' . $post_length,
+                                $_SESSION['personal_folders']
+                            );
+                            foreach ($rows as $record) {
+                                // Get itemKey from current user
+                                $currentUserKey = DB::queryFirstRow(
+                                    'SELECT share_key, increment_id
+                                    FROM ' . prefixTable('sharekeys_items') . '
+                                    WHERE object_id = %i AND user_id = %i',
+                                    $record['id'],
+                                    $_SESSION['user_id']
+                                );
+
+                                // Decrypt itemkey with admin key
+                                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                                // Encrypt Item key
+                                $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+
+                                // Save the key in DB
+                                if ($post_self_change === false) {
+                                    DB::insert(
+                                        prefixTable('sharekeys_items'),
+                                        array(
+                                            'object_id' => (int) $record['id'],
+                                            'user_id' => (int) $post_user_id,
+                                            'share_key' => $share_key_for_item,
+                                        )
+                                    );
+                                } else {
+                                    DB::update(
+                                        prefixTable('sharekeys_items'),
+                                        array(
+                                            'share_key' => $share_key_for_item,
+                                        ),
+                                        'increment_id = %i',
+                                        $currentUserKey['increment_id']
+                                    );
+                                }
+                            }
+
+                            // SHould we change step?
+                            DB::query(
+                                'SELECT *
+                                FROM ' . prefixTable('items') . '
+                                WHERE perso = 0'
+                            );
+                            $next_start = (int) $post_start + (int) $post_length;
+                            if ($next_start > DB::count()) {
+                                $post_action = 'finished';
+                                $next_start = 0;
+                            }
                         }
                         // ---
                         // ---

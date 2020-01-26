@@ -18,7 +18,7 @@
  */
 
 return array(
-    'provide_current_psk_and_click_launch' => 'Provide your current personal saltkey and click button Launch',
+    'provide_current_psk_and_click_launch' => 'When ready, click button Launch',
     'start' => 'Start',
     'data_inconsistency' => 'Data inconsistency found. Please reload the page!',
     'one_time_code_expected' => 'One-Time-Code expected',
@@ -473,12 +473,12 @@ return array(
     'index_maintenance_mode' => 'Maintenance mode is enabled. Only administrators can sign in.',
     'index_maintenance_mode_admin' => 'Maintenance mode is enabled. Users cannot sign in.',
     'at_manual' => 'Manual insertion',
+    '2fa_authentication_selector' => 'Select a 2 factor authentication method',
     '---' => '---',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
     'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
     'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'create_item_based_upon_template' => 'Use of template for Item',
     'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
     'main_template' => 'Use as template',

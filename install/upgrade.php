@@ -117,10 +117,10 @@ if (isset($_SERVER['HTTPS'])) {
 echo '
     <div id="top" class="center-screen">
         <div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
-		<div class="lcol">
-			<span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
-			<!--<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>-->
-		</div>
+        <div class="lcol">
+            <span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
+            <!--<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>-->
+        </div>
     <div id="content">
         <form name="install" method="post" action="">
         <div class="card card-default color-palette-box">
@@ -595,9 +595,9 @@ function Check(step)
     if (step != "") {
         var upgrade_file = "upgrade_ajax.php";
         if (step === "step0") {
-			if (document.getElementById("user_login").value === "" || document.getElementById("user_pwd").value === "") {
-				return false;
-			}
+            if (document.getElementById("user_login").value === "" || document.getElementById("user_pwd").value === "") {
+                return false;
+            }
             var data = "type="+step+
             "&login="+escape(document.getElementById("user_login").value)+
             "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
@@ -649,9 +649,9 @@ function Check(step)
                 .dismissOthers();
         }
         if (upgrade_file !== "") {
-			console.log(data);
-			httpRequest(upgrade_file, data);
-		}
+            console.log(data);
+            httpRequest(upgrade_file, data);
+        }
     }
 }
 
@@ -724,18 +724,18 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         if (newData !== '') {
             usersList.push(newData);
         }
-		//console.log('List of users');
-		//console.log(JSON.stringify(usersList))
+        //console.log('List of users');
+        //console.log(JSON.stringify(usersList))
         
-		if (usersRestList.length > 0) {
-			number = usersRestList[0];
-			usersRestList.shift();
-		} else if (number !== 'init') {
-			number = 'end';
-		}
-		//console.log('List of next users');
-		//console.log(JSON.stringify(usersRestList) + " ; Number = "+number)
-		
+        if (usersRestList.length > 0) {
+            number = usersRestList[0];
+            usersRestList.shift();
+        } else if (number !== 'init') {
+            number = 'end';
+        }
+        //console.log('List of next users');
+        //console.log(JSON.stringify(usersRestList) + " ; Number = "+number)
+        
         rand_number = createRandomId();
         $("#step4_progress").html("<div>" + getTime() + " - <span id='user_"+rand_number+"'>Treating User account ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
         // --
@@ -832,9 +832,9 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         if (usersList.length === 0 && step === 'step2' && loop_finished === 'true' && number === 0 && loop_start === 0) {
             /* Unlock this step */
             document.getElementById("but_next").disabled = "";
-                document.getElementById("but_launch").disabled = "disabled";
-                
-                $("#user_"+rand_number).parent()
+            document.getElementById("but_launch").disabled = "disabled";
+            
+            $("#user_"+rand_number).parent()
                 .prepend('<div>' + getTime() +' - All steps have been successfully performed <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
             return;
         } else {
@@ -852,7 +852,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         }
     }
     // Migrate if needed all account to new AES encryption
-	//console.log('Posting number = '+number);
+    //console.log('Posting number = '+number);
     $.post(
         "upgrade_run_3.0.0_users.php",
         {
@@ -862,19 +862,23 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
             start : loop_start,
             count_in_loop : count_in_loop,
             info : $('#infotmp').val(),
-			extra : number === 'end' ? 'all_users_created' : '',
+            extra : number === 'end' ? 'all_users_created' : '',
         },
         function(data) {
             //console.log(data[0]);
-			//console.log(JSON.parse(window.atob(data[0].rest)));
-			//console.log(JSON.parse(window.atob(data[0].data)));
+            //console.log(JSON.parse(window.atob(data[0].rest)));
+            //console.log(JSON.parse(window.atob(data[0].data)));
             previousStep = step;
 
             if (data[0].finish !== "1") {
                 // Manage list of users that is provide on number = 0
                 if ((number) === 'init' && step === 'step1') {
-                    usersRestList =  JSON.parse(window.atob(data[0].rest));
-					console.log("USERLIST = "+usersRestList);
+                    if (data[0].rest !== '') {
+                        usersRestList = JSON.parse(window.atob(data[0].rest));
+                    }else {
+                        usersRestList = '';
+                    }
+                    console.log("USERLIST = "+usersRestList);
                 }
 
                 // loop
@@ -1038,7 +1042,7 @@ function launch_database_dump() {
             type      : "perform_database_dump"
         },
         function(data) {
-			console.log(data)
+            console.log(data)
             if (data[0].error !== "") {
                 // ERROR
                 $("#dump_result").html(data[0].error);
@@ -1049,7 +1053,7 @@ function launch_database_dump() {
             } else {
                 // DONE
                 $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in folder <b>' + data[0].filename + '</b></div>');
-				$('#but_next').attr("disabled", false);
+                $('#but_next').attr("disabled", false);
                 alertify
                     .success('Success', 1)
                     .dismissOthers();

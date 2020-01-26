@@ -117,7 +117,7 @@ if (null !== $post_type) {
  *
  * @return void
  */
-function deleteUserObjetsKeys($user_id, $SETTINGS)
+/*function deleteUserObjetsKeys($user_id, $SETTINGS)
 {
     // Its goal is to adapt all user Items object key
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -157,3 +157,4 @@ function deleteUserObjetsKeys($user_id, $SETTINGS)
         $user_id
     );
 }
+*/

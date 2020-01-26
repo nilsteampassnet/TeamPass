@@ -50,8 +50,7 @@ header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
 
 // if no folders are visible then return no results
-if (
-    isset($_SESSION['groupes_visibles']) === false
+if (isset($_SESSION['groupes_visibles']) === false
     || empty($_SESSION['groupes_visibles']) === true
 ) {
     echo '{"sEcho": ' . intval($_GET['sEcho']) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
@@ -78,8 +77,7 @@ $aSortTypes = array('ASC', 'DESC');
 $sOrder = $sLimit = $sWhere = '';
 $sWhere = 'id_tree IN %ls_idtree'; //limit search to the visible folders
 
-if (
-    isset($_GET['limited']) === false
+if (isset($_GET['limited']) === false
     || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
 ) {
     $folders = $_SESSION['groupes_visibles'];
@@ -300,8 +298,7 @@ if (isset($_GET['type']) === false) {
 
         // Expiration
         if ($SETTINGS['activate_expiration'] === '1') {
-            if (
-                $record['renewal_period'] > 0
+            if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
                 $expired = 1;
@@ -352,7 +349,7 @@ if (isset($_GET['type']) === false) {
 
         if (($record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
             || (empty($record['restricted_to']) === false
-                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
             || ($restrictedToRole === true)
         ) {
             $getItemInList = false;
@@ -370,7 +367,7 @@ if (isset($_GET['type']) === false) {
 
         // col6 - URL
         if ($record['url'] != '0') {
-            $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['url']), ENT_QUOTES) . '", ';
+            $sOutputItem .= '"'.filter_var($record['url'], FILTER_SANITIZE_URL).'", ';
         } else {
             $sOutputItem .= '"", ';
         }
@@ -435,8 +432,7 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['is_result_of_search'] = 1;
 
         if ((int) $SETTINGS['activate_expiration'] === 1) {
-            if (
-                $record['renewal_period'] > 0
+            if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
                 $arr_data[$record['id']]['expired'] = 1;
@@ -496,7 +492,7 @@ if (isset($_GET['type']) === false) {
             $_SESSION['user_id']
         );
 
-        /*************** */
+        /* ************** */
         $right = 0;
         // Possible values:
         // 0 -> no access to item
@@ -508,8 +504,7 @@ if (isset($_GET['type']) === false) {
         $itemIsPersonal = false;
 
         // Let's identify the rights belonging to this ITEM
-        if (
-            (int) $record['perso'] === 1
+        if ((int) $record['perso'] === 1
             && DB::count() > 0
         ) {
             // Case 1 - Is this item personal and user its owner?
@@ -520,7 +515,7 @@ if (isset($_GET['type']) === false) {
 
             // ----- END CASE 1 -----
         } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
-                || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
             && $record['perso'] !== 1
         ) {
@@ -529,8 +524,7 @@ if (isset($_GET['type']) === false) {
             $right = 70;
 
             // ----- END CASE 3 -----
-        } elseif (
-            empty($record['restricted_to']) === false
+        } elseif (empty($record['restricted_to']) === false
             && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
@@ -540,8 +534,7 @@ if (isset($_GET['type']) === false) {
             $right = 70;
 
             // ----- END CASE 4 -----
-        } elseif (
-            $user_is_included_in_role === true
+        } elseif ($user_is_included_in_role === true
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
         ) {
@@ -550,8 +543,7 @@ if (isset($_GET['type']) === false) {
             $right = 60;
 
             // ----- END CASE 5 -----
-        } elseif (
-            $record['perso'] !== 1
+        } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 6 - Is user readonly?
@@ -559,8 +551,7 @@ if (isset($_GET['type']) === false) {
             $right = 10;
 
             // ----- END CASE 6 -----
-        } elseif (
-            $record['perso'] !== 1
+        } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 7 - Is user readonly?
@@ -568,8 +559,7 @@ if (isset($_GET['type']) === false) {
             $right = 10;
 
             // ----- END CASE 7 -----
-        } elseif (
-            $record['perso'] !== 1
+        } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 8 - Is user allowed to access?
@@ -578,8 +568,8 @@ if (isset($_GET['type']) === false) {
 
             // ----- END CASE 8 -----
         } elseif (((empty($record['restricted_to']) === false
-                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
-                || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
+            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
         ) {
@@ -650,8 +640,7 @@ if (isset($_GET['type']) === false) {
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
-        if (
-            isset($SETTINGS['copy_to_clipboard_small_icons']) === true
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true
             && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1
         ) {
             $data_item = DB::queryFirstRow(

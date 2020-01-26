@@ -60,7 +60,8 @@ if (mysqli_connect(
     $pass,
     $database,
     $port
-)) {
+)
+) {
     $db_link = mysqli_connect(
         $server,
         $user,
@@ -109,7 +110,7 @@ if (null !== $post_step) {
                 // Remove this ID from the array
                 array_shift($listOfUsers);
             }
-
+            
             // Treat the 1st user in the list
             if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false && $post_extra !== 'all_users_created')) {
                 // Get info about user
@@ -205,7 +206,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"' . ((int) $post_number + 1) . '" , "loop_finished" : "' . (count($listOfUsers) === 0 ? "true" : "false") . '" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
             } else {
                 // No more user to treat
-                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true" , "rest" : ""}]';
+                echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . (empty($post_number) === true ? 0 : $post_number) . '" , "loop_finished" : "true" , "rest" : ""}]';
             }
 
             exit();
