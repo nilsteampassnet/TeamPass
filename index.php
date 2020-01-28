@@ -266,9 +266,7 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     <!-- Theme style -->
     <link rel="stylesheet" href="includes/css/teampass.css">
     <!-- Google Font: Source Sans Pro -->
-    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-    <!-- Google Font: Source Sans Pro
-    <link rel="stylesheet" type="text/css" href="plugins/font-source-sans-pro"> -->
+    <link rel="stylesheet" type="text/css" href="plugins/font-source-sans-pro">
     <!-- Altertify -->
     <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css" />
     <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />

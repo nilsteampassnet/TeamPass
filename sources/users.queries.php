@@ -2737,10 +2737,9 @@ if (null !== $post_type) {
                 );
                 break;
             }
-			
+
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
-			
 
             // Prepare variables
             $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -2778,7 +2777,7 @@ if (null !== $post_type) {
                 );
                 break;
             }
-			
+
             // Encrypte private key with user password
             // and not the OTC
 
@@ -2790,24 +2789,29 @@ if (null !== $post_type) {
                 $userPrivateKey
             );
             // Save it in session
-			$_SESSION['user']['private_key'] = $userPrivateKey;
+            $_SESSION['user']['private_key'] = $userPrivateKey;
 
             // Check if this user has some private items.
             // If yes then upgrade needed for them
             // If no then upgrade is now finished
-            DB::query(
-                'SELECT id
-                FROM ' . prefixTable('items') . '
-                WHERE id_tree IN %ls',
-                $_SESSION['personal_folders']
-            );
+            if (count($_SESSION['personal_folders']) > 0) {
+                DB::query(
+                    'SELECT id
+                    FROM ' . prefixTable('items') . '
+                    WHERE id_tree IN %ls',
+                    $_SESSION['personal_folders']
+                );
 
-            if (DB::count() === 0) {
+                if (DB::count() === 0) {
+                    $upgrade_needed = 0;
+                    $special_status = 'none';
+                } else {
+                    $upgrade_needed = 1;
+                    $special_status = 'private_items_to_encrypt';
+                }
+            } else {
                 $upgrade_needed = 0;
                 $special_status = 'none';
-            } else {
-                $upgrade_needed = 1;
-                $special_status = 'private_items_to_encrypt';
             }
 
             // Update table

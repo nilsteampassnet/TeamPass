@@ -1652,7 +1652,12 @@ function prepareExchangedData($data, $type, $key = null)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get superglobals
-    $globalsKey = $superGlobal->get('key', 'SESSION');
+    if ($key !== null) {
+        $superGlobal->put('key', $key, 'SESSION');
+        $globalsKey = $key;
+    } else {
+        $globalsKey = $superGlobal->get('key', 'SESSION');
+    }
 
     //load ClassLoader
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
@@ -1660,16 +1665,11 @@ function prepareExchangedData($data, $type, $key = null)
     $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $aes->register();
 
-    if ($key !== null) {
-        $superGlobal->put('key', $key, 'SESSION');
-    }
-
     if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        if (
-            isset($SETTINGS['encryptClientServer'])
+        if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_encode(
@@ -1687,8 +1687,7 @@ function prepareExchangedData($data, $type, $key = null)
             );
         }
     } elseif ($type === 'decode' && is_array($data) === false) {
-        if (
-            isset($SETTINGS['encryptClientServer'])
+        if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
@@ -2597,8 +2596,7 @@ function accessToItemIsGranted($item_id, $SETTINGS)
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (
-            isset($session_list_restricted_folders_for_items[$data['id_tree']]) === true
+        if (isset($session_list_restricted_folders_for_items[$data['id_tree']]) === true
             && in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']]) === false
         ) {
             return 'ERR_FOLDER_NOT_ALLOWED';
@@ -2882,8 +2880,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
         $user_found = true;
 
         // Is user in allowed group
-        if (
-            isset($SETTINGS['ldap_allowed_usergroup']) === true
+        if (isset($SETTINGS['ldap_allowed_usergroup']) === true
             && empty($SETTINGS['ldap_allowed_usergroup']) === false
         ) {
             if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {

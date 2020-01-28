@@ -118,10 +118,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                             "sources/users.queries.php", {
                                                 type: "change_user_privkey_with_otc",
                                                 key: store.get('teampassUser').sessionKey,
-                                                data: prepareExchangedData(parameters, "encode", "<?php echo $_SESSION['key']; ?>"),
+                                                data: prepareExchangedData(JSON.stringify(parameters), "encode", store.get('teampassUser').sessionKey),
                                             },
                                             function(receivedData) {
-                                                receivedData = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
+                                                receivedData = prepareExchangedData(receivedData, 'decode', store.get('teampassUser').sessionKey);
 
                                                 if (receivedData.error !== false) {
                                                     // Show error
