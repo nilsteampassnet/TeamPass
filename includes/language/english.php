@@ -18,6 +18,7 @@
  */
 
 return array(
+    'converting_personal_items' => 'Converting personal items',
     'provide_current_psk_and_click_launch' => 'When ready, click button Launch',
     'start' => 'Start',
     'data_inconsistency' => 'Data inconsistency found. Please reload the page!',

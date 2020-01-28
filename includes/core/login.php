@@ -175,12 +175,11 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
         </div>';
 }
 
-if (
-    isset($SETTINGS['enable_http_request_login']) === true
+if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
     && isset($_SERVER['PHP_AUTH_USER']) === true
     && (isset($SETTINGS['maintenance_mode']) === false
-        && (int) $SETTINGS['maintenance_mode'] === 1)
+    && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
     echo '
 <script>
