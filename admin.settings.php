@@ -315,7 +315,7 @@ echo '
                     <td>
                         <select id="time_format" name="time_format" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="H:i:s"', !isset($SETTINGS['time_format']) || $SETTINGS['time_format'] == "H:i:s" ? ' selected="selected"' : "", '>H:i:s</option>
-                            <option value="h:m:s a"', $SETTINGS['time_format'] == "h:i:s a" ? ' selected="selected"' : "", '>h:i:s a</option>
+                            <option value="h:i:s a"', $SETTINGS['time_format'] == "h:i:s a" ? ' selected="selected"' : "", '>h:i:s a</option>
                             <option value="g:i:s a"', $SETTINGS['time_format'] == "g:i:s a" ? ' selected="selected"' : "", '>g:i:s a</option>
                             <option value="G:i:s"', $SETTINGS['time_format'] == "G:i:s" ? ' selected="selected"' : "", '>G:i:s</option>
                         </select>
