@@ -98,7 +98,7 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
         "install",
         "clear_install_folder"
     );
-    if ($row['valeur'] === "true") {
+    if ( $row!=null && $row['valeur'] === "true") {
         /**
          * Permits to delete files and folders recursively
          */

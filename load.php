@@ -1113,7 +1113,7 @@ $htmlHeaders .= '
                                     .stop(true,true)
                                     .show();
                             } else {
-                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
+                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$LANG['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",
                                     at: "center top+75",
