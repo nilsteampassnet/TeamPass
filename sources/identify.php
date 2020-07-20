@@ -320,25 +320,6 @@ function identifyUser($sentData, $SETTINGS)
         return false;
     }
 
-    // Manage Maintenance mode
-    if (
-        isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
-        && (int) $userInfo['admin'] === 0
-    ) {
-        echo prepareExchangedData(
-            array(
-                'value' => '',
-                'user_admin' => '',
-                'initial_url' => '',
-                'pwd_attempts' => '',
-                'error' => 'maintenance_mode_enabled',
-                'message' => '',
-            ),
-            'encode'
-        );
-        return false;
-    }
-
     // Debug
     debugIdentify(
         DEBUGDUO,
@@ -470,6 +451,28 @@ function identifyUser($sentData, $SETTINGS)
         DEBUGDUOFILE,
         'USer exists: ' . $counter . "\n"
     );
+
+    
+
+    // Manage Maintenance mode
+    if (
+        isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
+        && (int) $userInfo['admin'] === 0
+    ) {
+        echo prepareExchangedData(
+            array(
+                'value' => '',
+                'user_admin' => $userInfo['admin'],
+                'initial_url' => '',
+                'pwd_attempts' => '',
+                'error' => 'maintenance_mode_enabled',
+                'message' => '',
+            ),
+            'encode'
+        );
+        return false;
+    }
+
 
     $user_initial_creation_through_ldap = false;
     $userPasswordVerified = false;
