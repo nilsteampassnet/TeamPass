@@ -45,16 +45,12 @@ define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 
-define('DEBUG', true);
-define('DEBUGLDAP', true); //Can be used in order to debug LDAP authentication
-define('DEBUGDUO', true); //Can be used in order to debug DUO authentication
+define('DEBUG', false);
+define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
+define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
 
 // Management Pages
 $mngPages = array(
-    /*'users' => 'users.php',
-    'folders' => 'folders.php',
-    'roles' => 'roles.php',
-    'utilities' => 'utilities.php',*/
     'admin' => 'admin.php',
     'options' => 'options.php',
     'statistics' => 'statistics.php',
