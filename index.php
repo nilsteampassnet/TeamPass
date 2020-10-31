@@ -31,6 +31,8 @@ ini_set('session.use_only_cookies', 1);
 // Uses a secure connection (HTTPS) if possible
 ini_set('session.cookie_secure', 0);
 
+ini_set('session.cookie_samesite', 'Lax');
+
 // Before we start processing, we should abort no install is present
 if (file_exists('includes/config/settings.php') === false) {
     // This should never happen, but in case it does
@@ -261,12 +263,12 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
     <!-- Theme style -->
     <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css">
     <link rel="stylesheet" href="plugins/pace-progress/themes/blue/pace-theme-corner-indicator.css" type="text/css" />
-    <link rel="stylesheet" href="plugins/select2/select2.min.css" type="text/css" />
-    <link rel="stylesheet" href="plugins/select2/select2-bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="plugins/select2/css/select2.min.css" type="text/css" />
+    <link rel="stylesheet" href="plugins/select2/css/select2-bootstrap.min.css" type="text/css" />
     <!-- Theme style -->
     <link rel="stylesheet" href="includes/css/teampass.css">
     <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" type="text/css" href="plugins/font-source-sans-pro">
+    <link rel="stylesheet" type="text/css" href="includes/fonts/fonts.css">
     <!-- Altertify -->
     <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css" />
     <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />
@@ -1056,14 +1058,12 @@ if (($session_validite_pw === null
     <!-- aes -->
     <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.js"></script>
     <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes-ctr.js"></script>
-    <!-- nprogress -->
-    <!-- <script type="text/javascript" src="plugins/nprogress/nprogress.js"></script> -->
     <!-- pace -->
-    <script type="text/javascript" src="plugins/pace-progress/pace.min.js"></script>
+    <script type="text/javascript" data-pace-options='{ "ajax": true }' src="plugins/pace-progress/pace.min.js"></script>
     <!-- clipboardjs -->
     <script type="text/javascript" src="plugins/clipboard/clipboard.min.js"></script>
     <!-- select2 -->
-    <script type="text/javascript" src="plugins/select2/select2.full.min.js"></script>
+    <script type="text/javascript" src="plugins/select2/js/select2.full.min.js"></script>
     <!-- simplePassMeter -->
     <link rel="stylesheet" href="plugins/simplePassMeter/simplePassMeter.css" type="text/css" />
     <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js"></script>
@@ -1086,12 +1086,7 @@ if (($session_validite_pw === null
         <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
         <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
         <!-- InputMask -->
-        <script src="./plugins/input-mask/jquery.inputmask.js"></script>
-        <script src="./plugins/input-mask/jquery.inputmask.extensions.js"></script>
-        <!-- Ion Slider -->
-        <!--<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.css">
-<link rel="stylesheet" href="./plugins/ionslider/ion.rangeSlider.skinNice.css">
-<script src="./plugins/ionslider/ion.rangeSlider.min.js"></script>-->
+        <script src="./plugins/inputmask/jquery.inputmask.min.js"></script>
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
@@ -1101,8 +1096,6 @@ if (($session_validite_pw === null
         ?>
         <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
         <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
-        <!-- CKEDITOR -->
-        <!--<script src="./plugins/ckeditor/ckeditor.js"></script>-->
         <!-- SUMMERNOTE -->
         <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
         <script src="./plugins/summernote/summernote-bs4.min.js"></script>
@@ -1135,7 +1128,7 @@ if (($session_validite_pw === null
         <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
         <!-- daterange picker -->
         <link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker.css">
-        <script src="./plugins/daterangepicker/moment.min.js"></script>
+        <script src="./plugins/moment/moment.min.js"></script>
         <script src="./plugins/daterangepicker/daterangepicker.js"></script>
         <!-- SlimScroll -->
         <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>

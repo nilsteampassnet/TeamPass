@@ -1,6 +1,6 @@
 /*!
- * AdminLTE v3.0.1 (https://adminlte.io)
- * Copyright 2014-2019 Colorlib <http://colorlib.com>
+ * AdminLTE v3.0.5 (https://adminlte.io)
+ * Copyright 2014-2020 Colorlib <http://colorlib.com>
  * Licensed under MIT (https://github.com/ColorlibHQ/AdminLTE/blob/master/LICENSE)
  */
 (function (global, factory) {
@@ -62,9 +62,7 @@
      * ====================================================
      */
 
-    var ControlSidebar =
-    /*#__PURE__*/
-    function () {
+    var ControlSidebar = /*#__PURE__*/function () {
       function ControlSidebar(element, config) {
         this._element = element;
         this._config = config;
@@ -75,7 +73,7 @@
 
       var _proto = ControlSidebar.prototype;
 
-      _proto.show = function show() {
+      _proto.collapse = function collapse() {
         // Show the control sidebar
         if (this._config.controlsidebarSlide) {
           $('html').addClass(ClassName.CONTROL_SIDEBAR_ANIMATE);
@@ -88,11 +86,11 @@
           $('body').removeClass(ClassName.CONTROL_SIDEBAR_OPEN);
         }
 
-        var expandedEvent = $.Event(Event.EXPANDED);
-        $(this._element).trigger(expandedEvent);
+        var collapsedEvent = $.Event(Event.COLLAPSED);
+        $(this._element).trigger(collapsedEvent);
       };
 
-      _proto.collapse = function collapse() {
+      _proto.show = function show() {
         // Collapse the control sidebar
         if (this._config.controlsidebarSlide) {
           $('html').addClass(ClassName.CONTROL_SIDEBAR_ANIMATE);
@@ -107,19 +105,19 @@
           $('body').addClass(ClassName.CONTROL_SIDEBAR_OPEN);
         }
 
-        var collapsedEvent = $.Event(Event.COLLAPSED);
-        $(this._element).trigger(collapsedEvent);
+        var expandedEvent = $.Event(Event.EXPANDED);
+        $(this._element).trigger(expandedEvent);
       };
 
       _proto.toggle = function toggle() {
-        var shouldOpen = $('body').hasClass(ClassName.CONTROL_SIDEBAR_OPEN) || $('body').hasClass(ClassName.CONTROL_SIDEBAR_SLIDE);
+        var shouldClose = $('body').hasClass(ClassName.CONTROL_SIDEBAR_OPEN) || $('body').hasClass(ClassName.CONTROL_SIDEBAR_SLIDE);
 
-        if (shouldOpen) {
-          // Open the control sidebar
-          this.show();
-        } else {
+        if (shouldClose) {
           // Close the control sidebar
           this.collapse();
+        } else {
+          // Open the control sidebar
+          this.show();
         }
       } // Private
       ;
@@ -303,6 +301,8 @@
       CONTENT_HEADER: '.content-header',
       WRAPPER: '.wrapper',
       CONTROL_SIDEBAR: '.control-sidebar',
+      CONTROL_SIDEBAR_CONTENT: '.control-sidebar-content',
+      CONTROL_SIDEBAR_BTN: '[data-widget="control-sidebar"]',
       LAYOUT_FIXED: '.layout-fixed',
       FOOTER: '.main-footer',
       PUSHMENU_BTN: '[data-widget="pushmenu"]',
@@ -318,20 +318,22 @@
       NAVBAR_FIXED: 'layout-navbar-fixed',
       FOOTER_FIXED: 'layout-footer-fixed',
       LOGIN_PAGE: 'login-page',
-      REGISTER_PAGE: 'register-page'
+      REGISTER_PAGE: 'register-page',
+      CONTROL_SIDEBAR_SLIDE_OPEN: 'control-sidebar-slide-open',
+      CONTROL_SIDEBAR_OPEN: 'control-sidebar-open'
     };
     var Default = {
       scrollbarTheme: 'os-theme-light',
-      scrollbarAutoHide: 'l'
+      scrollbarAutoHide: 'l',
+      panelAutoHeight: true,
+      loginRegisterAutoHeight: true
     };
     /**
      * Class Definition
      * ====================================================
      */
 
-    var Layout =
-    /*#__PURE__*/
-    function () {
+    var Layout = /*#__PURE__*/function () {
       function Layout(element, config) {
         this._config = config;
         this._element = element;
@@ -342,24 +344,51 @@
 
       var _proto = Layout.prototype;
 
-      _proto.fixLayoutHeight = function fixLayoutHeight() {
+      _proto.fixLayoutHeight = function fixLayoutHeight(extra) {
+        if (extra === void 0) {
+          extra = null;
+        }
+
+        var control_sidebar = 0;
+
+        if ($('body').hasClass(ClassName.CONTROL_SIDEBAR_SLIDE_OPEN) || $('body').hasClass(ClassName.CONTROL_SIDEBAR_OPEN) || extra == 'control_sidebar') {
+          control_sidebar = $(Selector.CONTROL_SIDEBAR_CONTENT).height();
+        }
+
         var heights = {
           window: $(window).height(),
           header: $(Selector.HEADER).length !== 0 ? $(Selector.HEADER).outerHeight() : 0,
           footer: $(Selector.FOOTER).length !== 0 ? $(Selector.FOOTER).outerHeight() : 0,
-          sidebar: $(Selector.SIDEBAR).length !== 0 ? $(Selector.SIDEBAR).height() : 0
+          sidebar: $(Selector.SIDEBAR).length !== 0 ? $(Selector.SIDEBAR).height() : 0,
+          control_sidebar: control_sidebar
         };
 
         var max = this._max(heights);
 
-        if (max == heights.window) {
-          $(Selector.CONTENT).css('min-height', max - heights.header - heights.footer);
-        } else {
-          $(Selector.CONTENT).css('min-height', max - heights.header);
+        var offset = this._config.panelAutoHeight;
+
+        if (offset === true) {
+          offset = 0;
+        }
+
+        if (offset !== false) {
+          if (max == heights.control_sidebar) {
+            $(Selector.CONTENT).css('min-height', max + offset);
+          } else if (max == heights.window) {
+            $(Selector.CONTENT).css('min-height', max + offset - heights.header - heights.footer);
+          } else {
+            $(Selector.CONTENT).css('min-height', max + offset - heights.header);
+          }
+
+          if (this._isFooterFixed()) {
+            $(Selector.CONTENT).css('min-height', parseFloat($(Selector.CONTENT).css('min-height')) + heights.footer);
+          }
         }
 
         if ($('body').hasClass(ClassName.LAYOUT_FIXED)) {
-          $(Selector.CONTENT).css('min-height', max - heights.header - heights.footer);
+          if (offset !== false) {
+            $(Selector.CONTENT).css('min-height', max + offset - heights.header - heights.footer);
+          }
 
           if (typeof $.fn.overlayScrollbars !== 'undefined') {
             $(Selector.SIDEBAR).overlayScrollbars({
@@ -372,6 +401,18 @@
             });
           }
         }
+      };
+
+      _proto.fixLoginRegisterHeight = function fixLoginRegisterHeight() {
+        if ($(Selector.LOGIN_BOX + ', ' + Selector.REGISTER_BOX).length === 0) {
+          $('body, html').css('height', 'auto');
+        } else if ($(Selector.LOGIN_BOX + ', ' + Selector.REGISTER_BOX).length !== 0) {
+          var box_height = $(Selector.LOGIN_BOX + ', ' + Selector.REGISTER_BOX).height();
+
+          if ($('body').css('min-height') !== box_height) {
+            $('body').css('min-height', box_height);
+          }
+        }
       } // Private
       ;
 
@@ -380,24 +421,30 @@
 
         // Activate layout height watcher
         this.fixLayoutHeight();
+
+        if (this._config.loginRegisterAutoHeight === true) {
+          this.fixLoginRegisterHeight();
+        } else if (Number.isInteger(this._config.loginRegisterAutoHeight)) {
+          setInterval(this.fixLoginRegisterHeight, this._config.loginRegisterAutoHeight);
+        }
+
         $(Selector.SIDEBAR).on('collapsed.lte.treeview expanded.lte.treeview', function () {
           _this.fixLayoutHeight();
         });
         $(Selector.PUSHMENU_BTN).on('collapsed.lte.pushmenu shown.lte.pushmenu', function () {
           _this.fixLayoutHeight();
         });
+        $(Selector.CONTROL_SIDEBAR_BTN).on('collapsed.lte.controlsidebar', function () {
+          _this.fixLayoutHeight();
+        }).on('expanded.lte.controlsidebar', function () {
+          _this.fixLayoutHeight('control_sidebar');
+        });
         $(window).resize(function () {
           _this.fixLayoutHeight();
         });
-
-        if (!$('body').hasClass(ClassName.LOGIN_PAGE) && !$('body').hasClass(ClassName.REGISTER_PAGE)) {
-          $('body, html').css('height', 'auto');
-        } else if ($('body').hasClass(ClassName.LOGIN_PAGE) || $('body').hasClass(ClassName.REGISTER_PAGE)) {
-          var box_height = $(Selector.LOGIN_BOX + ', ' + Selector.REGISTER_BOX).height();
-          $('body').css('min-height', box_height);
-        }
-
-        $('body.hold-transition').removeClass('hold-transition');
+        setTimeout(function () {
+          $('body.hold-transition').removeClass('hold-transition');
+        }, 50);
       };
 
       _proto._max = function _max(numbers) {
@@ -409,10 +456,18 @@
           }
         });
         return max;
+      };
+
+      _proto._isFooterFixed = function _isFooterFixed() {
+        return $('.main-footer').css('position') === 'fixed';
       } // Static
       ;
 
       Layout._jQueryInterface = function _jQueryInterface(config) {
+        if (config === void 0) {
+          config = '';
+        }
+
         return this.each(function () {
           var data = $(this).data(DATA_KEY);
 
@@ -423,7 +478,9 @@
             $(this).data(DATA_KEY, data);
           }
 
-          if (config === 'init') {
+          if (config === 'init' || config === '') {
+            data['_init']();
+          } else if (config === 'fixLayoutHeight' || config === 'fixLoginRegisterHeight') {
             data[config]();
           }
         });
@@ -495,18 +552,16 @@
       WRAPPER: '.wrapper'
     };
     var ClassName = {
-      SIDEBAR_OPEN: 'sidebar-open',
       COLLAPSED: 'sidebar-collapse',
-      OPEN: 'sidebar-open'
+      OPEN: 'sidebar-open',
+      CLOSED: 'sidebar-closed'
     };
     /**
      * Class Definition
      * ====================================================
      */
 
-    var PushMenu =
-    /*#__PURE__*/
-    function () {
+    var PushMenu = /*#__PURE__*/function () {
       function PushMenu(element, options) {
         this._element = element;
         this._options = $.extend({}, Default, options);
@@ -528,7 +583,7 @@
           }
         }
 
-        $(Selector.BODY).removeClass(ClassName.COLLAPSED);
+        $(Selector.BODY).removeClass(ClassName.COLLAPSED).removeClass(ClassName.CLOSED);
 
         if (this._options.enableRemember) {
           localStorage.setItem("remember" + EVENT_KEY, ClassName.OPEN);
@@ -541,7 +596,7 @@
       _proto.collapse = function collapse() {
         if (this._options.autoCollapseSize) {
           if ($(window).width() <= this._options.autoCollapseSize) {
-            $(Selector.BODY).removeClass(ClassName.OPEN);
+            $(Selector.BODY).removeClass(ClassName.OPEN).addClass(ClassName.CLOSED);
           }
         }
 
@@ -576,6 +631,8 @@
           } else if (resize == true) {
             if ($(Selector.BODY).hasClass(ClassName.OPEN)) {
               $(Selector.BODY).removeClass(ClassName.OPEN);
+            } else if ($(Selector.BODY).hasClass(ClassName.CLOSED)) {
+              this.expand();
             }
           }
         }
@@ -732,9 +789,7 @@
      * ====================================================
      */
 
-    var Treeview =
-    /*#__PURE__*/
-    function () {
+    var Treeview = /*#__PURE__*/function () {
       function Treeview(element, config) {
         this._config = config;
         this._element = element;
@@ -897,9 +952,7 @@
      * ====================================================
      */
 
-    var DirectChat =
-    /*#__PURE__*/
-    function () {
+    var DirectChat = /*#__PURE__*/function () {
       function DirectChat(element, config) {
         this._element = element;
       }
@@ -989,9 +1042,7 @@
      * ====================================================
      */
 
-    var TodoList =
-    /*#__PURE__*/
-    function () {
+    var TodoList = /*#__PURE__*/function () {
       function TodoList(element, config) {
         this._config = config;
         this._element = element;
@@ -1100,6 +1151,8 @@
     var ClassName = {
       CARD: 'card',
       COLLAPSED: 'collapsed-card',
+      COLLAPSING: 'collapsing-card',
+      EXPANDING: 'expanding-card',
       WAS_COLLAPSED: 'was-collapsed',
       MAXIMIZED: 'maximized-card'
     };
@@ -1124,9 +1177,7 @@
       minimizeIcon: 'fa-compress'
     };
 
-    var CardWidget =
-    /*#__PURE__*/
-    function () {
+    var CardWidget = /*#__PURE__*/function () {
       function CardWidget(element, settings) {
         this._element = element;
         this._parent = element.parents(Selector.CARD).first();
@@ -1143,11 +1194,11 @@
       _proto.collapse = function collapse() {
         var _this = this;
 
-        this._parent.children(Selector.CARD_BODY + ", " + Selector.CARD_FOOTER).slideUp(this._settings.animationSpeed, function () {
-          _this._parent.addClass(ClassName.COLLAPSED);
+        this._parent.addClass(ClassName.COLLAPSING).children(Selector.CARD_BODY + ", " + Selector.CARD_FOOTER).slideUp(this._settings.animationSpeed, function () {
+          _this._parent.addClass(ClassName.COLLAPSED).removeClass(ClassName.COLLAPSING);
         });
 
-        this._parent.find(this._settings.collapseTrigger + ' .' + this._settings.collapseIcon).addClass(this._settings.expandIcon).removeClass(this._settings.collapseIcon);
+        this._parent.find('> ' + Selector.CARD_HEADER + ' ' + this._settings.collapseTrigger + ' .' + this._settings.collapseIcon).addClass(this._settings.expandIcon).removeClass(this._settings.collapseIcon);
 
         var collapsed = $.Event(Event.COLLAPSED);
 
@@ -1157,11 +1208,11 @@
       _proto.expand = function expand() {
         var _this2 = this;
 
-        this._parent.children(Selector.CARD_BODY + ", " + Selector.CARD_FOOTER).slideDown(this._settings.animationSpeed, function () {
-          _this2._parent.removeClass(ClassName.COLLAPSED);
+        this._parent.addClass(ClassName.EXPANDING).children(Selector.CARD_BODY + ", " + Selector.CARD_FOOTER).slideDown(this._settings.animationSpeed, function () {
+          _this2._parent.removeClass(ClassName.COLLAPSED).removeClass(ClassName.EXPANDING);
         });
 
-        this._parent.find(this._settings.collapseTrigger + ' .' + this._settings.expandIcon).addClass(this._settings.collapseIcon).removeClass(this._settings.expandIcon);
+        this._parent.find('> ' + Selector.CARD_HEADER + ' ' + this._settings.collapseTrigger + ' .' + this._settings.expandIcon).addClass(this._settings.collapseIcon).removeClass(this._settings.expandIcon);
 
         var expanded = $.Event(Event.EXPANDED);
 
@@ -1362,9 +1413,7 @@
       }
     };
 
-    var CardRefresh =
-    /*#__PURE__*/
-    function () {
+    var CardRefresh = /*#__PURE__*/function () {
       function CardRefresh(element, settings) {
         this._element = element;
         this._parent = element.parents(Selector.CARD).first();
@@ -1377,12 +1426,6 @@
 
         if (this._settings.source === '') {
           throw new Error('Source url was not defined. Please specify a url in your CardRefresh source option.');
-        }
-
-        this._init();
-
-        if (this._settings.loadOnInit) {
-          this.load();
         }
       }
 
@@ -1431,6 +1474,10 @@
         $(this).find(this._settings.trigger).on('click', function () {
           _this.load();
         });
+
+        if (this._settings.loadOnInit) {
+          this.load();
+        }
       } // Static
       ;
 
@@ -1446,7 +1493,7 @@
 
         if (typeof config === 'string' && config.match(/load/)) {
           data[config]();
-        } else if (typeof config === 'object') {
+        } else {
           data._init($(this));
         }
       };
@@ -1465,6 +1512,11 @@
       }
 
       CardRefresh._jQueryInterface.call($(this), 'load');
+    });
+    $(document).ready(function () {
+      $(Selector.DATA_REFRESH).each(function () {
+        CardRefresh._jQueryInterface.call($(this));
+      });
     });
     /**
      * jQuery API
@@ -1497,8 +1549,14 @@
     var DATA_KEY = 'lte.dropdown';
     var JQUERY_NO_CONFLICT = $.fn[NAME];
     var Selector = {
-      DROPDOWN_MENU: 'ul.dropdown-menu',
+      NAVBAR: '.navbar',
+      DROPDOWN_MENU: '.dropdown-menu',
+      DROPDOWN_MENU_ACTIVE: '.dropdown-menu.show',
       DROPDOWN_TOGGLE: '[data-toggle="dropdown"]'
+    };
+    var ClassName = {
+      DROPDOWN_HOVER: 'dropdown-hover',
+      DROPDOWN_RIGHT: 'dropdown-menu-right'
     };
     var Default = {};
     /**
@@ -1506,9 +1564,7 @@
      * ====================================================
      */
 
-    var Dropdown =
-    /*#__PURE__*/
-    function () {
+    var Dropdown = /*#__PURE__*/function () {
       function Dropdown(element, config) {
         this._config = config;
         this._element = element;
@@ -1527,6 +1583,35 @@
         this._element.parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function (e) {
           $('.dropdown-submenu .show').removeClass("show").hide();
         });
+      };
+
+      _proto.fixPosition = function fixPosition() {
+        var elm = $(Selector.DROPDOWN_MENU_ACTIVE);
+
+        if (elm.length !== 0) {
+          if (elm.hasClass(ClassName.DROPDOWN_RIGHT)) {
+            elm.css('left', 'inherit');
+            elm.css('right', 0);
+          } else {
+            elm.css('left', 0);
+            elm.css('right', 'inherit');
+          }
+
+          var offset = elm.offset();
+          var width = elm.width();
+          var windowWidth = $(window).width();
+          var visiblePart = windowWidth - offset.left;
+
+          if (offset.left < 0) {
+            elm.css('left', 'inherit');
+            elm.css('right', offset.left - 5);
+          } else {
+            if (visiblePart < width) {
+              elm.css('left', 'inherit');
+              elm.css('right', 0);
+            }
+          }
+        }
       } // Static
       ;
 
@@ -1541,7 +1626,7 @@
             $(this).data(DATA_KEY, data);
           }
 
-          if (config === 'toggleSubmenu') {
+          if (config === 'toggleSubmenu' || config == 'fixPosition') {
             data[config]();
           }
         });
@@ -1560,13 +1645,13 @@
       event.stopPropagation();
 
       Dropdown._jQueryInterface.call($(this), 'toggleSubmenu');
-    }); // $(Selector.SIDEBAR + ' a').on('focusin', () => {
-    //   $(Selector.MAIN_SIDEBAR).addClass(ClassName.SIDEBAR_FOCUSED);
-    // })
-    // $(Selector.SIDEBAR + ' a').on('focusout', () => {
-    //   $(Selector.MAIN_SIDEBAR).removeClass(ClassName.SIDEBAR_FOCUSED);
-    // })
-
+    });
+    $(Selector.NAVBAR + ' ' + Selector.DROPDOWN_TOGGLE).on("click", function (event) {
+      event.preventDefault();
+      setTimeout(function () {
+        Dropdown._jQueryInterface.call($(this), 'fixPosition');
+      }, 1);
+    });
     /**
      * jQuery API
      * ====================================================
@@ -1645,9 +1730,7 @@
      * ====================================================
      */
 
-    var Toasts =
-    /*#__PURE__*/
-    function () {
+    var Toasts = /*#__PURE__*/function () {
       function Toasts(element, config) {
         this._config = config;
 

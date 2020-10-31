@@ -63,7 +63,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 function(data) {
                     //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-
+                    console.log(data);
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();

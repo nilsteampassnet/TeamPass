@@ -601,7 +601,7 @@ if (null !== $post_type) {
                 $parentBloquerModification = 0;
             }
 
-            if ($data['personal_folder'] === '1') {
+            if (isset($data) === true && (int) $data['personal_folder'] === 1) {
                 $isPersonal = 1;
             } else {
                 $isPersonal = 0;
@@ -610,8 +610,8 @@ if (null !== $post_type) {
                 // if manager or admin don't care
                 if (
                     $_SESSION['is_admin'] != 1
-                    && ($_SESSION['user_manager'] !== '1'
-                        || $_SESSION['user_can_manage_all_users'] !== '1')
+                    && ((int) $_SESSION['user_manager'] !== 1
+                        || (int) $_SESSION['user_can_manage_all_users'] !== 1)
                 ) {
                     // get complexity level for this folder
                     $data = DB::queryfirstrow(
@@ -651,8 +651,8 @@ if (null !== $post_type) {
                         'title' => $post_title,
                         'personal_folder' => $isPersonal,
                         'renewal_period' => $post_duration,
-                        'bloquer_creation' => isset($post_create_auth_without) === true && $post_create_auth_without === '1' ? '1' : $parentBloquerCreation,
-                        'bloquer_modification' => isset($post_edit_auth_without) === true && $post_edit_auth_without === '1' ? '1' : $parentBloquerModification,
+                        'bloquer_creation' => isset($post_create_auth_without) === true && (int) $post_create_auth_without === 1 ? '1' : $parentBloquerCreation,
+                        'bloquer_modification' => isset($post_edit_auth_without) === true && (int) $post_edit_auth_without === 1 ? '1' : $parentBloquerModification,
                     )
                 );
                 $newId = DB::insertId();

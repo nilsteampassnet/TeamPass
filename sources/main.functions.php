@@ -1432,12 +1432,12 @@ function sendEmail(
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // load PHPMailer
-    $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
+    $mail = new SplClassLoader('PHPMailer\PHPMailer', '../includes/libraries');
     $mail->register();
-    $mail = new Email\PHPMailer\PHPMailer(true);
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
     try {
         // send to user
-        $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/Email/PHPMailer/language/');
+        $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
         $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
         $mail->Port = $SETTINGS['email_port']; //COULD BE USED
         $mail->CharSet = 'utf-8';

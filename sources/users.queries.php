@@ -135,7 +135,7 @@ if (null !== $post_type) {
             // Prepare variables
             $login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
             $email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
+            $password = '';//filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
             $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
             $name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
             $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
@@ -171,7 +171,7 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ($dataReceived['admin'] === 'true' && $_SESSION['user_admin'] !== '1') {
+                if ($dataReceived['admin'] === 'true' && (int) $_SESSION['user_admin'] !== 1) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -324,7 +324,7 @@ if (null !== $post_type) {
 
                 echo prepareExchangedData(
                     array(
-                        'error' => 'no',
+                        'error' => false,
                         'message' => '',
                     ),
                     'encode'

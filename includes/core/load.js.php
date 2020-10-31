@@ -426,7 +426,7 @@ if (
     });
 
 
-    var clipboardCopy = new Clipboard(".clipboard-copy", {
+    var clipboardCopy = new ClipboardJS(".clipboard-copy", {
         text: function(trigger) {
             var elementId = $(trigger).data('clipboard-text');
             return $('#' + elementId).val();
@@ -751,7 +751,7 @@ if (
                 }
                 //check if format error
                 if (data.error === '') {
-                    if (data.html_json === null) {
+                    if (data.html_json === null || data.html_json === '') {
                         $('#index-last-pwds').html('<li><?php echo langHdl('none'); ?></li>');
                     } else {
                         // Prepare HTML

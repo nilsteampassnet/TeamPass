@@ -91,10 +91,14 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     ORDER BY id DESC',
                                     'admin_action_rebuild_config_file'
                                 );
-                                $tmp = langHdl('last_execution') . ' ' .
-                                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
-                                $tmp .= $data['field_1'] === 'success' ?
-                                    '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
+                                if (DB::count() > 0) {
+                                    $tmp = langHdl('last_execution') . ' ' .
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                    $tmp .= $data['field_1'] === 'success' ?
+                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
+                                } else {
+                                    $tmp = langHdl('never_performed');
+                                }
                                 ?>
                                 <span class="ml-3 text-muted" id="config-file-result"><?php echo $tmp; ?></span>
                                 <small class='form-text text-muted'>
