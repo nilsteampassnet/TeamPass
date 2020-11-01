@@ -47,26 +47,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 <script type='text/javascript'>
     //<![CDATA[
-
-    /*
-    $.extend($.expr[":"], {
-        "containsIN": function(elem, i, match, array) {
-            return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
-        }
-    });
-
-    // prepare Alphabet
-    var _alphabetSearch = '';
-    $.fn.dataTable.ext.search.push( function ( settings, searchData ) {
-        if ( ! _alphabetSearch ) {
-            return true;
-        }
-        if ( searchData[0].charAt(0) === _alphabetSearch ) {
-            return true;
-        }
-        return false;
-    } );
-    */
     // Initialization
     var userDidAChange = false;
 

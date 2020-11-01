@@ -105,7 +105,7 @@ if (
         'install',
         'clear_install_folder'
     );
-    if ($row['valeur'] === 'true') {
+    if (DB::count() > 0 && $row['valeur'] === 'true') {
         /**
          * Permits to delete files and folders recursively.
          */

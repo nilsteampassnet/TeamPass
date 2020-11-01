@@ -1,0 +1,184 @@
+.toggle-dark .toggle-slide {
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px #242529, 0 1px 0 1px #666;
+}
+.toggle-dark .toggle-on,
+.toggle-dark .toggle-off,
+.toggle-dark .toggle-blob {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+}
+.toggle-dark .toggle-on,
+.toggle-dark .toggle-select .toggle-inner .active {
+  background: -webkit-linear-gradient(#1A70BE, #31A2E1);
+  background: linear-gradient(#1A70BE, #31A2E1);
+}
+.toggle-dark .toggle-off,
+.toggle-dark .toggle-select .toggle-on {
+  background: -webkit-linear-gradient(#242529, #34363B);
+  background: linear-gradient(#242529, #34363B);
+}
+.toggle-dark .toggle-blob {
+  border-radius: 4px;
+  background: -webkit-linear-gradient(#CFCFCF, whiteSmoke);
+  background: linear-gradient(#CFCFCF, whiteSmoke);
+  box-shadow: inset 0 0 0 1px #888, inset 0 0 0 2px white;
+}
+.toggle-dark .toggle-blob:hover {
+  background: -webkit-linear-gradient(#c0c0c0, #dadada);
+  background: linear-gradient(#c0c0c0, #dadada);
+  box-shadow: inset 0 0 0 1px #888,inset 0 0 0 2px #ddd;
+}
+.toggle-iphone .toggle-slide {
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px #999;
+}
+.toggle-iphone .toggle-on,
+.toggle-iphone .toggle-off {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+.toggle-iphone .toggle-on {
+  border-radius: 9999px 0 0 9999px;
+  background: #037bda;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+.toggle-iphone .toggle-on:after {
+  background: -webkit-linear-gradient(#1189f1, #3797ef);
+  background: linear-gradient(#1189f1, #3797ef);
+  height: 50%;
+  content: '';
+  margin-top: -19%;
+  display: block;
+  border-radius: 9999px;
+  margin-left: 10%;
+}
+.toggle-iphone .toggle-off {
+  box-shadow: inset -2px 2px 5px rgba(0, 0, 0, 0.4);
+  border-radius: 0 9999px 9999px 0;
+  color: #828282;
+  background: #ECECEC;
+  text-shadow: 0 0 1px white;
+}
+.toggle-iphone .toggle-off:after {
+  background: -webkit-linear-gradient(#fafafa, #fdfdfd);
+  background: linear-gradient(#fafafa, #fdfdfd);
+  height: 50%;
+  content: '';
+  margin-top: -19%;
+  display: block;
+  margin-right: 10%;
+  border-radius: 9999px;
+}
+.toggle-iphone .toggle-blob {
+  border-radius: 50px;
+  background: -webkit-linear-gradient(#d1d1d1, #fafafa);
+  background: linear-gradient(#d1d1d1, #fafafa);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6), inset 0 0 0 2px white, 0 0 3px rgba(0, 0, 0, 0.6);
+}
+.toggle-light .toggle-slide {
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px #999;
+}
+.toggle-light .toggle-on,
+.toggle-light .toggle-off {
+  font-size: 11px;
+  font-weight: 500;
+}
+.toggle-light .toggle-on,
+.toggle-light .toggle-select .toggle-inner .active {
+  background: #45a31f;
+  box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 1px 1px rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+.toggle-light .toggle-off,
+.toggle-light .toggle-select .toggle-on {
+  color: rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px rgba(255, 255, 255, 0.2);
+  background: -webkit-linear-gradient(#cfcfcf, #f5f5f5);
+  background: linear-gradient(#cfcfcf, #f5f5f5);
+}
+.toggle-light .toggle-blob {
+  border-radius: 50px;
+  background: -webkit-linear-gradient(#f5f5f5, #cfcfcf);
+  background: linear-gradient(#f5f5f5, #cfcfcf);
+  box-shadow: 1px 1px 2px #888;
+}
+.toggle-light .toggle-blob:hover {
+  background: -webkit-linear-gradient(#e4e4e4, #f9f9f9);
+  background: linear-gradient(#e4e4e4, #f9f9f9);
+}
+.toggle-modern .toggle-slide {
+  border-radius: 4px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25), 0 0 1px rgba(0, 0, 0, 0.2);
+  background: -webkit-linear-gradient(#c0c5c9, #a1a9af);
+  background: linear-gradient(#c0c5c9, #a1a9af);
+  box-shadow: inset 0 2px 1px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.toggle-modern .toggle-on,
+.toggle-modern .toggle-off {
+  -webkit-transition: all 0.1s ease-out;
+          transition: all 0.1s ease-out;
+  color: white;
+  text-shadow: 1px 1px rgba(0, 0, 0, 0.1);
+  font-size: 11px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 -1px 1px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+.toggle-modern .toggle-select .toggle-off,
+.toggle-modern .toggle-select .toggle-on {
+  background: none;
+}
+.toggle-modern .toggle-off,
+.toggle-modern .toggle-off.active {
+  background: -webkit-linear-gradient(#737e8d, #3f454e);
+  background: linear-gradient(#737e8d, #3f454e);
+}
+.toggle-modern .toggle-on,
+.toggle-modern .toggle-on.active {
+  background: -webkit-linear-gradient(#4894cd, #2852a6);
+  background: linear-gradient(#4894cd, #2852a6);
+}
+.toggle-modern .toggle-blob {
+  background: -webkit-linear-gradient(#c0c6c9, #81898f);
+  background: linear-gradient(#c0c6c9, #81898f);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset 0 -1px 1px rgba(0, 0, 0, 0.1), 1px 1px 2px rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+.toggle-modern .toggle-blob:hover {
+  background-image: -webkit-linear-gradient(#a1a9af, #a1a9af);
+  background-image: linear-gradient(#a1a9af, #a1a9af);
+}
+.toggle-soft .toggle-slide {
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px #999;
+}
+.toggle-soft .toggle-on,
+.toggle-soft .toggle-off {
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 11px;
+  text-shadow: 1px 1px white;
+}
+.toggle-soft .toggle-on,
+.toggle-soft .toggle-select .toggle-inner .active {
+  background: -webkit-linear-gradient(#d2ff52, #91e842);
+  background: linear-gradient(#d2ff52, #91e842);
+}
+.toggle-soft .toggle-off,
+.toggle-soft .toggle-select .toggle-on {
+  background: -webkit-linear-gradient(#cfcfcf, #f5f5f5);
+  background: linear-gradient(#cfcfcf, #f5f5f5);
+}
+.toggle-soft .toggle-blob {
+  border-radius: 4px;
+  background: -webkit-linear-gradient(#cfcfcf, #f5f5f5);
+  background: linear-gradient(#cfcfcf, #f5f5f5);
+  box-shadow: inset 0 0 0 1px #bbb, inset 0 0 0 2px white;
+}
+.toggle-soft .toggle-blob:hover {
+  background: -webkit-linear-gradient(#e4e4e4, #f9f9f9);
+  background: linear-gradient(#e4e4e4, #f9f9f9);
+  box-shadow: inset 0 0 0 1px #ddd,inset 0 0 0 2px #ddd;
+}

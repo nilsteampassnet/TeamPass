@@ -236,13 +236,14 @@ if (null !== $post_type) {
                 }
             }
 
-            $return = array(
-                'error' => false,
-                'message' => '',
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
             );
 
-            // send data
-            echo json_encode($return);
             break;
 
         case 'change_role_definition':

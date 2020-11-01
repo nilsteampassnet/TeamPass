@@ -67,7 +67,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     var debugJavascript = true;
 
-
     // Manage memory
     browserSession(
         'init',

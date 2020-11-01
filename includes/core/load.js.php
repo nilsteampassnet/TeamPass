@@ -931,7 +931,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    console.log(data)
+                    
                     if (data.error === true) {
                         // error
                         toastr.remove();
@@ -953,18 +953,24 @@ if (
                 }
             );
         } else {
+            // Enable close button
+            $('#button_close_sharekeys_reencryption').removeAttr('disabled');
+
             // Finished
             $("#dialog-encryption-keys-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
-
             toastr.remove();
-            toastr.success(
-                '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                '', {
-                    timeOut: 4000
-                }
-            );
 
-            window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+            // Unlog if same user
+            if (userId === <?php echo $_SESSION['user_id']; ?>) {
+                toastr.success(
+                    '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                    '', {
+                        timeOut: 4000
+                    }
+                );
+
+                window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+            }
         }
     }
 

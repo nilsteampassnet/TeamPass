@@ -1,0 +1,49 @@
+.toggle-iphone .toggle-slide {
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px #999;
+}
+.toggle-iphone .toggle-on,
+.toggle-iphone .toggle-off {
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+.toggle-iphone .toggle-on {
+  border-radius: 9999px 0 0 9999px;
+  background: #037bda;
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+.toggle-iphone .toggle-on:after {
+  background: -webkit-linear-gradient(#1189f1, #3797ef);
+  background: linear-gradient(#1189f1, #3797ef);
+  height: 50%;
+  content: '';
+  margin-top: -19%;
+  display: block;
+  border-radius: 9999px;
+  margin-left: 10%;
+}
+.toggle-iphone .toggle-off {
+  box-shadow: inset -2px 2px 5px rgba(0, 0, 0, 0.4);
+  border-radius: 0 9999px 9999px 0;
+  color: #828282;
+  background: #ECECEC;
+  text-shadow: 0 0 1px white;
+}
+.toggle-iphone .toggle-off:after {
+  background: -webkit-linear-gradient(#fafafa, #fdfdfd);
+  background: linear-gradient(#fafafa, #fdfdfd);
+  height: 50%;
+  content: '';
+  margin-top: -19%;
+  display: block;
+  margin-right: 10%;
+  border-radius: 9999px;
+}
+.toggle-iphone .toggle-blob {
+  border-radius: 50px;
+  background: -webkit-linear-gradient(#d1d1d1, #fafafa);
+  background: linear-gradient(#d1d1d1, #fafafa);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6), inset 0 0 0 2px white, 0 0 3px rgba(0, 0, 0, 0.6);
+}

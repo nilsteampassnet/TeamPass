@@ -361,10 +361,15 @@ if (!defined('__CSRF_PROTECTOR__')) {
             array_push($_SESSION[self::$config['CSRFP_TOKEN']], $token);
 
             //set token to cookie for client side processing
+            $cookie_options = array(
+                'expires' => time() + self::$cookieExpiryTime,
+                'secure' => true, // or false
+                'samesite' => 'NonLaxe' // None || Lax || Strict
+              );
             setcookie(
                 self::$config['CSRFP_TOKEN'],
                 $token,
-                time() + self::$cookieExpiryTime
+                $cookie_options
             );
         }
 

@@ -280,7 +280,15 @@ if (array_key_exists($pageSel, $utilitiesPages) === true) {
 
 
 
+
 <?php
+
+/*
+echo "<br>>".$session_user_id.
+"<br>>".$session_validite_pw.
+    "<br>>".filter_var($_GET['page'], FILTER_SANITIZE_STRING)."-- ";echo "JE SUIS ICI";
+    */
+
 // display an item in the context of OTV link
 if (($session_validite_pw === null
         || empty($session_validite_pw) === true
@@ -328,7 +336,8 @@ if (($session_validite_pw === null
         }
     } else {
         $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
-    } ?>
+    }
+    ?>
 
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed">
         <div class="wrapper">
@@ -900,7 +909,7 @@ if (($session_validite_pw === null
                                 && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_main'
                                 && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== 'manage_settings'
                             ) {
-                                include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
+                                //include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                             } else {
                                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                                 include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -916,7 +925,7 @@ if (($session_validite_pw === null
                         include $SETTINGS['cpassman_dir'] . '/pages/' . $_GET['page'] . '.php';
                     } else {
                         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
-                        //include $SETTINGS['cpassman_dir'].'/error.php';
+                        include $SETTINGS['cpassman_dir'].'/error.php';
                     }
 
                     // Case where login attempts have been identified
@@ -984,7 +993,7 @@ if (($session_validite_pw === null
         if (
             isset($_GET['page']) === true
             && empty($_GET['page']) === false
-            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) !== false
+            && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === false
         ) {
             $superGlobal->put(
                 'initialUrl',

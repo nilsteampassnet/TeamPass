@@ -2110,6 +2110,7 @@ Insert the log here and especially the answer of the query that failed.
                                 'pw' => $pwdlib->createPasswordHash($post_user_password),
                                 'public_key' => $userKeys['public_key'],
                                 'private_key' => $userKeys['private_key'],
+                                'last_pw_change' => time(),
                             ),
                             'id = %i',
                             $post_user_id
@@ -2581,48 +2582,50 @@ Insert the log here and especially the answer of the query that failed.
                             $post_action = 'finished';
                         } else {
                             // Loop on persoanl items
-                            $rows = DB::query(
-                                'SELECT id, pw
-                                FROM ' . prefixTable('items') . '
-                                WHERE perso = 1 AND id_tree IN %ls
-                                LIMIT ' . $post_start . ', ' . $post_length,
-                                $_SESSION['personal_folders']
-                            );
-                            foreach ($rows as $record) {
-                                // Get itemKey from current user
-                                $currentUserKey = DB::queryFirstRow(
-                                    'SELECT share_key, increment_id
-                                    FROM ' . prefixTable('sharekeys_items') . '
-                                    WHERE object_id = %i AND user_id = %i',
-                                    $record['id'],
-                                    $_SESSION['user_id']
+                            if (count($_SESSION['personal_folders']) > 0) {
+                                $rows = DB::query(
+                                    'SELECT id, pw
+                                    FROM ' . prefixTable('items') . '
+                                    WHERE perso = 1 AND id_tree IN %ls
+                                    LIMIT ' . $post_start . ', ' . $post_length,
+                                    $_SESSION['personal_folders']
                                 );
-
-                                // Decrypt itemkey with admin key
-                                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                                // Encrypt Item key
-                                $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                                // Save the key in DB
-                                if ($post_self_change === false) {
-                                    DB::insert(
-                                        prefixTable('sharekeys_items'),
-                                        array(
-                                            'object_id' => (int) $record['id'],
-                                            'user_id' => (int) $post_user_id,
-                                            'share_key' => $share_key_for_item,
-                                        )
+                                foreach ($rows as $record) {
+                                    // Get itemKey from current user
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT share_key, increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $_SESSION['user_id']
                                     );
-                                } else {
-                                    DB::update(
-                                        prefixTable('sharekeys_items'),
-                                        array(
-                                            'share_key' => $share_key_for_item,
-                                        ),
-                                        'increment_id = %i',
-                                        $currentUserKey['increment_id']
-                                    );
+
+                                    // Decrypt itemkey with admin key
+                                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                                    // Encrypt Item key
+                                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+
+                                    // Save the key in DB
+                                    if ($post_self_change === false) {
+                                        DB::insert(
+                                            prefixTable('sharekeys_items'),
+                                            array(
+                                                'object_id' => (int) $record['id'],
+                                                'user_id' => (int) $post_user_id,
+                                                'share_key' => $share_key_for_item,
+                                            )
+                                        );
+                                    } else {
+                                        DB::update(
+                                            prefixTable('sharekeys_items'),
+                                            array(
+                                                'share_key' => $share_key_for_item,
+                                            ),
+                                            'increment_id = %i',
+                                            $currentUserKey['increment_id']
+                                        );
+                                    }
                                 }
                             }
 
@@ -2657,10 +2660,16 @@ Insert the log here and especially the answer of the query that failed.
                     break;
                 } else {
                     // Nothing to do
+                    $post_action = 'finished';
+                    $next_start = 0;
                     echo prepareExchangedData(
                         array(
-                            'error' => true,
-                            'message' => langHdl('error_no_user'),
+                            'error' => false,
+                            'message' => '',
+                            'step' => $post_action,
+                            'start' => $next_start,
+                            'userId' => $post_user_id,
+                            'self_change' => $post_self_change,
                         ),
                         'encode'
                     );

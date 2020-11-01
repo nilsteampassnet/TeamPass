@@ -220,6 +220,7 @@ if (null !== $post_type) {
                         'groupes_visibles' => implode(';', $allowed_flds),
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
+                        'last_pw_change' => time(),
                     )
                 );
                 $new_user_id = DB::insertId();
