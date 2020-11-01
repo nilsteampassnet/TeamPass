@@ -364,7 +364,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $cookie_options = array(
                 'expires' => time() + self::$cookieExpiryTime,
                 'secure' => true, // or false
-                'samesite' => 'NonLaxe' // None || Lax || Strict
+                'samesite' => 'Lax' // None || Lax || Strict
               );
             setcookie(
                 self::$config['CSRFP_TOKEN'],

@@ -3334,7 +3334,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 uniqueLoadData: store.get('teampassApplication').queryUniqueLoad,
                 nb_items_to_display_once: store.get('teampassApplication').itemsShownByQuery,
             };
-
+console.log(dataArray);
             //ajax query
             var request = $.post('sources/items.queries.php', {
                     type: 'do_items_list_in_folder',
@@ -3430,7 +3430,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         }
 
                         // Prepare clipboard items
-                        clipboardForLogin = new Clipboard('.fa-clickable-login');
+                        clipboardForLogin = new ClipboardJS('.fa-clickable-login');
                         clipboardForLogin.on('success', function(e) {
                             toastr.info(
                                 '<?php echo langHdl('copy_to_clipboard'); ?>',
@@ -3445,7 +3445,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                         // Prepare clipboard for PAssword
                         // This will request a query to server to get the pwd
-                        clipboardForPassword = new Clipboard('.fa-clickable-password', {
+                        clipboardForPassword = new ClipboardJS('.fa-clickable-password', {
                             text: function(trigger) {
                                 // Send query and get password
                                 var result = '',
@@ -4451,7 +4451,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Manage clipboard button
                 if (itemClipboard) itemClipboard.destroy();
-                itemClipboard = new Clipboard('.btn-copy-clipboard-clear', {
+                itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
                         text: function(e) {
                             return ($($(e).data('clipboard-target')).val());
                         }
@@ -4478,7 +4478,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Prepare clipboard - COPY PASSWORD
                 if (data.pw !== '') {
-                    new Clipboard('#card-item-pwd-button', {
+                    new ClipboardJS('#card-item-pwd-button', {
                             text: function() {
                                 return (data.pw);
                             }
@@ -5071,7 +5071,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (data.error == "") {
                     $('#form-item-otv-link').val(data.url);
                     // prepare clipboard
-                    var clipboard = new Clipboard("#form-item-otv-copy-button", {
+                    var clipboard = new ClipboardJS("#form-item-otv-copy-button", {
                         text: function() {
                             return data.url;
                         }

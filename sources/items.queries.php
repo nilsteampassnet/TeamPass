@@ -3461,6 +3461,7 @@ if (null !== $post_type) {
                 // check role access on this folder (get the most restrictive) (2.1.23)
                 $accessLevel = 20;
                 $arrTmp = [];
+                
                 foreach ($_SESSION['user_roles'] as $role) {
                     //db::debugmode(true);
                     $access = DB::queryFirstRow(
@@ -3468,26 +3469,28 @@ if (null !== $post_type) {
                         $role,
                         $post_id
                     );
-                    //db::debugmode(false);
-                    if ($access['type'] === 'R') {
-                        array_push($arrTmp, 10);
-                    } elseif ($access['type'] === 'W') {
-                        array_push($arrTmp, 30);
-                    } elseif (
-                        $access['type'] === 'ND'
-                        || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
-                    ) {
-                        array_push($arrTmp, 20);
-                    } elseif ($access['type'] === 'NE') {
-                        array_push($arrTmp, 10);
-                    } elseif ($access['type'] === 'NDNE') {
-                        array_push($arrTmp, 15);
-                    } else {
-                        // Ensure to give access Right if allowed folder
-                        if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                    //db::debugmode(false);exit();
+                    if (DB::count()>0) {
+                        if ($access['type'] === 'R') {
+                            array_push($arrTmp, 10);
+                        } elseif ($access['type'] === 'W') {
                             array_push($arrTmp, 30);
+                        } elseif (
+                            $access['type'] === 'ND'
+                            || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
+                        ) {
+                            array_push($arrTmp, 20);
+                        } elseif ($access['type'] === 'NE') {
+                            array_push($arrTmp, 10);
+                        } elseif ($access['type'] === 'NDNE') {
+                            array_push($arrTmp, 15);
                         } else {
-                            array_push($arrTmp, 0);
+                            // Ensure to give access Right if allowed folder
+                            if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                                array_push($arrTmp, 30);
+                            } else {
+                                array_push($arrTmp, 0);
+                            }
                         }
                     }
                 }
