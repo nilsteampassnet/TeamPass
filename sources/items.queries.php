@@ -603,7 +603,8 @@ if (null !== $post_type) {
                         }
                     }
                     if (
-                        $data['restricted_to'] !== $post_restricted_to
+                        $post_restricted_to !== null
+                        && $data['restricted_to'] !== $post_restricted_to
                         && (int) $SETTINGS['restricted_to'] === 1
                     ) {
                         if (empty($data['restricted_to']) === false) {
@@ -4311,26 +4312,27 @@ if (null !== $post_type) {
 						$role,
 						$post_groupe
 					);
-					//echo $access['type']." ; ";
 					//db::debugmode(false);
-					if ($access['type'] === 'R') {
-						array_push($arrTmp, 10);
-					} elseif ($access['type'] === 'W') {
-						array_push($arrTmp, 30);
-					} elseif ($access['type'] === 'ND') {
-						array_push($arrTmp, 20);
-					} elseif ($access['type'] === 'NE') {
-						array_push($arrTmp, 10);
-					} elseif ($access['type'] === 'NDNE') {
-						array_push($arrTmp, 15);
-					} else {
-						// Ensure to give access Right if allowed folder
-						if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
-							array_push($arrTmp, 30);
-						} else {
-							array_push($arrTmp, 0);
-						}
-					}
+                    if (DB::count()>0) {
+                        if ($access['type'] === 'R') {
+                            array_push($arrTmp, 10);
+                        } elseif ($access['type'] === 'W') {
+                            array_push($arrTmp, 30);
+                        } elseif ($access['type'] === 'ND') {
+                            array_push($arrTmp, 20);
+                        } elseif ($access['type'] === 'NE') {
+                            array_push($arrTmp, 10);
+                        } elseif ($access['type'] === 'NDNE') {
+                            array_push($arrTmp, 15);
+                        } else {
+                            // Ensure to give access Right if allowed folder
+                            if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                                array_push($arrTmp, 30);
+                            } else {
+                                array_push($arrTmp, 0);
+                            }
+                        }
+                    }
 				}
 				// 3.0.0.0 - changed  MIN to MAX
 				$accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;

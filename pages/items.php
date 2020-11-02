@@ -734,7 +734,7 @@ foreach ($rows as $reccord) {
     <?php
     if (
         isset($SETTINGS['enable_suggestion']) === true
-        && $SETTINGS['enable_suggestion'] === '1'
+        && (int) $SETTINGS['enable_suggestion'] === 1
     ) {
         /*
             // TODO: NOT YET PORTED ?>
@@ -914,12 +914,13 @@ foreach ($rows as $reccord) {
     <?php
     } else {
         ?>
-        <div class="mt-4">
+        <!--
+            <div class="mt-4">
             <div class="alert alert-warning">
                 <i class="fas fa-info-circle mr-2"></i><?php echo langHdl('not_yet_implemented'); ?>
             </div>
         </div>
-
+        -->
     <?php
     }
     ?>
