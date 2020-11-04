@@ -221,7 +221,7 @@ if ($post_type === 'identify_duo_user') {
         echo prepareExchangedData(
             array(
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
@@ -308,7 +308,7 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => true,
@@ -383,7 +383,7 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => '2fa_not_set',
@@ -437,7 +437,7 @@ function identifyUser($sentData, $SETTINGS)
                 'error' => 'user_not_exists',
                 'message' => langHdl('error_bad_credentials'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             ),
             'encode'
@@ -462,7 +462,7 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '',
-                'user_admin' => $userInfo['admin'],
+                'user_admin' => (int) $userInfo['admin'],
                 'initial_url' => '',
                 'pwd_attempts' => '',
                 'error' => 'maintenance_mode_enabled',
@@ -505,7 +505,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                         'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                         'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => true,
@@ -520,7 +520,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                         'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                         'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_not_exists7',
@@ -545,7 +545,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                         'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                         'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => true,
@@ -560,7 +560,7 @@ function identifyUser($sentData, $SETTINGS)
                 echo prepareExchangedData(
                     array(
                         'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                         'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                         'pwd_attempts' => (int) $sessionPwdAttempts,
                         'error' => 'user_not_exists8',
@@ -645,7 +645,7 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
@@ -662,7 +662,7 @@ function identifyUser($sentData, $SETTINGS)
         echo prepareExchangedData(
             array(
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => 'user_not_exists2',
@@ -1019,7 +1019,7 @@ function identifyUser($sentData, $SETTINGS)
                 prefixTable('emails'),
                 array(
                     'timestamp' => time(),
-                    'subject' => $LANG['email_subject_on_user_login'],
+                    'subject' => langHdl('email_subject_on_user_login'),
                     'body' => str_replace(
                         array(
                             '#tp_user#',
@@ -1031,7 +1031,7 @@ function identifyUser($sentData, $SETTINGS)
                             date($SETTINGS['date_format'], $superGlobal->get('last_connection', 'SESSION')),
                             date($SETTINGS['time_format'], $superGlobal->get('last_connection', 'SESSION')),
                         ),
-                        $LANG['email_body_on_user_login']
+                        langHdl('email_body_on_user_login')
                     ),
                     'receivers' => $receivers,
                     'status' => 'not_sent',
@@ -1067,7 +1067,7 @@ function identifyUser($sentData, $SETTINGS)
             array(
                 'value' => $return,
                 'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
@@ -1122,7 +1122,7 @@ function identifyUser($sentData, $SETTINGS)
                 array(
                     'value' => $return,
                     'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => 0,
                     'error' => 'user_is_locked',
@@ -1148,7 +1148,7 @@ function identifyUser($sentData, $SETTINGS)
                 array(
                     'value' => $return,
                     'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => 'user_not_exists3',
@@ -1184,7 +1184,7 @@ function identifyUser($sentData, $SETTINGS)
         array(
             'value' => $return,
             'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-            'user_admin' => isset($sessionAdmin) ? (int) $antiXss->xss_clean($sessionAdmin) : '',
+            'user_admin' => isset($sessionAdmin) ? (int) $antiXss->xss_clean($sessionAdmin) : 0,
             'initial_url' => $antiXss->xss_clean($sessionUrl),
             'pwd_attempts' => 0,
             'error' => false,
@@ -1200,8 +1200,8 @@ function identifyUser($sentData, $SETTINGS)
             'can_create_root_folder' => null !== $superGlobal->get('can_create_root_folder', 'SESSION') ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
             'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
             'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
-            'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? $userInfo['upgrade_needed'] : 0,
-            'special' => isset($userInfo['special']) === true ? $userInfo['special'] : 0,
+            'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
+            'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
         ),
         'encode'
     );
@@ -1319,7 +1319,7 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                         'error' => true,
                         'message' => array(
                             'value' => '',
-                            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                             'pwd_attempts' => (int) $sessionPwdAttempts,
                             'error' => 'user_not_exists5',
@@ -1590,7 +1590,7 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
             return array(
                 'error' => true,
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => 'user_not_exists6',

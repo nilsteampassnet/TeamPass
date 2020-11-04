@@ -762,9 +762,9 @@ end;
                                 "decode",
                                 "<?php echo $_SESSION['key']; ?>"
                             );
-                            console.info('Identification answer:')
-                            console.log(data);
-
+                            //console.info('Identification answer:')
+                            //console.log(data);
+                            
                             // Maintenance mode is enabled?
                             if (data.error === 'maintenance_mode_enabled') {
                                 toastr.remove();

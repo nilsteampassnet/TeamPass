@@ -730,7 +730,7 @@ return array(
     'at_restriction' => 'Restriction',
     'pw_encryption_error' => 'Error encrypting password!',
     'enable_send_email_on_user_login' => 'Email administrators upon any user login',
-    'email_subject_on_user_login' => 'Info: user login to password manager',
+    'email_subject_on_user_login' => 'Info: user logged in to Teampass',
     'email_body_on_user_login' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# logged in to the password manager on #tp_date# at #tp_time#. <br><br>This is a normal message when option <i>Email administrators upon any user login</i> is set.',
     'account_is_locked' => 'This account is locked',
     'activity' => 'Activity',

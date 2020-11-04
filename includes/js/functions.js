@@ -53,7 +53,7 @@ function countdown()
     let oneSecondsMs = 1000;
     let theDay =  $('#temps_restant').val();
     let today = new Date(); // Create an Date Object that contains today's date.
-    let second = Math.floor(theDay - (today.getTime() / oneSecondsMs));
+    let second = Math.floor(theDay - today.getTime() / oneSecondsMs);
     let minute = Math.floor(second / hourInMinutes); // Devide 'second' into 60 to get the minute
     let hour = Math.floor(minute / hourInMinutes); // Devide 'minute' into 60 to get the hour
     let CHour= hour % hoursInDay; // Correct hour, after devide into 24, the remainder deposits here.

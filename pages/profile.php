@@ -157,6 +157,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                             ?>
                         </h3>
 
+                        <p class="text-info text-center"><?php echo $_SESSION['user_email']; ?></p>
                         <p class="text-muted text-center"><?php echo $_SESSION['user_privilege']; ?></p>
 
                         <ul class="list-group list-group-unbordered mb-3">

@@ -1592,10 +1592,10 @@ function mainQuery($SETTINGS)
 
                 // connect to Teampass Statistics database
                 $link2 = new MeekroDB(
-                    'sql11.freemysqlhosting.net',
-                    'sql11197223',
-                    '3QzpXYQ9dZ',
-                    'sql11197223',
+                    'teampass.pw',
+                    'teampass_user',
+                    'ZMlEfRzKzFLZNzie',
+                    'teampass_followup',
                     '3306',
                     'utf8'
                 );
@@ -2196,9 +2196,9 @@ Insert the log here and especially the answer of the query that failed.
                     include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // CLear old sharekeys
-                    if ($post_self_change === false) {
-                        deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                    }
+                    //if ($post_self_change === true) {
+                    //    deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                    //}
 
                     // Continu with next step
                     echo prepareExchangedData(
@@ -2308,6 +2308,18 @@ Insert the log here and especially the answer of the query that failed.
                                     )
                                 );
                             } else {
+                                // Get itemIncrement from selected user
+                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $post_user_id
+                                    );
+                                }
+
+                                // NOw update
                                 DB::update(
                                     prefixTable('sharekeys_items'),
                                     array(
@@ -2369,6 +2381,18 @@ Insert the log here and especially the answer of the query that failed.
                                     )
                                 );
                             } else {
+                                // Get itemIncrement from selected user
+                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $post_user_id
+                                    );
+                                }
+
+                                // NOw update
                                 DB::update(
                                     prefixTable('sharekeys_logs'),
                                     array(
@@ -2430,6 +2454,18 @@ Insert the log here and especially the answer of the query that failed.
                                     )
                                 );
                             } else {
+                                // Get itemIncrement from selected user
+                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $post_user_id
+                                    );
+                                }
+
+                                // NOw update
                                 DB::update(
                                     prefixTable('sharekeys_fields'),
                                     array(
@@ -2490,6 +2526,18 @@ Insert the log here and especially the answer of the query that failed.
                                     )
                                 );
                             } else {
+                                // Get itemIncrement from selected user
+                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $post_user_id
+                                    );
+                                }
+
+                                // NOw update
                                 DB::update(
                                     prefixTable('sharekeys_suggestions'),
                                     array(
@@ -2550,6 +2598,18 @@ Insert the log here and especially the answer of the query that failed.
                                     )
                                 );
                             } else {
+                                // Get itemIncrement from selected user
+                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                    $currentUserKey = DB::queryFirstRow(
+                                        'SELECT increment_id
+                                        FROM ' . prefixTable('sharekeys_items') . '
+                                        WHERE object_id = %i AND user_id = %i',
+                                        $record['id'],
+                                        $post_user_id
+                                    );
+                                }
+
+                                // NOw update
                                 DB::update(
                                     prefixTable('sharekeys_files'),
                                     array(
@@ -2617,6 +2677,18 @@ Insert the log here and especially the answer of the query that failed.
                                             )
                                         );
                                     } else {
+                                        // Get itemIncrement from selected user
+                                        if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                                            $currentUserKey = DB::queryFirstRow(
+                                                'SELECT increment_id
+                                                FROM ' . prefixTable('sharekeys_items') . '
+                                                WHERE object_id = %i AND user_id = %i',
+                                                $record['id'],
+                                                $post_user_id
+                                            );
+                                        }
+        
+                                        // NOw update
                                         DB::update(
                                             prefixTable('sharekeys_items'),
                                             array(

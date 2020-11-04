@@ -322,7 +322,7 @@ if (null !== $post_type) {
                     'complex',
                     $post_folder_id
                 );
-                $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
+                $itemInfos['requested_folder_complexity'] = $folderComplexity !== null ? (int) $folderComplexity['valeur'] : 0;
 
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
@@ -2356,7 +2356,7 @@ if (null !== $post_type) {
                 WHERE user_id = %i AND object_id = %i',
                 $_SESSION['user_id'],
                 $post_id
-            );
+            );//print_r($_SESSION['user']);
             if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                 // No share key found
                 $pw = '';
@@ -2638,11 +2638,13 @@ if (null !== $post_type) {
                     );
                     if (DB::count() > 0) {
                         $arrData['to_be_deleted'] = $dataDelete['del_value'];
+                        $arrData['to_be_deleted_type'] = (int) $dataDelete['del_type'];
                     }
-                    $arrData['to_be_deleted_type'] = (int) $dataDelete['del_type'];
 
                     // Now delete if required
-                    if ((int) $dataDelete['del_enabled'] === 1 || intval($arrData['id_user']) !== intval($_SESSION['user_id'])) {
+                    if ($dataDelete !== null && ((int) $dataDelete['del_enabled'] === 1
+                        || intval($arrData['id_user']) !== intval($_SESSION['user_id'])))
+                    {
                         if ((int) $dataDelete['del_type'] === 1 && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
@@ -3459,44 +3461,56 @@ if (null !== $post_type) {
                     }
                 }
 
+                // is this folder a personal one
+                $folder_is_personal = in_array($post_id, $_SESSION['personal_folders']);
+                $uniqueLoadData['folder_is_personal'] = $folder_is_personal;
+
+                $folder_is_in_personal = in_array($post_id, array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
+                $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
+
+
                 // check role access on this folder (get the most restrictive) (2.1.23)
-                $accessLevel = 20;
-                $arrTmp = [];
-                
-                foreach ($_SESSION['user_roles'] as $role) {
-                    //db::debugmode(true);
-                    $access = DB::queryFirstRow(
-                        'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
-                        $role,
-                        $post_id
-                    );
-                    //db::debugmode(false);exit();
-                    if (DB::count()>0) {
-                        if ($access['type'] === 'R') {
-                            array_push($arrTmp, 10);
-                        } elseif ($access['type'] === 'W') {
-                            array_push($arrTmp, 30);
-                        } elseif (
-                            $access['type'] === 'ND'
-                            || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
-                        ) {
-                            array_push($arrTmp, 20);
-                        } elseif ($access['type'] === 'NE') {
-                            array_push($arrTmp, 10);
-                        } elseif ($access['type'] === 'NDNE') {
-                            array_push($arrTmp, 15);
-                        } else {
-                            // Ensure to give access Right if allowed folder
-                            if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                if ((int) $folder_is_personal === 0) {
+                    $accessLevel = 20;
+                    $arrTmp = [];
+                    
+                    foreach ($_SESSION['user_roles'] as $role) {
+                        //db::debugmode(true);
+                        $access = DB::queryFirstRow(
+                            'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
+                            $role,
+                            $post_id
+                        );
+                        //db::debugmode(false);exit();
+                        if (DB::count()>0) {
+                            if ($access['type'] === 'R') {
+                                array_push($arrTmp, 10);
+                            } elseif ($access['type'] === 'W') {
                                 array_push($arrTmp, 30);
+                            } elseif (
+                                $access['type'] === 'ND'
+                                || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
+                            ) {
+                                array_push($arrTmp, 20);
+                            } elseif ($access['type'] === 'NE') {
+                                array_push($arrTmp, 10);
+                            } elseif ($access['type'] === 'NDNE') {
+                                array_push($arrTmp, 15);
                             } else {
-                                array_push($arrTmp, 0);
+                                // Ensure to give access Right if allowed folder
+                                if (in_array($post_id, $_SESSION['groupes_visibles']) === true) {
+                                    array_push($arrTmp, 30);
+                                } else {
+                                    array_push($arrTmp, 0);
+                                }
                             }
                         }
                     }
+                    // 3.0.0.0 - changed  MIN to MAX
+                    $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
+                } else {
+                    $accessLevel = 30;
                 }
-                // 3.0.0.0 - changed  MIN to MAX
-                $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
                 $uniqueLoadData['accessLevel'] = $accessLevel;
 
                 /*
@@ -3539,16 +3553,7 @@ if (null !== $post_type) {
                     $counter = DB::count();
                     $uniqueLoadData['counter'] = $counter;
                 }
-
-                /*
-                // Identify if it is a personal folder
-                if (in_array($post_id, $_SESSION['personal_visible_groups'])) {
-                    $findPfGroup = 1;
-                } else {
-                    $findPfGroup = '';
-                }
-                $uniqueLoadData['findPfGroup'] = $findPfGroup;
-                */
+                
 
                 // Get folder complexity
                 $folderComplexity = DB::queryFirstRow(
@@ -3556,7 +3561,7 @@ if (null !== $post_type) {
                     'complex',
                     $post_id
                 );
-                $folderComplexity = $folderComplexity['valeur'];
+                $folderComplexity = $folderComplexity !== null ? (int) $folderComplexity['valeur'] : 0;
                 $uniqueLoadData['folderComplexity'] = $folderComplexity;
 
                 // Has this folder some categories to be displayed?
@@ -3637,13 +3642,6 @@ if (null !== $post_type) {
                 $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
                 */
 
-                // is this folder a personal one
-                $folder_is_personal = in_array($post_id, $_SESSION['personal_folders']);
-                $uniqueLoadData['folder_is_personal'] = $folder_is_personal;
-
-                $folder_is_in_personal = in_array($post_id, array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
-                $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
-
                 if (isset($_SESSION['list_folders_editable_by_role'])) {
                     $list_folders_editable_by_role = in_array($post_id, $_SESSION['list_folders_editable_by_role']);
                 } else {
@@ -3669,7 +3667,7 @@ if (null !== $post_type) {
                 $folder_is_in_personal = $uniqueLoadData['folder_is_in_personal'];
                 $list_folders_editable_by_role = $uniqueLoadData['list_folders_editable_by_role'];
             }
-
+//print_r($uniqueLoadData);
             // prepare query WHere conditions
             $where = new WhereClause('and');
             if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
@@ -4250,7 +4248,9 @@ if (null !== $post_type) {
                     WHERE id = %s',
                     $post_groupe
                 );
-                $folder_is_personal = (int) $data_pf['personal_folder'];
+                
+                $folder_is_personal = $data_pf !== null ? (int) $data_pf['personal_folder'] : 0;
+                
                 $visibilite = $_SESSION['name'] . ' ' . $_SESSION['lastname'] . ' (' . $_SESSION['login'] . ')';
             }
 
@@ -4343,7 +4343,7 @@ if (null !== $post_type) {
             $returnValues = array(
                 'folderId' => (int) $post_groupe,
                 'error' => false,
-                'val' => (int) $data['valeur'],
+                'val' => $data !== null ? (int) $data['valeur'] : 0,
                 'visibility' => $visibilite,
                 'complexity' => $complexity,
                 'personal' => $folder_is_personal,
@@ -6606,7 +6606,7 @@ function recupDroitCreationSansComplexite($groupe)
         $groupe
     );
     // Check if it's in a personal folder. If yes, then force complexity overhead.
-    if ($data['personal_folder'] === '1') {
+    if ($data !== null && (int) $data['personal_folder'] === 1) {
         return array(
             'bloquer_modification_complexite' => 1,
             'bloquer_creation_complexite' => 1,
@@ -6614,8 +6614,8 @@ function recupDroitCreationSansComplexite($groupe)
     }
 
     return array(
-        'bloquer_modification_complexite' => (int) $data['bloquer_modification'],
-        'bloquer_creation_complexite' => (int) $data['bloquer_creation'],
+        'bloquer_modification_complexite' => $data !== null ? (int) $data['bloquer_modification'] : 0,
+        'bloquer_creation_complexite' => $data !== null ? (int) $data['bloquer_creation'] : 0,
     );
 }
 

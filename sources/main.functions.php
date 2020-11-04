@@ -3125,7 +3125,7 @@ function decryptUserObjectKey($key, $privateKey)
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($privateKey));
-
+//echo $privateKey." ;; ".$key;
     // Decrypt
     return base64_encode($rsa->decrypt(base64_decode($key)));
 }
@@ -3538,49 +3538,35 @@ function deleteUserObjetsKeys($userId, $SETTINGS)
     // Remove all item sharekeys items
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id != %i',
-        $userId
-    );
-
-    // Remove all item sharekeys
-    DB::delete(
-        prefixTable('sharekeys'),
-        'user_id != %i',
-        $userId
-    );
-
-    // Remove all item sharekeys
-    DB::delete(
-        prefixTable('sharekeys'),
-        'user_id != %i',
+        'user_id = %i',
         $userId
     );
 
     // Remove all item sharekeys files
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id != %i',
+        'user_id = %i',
         $userId
     );
 
     // Remove all item sharekeys fields
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id != %i',
+        'user_id = %i',
         $userId
     );
 
     // Remove all item sharekeys logs
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id != %i',
+        'user_id = %i',
         $userId
     );
 
     // Remove all item sharekeys suggestions
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id != %i',
+        'user_id = %i',
         $userId
     );
 
