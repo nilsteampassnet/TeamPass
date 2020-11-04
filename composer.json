@@ -1,5 +1,5 @@
 {
-    "name": "nilsteampassnet/teamPass",
+    "name": "nilsteampassnet/teampass",
     "description": "teampass",
     "prefer-stable": true,
     "config": {
@@ -34,7 +34,6 @@
     "require": {
         "php": ">=7.4",
         "ext-mysqli": ">=5.1.0",
-        "ext-mcrypt": "*",
         "ext-mbstring": "*",
         "ext-openssl": "*",
         "ext-bcmath": "*",
