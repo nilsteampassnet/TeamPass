@@ -696,7 +696,9 @@ function calculateOrder($id, $position)
             (int) $position
         );
 
-        $orderNewCategory = (int) $data['position'] - 1;
+        if (DB::count() > 0) {
+            $orderNewCategory = (int) $data['position'] - 1;
+        }
 
         // Manage case of top
         if ($orderNewCategory === 0) {
