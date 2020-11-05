@@ -1646,6 +1646,10 @@ function prepareExchangedData($data, $type, $key = null)
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
 
+    if (isset($SETTINGS) === false) {
+        return 'ERROR';
+    }
+
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -1690,13 +1694,13 @@ function prepareExchangedData($data, $type, $key = null)
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
-                $data,
+                (string) $data,
                 true
             );
         } else {
             return json_decode(
                 Encryption\Crypt\aesctr::decrypt(
-                    $data,
+                    (string) $data,
                     $globalsKey,
                     256
                 ),
@@ -1709,15 +1713,18 @@ function prepareExchangedData($data, $type, $key = null)
 /**
  * Create a thumbnail.
  *
- * @param string $src           Source
- * @param string $dest          Destination
- * @param float  $desired_width Size of width
+ * @param string  $src           Source
+ * @param string  $dest          Destination
+ * @param integer $desired_width Size of width
  */
 function makeThumbnail($src, $dest, $desired_width)
 {
     /* read the source image */
     if(is_file($src) === true && mime_content_type($src) === 'image/png'){
         $source_image = imagecreatefrompng($src);
+        if ($source_image === false) {
+            return "Error: Not a valid PNG file! It's type is ".mime_content_type($src);
+        }
     } else {
         return "Error: Not a valid PNG file! It's type is ".mime_content_type($src);
     }
@@ -2489,8 +2496,10 @@ function defuseFileDecrypt(
 function debugTeampass($text)
 {
     $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
-    fputs($debugFile, $text);
-    fclose($debugFile);
+    if ($debugFile !== false) {
+        fputs($debugFile, $text);
+        fclose($debugFile);
+    }    
 }
 
 /**
@@ -2541,6 +2550,9 @@ function getFileExtension($file)
 function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
     $pointer_dir = opendir($dir);
+    if ($pointer_dir === false) {
+        return false;
+    }  
     $res = true;
     while (false !== ($file = readdir($pointer_dir))) {
         if (($file === '.') || ($file === '..')) {
@@ -3390,7 +3402,7 @@ function filterString($field)
  *
  * @param array $SETTINGS Teampass settings
  *
- * @return boolean||array
+ * @return boolean|array
  */
 function ldapConnect($SETTINGS)
 {
@@ -3442,7 +3454,7 @@ function ldapConnect($SETTINGS)
  * @param string $password User Pwd
  * @param array  $SETTINGS Teampass settings
  *
- * @return boolean||array
+ * @return boolean|array
  */
 function ldapCheckUserPassword($login, $password, $SETTINGS)
 {

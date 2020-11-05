@@ -160,8 +160,6 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            $post_key = $_SESSION['key'];
-
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
             $pwdlib->register();
@@ -231,6 +229,7 @@ function mainQuery($SETTINGS)
                     );
                 } else {
                     // In case user has no roles yet
+                    $data = array();
                     $data['complexity'] = 0;
                 }
 
@@ -465,7 +464,7 @@ function mainQuery($SETTINGS)
             // If LDAP enabled and counter = 0 then perhaps new user to add
             if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && $counter === 0) {
                 $ldap_info_user = json_decode(
-                    connectLDAP($login, $pwd, $SETTINGS)
+                    connectLDAP($post_login, $post_pwd, $SETTINGS)
                 );
                 if ($ldap_info_user->{'user_found'} === true) {
                     $data['email'] = $ldap_info_user->{'email'};
@@ -477,7 +476,7 @@ function mainQuery($SETTINGS)
             // Do treatment
             if ($counter === 0) {
                 // Not a registered user !
-                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($login), stripslashes($login));
+                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -486,7 +485,7 @@ function mainQuery($SETTINGS)
                     'encode'
                 );
             } elseif (
-                isset($pwd) === true
+                isset($post_pwd) === true
                 && isset($data['pw']) === true
                 && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
                 && $post_demand_origin !== 'users_management_list'
@@ -532,8 +531,8 @@ function mainQuery($SETTINGS)
                         DB::insert(
                             prefixTable('users'),
                             array(
-                                'login' => $login,
-                                'pw' => $pwdlib->createPasswordHash($pwd),
+                                'login' => $post_login,
+                                'pw' => $pwdlib->createPasswordHash($post_pwd),
                                 'email' => $data['email'],
                                 'name' => $ldap_info_user->{'name'},
                                 'lastname' => $ldap_info_user->{'lastname'},
@@ -580,7 +579,7 @@ function mainQuery($SETTINGS)
                     }
 
                     // Log event
-                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($login));
+                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($post_login));
 
                     // send mail?
                     if ((int) $post_send_mail === 1) {
@@ -1112,7 +1111,7 @@ function mainQuery($SETTINGS)
                 'decode'
             );
 
-            if (count($dataReceived) > 0) {
+            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
                 $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);

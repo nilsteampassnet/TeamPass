@@ -270,7 +270,7 @@ if (null !== $post_type) {
                     foreach ($items as $item) {
                         logItems(
                             $SETTINGS,
-                            $item['id'],
+                            (int) $item['id'],
                             '',
                             $_SESSION['user_id'],
                             'at_restored',
@@ -293,7 +293,7 @@ if (null !== $post_type) {
                 //log
                 logItems(
                     $SETTINGS,
-                    $itemId,
+                    (int) $itemId,
                     '',
                     $_SESSION['user_id'],
                     'at_restored',

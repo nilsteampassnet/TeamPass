@@ -652,7 +652,7 @@ if (null !== $post_type) {
                     // log
                     logItems(
                         $SETTINGS,
-                        $newID,
+                        (int) $newID,
                         $post_label,
                         $_SESSION['user_id'],
                         'at_creation',
@@ -809,7 +809,7 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            if (count($dataReceived) > 0) {
+            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $itemInfos = array();
                 $post_label = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
@@ -1035,7 +1035,7 @@ if (null !== $post_type) {
                     if ($post_password !== $pw) {
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1208,7 +1208,7 @@ if (null !== $post_type) {
                                     // update LOG
                                     logItems(
                                         $SETTINGS,
-                                        $post_item_id,
+                                        (int) $post_item_id,
                                         $post_label,
                                         $_SESSION['user_id'],
                                         'at_modification',
@@ -1285,7 +1285,7 @@ if (null !== $post_type) {
                                         // update LOG
                                         logItems(
                                             $SETTINGS,
-                                            $post_item_id,
+                                            (int) $post_item_id,
                                             $post_label,
                                             $_SESSION['user_id'],
                                             'at_modification',
@@ -1391,7 +1391,7 @@ if (null !== $post_type) {
                                 // update LOG
                                 logItems(
                                     $SETTINGS,
-                                    $post_item_id,
+                                    (int) $post_item_id,
                                     $post_label,
                                     $_SESSION['user_id'],
                                     'at_modification',
@@ -1434,7 +1434,7 @@ if (null !== $post_type) {
                                 // update LOG
                                 logItems(
                                     $SETTINGS,
-                                    $post_item_id,
+                                    (int) $post_item_id,
                                     $post_label,
                                     $_SESSION['user_id'],
                                     'at_modification2',
@@ -1571,7 +1571,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1592,7 +1592,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1611,7 +1611,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1630,7 +1630,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1649,7 +1649,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1668,7 +1668,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1690,7 +1690,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -1711,7 +1711,7 @@ if (null !== $post_type) {
                         // Log
                         logItems(
                             $SETTINGS,
-                            $post_item_id,
+                            (int) $post_item_id,
                             $post_label,
                             $_SESSION['user_id'],
                             'at_modification',
@@ -2052,8 +2052,19 @@ if (null !== $post_type) {
 
                         // Step2 - create file
                         $newFileName = md5(time() . '_' . $record['id']) . '.' . $record['extension'];
+                        $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
+                        if ($outstream === false) {
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => langHdl('error_cannot_open_file'),
+                                ),
+                                'encode'
+                            );
+                            break;
+                        }
                         fwrite(
-                            fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab'),
+                            $outstream,
                             base64_decode($fileContent)
                         );
 
@@ -2117,7 +2128,7 @@ if (null !== $post_type) {
                 // Add this duplicate in logs
                 logItems(
                     $SETTINGS,
-                    $newItemId,
+                    (int) $newItemId,
                     $originalRecord['label'],
                     $_SESSION['user_id'],
                     'at_creation',
@@ -2126,7 +2137,7 @@ if (null !== $post_type) {
                 // Add the fact that item has been copied in logs
                 logItems(
                     $SETTINGS,
-                    $newItemId,
+                    (int) $newItemId,
                     $originalRecord['label'],
                     $_SESSION['user_id'],
                     'at_copy',
@@ -2508,7 +2519,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
                     logItems(
                         $SETTINGS,
-                        $post_id,
+                        (int) $post_id,
                         $dataItem['label'],
                         $_SESSION['user_id'],
                         'at_shown',
@@ -2679,7 +2690,7 @@ if (null !== $post_type) {
                             // log
                             logItems(
                                 $SETTINGS,
-                                $post_id,
+                                (int) $post_id,
                                 $dataItem['label'],
                                 $_SESSION['user_id'],
                                 'at_delete',
@@ -3126,7 +3137,7 @@ if (null !== $post_type) {
             // log
             logItems(
                 $SETTINGS,
-                $post_item_id,
+                (int) $post_item_id,
                 $post_label,
                 $_SESSION['user_id'],
                 'at_delete',
@@ -4413,7 +4424,7 @@ if (null !== $post_type) {
                 // Update the log
                 logItems(
                     $SETTINGS,
-                    $data['id_item'],
+                    (int) $data['id_item'],
                     $data['name'],
                     $_SESSION['user_id'],
                     'at_modification',
@@ -4805,7 +4816,7 @@ if (null !== $post_type) {
             // Log item moved
             logItems(
                 $SETTINGS,
-                $post_item_id,
+                (int) $post_item_id,
                 $dataSource['label'],
                 $_SESSION['user_id'],
                 'at_modification',
@@ -5224,7 +5235,7 @@ if (null !== $post_type) {
                     // log
                     logItems(
                         $SETTINGS,
-                        $item_id,
+                        (int) $item_id,
                         $dataSource['label'],
                         $_SESSION['user_id'],
                         'at_delete',
@@ -5456,7 +5467,7 @@ if (null !== $post_type) {
                     // Query
                     logItems(
                         $SETTINGS,
-                        $dataReceived['item_id'],
+                        (int) $dataReceived['item_id'],
                         $dataItem['label'],
                         $_SESSION['user_id'],
                         'at_manual',
@@ -6363,7 +6374,7 @@ if (null !== $post_type) {
             // Do log
             logItems(
                 $SETTINGS,
-                $post_item_id,
+                (int) $post_item_id,
                 $dataItem['label'],
                 $_SESSION['user_id'],
                 'at_access',

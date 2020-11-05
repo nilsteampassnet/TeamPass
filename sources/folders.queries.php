@@ -826,7 +826,7 @@ if (null !== $post_type) {
                                 // log
                                 logItems(
                                     $SETTINGS,
-                                    $item['id'],
+                                    (int) $item['id'],
                                     '',
                                     $_SESSION['user_id'],
                                     'at_delete',
@@ -1295,7 +1295,7 @@ if (null !== $post_type) {
                         // Add this duplicate in logs
                         logItems(
                             $SETTINGS,
-                            $newItemId,
+                            (int) $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],
                             'at_creation',
@@ -1304,7 +1304,7 @@ if (null !== $post_type) {
                         // Add the fact that item has been copied in logs
                         logItems(
                             $SETTINGS,
-                            $newItemId,
+                            (int) $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],
                             'at_copy',

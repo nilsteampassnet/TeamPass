@@ -219,7 +219,7 @@ if (null !== $post_type) {
                                 // log
                                 logItems(
                                     $SETTINGS,
-                                    $record['id'],
+                                    (int) $record['id'],
                                     $record['label'],
                                     $_SESSION['user_id'],
                                     'at_export',
@@ -394,7 +394,7 @@ if (null !== $post_type) {
                             // log
                             logItems(
                                 $SETTINGS,
-                                $record['id'],
+                                (int) $record['id'],
                                 $record['label'],
                                 $_SESSION['user_id'],
                                 'at_export',

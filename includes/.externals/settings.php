@@ -13,3 +13,11 @@ define("SALT", "");
 if (isset($_SESSION['settings']['timezone']) === true) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
 }
+
+
+// DUO
+@define('COST', '13'); // Don't change this.
+@define('AKEY', '');
+@define('IKEY', '');
+@define('SKEY', '');
+@define('HOST', '');
