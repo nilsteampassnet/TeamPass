@@ -8,6 +8,7 @@ define("DB_PREFIX", "");
 define("DB_PORT", "");
 define("DB_ENCODING", "");
 define("SECUREPATH", "");
+define("SALT", "");
 
 if (isset($_SESSION['settings']['timezone']) === true) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
