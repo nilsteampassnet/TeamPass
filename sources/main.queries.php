@@ -487,11 +487,11 @@ function mainQuery($SETTINGS)
             } elseif (
                 isset($post_pwd) === true
                 && isset($data['pw']) === true
-                && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
+                && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
                 && $post_demand_origin !== 'users_management_list'
             ) {
                 // checked the given password
-                logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($login), stripslashes($login));
+                logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($post_login), stripslashes($post_login));
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -534,8 +534,8 @@ function mainQuery($SETTINGS)
                                 'login' => $post_login,
                                 'pw' => $pwdlib->createPasswordHash($post_pwd),
                                 'email' => $data['email'],
-                                'name' => $ldap_info_user->{'name'},
-                                'lastname' => $ldap_info_user->{'lastname'},
+                                'name' => isset($ldap_info_user->{'name'}) === true ? $ldap_info_user->{'name'} : '',
+                                'lastname' => isset($ldap_info_user->{'lastname'}) === true ? $ldap_info_user->{'lastname'} : '',
                                 'admin' => '0',
                                 'gestionnaire' => '0',
                                 'can_manage_all_users' => '0',
@@ -953,7 +953,6 @@ function mainQuery($SETTINGS)
 
             //init
             $list = '';
-            $number = 0;
 
             // Get key from user
             $userInfo = DB::queryfirstrow(
@@ -1114,7 +1113,6 @@ function mainQuery($SETTINGS)
             if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-                $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
                 $post_delete_items = filter_var($dataReceived['delete_items'], FILTER_SANITIZE_NUMBER_INT);
 
                 if (empty($_SESSION['user_id']) === false) {
@@ -1526,9 +1524,9 @@ function mainQuery($SETTINGS)
 
             if ($_SESSION['user_manager'] === '1' || $_SESSION['is_admin'] === '1') {
                 $count = 0;
-                DB::query('SELECT * FROM ' . $pre . 'items_change');
+                DB::query('SELECT * FROM ' . prefixTable('items_change'));
                 $count += DB::count();
-                DB::query('SELECT * FROM ' . $pre . 'suggestion');
+                DB::query('SELECT * FROM ' . prefixTable('suggestion'));
                 $count += DB::count();
 
                 echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
@@ -1734,7 +1732,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . mysqli_get_server_info($link) . '
+**Database:** ' . isset($link) === true ? mysqli_get_server_info($link) : langHdl('undefined') . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1914,7 +1912,7 @@ Insert the log here and especially the answer of the query that failed.
                 array(
                     'error' => true,
                     'message' => langHdl('password_is_not_correct'),
-                    'debug' => base64_decode($itemKey),
+                    'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
                 ),
                 'encode'
             );
@@ -1947,7 +1945,6 @@ Insert the log here and especially the answer of the query that failed.
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
             $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-            $emailError = false;
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Get user info
@@ -1960,7 +1957,6 @@ Insert the log here and especially the answer of the query that failed.
                 if (DB::count() > 0) {
                     // If LDAP enabled, then
                     // check that this password is correct
-                    $continue = true;
                     if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
                         $continue = ldapCheckUserPassword(
                             $userData['login'],
@@ -2722,7 +2718,7 @@ Insert the log here and especially the answer of the query that failed.
                             'error' => false,
                             'message' => '',
                             'step' => $post_action,
-                            'start' => $next_start,
+                            'start' => isset($next_start) === true ? $next_start : 0,
                             'userId' => $post_user_id,
                             'self_change' => $post_self_change,
                         ),
@@ -2801,143 +2797,143 @@ Insert the log here and especially the answer of the query that failed.
                             $dataReceived['userPsk'],
                             $userInfo['encrypted_psk']
                         );
-                    }
 
-                    if (strpos($user_key_encoded, "Error ") !== false) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('bad_psk'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    } else {
-                        // Loop on persoanl items
-                        $rows = DB::query(
-                            'SELECT id, pw
-							FROM ' . prefixTable('items') . '
-							WHERE perso = 1 AND id_tree IN %ls
-							LIMIT ' . $post_start . ', ' . $post_length,
-                            $_SESSION['personal_folders']
-                        );
-                        $countUserPersonalItems = DB::count();
-                        foreach ($rows as $record) {
-                            if ($record['encryption_type'] !== 'teampass_aes') {
-                                // Decrypt with Defuse
-                                $passwd = cryption(
-                                    $record['pw'],
-                                    $user_key_encoded,
-                                    'decrypt',
-                                    $SETTINGS
-                                );
-
-                                // Encrypt with Object Key
-                                $cryptedStuff = doDataEncryption($passwd['string']);
-
-                                // Store new password in DB
-                                DB::update(
-                                    prefixTable('items'),
-                                    array(
-                                        'pw' => $cryptedStuff['encrypted'],
-                                        'encryption_type' => 'teampass_aes',
-                                    ),
-                                    'id = %i',
-                                    $record['id']
-                                );
-
-                                // Insert in DB the new object key for this item by user
-                                DB::insert(
-                                    prefixTable('sharekeys_items'),
-                                    array(
-                                        'object_id' => $record['id'],
-                                        'user_id' => $post_user_id,
-                                        'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
-                                    )
-                                );
-
-
-                                // Does this item has Files?
-                                // Loop on files
-                                $rows = DB::query(
-                                    'SELECT id, file
-									FROM ' . prefixTable('files') . '
-									WHERE status != %s
-									AND id_item = %i',
-                                    TP_ENCRYPTION_NAME,
-                                    $record['id']
-                                );
-                                //aes_encryption
-                                foreach ($rows as $record) {
-                                    // Now decrypt the file
-                                    prepareFileWithDefuse(
+                        if (strpos($user_key_encoded, "Error ") !== false) {
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => langHdl('bad_psk'),
+                                ),
+                                'encode'
+                            );
+                            break;
+                        } else {
+                            // Loop on persoanl items
+                            $rows = DB::query(
+                                'SELECT id, pw
+                                FROM ' . prefixTable('items') . '
+                                WHERE perso = 1 AND id_tree IN %ls
+                                LIMIT ' . $post_start . ', ' . $post_length,
+                                $_SESSION['personal_folders']
+                            );
+                            $countUserPersonalItems = DB::count();
+                            foreach ($rows as $record) {
+                                if ($record['encryption_type'] !== 'teampass_aes') {
+                                    // Decrypt with Defuse
+                                    $passwd = cryption(
+                                        $record['pw'],
+                                        $user_key_encoded,
                                         'decrypt',
-                                        $SETTINGS['path_to_upload_folder'] . '/' . $record['file'],
-                                        $SETTINGS['path_to_upload_folder'] . '/' . $record['file'] . '.delete',
-                                        $dataReceived['userPsk']
+                                        $SETTINGS
                                     );
 
-                                    // Encrypt the file
-                                    $encryptedFile = encryptFile($record['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
+                                    // Encrypt with Object Key
+                                    $cryptedStuff = doDataEncryption($passwd['string']);
 
+                                    // Store new password in DB
                                     DB::update(
-                                        prefixTable('files'),
+                                        prefixTable('items'),
                                         array(
-                                            'file' => $encryptedFile['fileHash'],
-                                            'status' => TP_ENCRYPTION_NAME,
+                                            'pw' => $cryptedStuff['encrypted'],
+                                            'encryption_type' => 'teampass_aes',
                                         ),
                                         'id = %i',
                                         $record['id']
                                     );
 
-                                    // Save key
+                                    // Insert in DB the new object key for this item by user
                                     DB::insert(
-                                        prefixTable('sharekeys_files'),
+                                        prefixTable('sharekeys_items'),
                                         array(
                                             'object_id' => $record['id'],
-                                            'user_id' => $_SESSION['user_id'],
-                                            'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
+                                            'user_id' => $post_user_id,
+                                            'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
                                         )
                                     );
 
-                                    // Unlink original file
-                                    unlink($SETTINGS['path_to_upload_folder'] . '/' . $file_info['file']);
+
+                                    // Does this item has Files?
+                                    // Loop on files
+                                    $rows = DB::query(
+                                        'SELECT id, file
+                                        FROM ' . prefixTable('files') . '
+                                        WHERE status != %s
+                                        AND id_item = %i',
+                                        TP_ENCRYPTION_NAME,
+                                        $record['id']
+                                    );
+                                    //aes_encryption
+                                    foreach ($rows as $record2) {
+                                        // Now decrypt the file
+                                        prepareFileWithDefuse(
+                                            'decrypt',
+                                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
+                                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
+                                            $dataReceived['userPsk']
+                                        );
+
+                                        // Encrypt the file
+                                        $encryptedFile = encryptFile($record2['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
+
+                                        DB::update(
+                                            prefixTable('files'),
+                                            array(
+                                                'file' => $encryptedFile['fileHash'],
+                                                'status' => TP_ENCRYPTION_NAME,
+                                            ),
+                                            'id = %i',
+                                            $record2['id']
+                                        );
+
+                                        // Save key
+                                        DB::insert(
+                                            prefixTable('sharekeys_files'),
+                                            array(
+                                                'object_id' => $record2['id'],
+                                                'user_id' => $_SESSION['user_id'],
+                                                'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
+                                            )
+                                        );
+
+                                        // Unlink original file
+                                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $record2['file']);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // SHould we change step?
-                    $next_start = (int) $post_start + (int) $post_length;
-                    if ($next_start > $countUserPersonalItems) {
-                        // Now update user
-                        DB::update(
-                            prefixTable('users'),
+                        // SHould we change step?
+                        $next_start = (int) $post_start + (int) $post_length;
+                        if ($next_start > $countUserPersonalItems) {
+                            // Now update user
+                            DB::update(
+                                prefixTable('users'),
+                                array(
+                                    'special' => 'none',
+                                    'upgrade_needed' => 0,
+                                    'encrypted_psk' => '',
+                                ),
+                                'id = %i',
+                                $post_user_id
+                            );
+
+                            $next_step = 'finished';
+                            $next_start = 0;
+                        }
+
+                        // Continu with next step
+                        echo prepareExchangedData(
                             array(
-                                'special' => 'none',
-                                'upgrade_needed' => 0,
-                                'encrypted_psk' => '',
+                                'error' => false,
+                                'message' => '',
+                                'step' => $next_step,
+                                'start' => $next_start,
+                                'userId' => $post_user_id
                             ),
-                            'id = %i',
-                            $post_user_id
+                            'encode'
                         );
-
-                        $next_step = 'finished';
-                        $next_start = 0;
+                        break;
                     }
-
-                    // Continu with next step
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'step' => $next_step,
-                            'start' => $next_start,
-                            'userId' => $post_user_id
-                        ),
-                        'encode'
-                    );
-                    break;
                 } else {
                     // Nothing to do
                     echo prepareExchangedData(
