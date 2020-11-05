@@ -281,7 +281,7 @@ if (null !== $post_type) {
                     $post_key
                 );
 
-                if ($ret !== true) {
+                if (empty($ret) === false) {
                     echo '[{"result":"db_restore" , "message":"' . $ret . '"}]';
                     break;
                 }

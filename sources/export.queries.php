@@ -203,10 +203,10 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
                                     'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
-                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF-8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
                                     'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
                                     'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
@@ -379,13 +379,13 @@ if (null !== $post_type) {
                                 prefixTable('export'),
                                 array(
                                     'id' => $record['id'],
-                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
-                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true),
-                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, UTF-8),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
+                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
                                     'path' => $path,
-                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
-                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
                                     'kbs' => $arr_kbs,
                                     'tags' => $arr_tags,
                                 )
@@ -451,7 +451,7 @@ if (null !== $post_type) {
                 include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/Tfpdf/fpdf.php';
 
                 $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
-                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null, 3);
+                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
 
                 //Add font for regular text
                 $pdf->AddFont('helvetica', '');
@@ -589,6 +589,10 @@ if (null !== $post_type) {
             $html_file = '/teampass_export_' . time() . '_' . generateKey() . '.html';
             //print_r($full_listing);
             $outstream = fopen($SETTINGS['path_to_files_folder'] . $html_file, 'w');
+            if ($outstream === false) {
+                echo '[{"error":"true"}]';
+                break;
+            }
             fwrite(
                 $outstream,
                 '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -608,7 +612,7 @@ if (null !== $post_type) {
     </style>
     </head>
     <body>
-    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(time(), $post_pdf_password) . '" />
+    <input type="hidden" id="generation_date" value="' . GibberishAES::enc((string) time(), $post_pdf_password) . '" />
     <div id="header">
     ' . TP_TOOL_NAME . ' - Off Line mode
     </div>
@@ -688,13 +692,15 @@ if (null !== $post_type) {
                         $pw = cryption(
                             $record['pw'],
                             mysqli_escape_string($link, stripslashes($post_salt_key)),
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     } else {
                         $pw = cryption(
                             $record['pw'],
                             '',
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     }
                     array_push(
@@ -714,20 +720,24 @@ if (null !== $post_type) {
                     array_push($items_id_list, $record['id']);
 
                     // log
-                    logItems(
+                    /*logItems(
                         $record['id'],
                         $record['l SeekableIteratorabel'],
                         $_SESSION['user_id'],
                         'at_export',
                         $_SESSION['login'],
                         'html'
-                    );
+                    );*/
                 }
                 $id_managed = $record['id'];
             }
 
             //save in export file
             $outstream = fopen($post_file . '.txt', 'a');
+            if ($outstream === false) {
+                echo '[{"error":"true"}]';
+                break;
+            }
 
             $lineType = 'line1';
             $idTree = '';
@@ -820,6 +830,10 @@ if (null !== $post_type) {
 
             // open file
             $outstream = fopen($post_file, 'a');
+            if ($outstream === false) {
+                echo '[{"error":"true"}]';
+                break;
+            }
 
             fputs(
                 $outstream,
@@ -1031,6 +1045,9 @@ function nbLines($width, $txt)
 function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
 {
     $buffer = fopen('php://temp', 'r+');
+    if ($outstream === false) {
+        return "";
+    }
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);
     rewind($buffer);
     $csv = fgets($buffer);

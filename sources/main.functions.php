@@ -1632,7 +1632,7 @@ function utf8Converter($array)
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
- * @return string|array
+ * @return array
  */
 function prepareExchangedData($data, $type, $key = null)
 {
@@ -2332,7 +2332,7 @@ function checkCFconsistency($source_id, $target_id)
  * @param array  $SETTINGS    Settings
  * @param string $password    A password
  *
- * @return string|bool
+ * @return string
  */
 function prepareFileWithDefuse(
     $type,
@@ -2383,7 +2383,7 @@ function prepareFileWithDefuse(
     }
 
     // return error
-    return empty($err) === false ? $err : true;
+    return empty($err) === false ? $err : "";
 }
 
 /**

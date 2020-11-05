@@ -256,9 +256,9 @@ if (null !== $post_type) {
 
                 // is pwd empty?
                 if (
-                    empty($post_password)
-                    && isset($_SESSION['user']['create_item_without_password']) == true
-                    && $_SESSION['user']['create_item_without_password'] !== '1'
+                    empty($post_password) === true
+                    && isset($_SESSION['user']['create_item_without_password']) === true
+                    && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -894,7 +894,7 @@ if (null !== $post_type) {
                     $post_folder_id
                 );
                 $itemInfos['personal_folder'] = (int) $dataFolderSettings['personal_folder'];
-                if ($itemInfos['personal_folder'] === '1') {
+                if ((int) $itemInfos['personal_folder'] === 1) {
                     $itemInfos['no_complex_check_on_modification'] = 1;
                     $itemInfos['no_complex_check_on_creation'] = 1;
                 } else {
@@ -5118,7 +5118,7 @@ if (null !== $post_type) {
                     // Log item moved
                     logItems(
                         $SETTINGS,
-                        $item_id,
+                        (int) $item_id,
                         $dataSource['label'],
                         $_SESSION['user_id'],
                         'at_modification',
@@ -6223,7 +6223,7 @@ if (null !== $post_type) {
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
                 0,
-                $folder,
+                (int) $folder,
                 $newID,
                 $cryptedStuff['objectKey'],
                 $SETTINGS

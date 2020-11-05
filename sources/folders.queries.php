@@ -1243,8 +1243,20 @@ if (null !== $post_type) {
 
                                 // Step2 - create file
                                 $newFileName = md5(time() . '_' . $file['id']) . '.' . $file['extension'];
+
+                                $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
+                                if ($outstream === false) {
+                                    echo prepareExchangedData(
+                                        array(
+                                            'error' => true,
+                                            'message' => langHdl('error_cannot_open_file'),
+                                        ),
+                                        'encode'
+                                    );
+                                    break;
+                                }
                                 fwrite(
-                                    fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab'),
+                                    $outstream,
                                     base64_decode($fileContent)
                                 );
 

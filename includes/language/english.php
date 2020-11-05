@@ -18,6 +18,7 @@
  */
 
 return array(
+    'error_cannot_open_file' => 'File cannot be openned',
     'converting_personal_items' => 'Converting personal items',
     'provide_current_psk_and_click_launch' => 'When ready, click button Launch',
     'start' => 'Start',

@@ -299,27 +299,6 @@ function identifyUser($sentData, $SETTINGS)
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
 
-    // Brute force management
-    if ($sessionPwdAttempts > 2) {
-        $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
-        $superGlobal->put('pwd_attempts', 0, 'SESSION');
-
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        echo prepareExchangedData(
-            array(
-                'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => true,
-                'message' => langHdl('error_bad_credentials_more_than_3_times'),
-            ),
-            'encode'
-        );
-
-        return false;
-    }
-
     // Debug
     debugIdentify(
         DEBUGDUO,
@@ -369,6 +348,27 @@ function identifyUser($sentData, $SETTINGS)
     } else {
         $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
         $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+    }
+
+    // Brute force management
+    if ($sessionPwdAttempts > 2) {
+        $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
+        $superGlobal->put('pwd_attempts', 0, 'SESSION');
+
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        echo prepareExchangedData(
+            array(
+                'value' => 'bruteforce_wait',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => 0,
+                'error' => true,
+                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+            ),
+            'encode'
+        );
+
+        return false;
     }
 
     // User's 2FA method
