@@ -832,7 +832,7 @@ foreach ($rows as $reccord) {
         -->
 
     <!-- SERVER UPDATE --><?php
-                            if (null !== DEBUG && DEBUG === true) {
+                            if (DEBUG === true) {
                                 ?>
         <div class="row hidden form-item-server form-item-action">
             <div class="col-12">

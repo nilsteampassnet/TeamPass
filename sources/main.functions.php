@@ -85,7 +85,7 @@ function langHdl($string)
  *
  * @param int $size Length
  *
- * @return array
+ * @return string
  */
 function getBits($size)
 {
@@ -2172,7 +2172,7 @@ function noHTML($input, $encoding = 'UTF-8')
  * @param string $field    Field to refresh
  * @param string $value    Value to set
  *
- * @return void
+ * @return void|string|boolean
  */
 function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 {
@@ -3368,7 +3368,7 @@ function isBase64($str)
  *
  * @param string $field Parameter
  *
- * @return string|boolean
+ * @return string|bool|array
  */
 function filterString($field)
 {
@@ -3517,7 +3517,7 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
  * @param integer $userId   User's id
  * @param array   $SETTINGS Teampass settings
  *
- * @return void
+ * @return void|bool
  */
 function deleteUserObjetsKeys($userId, $SETTINGS)
 {

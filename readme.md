@@ -28,7 +28,7 @@ Teampass is a Collaborative Passwords Manager
 ## Requirements
 
 * MySQL 5.1 or higher,
-* PHP 7 or higher,
+* PHP 7.2 or higher,
 * PHP extensions:
   * mcrypt
   * openssl
