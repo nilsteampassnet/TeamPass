@@ -698,13 +698,16 @@ function calculateOrder($id, $position)
 
         if (DB::count() > 0) {
             $orderNewCategory = (int) $data['position'] - 1;
-        }
 
-        // Manage case of top
-        if ($orderNewCategory === 0) {
-            $orderNewCategory = 1;
-            $newOrder = 2;
+            // Manage case of top
+            if ((int) $orderNewCategory === 0) {
+                $orderNewCategory = 1;
+                $newOrder = 2;
+            } else {
+                $newOrder = 1;
+            }
         } else {
+            $orderNewCategory = 1;
             $newOrder = 1;
         }
     }

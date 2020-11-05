@@ -1475,7 +1475,6 @@ function sendEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-        $silent = false;
         // send email
         if ($mail->send()) {
             if ($silent === false) {

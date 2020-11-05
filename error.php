@@ -47,13 +47,13 @@ if (
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired'
 ) {
     //Include files
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+    require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
     // connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -67,7 +67,7 @@ if (
     //$link->set_charset(DB_ENCODING);
 
     // Include main functions used by TeamPass
-    include_once 'sources/main.functions.php';
+    require_once 'sources/main.functions.php';
 
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
@@ -86,7 +86,7 @@ if (
         logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';
+    require_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';
     $errorCode = '';
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
         $errorCode = 'ERROR NOT ALLOWED';
