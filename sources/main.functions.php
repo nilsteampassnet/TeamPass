@@ -1769,7 +1769,7 @@ function prefixTable($table)
  * @param boolean $symbols   Symbols
  * @param boolean $lowercase Lowercase
  * @param array   $SETTINGS  SETTINGS
- * @return void
+ * @return string
  */
 function GenerateCryptKey(
     $size = null,
@@ -2172,7 +2172,7 @@ function noHTML($input, $encoding = 'UTF-8')
  * @param string $field    Field to refresh
  * @param string $value    Value to set
  *
- * @return void|string|boolean
+ * @return string|boolean
  */
 function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 {
