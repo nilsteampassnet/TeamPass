@@ -122,7 +122,7 @@ if (null !== $post_type) {
         case 'new_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -131,7 +131,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -201,7 +201,7 @@ if (null !== $post_type) {
                     && (in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     || $post_folder_is_personal !== 1)
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -217,7 +217,7 @@ if (null !== $post_type) {
                         && in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                         && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     ) {
-                        echo prepareExchangedData(
+                        echo (string) prepareExchangedData(
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -228,7 +228,7 @@ if (null !== $post_type) {
                     }
                 } else {
                     if (in_array($post_folder_id, $_SESSION['groupes_visibles']) === false) {
-                        echo prepareExchangedData(
+                        echo (string) prepareExchangedData(
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -244,7 +244,7 @@ if (null !== $post_type) {
                     $_SESSION['user_read_only'] === true
                     && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -260,7 +260,7 @@ if (null !== $post_type) {
                     && isset($_SESSION['user']['create_item_without_password']) === true
                     && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('password_cannot_be_empty'),
@@ -272,7 +272,7 @@ if (null !== $post_type) {
 
                 // Check length
                 if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('password_too_long'),
@@ -288,7 +288,7 @@ if (null !== $post_type) {
                     && (isset($_SESSION['user']['session_psk']) === false
                         || empty($post_password) === true)
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('provide_your_personal_saltkey'),
@@ -326,7 +326,7 @@ if (null !== $post_type) {
 
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_security_level_not_reached'),
@@ -737,7 +737,7 @@ if (null !== $post_type) {
                     && (int) $itemExists === 1
                 ) {
                     // Encrypt data to return
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_item_exists'),
@@ -761,7 +761,7 @@ if (null !== $post_type) {
                 );
             } else {
                 // an error appears on JSON format
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('json_error_format'),
@@ -771,7 +771,7 @@ if (null !== $post_type) {
             }
 
             // Encrypt data to return
-            echo prepareExchangedData($arrData, 'encode');
+            echo (string) prepareExchangedData($arrData, 'encode');
             break;
 
             /*
@@ -781,7 +781,7 @@ if (null !== $post_type) {
         case 'update_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -790,7 +790,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -859,7 +859,7 @@ if (null !== $post_type) {
                     && (in_array($post_folder_id, $_SESSION['personal_folders']) === false
                         || $post_folder_is_personal !== 1)
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -875,7 +875,7 @@ if (null !== $post_type) {
                     && isset($_SESSION['user']['create_item_without_password']) === true
                     && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_pw'),
@@ -913,7 +913,7 @@ if (null !== $post_type) {
 
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_security_level_not_reached'),
@@ -925,7 +925,7 @@ if (null !== $post_type) {
 
                 // Check length
                 if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_pw_too_long'),
@@ -960,7 +960,7 @@ if (null !== $post_type) {
                     $_SESSION['user_id']
                 );
                 if (DB::count() === 0) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -1802,7 +1802,7 @@ if (null !== $post_type) {
                         'message' => '',
                     );
                 } else {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_edit_item'),
@@ -1819,7 +1819,7 @@ if (null !== $post_type) {
                 );
             }
             // return data
-            echo prepareExchangedData($arrData, 'encode');
+            echo (string) prepareExchangedData($arrData, 'encode');
             break;
 
             /*
@@ -1829,7 +1829,7 @@ if (null !== $post_type) {
         case 'copy_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -1838,7 +1838,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -1866,7 +1866,7 @@ if (null !== $post_type) {
                 && (in_array($post_source_id, $_SESSION['personal_folders']) === false
                     || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
             ) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -1894,7 +1894,7 @@ if (null !== $post_type) {
 
                 // Check if the folder where this item is accessible to the user
                 if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -1921,7 +1921,7 @@ if (null !== $post_type) {
                 );
                 if (DB::count() === 0) {
                     // ERROR - No sharekey found for this item and user
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -2136,7 +2136,7 @@ if (null !== $post_type) {
                 include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 updateCacheTable('reload', $SETTINGS, '');
 
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => false,
                         'message' => '',
@@ -2146,7 +2146,7 @@ if (null !== $post_type) {
                 );
             } else {
                 // no item
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_missing_id'),
@@ -2163,7 +2163,7 @@ if (null !== $post_type) {
         case 'show_details_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -2226,7 +2226,7 @@ if (null !== $post_type) {
 
             if ($dataDeleted != 0 && intval($item_deleted['date']) > intval($item_restored['date'])) {
                 // This item is deleted => exit
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('not_allowed_to_see_pw'),
@@ -2738,7 +2738,7 @@ if (null !== $post_type) {
             $arrData['error'] = '';
 
             // Encrypt data to return
-            echo prepareExchangedData($arrData, 'encode');
+            echo (string) prepareExchangedData($arrData, 'encode');
             break;
 
             /*
@@ -2750,7 +2750,7 @@ if (null !== $post_type) {
             if ($_SESSION['user']['show_step2'] !== true) {
                 // Check KEY and rights
                 if ($post_key !== $_SESSION['key']) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('key_is_not_correct'),
@@ -2759,7 +2759,7 @@ if (null !== $post_type) {
                     );
                     break;
                 } elseif ($_SESSION['user_read_only'] === true) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -3033,7 +3033,7 @@ if (null !== $post_type) {
 
                 $_SESSION['user']['show_step2'] = false;
 
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     $returnArray,
                     'encode'
                 );
@@ -3047,7 +3047,7 @@ if (null !== $post_type) {
         case 'delete_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3056,7 +3056,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3083,7 +3083,7 @@ if (null !== $post_type) {
                     && in_array($post_label, $_SESSION['personal_folders']) === false)
                 || (int) $post_access_level <= 20
             ) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to1'),
@@ -3096,7 +3096,7 @@ if (null !== $post_type) {
             // Check that user can access this item
             $granted = accessToItemIsGranted($post_item_id, $SETTINGS);
             if ($granted !== true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => $granted,
@@ -3135,7 +3135,7 @@ if (null !== $post_type) {
             // Update CACHE table
             updateCacheTable('delete_value', $SETTINGS, $post_item_id);
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
@@ -3151,7 +3151,7 @@ if (null !== $post_type) {
         case 'update_folder':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3160,7 +3160,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3265,7 +3265,7 @@ if (null !== $post_type) {
         case 'move_folder':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3274,7 +3274,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3372,7 +3372,7 @@ if (null !== $post_type) {
         case 'do_items_list_in_folder':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3383,7 +3383,7 @@ if (null !== $post_type) {
             }
 
             if (count($_SESSION['user_roles']) === 0) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3535,7 +3535,7 @@ if (null !== $post_type) {
                         @array_keys($_SESSION['list_folders_limited'])
                     )
                 )) {
-                    echo prepareExchangedData(
+                    echo (string) prepareExchangedData(
                         array(
                             'error' => 'not_authorized',
                             'arborescence' => $arr_arbo,
@@ -4016,7 +4016,7 @@ if (null !== $post_type) {
             }
 
             // Encrypt data to return
-            echo prepareExchangedData($returnValues, 'encode');
+            echo (string) prepareExchangedData($returnValues, 'encode');
 
             break;
 
@@ -4027,7 +4027,7 @@ if (null !== $post_type) {
         case 'show_item_password':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4071,7 +4071,7 @@ if (null !== $post_type) {
             );
 
             // Encrypt data to return
-            echo prepareExchangedData($returnValues, 'encode');
+            echo (string) prepareExchangedData($returnValues, 'encode');
             break;
 
             /*
@@ -4106,7 +4106,7 @@ if (null !== $post_type) {
                                     'error' => true,
                                     'message' => langHdl('error_not_allowed_to'),
                                 );
-                                echo prepareExchangedData($returnValues, 'encode');
+                                echo (string) prepareExchangedData($returnValues, 'encode');
                                 break;
                             }
                         } else {
@@ -4115,7 +4115,7 @@ if (null !== $post_type) {
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to'),
                             );
-                            echo prepareExchangedData($returnValues, 'encode');
+                            echo (string) prepareExchangedData($returnValues, 'encode');
                             break;
                         }
                     }
@@ -4165,7 +4165,7 @@ if (null !== $post_type) {
                         'error' => true,
                         'message' => langHdl('error_no_edition_possible_locked'),
                     );
-                    echo prepareExchangedData($returnValues, 'encode');
+                    echo (string) prepareExchangedData($returnValues, 'encode');
                     break;
                 }
             }
@@ -4200,7 +4200,7 @@ if (null !== $post_type) {
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
                         );
-                        echo prepareExchangedData($returnValues, 'encode');
+                        echo (string) prepareExchangedData($returnValues, 'encode');
                         break;
                     }
                 }
@@ -4353,7 +4353,7 @@ if (null !== $post_type) {
                     && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0,
                 'itemAccessRight' => isset($accessLevel) === true ? $accessLevel : '',
             );
-            echo prepareExchangedData($returnValues, 'encode');
+            echo (string) prepareExchangedData($returnValues, 'encode');
             break;
 
             /*
@@ -4363,7 +4363,7 @@ if (null !== $post_type) {
         case 'delete_attached_file':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4398,7 +4398,7 @@ if (null !== $post_type) {
 
             // Check that user can access this folder
             if (in_array($data_item['id_tree'], $_SESSION['groupes_visibles']) === false) {
-                echo prepareExchangedData(array('error' => 'ERR_FOLDER_NOT_ALLOWED'), 'encode');
+                echo (string) prepareExchangedData(array('error' => 'ERR_FOLDER_NOT_ALLOWED'), 'encode');
                 break;
             }
 
@@ -4432,7 +4432,7 @@ if (null !== $post_type) {
                 fileDelete($SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($data['file']), $SETTINGS);
             }
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
@@ -4529,7 +4529,7 @@ if (null !== $post_type) {
         case 'move_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4538,7 +4538,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -4579,7 +4579,7 @@ if (null !== $post_type) {
                 || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                 //|| (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
             ) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -4819,7 +4819,7 @@ if (null !== $post_type) {
                 'from_folder' => $dataSource['id_tree'],
                 'to_folder' => $post_folder_id,
             );
-            echo prepareExchangedData($returnValues, 'encode');
+            echo (string) prepareExchangedData($returnValues, 'encode');
             break;
 
             /*
@@ -4829,7 +4829,7 @@ if (null !== $post_type) {
         case 'mass_move_items':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4838,7 +4838,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -4873,7 +4873,7 @@ if (null !== $post_type) {
                         in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                         || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                     ) {
-                        echo prepareExchangedData(
+                        echo (string) prepareExchangedData(
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to'),
@@ -5132,7 +5132,7 @@ if (null !== $post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, '');
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
@@ -5148,7 +5148,7 @@ if (null !== $post_type) {
         case 'mass_delete_items':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5157,7 +5157,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5176,7 +5176,7 @@ if (null !== $post_type) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5201,7 +5201,7 @@ if (null !== $post_type) {
                     if (
                         in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                     ) {
-                        echo prepareExchangedData(
+                        echo (string) prepareExchangedData(
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to'),
@@ -5236,7 +5236,7 @@ if (null !== $post_type) {
                 }
             }
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
@@ -5254,7 +5254,7 @@ if (null !== $post_type) {
         case 'send_email':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5263,7 +5263,7 @@ if (null !== $post_type) {
                 );
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5354,7 +5354,7 @@ if (null !== $post_type) {
                 );
             }
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => empty($ret['error']) === true ? false : true,
                     'message' => $ret['message'],
@@ -5420,7 +5420,7 @@ if (null !== $post_type) {
         case 'history_entry_add':
             if ($post_key !== $_SESSION['key']) {
                 $data = array('error' => 'key_is_wrong');
-                echo prepareExchangedData($data, 'encode');
+                echo (string) prepareExchangedData($data, 'encode');
                 break;
             } else {
                 // decrypt and retreive data in JSON format
@@ -5474,10 +5474,10 @@ if (null !== $post_type) {
                         'error' => '',
                         'new_line' => '<br>' . addslashes($historic),
                     );
-                    echo prepareExchangedData($data, 'encode');
+                    echo (string) prepareExchangedData($data, 'encode');
                 } else {
                     $data = array('error' => 'something_wrong');
-                    echo prepareExchangedData($data, 'encode');
+                    echo (string) prepareExchangedData($data, 'encode');
                     break;
                 }
             }
@@ -5627,7 +5627,7 @@ if (null !== $post_type) {
         case 'image_preview_preparation':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5651,7 +5651,7 @@ if (null !== $post_type) {
 
             // Check if user has this sharekey
             if (empty($file_info['share_key']) === true) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('no_sharekey_found'),
@@ -5678,7 +5678,7 @@ if (null !== $post_type) {
             );
 
             // Encrypt data to return
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'filename' => $post_title . '.' . $file_info['extension'],
@@ -5795,7 +5795,7 @@ if (null !== $post_type) {
         case 'refresh_visible_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5934,7 +5934,7 @@ if (null !== $post_type) {
                 'html_json' => $arr_data,
             );
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
 
@@ -5945,7 +5945,7 @@ if (null !== $post_type) {
         case 'refresh_folders_other_info':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -6030,7 +6030,7 @@ if (null !== $post_type) {
                 'result' => $arr_data,
             );
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
 
@@ -6041,7 +6041,7 @@ if (null !== $post_type) {
         case 'load_item_history':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+                echo (string) prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
                 break;
             }
 
@@ -6162,14 +6162,14 @@ if (null !== $post_type) {
             );
 
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
 
         case 'suggest_item_change':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6255,7 +6255,7 @@ if (null !== $post_type) {
                 );
             }
 
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => '',
                 ),
@@ -6289,13 +6289,13 @@ if (null !== $post_type) {
             );
 
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
             break;
 
         case 'send_request_access':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6371,7 +6371,7 @@ if (null !== $post_type) {
             );
 
             // Return
-            echo prepareExchangedData(
+            echo (string) prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
@@ -6388,7 +6388,7 @@ if (null !== $post_type) {
         case 'save_notification_status':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6442,7 +6442,7 @@ if (null !== $post_type) {
             );
 
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
 
@@ -6453,7 +6453,7 @@ if (null !== $post_type) {
         case 'delete_uploaded_files_but_not_saved':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6515,7 +6515,7 @@ if (null !== $post_type) {
             );
 
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
 
@@ -6526,7 +6526,7 @@ if (null !== $post_type) {
         case 'confirm_attachments':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                echo (string) prepareExchangedData(
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6566,7 +6566,7 @@ if (null !== $post_type) {
             );
 
             // send data
-            echo prepareExchangedData($data, 'encode');
+            echo (string) prepareExchangedData($data, 'encode');
 
             break;
     }

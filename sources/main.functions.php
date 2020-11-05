@@ -1632,7 +1632,7 @@ function utf8Converter($array)
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
- * @return array
+ * @return array|string
  */
 function prepareExchangedData($data, $type, $key = null)
 {
