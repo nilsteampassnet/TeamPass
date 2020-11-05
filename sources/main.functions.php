@@ -618,7 +618,7 @@ function identifyUserRights(
         identAdmin(
             $idFonctions,
             $SETTINGS,
-            $tree
+            /** @scrutinizer ignore-type */ $tree
         );
     } else {
         identUser(
@@ -626,7 +626,7 @@ function identifyUserRights(
             $groupesInterditsUser,
             $idFonctions,
             $SETTINGS,
-            $tree
+            /** @scrutinizer ignore-type */ $tree
         );
     }
 
