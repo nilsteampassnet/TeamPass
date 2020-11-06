@@ -612,7 +612,7 @@ if (null !== $post_type) {
     </style>
     </head>
     <body>
-    <input type="hidden" id="generation_date" value="' . GibberishAES::enc((string) time(), $post_pdf_password) . '" />
+    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(/** @scrutinizer ignore-type */ (string) time(), $post_pdf_password) . '" />
     <div id="header">
     ' . TP_TOOL_NAME . ' - Off Line mode
     </div>
@@ -985,7 +985,7 @@ function nbLines($width, $txt)
     global $pdf;
     //Calculate the number of lines needed by a Multicell with a width of w
     if ($width == 0) {
-        $width = $pdf->w - $this->rMargin - $pdf->x;
+        $width = $pdf->w - $pdf->rMargin - $pdf->x;
     }
     $wmax = ($width - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
     $s_text = str_replace("\r", '', $txt);
@@ -1045,7 +1045,7 @@ function nbLines($width, $txt)
 function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
 {
     $buffer = fopen('php://temp', 'r+');
-    if ($outstream === false) {
+    if ($buffer === false) {
         return "";
     }
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);

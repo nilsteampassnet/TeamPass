@@ -137,13 +137,13 @@ function encryptOld($text, $personalSalt = '')
     if (empty($personalSalt) === false) {
         return trim(
             base64_encode(
-                mcrypt_encrypt(
+                /** @scrutinizer ignore-deprecated */ mcrypt_encrypt(
                     MCRYPT_RIJNDAEL_256,
                     $personalSalt,
                     $text,
                     MCRYPT_MODE_ECB,
-                    mcrypt_create_iv(
-                        mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                    /** @scrutinizer ignore-deprecated */ mcrypt_create_iv(
+                        /** @scrutinizer ignore-deprecated */ mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
                         MCRYPT_RAND
                     )
                 )
@@ -154,13 +154,13 @@ function encryptOld($text, $personalSalt = '')
     // If $personalSalt is not empty
     return trim(
         base64_encode(
-            mcrypt_encrypt(
+            /** @scrutinizer ignore-deprecated */ mcrypt_encrypt(
                 MCRYPT_RIJNDAEL_256,
                 SALT,
                 $text,
                 MCRYPT_MODE_ECB,
-                mcrypt_create_iv(
-                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                /** @scrutinizer ignore-deprecated */ mcrypt_create_iv(
+                    /** @scrutinizer ignore-deprecated */ mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
                     MCRYPT_RAND
                 )
             )
@@ -177,13 +177,13 @@ function decryptOld($text, $personalSalt = '')
 {
     if (!empty($personalSalt)) {
         return trim(
-            mcrypt_decrypt(
+            /** @scrutinizer ignore-deprecated */ mcrypt_decrypt(
                 MCRYPT_RIJNDAEL_256,
                 $personalSalt,
                 base64_decode($text),
                 MCRYPT_MODE_ECB,
-                mcrypt_create_iv(
-                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                /** @scrutinizer ignore-deprecated */ mcrypt_create_iv(
+                    /** @scrutinizer ignore-deprecated */ mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
                     MCRYPT_RAND
                 )
             )
@@ -192,13 +192,13 @@ function decryptOld($text, $personalSalt = '')
 
     // No personal SK
     return trim(
-        mcrypt_decrypt(
+        /** @scrutinizer ignore-deprecated */ mcrypt_decrypt(
             MCRYPT_RIJNDAEL_256,
             SALT,
             base64_decode($text),
             MCRYPT_MODE_ECB,
-            mcrypt_create_iv(
-                mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+            /** @scrutinizer ignore-deprecated */ mcrypt_create_iv(
+                /** @scrutinizer ignore-deprecated */ mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
                 MCRYPT_RAND
             )
         )
@@ -1694,13 +1694,13 @@ function prepareExchangedData($data, $type, $key = null)
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
-                (string) $data,
+                /** @scrutinizer ignore-type */ (string) $data,
                 true
             );
         } else {
             return json_decode(
                 Encryption\Crypt\aesctr::decrypt(
-                    (string) $data,
+                    /** @scrutinizer ignore-type */ (string) $data,
                     $globalsKey,
                     256
                 ),
@@ -1734,11 +1734,13 @@ function makeThumbnail($src, $dest, $desired_width)
     $height = imagesy($source_image);
 
     /* find the "desired height" of this thumbnail, relative to the desired width  */
-    $desired_height = floor($height * ($desired_width / $width));
+    $desired_height = (int) floor($height * ($desired_width / $width));
 
     /* create a new, "virtual" image */
     $virtual_image = imagecreatetruecolor($desired_width, $desired_height);
-
+    if ($virtual_image === false) {
+        return false;
+    }
     /* copy source image at a resized size */
     imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
 
@@ -2339,7 +2341,7 @@ function checkCFconsistency($source_id, $target_id)
  * @param array  $SETTINGS    Settings
  * @param string $password    A password
  *
- * @return string
+ * @return string|boolean
  */
 function prepareFileWithDefuse(
     $type,
@@ -2376,7 +2378,7 @@ function prepareFileWithDefuse(
             $source_file,
             $target_file,
             $SETTINGS,
-            $password
+            /** @scrutinizer ignore-type */ $password
         );
         // ---
     } elseif ($type === 'encrypt') {
@@ -2385,7 +2387,7 @@ function prepareFileWithDefuse(
             $source_file,
             $target_file,
             $SETTINGS,
-            $password
+            /** @scrutinizer ignore-type */ $password
         );
     }
 

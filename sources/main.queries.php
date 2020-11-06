@@ -534,8 +534,8 @@ function mainQuery($SETTINGS)
                                 'login' => $post_login,
                                 'pw' => $pwdlib->createPasswordHash($post_pwd),
                                 'email' => $data['email'],
-                                'name' => isset($ldap_info_user->{'name'}) === true ? $ldap_info_user->{'name'} : '',
-                                'lastname' => isset($ldap_info_user->{'lastname'}) === true ? $ldap_info_user->{'lastname'} : '',
+                                'name' => isset($ldap_info_user) === true ? $ldap_info_user->{'name'} : '',
+                                'lastname' => isset($ldap_info_user) === true ? $ldap_info_user->{'lastname'} : '',
                                 'admin' => '0',
                                 'gestionnaire' => '0',
                                 'can_manage_all_users' => '0',
@@ -579,7 +579,7 @@ function mainQuery($SETTINGS)
                     }
 
                     // Log event
-                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($post_login));
+                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($post_login), stripslashes($post_login));
 
                     // send mail?
                     if ((int) $post_send_mail === 1) {

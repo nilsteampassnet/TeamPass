@@ -128,7 +128,7 @@ if (
             $_GET['id'],
             $listFoldersLimitedKeys,
             $listRestrictedFoldersForItemsKeys,
-            $tree,
+            /** @scrutinizer ignore-type */ $tree,
             $SETTINGS
         );
     } elseif (
@@ -139,7 +139,7 @@ if (
             0,
             $listFoldersLimitedKeys,
             $listRestrictedFoldersForItemsKeys,
-            $tree,
+            /** @scrutinizer ignore-type */ $tree,
             $SETTINGS
         );
     } else {
@@ -148,7 +148,7 @@ if (
             recursiveTree(
                 $child,
                 $completTree,
-                $tree,
+                /** @scrutinizer ignore-type */ $tree,
                 $listFoldersLimitedKeys,
                 $listRestrictedFoldersForItemsKeys,
                 $last_visible_parent,
@@ -580,7 +580,7 @@ function recursiveTree(
                 && $SETTINGS['show_only_accessible_folders'] === '1'
             ) {
                 if ($hide_node === true) {
-                    $last_visible_parent = $parent;
+                    $last_visible_parent = (int) $parent;
                     $last_visible_parent_level = $completTree[$nodeId]->nlevel--;
                 } elseif ($completTree[$nodeId]->nlevel < $last_visible_parent_level) {
                     $last_visible_parent = '';
@@ -625,7 +625,7 @@ function recursiveTree(
                 recursiveTree(
                     $child,
                     $completTree,
-                    $tree,
+                    /** @scrutinizer ignore-type */ $tree,
                     $listFoldersLimitedKeys,
                     $listRestrictedFoldersForItemsKeys,
                     $last_visible_parent,

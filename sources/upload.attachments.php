@@ -306,7 +306,7 @@ if (strpos($contentType, 'multipart') !== false) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
 
-        if ($out) {
+        if ($out !== false) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
             $fileFullSize += $_FILES['file']['size'];
@@ -334,7 +334,7 @@ if (strpos($contentType, 'multipart') !== false) {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
 
-    if ($out) {
+    if ($out !== false) {
         // Read binary input stream and append it to temp file
         $in = fopen('php://input', 'rb');
 
