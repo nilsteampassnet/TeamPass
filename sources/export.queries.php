@@ -815,6 +815,10 @@ if (null !== $post_type) {
                 break;
             }
             $contents = fread($handle, filesize($post_file . '.txt'));
+            if ($contents !== false) {
+                echo '[{"error":"true"}]';
+                break;
+            }
             fclose($handle);
             if (is_file($post_file . '.txt')) {
                 unlink($post_file . '.txt');
@@ -828,7 +832,7 @@ if (null !== $post_type) {
                 if (empty($encrypted_text) === true) {
                     $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
                 } else {
-                    $encrypted_text .= '|#|#|' . GibberishAES::enc($chunk, $post_pdf_password);
+                    $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
                 }
             }
 

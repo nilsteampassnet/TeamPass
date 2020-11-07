@@ -174,11 +174,13 @@ if (null !== $post_type) {
                 }
                 //save the file
                 $handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql', 'w+');
-                foreach ($full_listing as $line) {
-                    $return = $line['id'].';'.$line['label'].';'.$line['description'].';'.$line['pw'].';'.$line['login'].';'.$line['restricted_to'].';'.$line['perso'].'/n';
-                    fwrite($handle, $return);
+                if ($handle !== false) {
+                    foreach ($full_listing as $line) {
+                        $return = $line['id'].';'.$line['label'].';'.$line['description'].';'.$line['pw'].';'.$line['login'].';'.$line['restricted_to'].';'.$line['perso'].'/n';
+                        fwrite($handle, $return);
+                    }
+                    fclose($handle);
                 }
-                fclose($handle);
             }
             break;
 
@@ -318,6 +320,7 @@ if (null !== $post_type) {
                 );
                 // update log
                 logItems(
+                    $SETTINGS,
                     $dataReceived['currentId'],
                     $dataItem['label'],
                     $_SESSION['user_id'],

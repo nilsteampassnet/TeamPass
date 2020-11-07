@@ -3381,7 +3381,7 @@ function isBase64($str)
  *
  * @param string $field Parameter
  *
- * @return string|bool|resource
+ * @return array|bool|resource
  */
 function filterString($field)
 {
@@ -3455,7 +3455,7 @@ function ldapConnect($SETTINGS)
  * @param string $password User Pwd
  * @param array  $SETTINGS Teampass settings
  *
- * @return boolean
+ * @return bool
  */
 function ldapCheckUserPassword($login, $password, $SETTINGS)
 {

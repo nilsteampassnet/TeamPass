@@ -1732,7 +1732,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . isset($link) === true ? mysqli_get_server_info($link) : langHdl('undefined') . '
+**Database:** ' . $link !== false ? mysqli_get_server_info($link) : langHdl('undefined') . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1958,13 +1958,12 @@ Insert the log here and especially the answer of the query that failed.
                     // If LDAP enabled, then
                     // check that this password is correct
                     if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
-                        $continue = ldapCheckUserPassword(
-                            $userData['login'],
-                            $post_user_password,
-                            $SETTINGS
-                        );
-
-                        if ($continue === true) {
+                        if (ldapCheckUserPassword(
+                                $userData['login'],
+                                $post_user_password,
+                                $SETTINGS
+                            ) === true)
+                        {
                             // GEnerate new keys
                             $userKeys = generateUserKeys($post_user_password);
 

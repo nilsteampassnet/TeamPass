@@ -304,11 +304,11 @@ if (strpos($contentType, 'multipart') !== false) {
 } else {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
-    if ($out) {
+    if ($out !== false) {
         // Read binary input stream and append it to temp file
         $in = fopen('php://input', 'rb');
 
-        if ($in) {
+        if ($in !== false) {
             while ($buff = fread($in, 4096)) {
                 fwrite($out, $buff);
             }
