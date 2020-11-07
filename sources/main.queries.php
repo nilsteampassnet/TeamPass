@@ -1994,7 +1994,7 @@ Insert the log here and especially the answer of the query that failed.
                                 array(
                                     'error' => true,
                                     'message' => langHdl('password_is_not_correct'),
-                                    'debug' => base64_decode($itemKey),
+                                    'debug' => '',
                                 ),
                                 'encode'
                             );

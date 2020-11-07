@@ -113,7 +113,7 @@ if (null === $post_user_token) {
 
         if (time() > $data['end_timestamp']) {
             // too old
-            handleUploadError('User token expired.', 110);
+            handleUploadError('User token expired.');
             die();
         }
     }
@@ -277,11 +277,11 @@ if (strpos($contentType, 'multipart') !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
-        if ($out) {
+        if ($out !== false) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
 
-            if ($in) {
+            if ($in !== false) {
                 while ($buff = fread($in, 4096)) {
                     fwrite($out, $buff);
                 }

@@ -113,7 +113,7 @@ if (
     }
 
     $ret_json = array();
-    $last_visible_parent = '';
+    $last_visible_parent = -1;
     $parent = '#';
     $last_visible_parent_level = 1;
 
@@ -583,7 +583,7 @@ function recursiveTree(
                     $last_visible_parent = (int) $parent;
                     $last_visible_parent_level = $completTree[$nodeId]->nlevel--;
                 } elseif ($completTree[$nodeId]->nlevel < $last_visible_parent_level) {
-                    $last_visible_parent = '';
+                    $last_visible_parent = -1;
                 }
             }
 
@@ -593,7 +593,7 @@ function recursiveTree(
                     $ret_json,
                     array(
                         'id' => 'li_' . $completTree[$nodeId]->id,
-                        'parent' => empty($last_visible_parent) === true ? $parent : $last_visible_parent,
+                        'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                         'text' => $text,
                         'li_attr' => array(
                             'class' => 'jstreeopen',
@@ -612,7 +612,7 @@ function recursiveTree(
                     $ret_json,
                     array(
                         'id' => 'li_' . $completTree[$nodeId]->id,
-                        'parent' => empty($last_visible_parent) === true ? $parent : $last_visible_parent,
+                        'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                         'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>' . $text,
                         'li_attr' => array(
                             'class' => '',

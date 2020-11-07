@@ -311,7 +311,7 @@ if (strpos($contentType, 'multipart') !== false) {
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
             $fileFullSize += $_FILES['file']['size'];
 
-            if ($in) {
+            if ($in !== false) {
                 while ($buff = fread($in, 4096)) {
                     fwrite($out, $buff);
                 }
@@ -338,7 +338,7 @@ if (strpos($contentType, 'multipart') !== false) {
         // Read binary input stream and append it to temp file
         $in = fopen('php://input', 'rb');
 
-        if ($in) {
+        if ($in !== false) {
             while ($buff = fread($in, 4096)) {
                 fwrite($out, $buff);
             }

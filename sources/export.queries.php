@@ -810,6 +810,10 @@ if (null !== $post_type) {
 
             // read the content of the temporary file
             $handle = fopen($post_file . '.txt', 'r');
+            if ($handle !== false) {
+                echo '[{"error":"true"}]';
+                break;
+            }
             $contents = fread($handle, filesize($post_file . '.txt'));
             fclose($handle);
             if (is_file($post_file . '.txt')) {
@@ -822,7 +826,7 @@ if (null !== $post_type) {
             $chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
             foreach ($chunks as $chunk) {
                 if (empty($encrypted_text) === true) {
-                    $encrypted_text = GibberishAES::enc($chunk, $post_pdf_password);
+                    $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
                 } else {
                     $encrypted_text .= '|#|#|' . GibberishAES::enc($chunk, $post_pdf_password);
                 }

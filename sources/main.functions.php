@@ -1632,7 +1632,7 @@ function utf8Converter($array)
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
- * @return array|string
+ * @return resource|string
  */
 function prepareExchangedData($data, $type, $key = null)
 {
@@ -2622,17 +2622,16 @@ function accessToItemIsGranted($item_id, $SETTINGS)
 /**
  * Creates a unique key.
  *
- * @param float $lenght Key lenght
+ * @param integer $lenght Key lenght
  *
  * @return string
  */
 function uniqidReal($lenght = 13)
 {
-    // uniqid gives 13 chars, but you could adjust it to your needs.
     if (function_exists('random_bytes')) {
-        $bytes = random_bytes(ceil($lenght / 2));
+        $bytes = random_bytes(intval(ceil($lenght / 2)));
     } elseif (function_exists('openssl_random_pseudo_bytes')) {
-        $bytes = openssl_random_pseudo_bytes(ceil($lenght / 2));
+        $bytes = openssl_random_pseudo_bytes(intval(ceil($lenght / 2)));
     } else {
         throw new Exception('no cryptographically secure random function available');
     }
@@ -2780,7 +2779,7 @@ function ldapPosixSearch($username, $password, $SETTINGS)
                         array('dn', 'samaccountname')
                     );
 
-                    if ($result_group) {
+                    if ($result_group !== false) {
                         $entries = ldap_get_entries($ldapconn, $result_group);
 
                         if ($entries['count'] > 0) {
@@ -2842,7 +2841,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
     $ldap_suffix = '';
 
     //Multiple Domain Names
-    if (strpos(html_entity_decode($username), '\\') === true) {
+    if (strpos(html_entity_decode($username), '\\') > 0) {
         $ldap_suffix = '@' . substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
@@ -3382,7 +3381,7 @@ function isBase64($str)
  *
  * @param string $field Parameter
  *
- * @return string|bool|array
+ * @return string|bool|resource
  */
 function filterString($field)
 {
@@ -3404,7 +3403,7 @@ function filterString($field)
  *
  * @param array $SETTINGS Teampass settings
  *
- * @return boolean|array
+ * @return boolean|resource
  */
 function ldapConnect($SETTINGS)
 {
@@ -3456,7 +3455,7 @@ function ldapConnect($SETTINGS)
  * @param string $password User Pwd
  * @param array  $SETTINGS Teampass settings
  *
- * @return boolean|array
+ * @return boolean
  */
 function ldapCheckUserPassword($login, $password, $SETTINGS)
 {
