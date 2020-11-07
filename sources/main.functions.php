@@ -3381,7 +3381,7 @@ function isBase64($str)
  *
  * @param string $field Parameter
  *
- * @return array|bool|resource
+ * @return array|bool|resource|string
  */
 function filterString($field)
 {

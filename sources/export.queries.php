@@ -810,12 +810,12 @@ if (null !== $post_type) {
 
             // read the content of the temporary file
             $handle = fopen($post_file . '.txt', 'r');
-            if ($handle !== false) {
+            if ($handle === false) {
                 echo '[{"error":"true"}]';
                 break;
             }
             $contents = fread($handle, filesize($post_file . '.txt'));
-            if ($contents !== false) {
+            if ($contents === false) {
                 echo '[{"error":"true"}]';
                 break;
             }

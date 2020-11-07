@@ -1732,7 +1732,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . $link !== false ? mysqli_get_server_info($link) : langHdl('undefined') . '
+**Database:** ' . ($link === false ? langHdl('undefined') : mysqli_get_server_info($link)) . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1962,7 +1962,7 @@ Insert the log here and especially the answer of the query that failed.
                                 $userData['login'],
                                 $post_user_password,
                                 $SETTINGS
-                            ) === true)
+                            ) !== false)
                         {
                             // GEnerate new keys
                             $userKeys = generateUserKeys($post_user_password);
