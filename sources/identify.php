@@ -475,9 +475,10 @@ function identifyUser($sentData, $SETTINGS)
 
 
     $user_initial_creation_through_ldap = false;
-    $userPasswordVerified = false;
+    $userPasswordVerified = '';
     $ldapConnection = false;
     $return = '';
+    $proceedIdentification = '';
 
     // Prepare LDAP connection if set up
     if (
@@ -488,7 +489,9 @@ function identifyUser($sentData, $SETTINGS)
     ) {
         $ldapConnection = true;
         //Multiple Domain Names
-        if (strpos(html_entity_decode($username), '\\') === true) {
+        if (strpos(html_entity_decode($username), '\\') === false) {
+            $ldap_suffix = '';
+        } else {
             $ldap_suffix = '@' . substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
             $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
@@ -1220,10 +1223,6 @@ function identifyUser($sentData, $SETTINGS)
  */
 function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $counter, $SETTINGS)
 {
-    // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
-
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $pwdlib->register();
@@ -1241,6 +1240,17 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
 
     // Force
     $userInfo['login'] = $username;
+
+    // Load superGlobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $result = '';
+    $proceedIdentification = false;
+    $userInLDAP = false;
+    $ldapUserGroups  = false;
 
     // Debug
     debugIdentify(
@@ -1342,7 +1352,7 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
                         array('dn', 'samaccountname')
                     );
 
-                    if ($result_group) {
+                    if ($result_group !== false) {
                         $ldapUserGroups = ldap_get_entries($ldapconn, $result_group);
 
                         // Debug
@@ -1505,14 +1515,21 @@ function identifyViaLDAPPosixSearch($username, $userInfo, $passwordClear, $count
  */
 function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter, $SETTINGS)
 {
-    // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
-
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $pwdlib->register();
     $pwdlib = new PasswordLib\PasswordLib();
+    
+    // Load superGlobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+
+    // Init
+    $proceedIdentification = false;
+    $userInLDAP = false;
 
     // Debug
     debugIdentify(
@@ -1670,9 +1687,16 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
  */
 function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
 {
-    // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    // Load superGlobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+
+    // Init
+    $proceedIdentification = false;
+    $userInLDAP = false;
 
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
     $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
@@ -1806,10 +1830,10 @@ function ldapCreateUser($username, $passwordClear, $retLDAP, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param string       $username     Username
- * @param string       $userInfo     Result of query
- * @param string|array $dataReceived DataReceived
- * @param array        $SETTINGS     Teampass settings
+ * @param string                $username     Username
+ * @param string                $userInfo     Result of query
+ * @param string|array|resource $dataReceived DataReceived
+ * @param array                 $SETTINGS     Teampass settings
  *
  * @return array
  */
@@ -1819,6 +1843,17 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
         isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
+        // Load superGlobals
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+        $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+        $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+
+        // Init
+        $proceedIdentification = false;
+        $userInLDAP = false;
+        
         // load library
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
 
@@ -1987,9 +2022,11 @@ function debugIdentify($enabled, $dbgFile, $text)
 {
     if ($enabled === true) {
         $fp = fopen($dbgFile, 'a');
-        fwrite(
-            $fp,
-            $text
-        );
+        if ($fp !== false) {
+            fwrite(
+                $fp,
+                $text
+            );
+        }
     }
 }

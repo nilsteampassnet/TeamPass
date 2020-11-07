@@ -2838,10 +2838,11 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
     $user_lastname = '';
     $user_name = '';
     $ldapConnection = false;
-    $ldap_suffix = '';
 
     //Multiple Domain Names
-    if (strpos(html_entity_decode($username), '\\') > 0) {
+    if (strpos(html_entity_decode($username), '\\') === false) {
+        $ldap_suffix = '';
+    } else {
         $ldap_suffix = '@' . substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
@@ -3519,8 +3520,9 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
                 return true;
             }
         }
+    } else {
+        return false;
     }
-    return false;
 }
 
 
