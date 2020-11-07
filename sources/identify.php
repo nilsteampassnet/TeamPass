@@ -1529,7 +1529,6 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 
     // Init
     $proceedIdentification = false;
-    $userInLDAP = false;
 
     // Debug
     debugIdentify(
@@ -1546,8 +1545,8 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
-    $ldap_suffix = '';
     $ldapConnection = false;
+    $ldapUserGroups  = false;
 
     // Posix style LDAP handles user searches a bit differently
     if ($SETTINGS['ldap_type'] === 'posix') {
@@ -1696,7 +1695,6 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
 
     // Init
     $proceedIdentification = false;
-    $userInLDAP = false;
 
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
     $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
@@ -1852,7 +1850,6 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 
         // Init
         $proceedIdentification = false;
-        $userInLDAP = false;
         
         // load library
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
@@ -1935,11 +1932,11 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
 /**
  * Undocumented function.
  *
- * @param string       $passwordClear Password in clear
- * @param array|string $userInfo      Array of user data
- * @param array|string $dataReceived  Received data
- * @param string       $username      User name
- * @param array        $SETTINGS      Teampass settings
+ * @param string                $passwordClear Password in clear
+ * @param array|string          $userInfo      Array of user data
+ * @param array|string|resource $dataReceived  Received data
+ * @param string                $username      User name
+ * @param array                 $SETTINGS      Teampass settings
  *
  * @return bool
  */

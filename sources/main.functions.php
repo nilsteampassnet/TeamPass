@@ -3520,9 +3520,8 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
                 return true;
             }
         }
-    } else {
-        return false;
     }
+    return false;
 }
 
 
