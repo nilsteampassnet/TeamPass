@@ -1662,9 +1662,9 @@ function identifyViaLDAPPosix($userInfo, $ldap_suffix, $passwordClear, $counter,
 /**
  * Undocumented function.
  *
- * @param string|array $dataReceived Received data
- * @param string       $userInfo     Result of query
- * @param array        $SETTINGS     Teampass settings
+ * @param string|array|resource $dataReceived Received data
+ * @param string                $userInfo     Result of query
+ * @param array                 $SETTINGS     Teampass settings
  *
  * @return array
  */
