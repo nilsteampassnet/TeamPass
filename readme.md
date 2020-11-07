@@ -1,14 +1,14 @@
-# Teampass
+# Teampass 3
 
-**This release is a beta version.**
+**This release is a beta version. It is recommended for new users to start from using this version. Currently update from latest 2.X is not finalized.**
 
 **Only English language is available. Don't change the language!**
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c1709641128d42d1ac6ec7fad3cb921c)](https://www.codacy.com/app/nilsteampassnet/TeamPass?utm_source=github.com&utm_medium=referral&utm_content=nilsteampassnet/TeamPass&utm_campaign=badger)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/quality-score.png?b=teampass_3.0)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/?branch=teampass_3.0)
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2019, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2020, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -68,11 +68,13 @@ The included [docker-compose.yml](docker-compose.yml) file is an example setup, 
 ## Languages
 
 Teampass is currently available in the following languages:
+* ENGLISH
+
+Future available translations:
 * CATALAN
 * CHINESE
 * CZECH
 * DUTCH
-* ENGLISH
 * ESTONIAN
 * FRENCH
 * GERMAN
@@ -105,7 +107,7 @@ Visit [Teampass.net]( * @package       /)
 
 ## Bugs
 
-If you discover bugs, please report them in [Gitlab Issues](https://gitlab.com/NilsLaumaille/teampass-v3/issues).
+If you discover bugs, please report them in [Github Issues](https://github.com/nilsteampassnet/TeamPass/issues).
 
 ## Requests
 

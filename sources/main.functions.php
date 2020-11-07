@@ -1412,7 +1412,7 @@ function sendEmail(
     $silent = true
 ) {
     // CAse where email not defined
-    if ($email === 'none') {
+    if ($email === 'none' || empty($email) === true) {
         return '"error":"" , "message":"' . langHdl('forgot_my_pw_email_sent') . '"';
     }
 
@@ -1477,6 +1477,7 @@ function sendEmail(
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
         // send email
         if ($mail->send()) {
+            $mail->smtpClose();
             if ($silent === false) {
                 return json_encode(
                     array(
@@ -1486,6 +1487,7 @@ function sendEmail(
                 );
             }
         } elseif ($silent === false) {
+            $mail->smtpClose();
             return json_encode(
                 array(
                     'error' => true,
