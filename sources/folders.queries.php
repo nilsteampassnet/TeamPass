@@ -475,6 +475,7 @@ if (null !== $post_type) {
                     'error' => $error,
                     'message' => $errorMessage,
                     'info_parent_changed' => $parentChanged,
+                    'new_folder_id' => $dataFolder['id'],
                 ),
                 'encode'
             );

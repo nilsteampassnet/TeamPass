@@ -70,8 +70,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             function(receivedData) {
                                 var data = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
                                 $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
-console.log(data);
-end;
+
                                 if (data.error !== false) {
                                     // Show error
                                     toastr.remove();
