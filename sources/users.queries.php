@@ -182,6 +182,12 @@ if (null !== $post_type) {
                     break;
                 }
 
+                // Generate pwd
+                $password = generateQuickPassword();
+
+                // GEnerate new keys
+                $userKeys = generateUserKeys($password);
+
                 // load passwordLib library
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                 $pwdlib->register();
@@ -221,8 +227,8 @@ if (null !== $post_type) {
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
                         'last_pw_change' => time(),
-                        'public_key' => 'none',
-                        'private_key' => 'none',
+                        'public_key' => $userKeys['public_key'],
+                        'private_key' => $userKeys['private_key'],
                     )
                 );
                 $new_user_id = DB::insertId();
