@@ -757,8 +757,8 @@ $SETTINGS = array (';
                             `user_api_key` varchar(500) NOT null DEFAULT 'none',
                             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
                             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
-                            `public_key` TEXT NOT NULL DEFAULT 'none',
-                            `private_key` TEXT NOT NULL DEFAULT 'none',
+                            `public_key` TEXT DEFAULT NULL,
+                            `private_key` TEXT DEFAULT NULL,
                             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
                             `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
                             PRIMARY KEY (`id`),
@@ -772,7 +772,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1', 'none', 'none')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . bCrypt($var['admin_pwd'], '13') . "' WHERE login = 'admin' AND id = '1'");

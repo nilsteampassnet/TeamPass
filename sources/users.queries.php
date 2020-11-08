@@ -221,6 +221,8 @@ if (null !== $post_type) {
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
                         'last_pw_change' => time(),
+                        'public_key' => 'none',
+                        'private_key' => 'none',
                     )
                 );
                 $new_user_id = DB::insertId();
