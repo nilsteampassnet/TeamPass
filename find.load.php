@@ -198,7 +198,7 @@ $("#div_item_data").dialog({
                     $("#div_item_data_show_error").html("").hide();
                     $("#div_item_data_text").html(return_html);
                     $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
-                    $('#hid_pw').html(unsanitizeString(data.pw));
+                    $('#hid_pw').text(unsanitizeString(data.pw));
                 }
            );
         }
