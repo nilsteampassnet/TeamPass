@@ -3,8 +3,9 @@
 namespace Authentication\TwoFactorAuth\Providers\Qr;
 require_once(dirname(__FILE__)."/BaseHTTPQRCodeProvider.php");
 
-// https://developers.google.com/chart/infographics/docs/qr_codes
-class GoogleQRCodeProvider extends BaseHTTPQRCodeProvider 
+// https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example
+// http://goqr.me/api/doc/create-qr-code/
+class GoqrMeQRCodeProvider extends BaseHTTPQRCodeProvider 
 {
     public $errorcorrectionlevel;
     public $margin;
@@ -32,9 +33,9 @@ class GoogleQRCodeProvider extends BaseHTTPQRCodeProvider
     
     public function getUrl($qrtext, $size) 
     {
-        return 'https://chart.googleapis.com/chart?cht=qr'
-            . '&chs=' . $size . 'x' . $size
-            . '&chld=' . $this->errorcorrectionlevel . '|' . $this->margin
-            . '&chl=' . rawurlencode($qrtext);
+        return 'https://api.qrserver.com/v1/create-qr-code/?'
+            . 'size=' . $size . 'x' . $size
+            . '&ecc=' . $this->errorcorrectionlevel . '|' . $this->margin
+            . '&data=' . rawurlencode($qrtext);
     }
 }
