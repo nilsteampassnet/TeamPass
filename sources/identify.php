@@ -1070,7 +1070,7 @@ function identifyUser($sentData, $SETTINGS)
             array(
                 'value' => $return,
                 'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'user_admin' => null !== $superGlobal->get('admin', 'SESSION') ? (int) $superGlobal->get('admin', 'SESSION') : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
@@ -1125,7 +1125,7 @@ function identifyUser($sentData, $SETTINGS)
                 array(
                     'value' => $return,
                     'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'user_admin' => null !== $superGlobal->get('admin', 'SESSION') ? (int) $superGlobal->get('admin', 'SESSION') : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => 0,
                     'error' => 'user_is_locked',
@@ -1151,7 +1151,7 @@ function identifyUser($sentData, $SETTINGS)
                 array(
                     'value' => $return,
                     'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'user_admin' => null !== $superGlobal->get('admin', 'SESSION') ? (int) $superGlobal->get('admin', 'SESSION') : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => 'user_not_exists3',
@@ -1187,7 +1187,7 @@ function identifyUser($sentData, $SETTINGS)
         array(
             'value' => $return,
             'user_id' => null !== $superGlobal->get('user_id', 'SESSION') ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-            'user_admin' => isset($sessionAdmin) ? (int) $antiXss->xss_clean($sessionAdmin) : 0,
+            'user_admin' => null !== $superGlobal->get('admin', 'SESSION') ? (int) $superGlobal->get('admin', 'SESSION') : 0,
             'initial_url' => $antiXss->xss_clean($sessionUrl),
             'pwd_attempts' => 0,
             'error' => false,
