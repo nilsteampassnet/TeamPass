@@ -132,9 +132,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                             <div class="col-7 mb-0">
                                 <select class='form-control form-control-sm' id='email_security'>
-                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] == 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
-                                    <option value="ssl" <?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'ssl' ? ' selected' : ''; ?>>SSL</option>
-                                    <option value="tls" <?php echo isset($SETTINGS['email_security']) === true || $SETTINGS['email_security'] == 'tls' ? ' selected' : ''; ?>>TLS</option>
+                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] === 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
+                                    <option value="ssl" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'ssl' ? ' selected' : ''; ?>>SSL</option>
+                                    <option value="tls" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'tls' ? ' selected' : ''; ?>>TLS</option>
                                 </select>
                             </div>
                         </div>
