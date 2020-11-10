@@ -317,7 +317,11 @@ if (null !== $post_type) {
                 // Send email to new user
                 sendEmail(
                     langHdl('email_subject_new_user'),
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(' ' . addslashes($login), addslashes($password), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
+                    str_replace(
+                        array('#tp_login#', '#tp_pw#', '#tp_link#'),
+                        array(addslashes($login), addslashes($password), $SETTINGS['email_server_url']),
+                        langHdl('email_new_user_mail')
+                    ),
                     $dataReceived['email'],
                     $SETTINGS
                 );

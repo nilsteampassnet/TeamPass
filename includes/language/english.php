@@ -712,7 +712,7 @@ return array(
     'migrate_pf_no_sk_user' => 'You must enter a salt key',
     'migrate_pf_no_user_id' => 'You must select the user',
     'email_subject_new_user' => 'Password management account created for you',
-    'email_new_user_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created an account for you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=\'#tp_link#\'>Click this link</a> to log in and reset your password.',
+    'email_new_user_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created an account for you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=#tp_link#>Click this link</a> to log in.',
     'error_empty_data' => 'No data to proceed!',
     'error_not_allowed_to' => 'You are not allowed to do that!',
     'new_saltkey_warning_lost' => 'Input a new user salt key without re-encrypting any existing items. If you change your salt key here, all previous personal item passwords will be lost! If you know your old salt key, use the change key feature instead.',
