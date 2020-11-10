@@ -112,7 +112,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
      * On page loaded
      */
     $(function() {
-        requestRunning = true;
+        //requestRunning = true;
         // Load list of groups
         $("#ldap_new_user_is_administrated_by, #ldap_new_user_role").empty();
         $.post(

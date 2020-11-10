@@ -96,7 +96,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_mode' data-toggle-on='<?php echo isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_mode_input' value='<?php echo isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='ldap_mode' data-toggle-on='<?php echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_mode_input' value='<?php echo isset($SETTINGS['ldap_mode']) && (int) $SETTINGS['ldap_mode'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 
@@ -242,7 +242,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         <?php echo langHdl('settings_ldap_ssl'); ?>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_ssl' data-toggle-on='<?php echo isset($SETTINGS['ldap_ssl']) === true && $SETTINGS['ldap_ssl'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_ssl_input' value='<?php echo isset($SETTINGS['ldap_ssl']) && $SETTINGS['ldap_ssl'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='ldap_ssl' data-toggle-on='<?php echo isset($SETTINGS['ldap_ssl']) === true && $SETTINGS['ldap_ssl'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_ssl_input' value='<?php echo isset($SETTINGS['ldap_ssl']) && (int) $SETTINGS['ldap_ssl'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 
@@ -251,7 +251,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         <?php echo langHdl('settings_ldap_tls'); ?>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_tls' data-toggle-on='<?php echo isset($SETTINGS['ldap_tls']) === true && $SETTINGS['ldap_tls'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_tls_input' value='<?php echo isset($SETTINGS['ldap_tls']) && $SETTINGS['ldap_tls'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='ldap_tls' data-toggle-on='<?php echo isset($SETTINGS['ldap_tls']) === true && $SETTINGS['ldap_tls'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_tls_input' value='<?php echo isset($SETTINGS['ldap_tls']) && (int) $SETTINGS['ldap_tls'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 
@@ -263,7 +263,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_elusers' data-toggle-on='<?php echo isset($SETTINGS['ldap_elusers']) === true && $SETTINGS['ldap_elusers'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_elusers_input' value='<?php echo isset($SETTINGS['ldap_elusers']) && $SETTINGS['ldap_elusers'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='ldap_elusers' data-toggle-on='<?php echo isset($SETTINGS['ldap_elusers']) === true && $SETTINGS['ldap_elusers'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_elusers_input' value='<?php echo isset($SETTINGS['ldap_elusers']) && (int) $SETTINGS['ldap_elusers'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 
@@ -275,7 +275,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_and_local_authentication' data-toggle-on='<?php echo isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_and_local_authentication_input' value='<?php echo isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='ldap_and_local_authentication' data-toggle-on='<?php echo isset($SETTINGS['ldap_and_local_authentication']) === true && (int) $SETTINGS['ldap_and_local_authentication'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_and_local_authentication_input' value='<?php echo isset($SETTINGS['ldap_and_local_authentication']) && (int) $SETTINGS['ldap_and_local_authentication'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 
@@ -287,7 +287,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='disable_show_forgot_pwd_link' data-toggle-on='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['disable_show_forgot_pwd_link'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_show_forgot_pwd_link_input' value='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] === '1' ? '1' : '0'; ?>'>
+                                        <div class='toggle toggle-modern' id='disable_show_forgot_pwd_link' data-toggle-on='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) === true && (int) $SETTINGS['disable_show_forgot_pwd_link'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_show_forgot_pwd_link_input' value='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) && (int) $SETTINGS['disable_show_forgot_pwd_link'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
 

@@ -116,12 +116,12 @@
 
     /**
      */
-    $(document).on('change', '.form-control-sm', function() {
+    $(document).on('change', '.form-control-sm, .setting-ldap', function() {
         var field = $(this).attr('id'),
             value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val());
 
         if (field === '') return false;
-
+        
         // prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {
             return false;

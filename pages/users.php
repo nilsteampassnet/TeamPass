@@ -45,6 +45,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === fa
 
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
+
+// Load superGlobals
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -56,8 +61,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-//$link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
-//$link->set_charset(DB_ENCODING);
 
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
@@ -80,8 +83,8 @@ foreach ($rows as $record) {
     }
     if (
         (int) $_SESSION['is_admin'] === 1
-        || ((int) $_SESSION['user_manager'] === 1
-            && (in_array($record['id'], $userRoles) === true || (int) $record['creator_id'] === (int) $_SESSION['user_id']))
+        || (((int) $superGlobal->get('user_manager', 'SESSION') === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+            && (in_array($record['id'], $userRoles) === true)|| (int) $record['creator_id'] === (int) $_SESSION['user_id'])
     ) {
         $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
     }
