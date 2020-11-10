@@ -452,6 +452,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
+                    $('#warningModal').modal('hide');
+
                     // Action
                     var data = {
                         'user_id': store.get('teampassApplication').formUserId,

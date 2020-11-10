@@ -55,7 +55,7 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
     //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
     session_regenerate_id(true);
 } else {
-    handleUploadError('No Session was found.');
+    handleAttachmentError('No Session was found.', '');
 }
 
 // Prepare POST variables
