@@ -1991,7 +1991,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
-
+            
             // Load item info
             Details($(this).closest('tr'), 'edit');
         })
@@ -4629,7 +4629,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $.post(
             'sources/items.queries.php', {
                 type: 'showDetailsStep2',
-                id: id
+                id: id,
+                key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
                 //decrypt data
