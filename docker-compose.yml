@@ -6,7 +6,7 @@ services:
     networks:
       - frontend
     ports:
-      - "443:443"
+      - "8080:80"
     volumes:
       - ./volumes/ssl:/etc/nginx/certs
       - /var/run/docker.sock:/tmp/docker.sock:ro
