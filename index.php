@@ -333,10 +333,10 @@ if (empty($session_login) === false) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-    ($session_user_admin === '1' && $SETTINGS_EXT['admin_full_right'] === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
+    ($session_user_admin === '1' && $SETTINGS_EXT['admin_full_right'] === true) ? '' : (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;' . $LANG['home_personal_saltkey_button'].'
-                                </li>' : '', '
+                                </li>' : ''), '
                                 <li onclick="$(\'#div_increase_session_time\').dialog(\'open\')">
                                     <i class="fa fa-clock-o fa-fw"></i> &nbsp;' . $LANG['index_add_one_hour'].'
                                 </li>
