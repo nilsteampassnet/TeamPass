@@ -151,11 +151,11 @@ switch ($post_type) {
                 $debug_ldap .= 'DN : ' . $SETTINGS['ldap_bind_dn'] . ' -- ' . $SETTINGS['ldap_bind_passwd'] . '<br/>';
                 ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
                 ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
-                $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+                $ldapbind = @ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
 
-                $debug_ldap .= 'LDAP bind : ' . ($ldapbind ? 'Bound' : 'Failed') . '<br/>';
+                $debug_ldap .= 'LDAP bind : ' . ($ldapbind === true ? 'Bound' : 'Failed') . '<br/>';
 
-                if ($ldapbind) {
+                if ($ldapbind === true) {
                     $filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $dataReceived['username'] . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
                     //echo $filter;
                     $result = ldap_search(
@@ -267,7 +267,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => $antiXss->xss_clean($debug_ldap),
+                'message' => ($debug_ldap),
             ),
             'encode'
         );
