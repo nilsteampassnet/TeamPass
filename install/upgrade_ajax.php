@@ -84,6 +84,7 @@ if (mysqli_connect(
         $database,
         $port
     );
+    $db_link->set_charset($encoding);
     $res = "Connection is successful";
 } else {
     $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
