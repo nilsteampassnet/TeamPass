@@ -735,7 +735,7 @@ function identifyUserRights(
         // Clean arrays
         $listAllowedFolders = array_unique($listAllowedFolders);
         $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
-        
+
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = DB::query(
@@ -751,7 +751,7 @@ function identifyUserRights(
                 $inc++;
             }
         }
-        
+
         // => Build final lists
         // Add user allowed folders
         $allowedFoldersTmp = array_unique(
@@ -800,15 +800,15 @@ function identifyUserRights(
                 $_SESSION['user_id'],
                 1
             );
-            
+
             if (empty($persoFld['id']) === false && DB::count() > 0) {
                 if (in_array($persoFld['id'], $listAllowedFolders) === false) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     array_push($listAllowedFolders, $persoFld['id']);
                     array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
-                    
+
                     // get all descendants
-                    $ids = $tree->getDescendants($persoFld['id'], false);
+                    $ids = $tree->getDescendants($persoFld['id'], false, true);
                     foreach ($ids as $ident) {
                         if ((int) $ident->personal_folder === 1) {
                             array_push($listAllowedFolders, $ident->id);
@@ -1310,7 +1310,7 @@ function sendEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-        
+
         // send email
         if ($mail->send()) {
             return json_encode(
@@ -1405,7 +1405,7 @@ function isUTF8($string)
 function prepareExchangedData($data, $type)
 {
     global $SETTINGS;
-    /* 
+    /*
     print_r($data);
 echo "\n".json_encode(
     $data,
@@ -2410,7 +2410,7 @@ function connectLDAP($username, $password, $SETTINGS)
     $ldapInfo = '';
 
     // Prepare LDAP connection if set up
-    
+
     if ($SETTINGS['ldap_type'] === 'posix-search') {
         $ldapInfo = ldapPosixSearch(
             $username,
@@ -2583,7 +2583,7 @@ function ldapPosixAndWindows($username, $password, $SETTINGS)
 
     //load ClassLoader
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-    
+
     $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
     $adldap->register();
 
