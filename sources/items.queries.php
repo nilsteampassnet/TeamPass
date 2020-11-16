@@ -2826,7 +2826,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['label'] = utf8_encode($record['label']);
+                        $html_json[$record['id']]['label'] = mb_convert_encoding($record['label'], "UTF-8", "auto");
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
                         } else {
