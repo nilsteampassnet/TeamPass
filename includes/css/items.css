@@ -129,6 +129,7 @@ button{
 
 #item_details_scroll {
     background:white url(../images/canevas/lock_open.png) 100% 100% no-repeat;
+    width: 100%;
 }
 
 .item_detail_title_1{

@@ -796,13 +796,13 @@ function AjouterItem()
             var fields = "";
             $('.item_field').each(function(i){
                 id = $(this).attr('id').split('_');
-                
+
                 // Check if mandatory
                 if ($(this).data('field-is-mandatory') === 1
                     && $(this).val() === ''
                     && $(this).is(':visible') === true
                 ) {
-                    fields = false; 
+                    fields = false;
 
                     $('#new_show_error')
                         .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
@@ -815,7 +815,7 @@ function AjouterItem()
                 // Store date
                 if (fields == "") fields = id[1] + '~~' + $(this).val() + '~~' + id[2];
                 else fields += '_|_' + id[1] + '~~' + $(this).val() + '~~' + id[2];
-            });            
+            });
             if (fields === false) {
                 return false;
             }
@@ -1087,7 +1087,7 @@ function EditerItem()
                         && $(this).val() === ''
                         && $(this).is(':visible') === true
                     ) {
-                        fields = false; 
+                        fields = false;
                         return false;
                     }
                 } else {
@@ -1097,7 +1097,7 @@ function EditerItem()
                         && $(this).val() === ''
                         && $(this).is(':visible') === true
                     ) {
-                        fields = false; 
+                        fields = false;
                         return false;
                     }
                 }
@@ -1106,7 +1106,7 @@ function EditerItem()
                 if (fields == "") fields = id[2] + '~~' + $(this).val();
                 else fields += '_|_' + id[2] + '~~' + $(this).val();
             });
-            
+
             // Exit if error
             if (fields === false) {
                 $('#edit_show_error')
@@ -1263,7 +1263,7 @@ function EditerItem()
                                     } else {
                                         $('#id_field_' + id[2] + '_' + id[3]).text($('#'+input_id).val().replace(/\n/g, "<br>"));
                                     }
-                                    
+
                                     // In case of enabled template then only show the expected one
                                     if ($('#template_selected_id').val() !== '') {
                                         if ($('#template_selected_id').val() === id[3]) {
@@ -1600,7 +1600,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    
+
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -1661,7 +1661,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else {
                             $("#id_pw").html('<?php echo $var['hidden_asterisk']; ?>');
                         }
-                        
+
                         $("#hid_pw").text(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
@@ -1730,7 +1730,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 } else {
                                     $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
                                 }
-                                
+
                                 $('#hid_field_' + field[0] + '_' + field[2]).text(field[1].replace(/<br ?\/?>/g,""));
                                 if (field[4] === "1") {
                                     $('#id_field_' + field[0] + '_' + field[2])
@@ -1742,7 +1742,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             }
                         }
 
-                        // 
+                        //
                         if (data.template_id !== '') {
                             $('.default_item_field, .tr_fields_header').addClass('hidden');
                         } else {
@@ -1900,7 +1900,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.restricted == "1" || data.user_can_modify == "1") {
                             $("#item_editable").val(1);
                         }
-                        
+
                         //Manage double click
                         if (open_edit === "1" && (data.restricted === 1 || data.user_can_modify === 1)) {
                             open_edit_item_div(
@@ -2825,7 +2825,7 @@ function refreshVisibleFolders()
                 } else if ($('#div_formulaire_saisi').is(':visible') === true) {
                     selectionFolderId = $("#categorie option:selected").val();
                 }
-                
+
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
                 $("#move_folder_id").find('option').remove().end().append(html_full_visible);
@@ -2889,10 +2889,11 @@ $(function() {
     // manage item div resize
     $( "#item_details_scroll" ).resizable({handles: {'s': '#handle'}});
     $("#handle").dblclick(function() {
-        var inner = $("#item_details_scroll").find('table');
-        var current_height = $("#item_details_scroll").height();
-        $("#item_details_scroll").animate({top:'+='+(current_height-inner.height())}, 0);
-        $("#item_details_scroll").height(inner.outerHeight(true));
+        var scroll = $("#item_details_scroll");
+        var inner = scroll.find('table');
+        var current_height = scroll.height();
+        scroll.animate({top:'+='+(current_height-inner.height())}, 0);
+        scroll.height(inner.outerHeight(true));
     });
 
     $('#toppathwrap').addClass("hidden");
@@ -3064,7 +3065,7 @@ $(function() {
             $("#new_rep_show_error").addClass("hidden");
             $("#new_rep_show_error").html("");
             $(".ui-tooltip").siblings(".tooltip").remove();
-            
+
             $('#new_rep_groupe').select2({
                 language: "<?php echo $_SESSION['user_language_code']; ?>"
             });
@@ -4495,7 +4496,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         }
     });
 
-    
+
     //Simulate a CRON activity (only 5 secs after page loading)
     setTimeout(
         function() {
@@ -4567,7 +4568,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 
     // Ensure only one template is selected
     $('input.template_for_items').on('change', function() {
-        $('input.template_for_items').not(this).prop('checked', false);  
+        $('input.template_for_items').not(this).prop('checked', false);
     });
 
     NProgress.done();
