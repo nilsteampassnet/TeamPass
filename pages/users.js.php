@@ -594,6 +594,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'form-user-disabled': $('#form-user-disabled').prop('checked'),
                 };
                 console.log(data);
+                var formUserId = store.get('teampassApplication').formUserId;
 
                 $.post(
                     'sources/users.queries.php', {
@@ -615,6 +616,209 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
+                        } else if (store.get('teampassApplication').formUserAction === 'store_user_changes' && data.post_action === 'encrypt_keys') {
+                            // Case where we need to encrypt new keys for the user
+                            // Process is: 
+                            // 1/ generate encryption key (to be shared by email)
+                            // 2/ clear all keyx for this user
+                            // 3/ generate keys for this user with encryption key
+                            // 4/ send email to user
+
+                            // STEP 0 - Prepare Modal
+
+                            toastr.remove();
+                            showModalDialogBox(
+                                '#warningModal',
+                                '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
+                                '<?php echo langHdl('please_wait'); ?>',
+                                '',
+                                '',
+                                true,
+                                false,
+                                false
+                            );
+
+                            // STEP 1
+                            var data = {
+                                'user_id': formUserId,
+                            };
+
+                            $.post(
+                                'sources/main.queries.php', {
+                                    type: 'generate_temporary_encryption_key',
+                                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                    key: "<?php echo $_SESSION['key']; ?>"
+                                },
+                                function(data) {
+                                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                    userTemporaryCode = data.userTemporaryCode;
+
+                                    if (data.error !== false) {
+                                        // Show error
+                                        toastr.remove();
+                                        toastr.error(
+                                            data.message,
+                                            '<?php echo langHdl('caution'); ?>', {
+                                                timeOut: 5000,
+                                                progressBar: true
+                                            }
+                                        );
+                                    } else {
+                                        // Launch recursive action to encrypt the keys
+                                        function callRecurive(
+                                            userId,
+                                            step,
+                                            start
+                                        ) {
+                                            var dfd = $.Deferred();
+                                            
+                                            var stepText = '';
+                                            console.log('Performing '+step)
+
+                                            // Prepare progress string
+                                            if (step === 'step0') {
+                                                stepText = '<?php echo langHdl('inititialization'); ?>';
+                                            } else if (step === 'step1') {
+                                                stepText = '<?php echo langHdl('items'); ?>';
+                                            } else if (step === 'step2') {
+                                                stepText = '<?php echo langHdl('logs'); ?>';
+                                            } else if (step === 'step3') {
+                                                stepText = '<?php echo langHdl('suggestions'); ?>';
+                                            } else if (step === 'step4') {
+                                                stepText = '<?php echo langHdl('fields'); ?>';
+                                            } else if (step === 'step5') {
+                                                stepText = '<?php echo langHdl('files'); ?>';
+                                            } else if (step === 'step6') {
+                                                stepText = '<?php echo langHdl('personal_items'); ?>';
+                                            }
+
+                                            if (step !== 'finished') {
+                                                // Inform user
+                                                $("#warningModalBody").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+                                                    stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
+                                                    '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+
+                                                // Do query
+                                                $.post(
+                                                    "sources/main.queries.php", {
+                                                        type: "user_sharekeys_reencryption_next",
+                                                        'action': step,
+                                                        'start': start,
+                                                        'length': 200,
+                                                        userId: userId,
+                                                        key: '<?php echo $_SESSION['key']; ?>'
+                                                    },
+                                                    function(data) {
+                                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                                        
+                                                        if (data.error === true) {
+                                                            // error
+                                                            toastr.remove();
+                                                            toastr.error(
+                                                                data.message,
+                                                                '<?php echo langHdl('caution'); ?>', {
+                                                                    timeOut: 5000,
+                                                                    progressBar: true
+                                                                }
+                                                            );
+
+                                                            dfd.reject();
+                                                        } else {
+                                                            // Prepare variables
+                                                            userId = data.userId;
+                                                            step = data.step;
+                                                            start = data.start;
+
+                                                            // Do recursive call until step = finished
+                                                            callRecurive(
+                                                                userId,
+                                                                step,
+                                                                start
+                                                            ).done(function(response) {
+                                                                dfd.resolve(response);
+                                                            });
+                                                        }
+                                                    }
+                                                );
+                                            } else {
+                                                console.log('send email for '+userTemporaryCode)
+                                                $("#warningModalBody").html('<b><?php echo langHdl('sending_email_message'); ?> <i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+                                                
+                                                // Prepare data
+                                                var data = {
+                                                    'receipt': $('#form-email').val(),
+                                                    'subject': 'TEAMPASS - <?php echo langHdl('temporary_encryption_code');?>',
+                                                    'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
+                                                    'pre_replace' : {
+                                                        '#enc_code#' : userTemporaryCode,
+                                                    }
+                                                }
+
+                                                // Launch action
+                                                $.post(
+                                                    'sources/main.queries.php', {
+                                                        type: 'mail_me',
+                                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                                        key: '<?php echo $_SESSION['key']; ?>'
+                                                    },
+                                                    function(data) {
+                                                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                                                        if (data.error !== false) {
+                                                            // Show error
+                                                            toastr.remove();
+                                                            toastr.error(
+                                                                data.message,
+                                                                '', {
+                                                                    timeOut: 5000,
+                                                                    progressBar: true
+                                                                }
+                                                            );
+                                                        } else {
+                                                            toastr.remove();
+                                                            $('#warningModal').modal('hide');
+
+                                                            // Fianlize UI
+                                                            // clear form fields
+                                                            $(".clear-me").val('');
+                                                            $('.select2').val('').change();
+                                                            //$('#privilege-user').iCheck('check');
+                                                            $('.form-check-input')
+                                                                .iCheck('disable')
+                                                                .iCheck('uncheck');
+
+                                                            // refresh table content
+                                                            oTable.ajax.reload();
+
+                                                            // Show list of users
+                                                            $('#row-form').addClass('hidden');
+                                                            $('#row-list').removeClass('hidden');
+
+                                                            // Inform user
+                                                            toastr.remove();
+                                                            toastr.success(
+                                                                '<?php echo langHdl('done'); ?>',
+                                                                '', {
+                                                                    timeOut: 1000
+                                                                }
+                                                            );
+                                                        }
+                                                    }
+                                                );
+                                            }
+                                            return dfd.promise();
+                                        }
+                                               
+
+                                        // call the recursive function
+                                        callRecurive(formUserId, 'step0', 0); 
+                                    }
+                                }
+                            );
+
+
+
+                            // ---
                         } else {
                             // clear form fields
                             $(".clear-me").val('');
@@ -1356,11 +1560,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 if (regex !== null) {
                                     group = regex[0].replace('cn=', '').replace(',', '');
                                     // Check if this user has this group in Teampass
-                                    if (entry.teampass !== undefined && entry.teampass.groups.filter(p => p.title === group).length > 0) {
+                                    if (entry.teampass !== undefined && entry.ldap_groups.filter(p => p.title === group).length > 0) {
                                         html += group + '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo langHdl('user_has_this_role_in_teampass'); ?>"></i><br>';
                                     } else {
                                         // Check if this group exists in Teampass and propose to add it
-                                        tmp = data.teampassGroups.filter(p => p.title === group);
+                                        tmp = data.teampass_groups.filter(p => p.title === group);
                                         if (tmp.length > 0 && entry.teampass !== undefined) {
                                             html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo langHdl('add_user_to_role'); ?>" data-user-id="' + entry.teampass.id + '" data-role-id="' + tmp[0].id + '"></i><br>';
                                         } else {
@@ -1371,14 +1575,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 }
                             });
                             html += '</td><td>';
-
                             // Action icons
-                            html += (entry.teampass === undefined ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + entry.mail[0] + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + entry.sn[0] + '"></i>' : '');
+                            html += (entry.teampass === undefined ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
 
                             // Only of not admin
-                            if (userLogin !== 'admin') {
+                            /*if (userLogin !== 'admin') {
                                 html += (entry.teampass.auth === 'ldap' ? '<i class="fas fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo langHdl('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fas fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo langHdl('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
-                            }
+                            }*/
 
                             html += '</td></tr>';
                         }
@@ -1394,8 +1597,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $('#ldap-new-role-selection')
                         .empty()
                         .append('<option value="">--- <?php echo langHdl('select'); ?> ---</option>');
-                    $.each(data.adGroups, function(i, group) {
-                        tmp = data.teampassGroups.filter(p => p.title === group);
+                    $.each(data.ldap_groups, function(i, group) {
+                        tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
                             $('#ldap-new-role-selection').append(
                                 '<option value="' + group + '">' + group + '</option>'

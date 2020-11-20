@@ -47,17 +47,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 
 <script type='text/javascript'>
     //<![CDATA[
-
-    $(document).on('change', '#ldap_type', function() {
-        $(".tr-ldap").addClass('hidden');
-        $(".tr-" + $(this).val()).removeClass('hidden');
-    });
-
     /**
      * TOP MENU BUTTONS ACTIONS
      */
     $(document).on('click', '.tp-action', function() {
         console.log($(this).data('action'))
+        $('#ldap-test-config-results-text').html('');
         if ($(this).data('action') === 'ldap-test-config') {
             toastr.remove();
             toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
@@ -83,7 +78,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         toastr.error(
                             data.message,
                             '<?php echo langHdl('caution'); ?>', {
-                                timeOut: 5000,
+                                //timeOut: 5000,
                                 progressBar: true
                             }
                         );

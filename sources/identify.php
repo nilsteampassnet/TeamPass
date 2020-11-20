@@ -17,6 +17,10 @@
  * @see       https://www.teampass.net
  */
 
+use LdapRecord\Models\Model;
+use LdapRecord\Models\Entry;
+use LdapRecord\Container; 
+use LdapRecord\Connection;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -202,6 +206,7 @@ if ($post_type === 'identify_duo_user') {
 
     // manage brute force
     if ($sessionPwdAttempts <= 3) {
+        $sessionPwdAttempts = 0;
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -351,7 +356,7 @@ function identifyUser($sentData, $SETTINGS)
     }
 
     // Brute force management
-    if ($sessionPwdAttempts > 2) {
+    if ($sessionPwdAttempts > 3) {
         $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
@@ -488,91 +493,28 @@ function identifyUser($sentData, $SETTINGS)
         && $userInfo['auth_type'] !== 'local'
     ) {
         $ldapConnection = true;
-        //Multiple Domain Names
-        if (strpos(html_entity_decode($username), '\\') === false) {
-            $ldap_suffix = '';
-        } else {
-            $ldap_suffix = '@' . substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
-            $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
-        }
-        if ($SETTINGS['ldap_type'] === 'posix-search') {
-            $retLDAP = identifyViaLDAPPosixSearch(
-                $username,
-                $userInfo,
-                $passwordClear,
-                $counter,
-                $SETTINGS
-            );
 
-            if ($retLDAP['error'] === true) {
-                echo prepareExchangedData(
-                    array(
-                        'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                        'pwd_attempts' => (int) $sessionPwdAttempts,
-                        'error' => true,
-                        'message' => $retLDAP['message'],
-                    ),
-                    'encode'
-                );
-                return false;
-                // ---
-            } elseif ($retLDAP['proceedIdentification'] !== true && $retLDAP['userInLDAP'] === true) {
-                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-                echo prepareExchangedData(
-                    array(
-                        'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                        'pwd_attempts' => (int) $sessionPwdAttempts,
-                        'error' => 'user_not_exists7',
-                        'message' => langHdl('error_bad_credentials'),
-                    ),
-                    'encode'
-                );
-                return false;
-            } elseif (isset($retLDAP['hashedPassword']) === true && empty($retLDAP['hashedPassword']) === false) {
-                $userInfo['pw'] = $retLDAP['hashedPassword'];
-            }
-        } else {
-            $retLDAP = identifyViaLDAPPosix(
-                $username,
-                $ldap_suffix,
-                $passwordClear,
-                $counter,
-                $SETTINGS
-            );
+        $retLDAP = authenticateThroughAD(
+            $username,
+            $userInfo,
+            $passwordClear,
+            $counter,
+            $SETTINGS
+        );
 
-            if ($retLDAP['error'] === true) {
-                echo prepareExchangedData(
-                    array(
-                        'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                        'pwd_attempts' => (int) $sessionPwdAttempts,
-                        'error' => true,
-                        'message' => $retLDAP['message'],
-                    ),
-                    'encode'
-                );
-                return false;
-                // ---
-            } elseif ($retLDAP['proceedIdentification'] !== true && (int) $SETTINGS['ldap_and_local_authentication'] !== 1) {
-                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-                echo prepareExchangedData(
-                    array(
-                        'value' => '',
-                        'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                        'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                        'pwd_attempts' => (int) $sessionPwdAttempts,
-                        'error' => 'user_not_exists8',
-                        'message' => langHdl('error_bad_credentials'),
-                    ),
-                    'encode'
-                );
-                return false;
-            }
+        if ($retLDAP['error'] === true) {
+            echo prepareExchangedData(
+                array(
+                    'value' => '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => true,
+                    'message' => $retLDAP['message'],
+                ),
+                'encode'
+            );
+            return false;
         }
     }
 
@@ -750,6 +692,7 @@ function identifyUser($sentData, $SETTINGS)
         $superGlobal->put('name', stripslashes($userInfo['name']), 'SESSION');
         $superGlobal->put('lastname', stripslashes($userInfo['lastname']), 'SESSION');
         $superGlobal->put('user_id', $userInfo['id'], 'SESSION');
+        $superGlobal->put('user_pwd', $passwordClear, 'SESSION');
         $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
         $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
         $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
@@ -772,10 +715,10 @@ function identifyUser($sentData, $SETTINGS)
         $superGlobal->put('treeloadstrategy', $userInfo['treeloadstrategy'], 'SESSION', 'user');
         $superGlobal->put('agses-usercardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
-        $superGlobal->put('encrypted_psk', $userInfo['encrypted_psk'], 'SESSION', 'user');
         $superGlobal->put('usertimezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
+        $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
 
         // manage session expiration
         $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
@@ -1209,6 +1152,202 @@ function identifyUser($sentData, $SETTINGS)
         'encode'
     );
 }
+
+/**
+ * Authenticate a user through AD.
+ *
+ * @param string $username      Username
+ * @param array  $userInfo      User account information
+ * @param string $passwordClear Password
+ * @param int    $counter       User exists in teampass
+ * @param array  $SETTINGS      Teampass settings
+ *
+ * @return array
+ */
+function authenticateThroughAD($username, $userInfo, $passwordClear, $counter, $SETTINGS)
+{
+    // Build ldap configuration array
+    $config = [
+        // Mandatory Configuration Options
+        'hosts'            => [$SETTINGS['ldap_domain_controler']],
+        'base_dn'          => $SETTINGS['ldap_search_base'],
+        'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",cn=users,".$SETTINGS['ldap_bdn'],
+        'password'         => $passwordClear,
+    
+        // Optional Configuration Options
+        'port'             => $SETTINGS['ldap_port'],
+        'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'version'          => 3,
+        'timeout'          => 5,
+        'follow_referrals' => false,
+    
+        // Custom LDAP Options
+        'options' => [
+            // See: http://php.net/ldap_set_option
+            LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+        ]
+    ];
+
+    // Load expected libraries
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/illuminate/Contracts/Auth/Authenticatable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Contracts/Support/Jsonable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Contracts/Support/Arrayable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Enumerable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Collection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
+
+    $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+    $ad->register();
+    $connection = new Connection($config);
+
+    // COnnect to LDAP
+    try {
+        $connection->connect();
+        Container::addConnection($connection);
+    } catch (\LdapRecord\Auth\BindException $e) {
+        $error = $e->getDetailedError();
+
+        return array(
+            'error' => true,
+            'message' => langHdl('error').' : '.$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+             
+        );
+    }
+
+    $query = $connection->query();
+
+    
+    try {
+        $entry = $query->findBy('uid', 'nils');
+    } catch (\LdapRecord\Models\ModelNotFoundException $ex) {
+        // Not found.
+        return array(
+            'error' => true,
+            'message' => langHdl('error_no_user_in_ad'),             
+        );
+    }
+    
+    // Check shadowexpire attribute - if === 1 then user disabled
+    if (isset($entry['shadowexpire'][0]) === true && (int) $entry['shadowexpire'][0] === 1) {
+        return array(
+            'error' => true,
+            'message' => langHdl('error_ad_user_expired'),
+        );
+    }
+
+    
+    // Should we restrain the search in specified user groups
+    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+        // Get immediate groups the user is apart of:
+        $arrayTmp = array();
+        foreach ($entry['memberof'] as $group) {
+            $group = substr($group, strpos($group, '=')+1, (strpos($group,',') - strpos($group, '=') - 1));
+            if (empty($group) === false) {
+                array_push($arrayTmp, $group);
+            }
+        }
+
+        if (in_array($SETTINGS['ldap_usergroup'], $arrayTmp) === false) {
+            return array(
+                'error' => true,
+                'message' => langHdl('error_user_not_allowed_group'),
+            );
+        }
+    }
+
+    
+    // Check if password is still the same with the one in Teampass
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+    
+    // If user has never been connected then erase current pwd with the ldap's one
+    if (empty($userInfo['last_connexion']) === true) {
+        $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($passwordClear), $hashedPassword) === true) {
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'pw' => $hashedPassword,
+                ),
+                'id = %i',
+                $userInfo['id']
+            );
+            $userInfo['pw'] = $hashedPassword;
+        } else {
+            return array(
+                'error' => true,
+                'message' => langHdl('error_something_wrong'),
+            );
+        }
+    } else {
+        DB::update(
+            prefixTable('users'),
+            array(
+                'upgrade_needed' => 1,
+            ),
+            'id = %i',
+            $userInfo['id']
+        );
+    }
+
+    return array(
+        'error' => false,
+        'message' => '',
+    );
+    
+    //print_r($entry);
+
+    // Get user AD infos
+  /*  if ($SETTINGS['ldap_type'] === 'OpenLDAP') {
+        $user = \LdapRecord\Models\OpenLDAP\User::where($SETTINGS['ldap_user_attribute'], '=', $username);
+    } else if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+        $user = \LdapRecord\Models\ActiveDirectory\User::where($SETTINGS['ldap_user_attribute'], '=', $username)->get();
+    } else if ($SETTINGS['ldap_type'] === 'FreeIPA') {
+        $user = \LdapRecord\Models\FreeIPA\User::where($SETTINGS['ldap_user_attribute'], '=', $username)->get();
+    }
+
+    $userADInfo = $user->get();*/
+    /*class User extends Model
+    {
+        //protected $connection = 'domain-b';
+        public static $objectClasses = [
+            'uid',
+            'mail',
+            'givenname',
+            'cn',
+        ];
+    $user = User::find('uid=nils,dc=ldap,dc=test,dc=local');
+    
+    //$user = \LdapRecord\Models\OpenLdap\User::find('uid=nils,dc=ldap,dc=test,dc=local')->getAttributes();
+    print_r($user);
+    }*/
+
+    //echo $user->getFirstAttribute('shadowexpire')." -- ";
+
+    //print_r($userADInfo);
+
+
+    return array(
+        'error' => false,
+        /*'message' => $ldapConnection,
+        'auth_username' => $username,
+        'user_info_from_ad' => $result,
+        'proceedIdentification' => $proceedIdentification,
+        'userInLDAP' => $userInLDAP,
+        'userGroups' => $ldapUserGroups,
+        'hashedPassword' => isset($hashedPassword) === true ? $hashedPassword : '',*/
+    );
+}
+
 
 /**
  * Undocumented function.

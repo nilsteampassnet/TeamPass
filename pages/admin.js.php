@@ -168,17 +168,6 @@
                             progressBar: true
                         }
                     );
-
-                    // Force page reload in case of encryptClientServer
-                    if (field === 'ldap_type') {
-                        $('.tr-ldap').each(function() {
-                            if ($(this).hasClass('tr-' + value) === false) {
-                                $(this).addClass('hidden');
-                            } else {
-                                $(this).removeClass('hidden');
-                            }
-                        });
-                    }
                 }
                 requestRunning = false;
             }

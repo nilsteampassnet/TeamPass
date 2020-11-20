@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 
+use LdapRecord\Connection;
+
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -107,20 +109,88 @@ switch ($post_type) {
             break;
         }
 
-        // decrypt and retreive data in JSON format
+        // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
 
-        if (empty($dataReceived['password']) === true || empty($dataReceived['username']) === true) {
+        // prepare variables
+        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_STRING);
+        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+
+        // Build ldap configuration array
+        $config = [
+            // Mandatory Configuration Options
+            'hosts'            => [$SETTINGS['ldap_domain_controler']],
+            'base_dn'          => $SETTINGS['ldap_search_base'],
+            'username'         => $SETTINGS['ldap_bind_dn'],
+            'password'         => $SETTINGS['ldap_bind_passwd'],
+        
+            // Optional Configuration Options
+            'port'             => $SETTINGS['ldap_port'],
+            'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
+            'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+            'version'          => 3,
+            'timeout'          => 5,
+            'follow_referrals' => false,
+        
+            // Custom LDAP Options
+            'options' => [
+                // See: http://php.net/ldap_set_option
+                LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+            ]
+        ];
+
+        // Load expected libraries
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+
+        $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+        $ad->register();
+        $connection = new Connection($config);
+
+        try {
+            $connection->connect();
+        
+        } catch (\LdapRecord\Auth\BindException $e) {
+            $error = $e->getDetailedError();
+
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('credentials_cannot_be_empty'),
+                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
                 ),
                 'encode'
             );
             break;
         }
 
+        try {
+            $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.',cn=users,'.$SETTINGS['ldap_bdn'], $post_password);
+
+        } catch (\LdapRecord\Auth\BindException $e) {
+            $error = $e->getDetailedError();
+            
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => "Great",
+            ),
+            'encode'
+        );
+
+    break;
+/*
         $debug_ldap = $ldap_suffix = '';
 
         //Multiple Domain Names
@@ -272,5 +342,5 @@ switch ($post_type) {
             'encode'
         );
 
-        break;
+        break;*/
 }

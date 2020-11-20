@@ -17,6 +17,8 @@
  * @see       https://www.teampass.net
  */
 
+use LdapRecord\Connection;
+
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
@@ -3451,6 +3453,7 @@ function ldapConnect($SETTINGS)
     } else { }
 }
 
+
 /**
  * CHeck if provided credentials are allowed on server
  *
@@ -3461,6 +3464,77 @@ function ldapConnect($SETTINGS)
  * @return bool
  */
 function ldapCheckUserPassword($login, $password, $SETTINGS)
+{
+    // Build ldap configuration array
+    $config = [
+        // Mandatory Configuration Options
+        'hosts'            => [$SETTINGS['ldap_domain_controler']],
+        'base_dn'          => $SETTINGS['ldap_search_base'],
+        'username'         => $SETTINGS['ldap_bind_dn'],
+        'password'         => $SETTINGS['ldap_bind_passwd'],
+
+        // Optional Configuration Options
+        'port'             => $SETTINGS['ldap_port'],
+        'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'version'          => 3,
+        'timeout'          => 5,
+        'follow_referrals' => false,
+
+        // Custom LDAP Options
+        'options' => [
+            // See: http://php.net/ldap_set_option
+            LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+        ]
+    ];
+
+    // Load expected libraries
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
+
+    $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+    $ad->register();
+    $connection = new Connection($config);
+
+    // COnnect to LDAP
+    try {
+        $connection->connect();
+
+    } catch (\LdapRecord\Auth\BindException $e) {
+        $error = $e->getDetailedError();
+
+        echo "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage();
+        return false;
+    }
+
+    // Authenticate user
+    try {
+        $connection->auth()->attempt($SETTINGS['ldap_user_attribute']."=".$login.",".$SETTINGS['ldap_search_base'], $password, $stayAuthenticated = true);
+
+    } catch (\LdapRecord\Auth\BindException $e) {
+        $error = $e->getDetailedError();
+        
+        echo "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage();
+        return false;
+    }
+
+    return true;
+}
+
+
+/**
+ * CHeck if provided credentials are allowed on server
+ *
+ * @param string $login    User Login
+ * @param string $password User Pwd
+ * @param array  $SETTINGS Teampass settings
+ *
+ * @return bool
+ */
+function ldapCheckUserPassword_OLD($login, $password, $SETTINGS)
 {
     $ldapconn = ldapConnect($SETTINGS);
     if ($ldapconn) {

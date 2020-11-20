@@ -716,46 +716,6 @@ if (($session_validite_pw === null
             <!-- Content Wrapper. Contains page content -->
             <div class="content-wrapper">
 
-                <!-- PERSONAL SALTKEY -->
-                <div class="card card-warning m-2 hidden" id="dialog-request-psk">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-key mr-2"></i>
-                            <?php echo langHdl('home_personal_saltkey_label'); ?>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12 col-md-12">
-                                <h6 class="text-center">
-                                    <?php
-                                        echo isset($SETTINGS['personal_saltkey_security_level']) === true
-                                            && empty($SETTINGS['personal_saltkey_security_level']) === false ?
-                                            '<div class="text-info text-center"><i class="fas fa-info mr-3"></i>' .
-                                            langHdl('complex_asked') . ' : <b>' .
-                                            TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1] .
-                                            '</b></div>'
-                                            : ''; ?>
-                                </h6>
-
-                                <input class="form-control form-control-lg" type="password" placeholder="<?php echo langHdl('personal_salt_key'); ?>" value="<?php echo isset($_SESSION['user']['clear_psk']) ? (string) $_SESSION['user']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
-
-                                <div class="text-center" style="margin: 10px 0 0 40%;">
-                                    <?php
-                                        echo '<div id="psk_strength"></div>' .
-                                            '<input type="hidden" id="psk_strength_value" />'; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-default" id="button_save_user_psk"><?php echo langHdl('submit'); ?></button>
-                        <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
-                    </div>
-                </div>
-                <!-- /.PERSONAL SALTKEY -->
-
-
                 <!-- DEFECT REPORT -->
                 <div class="card card-danger m-2 hidden" id="dialog-bug-report">
                     <div class="card-header">
@@ -795,13 +755,9 @@ if (($session_validite_pw === null
                     <div class="card-body">
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
-                                <div class="mb-2 alert alert-info" id="warning-text-changing-password">
+                                <div class="mb-2 alert alert-info" id="warning-text-reencryption">
                                     <i class="icon fas fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
-                                </div>
-                                <div class="mb-2 alert alert-info ask-for-previous-password hidden">
-                                    <i class="icon fas fa-info mr-2"></i>
-                                    <?php echo langHdl('ldap_password_change_warning'); ?>
                                 </div>
                                 <div class="input-group mb-3 ask-for-previous-password hidden">
                                     <div class="input-group-prepend">
@@ -809,11 +765,17 @@ if (($session_validite_pw === null
                                     </div>
                                     <input type="password" class="form-control" id="profile-previous-password">
                                 </div>
-                                <div class="input-group mb-3 ask-for-previous-password hidden">
+                                <div class="input-group mb-3 current-user-password hidden">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="profile-current-password">
+                                </div>
+                                <div class="input-group mb-3 temporary-encryption-code hidden">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-temporary-encryption-code">
                                 </div>
                                 <div class="input-group mb-3 ask-for-new-password hidden">
                                     <div class="input-group-prepend">
@@ -1032,7 +994,7 @@ if (($session_validite_pw === null
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="warningModalTitle"></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" id="warningModalCrossClose">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>

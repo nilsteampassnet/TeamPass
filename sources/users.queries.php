@@ -17,6 +17,7 @@
  * @see       https://www.teampass.net
  */
 
+use LdapRecord\Connection;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -1365,7 +1366,6 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            //$post_password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
             $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
             $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
             $post_is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
@@ -1384,6 +1384,7 @@ if (null !== $post_type) {
 
             // Init post variables
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
+            $action_to_perform_after = '';
 
             // Build array of update
             $changeArray = array(
@@ -1423,6 +1424,8 @@ if (null !== $post_type) {
 
                 // We need to adapt the private key with new password
                 $changeArray['private_key'] = encryptPrivateKey($post_password, $_SESSION['user']['private_key']);
+
+                // TODO
             }
 
             // Empty user
@@ -1506,6 +1509,21 @@ if (null !== $post_type) {
                         $logDisabledText = 'at_user_unlocked';
                     }
 
+                    // update SESSION
+                    if ($_SESSION['user_id'] === $post_id) {
+                        $_SESSION['user_email'] = $post_email;
+                        $_SESSION['name'] = $post_name;
+                        $_SESSION['lastname'] = $post_lastname;
+                    }
+
+                    // Has the groups changed? If yes then ask for a keys regeneration
+                    $arrOldData = array_filter(explode(';', $oldData['fonction_id']));
+                    $post_groups = array_filter($post_groups);
+
+                    if ($arrOldData != $post_groups) {
+                        $action_to_perform_after = 'encrypt_keys';
+                    }
+
                     // update user
                     DB::update(
                         prefixTable('users'),
@@ -1513,13 +1531,6 @@ if (null !== $post_type) {
                         'id = %i',
                         $post_id
                     );
-
-                    // update SESSION
-                    if ($_SESSION['user_id'] === $post_id) {
-                        $_SESSION['user_email'] = $post_email;
-                        $_SESSION['name'] = $post_name;
-                        $_SESSION['lastname'] = $post_lastname;
-                    }
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
@@ -1535,6 +1546,7 @@ if (null !== $post_type) {
                     array(
                         'error' => false,
                         'message' => '',
+                        'post_action' => $action_to_perform_after,
                     ),
                     'encode'
                 );
@@ -1869,8 +1881,8 @@ if (null !== $post_type) {
                         WHERE id = %i',
                         $role
                     );
-                    array_push($foldersAllowed, $tmp['title']);
-                    array_push($foldersAllowedIds, $tmp['id']);
+                    array_push($foldersAllowed, $tmp !== null ? $tmp['title'] : langHdl('none'));
+                    array_push($foldersAllowedIds, $tmp !== null ? $tmp['id'] : -1);
                 }
 
                 // Get denied folders
@@ -1882,8 +1894,8 @@ if (null !== $post_type) {
                         WHERE id = %i',
                         $role
                     );
-                    array_push($foldersForbidden, $tmp['title']);
-                    array_push($foldersForbiddenIds, $tmp['id']);
+                    array_push($foldersForbidden, $tmp !== null ? $tmp['title'] : langHdl('none'));
+                    array_push($foldersForbiddenIds, $tmp !== null ? $tmp['id'] : -1);
                 }
 
                 // Store
@@ -1896,8 +1908,8 @@ if (null !== $post_type) {
                         'login' => $record['login'],
                         'groups' => implode(', ', $groups),
                         'groupIds' => $groupIds,
-                        'managedBy' => $managedBy['title'] === null ? langHdl('administrator') : $managedBy['title'],
-                        'managedById' => $managedBy['id'] === null ? 0 : $managedBy['id'],
+                        'managedBy' => $managedBy=== null ? langHdl('administrator') : $managedBy['title'],
+                        'managedById' => $managedBy === null ? 0 : $managedBy['id'],
                         'foldersAllowed' => implode(', ', $foldersAllowed),
                         'foldersAllowedIds' => $foldersAllowedIds,
                         'foldersForbidden' => implode(', ', $foldersForbidden),
@@ -2263,6 +2275,169 @@ if (null !== $post_type) {
                 );
                 break;
             }
+
+            // Build ldap configuration array
+            $config = [
+                // Mandatory Configuration Options
+                'hosts'            => [$SETTINGS['ldap_domain_controler']],
+                'base_dn'          => $SETTINGS['ldap_search_base'],
+                'username'         => $SETTINGS['ldap_bind_dn'],
+                'password'         => $SETTINGS['ldap_bind_passwd'],
+            
+                // Optional Configuration Options
+                'port'             => $SETTINGS['ldap_port'],
+                'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
+                'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+                'version'          => 3,
+                'timeout'          => 5,
+                'follow_referrals' => false,
+            
+                // Custom LDAP Options
+                'options' => [
+                    // See: http://php.net/ldap_set_option
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+                ]
+            ];
+
+            // Load expected libraries
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
+
+            $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+            $ad->register();
+            $connection = new Connection($config);
+
+            // COnnect to LDAP
+            try {
+                $connection->connect();
+            
+            } catch (\LdapRecord\Auth\BindException $e) {
+                $error = $e->getDetailedError();
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $adRoles = array();
+            $adUsersToSync = array();
+            $teampassRoles = array();
+            $adUsedAttributes = array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire');
+
+
+            $users = $connection->query()->where([
+                ['objectclass', '=', 'top'],
+                ['objectclass', '=', 'person'],
+                ['objectclass', '=', 'organizationalperson'],
+                ['objectclass', '=', 'inetorgperson'],
+            ])->get();
+            
+            foreach($users as $i => $adUser) {
+                //print_r($user);
+
+                // Build the list of all groups in AD
+                foreach($adUser['memberof'] as $j => $adUserGroup) {
+                    if (empty($adUserGroup) === false) {
+                        $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
+                        if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
+                            array_push($adRoles, $adGroup);
+                        }
+                    }
+                }
+
+                // Is user in Teampass ?
+                $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
+                if (null !== $userLogin) {
+                    // Get his ID
+                    $user = DB::queryfirstrow(
+                        'SELECT id, fonction_id, auth_type
+                        FROM ' . prefixTable('users') . '
+                        WHERE login = %s',
+                        $userLogin
+                    );
+                    if (DB::count() === 0) {
+                        // Loop on all user attributes
+                        $tmp = array();
+                        foreach ($adUsedAttributes as $userAttribute) {
+                            if (isset($adUser[$userAttribute]) === true) {
+                                if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
+                                    // Loop on all entries
+                                    $tmpAttrValue = '';
+                                    foreach ($adUser[$userAttribute] as $userAttributeEntry) {
+                                        if ($userAttribute === 'memberof') {
+                                            $userAttributeEntry = substr($userAttributeEntry, 3, strpos($userAttributeEntry, ',') - 3);
+                                        }
+                                        if (empty($tmpAttrValue) === true) {
+                                            $tmpAttrValue = $userAttributeEntry;
+                                        } else {
+                                            $tmpAttrValue .= ','.$userAttributeEntry;
+                                        }
+                                    }
+                                    $tmp[$userAttribute] = $tmpAttrValue;
+                                } else {
+                                    $tmp[$userAttribute] = $adUser[$userAttribute];
+                                }
+                            }
+                        }
+
+                        array_push($adUsersToSync, $tmp);
+                    }
+                }
+            }
+
+            // Get all groups in Teampass
+            $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
+            foreach ($rows as $record) {
+                array_push(
+                    $teampassRoles,
+                    array(
+                        'id' => $record['id'],
+                        'title' => $record['title']
+                    )
+                );
+            }
+
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => false,
+                    'entries' => $adUsersToSync,
+                    'ldap_groups' => $adRoles,
+                    'teampass_groups' => $teampassRoles,
+                ), 
+                'encode'
+            );
+
+/*
+        // Authenticate user
+        try {
+            $connection->auth()->bind($SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd'], $stayAuthenticated = true);
+
+        } catch (\LdapRecord\Auth\BindException $e) {
+            $error = $e->getDetailedError();
+            
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                ),
+                'encode'
+            );
+            break;
+        }
+*/
+
+
+
+
+        break;
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');

@@ -389,16 +389,22 @@ function showModalDialogBox(
     actionButton,
     closeButton,
     xlSize = false,
-    warningModal = false
+    warningModal = false,
+    closeCross = true
 ) {
     $(modalId + 'Title').html(title);
     $(modalId + 'Body').html(body);
-    $(modalId + 'ButtonClose').html(closeButton);
-    $(modalId + 'ButtonAction').html(actionButton);
     if (actionButton === '') {
         $(modalId + 'ButtonAction').addClass('hidden');
     } else {
         $(modalId + 'ButtonAction').removeClass('hidden');
+        $(modalId + 'ButtonAction').html(actionButton);
+    }
+    if (closeButton === '') {
+        $(modalId + 'ButtonClose').addClass('hidden');
+    } else {
+        $(modalId + 'ButtonClose').removeClass('hidden');
+        $(modalId + 'ButtonClose').html(closeButton);
     }
     if (xlSize === true) {
         $(modalId + ' div:first').addClass('modal-xl');
@@ -410,7 +416,14 @@ function showModalDialogBox(
     } else {
         $(modalId + ':eq(1)').removeClass('bg-warning');
     }
+    if (closeCross === false) {
+        $(modalId + 'CrossClose').addClass('hidden');
+    } else {
+        $(modalId + 'CrossClose').removeClass('hidden');
+    }
     $(modalId).modal({
+        backdrop : 'static',
+        keyboard : false,
         show: true,
         focus: true
     });

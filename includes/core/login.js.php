@@ -69,6 +69,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             },
                             function(receivedData) {
                                 var data = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
+                                console.log(data)
                                 $('#div-2fa-duo, #div-2fa-duo-progress').removeClass('hidden');
 
                                 if (data.error !== false) {
@@ -755,14 +756,13 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
                         },
                         function(receivedData) {
-                            console.log(receivedData)
                             var data = prepareExchangedData(
                                 receivedData,
                                 "decode",
                                 "<?php echo $_SESSION['key']; ?>"
                             );
-                            //console.info('Identification answer:')
-                            //console.log(data);
+                            console.info('Identification answer:')
+                            console.log(data);
                             
                             // Maintenance mode is enabled?
                             if (data.error === 'maintenance_mode_enabled') {
@@ -786,6 +786,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                         teampassUser.sessionStartTimestamp = Date.now();
                                         teampassUser.sessionKey = data.session_key;
                                         teampassUser.user_id = data.user_id;
+                                        teampassUser.pwd = data.pw;
                                         teampassUser.user_has_psk = data.has_psk;
                                         teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
                                         teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
@@ -798,10 +799,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                     window.location.href = 'index.php?page=admin';
                                 } else if (data.initial_url !== '' && data.initial_url !== null) {
                                     window.location.href = data.initial_url;
-                                    //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                                 } else {
                                     window.location.href = 'index.php?page=items';
-                                    //+ (data.action_on_login !== '' ? '&action='+data.action_on_login : '');
                                 }
                             } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
                                 $('#div-2fa-google-qr')

@@ -1864,7 +1864,7 @@ Insert the log here and especially the answer of the query that failed.
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Check if user exists
                 $userInfo = DB::queryFirstRow(
-                    'SELECT public_key, private_key, public_key
+                    'SELECT public_key, private_key, pw
                     FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
@@ -1886,24 +1886,46 @@ Insert the log here and especially the answer of the query that failed.
                         $post_user_id
                     );
 
-                    // Decrypt itemkey with user key
-                    // use old password to decrypt private_key
-                    $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
-                    $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
-                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+                    if (count($currentUserKey) > 0) {
+                        // Decrypt itemkey with user key
+                        // use old password to decrypt private_key
+                        $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
+                        $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
+                        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
 
-                    if (empty(base64_decode($itemKey)) === false) {
-                        // GOOD password
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'debug' => '',
-                            ),
-                            'encode'
-                        );
+                        if (empty(base64_decode($itemKey)) === false) {
+                            // GOOD password
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => false,
+                                    'message' => '',
+                                    'debug' => '',
+                                ),
+                                'encode'
+                            );
 
-                        break;
+                            break;
+                        }
+                    } else {
+                        // Use the password check
+                        // load passwordLib library
+                        $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+                        $pwdlib->register();
+                        $pwdlib = new PasswordLib\PasswordLib();
+                        
+                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
+                            // GOOD password
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => false,
+                                    'message' => '',
+                                    'debug' => '',
+                                ),
+                                'encode'
+                            );
+
+                            break;
+                        }
                     }
                 }
             }
@@ -1962,33 +1984,27 @@ Insert the log here and especially the answer of the query that failed.
                                 $userData['login'],
                                 $post_user_password,
                                 $SETTINGS
-                            ) !== false)
+                            ) !== true)
                         {
-                            // GEnerate new keys
-                            $userKeys = generateUserKeys($post_user_password);
-
-                            // Update user account
-                            DB::update(
-                                prefixTable('users'),
-                                array(
-                                    'special' => $post_special,
-                                    'public_key' => $userKeys['public_key'],
-                                    'private_key' => $userKeys['private_key'],
-                                ),
-                                'id = %i',
-                                $post_user_id
-                            );
-
-                            // Return
+                            // BAD password
                             echo prepareExchangedData(
                                 array(
-                                    'error' => false,
-                                    'message' => '',
-                                    'debug' => $post_user_password,
+                                    'error' => true,
+                                    'message' => langHdl('password_is_not_correct'),
+                                    'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
                                 ),
                                 'encode'
                             );
-                        } else {
+                        }
+                    } else {
+                        // Use the password check
+                        // load passwordLib library
+                        $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+                        $pwdlib->register();
+                        $pwdlib = new PasswordLib\PasswordLib();
+                        
+                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) !== true) {
+                            // BAD password
                             echo prepareExchangedData(
                                 array(
                                     'error' => true,
@@ -1997,8 +2013,35 @@ Insert the log here and especially the answer of the query that failed.
                                 ),
                                 'encode'
                             );
+
+                            break;
                         }
                     }
+
+                    // GEnerate new keys
+                    $userKeys = generateUserKeys($post_user_password);
+
+                    // Update user account
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'special' => $post_special,
+                            'public_key' => $userKeys['public_key'],
+                            'private_key' => $userKeys['private_key'],
+                        ),
+                        'id = %i',
+                        $post_user_id
+                    );
+
+                    // Return
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'debug' => $post_user_password,
+                        ),
+                        'encode'
+                    );
                 }
             } else {
                 echo prepareExchangedData(
@@ -2015,6 +2058,87 @@ Insert the log here and especially the answer of the query that failed.
             break;
 
             /*
+         * User's public/private keys change
+         */
+        case 'change_private_key_encryption_password':
+            // Allowed?
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            // Variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_current_code = filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING);
+            $post_new_code = filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING);
+
+            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                // Get user info
+                $userData = DB::queryFirstRow(
+                    'SELECT private_key
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_user_id
+                );
+                if (DB::count() > 0) {
+                    $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
+
+                    $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
+
+                    // Update user account
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'private_key' => $hashedPrivateKey,
+                            'special' => 'none',
+                        ),
+                        'id = %i',
+                        $post_user_id
+                    );
+
+                    // Load superGlobals
+                    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+                    $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+                }
+
+                // Return
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                    ),
+                    'encode'
+                );
+                break;
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_user'),
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            break;
+
+        /*
          * User's password has to be initialized
          */
         case 'initialize_user_password':
@@ -2158,7 +2282,144 @@ Insert the log here and especially the answer of the query that failed.
 
             break;
 
+        /*
+        * CASE
+        * Send email
+        */
+        case 'mail_me':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_receipt = filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING);
+            $post_body = ($dataReceived['body']);
+            $post_subject = filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING);
+            $post_replace = filter_var_array($dataReceived['pre_replace'], FILTER_SANITIZE_STRING);
+
+            if (count($post_replace) > 0) {
+                $post_body = str_replace(
+                    array_keys($post_replace),
+                    array_values($post_replace),
+                    $post_body
+                );
+            }
+            $ret = json_decode(
+                sendEmail(
+                    $post_subject,
+                    $post_body,
+                    $post_receipt,
+                    $SETTINGS
+                ),
+                true
+            );
+
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => empty($ret['error']) === true ? false : true,
+                    'message' => $ret['message'],
+                ),
+                'encode'
+            );
+
+            break;
+
             /*
+             * Generate a temporary encryption key for user
+             */
+            case 'generate_temporary_encryption_key':
+                // Allowed?
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('key_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                //decrypt and retreive data in JSON format
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                    'decode'
+                );
+
+                // Variables
+                $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+                if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                    // Get user info
+                    $userData = DB::queryFirstRow(
+                        'SELECT email, auth_type, login
+                        FROM ' . prefixTable('users') . '
+                        WHERE id = %i',
+                        $post_user_id
+                    );
+                    if (DB::count() > 0 && empty($userData['email']) === false) {
+                        // Generate pwd
+                        $password = generateQuickPassword();
+
+                        // GEnerate new keys
+                        $userKeys = generateUserKeys($password);
+
+                        // Save in DB
+                        DB::update(
+                            prefixTable('users'),
+                            array(
+                                'public_key' => $userKeys['public_key'],
+                                'private_key' => $userKeys['private_key'],
+                                'special' => 'generate-keys',
+                            ),
+                            'id=%i',
+                            $post_user_id
+                        );
+
+                        echo prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => '',
+                                'userTemporaryCode' => $password,
+                            ),
+                            'encode'
+                        );
+                        break;
+                    } else {
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => langHdl('no_email_set'),
+                            ),
+                            'encode'
+                        );
+                        break;
+                    }
+                }
+    
+                break;
+
+        /*
         * user_sharekeys_reencryption_start
         */
         case 'user_sharekeys_reencryption_start':
@@ -2190,9 +2451,9 @@ Insert the log here and especially the answer of the query that failed.
                     include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // CLear old sharekeys
-                    //if ($post_self_change === true) {
-                    //    deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                    //}
+                    if ($post_self_change === false) {
+                        deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                    }
 
                     // Continu with next step
                     echo prepareExchangedData(
@@ -2265,7 +2526,14 @@ Insert the log here and especially the answer of the query that failed.
                     include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
                     // WHAT STEP TO PERFORM?
-                    if ($post_action === 'step1') {
+                    if ($post_action === 'step0') {
+                        // CLear old sharekeys
+                        if ($post_self_change === false) {
+                            deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                        }
+
+                        $post_action = 'step1';
+                    } elseif ($post_action === 'step1') {
                         // STEP 1 - ITEMS
                         //
                         // Loop on items
@@ -2287,7 +2555,7 @@ Insert the log here and especially the answer of the query that failed.
 
                             // Decrypt itemkey with admin key
                             $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
+                            
                             // Encrypt Item key
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
@@ -2311,17 +2579,28 @@ Insert the log here and especially the answer of the query that failed.
                                         $record['id'],
                                         $post_user_id
                                     );
-                                }
 
-                                // NOw update
-                                DB::update(
-                                    prefixTable('sharekeys_items'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
+                                    if (DB::count() > 0) {
+                                        // NOw update
+                                        DB::update(
+                                            prefixTable('sharekeys_items'),
+                                            array(
+                                                'share_key' => $share_key_for_item,
+                                            ),
+                                            'increment_id = %i',
+                                            $currentUserKey['increment_id']
+                                        );
+                                    } else {
+                                        DB::insert(
+                                            prefixTable('sharekeys_items'),
+                                            array(
+                                                'object_id' => (int) $record['id'],
+                                                'user_id' => (int) $post_user_id,
+                                                'share_key' => $share_key_for_item,
+                                            )
+                                        );
+                                    }
+                                }
                             }
                         }
 

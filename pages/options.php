@@ -340,6 +340,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
 
+                        <!--
                         <div class='row mb-2 option' data-keywords="log user login">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_log_connections'); ?>
@@ -348,6 +349,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <div class='toggle toggle-modern' id='log_connections' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1' ? '1' : '0'; ?>' />
                             </div>
                         </div>
+                        -->
 
                         <div class='row mb-2 option' data-keywords="log item password">
                             <div class='col-10'>

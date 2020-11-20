@@ -92,12 +92,30 @@ if (
     countdown();
     
     if (store.get('teampassUser') !== undefined &&
+        store.get('teampassUser').special === 'generate-keys'
+    ) {
+        // Now we need to perform re-encryption due to LDAP password change
+        console.log('User has to regenerate keys')
+        // HIde
+        $('.content-header, .content, #button_do_sharekeys_reencryption, .ask-for-previous-password').addClass('hidden');
+        $('#warning-text-reencryption').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+
+        // Show passwords inputs and form
+        $('#dialog-encryption-keys, .temporary-encryption-code, .current-user-password').removeClass('hidden');
+
+        $('#sharekeys_reencryption_target_user').val(store.get('teampassUser').user_id);
+
+        $('#button_do_sharekeys_reencryption').removeClass('hidden');
+        
+        // ---
+    } else if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').special === 'ldap_password_has_changed_do_reencryption'
     ) {
         // Now we need to perform re-encryption due to LDAP password change
         console.log('show password change')
         // HIde
-        $('.content-header, .content, #button_do_sharekeys_reencryption, #warning-text-changing-password').addClass('hidden');
+        $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
+        $('#warning-text-reencryption').html('<i class="icon fas fa-info mr-2"></i>'.langHdl('ldap_password_change_warning'));
 
         // Show passwords inputs and form
         $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
@@ -235,9 +253,7 @@ if (
     // User menu action
     $('.user-menu').click(function() {
         if ($(this).data('name') !== undefined) {
-            if ($(this).data('name') === 'set_psk') {
-                showPersonalSKDialog();
-            } else if ($(this).data('name') === 'increase_session') {
+            if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
             } else if ($(this).data('name') === 'password-change') {
                 console.log('show password change')
@@ -465,18 +481,19 @@ if (
             '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
-        $('#dialog-encryption-keys-progress').html('<b><?php echo langHdl('change_login_password'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-encryption-keys-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
         // Disable buttons
         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').attr('disabled', 'disabled');
 
         // Case where LDAP user with new password (from AD)
-        if ($('.ask-for-previous-password').hasClass('hidden') === false) {
+        if ($('.ask-for-previous-password').hasClass('hidden') === false || ($('.current-user-password').hasClass('hidden') === false && $('.temporary-encryption-code').hasClass('hidden') === true)) {
             // Test if previous password is correct
             data = {
                 'user_id': $('#sharekeys_reencryption_target_user').val(),
-                'password': $('#profile-previous-password').val(),
+                'password': $('#profile-current-password').val() === '' ? $('#profile-previous-password').val() : $('#profile-current-password').val(),
             }
+            console.log("1st step: ");
             console.log(data)
             // If LDAP is enabled, then check that this password is correct
             // Before starting with changing it in Teampass
@@ -489,7 +506,6 @@ if (
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                     console.log(data);
-                    console.log('new pwd: ' + data.debug)
 
                     if (data.error !== false) {
                         // Show error
@@ -513,7 +529,8 @@ if (
                             'special': 'none',
                             'password': $('#profile-current-password').val(),
                         }
-                        console.log(data)
+                        console.log("2d step: ")+$('#profile-current-password').val();
+                        console.log(data);
                         // If LDAP is enabled, then check that this password is correct
                         // Before starting with changing it in Teampass
                         $.post(
@@ -544,13 +561,105 @@ if (
                                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                                 } else {
                                     // Inform user
-                                    userShareKeysReencryption($('#sharekeys_reencryption_target_user').val(), true);
+                                    userShareKeysReencryptionNext($('#sharekeys_reencryption_target_user').val(), 'step0', 0, true, 'dialog-encryption-keys-progress', false);
                                 }
                             }
                         );
                     }
                 }
             );
+        } else if ($('.temporary-encryption-code').hasClass('hidden') === false && $('.current-user-password').hasClass('hidden') === false) {
+            // Perform a renecryption based upon a temporary code
+            data = {
+                'user_id': $('#sharekeys_reencryption_target_user').val(),
+                'password': $('#profile-temporary-encryption-code').val(),
+            }
+            console.log(data);
+
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'test_current_user_password_is_correct',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
+                        // Enable buttons
+                        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                    } else {
+                        // Change privatekey encryption with user-s password
+                        data = {
+                            'user_id': $('#sharekeys_reencryption_target_user').val(),
+                            'current_code': $('#profile-temporary-encryption-code').val(),
+                            'new_code': $('#profile-current-password').val(),
+                        }
+                        console.log(data);
+                        
+                        $.post(
+                            'sources/main.queries.php', {
+                                type: 'change_private_key_encryption_password',
+                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key: "<?php echo $_SESSION['key']; ?>"
+                            },
+                            function(data) {
+                                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                console.log(data);
+
+                                if (data.error !== false) {
+                                    // Show error
+                                    toastr.remove();
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true
+                                        }
+                                    );
+
+                                    // Enable buttons
+                                    $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                                } else {
+                                    // Inform user
+                                    // Enable close button
+                                    $('#button_close_sharekeys_reencryption').removeAttr('disabled');
+                                    $('#button_do_sharekeys_reencryption').attr('disabled', 'disabled');
+
+                                    // Finished
+                                    $("#dialog-encryption-keys-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                    toastr.remove();
+
+                                    store.update(
+                                        'teampassUser', {},
+                                        function(teampassUser) {
+                                            teampassUser.special = 'none';
+                                        }
+                                    );
+                                }
+                            }
+                        );
+                    }
+                }
+            );
+
+            
+            
+
+            // ----
         } else {
             // Manage 2 cases
             // One is when an admin asks
@@ -851,10 +960,15 @@ if (
 
 
 
-    function userShareKeysReencryption(userId = null, self_change = false) {
+    function userShareKeysReencryption(
+        userId = null,
+        erase_existing_keys = false,
+        divIdProgress = 'dialog-encryption-keys-progress',
+        to_be_continued = false
+    ) {
         console.log('USER SHAREKEYS RE-ENCRYPTION START');
 
-        $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $("#"+divIdProgress).html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
         toastr.remove();
         toastr.info(
@@ -865,7 +979,7 @@ if (
             "sources/main.queries.php", {
                 type: "user_sharekeys_reencryption_start",
                 userId: userId,
-                self_change: self_change,
+                self_change: erase_existing_keys,
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -882,24 +996,34 @@ if (
                         }
                     );
 
-                    $("#dialog-encryption-keys-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+                    $("#"+divIdProgress).html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
 
                     // Enable buttons
                     $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                     return false;
                 } else {
                     // Start looping on all steps of re-encryption
-                    userShareKeysReencryptionNext(data.userId, data.step, data.start, self_change);
+                    userShareKeysReencryptionNext(data.userId, data.step, data.start, erase_existing_keys, divIdProgress, to_be_continued);
                 }
             }
         );
     }
 
-    function userShareKeysReencryptionNext(userId, step, start, self_change = false) {
+    function userShareKeysReencryptionNext(
+        userId,
+        step,
+        start,
+        erase_existing_keys = false,
+        divIdProgress,
+        to_be_continued
+    ) {
         var stepText = '';
+        console.log('Performing '+step)
 
         // Prepare progress string
-        if (step === 'step1') {
+        if (step === 'step0') {
+            stepText = '<?php echo langHdl('inititialization'); ?>';
+        } else if (step === 'step1') {
             stepText = '<?php echo langHdl('items'); ?>';
         } else if (step === 'step2') {
             stepText = '<?php echo langHdl('logs'); ?>';
@@ -915,7 +1039,7 @@ if (
 
         if (step !== 'finished') {
             // Inform user
-            $("#dialog-encryption-keys-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+            $("#"+divIdProgress).html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
                 '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
@@ -948,28 +1072,30 @@ if (
                         return false;
                     } else {
                         // Start looping on all steps of re-encryption
-                        userShareKeysReencryptionNext(data.userId, data.step, data.start, self_change);
+                        userShareKeysReencryptionNext(data.userId, data.step, data.start, erase_existing_keys);
                     }
                 }
             );
-        } else {
-            // Enable close button
-            $('#button_close_sharekeys_reencryption').removeAttr('disabled');
+        } else {console.log('to_be_continued '+to_be_continued)
+            if (to_be_continued === false) {
+                // Enable close button
+                $('#button_close_sharekeys_reencryption').removeAttr('disabled');
 
-            // Finished
-            $("#dialog-encryption-keys-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
-            toastr.remove();
+                // Finished
+                $("#"+divIdProgress).html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                toastr.remove();
 
-            // Unlog if same user
-            if (userId === <?php echo $_SESSION['user_id']; ?>) {
-                toastr.success(
-                    '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                    '', {
-                        timeOut: 4000
-                    }
-                );
+                // Unlog if same user
+                if (userId === <?php echo $_SESSION['user_id']; ?>) {
+                    toastr.success(
+                        '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                        '', {
+                            timeOut: 4000
+                        }
+                    );
 
-                window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                    window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                }
             }
         }
     }

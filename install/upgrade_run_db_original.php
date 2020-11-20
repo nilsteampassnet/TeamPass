@@ -117,7 +117,7 @@ $val = array(
     array('admin', 'show_last_items', '1', 0),
     array('admin', 'enable_pf_feature', '0', 0),
     array('admin', 'menu_type', 'context', 0),
-    array('admin', 'log_connections', '0', 0),
+    array('admin', 'log_connections', '1', 1),
     array('admin', 'time_format', 'H:i:s', 0),
     array('admin', 'date_format', 'd/m/Y', 0),
     array('admin', 'duplicate_folder', '0', 0),

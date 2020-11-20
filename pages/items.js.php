@@ -96,8 +96,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
     );
 
-
-
+console.log('User infor')
+console.log(store.get('teampassUser'))
 
     // Build tree
     $('#jstree').jstree({
@@ -3465,7 +3465,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                     async: false,
                                     url: 'sources/items.queries.php',
                                     data: 'type=show_item_password&item_id=' + trigger.getAttribute('data-item-id') +
-                                        //'&psk=' + store.get('teampassUser').pskSetForSession +
                                         '&key=<?php echo $_SESSION['key']; ?>',
                                     dataType: "",
                                     success: function(data) {

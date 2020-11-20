@@ -512,7 +512,7 @@ $SETTINGS = array (';
                             array('admin', 'enable_favourites', '1'),
                             array('admin', 'show_last_items', '1'),
                             array('admin', 'enable_pf_feature', '0'),
-                            array('admin', 'log_connections', '0'),
+                            array('admin', 'log_connections', '1'),
                             array('admin', 'log_accessed', '1'),
                             array('admin', 'time_format', 'H:i:s'),
                             array('admin', 'date_format', 'd/m/Y'),
