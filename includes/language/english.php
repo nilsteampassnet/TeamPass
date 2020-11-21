@@ -19,7 +19,12 @@
 
 return array(
     'sending_email_message' => 'Now sending email to user, please wait',
+    'change_your_password_info_message' => 'Please provide your new authentication password and confirm it.',
+    'ready_to_go' => 'Ready to go',
+    'passwords_not_the_same' => 'Provided passwords are not the same',
     'inititialization' => 'Initialization',
+    'bad_password' => 'Bad password',
+    'perform_checks' => 'Perform checks',
     'email_body_temporary_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Some changes were performed on your account that require a new encryption of items for data security. Next time you will connect to Teampass, please use the next code:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'temporary_encryption_code' => 'Your temporary encryption code',
     'renecyption_expected' => 'We need to renecrypt your keys to fit the privileges corresponding to your account and rights.',

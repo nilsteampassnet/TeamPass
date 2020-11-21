@@ -718,7 +718,8 @@ function identifyUser($sentData, $SETTINGS)
         $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
         $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
-
+        $superGlobal->put('auth_type', $userInfo['auth_type'], 'SESSION', 'user');
+        
         // manage session expiration
         $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
 

@@ -2899,9 +2899,16 @@ function decryptUserObjectKey($key, $privateKey)
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($privateKey));
-//echo $privateKey." ;; ".$key;
+    
+    
     // Decrypt
-    return base64_encode($rsa->decrypt(base64_decode($key)));
+    try {
+        $ret = base64_encode($rsa->decrypt(base64_decode($key)));
+    } catch(Exception $e) {
+        return $e;
+    }
+
+    return $ret;
 }
 
 /**

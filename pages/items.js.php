@@ -4128,6 +4128,7 @@ console.log(store.get('teampassUser'))
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
                 requestRunning = true;
                 if (debugJavascript === true) console.log("RECEIVED");
                 if (debugJavascript === true) console.log(data);

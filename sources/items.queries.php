@@ -2367,7 +2367,7 @@ if (null !== $post_type) {
                 WHERE user_id = %i AND object_id = %i',
                 $_SESSION['user_id'],
                 $post_id
-            );//print_r($_SESSION['user']);
+            );
             if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                 // No share key found
                 $pw = '';
