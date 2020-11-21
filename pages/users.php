@@ -358,9 +358,9 @@ foreach ($treeDesc as $t) {
                             <label class="form-check-label mr-2" for="form-create-personal-folder"><?php echo langHdl('enable_personal_folder_for_this_user'); ?></label>
                         </div>
                         <div class="form-group" id="group-create-special-folder">
-                            <input type="checkbox" class="form-check-input form-control flat-blu track-changee" id="create-special-folder">
-                            <label class="form-check-label mr-2" for="create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
-                            <input type="text" class="form-control clear-me" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
+                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-special-folder">
+                            <label class="form-check-label mr-2" for="form-create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
+                            <input type="text" class="form-control clear-me mt-1" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
                         </div>
                         <div class="form-group" id="group-form-user-disabled">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-user-disabled">

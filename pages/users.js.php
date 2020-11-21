@@ -71,7 +71,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         radioClass: 'iradio_flat-blue',
         checkboxClass: 'icheckbox_flat-blue',
     });
-    $('#create-special-folder').iCheck('disable');
+    $('#form-create-special-folder').iCheck('disable');
 
     // Prevent submit on button
     $('.btn-no-click')
@@ -193,10 +193,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 console.log(data);
                 $("#new_folder_role_domain").attr("disabled", "disabled");
                 if (data.folder === 'not_exists' && data.role === 'not_exists' && domain !== '') {
-                    $('#create-special-folder').iCheck('enable');
+                    $('#form-create-special-folder').iCheck('enable');
                     $('#form-special-folder').val(domain);
                 } else {
-                    $('#create-special-folder').iCheck('disable');
+                    $('#form-create-special-folder').iCheck('disable');
                     $('#form-special-folder').val('');
                 }
             }
@@ -281,7 +281,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Prepare checks
             $('#privilege-user').iCheck('check');
-            $('#create-special-folder').iCheck('disable');
+            $('#form-create-special-folder').iCheck('disable');
 
             // Personal folder
             if (store.get('teampassSettings').enable_pf_feature === '1') {
@@ -583,7 +583,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'hr': $('#privilege-hr').prop('checked'),
                     'read_only': $('#privilege-ro').prop('checked'),
                     'personal_folder': $('#form-create-personal-folder').prop('checked'),
-                    'new_folder_role_domain': $('#create-special-folder').prop('checked'),
+                    'new_folder_role_domain': $('#form-create-special-folder').prop('checked'),
                     'domain': $('#form-special-folder').val(),
                     'isAdministratedByRole': $('#form-managedby').val(),
                     'groups': groups,

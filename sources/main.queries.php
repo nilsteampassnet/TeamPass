@@ -462,16 +462,7 @@ function mainQuery($SETTINGS)
             $pwdlib = new PasswordLib\PasswordLib();
 
             // If LDAP enabled and counter = 0 then perhaps new user to add
-            if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && $counter === 0) {
-                $ldap_info_user = json_decode(
-                    connectLDAP($post_login, $post_pwd, $SETTINGS)
-                );
-                if ($ldap_info_user->{'user_found'} === true) {
-                    $data['email'] = $ldap_info_user->{'email'};
-                    $counter = 1;
-                    $ldap_user_never_auth = true;
-                }
-            }
+            // REMOVED - No user is added automatically from AD
 
             // Do treatment
             if ($counter === 0) {
@@ -1991,7 +1982,6 @@ Insert the log here and especially the answer of the query that failed.
                                 array(
                                     'error' => true,
                                     'message' => langHdl('password_is_not_correct'),
-                                    'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
                                 ),
                                 'encode'
                             );
@@ -2095,7 +2085,7 @@ Insert the log here and especially the answer of the query that failed.
                 if (DB::count() > 0) {
                     $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
 
-                    $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
+                    $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
 
                     // Update user account
                     DB::update(
