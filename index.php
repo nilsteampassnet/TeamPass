@@ -744,6 +744,122 @@ if (($session_validite_pw === null
                 <!-- /.DEFECT REPORT -->
 
 
+                <!-- USER CHANGE AUTH PASSWORD -->
+                <div class="card card-warning m-3 hidden" id="dialog-user-change-password">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-5 alert alert-info hidden" id="dialog-user-change-password-info">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-current-password">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-password">
+                                    <div class="input-group-append" style="margin: 0px;">
+                                        <span class="input-group-text" id="profile-password-strength"></span>
+                                        <input type="hidden" id="profile-password-complex" />
+                                    </div>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="profile-password-confirm">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="dialog-user-change-password-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="dialog-user-change-password-do"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-user-change-password-close"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.USER CHANGE AUTH PASSWORD -->
+
+
+                <!-- ADMIN ASKS FOR USER PASSWORD CHANGE -->
+                <div class="card card-warning m-3 hidden" id="dialog-admin-change-user-password">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-2 alert alert-info" id="dialog-admin-change-user-password-info">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="dialog-admin-change-user-password-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="admin_change_user_password_target_user" value="">
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="dialog-admin-change-user-password-do"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-admin-change-user-password-close"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.ADMIN ASKS FOR USER PASSWORD CHANGE -->
+
+
+                <!-- USER PROVIDES TEMPORARY CODE -->
+                <div class="card card-warning m-3 hidden" id="dialog-user-temporary-code">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-5 alert alert-info" id="dialog-user-temporary-code-info">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-user-temporary-code-current-password">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-user-temporary-code-value">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="dialog-user-temporary-code-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="dialog-user-temporary-code-do"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-user-temporary-code-close"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.USER PROVIDES TEMPORARY CODE -->
+
+
                 <!-- ENCRYPTION KEYS GENERATION -->
                 <div class="card card-warning m-3 hidden" id="dialog-encryption-keys">
                     <div class="card-header">
@@ -758,43 +874,6 @@ if (($session_validite_pw === null
                                 <div class="mb-2 alert alert-info" id="warning-text-reencryption">
                                     <i class="icon fas fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
-                                </div>
-                                <div class="input-group mb-3 ask-for-previous-password hidden">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_previous_password'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="profile-previous-password">
-                                </div>
-                                <div class="input-group mb-3 current-user-password hidden">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="profile-current-password">
-                                </div>
-                                <div class="input-group mb-3 temporary-encryption-code hidden">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="profile-temporary-encryption-code">
-                                </div>
-                                <div class="input-group mb-3 ask-for-new-password hidden">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="profile-password">
-                                    <div class="input-group-append" style="margin: 0px;">
-                                        <span class="input-group-text" id="profile-password-strength"></span>
-                                        <input type="hidden" id="profile-password-complex" />
-                                    </div>
-                                </div>
-                                <div class="input-group mb-3 ask-for-new-password hidden">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="profile-password-confirm">
-                                </div>
-                                <div class="form-control mt-3 font-weight-light grey" id="dialog-encryption-keys-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>

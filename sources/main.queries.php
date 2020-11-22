@@ -3343,8 +3343,7 @@ Insert the log here and especially the answer of the query that failed.
 
                                 // Prepare variables
                                 $newPw = $pwdlib->createPasswordHash($post_new_pwd);
-
-                                /*
+                                
                                 // Update user account
                                 DB::update(
                                     prefixTable('users'),
@@ -3355,7 +3354,7 @@ Insert the log here and especially the answer of the query that failed.
                                     ),
                                     'id = %i',
                                     $post_user_id
-                                );*/
+                                );
 
                                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 

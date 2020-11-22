@@ -18,8 +18,10 @@
  */
 
 return array(
+    'admin_change_user_password_info' => 'This operation will reset the select user current password. A random one will be send by email to the user that will have to change it on first login.',
     'sending_email_message' => 'Now sending email to user, please wait',
     'change_your_password_info_message' => 'Please provide your new authentication password and confirm it.',
+    'user_has_to_change_password_info' => 'The current used password has been generated. It is expected from you to change it for security purpose.',
     'ready_to_go' => 'Ready to go',
     'passwords_not_the_same' => 'Provided passwords are not the same',
     'inititialization' => 'Initialization',

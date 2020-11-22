@@ -932,10 +932,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // HIde
             $('.content-header, .content').addClass('hidden');
 
-            // SHow form
-            $('#dialog-encryption-keys').removeClass('hidden');
+            // PRepare info
+            $('#dialog-admin-change-user-password-info')
+                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('admin_change_user_password_info'); ?>');
+            $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
 
-            $('#sharekeys_reencryption_target_user').val($(this).data('id'));
+            // SHow form
+            $('#dialog-admin-change-user-password').removeClass('hidden');
+
+            $('#admin_change_user_password_target_user').val($(this).data('id'));
             // ---
         } else if ($(this).data('action') === 'logs') {
             $('#row-list, #row-folders').addClass('hidden');
