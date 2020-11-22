@@ -793,6 +793,45 @@ if (($session_validite_pw === null
                 <!-- /.USER CHANGE AUTH PASSWORD -->
 
 
+                <!-- LDAP USER HAS CHANGED AUTH PASSWORD -->
+                <div class="card card-warning m-3 hidden" id="dialog-ldap-user-change-password">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-5 alert alert-info hidden" id="dialog-ldap-user-change-password-info">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_previous_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-ldap-user-change-password-old">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-ldap-user-change-password-current">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-change-password-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="dialog-ldap-user-change-password-do"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-ldap-user-change-password-close"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.LDAP USER HAS CHANGED AUTH PASSWORD -->
+
+
                 <!-- ADMIN ASKS FOR USER PASSWORD CHANGE -->
                 <div class="card card-warning m-3 hidden" id="dialog-admin-change-user-password">
                     <div class="card-header">

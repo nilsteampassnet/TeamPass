@@ -3343,7 +3343,7 @@ Insert the log here and especially the answer of the query that failed.
 
                                 // Prepare variables
                                 $newPw = $pwdlib->createPasswordHash($post_new_pwd);
-                                
+
                                 // Update user account
                                 DB::update(
                                     prefixTable('users'),
@@ -3378,6 +3378,126 @@ Insert the log here and especially the answer of the query that failed.
                                 break;
                             }
                         } else {
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => langHdl('error_no_user'),
+                                ),
+                                'encode'
+                            );
+                            break;
+                        }
+                    }
+        
+                    break;
+        
+
+                /*
+                 * User's authenticataion password in LDAP has changed
+                 */
+                case 'change_user_ldap_auth_password':
+                    // Allowed?
+                    if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => langHdl('key_is_not_correct'),
+                            ),
+                            'encode'
+                        );
+                        break;
+                    }
+    
+                    //decrypt and retreive data in JSON format
+                    $dataReceived = prepareExchangedData(
+                        filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                        'decode'
+                    );
+    
+                    // Variables
+                    $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+                    $post_previous_pwd = filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING);
+                    $post_current_pwd = filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING);
+    
+                    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+                        // Get user info
+                        $userData = DB::queryFirstRow(
+                            'SELECT auth_type, login, private_key
+                            FROM ' . prefixTable('users') . '
+                            WHERE id = %i',
+                            $post_user_id
+                        );
+                        if (DB::count() > 0) {
+                            // Now check if current password is correct
+                            // For this, just check if it is possible to decrypt the privatekey
+                            // And try to decrypt one existing key
+                            $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+
+                            // Test if possible to decvrypt one key
+                            // Get one item
+                            $record = DB::queryFirstRow(
+                                'SELECT id, pw
+                                FROM ' . prefixTable('items') . '
+                                WHERE perso = 0'
+                            );
+
+                            // Get itemKey from current user
+                            $currentUserKey = DB::queryFirstRow(
+                                'SELECT share_key, increment_id
+                                FROM ' . prefixTable('sharekeys_items') . '
+                                WHERE object_id = %i AND user_id = %i',
+                                $record['id'],
+                                $post_user_id
+                            );
+
+                            if (count($currentUserKey) > 0) {
+                                // Decrypt itemkey with user key
+                                // use old password to decrypt private_key
+                                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+
+                                if (empty(base64_decode($itemKey)) === false) {
+                                    // GOOD password
+                                    // Encrypt it with current password
+                                    $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+                                    
+                                    // Update user account
+                                    DB::update(
+                                        prefixTable('users'),
+                                        array(
+                                            'private_key' => $hashedPrivateKey,
+                                            'special' => 'none',
+                                        ),
+                                        'id = %i',
+                                        $post_user_id
+                                    );
+                                    
+                                    // Load superGlobals
+                                    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                                    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                                    $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+
+                                    echo prepareExchangedData(
+                                        array(
+                                            'error' => false,
+                                            'message' => langHdl('done'),'',
+                                        ),
+                                        'encode'
+                                    );
+                                    break;
+                                }
+                            } else {
+                                // ERROR
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => true,
+                                        'message' => langHdl('bad_password'),
+                                    ),
+                                    'encode'
+                                );
+                                break;
+                            }
+                        } else {
+                            // ERROR
                             echo prepareExchangedData(
                                 array(
                                     'error' => true,

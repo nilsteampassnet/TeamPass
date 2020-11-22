@@ -1464,9 +1464,7 @@ function sendEmail(
 
         // Prepare for each person
         foreach (array_filter(explode(',', $email)) as $dest) {
-            if (empty($dest) === false) {
-                $mail->addAddress($dest);
-            }
+            $mail->addAddress($dest);
         }
 
         // Prepare HTML

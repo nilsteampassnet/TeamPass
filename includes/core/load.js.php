@@ -65,7 +65,7 @@ if (
                         // Check if new privatekey needs to be adapted
                         var data = {
                             'user_id': store.get('teampassUser').user_id,
-                            'fields' : 'special',
+                            'fields' : 'special, auth_type',
                         }
                         $.post(
                             "sources/main.queries.php", {
@@ -76,6 +76,7 @@ if (
                             function(data) {
                                 //decrypt data
                                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                                console.log(data)
 
                                 if (data.error === false && data.queryResults.special === 'generate-keys') {
                                     // Now we need to perform re-encryption due to LDAP password change
@@ -88,7 +89,7 @@ if (
                                     $('#dialog-user-temporary-code').removeClass('hidden');
 
                                     // ----
-                                } else if (data.error === false && data.queryResults.special === 'auth-pwd-change') {
+                                } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'local') {
                                     // USer's password has been reseted, he shall change it
                                     console.log('User has to change his auth password')
                                     // HIde
@@ -99,6 +100,19 @@ if (
                                         .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
                                         .removeClass('hidden');
                                     $('#dialog-user-change-password').removeClass('hidden');
+
+                                // ----
+                                } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'ldap') {
+                                    // USer's password has been reseted, he shall change it
+                                    console.log('LDAP user password has to change his auth password')
+                                    // HIde
+                                    $('.content-header, .content').addClass('hidden');
+
+                                    // Show passwords inputs and form
+                                    $('#dialog-ldap-user-change-password-info')
+                                        .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                                        .removeClass('hidden');
+                                    $('#dialog-ldap-user-change-password').removeClass('hidden');
                                 }
                             }
                         );
@@ -800,6 +814,96 @@ if (
 
         // SHow form
         $('#dialog-user-temporary-code').addClass('hidden');
+    });
+
+
+    /**
+    * USER PASSWORD IN LDAP HAS CHANGED
+    */
+    $(document).on('click', '#dialog-ldap-user-change-password-do', function() {
+        // Start by changing the user password and send it by email
+        if ($('#dialog-ldap-user-change-password-old').val() !== "" && $('#dialog-ldap-user-change-password-current').val() !== "") {
+            // Case where a user is changing his authentication password
+            console.log('Reencryption based upon user auth password changed in LDAP');
+
+            // Show progress
+            $('#dialog-ldap-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+            toastr.remove();
+            toastr.info(
+                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            );
+            
+            // Disable buttons
+            $('#dialog-ldap-user-change-password-do, #dialog-ldap-user-change-password-close').attr('disabled', 'disabled');
+            
+            data = {
+                'user_id': store.get('teampassUser').user_id,
+                'previous_password': $('#dialog-ldap-user-change-password-old').val(),
+                'current_password': $('#dialog-ldap-user-change-password-current').val(),
+            }
+            console.log(data);
+
+            // Check user current password
+            // and change the password
+            // and use the password to re-encrypt the privatekey
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'change_user_ldap_auth_password',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        $("#dialog-ldap-user-change-password-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+
+                        // Enable buttons
+                        $('#dialog-ldap-user-change-password-do, #dialog-ldap-user-change-password-close').removeAttr('disabled');
+                    } else {
+                        // SUCCESS
+                        $('#dialog-ldap-user-change-password-close').removeAttr('disabled');
+                        toastr.remove();
+                        toastr.success(
+                            data.message,
+                            '<?php echo langHdl('success'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        $("#dialog-ldap-user-change-password-progress").html('');
+                    }
+                }
+            );
+        } else {
+            // Show error
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('password_cannot_be_empty'); ?>',
+                '<?php echo langHdl('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        }
+    });
+    $(document).on('click', '#dialog-user-change-password-close', function() {
+        // HIde
+        $('.content-header, .content').removeClass('hidden');
+
+        // SHow form
+        $('#dialog-user-change-password, #dialog-user-change-password-info').addClass('hidden');
     });
     // --- END ---
 

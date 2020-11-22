@@ -92,6 +92,11 @@ function curPage($SETTINGS)
  */
 function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 {
+    // Should we start?
+    if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
+        return false;
+    }
+
     // Definition
     $pagesRights = array(
         'user' => array(
@@ -116,6 +121,8 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
     );
+    // Convert to array
+    $pageVisited = array($pageVisited);
 
     // Load
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
@@ -124,13 +131,6 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     // Load libraries
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
-    if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
-        return false;
-    }
-
-    // Convert to array
-    $pageVisited = array($pageVisited);
 
     // Securize language
     if (
@@ -165,18 +165,15 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     // check if user exists and tempo key is coherant
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;
-    }
-
-    if (
-        (int) $data['admin'] === 1
-        && isInArray($pageVisited, $pagesRights['admin']) === true
+    } else if (
+        ((int) $data['admin'] === 1
+        && isInArray($pageVisited, $pagesRights['admin']) === true)
+        ||
+        (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
+        && (isInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true))
+        ||
+        (isInArray($pageVisited, $pagesRights['user']) === true)
     ) {
-        return true;
-    } elseif (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
-        && (isInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true)
-    ) {
-        return true;
-    } elseif (isInArray($pageVisited, $pagesRights['user']) === true) {
         return true;
     }
 

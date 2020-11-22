@@ -18,6 +18,8 @@
  */
 
 return array(
+    'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
+    'provide_your_previous_password' => 'Your previous password',
     'admin_change_user_password_info' => 'This operation will reset the select user current password. A random one will be send by email to the user that will have to change it on first login.',
     'sending_email_message' => 'Now sending email to user, please wait',
     'change_your_password_info_message' => 'Please provide your new authentication password and confirm it.',
@@ -64,7 +66,6 @@ return array(
     'current_password' => 'Current password',
     'password_is_not_correct' => 'This password is not correct',
     'ldap_password_change_warning' => 'Your login password has changed since last connection. It is requested to re-encrypt all the keys using this new password. For this operation, please fill in the next field with your previous ldap password. The operation can take several minutes.',
-    'provide_your_previous_password' => 'Provide your previous password',
     'password_doesnot_correspond_to_ldap_one' => 'This password does not correspond to the one defined in LDAP',
     'personal_items' => 'Personal items',
     'logout_on_going' => 'You will now be logout. Use your new password for being connected from now.',

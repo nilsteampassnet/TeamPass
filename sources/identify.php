@@ -500,7 +500,7 @@ function identifyUser($sentData, $SETTINGS)
             $passwordClear,
             $SETTINGS
         );
-
+        
         if ($retLDAP['error'] === true) {
             echo prepareExchangedData(
                 array(
@@ -514,6 +514,8 @@ function identifyUser($sentData, $SETTINGS)
                 'encode'
             );
             return false;
+        } else {
+            $userPasswordVerified = true;
         }
     }
 
@@ -1220,11 +1222,12 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
         );
     }
 
-    $query = $connection->query();
-
-    
+    $query = $connection->query();    
     try {
-        $entry = $query->findBy('uid', 'nils');
+        $entry = $query->findBy(
+            $SETTINGS['ldap_user_attribute'],
+            $username
+        );
     } catch (\LdapRecord\Models\ModelNotFoundException $ex) {
         // Not found.
         return array(
@@ -1239,11 +1242,8 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             'error' => true,
             'message' => langHdl('error_ad_user_expired'),
         );
-    }
-
-    
-    // Should we restrain the search in specified user groups
-    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+    } elseif (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+        // Should we restrain the search in specified user groups
         // Get immediate groups the user is apart of:
         $arrayTmp = array();
         foreach ($entry['memberof'] as $group) {
@@ -1261,42 +1261,39 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
         }
     }
 
-    
-    // Check if password is still the same with the one in Teampass
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $pwdlib->register();
     $pwdlib = new PasswordLib\PasswordLib();
+    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
     
-    // If user has never been connected then erase current pwd with the ldap's one
-    if (empty($userInfo['last_connexion']) === true) {
-        $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
-        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($passwordClear), $hashedPassword) === true) {
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'pw' => $hashedPassword,
-                ),
-                'id = %i',
-                $userInfo['id']
-            );
-            $userInfo['pw'] = $hashedPassword;
-        } else {
-            return array(
-                'error' => true,
-                'message' => langHdl('error_something_wrong'),
-            );
-        }
-    } else {
+    //If user has never been connected then erase current pwd with the ldap's one
+    if (empty($userInfo['pw'])) {
+        // Password are similar in Teampass and AD
         DB::update(
             prefixTable('users'),
             array(
-                'upgrade_needed' => 1,
+                'pw' => $hashedPassword,
+            ),
+            'id = %i',
+            $userInfo['id']
+        );
+    } else if ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === false) {
+        // Case where user is auth by LDAP but his password in Teampass is not synchronized
+        // For example when user has changed his password in AD.
+        // So we need to update it in Teampass and ask for private key re-encryption
+        DB::update(
+            prefixTable('users'),
+            array(
+                'pw' => $hashedPassword,
+                'special' => 'auth-pwd-change',
             ),
             'id = %i',
             $userInfo['id']
         );
     }
+    
+    $userInfo['pw'] = $hashedPassword;
 
     return array(
         'error' => false,
