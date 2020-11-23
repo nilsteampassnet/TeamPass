@@ -1133,7 +1133,7 @@ if (($session_validite_pw === null
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="plugins/fontawesome-free/css/all.css">
     <!-- jQuery -->
-    <script src="plugins/jquery/jquery.js"></script>
+    <script src="plugins/jquery/jquery.min.js"></script>
     <!-- jQuery -->
     <script src="plugins/jqueryUI/jquery-ui.min.js"></script>
     <!-- Popper -->
