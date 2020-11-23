@@ -623,7 +623,7 @@ function identifyUser($sentData, $SETTINGS)
     debugIdentify(
         DEBUGDUO,
         DEBUGDUOFILE,
-        "User's password verified: " . $userPasswordVerified . "\n"
+        "User's password verified: " . /** @scrutinizer ignore-type */ $userPasswordVerified . "\n"
     );
 
     // Can connect if

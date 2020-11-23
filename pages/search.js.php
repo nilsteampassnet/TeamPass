@@ -224,7 +224,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 });
 
                 // Manage buttons --> PASSWORD
-                new Clipboard('#btn-copy-pwd', {
+                new ClipboardJS('#btn-copy-pwd', {
                         text: function(trigger) {
                             // Send query and get password
                             var result = '',
@@ -310,7 +310,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     });
 
                 // Manage buttons --> LOGIN
-                new Clipboard('#btn-copy-login', {
+                new ClipboardJS('#btn-copy-login', {
                         text: function(e) {
                             return $('#login-item_' + $('#btn-copy-login').data('id')).text();
                         }
@@ -329,7 +329,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     });
 
                 // Manage buttons --> URL
-                new Clipboard('#btn-copy-url', {
+                new ClipboardJS('#btn-copy-url', {
                         text: function(e) {
                             return $('#url-item_' + $('#btn-copy-url').data('id')).text();
                         }

@@ -121,8 +121,8 @@ switch ($post_type) {
             // Mandatory Configuration Options
             'hosts'            => [$SETTINGS['ldap_domain_controler']],
             'base_dn'          => $SETTINGS['ldap_search_base'],
-            'username'         => $SETTINGS['ldap_bind_dn'],
-            'password'         => $SETTINGS['ldap_bind_passwd'],
+            'username'         => $SETTINGS['ldap_username'],
+            'password'         => $SETTINGS['ldap_password'],
         
             // Optional Configuration Options
             'port'             => $SETTINGS['ldap_port'],
