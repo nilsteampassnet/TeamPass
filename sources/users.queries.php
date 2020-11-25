@@ -1520,7 +1520,7 @@ if (null !== $post_type) {
                     $arrOldData = array_filter(explode(';', $oldData['fonction_id']));
                     $post_groups = array_filter($post_groups);
 
-                    if ($arrOldData != $post_groups) {
+                    if ($arrOldData != $post_groups && (int) $oldData['admin'] !== 1) {
                         $action_to_perform_after = 'encrypt_keys';
                     }
 

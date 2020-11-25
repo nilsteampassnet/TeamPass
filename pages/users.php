@@ -322,47 +322,47 @@ foreach ($treeDesc as $t) {
                             <input type="radio" class="form-check-input form-control flat-blue track-change" name="privilege" id="privilege-ro">
                             <label class="form-check-label mr-2 pointer" for="privilege-ro"><?php echo langHdl('read_only'); ?></label>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <label for="form-roles"><?php echo langHdl('roles'); ?></label>
                             <select id="form-roles" class="form-control form-item-control select2 no-root required track-change" style="width:100%;" multiple="multiple">
                                 <?php echo $optionsRoles; ?>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <label for="form-managedby"><?php echo langHdl('managed_by'); ?></label>
                             <select id="form-managedby" class="form-control form-item-control select2 no-root required track-change" style="width:100%;">
                                 <?php echo $optionsManagedBy; ?>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <label for="form-auth"><?php echo langHdl('authorized_groups'); ?></label>
                             <select id="form-auth" class="form-control form-item-control select2 no-root track-change" style="width:100%;" multiple="multiple">
                                 <?php echo $foldersList; ?>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <label for="form-forbid"><?php echo langHdl('forbidden_groups'); ?></label>
                             <select id="form-forbid" class="form-control form-item-control select2 no-root track-change" style="width:100%;" multiple="multiple">
                                 <?php echo $foldersList; ?>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <label for="form-forbid"><?php echo langHdl('special'); ?></label>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-root-folder">
                             <label class="form-check-label mr-2" for="form-create-root-folder"><?php echo langHdl('can_create_root_folder'); ?></label>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group not-for-admin">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-personal-folder">
                             <label class="form-check-label mr-2" for="form-create-personal-folder"><?php echo langHdl('enable_personal_folder_for_this_user'); ?></label>
                         </div>
-                        <div class="form-group" id="group-create-special-folder">
+                        <div class="form-group not-for-admin" id="group-create-special-folder">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-special-folder">
                             <label class="form-check-label mr-2" for="form-create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
                             <input type="text" class="form-control clear-me mt-1" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
                         </div>
-                        <div class="form-group" id="group-form-user-disabled">
+                        <div class="form-group not-for-admin" id="group-form-user-disabled">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-user-disabled">
                             <label class="form-check-label mr-2" for="form-user-disabled"><?php echo langHdl('user_is_disabled'); ?></label>
 

@@ -422,7 +422,7 @@ if (($session_validite_pw === null
                     <nav class="mt-2" style="margin-bottom:20px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
-                                if ($session_user_admin === 0 || TP_ADMIN_FULL_RIGHT === false) {
+                                if ($session_user_admin === 0) {
                                     // ITEMS & SEARCH
                                     echo '
                     <li class="nav-item">
@@ -972,8 +972,6 @@ if (($session_validite_pw === null
                         // SHow page with Items
                         if (
                             (int) $session_user_admin !== 1
-                            || ((int) $session_user_admin === 1
-                                && TP_ADMIN_FULL_RIGHT === false)
                         ) {
                             include $SETTINGS['cpassman_dir'] . '/pages/items.php';
                         } elseif ((int) $session_user_admin === 1) {

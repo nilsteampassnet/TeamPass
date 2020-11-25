@@ -395,14 +395,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // User's current privilege
                         if (data.admin === 1) {
                             $('#privilege-admin').iCheck('check');
+                            $('.not-for-admin').addClass('hidden');
                         } else if (data.can_manage_all_users === 1) {
                             $('#privilege-hr').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
                         } else if (data.gestionnaire === 1) {
                             $('#privilege-manager').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
                         } else if (data.read_only === 1) {
                             $('#privilege-ro').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
                         } else {
                             $('#privilege-user').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
                         }
 
                         $('input:radio[name=privilege]').on('ifChanged', function() {
