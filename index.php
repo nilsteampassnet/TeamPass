@@ -456,7 +456,7 @@ if (($session_validite_pw === null
                                     && isset($SETTINGS['roles_allowed_to_print_select']) === true
                                     && empty($SETTINGS['roles_allowed_to_print_select']) === false
                                     && count(array_intersect(
-                                        $superGlobal->get('groupes_visibles', 'SESSION'),
+                                        explode(';', $superGlobal->get('fonction_id', 'SESSION')),
                                         explode(',', str_replace(array('"', '[', ']'), '', $SETTINGS['roles_allowed_to_print_select']))
                                     )) > 0
                                     && (int) $session_user_admin === 0
