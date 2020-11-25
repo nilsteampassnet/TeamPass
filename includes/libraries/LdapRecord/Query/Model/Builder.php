@@ -150,17 +150,30 @@ class Builder extends BaseBuilder
      * @param string       $value
      * @param array|string $columns
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model
+     *
+     * @throws ModelNotFoundException
      */
     public function findByAnrOrFail($value, $columns = ['*'])
     {
-        if ($entry = $this->findByAnr($value, $columns)) {
-            return $entry;
+        if (! $entry = $this->findByAnr($value, $columns)) {
+            $this->throwNotFoundException($this->getUnescapedQuery(), $this->dn);
         }
 
-        throw ModelNotFoundException::forQuery($this->getUnescapedQuery(), $this->dn);
+        return $entry;
+    }
+
+    /**
+     * Throws a not found exception.
+     *
+     * @param string $query
+     * @param string $dn
+     *
+     * @throws ModelNotFoundException
+     */
+    protected function throwNotFoundException($query, $dn)
+    {
+        throw ModelNotFoundException::forQuery($query, $dn);
     }
 
     /**
@@ -227,9 +240,9 @@ class Builder extends BaseBuilder
      * @param string       $guid
      * @param array|string $columns
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model|static
+     *
+     * @throws ModelNotFoundException
      */
     public function findByGuidOrFail($guid, $columns = ['*'])
     {
@@ -264,13 +277,15 @@ class Builder extends BaseBuilder
         }
 
         foreach ($this->scopes as $identifier => $scope) {
-            if (! isset($this->appliedScopes[$identifier])) {
-                $scope instanceof Scope
-                    ? $scope->apply($this, $this->getModel())
-                    : $scope($this);
-
-                $this->appliedScopes[$identifier] = $scope;
+            if (isset($this->appliedScopes[$identifier])) {
+                continue;
             }
+
+            $scope instanceof Scope
+                ? $scope->apply($this, $this->getModel())
+                : $scope($this);
+
+            $this->appliedScopes[$identifier] = $scope;
         }
 
         return $this;
@@ -280,7 +295,7 @@ class Builder extends BaseBuilder
      * Register a new global scope.
      *
      * @param string                            $identifier
-     * @param \LdapRecord\Models\Scope|\Closure $scope
+     * @param Scope|\Closure $scope
      *
      * @return $this
      */
@@ -294,7 +309,7 @@ class Builder extends BaseBuilder
     /**
      * Remove a registered global scope.
      *
-     * @param \LdapRecord\Models\Scope|string $scope
+     * @param Scope|string $scope
      *
      * @return $this
      */

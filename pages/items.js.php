@@ -1994,11 +1994,7 @@ console.log(store.get('teampassUser'))
             
             // Load item info
             Details($(this).closest('tr'), 'edit');
-        })
-    /*.on('click', '#card-item-otv-generate-button', function() {        
-        prepareOneTimeView();
-    })*/
-    ;
+        });
 
     /**
      *  Manage mini icons on mouse over
@@ -4834,11 +4830,6 @@ console.log(store.get('teampassUser'))
                         data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                         key: '<?php echo $_SESSION['key']; ?>'
                     }
-                    /*,
-                                    function(data) {
-                                        data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                                        if (debugJavascript === true) console.log(data);
-                                    }*/
                 );
             }
         );

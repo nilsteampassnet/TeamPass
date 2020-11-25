@@ -74,7 +74,7 @@ class Grammar
             $this->wrapper = 'and';
         }
 
-        $filter = $this->concatenate($query->filters['raw'])
+        $filter = $this->compileRaws($query)
             . $this->compileWheres($query)
             . $this->compileOrWheres($query);
 
@@ -98,6 +98,18 @@ class Grammar
     protected function queryMustBeWrapped(Builder $query)
     {
         return ! $query->isNested() && $this->hasMultipleFilters($query);
+    }
+
+    /**
+     * Assembles all of the "raw" filters on the query.
+     *
+     * @param Builder $builder
+     *
+     * @return string
+     */
+    protected function compileRaws(Builder $builder)
+    {
+        return $this->concatenate($builder->filters['raw']);
     }
 
     /**
@@ -484,9 +496,9 @@ class Grammar
      *
      * @param array $where
      *
-     * @throws UnexpectedValueException
-     *
      * @return string
+     *
+     * @throws UnexpectedValueException
      */
     protected function compileWhere(array $where)
     {

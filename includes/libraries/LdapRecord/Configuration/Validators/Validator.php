@@ -33,9 +33,9 @@ abstract class Validator
     /**
      * Validates the configuration value.
      *
-     * @throws \LdapRecord\Configuration\ConfigurationException When the value given fails validation.
-     *
      * @return bool
+     *
+     * @throws \LdapRecord\Configuration\ConfigurationException When the value given fails validation.
      */
     abstract public function validate();
 }

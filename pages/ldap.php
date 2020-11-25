@@ -112,6 +112,18 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap tr-windows tr-posix tr-posix-search'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_port'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_port_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_port' value='<?php echo isset($SETTINGS['ldap_port']) ? $SETTINGS['ldap_port'] : '389'; ?>'>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
                                         <?php echo langHdl('base_distiguished_name'); ?>

@@ -16,7 +16,7 @@ class MbString
         if (static::isLoaded()) {
             $result = unpack('N', mb_convert_encoding($string, 'UCS-4BE', 'UTF-8'));
 
-            if (is_array($result) === true) {
+            if (is_array($result)) {
                 return $result[1];
             }
         }

@@ -33,9 +33,9 @@ class Cache
      *
      * @param string $key
      *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *
      * @return mixed
+     *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function get($key)
     {
@@ -49,9 +49,9 @@ class Cache
      * @param mixed                                   $value
      * @param DateTimeInterface|DateInterval|int|null $ttl
      *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *
      * @return bool
+     *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function put($key, $value, $ttl = null)
     {
@@ -65,9 +65,9 @@ class Cache
      * @param DateTimeInterface|DateInterval|int|null $ttl
      * @param Closure                                 $callback
      *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *
      * @return mixed
+     *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function remember($key, $ttl, Closure $callback)
     {
@@ -87,9 +87,9 @@ class Cache
      *
      * @param string $key
      *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *
      * @return bool
+     *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function delete($key)
     {

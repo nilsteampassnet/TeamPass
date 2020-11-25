@@ -27,7 +27,7 @@ trait HasPassword
      *
      * @param string|array $password
      *
-     * @throws \LdapRecord\ConnectionException
+     * @throws ConnectionException
      */
     public function setPasswordAttribute($password)
     {
@@ -41,7 +41,8 @@ trait HasPassword
                 $this->getHashedPassword($password[1])
             );
         }
-        // Otherwise, we will set the password normally.
+        // Otherwise, we will assume the password is being
+        // reset, overwriting the one currently in place.
         else {
             $this->setPassword($this->getHashedPassword($password));
         }
@@ -52,7 +53,7 @@ trait HasPassword
      *
      * @param string|array $password
      *
-     * @throws \LdapRecord\ConnectionException
+     * @throws ConnectionException
      */
     public function setUnicodepwdAttribute($password)
     {
@@ -111,9 +112,9 @@ trait HasPassword
      *
      * @param string $password
      *
-     * @throws LdapRecordException
-     *
      * @return string
+     *
+     * @throws LdapRecordException
      */
     protected function getHashedPassword($password)
     {
@@ -127,9 +128,9 @@ trait HasPassword
     /**
      * Validates that the current LDAP connection is secure.
      *
-     * @throws ConnectionException
-     *
      * @return void
+     *
+     * @throws ConnectionException
      */
     protected function validateSecureConnection()
     {

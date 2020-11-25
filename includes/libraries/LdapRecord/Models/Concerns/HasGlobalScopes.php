@@ -11,13 +11,12 @@ trait HasGlobalScopes
     /**
      * Register a new global scope on the model.
      *
-     * @param \LdapRecord\Models\Scope|\Closure|string $scope
-     * @param \Closure|null                            $implementation
-     *
-     * @throws \InvalidArgumentException
+     * @param Scope|Closure|string $scope
+     * @param Closure|null         $implementation
      *
      * @return mixed
-     * @return mixed
+     *
+     * @throws InvalidArgumentException
      */
     public static function addGlobalScope($scope, Closure $implementation = null)
     {
@@ -35,7 +34,7 @@ trait HasGlobalScopes
     /**
      * Determine if a model has a global scope.
      *
-     * @param \LdapRecord\Models\Scope|string $scope
+     * @param Scope|string $scope
      *
      * @return bool
      */
@@ -47,9 +46,9 @@ trait HasGlobalScopes
     /**
      * Get a global scope registered with the model.
      *
-     * @param \LdapRecord\Models\Scope|string $scope
+     * @param Scope|string $scope
      *
-     * @return \LdapRecord\Models\Scope|\Closure|null
+     * @return Scope|Closure|null
      */
     public static function getGlobalScope($scope)
     {
@@ -69,6 +68,8 @@ trait HasGlobalScopes
      */
     public function getGlobalScopes()
     {
-        return array_key_exists(static::class, static::$globalScopes) ? static::$globalScopes[static::class] : [];
+        return array_key_exists(static::class, static::$globalScopes)
+            ? static::$globalScopes[static::class]
+            : [];
     }
 }

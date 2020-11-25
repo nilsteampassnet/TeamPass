@@ -87,6 +87,8 @@ class Entry extends BaseEntry implements ActiveDirectory
      * @param string|null $newParentDn
      *
      * @return bool
+     *
+     * @throws \LdapRecord\LdapRecordException
      */
     public function restore($newParentDn = null)
     {
@@ -107,7 +109,7 @@ class Entry extends BaseEntry implements ActiveDirectory
             }
         });
 
-        return $this->save([
+        $this->save([
             'isDeleted'         => null,
             'distinguishedName' => $newDn,
         ]);

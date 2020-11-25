@@ -12,17 +12,8 @@ class User extends Entry
     public static $objectClasses = [
         'top',
         'person',
-        'organizationalperson',
         'inetorgperson',
-        'inetuser',
-        'posixaccount',
-        'krbprincipalaux',
-        'krbticketpolicyaux',
-        'ipaobject',
-        'ipasshuser',
-        'ipaSshGroupOfPubKeys',
-        'mepOriginEntry',
-        'ipauserauthtypeclass',
+        'organizationalperson',
     ];
 
     /**

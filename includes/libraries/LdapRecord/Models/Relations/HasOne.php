@@ -27,7 +27,9 @@ class HasOne extends Relation
      *
      * @param Model|string $model
      *
-     * @return Model|string|false
+     * @return Model|string
+     *
+     * @throws \LdapRecord\LdapRecordException
      */
     public function attach($model)
     {
@@ -35,19 +37,20 @@ class HasOne extends Relation
             ? $this->getForeignValueFromModel($model)
             : $model;
 
-        return $this->parent->setAttribute(
-            $this->relationKey,
-            $foreign
-        )->save() ? $model : false;
+        $this->parent->setAttribute($this->relationKey, $foreign)->save();
+
+        return $model;
     }
 
     /**
      * Detach the related model from the parent.
      *
-     * @return bool
+     * @return void
+     *
+     * @throws \LdapRecord\LdapRecordException
      */
     public function detach()
     {
-        return $this->parent->setAttribute($this->relationKey, null)->save();
+        $this->parent->setAttribute($this->relationKey, null)->save();
     }
 }

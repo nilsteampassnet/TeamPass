@@ -55,11 +55,11 @@ class Guard
      * @param string $password
      * @param bool   $stayBound
      *
+     * @return bool
+     *
      * @throws UsernameRequiredException
      * @throws PasswordRequiredException
      * @throws \LdapRecord\ConnectionException
-     *
-     * @return bool
      */
     public function attempt($username, $password, $stayBound = false)
     {
@@ -95,7 +95,8 @@ class Guard
      * @param string|null $username
      * @param string|null $password
      *
-     * @throws BindException|\LdapRecord\ConnectionException
+     * @throws BindException
+     * @throws \LdapRecord\ConnectionException
      */
     public function bind($username = null, $password = null)
     {

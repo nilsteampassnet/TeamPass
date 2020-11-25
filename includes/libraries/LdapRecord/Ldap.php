@@ -3,6 +3,7 @@
 namespace LdapRecord;
 
 use Closure;
+use Exception;
 use ErrorException;
 
 class Ldap
@@ -290,10 +291,14 @@ class Ldap
      *
      * @link http://php.net/manual/en/function.ldap-error.php
      *
-     * @return string
+     * @return string|null
      */
     public function getLastError()
     {
+        if (! $this->connection) {
+            return;
+        }
+
         return ldap_error($this->connection);
     }
 
@@ -399,9 +404,9 @@ class Ldap
      *
      * @link http://php.net/manual/en/function.ldap-start-tls.php
      *
-     * @throws \ErrorException If starting TLS fails.
-     *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function startTLS()
     {
@@ -566,9 +571,9 @@ class Ldap
      * @param string $username
      * @param string $password
      *
-     * @throws ConnectionException If starting TLS fails.
-     *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function bind($username, $password)
     {
@@ -586,6 +591,8 @@ class Ldap
      * @param array  $entry
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function add($dn, array $entry)
     {
@@ -602,6 +609,8 @@ class Ldap
      * @param string $dn
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function delete($dn)
     {
@@ -621,6 +630,8 @@ class Ldap
      * @param bool   $deleteOldRdn
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function rename($dn, $newRdn, $newParent, $deleteOldRdn = false)
     {
@@ -640,6 +651,8 @@ class Ldap
      * @param array  $entry
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function modify($dn, array $entry)
     {
@@ -657,6 +670,8 @@ class Ldap
      * @param array  $values
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function modifyBatch($dn, array $values)
     {
@@ -674,6 +689,8 @@ class Ldap
      * @param array  $entry
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function modAdd($dn, array $entry)
     {
@@ -691,6 +708,8 @@ class Ldap
      * @param array  $entry
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function modReplace($dn, array $entry)
     {
@@ -708,6 +727,8 @@ class Ldap
      * @param array  $entry
      *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function modDelete($dn, array $entry)
     {
@@ -771,10 +792,14 @@ class Ldap
      *
      * @link http://php.net/manual/en/function.ldap-errno.php
      *
-     * @return int
+     * @return int|null
      */
     public function errNo()
     {
+        if (! $this->connection) {
+            return;
+        }
+
         return ldap_errno($this->connection);
     }
 
@@ -795,7 +820,7 @@ class Ldap
      */
     public function getExtendedErrorHex()
     {
-        if (preg_match("/(?<=data\s).*?(?=\,)/", $this->getExtendedError(), $code)) {
+        if (preg_match("/(?<=data\s).*?(?=,)/", $this->getExtendedError(), $code)) {
             return $code[0];
         }
     }
@@ -811,8 +836,7 @@ class Ldap
     }
 
     /**
-     * Returns the error string of the specified
-     * error number.
+     * Returns the error string of the specified error number.
      *
      * @link http://php.net/manual/en/function.ldap-err2str.php
      *
@@ -866,9 +890,9 @@ class Ldap
      *
      * @param Closure $operation
      *
-     * @throws ErrorException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function executeFailableOperation(Closure $operation)
     {
@@ -879,12 +903,32 @@ class Ldap
         });
 
         try {
-            return $operation();
+            if (($result = $operation()) !== false) {
+                return $result;
+            }
+
+            if ($this->shouldBypassFailure($method = debug_backtrace()[1]['function'])) {
+                return $result;
+            }
+
+            throw new Exception("LDAP operation [$method] failed.");
         } catch (ErrorException $e) {
-            throw $e;
+            throw LdapRecordException::withDetailedError($e, $this->getDetailedError());
         } finally {
             restore_error_handler();
         }
+    }
+
+    /**
+     * Determine if the failed operation should be bypassed.
+     *
+     * @param string $method
+     *
+     * @return bool
+     */
+    protected function shouldBypassFailure($method)
+    {
+        return in_array($method, ['search', 'read', 'listing']);
     }
 
     /**

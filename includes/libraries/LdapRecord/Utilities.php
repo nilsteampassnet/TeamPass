@@ -117,10 +117,8 @@ class Utilities
         $hex3 = substr($hex, -18, 2).substr($hex, -20, 2);
         $hex4 = substr($hex, -16, 4);
         $hex5 = substr($hex, -12, 12);
-
-        $guid = sprintf('%s-%s-%s-%s-%s', $hex1, $hex2, $hex3, $hex4, $hex5);
-
-        return $guid;
+        
+        return sprintf('%s-%s-%s-%s-%s', $hex1, $hex2, $hex3, $hex4, $hex5);;
     }
 
     /**

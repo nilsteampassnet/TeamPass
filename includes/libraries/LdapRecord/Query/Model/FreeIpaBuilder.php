@@ -2,8 +2,6 @@
 
 namespace LdapRecord\Query\Model;
 
-use LdapRecord\Query\Model\Builder;
-
 class FreeIpaBuilder extends Builder
 {
     /**

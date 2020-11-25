@@ -6,9 +6,11 @@ use LdapRecord\Models\Entry;
 use LdapRecord\Models\Model;
 use LdapRecord\Query\Collection;
 use LdapRecord\Query\Model\Builder;
-use LdapRecord\Models\Attributes\DistinguishedName;
-use Tightenco\Collect\Support\Arr;
 
+/**
+ * @method bool exists($models = null) Determine if the relation contains all of the given models, or any models
+ * @method bool contains($models) Determine if any of the given models are contained in the relation
+ */
 abstract class Relation
 {
     /**
@@ -83,6 +85,10 @@ abstract class Relation
      */
     public function __call($method, $parameters)
     {
+        if (in_array($method, ['exists', 'contains'])) {
+            return $this->get('objectclass')->$method(...$parameters);
+        }
+
         $result = $this->query->$method(...$parameters);
 
         if ($result === $this->query) {
@@ -112,7 +118,7 @@ abstract class Relation
     }
 
     /**
-     * Get the results if the relationship while selecting the given columns.
+     * Get the results of the relationship while selecting the given columns.
      *
      * If the query columns are empty, the given columns are applied.
      *
@@ -139,107 +145,6 @@ abstract class Relation
     public function first($columns = ['*'])
     {
         return $this->get($columns)->first();
-    }
-
-    /**
-     * Determine if the relation contains all of the given models or any models.
-     *
-     * @param Model|string|Collection|array|null $models
-     *
-     * @return bool
-     */
-    public function exists($models = null)
-    {
-        $models = $this->getArrayableModels($models);
-
-        if (func_num_args() >= 1 && empty(array_filter($models))) {
-            return false;
-        }
-
-        $related = $this->get('objectclass');
-
-        if ($models) {
-            foreach ($models as $model) {
-                $exists = $related->contains(function (Model $related) use ($model) {
-                    return $this->compareModelWithRelated($model, $related);
-                });
-
-                if (! $exists) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        return $related->isNotEmpty();
-    }
-
-    /**
-     * Determine if any of the models are contained in the relation.
-     *
-     * @param Model|string|Collection|array $models
-     * 
-     * @return bool
-     */
-    public function contains($models)
-    {
-        $related = $this->get('objectclass');
-
-        foreach ($this->getArrayableModels($models) as $model) {
-            $exists = $related->contains(function (Model $related) use ($model) {
-                return $this->compareModelWithRelated($model, $related);
-            });
-            
-            if ($exists) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    /**
-     * Get the provided models as an array.
-     *
-     * @param mixed $models
-     *
-     * @return array
-     */
-    protected function getArrayableModels($models = null)
-    {
-        return $models instanceof Collection ? $models->toArray() : Arr::wrap($models);
-    }
-
-    /**
-     * Compare the related model with the given.
-     *
-     * @param Model|string $model
-     * @param Model        $related
-     *
-     * @return bool
-     */
-    protected function compareModelWithRelated($model, $related)
-    {
-        if (is_string($model)) {
-            return $this->isValidDn($model)
-                ? $related->getDn() == $model
-                : $related->getName() == $model;
-        }
-
-        return $related->is($model);
-    }
-
-    /**
-     * Determine if the given string is a valid distinguished name.
-     *
-     * @param string $dn
-     *
-     * @return bool
-     */
-    protected function isValidDn($dn)
-    {
-        return ! empty((new DistinguishedName($dn))->components());
     }
 
     /**

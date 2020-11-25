@@ -123,6 +123,8 @@ class AccountControl
      * Extract and apply the flag.
      *
      * @param int $flag
+     *
+     * @return void
      */
     public function apply($flag)
     {
@@ -155,6 +157,16 @@ class AccountControl
     public function doesntHave($flag)
     {
         return !$this->has($flag);
+    }
+
+    /**
+     * Generate an LDAP filter based on the current value.
+     *
+     * @return string
+     */
+    public function filter()
+    {
+        return sprintf('(UserAccountControl:1.2.840.113556.1.4.803:=%s)', $this->getValue());
     }
 
     /**

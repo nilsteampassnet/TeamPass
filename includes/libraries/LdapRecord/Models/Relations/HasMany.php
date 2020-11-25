@@ -264,9 +264,9 @@ class HasMany extends OneToMany
      *
      * @param string $model
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model
+     *
+     * @throws ModelNotFoundException
      */
     protected function getForeignModelByValueOrFail($model)
     {
@@ -288,14 +288,16 @@ class HasMany extends OneToMany
      * @param string|array   $bypass
      * @param mixed          $value
      *
-     * @throws LdapRecordException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function attemptFailableOperation($operation, $bypass, $value)
     {
         try {
-            return $operation() ? $value : false;
+            $operation();
+
+            return $value;
         } catch (LdapRecordException $e) {
             if ($this->errorContainsMessage($e->getMessage(), $bypass)) {
                 return $value;

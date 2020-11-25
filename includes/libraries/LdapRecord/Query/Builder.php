@@ -15,7 +15,6 @@ use LdapRecord\EscapesValues;
 use Tightenco\Collect\Support\Arr;
 use LdapRecord\LdapRecordException;
 use LdapRecord\Query\Events\QueryExecuted;
-use LdapRecord\Models\ModelNotFoundException;
 use LdapRecord\Query\Model\Builder as ModelBuilder;
 
 class Builder
@@ -704,19 +703,32 @@ class Builder
      *
      * @param array|string $columns
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model|static
+     *
+     * @throws ObjectNotFoundException
      */
     public function firstOrFail($columns = ['*'])
     {
         $record = $this->first($columns);
 
         if (! $record) {
-            throw ModelNotFoundException::forQuery($this->getUnescapedQuery(), $this->dn);
+            $this->throwNotFoundException($this->getUnescapedQuery(), $this->dn);
         }
 
         return $record;
+    }
+
+    /**
+     * Throws a not found exception.
+     *
+     * @param string $query
+     * @param string $dn
+     *
+     * @throws ObjectNotFoundException
+     */
+    protected function throwNotFoundException($query, $dn)
+    {
+        throw ObjectNotFoundException::forQuery($query, $dn);
     }
 
     /**
@@ -732,7 +744,7 @@ class Builder
     {
         try {
             return $this->findByOrFail($attribute, $value, $columns);
-        } catch (ModelNotFoundException $e) {
+        } catch (ObjectNotFoundException $e) {
             return;
         }
     }
@@ -746,9 +758,9 @@ class Builder
      * @param string       $value
      * @param array|string $columns
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model
+     *
+     * @throws ObjectNotFoundException
      */
     public function findByOrFail($attribute, $value, $columns = ['*'])
     {
@@ -816,7 +828,7 @@ class Builder
 
         try {
             return $this->findOrFail($dn, $columns);
-        } catch (ModelNotFoundException $e) {
+        } catch (ObjectNotFoundException $e) {
             return;
         }
     }
@@ -829,9 +841,9 @@ class Builder
      * @param string       $dn
      * @param array|string $columns
      *
-     * @throws ModelNotFoundException
-     *
      * @return Model|static
+     *
+     * @throws ObjectNotFoundException
      */
     public function findOrFail($dn, $columns = ['*'])
     {
@@ -950,9 +962,9 @@ class Builder
      * @param string       $boolean
      * @param bool         $raw
      *
-     * @throws InvalidArgumentException
-     *
      * @return $this
+     *
+     * @throws InvalidArgumentException
      */
     public function where($field, $operator = null, $value = null, $boolean = 'and', $raw = false)
     {
@@ -1416,9 +1428,9 @@ class Builder
      * @param string $type     The type of filter to add.
      * @param array  $bindings The bindings of the filter.
      *
-     * @throws InvalidArgumentException
-     *
      * @return $this
+     *
+     * @throws InvalidArgumentException
      */
     public function addFilter($type, array $bindings)
     {
@@ -1597,9 +1609,9 @@ class Builder
      * @param string $dn
      * @param array  $attributes
      *
-     * @throws LdapRecordException
-     *
      * @return bool
+     *
+     * @throws LdapRecordException
      */
     public function insert($dn, array $attributes)
     {
@@ -1715,9 +1727,9 @@ class Builder
      * @param string $method
      * @param array  $parameters
      *
-     * @throws BadMethodCallException
-     *
      * @return mixed
+     *
+     * @throws BadMethodCallException
      */
     public function __call($method, $parameters)
     {

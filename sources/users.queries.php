@@ -2281,8 +2281,8 @@ if (null !== $post_type) {
                 // Mandatory Configuration Options
                 'hosts'            => [$SETTINGS['ldap_domain_controler']],
                 'base_dn'          => $SETTINGS['ldap_search_base'],
-                'username'         => $SETTINGS['ldap_bind_dn'],
-                'password'         => $SETTINGS['ldap_bind_passwd'],
+                'username'         => $SETTINGS['ldap_username'],
+                'password'         => $SETTINGS['ldap_password'],
             
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
@@ -2414,27 +2414,6 @@ if (null !== $post_type) {
                 ), 
                 'encode'
             );
-
-/*
-        // Authenticate user
-        try {
-            $connection->auth()->bind($SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd'], $stayAuthenticated = true);
-
-        } catch (\LdapRecord\Auth\BindException $e) {
-            $error = $e->getDetailedError();
-            
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
-                ),
-                'encode'
-            );
-            break;
-        }
-*/
-
-
 
 
         break;

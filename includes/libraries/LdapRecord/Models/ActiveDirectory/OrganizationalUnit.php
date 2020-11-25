@@ -21,7 +21,9 @@ class OrganizationalUnit extends Entry
      */
     public function getCreatableRdn()
     {
-        $name = $this->escape($this->getFirstAttribute('ou'))->dn();
+        $name = $this->escape(
+            $this->getFirstAttribute('ou')
+        )->dn();
 
         return "ou=$name";
     }

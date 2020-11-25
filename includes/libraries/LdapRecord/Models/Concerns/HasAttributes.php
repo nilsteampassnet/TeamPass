@@ -111,7 +111,7 @@ trait HasAttributes
                 continue;
             }
 
-            $date = $this->asDateTime($type, $attributes[$attribute]);
+            $date = $this->asDateTime($attributes[$attribute], $type);
 
             $attributes[$attribute] = $date instanceof Carbon
                 ? Arr::wrap($this->serializeDate($date))
@@ -237,7 +237,7 @@ trait HasAttributes
     }
 
     /**
-     * Get an attribute value.
+     * Get an attributes value.
      *
      * @param string $key
      *
@@ -253,7 +253,7 @@ trait HasAttributes
         }
 
         if ($this->isDateAttribute($key) && !is_null($value)) {
-            return $this->asDateTime($this->getDates()[$key], Arr::first($value));
+            return $this->asDateTime(Arr::first($value), $this->getDates()[$key]);
         }
 
         if ($this->isCastedAttribute($key) && !is_null($value)) {
@@ -297,9 +297,9 @@ trait HasAttributes
      * @param string $type
      * @param mixed  $value
      *
-     * @throws LdapRecordException
-     *
      * @return float|string
+     *
+     * @throws LdapRecordException
      */
     public function fromDateTime($type, $value)
     {
@@ -309,16 +309,14 @@ trait HasAttributes
     /**
      * Convert the given LDAP date value to a Carbon instance.
      *
-     * TODO: Parameter arrangement will be swapped in v2.0.0.
-     *
-     * @param string $type
      * @param mixed  $value
-     *
-     * @throws LdapRecordException
+     * @param string $type
      *
      * @return Carbon|false
+     *
+     * @throws LdapRecordException
      */
-    public function asDateTime($type, $value)
+    public function asDateTime($value, $type)
     {
         return (new Timestamp($type))->toDateTime($value);
     }
@@ -457,7 +455,7 @@ trait HasAttributes
             case 'collection':
                 return $this->newCollection($value);
             case 'datetime':
-                return $this->asDateTime(explode(':', $this->getCasts()[$key], 2)[1], $value);
+                return $this->asDateTime($value, explode(':', $this->getCasts()[$key], 2)[1]);
             default:
                 return $value;
         }

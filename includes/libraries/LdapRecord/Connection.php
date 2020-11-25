@@ -191,10 +191,10 @@ class Connection
      * @param string|null $username
      * @param string|null $password
      *
+     * @return Connection
+     *
      * @throws ConnectionException If upgrading the connection to TLS fails
      * @throws Auth\BindException  If binding to the LDAP server fails.
-     *
-     * @return Connection
      */
     public function connect($username = null, $password = null)
     {
@@ -295,9 +295,9 @@ class Connection
      *
      * @param Closure $operation
      *
-     * @throws LdapRecordException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function runOperationCallback(Closure $operation)
     {
@@ -352,9 +352,9 @@ class Connection
      * @param LdapRecordException $e
      * @param Closure             $operation
      *
-     * @throws LdapRecordException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function tryAgainIfCausedByLostConnection(LdapRecordException $e, Closure $operation)
     {
@@ -373,9 +373,9 @@ class Connection
      *
      * @param Closure $operation
      *
-     * @throws LdapRecordException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function retry(Closure $operation)
     {
@@ -396,9 +396,9 @@ class Connection
      * @param LdapRecordException $e
      * @param Closure             $operation
      *
-     * @throws LdapRecordException
-     *
      * @return mixed
+     *
+     * @throws LdapRecordException
      */
     protected function retryOnNextHost(LdapRecordException $e, Closure $operation)
     {
