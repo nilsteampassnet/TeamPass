@@ -166,7 +166,7 @@ switch ($post_type) {
         }
 
         try {
-            $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.',cn=users,'.$SETTINGS['ldap_bdn'], $post_password);
+            $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
 
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
@@ -184,7 +184,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => "Great",
+                'message' => "User is successfully authenticated",
             ),
             'encode'
         );

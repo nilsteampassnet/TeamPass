@@ -18,6 +18,8 @@
  */
 
 return array(
+    'settings_ldap_additional_user_dn_tip' => 'This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. Examples: ou=Users ; cn=users',
+    'settings_ldap_additional_user_dn' => 'Additional User DN',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
     'provide_your_previous_password' => 'Your previous password',
     'admin_change_user_password_info' => 'This operation will reset the select user current password. A random one will be send by email to the user that will have to change it on first login.',
@@ -39,7 +41,7 @@ return array(
     'error' => 'Error caught',
     'hosts' => 'Hosts',
     'settings_ldap_hosts_tip' => 'The hosts option is an array of IP addresses or host names located on your network that serve an LDAP directory (seprated by a comma). You insert as many servers or as little as you would like depending on your forest (with the minimum of one of course).',
-    'base_distiguished_name' => 'Base Distinguished Name',
+    'base_distiguished_name' => 'Base DN',
     'settings_ldap_bdn_tip' => 'A Distinguished Name is a string based identifier in LDAP that is used to indicate hierarchy. Each object in your domain is assigned a Distinguished Name. An example Distinguished Name would be cn=John Doe,ou=Users,dc=local,dc=com. A Base Distinguished Name is the distinguished name that you would like to be used as the root of all searches and object creations using LdapRecord. An example base DN would be dc=local,dc=com. This means, that all searches executed with LdapRecord will start at dc=local,dc=com as the root. This would allow all records below it to be retrieved from results.',
     'username' => 'Username',
     'settings_ldap_username_tip' => 'To connect to your LDAP server, a username and password is required to be able to query and run operations on your server(s).',
@@ -1278,8 +1280,8 @@ return array(
     'collapse' => 'Collapse',
     'error_file_is_missing' => 'Error: The file is missing!',
     'click_to_change' => 'Click to change',
-    'settings_ldap_user_attribute' => 'User attribute to search',
-    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search within for username',
+    'settings_ldap_user_attribute' => 'User name attribute',
+    'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username. Examples: cn, uid, sAMAccountName',
     'user_ga_code_sent_by_email' => 'A new Google Authentication code was sent to your email address.',
     'log_user_initial_pwd_changed' => 'Initial password defined',
     'log_user_email_changed' => 'User email changed to ',

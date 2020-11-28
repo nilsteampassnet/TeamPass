@@ -407,23 +407,6 @@ function identifyUser($sentData, $SETTINGS)
         "Starting authentication of '" . $username . "'\n" .
             'LDAP status: ' . $SETTINGS['ldap_mode'] . "\n"
     );
-    debugIdentify(
-        DEBUGLDAP,
-        DEBUGLDAPFILE,
-        "Get all LDAP params : \n" .
-            'mode : ' . $SETTINGS['ldap_mode'] . "\n" .
-            'type : ' . $SETTINGS['ldap_type'] . "\n" .
-            'base_dn : ' . $SETTINGS['ldap_domain_dn'] . "\n" .
-            'search_base : ' . $SETTINGS['ldap_search_base'] . "\n" .
-            'bind_dn : ' . $SETTINGS['ldap_bind_dn'] . "\n" .
-            'bind_passwd : ' . $SETTINGS['ldap_bind_passwd'] . "\n" .
-            'user_attribute : ' . $SETTINGS['ldap_user_attribute'] . "\n" .
-            'account_suffix : ' . $SETTINGS['ldap_suffix'] . "\n" .
-            'domain_controllers : ' . $SETTINGS['ldap_domain_controler'] . "\n" .
-            'ad_port : ' . $SETTINGS['ldap_port'] . "\n" .
-            'use_ssl : ' . $SETTINGS['ldap_ssl'] . "\n" .
-            'use_tls : ' . $SETTINGS['ldap_tls'] . "\n*********\n\n"
-    );
 
     // Check if user exists
     $userInfo = DB::queryFirstRow(
@@ -546,7 +529,7 @@ function identifyUser($sentData, $SETTINGS)
         isset($SETTINGS['google_authentication']) === true
         && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-        && $user_2fa_selection === 'otp'
+        && $user_2fa_selection === 'google'
     ) {
         $ret = googleMFACheck(
             $username,
@@ -1172,7 +1155,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
         // Mandatory Configuration Options
         'hosts'            => [$SETTINGS['ldap_domain_controler']],
         'base_dn'          => $SETTINGS['ldap_search_base'],
-        'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",cn=users,".$SETTINGS['ldap_bdn'],
+        'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",".(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
         'password'         => $passwordClear,
     
         // Optional Configuration Options
@@ -1189,7 +1172,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
         ]
     ];
-
+    
     // Load expected libraries
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/illuminate/Contracts/Auth/Authenticatable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
@@ -1217,7 +1200,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
 
         return array(
             'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+            'message' => langHdl('error').' : '.$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage()." ".$config['username'],
              
         );
     }
@@ -1235,7 +1218,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             'message' => langHdl('error_no_user_in_ad'),             
         );
     }
-    
+
     // Check shadowexpire attribute - if === 1 then user disabled
     if (isset($entry['shadowexpire'][0]) === true && (int) $entry['shadowexpire'][0] === 1) {
         return array(

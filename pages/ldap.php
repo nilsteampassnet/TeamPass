@@ -112,7 +112,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </div>
                                 </div>
 
-                                <div class='row mb-2 tr-ldap tr-windows tr-posix tr-posix-search'>
+                                <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
                                         <?php echo langHdl('settings_ldap_port'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -169,6 +169,18 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </div>
                                     <div class='col-7'>
                                         <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_user_attribute' value='<?php echo isset($SETTINGS['ldap_user_attribute']) ? $SETTINGS['ldap_user_attribute'] : ''; ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_additional_user_dn'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_additional_user_dn_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_dn_additional_user_dn' value='<?php echo isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'] : ''; ?>'>
                                     </div>
                                 </div>
 

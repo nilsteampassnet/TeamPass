@@ -451,7 +451,7 @@ function mainQuery($SETTINGS)
                     $post_id
                 );
                 $post_login = $data['login'];
-                $post_pwd = $data['pw'];
+                //$post_pwd = $data['pw'];
             }
             // Get number of returned users
             $counter = DB::count();
@@ -592,7 +592,7 @@ function mainQuery($SETTINGS)
                         echo prepareExchangedData(
                             array(
                                 'error' => false,
-                                'message' => '',
+                                'message' => $post_send_mail,
                                 'email' => $data['email'],
                                 'email_result' => str_replace(
                                     '#email#',

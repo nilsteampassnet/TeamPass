@@ -120,8 +120,8 @@ echo '
                 <div class="2fa-methods text-center mt-2">',
     isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
         '
-                    <label for="select2fa-otp">OTP</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="otp" data-button-color="lightblue">' : '',
+                    <label for="select2fa-otp">Google</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="google" data-button-color="lightblue">' : '',
     '',
     isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
         '
@@ -153,7 +153,7 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
 // Google Authenticator code
 if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
-        <div id="div-2fa-otp" class="mb-3 div-2fa-method hidden">
+        <div id="div-2fa-otp" class="mb-3 div-2fa-method">
             <div class="row">
                 <div class="col-1">
                 </div>
