@@ -172,6 +172,18 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_dn_prefix'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_dn_prefix_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_dn_suffix' value='<?php echo isset($SETTINGS['ldap_dn_suffix']) ? $SETTINGS['ldap_dn_suffix'] : ''; ?>'>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2'>
                                     <div class='col-5'>
                                         <?php echo langHdl('settings_ldap_type'); ?>

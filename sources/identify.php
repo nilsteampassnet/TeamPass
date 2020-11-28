@@ -1172,7 +1172,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
         // Mandatory Configuration Options
         'hosts'            => [$SETTINGS['ldap_domain_controler']],
         'base_dn'          => $SETTINGS['ldap_search_base'],
-        'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",cn=users,".$SETTINGS['ldap_bdn'],
+        'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",".(isset($SETTINGS['ldap_dn_suffix']) ? $SETTINGS['ldap_dn_suffix'] : '').$SETTINGS['ldap_bdn'],
         'password'         => $passwordClear,
     
         // Optional Configuration Options

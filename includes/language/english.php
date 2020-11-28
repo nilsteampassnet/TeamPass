@@ -18,6 +18,8 @@
  */
 
 return array(
+    'settings_ldap_dn_prefix_tip' => 'It could be required to provide a DN object permitting to authenticate users. Example: cn=users,',
+    'settings_ldap_dn_prefix' => 'Distinguished Names suffix (if needed)',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
     'provide_your_previous_password' => 'Your previous password',
     'admin_change_user_password_info' => 'This operation will reset the select user current password. A random one will be send by email to the user that will have to change it on first login.',
