@@ -1,4 +1,11 @@
 <Files "downloadFile.php">
-Order Allow,Deny
-Allow from all
+# Apache < 2.3
+<IfModule !mod_authz_core.c>
+  Order Allow,Deny
+  Allow from all
+</IfModule>
+# Apache > 2.3
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
 </Files>

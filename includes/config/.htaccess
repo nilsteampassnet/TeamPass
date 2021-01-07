@@ -1,6 +1,13 @@
 <Files>
 Options -Indexes 
 IndexIgnore *
-Order Allow,Deny
-Deny from all
+# Apache < 2.3
+<IfModule !mod_authz_core.c>
+  Order Allow,Deny
+  Deny from all
+</IfModule>
+# Apache > 2.3
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
 </Files>
