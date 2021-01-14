@@ -513,7 +513,7 @@ function showItemsList(data)
             item_flag +
             '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
             '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"  ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+
-            '<span id="item_label_' + value.item_id + '">' + value.label + '</span>&nbsp;<font size="1px">' +
+            '<span id="item_label_' + value.item_id + '">' + decodeURIComponent(escape(value.label)) + '</span>&nbsp;<font size="1px">' +
             value.desc +
             '</div></font></a>' +
             '<span style="float:right;margin-top:2px;">' +
