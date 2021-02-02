@@ -1666,20 +1666,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'user_api_key', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
         )
         ) {
-            $allowed_languages = array();
-            $cnt = 0;
-            if ($handle = opendir($SETTINGS['cpassman_dir']."/includes/language/")) {
-              while (false !== ($entry = readdir($handle))) {
-                if ($entry != "." && $entry != "..") {
-                  $allowed_languages[$cnt] = $entry;
-                  $cnt++;
+            if ($value[0] === 'user_language') {
+              $allowed_languages = array();
+              $cnt = 0;
+              if ($handle = opendir($SETTINGS['cpassman_dir']."/includes/language/")) {
+                while (false !== ($entry = readdir($handle))) {
+                  if ($entry != "." && $entry != "..") {
+                    $allowed_languages[$cnt] = $entry;
+                    $cnt++;
+                  }
                 }
+              closedir($handle);
               }
-            closedir($handle);
-            }
-            if(($value[0] === 'user_language') && !in_array($value[1], $allowed_languages)) {
-                // error
-                exit();
+              if (!in_array($value[1], $allowed_languages) {
+                  // error
+                  exit();
+              }
             }
             DB::update(
                 prefix_table("users"),
