@@ -1672,7 +1672,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
               if ($handle = opendir($SETTINGS['cpassman_dir']."/includes/language/")) {
                 while (false !== ($entry = readdir($handle))) {
                   if ($entry != "." && $entry != "..") {
-                    $allowed_languages[$cnt] = $entry;
+                    $extension = ".php";
+                    $accepted_language = str_replace($extension, "", $entry);
+                    $allowed_languages[$cnt] = $accepted_language;
                     $cnt++;
                   }
                 }
