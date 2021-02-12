@@ -20,14 +20,11 @@ RUN echo && \
   /usr/local/bin/docker-php-ext-install ldap && \
   apk del openldap-dev && \
   echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
-echo
-
-# Fix API URL, BUG: API not working in container. #2100
-# Search last } and insert configuration rows before
-RUN sed -i "/^}/i \
+  sed -i "/^}/i \
   location /api/ {\
           try_files \$uri \$uri/ /api/index.php?\$args;\
-  }" /etc/nginx/sites-enabled/default.conf
+  }" /etc/nginx/sites-enabled/default.conf && \
+echo
 
 COPY teampass-docker-start.sh /teampass-docker-start.sh
 
