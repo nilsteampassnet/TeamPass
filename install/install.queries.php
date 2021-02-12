@@ -749,7 +749,7 @@ global \$SETTINGS;
                             `login` varchar(200) DEFAULT NULL,
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
-                            `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
+                            `renewal_period` int(5) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
                             `url` varchar(500) NOT NULL DEFAULT '0',
                             `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
