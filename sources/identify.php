@@ -878,7 +878,8 @@ function identifyUser($sentData, $SETTINGS)
         // Get user's rights
         if ($user_initial_creation_through_ldap === false) {
             identifyUserRights(
-                implode(';', $userInfo['groupes_visibles']),
+                //implode(';', $userInfo['groupes_visibles']),
+                $userInfo['groupes_visibles'],
                 $superGlobal->get('no_access_folders', 'SESSION'),
                 $userInfo['admin'],
                 $userInfo['fonction_id'],

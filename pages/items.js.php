@@ -4636,71 +4636,73 @@ console.log(store.get('teampassUser'))
                 if (debugJavascript === true) console.log(data);
 
                 // Attachments
-                if (data.attachments.length === 0) {
-                    $('#card-item-attachments-badge').html('<?php echo langHdl('none'); ?>');
-                    $('#card-item-attachments')
-                        .html('<?php echo langHdl('no_attachment'); ?>')
-                        .parent()
-                        .addClass('collapsed');
-                } else {
-                    var html = '',
-                        htmlFull = '',
-                        counter = 1,
-                        nbFiles = 0;
-                    $.each(data.attachments, function(i, value) {
-                        // Manage new row
-                        if (counter === 1) {
-                            htmlFull += '<div class="row">';
-                            html += '<div class="row">';
-                        }
+                if (data !== false) {
+                    if (data.attachments.length === 0) {
+                        $('#card-item-attachments-badge').html('<?php echo langHdl('none'); ?>');
+                        $('#card-item-attachments')
+                            .html('<?php echo langHdl('no_attachment'); ?>')
+                            .parent()
+                            .addClass('collapsed');
+                    } else {
+                        var html = '',
+                            htmlFull = '',
+                            counter = 1,
+                            nbFiles = 0;
+                        $.each(data.attachments, function(i, value) {
+                            // Manage new row
+                            if (counter === 1) {
+                                htmlFull += '<div class="row">';
+                                html += '<div class="row">';
+                            }
 
-                        html += '<div class="col-6">' +
-                            '<div class="callout callout-info">' +
-                            '<i class="' + value.icon + ' mr-2 text-info"></i>';
+                            html += '<div class="col-6">' +
+                                '<div class="callout callout-info">' +
+                                '<i class="' + value.icon + ' mr-2 text-info"></i>';
 
-                        // Show VIEW image icon
-                        if (value.is_image === 1) {
+                            // Show VIEW image icon
+                            if (value.is_image === 1) {
+                                html +=
+                                    '<i class="fas fa-eye infotip preview-image pointer mr-2" ' +
+                                    'title="<?php echo langHdl('see'); ?>" ' +
+                                    'data-file-id="' + value.id + '" data-file-title="' +
+                                    (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
+                            }
+
+                            // Show DOWNLOAD icon
                             html +=
-                                '<i class="fas fa-eye infotip preview-image pointer mr-2" ' +
-                                'title="<?php echo langHdl('see'); ?>" ' +
-                                'data-file-id="' + value.id + '" data-file-title="' +
-                                (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
-                        }
+                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' +
+                                '<i class="fas fa-file-download"></i></a>';
 
-                        // Show DOWNLOAD icon
-                        html +=
-                            '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' +
-                            '<i class="fas fa-file-download"></i></a>';
+                            // Show other info
+                            html +=
+                                '<span class="font-weight-bold mr-3">' +
+                                (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '</span>' +
+                                '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
+                                '<span class="font-italic">' + value.size + '</span>' +
+                                '</div></div>';
 
-                        // Show other info
-                        html +=
-                            '<span class="font-weight-bold mr-3">' +
-                            (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '</span>' +
-                            '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
-                            '<span class="font-italic">' + value.size + '</span>' +
-                            '</div></div>';
-
-                        htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
-                            '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                            '<div class="info-box-content"><span class="info-box-text">' +
-                            (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '.' + value.extension + '</span>' +
-                            '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
-                            '</div></div>';
+                            htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
+                                '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
+                                '<div class="info-box-content"><span class="info-box-text">' +
+                                (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '.' + value.extension + '</span>' +
+                                '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
+                                '</div></div>';
 
 
-                        if (counter === 2) {
-                            htmlFull += '</div>';
-                            html += '</div>';
-                            counter = 1;
-                        } else {
-                            counter += 1;
-                        }
-                        nbFiles += 1;
-                    });
-                    $('#card-item-attachments').html(html);
-                    $('#card-item-attachments-badge').html(nbFiles);
-                    $('#form-item-attachments').html(htmlFull);
-                    $('#form-item-attachments-zone').removeClass('hidden');
+                            if (counter === 2) {
+                                htmlFull += '</div>';
+                                html += '</div>';
+                                counter = 1;
+                            } else {
+                                counter += 1;
+                            }
+                            nbFiles += 1;
+                        });
+                        $('#card-item-attachments').html(html);
+                        $('#card-item-attachments-badge').html(nbFiles);
+                        $('#form-item-attachments').html(htmlFull);
+                        $('#form-item-attachments-zone').removeClass('hidden');
+                    }
                 }
                 // Hide loading state
                 $('#card-item-attachments').nextAll().addClass('hidden');

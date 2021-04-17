@@ -413,7 +413,7 @@ function mainQuery($SETTINGS)
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_NUMBER_INT);
+            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING);
             $post_send_mail = filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
             $post_pwd = filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING);
@@ -472,6 +472,7 @@ function mainQuery($SETTINGS)
                     array(
                         'error' => true,
                         'message' => langHdl('no_user'),
+                        'tst' => 1,
                     ),
                     'encode'
                 );
@@ -487,6 +488,7 @@ function mainQuery($SETTINGS)
                     array(
                         'error' => true,
                         'message' => langHdl('no_user'),
+                        'tst' => $post_demand_origin,
                     ),
                     'encode'
                 );
@@ -3413,7 +3415,7 @@ Insert the log here and especially the answer of the query that failed.
                         filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                         'decode'
                     );
-    
+
                     // Variables
                     $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
                     $post_previous_pwd = filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING);
@@ -3432,6 +3434,16 @@ Insert the log here and especially the answer of the query that failed.
                             // For this, just check if it is possible to decrypt the privatekey
                             // And try to decrypt one existing key
                             $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+                            if (empty($privateKey) === true) {
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => true,
+                                        'message' => langHdl('password_is_not_correct'),
+                                    ),
+                                    'encode'
+                                );
+                                break;
+                            }
 
                             // Test if possible to decvrypt one key
                             // Get one item
@@ -3454,6 +3466,11 @@ Insert the log here and especially the answer of the query that failed.
                                 // Decrypt itemkey with user key
                                 // use old password to decrypt private_key
                                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+
+
+                                $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+
+                                echo "-".$objectKey." -- PRovatekey = ".$privateKey;
 
                                 if (empty(base64_decode($itemKey)) === false) {
                                     // GOOD password
@@ -3479,7 +3496,7 @@ Insert the log here and especially the answer of the query that failed.
                                     echo prepareExchangedData(
                                         array(
                                             'error' => false,
-                                            'message' => langHdl('done'),'',
+                                            'message' => langHdl('done'),
                                         ),
                                         'encode'
                                     );

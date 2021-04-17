@@ -184,6 +184,18 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_user_object_filter'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_user_object_filter_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_user_object_filter' value='<?php echo isset($SETTINGS['ldap_user_object_filter']) ? $SETTINGS['ldap_user_object_filter'] : ''; ?>'>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2'>
                                     <div class='col-5'>
                                         <?php echo langHdl('settings_ldap_type'); ?>

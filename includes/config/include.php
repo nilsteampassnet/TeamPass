@@ -17,7 +17,7 @@
  * @see      http://www.teampass.net
  */
 define('TP_VERSION', '3.0.0');
-define('TP_VERSION_FULL', TP_VERSION.'.7');
+define('TP_VERSION_FULL', TP_VERSION.'.8');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -48,6 +48,7 @@ define('TEAMPASS_URL', 'https://teampass.net');
 define('DEBUG', false);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
 define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
+define('DEBUGDUOFILE', "C:\\temp\\debug_duo.txt"); //Can be used in order to debug DUO authentication
 
 // Management Pages
 $mngPages = array(

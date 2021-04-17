@@ -1070,6 +1070,14 @@ if (null !== $post_type) {
                     }
 
                     // ---Manage tags
+                    // Get list of tags
+                    $itemTags = DB::queryFirstColumn(
+                        'SELECT tag
+                        FROM ' . prefixTable('tags') . '
+                        WHERE item_id = %i',
+                        $post_item_id
+                    );
+
                     // deleting existing tags for this item
                     DB::delete(
                         prefixTable('tags'),
@@ -1079,10 +1087,10 @@ if (null !== $post_type) {
 
                     // Add new tags
                     $return_tags = '';
-                    $post_tags = explode(' ', $post_tags);
-                    foreach ($post_tags as $tag) {
+                    $postArrayTags = explode(' ', $post_tags);
+                    foreach ($postArrayTags as $tag) {
                         if (empty($tag) === false) {
-                            // save in DB
+                           // save in DB
                             DB::insert(
                                 prefixTable('tags'),
                                 array(
@@ -1092,6 +1100,29 @@ if (null !== $post_type) {
                             );
                         }
                     }
+
+                    // Store LOG
+                    if (count(array_diff($postArrayTags, $itemTags)) > 0) {
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            'tags'
+                        );
+
+                        // update LOG
+                        logItems(
+                            $SETTINGS,
+                            (int) $post_item_id,
+                            $post_label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_tag : ' . implode(' ', $itemTags) . ' => ' . $post_tags
+                        );
+                    }
+                    
+
+
 
                     // update item
                     DB::update(
@@ -2820,82 +2851,31 @@ if (null !== $post_type) {
 
             // check user is admin
             if (
-                $_SESSION['user_admin'] === '1'
-                && $dataItem['perso'] !== 1
-                && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
-                || null == TP_ADMIN_FULL_RIGHT
+                (int) $_SESSION['is_admin'] === 1
+                && (int) $dataItem['perso'] === 0
             ) {
                 $returnArray['show_details'] = 0;
-                // Check if actual USER can see this ITEM
+                echo (string) prepareExchangedData(
+                    $returnArray,
+                    'encode'
+                );
+            // Check if actual USER can see this ITEM
             } elseif ((
-                    (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
-                || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
+                    (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
+                    && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                    && $restrictionActive === false) === true
+                || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1
+                    && (int) (int) $dataItem['anyone_can_modify'] === 1
+                    && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
+                    && $restrictionActive === false) === true
                 || (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
                     && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
                     && (int) $post_restricted === 1
-                    && $user_in_restricted_list_of_item === true)
+                    && $user_in_restricted_list_of_item === true) === true
                 || (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
-                    && $restrictionActive === false)
+                    && $restrictionActive === false) === true
             ) {
-                /*// GET Audit trail
-                $history = array();
-                $historyOfPws = array();
-                $rows = DB::query(
-                    'SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
-                    FROM '.prefixTable('log_items').' as l
-                    LEFT JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-                    WHERE id_item=%i AND action <> %s
-                    ORDER BY date ASC',
-                    $post_id,
-                    'at_shown'
-                );
-                // Get share_key
-                $shKey = DB::query(
-                    'SELECT share_key
-                    FROM '.prefixTable('sharekeys_items').'
-                    WHERE object_id = %i',
-                    $post_id
-                );
-                // Now loop on logs
-                foreach ($rows as $record) {
-                    $reason = explode(':', $record['raison']);
-                    if ($record['action'] === 'at_modification' && $reason[0] === 'at_pw ') {
-                        $pw = base64_decode(
-                            doDataDecryption(
-                                $reason[1],
-                                decryptUserObjectKey(
-                                    $shKey,
-                                    $_SESSION['user']['private_key']
-                                )
-                            )
-                        );
-
-                        $reason[1] = $pw['string'];
-                        // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                        if (isUTF8($reason[1]) === false || is_array($reason[1]) === true) {
-                            $reason[1] = '';
-                        }
-                    }
-                    // imported via API
-                    if (empty($record['login'])) {
-                        $record['login'] = langHdl('imported_via_api');
-                    }
-
-                    if (empty($reason[1]) === false
-                        && in_array(
-                            $record['action'],
-                            array('at_copy', 'at_creation', 'at_manual', 'at_modification', 'at_delete', 'at_restored')
-                        ) === true
-                    ) {
-                        if (trim($reason[0]) === 'at_pw' && empty($reason[1]) === false) {
-                            array_push($historyOfPws, $reason[1]);
-                        }
-                    }
-                }
-                $returnArray['historyOfPassword'] = $historyOfPws;
-                */
-
                 // generate 2d key
                 $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
@@ -2995,7 +2975,7 @@ if (null !== $post_type) {
                 $returnArray['roles_list'] = $listOptionsForRoles;
 
                 // send notification if enabled
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1) {
                     // Get path
                     $arbo = $tree->getPath($dataItem['id_tree'], true);
                     $path = '';
@@ -3043,7 +3023,12 @@ if (null !== $post_type) {
                     && $SETTINGS['restricted_to_roles'] === '1' ? 1 : 0;
 
                 $_SESSION['user']['show_step2'] = false;
-
+                
+                echo (string) prepareExchangedData(
+                    $returnArray,
+                    'encode'
+                );
+            } else {echo "ici3";
                 echo (string) prepareExchangedData(
                     $returnArray,
                     'encode'
@@ -6127,7 +6112,7 @@ if (null !== $post_type) {
                             } else {
                                 $detail = trim($reason[1]);
                             }
-                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url')) === true) {
+                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
                             $tmp = explode(' => ', $reason[1]);
                             $detail = empty(trim($tmp[0])) === true ?
                                 langHdl('no_previous_value') : langHdl('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';

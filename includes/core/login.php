@@ -153,7 +153,7 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
 // Google Authenticator code
 if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
-        <div id="div-2fa-otp" class="mb-3 div-2fa-method">
+        <div id="div-2fa-google" class="mb-3 div-2fa-method hidden">
             <div class="row">
                 <div class="col-1">
                 </div>

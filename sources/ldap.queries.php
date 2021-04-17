@@ -165,6 +165,15 @@ switch ($post_type) {
             break;
         }
 
+        $user = $connection->query()
+            ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
+            ->firstOrFail();
+
+        // Get the groups from the user.
+        $userGroups = $user['memberof'];
+print_r($user);
+
+    break;
         try {
             $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
 
@@ -180,6 +189,23 @@ switch ($post_type) {
             );
             break;
         }
+
+/*        
+        // If user object is set
+        //$filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+        $query = $connection->query();
+        
+
+        //if ($entry = $query->find($SETTINGS['ldap_user_object_filter'])) {
+        if ($entry = $query->find('uid=nils(&(memberOf=CN=teampass,OU=groups,dc=ldap,dc=test,dc=local)(!(disabled=TRUE)))')) {
+            
+            // Found entry!
+            echo "FOUND";
+        } else {
+            // Not found.
+            echo "NOT FOUND";
+        }
+*/
         
         echo prepareExchangedData(
             array(

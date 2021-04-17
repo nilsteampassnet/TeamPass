@@ -266,7 +266,7 @@ if (null !== $post_type) {
                 if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($session_url_path) ? $db['url_path'] : $session_url_path . "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $data['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
@@ -1162,7 +1162,7 @@ $SETTINGS = array (';
                 if ($mysqli_result) {
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '", "task" : "' . $task . '", "activity" : "' . $activity . '"}]';
                 } else {
-                    echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())) . '", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '", "table" : "' . $task . '"}]';
+                    echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error($dbTmp))) . '", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '", "table" : "' . $task . '"}]';
                 }
             } else {
                 echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())) . '", "result" : "Failed", "multiple" : ""}]';

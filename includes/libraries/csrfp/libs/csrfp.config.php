@@ -4,7 +4,7 @@
  */
 
 return array(
-    "CSRFP_TOKEN" => "06446ed404abd4d5acb150aecb9a9abd11936c072781b372a1",
+    "CSRFP_TOKEN" => "d346024960cbf5ef4ddc109bde72701ab9464d25fd036135fd",
     "logDirectory" => "../log",
     "failedAuthAction" => array(
         "GET" => 0,

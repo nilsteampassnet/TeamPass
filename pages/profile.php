@@ -110,7 +110,9 @@ foreach ($_SESSION['user_roles'] as $role) {
         FROM ' . prefixTable('roles_title') . ' 
         WHERE id = "' . $role . '"'
     );
-    array_push($userParOfGroups, $tmp['title']);
+    if ($tmp !== null) {
+        array_push($userParOfGroups, $tmp['title']);
+    }
 }
 
 ?>
