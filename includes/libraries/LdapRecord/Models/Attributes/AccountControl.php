@@ -140,9 +140,12 @@ class AccountControl
      */
     public function has($flag)
     {
-        // We'll extract the given flag into an array of possible flags, and
-        // see if our AccountControl object contains any of them.
-        $flagsUsed = array_intersect($this->extractFlags($flag), $this->values);
+        // Here we will extract the given flag into an array
+        // of possible flags. This will allow us to see if
+        // our AccountControl object contains any of them.
+        $flagsUsed = array_intersect(
+            $this->extractFlags($flag), $this->values
+        );
 
         return in_array($flag, $flagsUsed);
     }
@@ -156,7 +159,7 @@ class AccountControl
      */
     public function doesntHave($flag)
     {
-        return !$this->has($flag);
+        return ! $this->has($flag);
     }
 
     /**
@@ -444,6 +447,26 @@ class AccountControl
     public function setValues(array $flags)
     {
         $this->values = $flags;
+    }
+
+    /**
+     * Get all flags that are currently applied to the value.
+     *
+     * @return array
+     */
+    public function getAppliedFlags()
+    {
+        $flags = $this->getAllFlags();
+
+        $exists = [];
+
+        foreach ($flags as $name => $flag) {
+            if ($this->has($flag)) {
+                $exists[$name] = $flag;
+            }
+        }
+
+        return $exists;
     }
 
     /**

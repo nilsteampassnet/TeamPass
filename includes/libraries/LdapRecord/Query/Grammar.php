@@ -75,8 +75,8 @@ class Grammar
         }
 
         $filter = $this->compileRaws($query)
-            . $this->compileWheres($query)
-            . $this->compileOrWheres($query);
+            .$this->compileWheres($query)
+            .$this->compileOrWheres($query);
 
         switch ($this->wrapper) {
             case 'and':

@@ -2,8 +2,8 @@
 
 namespace LdapRecord\Query;
 
-use DateInterval;
 use Carbon\Carbon;
+use DateInterval;
 use DateTimeInterface;
 
 /**

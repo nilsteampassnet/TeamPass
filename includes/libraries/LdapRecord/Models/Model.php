@@ -3,17 +3,17 @@
 namespace LdapRecord\Models;
 
 use ArrayAccess;
-use JsonSerializable;
-use LdapRecord\Container;
-use LdapRecord\Connection;
 use InvalidArgumentException;
+use JsonSerializable;
+use LdapRecord\Connection;
+use LdapRecord\Container;
 use LdapRecord\EscapesValues;
-use UnexpectedValueException;
-use LdapRecord\Query\Model\Builder;
-use LdapRecord\Models\Events\Renamed;
-use LdapRecord\Models\Attributes\Guid;
-use LdapRecord\Models\Events\Renaming;
 use LdapRecord\Models\Attributes\DistinguishedName;
+use LdapRecord\Models\Attributes\Guid;
+use LdapRecord\Models\Events\Renamed;
+use LdapRecord\Models\Events\Renaming;
+use LdapRecord\Query\Model\Builder;
+use UnexpectedValueException;
 
 /** @mixin Builder */
 abstract class Model implements ArrayAccess, JsonSerializable
@@ -27,11 +27,25 @@ abstract class Model implements ArrayAccess, JsonSerializable
     use Concerns\HasRelationships;
 
     /**
-     * Indicates if the model exists.
+     * Indicates if the model exists in the LDAP directory.
      *
      * @var bool
      */
     public $exists = false;
+
+    /**
+     * Indicates whether the model was created during the current request lifecycle.
+     *
+     * @var bool
+     */
+    public $wasRecentlyCreated = false;
+
+    /**
+     * Indicates whether the model was renamed during the current request lifecycle.
+     *
+     * @var bool
+     */
+    public $wasRecentlyRenamed = false;
 
     /**
      * The models distinguished name.
@@ -205,7 +219,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function getConnection()
     {
-        return static::resolveConnection($this->connection);
+        return static::resolveConnection($this->getConnectionName());
     }
 
     /**
@@ -289,7 +303,9 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function newQueryWithoutScopes()
     {
-        return static::resolveConnection($this->connection)->query()->model($this);
+        return static::resolveConnection(
+            $this->getConnectionName()
+        )->query()->model($this);
     }
 
     /**
@@ -301,7 +317,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function newQueryBuilder(Connection $connection)
     {
-        return (new Builder($connection))->setCache($connection->getCache());
+        return new Builder($connection);
     }
 
     /**
@@ -486,7 +502,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function offsetExists($offset)
     {
-        return !is_null($this->getAttribute($offset));
+        return ! is_null($this->getAttribute($offset));
     }
 
     /**
@@ -604,7 +620,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     public function is(self $model)
     {
-        return $this->dn == $model->getDn() && $this->connection == $model->getConnectionName();
+        return $this->dn == $model->getDn() && $this->getConnectionName() == $model->getConnectionName();
     }
 
     /**
@@ -911,6 +927,8 @@ abstract class Model implements ArrayAccess, JsonSerializable
         $this->exists ? $this->performUpdate() : $this->performInsert();
 
         $this->fireModelEvent(new Events\Saved($this));
+
+        $this->in = null;
     }
 
     /**
@@ -950,6 +968,8 @@ abstract class Model implements ArrayAccess, JsonSerializable
         $this->syncOriginal();
 
         $this->exists = true;
+
+        $this->wasRecentlyCreated = true;
     }
 
     /**
@@ -1124,9 +1144,13 @@ abstract class Model implements ArrayAccess, JsonSerializable
      */
     protected function deleteLeafNodes()
     {
-        return $this->newQuery()->listing()->in($this->dn)->get()->each(function (self $model) {
-            $model->delete($recursive = true);
-        });
+        return $this->newQueryWithoutScopes()
+            ->in($this->dn)
+            ->listing()
+            ->paginate()
+            ->each(function (self $model) {
+                $model->delete($recursive = true);
+            });
     }
 
     /**
@@ -1169,7 +1193,7 @@ abstract class Model implements ArrayAccess, JsonSerializable
             // removed and update the attributes value.
             else {
                 $this->attributes[$attribute] = array_values(
-                    array_diff($this->attributes[$attribute], $value)
+                    array_diff($this->attributes[$attribute], (array) $value)
                 );
             }
         }
@@ -1226,9 +1250,20 @@ abstract class Model implements ArrayAccess, JsonSerializable
             $newParentDn = $this->getParentDn($this->dn);
         }
 
+        // If the RDN and the new parent DN are the same as the current,
+        // we will simply return here to prevent a rename operation
+        // being sent, which would fail anyway in such case.
+        if (
+            $rdn === $this->getRdn()
+         && $newParentDn === $this->getParentDn()
+        ) {
+            return;
+        }
+
         $this->fireModelEvent(new Renaming($this, $rdn, $newParentDn));
 
         $this->newQuery()->rename($this->dn, $rdn, $newParentDn, $deleteOldRdn);
+
         // If the model was successfully renamed, we will set
         // its new DN so any further updates to the model
         // can be performed without any issues.
@@ -1246,28 +1281,53 @@ abstract class Model implements ArrayAccess, JsonSerializable
             = [reset($map[$modelNameAttribute])];
 
         $this->fireModelEvent(new Renamed($this));
+
+        $this->wasRecentlyRenamed = true;
     }
 
     /**
      * Get a distinguished name that is creatable for the model.
      *
-     * @return string
-     */
-    public function getCreatableDn()
-    {
-        return implode(',', [$this->getCreatableRdn(), $this->in ?? $this->newQuery()->getDn()]);
-    }
-
-    /**
-     * Get a creatable RDN for the model.
+     * @param string|null $name
+     * @param string|null $attribute
      *
      * @return string
      */
-    public function getCreatableRdn()
+    public function getCreatableDn($name = null, $attribute = null)
     {
-        $name = $this->escape($this->getFirstAttribute('cn'))->dn();
+        return implode(',', [
+            $this->getCreatableRdn($name, $attribute),
+            $this->in ?? $this->newQuery()->getbaseDn(),
+        ]);
+    }
 
-        return "cn=$name";
+    /**
+     * Get a creatable (escaped) RDN for the model.
+     *
+     * @param string|null $name
+     * @param string|null $attribute
+     *
+     * @return string
+     */
+    public function getCreatableRdn($name = null, $attribute = null)
+    {
+        $attribute = $attribute ?? $this->getCreatableRdnAttribute();
+
+        $name = $this->escape(
+            $name ?? $this->getFirstAttribute($attribute)
+        )->dn();
+
+        return "$attribute=$name";
+    }
+
+    /**
+     * Get the creatable RDN attribute name.
+     *
+     * @return string
+     */
+    protected function getCreatableRdnAttribute()
+    {
+        return 'cn';
     }
 
     /**

@@ -119,8 +119,8 @@ switch ($post_type) {
         // Build ldap configuration array
         $config = [
             // Mandatory Configuration Options
-            'hosts'            => [$SETTINGS['ldap_domain_controler']],
-            'base_dn'          => $SETTINGS['ldap_search_base'],
+            'hosts'            => [$SETTINGS['ldap_hosts']],
+            'base_dn'          => $SETTINGS['ldap_bdn'],
             'username'         => $SETTINGS['ldap_username'],
             'password'         => $SETTINGS['ldap_password'],
         
@@ -144,6 +144,7 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
 
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
@@ -165,15 +166,11 @@ switch ($post_type) {
             break;
         }
 
+        // User try to auth
         $user = $connection->query()
             ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
             ->firstOrFail();
 
-        // Get the groups from the user.
-        $userGroups = $user['memberof'];
-print_r($user);
-
-    break;
         try {
             $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
 
@@ -189,23 +186,11 @@ print_r($user);
             );
             break;
         }
-
-/*        
-        // If user object is set
-        //$filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
-        $query = $connection->query();
         
+        // Get the groups from the user.
+        $userGroups = $user['memberof'];
+//        print_r($user);
 
-        //if ($entry = $query->find($SETTINGS['ldap_user_object_filter'])) {
-        if ($entry = $query->find('uid=nils(&(memberOf=CN=teampass,OU=groups,dc=ldap,dc=test,dc=local)(!(disabled=TRUE)))')) {
-            
-            // Found entry!
-            echo "FOUND";
-        } else {
-            // Not found.
-            echo "NOT FOUND";
-        }
-*/
         
         echo prepareExchangedData(
             array(

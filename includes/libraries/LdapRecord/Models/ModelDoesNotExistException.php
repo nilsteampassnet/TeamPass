@@ -26,7 +26,7 @@ class ModelDoesNotExistException extends LdapRecordException
     }
 
     /**
-     * Sets the model that does not exist.
+     * Set the model that does not exist.
      *
      * @param Model $model
      *

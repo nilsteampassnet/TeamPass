@@ -2,8 +2,10 @@
 
 namespace LdapRecord\Query\Model;
 
-use LdapRecord\Models\ModelNotFoundException;
+use Closure;
+use LdapRecord\LdapInterface;
 use LdapRecord\Models\Attributes\AccountControl;
+use LdapRecord\Models\ModelNotFoundException;
 
 class ActiveDirectoryBuilder extends Builder
 {
@@ -75,10 +77,9 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function whereMember($dn, $nested = false)
     {
-        return $this->whereEquals(
-            $nested ? 'member:1.2.840.113556.1.4.1941:' : 'member',
-            $dn
-        );
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->whereEquals($attribute, $dn);
+        }, 'member', $nested);
     }
 
     /**
@@ -91,10 +92,9 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function orWhereMember($dn, $nested = false)
     {
-        return $this->orWhereEquals(
-            $nested ? 'member:1.2.840.113556.1.4.1941:' : 'member',
-            $dn
-        );
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->orWhereEquals($attribute, $dn);
+        }, 'member', $nested);
     }
 
     /**
@@ -107,10 +107,24 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function whereMemberOf($dn, $nested = false)
     {
-        return $this->whereEquals(
-            $nested ? 'memberof:1.2.840.113556.1.4.1941:' : 'memberof',
-            $dn
-        );
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->whereEquals($attribute, $dn);
+        }, 'memberof', $nested);
+    }
+
+    /**
+     * Adds a 'where not member of' filter to the current query.
+     *
+     * @param string $dn
+     * @param bool   $nested
+     *
+     * @return $this
+     */
+    public function whereNotMemberof($dn, $nested = false)
+    {
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->whereNotEquals($attribute, $dn);
+        }, 'memberof', $nested);
     }
 
     /**
@@ -123,10 +137,24 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function orWhereMemberOf($dn, $nested = false)
     {
-        return $this->orWhereEquals(
-            $nested ? 'memberof:1.2.840.113556.1.4.1941:' : 'memberof',
-            $dn
-        );
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->orWhereEquals($attribute, $dn);
+        }, 'memberof', $nested);
+    }
+
+    /**
+     * Adds a 'or where not member of' filter to the current query.
+     *
+     * @param string $dn
+     * @param bool   $nested
+     *
+     * @return $this
+     */
+    public function orWhereNotMemberof($dn, $nested = false)
+    {
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->orWhereNotEquals($attribute, $dn);
+        }, 'memberof', $nested);
     }
 
     /**
@@ -139,10 +167,24 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function whereManager($dn, $nested = false)
     {
-        return $this->whereEquals(
-            $nested ? 'manager:1.2.840.113556.1.4.1941:' : 'manager',
-            $dn
-        );
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->whereEquals($attribute, $dn);
+        }, 'manager', $nested);
+    }
+
+    /**
+     * Adds a 'where not manager' filter to the current query.
+     *
+     * @param string $dn
+     * @param bool   $nested
+     *
+     * @return $this
+     */
+    public function whereNotManager($dn, $nested = false)
+    {
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->whereNotEquals($attribute, $dn);
+        }, 'manager', $nested);
     }
 
     /**
@@ -155,9 +197,51 @@ class ActiveDirectoryBuilder extends Builder
      */
     public function orWhereManager($dn, $nested = false)
     {
-        return $this->orWhereEquals(
-            $nested ? 'manager:1.2.840.113556.1.4.1941:' : 'manager',
-            $dn
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->orWhereEquals($attribute, $dn);
+        }, 'manager', $nested);
+    }
+
+    /**
+     * Adds an 'or where not manager' filter to the current query.
+     *
+     * @param string $dn
+     * @param bool   $nested
+     *
+     * @return $this
+     */
+    public function orWhereNotManager($dn, $nested = false)
+    {
+        return $this->nestedMatchQuery(function ($attribute) use ($dn) {
+            return $this->orWhereNotEquals($attribute, $dn);
+        }, 'manager', $nested);
+    }
+
+    /**
+     * Execute the callback with a nested match attribute.
+     *
+     * @param Closure $callback
+     * @param string  $attribute
+     * @param bool    $nested
+     *
+     * @return $this
+     */
+    protected function nestedMatchQuery(Closure $callback, $attribute, $nested = false)
+    {
+        return $callback(
+            $nested ? $this->makeNestedMatchAttribute($attribute) : $attribute
         );
+    }
+
+    /**
+     * Make a "nested match" filter attribute for querying descendants.
+     *
+     * @param string $attribute
+     *
+     * @return string
+     */
+    protected function makeNestedMatchAttribute($attribute)
+    {
+        return sprintf('%s:%s:', $attribute, LdapInterface::OID_MATCHING_RULE_IN_CHAIN);
     }
 }

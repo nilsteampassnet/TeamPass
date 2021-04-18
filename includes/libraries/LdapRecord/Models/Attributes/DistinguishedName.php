@@ -2,10 +2,12 @@
 
 namespace LdapRecord\Models\Attributes;
 
-use LdapRecord\Utilities;
+use LdapRecord\EscapesValues;
 
 class DistinguishedName
 {
+    use EscapesValues;
+
     /**
      * The underlying raw value.
      *
@@ -18,9 +20,117 @@ class DistinguishedName
      *
      * @param string|null $value
      */
-    public function __construct($value)
+    public function __construct($value = null)
     {
-        $this->value = $value;
+        $this->value = trim($value);
+    }
+
+    /**
+     * Get the distinguished name value.
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return (string) $this->value;
+    }
+
+    /**
+     * Alias of the "build" method.
+     *
+     * @param string|null $value
+     *
+     * @return DistinguishedNameBuilder
+     */
+    public static function of($value = null)
+    {
+        return static::build($value);
+    }
+
+    /**
+     * Get a new DN builder object from the given DN.
+     *
+     * @param string|null $value
+     *
+     * @return DistinguishedNameBuilder
+     */
+    public static function build($value = null)
+    {
+        return new DistinguishedNameBuilder($value);
+    }
+
+    /**
+     * Make a new Distinguished Name instance.
+     *
+     * @param string|null $value
+     *
+     * @return static
+     */
+    public static function make($value = null)
+    {
+        return new static($value);
+    }
+
+    /**
+     * Explode a distinguished name into relative distinguished names.
+     *
+     * @param string $dn
+     *
+     * @return array
+     */
+    public static function explode($dn)
+    {
+        $dn = ldap_explode_dn($dn, $withoutAttributes = false);
+
+        if (! is_array($dn)) {
+            return [];
+        }
+
+        if (! array_key_exists('count', $dn)) {
+            return [];
+        }
+
+        unset($dn['count']);
+
+        return $dn;
+    }
+
+    /**
+     * Un-escapes a hexadecimal string into its original string representation.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public static function unescape($value)
+    {
+        return preg_replace_callback('/\\\([0-9A-Fa-f]{2})/', function ($matches) {
+            return chr(hexdec($matches[1]));
+        }, $value);
+    }
+
+    /**
+     * Explode the RDN into an attribute and value.
+     *
+     * @param string $rdn
+     *
+     * @return array
+     */
+    public static function explodeRdn($rdn)
+    {
+        return explode('=', $rdn, $limit = 2);
+    }
+
+    /**
+     * Implode the component attribute and value into an RDN.
+     *
+     * @param string $rdn
+     *
+     * @return string
+     */
+    public static function makeRdn(array $component)
+    {
+        return implode('=', $component);
     }
 
     /**
@@ -54,7 +164,17 @@ class DistinguishedName
      */
     public function values()
     {
-        return Utilities::explodeDn($this->value, $withoutAttributes = true) ?: [];
+        $components = $this->components();
+
+        $values = [];
+
+        foreach ($components as $rdn) {
+            [,$value] = static::explodeRdn($rdn);
+
+            $values[] = static::unescape($value);
+        }
+
+        return $values;
     }
 
     /**
@@ -64,7 +184,25 @@ class DistinguishedName
      */
     public function components()
     {
-        return Utilities::explodeDn($this->value, $withoutAttributes = false) ?: [];
+        $rdns = static::explode($this->value);
+
+        $components = [];
+
+        foreach ($rdns as $rdn) {
+            [$attribute, $value] = static::explodeRdn($rdn);
+
+            // When a Distinguished Name is exploded, the values are automatically
+            // escaped. This cannot be opted out of. Here we will unescape
+            // the attribute value, then re-escape it to its original
+            // representation from the server using the "dn" flag.
+            $value = $this->escape(static::unescape($value))->dn();
+
+            $components[] = static::makeRdn([
+                $attribute, $value,
+            ]);
+        }
+
+        return $components;
     }
 
     /**
@@ -77,7 +215,9 @@ class DistinguishedName
         $map = [];
 
         foreach ($this->components() as $rdn) {
-            [$attribute, $value] = explode('=', $rdn);
+            [$attribute, $value] = static::explodeRdn($rdn);
+
+            $attribute = $this->normalize($attribute);
 
             array_key_exists($attribute, $map)
                 ? $map[$attribute][] = $value

@@ -2,7 +2,7 @@
 
 namespace LdapRecord\Configuration;
 
-use LdapRecord\Ldap;
+use LdapRecord\LdapInterface;
 
 class DomainConfiguration
 {
@@ -31,7 +31,7 @@ class DomainConfiguration
         'version' => 3,
 
         // The port to use for connecting to your hosts.
-        'port' => Ldap::PORT,
+        'port' => LdapInterface::PORT,
 
         // The base distinguished name of your domain.
         'base_dn' => '',
@@ -65,7 +65,7 @@ class DomainConfiguration
     public function __construct(array $options = [])
     {
         $this->options = array_merge($this->options, static::$extended);
-        
+
         foreach ($options as $key => $value) {
             $this->set($key, $value);
         }
@@ -105,7 +105,7 @@ class DomainConfiguration
     }
 
     /**
-     * Sets a configuration option.
+     * Set a configuration option.
      *
      * @param string $key
      * @param mixed  $value

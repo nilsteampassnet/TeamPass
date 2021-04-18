@@ -2,20 +2,22 @@
 
 namespace LdapRecord\Query;
 
-use Closure;
-use LdapRecord\Ldap;
-use DateTimeInterface;
-use LdapRecord\Container;
-use LdapRecord\Utilities;
-use LdapRecord\Connection;
 use BadMethodCallException;
-use LdapRecord\Models\Model;
+use Closure;
+use DateTimeInterface;
 use InvalidArgumentException;
+use LdapRecord\Connection;
+use LdapRecord\Container;
 use LdapRecord\EscapesValues;
-use Tightenco\Collect\Support\Arr;
+use LdapRecord\LdapInterface;
 use LdapRecord\LdapRecordException;
+use LdapRecord\Models\Model;
 use LdapRecord\Query\Events\QueryExecuted;
 use LdapRecord\Query\Model\Builder as ModelBuilder;
+use LdapRecord\Query\Pagination\DeprecatedPaginator;
+use LdapRecord\Query\Pagination\Paginator;
+use LdapRecord\Utilities;
+use Tightenco\Collect\Support\Arr;
 
 class Builder
 {
@@ -66,6 +68,13 @@ class Builder
      * @var string|null
      */
     protected $dn;
+
+    /**
+     * The base distinguished name to perform searches inside.
+     *
+     * @var string|null
+     */
+    protected $baseDn;
 
     /**
      * The default query type.
@@ -135,7 +144,7 @@ class Builder
     }
 
     /**
-     * Sets the current connection.
+     * Set the current connection.
      *
      * @param Connection $connection
      *
@@ -149,7 +158,7 @@ class Builder
     }
 
     /**
-     * Sets the current filter grammar.
+     * Set the current filter grammar.
      *
      * @param Grammar $grammar
      *
@@ -163,7 +172,7 @@ class Builder
     }
 
     /**
-     * Sets the cache to store query results.
+     * Set the cache to store query results.
      *
      * @param Cache|null $cache
      *
@@ -213,7 +222,7 @@ class Builder
     /**
      * Executes the LDAP query.
      *
-     * @param array $columns
+     * @param string|array $columns
      *
      * @return Collection|array
      */
@@ -316,7 +325,31 @@ class Builder
     }
 
     /**
-     * Returns the builders DN to perform searches upon.
+     * Set the base distinguished name of the query.
+     *
+     * @param Model|string $dn
+     *
+     * @return $this
+     */
+    public function setBaseDn($dn)
+    {
+        $this->baseDn = $this->substituteBaseInDn($dn);
+
+        return $this;
+    }
+
+    /**
+     * Get the base distinguished name of the query.
+     *
+     * @return string|null
+     */
+    public function getBaseDn()
+    {
+        return $this->baseDn;
+    }
+
+    /**
+     * Get the distinguished name of the query.
      *
      * @return string
      */
@@ -326,7 +359,7 @@ class Builder
     }
 
     /**
-     * Sets the DN to perform searches upon.
+     * Set the distinguished name for the query.
      *
      * @param string|Model|null $dn
      *
@@ -334,13 +367,27 @@ class Builder
      */
     public function setDn($dn = null)
     {
-        $this->dn = $dn instanceof Model ? $dn->getDn() : $dn;
+        $this->dn = $this->substituteBaseInDn($dn);
 
         return $this;
     }
 
     /**
-     * Alias for setting the base DN of the query.
+     * Substitute the base DN string template for the current base.
+     *
+     * @param Model|string $dn
+     *
+     * @return string
+     */
+    protected function substituteBaseInDn($dn)
+    {
+        return str_replace(
+            '{base}', $this->baseDn, $dn instanceof Model ? $dn->getDn() : $dn
+        );
+    }
+
+    /**
+     * Alias for setting the distinguished name for the query.
      *
      * @param string|Model|null $dn
      *
@@ -352,7 +399,7 @@ class Builder
     }
 
     /**
-     * Sets the size limit of the current query.
+     * Set the size limit of the current query.
      *
      * @param int $limit
      *
@@ -375,8 +422,9 @@ class Builder
     public function model(Model $model)
     {
         return $model->newQueryBuilder($this->connection)
-            ->setModel($model)
-            ->in($this->dn);
+            ->setCache($this->connection->getCache())
+            ->setBaseDn($this->baseDn)
+            ->setModel($model);
     }
 
     /**
@@ -399,10 +447,8 @@ class Builder
 
         $results = $this->getCachedResponse($query, $callback);
 
-        // Log the query.
         $this->logQuery($this, $this->type, $this->getElapsedTime($start));
 
-        // Process & return the results.
         return $this->process($results);
     }
 
@@ -431,10 +477,8 @@ class Builder
 
         $pages = $this->getCachedResponse($query, $callback);
 
-        // Log the query.
         $this->logQuery($this, 'paginate', $this->getElapsedTime($start));
 
-        // Process & return the results.
         return $this->process($pages);
     }
 
@@ -505,9 +549,9 @@ class Builder
      *
      * @return resource
      */
-    protected function run($filter)
+    public function run($filter)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($filter) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($filter) {
             // We will avoid setting the controls during any pagination
             // requests as it will clear the cookie we need to send
             // to the server upon retrieving every page.
@@ -519,7 +563,7 @@ class Builder
             }
 
             return $ldap->{$this->type}(
-                $this->getDn(),
+                $this->dn ?? $this->baseDn,
                 $filter,
                 $this->getSelects(),
                 $onlyAttributes = false,
@@ -539,100 +583,13 @@ class Builder
      */
     protected function runPaginate($filter, $perPage, $isCritical)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($filter, $perPage, $isCritical) {
-            $callback = $ldap->supportsServerControlsInMethods()
-                ? $this->compatiblePaginationCallback($filter, $perPage, $isCritical)
-                : $this->deprecatedPaginationCallback($filter, $perPage, $isCritical);
+        return $this->connection->run(function (LdapInterface $ldap) use ($filter, $perPage, $isCritical) {
+            $paginator = $ldap->supportsServerControlsInMethods()
+                ? new Paginator($this, $filter, $perPage, $isCritical)
+                : new DeprecatedPaginator($this, $filter, $perPage, $isCritical);
 
-            return $callback($ldap);
+            return $paginator->execute($ldap);
         });
-    }
-
-    /**
-     * Create a deprecated pagination callback compatible with PHP 7.2.
-     *
-     * @param string $filter
-     * @param int    $perPage
-     * @param bool   $isCritical
-     *
-     * @return Closure
-     */
-    protected function deprecatedPaginationCallback($filter, $perPage, $isCritical)
-    {
-        return function (Ldap $ldap) use ($filter, $perPage, $isCritical) {
-            $pages = [];
-
-            $cookie = '';
-
-            do {
-                $ldap->controlPagedResult($perPage, $isCritical, $cookie);
-
-                // Run the search.
-                $resource = $this->run($filter);
-
-                if ($resource) {
-                    // If we have been given a valid resource, we will retrieve the next
-                    // pagination cookie to send for our next pagination request.
-                    $ldap->controlPagedResultResponse($resource, $cookie);
-
-                    $pages[] = $this->parse($resource);
-                }
-            } while (!empty($cookie));
-
-            // Reset paged result on the current connection. We won't pass in the current $perPage
-            // parameter since we want to reset the page size to the default '1000'. Sending '0'
-            // eliminates any further opportunity for running queries in the same request,
-            // even though that is supposed to be the correct usage.
-            $ldap->controlPagedResult();
-
-            return $pages;
-        };
-    }
-
-    /**
-     * Create a compatible pagination callback compatible with PHP 7.3 and greater.
-     *
-     * @param string $filter
-     * @param int    $perPage
-     * @param bool   $isCritical
-     *
-     * @return Closure
-     */
-    protected function compatiblePaginationCallback($filter, $perPage, $isCritical)
-    {
-        return function (Ldap $ldap) use ($filter, $perPage, $isCritical) {
-            $pages = [];
-
-            // Add our paged results control.
-            $this->addControl(LDAP_CONTROL_PAGEDRESULTS, $isCritical = false, [
-                'size' => $perPage, 'cookie' => '',
-            ]);
-
-            do {
-                // Update the server controls.
-                $ldap->setOption(LDAP_OPT_SERVER_CONTROLS, $this->controls);
-
-                // Run the search.
-                $resource = $this->run($filter);
-
-                if ($resource) {
-                    $errorCode = $dn = $errorMessage = $refs = null;
-
-                    // Update the server controls with the servers response.
-                    $ldap->parseResult($resource, $errorCode, $dn, $errorMessage, $refs, $this->controls);
-
-                    $pages[] = $this->parse($resource);
-
-                    // Reset paged result on the current connection. We won't pass in the current $perPage
-                    // parameter since we want to reset the page size to the default '1000'. Sending '0'
-                    // eliminates any further opportunity for running queries in the same request,
-                    // even though that is supposed to be the correct usage.
-                    $this->controls[LDAP_CONTROL_PAGEDRESULTS]['value']['size'] = $perPage;
-                }
-            } while (!empty($this->controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie']));
-
-            return $pages;
-        };
     }
 
     /**
@@ -642,13 +599,13 @@ class Builder
      *
      * @return array
      */
-    protected function parse($resource)
+    public function parse($resource)
     {
         if (! $resource) {
             return [];
         }
 
-        return $this->connection->run(function (Ldap $ldap) use ($resource) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($resource) {
             $entries = $ldap->getEntries($resource);
 
             // Free up memory.
@@ -691,9 +648,7 @@ class Builder
      */
     public function first($columns = ['*'])
     {
-        $results = $this->limit(1)->get($columns);
-
-        return Arr::get($results, 0);
+        return Arr::get($this->limit(1)->get($columns), 0);
     }
 
     /**
@@ -709,9 +664,7 @@ class Builder
      */
     public function firstOrFail($columns = ['*'])
     {
-        $record = $this->first($columns);
-
-        if (! $record) {
+        if (! $record = $this->first($columns)) {
             $this->throwNotFoundException($this->getUnescapedQuery(), $this->dn);
         }
 
@@ -1220,7 +1173,7 @@ class Builder
      */
     public function withDeleted()
     {
-        return $this->addControl(Ldap::OID_SERVER_SHOW_DELETED, $isCritical = true);
+        return $this->addControl(LdapInterface::OID_SERVER_SHOW_DELETED, $isCritical = true);
     }
 
     /**
@@ -1434,9 +1387,8 @@ class Builder
      */
     public function addFilter($type, array $bindings)
     {
-        // Here we will ensure we have been given a proper filter type.
         if (! array_key_exists($type, $this->filters)) {
-            throw new InvalidArgumentException("Invalid filter type: {$type}.");
+            throw new InvalidArgumentException("Filter type [$type] is invalid.");
         }
 
         // The required filter key bindings.
@@ -1447,7 +1399,7 @@ class Builder
             // Retrieve the keys that are missing in the bindings array.
             $missing = implode(', ', array_diff($required, array_flip($bindings)));
 
-            throw new InvalidArgumentException("Invalid filter bindings. Missing: [{$missing}] keys.");
+            throw new InvalidArgumentException("Invalid filter bindings. Missing: [$missing] keys.");
         }
 
         $this->filters[$type][] = $bindings;
@@ -1496,17 +1448,20 @@ class Builder
      */
     public function getSelects()
     {
-        $selects = $this->columns ?? [];
+        $selects = $this->columns ?? ['*'];
+
+        if (in_array('*', $selects)) {
+            return $selects;
+        }
+
+        if (in_array('objectclass', $selects)) {
+            return $selects;
+        }
 
         // If the * character is not provided in the selected columns,
         // we need to ensure we always select the object class, as
         // this is used for constructing models properly.
-        if (
-            !in_array('*', $selects) &&
-            !in_array('objectclass', $selects)
-        ) {
-            $selects[] = 'objectclass';
-        }
+        $selects[] = 'objectclass';
 
         return $selects;
     }
@@ -1538,7 +1493,7 @@ class Builder
     }
 
     /**
-     * Sets the query to search the entire directory on the base distinguished name.
+     * Set the query to search the entire directory on the base distinguished name.
      *
      * @return $this
      */
@@ -1583,7 +1538,7 @@ class Builder
     }
 
     /**
-     * Returns true / false if the current query is nested.
+     * Determine if the query is nested.
      *
      * @return bool
      */
@@ -1593,8 +1548,7 @@ class Builder
     }
 
     /**
-     * Returns bool that determines whether the current
-     * query builder will return paginated results.
+     * Determine whether the query is paginated.
      *
      * @return bool
      */
@@ -1604,7 +1558,7 @@ class Builder
     }
 
     /**
-     * Insert the entry in the directory.
+     * Insert an entry into the directory.
      *
      * @param string $dn
      * @param array  $attributes
@@ -1625,7 +1579,7 @@ class Builder
             );
         }
 
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $attributes) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $attributes) {
             return $ldap->add($dn, $attributes);
         });
     }
@@ -1640,7 +1594,7 @@ class Builder
      */
     public function insertAttributes($dn, array $attributes)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $attributes) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $attributes) {
             return $ldap->modAdd($dn, $attributes);
         });
     }
@@ -1655,7 +1609,7 @@ class Builder
      */
     public function update($dn, array $modifications)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $modifications) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $modifications) {
             return $ldap->modifyBatch($dn, $modifications);
         });
     }
@@ -1670,7 +1624,7 @@ class Builder
      */
     public function updateAttributes($dn, array $attributes)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $attributes) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $attributes) {
             return $ldap->modReplace($dn, $attributes);
         });
     }
@@ -1684,7 +1638,7 @@ class Builder
      */
     public function delete($dn)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn) {
             return $ldap->delete($dn);
         });
     }
@@ -1699,7 +1653,7 @@ class Builder
      */
     public function deleteAttributes($dn, array $attributes)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $attributes) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $attributes) {
             return $ldap->modDelete($dn, $attributes);
         });
     }
@@ -1716,7 +1670,7 @@ class Builder
      */
     public function rename($dn, $rdn, $newParentDn, $deleteOldRdn = true)
     {
-        return $this->connection->run(function (Ldap $ldap) use ($dn, $rdn, $newParentDn, $deleteOldRdn) {
+        return $this->connection->run(function (LdapInterface $ldap) use ($dn, $rdn, $newParentDn, $deleteOldRdn) {
             return $ldap->rename($dn, $rdn, $newParentDn, $deleteOldRdn);
         });
     }
@@ -1848,6 +1802,8 @@ class Builder
      * @param Builder    $query
      * @param string     $type
      * @param null|float $time
+     *
+     * @return void
      */
     protected function logQuery($query, $type, $time = null)
     {
@@ -1880,7 +1836,7 @@ class Builder
      */
     protected function fireQueryEvent(QueryExecuted $event)
     {
-        Container::getEventDispatcher()->fire($event);
+        Container::getInstance()->getEventDispatcher()->fire($event);
     }
 
     /**

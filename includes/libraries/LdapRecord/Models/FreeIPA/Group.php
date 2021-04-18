@@ -26,7 +26,7 @@ class Group extends Entry
      */
     public function groups()
     {
-        return $this->hasMany(Group::class, 'member');
+        return $this->hasMany(self::class, 'member');
     }
 
     /**

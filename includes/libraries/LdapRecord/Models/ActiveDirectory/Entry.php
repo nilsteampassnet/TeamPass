@@ -2,11 +2,11 @@
 
 namespace LdapRecord\Models\ActiveDirectory;
 
-use LdapRecord\Connection;
 use InvalidArgumentException;
+use LdapRecord\Connection;
 use LdapRecord\Models\Attributes\Sid;
-use LdapRecord\Models\Events\Updated;
 use LdapRecord\Models\Entry as BaseEntry;
+use LdapRecord\Models\Events\Updated;
 use LdapRecord\Models\Types\ActiveDirectory;
 use LdapRecord\Query\Model\ActiveDirectoryBuilder;
 

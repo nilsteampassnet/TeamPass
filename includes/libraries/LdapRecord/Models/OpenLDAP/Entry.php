@@ -3,10 +3,10 @@
 namespace LdapRecord\Models\OpenLDAP;
 
 use LdapRecord\Connection;
-use LdapRecord\Models\Types\OpenLDAP;
 use LdapRecord\Models\Entry as BaseEntry;
-use LdapRecord\Query\Model\OpenLdapBuilder;
 use LdapRecord\Models\OpenLDAP\Scopes\AddEntryUuidToSelects;
+use LdapRecord\Models\Types\OpenLDAP;
+use LdapRecord\Query\Model\OpenLdapBuilder;
 
 /** @mixin OpenLdapBuilder */
 class Entry extends BaseEntry implements OpenLDAP

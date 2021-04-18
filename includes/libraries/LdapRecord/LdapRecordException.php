@@ -27,7 +27,7 @@ class LdapRecordException extends Exception
     }
 
     /**
-     * Sets the detailed error.
+     * Set the detailed error.
      *
      * @param DetailedError|null $error
      *

@@ -19,12 +19,24 @@ class DirectoryFake
     {
         $connection = Container::getConnection($name);
 
-        $fake = static::makeConnectionFake($connection->getConfiguration()->all());
+        $fake = static::makeConnectionFake(
+            $connection->getConfiguration()->all()
+        );
 
         // Replace the connection with a fake.
         Container::addConnection($fake, $name);
 
         return $fake;
+    }
+
+    /**
+     * Reset the container.
+     *
+     * @return void
+     */
+    public static function tearDown()
+    {
+        Container::reset();
     }
 
     /**
@@ -36,6 +48,6 @@ class DirectoryFake
      */
     public static function makeConnectionFake(array $config = [])
     {
-        return ConnectionFake::make($config);
+        return ConnectionFake::make($config)->shouldBeConnected();
     }
 }

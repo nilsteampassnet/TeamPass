@@ -3,8 +3,8 @@
 namespace LdapRecord\Models\Concerns;
 
 use Closure;
-use LdapRecord\Models\Scope;
 use InvalidArgumentException;
+use LdapRecord\Models\Scope;
 
 trait HasGlobalScopes
 {
@@ -20,7 +20,7 @@ trait HasGlobalScopes
      */
     public static function addGlobalScope($scope, Closure $implementation = null)
     {
-        if (is_string($scope) && !is_null($implementation)) {
+        if (is_string($scope) && ! is_null($implementation)) {
             return static::$globalScopes[static::class][$scope] = $implementation;
         } elseif ($scope instanceof Closure) {
             return static::$globalScopes[static::class][spl_object_hash($scope)] = $scope;
@@ -40,7 +40,7 @@ trait HasGlobalScopes
      */
     public static function hasGlobalScope($scope)
     {
-        return !is_null(static::getGlobalScope($scope));
+        return ! is_null(static::getGlobalScope($scope));
     }
 
     /**

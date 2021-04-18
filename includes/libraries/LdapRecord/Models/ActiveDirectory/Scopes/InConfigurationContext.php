@@ -2,15 +2,15 @@
 
 namespace LdapRecord\Models\ActiveDirectory\Scopes;
 
+use LdapRecord\Models\ActiveDirectory\Entry;
 use LdapRecord\Models\Model;
 use LdapRecord\Models\Scope;
 use LdapRecord\Query\Model\Builder;
-use LdapRecord\Models\ActiveDirectory\Entry;
 
 class InConfigurationContext implements Scope
 {
     /**
-     * Refines the base dn to be inside the configuration context
+     * Refines the base dn to be inside the configuration context.
      *
      * @param Builder $query
      * @param Model   $model

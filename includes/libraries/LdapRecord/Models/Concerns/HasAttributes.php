@@ -2,14 +2,14 @@
 
 namespace LdapRecord\Models\Concerns;
 
-use Exception;
 use Carbon\Carbon;
 use DateTimeInterface;
-use Tightenco\Collect\Support\Arr;
+use Exception;
 use LdapRecord\LdapRecordException;
 use LdapRecord\Models\Attributes\MbString;
 use LdapRecord\Models\Attributes\Timestamp;
 use LdapRecord\Models\DetectsResetIntegers;
+use Tightenco\Collect\Support\Arr;
 
 trait HasAttributes
 {
@@ -252,11 +252,11 @@ trait HasAttributes
             return $this->getMutatedAttributeValue($key, $value);
         }
 
-        if ($this->isDateAttribute($key) && !is_null($value)) {
+        if ($this->isDateAttribute($key) && ! is_null($value)) {
             return $this->asDateTime(Arr::first($value), $this->getDates()[$key]);
         }
 
-        if ($this->isCastedAttribute($key) && !is_null($value)) {
+        if ($this->isCastedAttribute($key) && ! is_null($value)) {
             return $this->castAttribute($key, $value);
         }
 
@@ -324,8 +324,8 @@ trait HasAttributes
     /**
      * Determine whether an attribute should be cast to a native type.
      *
-     * @param string             $key
-     * @param array|string|null  $types
+     * @param string            $key
+     * @param array|string|null $types
      *
      * @return bool
      */
@@ -463,7 +463,7 @@ trait HasAttributes
 
     /**
      * Determine if the cast type requires the first attribute value.
-     * 
+     *
      * @return bool
      */
     protected function castRequiresArrayValue($key)
@@ -667,7 +667,7 @@ trait HasAttributes
     }
 
     /**
-     * Sets an attributes value by the specified key and sub-key.
+     * Set an attribute value by the specified key and sub-key.
      *
      * @param mixed $key
      * @param mixed $value
@@ -683,7 +683,7 @@ trait HasAttributes
         } elseif (
             $value &&
             $this->isDateAttribute($key) &&
-            !$this->valueIsResetInteger($value)
+            ! $this->valueIsResetInteger($value)
         ) {
             $value = $this->fromDateTime($this->getDates()[$key], $value);
         }
@@ -810,7 +810,7 @@ trait HasAttributes
     }
 
     /**
-     * Sets the attributes property.
+     * Set the attributes property.
      *
      * Used when constructing an existing LDAP record.
      *
@@ -830,7 +830,7 @@ trait HasAttributes
         // search results will contain integer keys that have
         // attribute names as values. We don't need these.
         $this->attributes = array_filter($raw, function ($key) {
-            return !is_int($key);
+            return ! is_int($key);
         }, ARRAY_FILTER_USE_KEY);
 
         // LDAP search results will contain the distinguished
@@ -937,7 +937,7 @@ trait HasAttributes
      */
     public function isDirty($key)
     {
-        return !$this->originalIsEquivalent($key);
+        return ! $this->originalIsEquivalent($key);
     }
 
     /**

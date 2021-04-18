@@ -2,18 +2,32 @@
 
 namespace LdapRecord\Models\ActiveDirectory;
 
-use LdapRecord\Query\Model\Builder;
-use LdapRecord\Models\Concerns\HasPassword;
 use Illuminate\Contracts\Auth\Authenticatable;
-use LdapRecord\Models\Concerns\CanAuthenticate;
 use LdapRecord\Models\ActiveDirectory\Concerns\HasPrimaryGroup;
 use LdapRecord\Models\ActiveDirectory\Scopes\RejectComputerObjectClass;
+use LdapRecord\Models\Concerns\CanAuthenticate;
+use LdapRecord\Models\Concerns\HasPassword;
+use LdapRecord\Query\Model\Builder;
 
 class User extends Entry implements Authenticatable
 {
     use HasPassword;
     use HasPrimaryGroup;
     use CanAuthenticate;
+
+    /**
+     * The password's attribute name.
+     *
+     * @var string
+     */
+    protected $passwordAttribute = 'unicodepwd';
+
+    /**
+     * The password's hash method.
+     *
+     * @var string
+     */
+    protected $passwordHashMethod = 'encode';
 
     /**
      * The object classes of the LDAP model.

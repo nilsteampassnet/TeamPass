@@ -2,13 +2,14 @@
 
 namespace LdapRecord\Query\Model;
 
+use Closure;
 use DateTime;
-use LdapRecord\Utilities;
 use LdapRecord\Models\Model;
+use LdapRecord\Models\ModelNotFoundException;
 use LdapRecord\Models\Scope;
 use LdapRecord\Models\Types\ActiveDirectory;
 use LdapRecord\Query\Builder as BaseBuilder;
-use LdapRecord\Models\ModelNotFoundException;
+use LdapRecord\Utilities;
 
 class Builder extends BaseBuilder
 {
@@ -73,7 +74,22 @@ class Builder extends BaseBuilder
     }
 
     /**
-     * Sets the model instance for the model being queried.
+     * Get the attributes to select on the search.
+     *
+     * @return array
+     */
+    public function getSelects()
+    {
+        // Here we will ensure the models GUID attribute is always
+        // selected. In some LDAP directories, the attribute is
+        // virtual and must be requested for specifically.
+        return array_values(array_unique(
+            array_merge([$this->model->getGuidKey()], parent::getSelects())
+        ));
+    }
+
+    /**
+     * Set the model instance for the model being queried.
      *
      * @param Model $model
      *
@@ -106,6 +122,21 @@ class Builder extends BaseBuilder
     public function newInstance($baseDn = null)
     {
         return parent::newInstance($baseDn)->model($this->model);
+    }
+
+    /**
+     * Finds a model by its distinguished name.
+     *
+     * @param array|string          $dn
+     * @param array|string|string[] $columns
+     *
+     * @return Model|\LdapRecord\Query\Collection|static|null
+     */
+    public function find($dn, $columns = ['*'])
+    {
+        return $this->afterScopes(function () use ($dn, $columns) {
+            return parent::find($dn, $columns);
+        });
     }
 
     /**
@@ -260,9 +291,23 @@ class Builder extends BaseBuilder
      */
     public function getQuery()
     {
+        return $this->afterScopes(function () {
+            return parent::getQuery();
+        });
+    }
+
+    /**
+     * Apply the query scopes and execute the callback.
+     *
+     * @param Closure $callback
+     *
+     * @return mixed
+     */
+    protected function afterScopes(Closure $callback)
+    {
         $this->applyScopes();
 
-        return parent::getQuery();
+        return $callback();
     }
 
     /**
@@ -294,7 +339,7 @@ class Builder extends BaseBuilder
     /**
      * Register a new global scope.
      *
-     * @param string                            $identifier
+     * @param string         $identifier
      * @param Scope|\Closure $scope
      *
      * @return $this

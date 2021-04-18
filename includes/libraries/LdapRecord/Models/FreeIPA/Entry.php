@@ -3,10 +3,10 @@
 namespace LdapRecord\Models\FreeIPA;
 
 use LdapRecord\Connection;
-use LdapRecord\Models\Types\FreeIPA;
 use LdapRecord\Models\Entry as BaseEntry;
-use LdapRecord\Query\Model\FreeIpaBuilder;
 use LdapRecord\Models\FreeIPA\Scopes\AddEntryUuidToSelects;
+use LdapRecord\Models\Types\FreeIPA;
+use LdapRecord\Query\Model\FreeIpaBuilder;
 
 /** @mixin FreeIpaBuilder */
 class Entry extends BaseEntry implements FreeIPA

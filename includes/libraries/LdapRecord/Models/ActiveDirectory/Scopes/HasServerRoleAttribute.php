@@ -9,7 +9,7 @@ use LdapRecord\Query\Model\Builder;
 class HasServerRoleAttribute implements Scope
 {
     /**
-     * Includes condition of having a serverRole attribute
+     * Includes condition of having a serverRole attribute.
      *
      * @param Builder $query
      * @param Model   $model

@@ -3,9 +3,9 @@
 namespace LdapRecord\Models;
 
 use Closure;
-use Tightenco\Collect\Support\Arr;
 use LdapRecord\Models\Attributes\DistinguishedName;
 use LdapRecord\Query\Collection as QueryCollection;
+use Tightenco\Collect\Support\Arr;
 
 class Collection extends QueryCollection
 {
@@ -47,22 +47,22 @@ class Collection extends QueryCollection
     /**
      * Determine if any of the given models are contained in the collection.
      *
-     * @param mixed $models
+     * @param mixed $key
      * @param mixed $operator
      * @param mixed $value
      *
      * @return bool
      */
-    public function contains($models, $operator = null, $value = null)
+    public function contains($key, $operator = null, $value = null)
     {
-        if (func_num_args() > 1 || $models instanceof Closure) {
+        if (func_num_args() > 1 || $key instanceof Closure) {
             // If we are supplied with more than one argument, or
             // we were passed a closure, we will utilize the
             // parents contains method, for compatibility.
-            return parent::contains($models, $operator, $value);
+            return parent::contains($key, $operator, $value);
         }
 
-        foreach ($this->getArrayableModels($models) as $model) {
+        foreach ($this->getArrayableModels($key) as $model) {
             $exists = parent::contains(function (Model $related) use ($model) {
                 return $this->compareModelWithRelated($model, $related);
             });

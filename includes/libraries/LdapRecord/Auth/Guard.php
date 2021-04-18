@@ -3,22 +3,21 @@
 namespace LdapRecord\Auth;
 
 use Exception;
-use Throwable;
-use LdapRecord\Ldap;
+use LdapRecord\Auth\Events\Attempting;
+use LdapRecord\Auth\Events\Binding;
 use LdapRecord\Auth\Events\Bound;
 use LdapRecord\Auth\Events\Failed;
 use LdapRecord\Auth\Events\Passed;
-use LdapRecord\Auth\Events\Binding;
-use LdapRecord\Auth\Events\Attempting;
-use LdapRecord\Events\DispatcherInterface;
 use LdapRecord\Configuration\DomainConfiguration;
+use LdapRecord\Events\DispatcherInterface;
+use LdapRecord\LdapInterface;
 
 class Guard
 {
     /**
      * The connection to bind to.
      *
-     * @var Ldap
+     * @var LdapInterface
      */
     protected $connection;
 
@@ -39,10 +38,10 @@ class Guard
     /**
      * Constructor.
      *
-     * @param Ldap                $connection
+     * @param LdapInterface       $connection
      * @param DomainConfiguration $configuration
      */
-    public function __construct(Ldap $connection, DomainConfiguration $configuration)
+    public function __construct(LdapInterface $connection, DomainConfiguration $configuration)
     {
         $this->connection = $connection;
         $this->configuration = $configuration;
@@ -59,7 +58,6 @@ class Guard
      *
      * @throws UsernameRequiredException
      * @throws PasswordRequiredException
-     * @throws \LdapRecord\ConnectionException
      */
     public function attempt($username, $password, $stayBound = false)
     {
@@ -105,7 +103,7 @@ class Guard
         // Prior to binding, we will upgrade our connectivity to TLS on our current
         // connection and ensure we are not already bound before upgrading.
         // This is to prevent subsequent upgrading on several binds.
-        if ($this->connection->isUsingTLS() && !$this->connection->isBound()) {
+        if ($this->connection->isUsingTLS() && ! $this->connection->isBound()) {
             $this->connection->startTLS();
         }
 
@@ -115,7 +113,7 @@ class Guard
             }
 
             $this->fireBoundEvent($username, $password);
-        } catch (Throwable $e) {
+        } catch (Exception $e) {
             $this->fireFailedEvent($username, $password);
 
             throw BindException::withDetailedError($e, $this->connection->getDetailedError());
@@ -148,7 +146,7 @@ class Guard
     }
 
     /**
-     * Sets the event dispatcher instance.
+     * Set the event dispatcher instance.
      *
      * @param DispatcherInterface $dispatcher
      *

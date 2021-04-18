@@ -19,12 +19,18 @@ class Utilities
     {
         $dn = ldap_explode_dn($dn, ($removeAttributePrefixes ? 1 : 0));
 
-        if (is_array($dn) && array_key_exists('count', $dn)) {
-            unset($dn['count']);
+        if (! is_array($dn)) {
+            return false;
+        }
 
-            foreach ($dn as $rdn => $value) {
-                $dn[$rdn] = static::unescape($value);
-            }
+        if (! array_key_exists('count', $dn)) {
+            return false;
+        }
+
+        unset($dn['count']);
+
+        foreach ($dn as $rdn => $value) {
+            $dn[$rdn] = static::unescape($value);
         }
 
         return $dn;
@@ -117,8 +123,8 @@ class Utilities
         $hex3 = substr($hex, -18, 2).substr($hex, -20, 2);
         $hex4 = substr($hex, -16, 4);
         $hex5 = substr($hex, -12, 12);
-        
-        return sprintf('%s-%s-%s-%s-%s', $hex1, $hex2, $hex3, $hex4, $hex5);;
+
+        return sprintf('%s-%s-%s-%s-%s', $hex1, $hex2, $hex3, $hex4, $hex5);
     }
 
     /**

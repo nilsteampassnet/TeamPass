@@ -15,16 +15,12 @@ class OrganizationalUnit extends Entry
     ];
 
     /**
-     * Get a creatable RDN for the model.
+     * Get the creatable RDN attribute name.
      *
      * @return string
      */
-    public function getCreatableRdn()
+    public function getCreatableRdnAttribute()
     {
-        $name = $this->escape(
-            $this->getFirstAttribute('ou')
-        )->dn();
-
-        return "ou=$name";
+        return 'ou';
     }
 }

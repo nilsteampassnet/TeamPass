@@ -2279,8 +2279,8 @@ if (null !== $post_type) {
             // Build ldap configuration array
             $config = [
                 // Mandatory Configuration Options
-                'hosts'            => [$SETTINGS['ldap_domain_controler']],
-                'base_dn'          => $SETTINGS['ldap_search_base'],
+                'hosts'            => [$SETTINGS['ldap_hosts']],
+                'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
@@ -2304,6 +2304,8 @@ if (null !== $post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
 
             $ad = new SplClassLoader('LdapRecord', '../includes/libraries');

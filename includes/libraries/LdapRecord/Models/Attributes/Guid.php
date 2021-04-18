@@ -2,8 +2,8 @@
 
 namespace LdapRecord\Models\Attributes;
 
-use LdapRecord\Utilities;
 use InvalidArgumentException;
+use LdapRecord\Utilities;
 
 class Guid
 {

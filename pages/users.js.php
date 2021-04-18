@@ -1268,8 +1268,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'label': $('#ldap-new-role-selection').val(),
                     'complexity': $('#ldap-new-role-complexity').val(),
                     'allowEdit': 0,
-                    'action': 'add_folder'
+                    'action': 'add_role',
+                    'folderId' : -1,
                 }
+
+                console.log(data);
+                
                 $.post(
                     'sources/roles.queries.php', {
                         type: 'change_role_definition',

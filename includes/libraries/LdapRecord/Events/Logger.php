@@ -2,12 +2,12 @@
 
 namespace LdapRecord\Events;
 
-use ReflectionClass;
-use Psr\Log\LoggerInterface;
-use LdapRecord\Auth\Events\Failed;
 use LdapRecord\Auth\Events\Event as AuthEvent;
+use LdapRecord\Auth\Events\Failed;
 use LdapRecord\Models\Events\Event as ModelEvent;
 use LdapRecord\Query\Events\QueryExecuted as QueryEvent;
+use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 class Logger
 {

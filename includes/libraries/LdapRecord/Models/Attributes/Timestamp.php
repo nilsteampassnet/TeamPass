@@ -2,11 +2,11 @@
 
 namespace LdapRecord\Models\Attributes;
 
-use DateTime;
 use Carbon\Carbon;
-use LdapRecord\Utilities;
 use Carbon\CarbonInterface;
+use DateTime;
 use LdapRecord\LdapRecordException;
+use LdapRecord\Utilities;
 
 class Timestamp
 {
@@ -202,7 +202,7 @@ class Timestamp
     protected function convertDateTimeToWindows(DateTime $date)
     {
         return $date->format(
-            $date->getOffset() == 0 ?  'YmdHis.0\Z' : 'YmdHis.0O'
+            $date->getOffset() == 0 ? 'YmdHis.0\Z' : 'YmdHis.0O'
         );
     }
 

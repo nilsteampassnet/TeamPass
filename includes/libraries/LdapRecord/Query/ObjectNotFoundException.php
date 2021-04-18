@@ -34,7 +34,7 @@ class ObjectNotFoundException extends LdapRecordException
     }
 
     /**
-     * Sets the query that was used.
+     * Set the query that was used.
      *
      * @param string      $query
      * @param string|null $baseDn
