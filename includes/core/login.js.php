@@ -766,10 +766,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             );
                             console.info('Identification answer:')
                             console.log(data);
+                            toastr.remove();
                             
                             // Maintenance mode is enabled?
                             if (data.error === 'maintenance_mode_enabled') {
-                                toastr.remove();
                                 toastr.warning(
                                     '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
                                     '<?php echo langHdl('caution'); ?>', {

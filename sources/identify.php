@@ -400,13 +400,13 @@ function identifyUser($sentData, $SETTINGS)
         return false;
     }
 
-    // Debug
+    /*// Debug
     debugIdentify(
         DEBUGDUO,
         DEBUGDUOFILE,
         "Starting authentication of '" . $username . "'\n" .
             'LDAP status: ' . $SETTINGS['ldap_mode'] . "\n"
-    );
+    );*/
 
     // Check if user exists
     $userInfo = DB::queryFirstRow(
@@ -433,12 +433,12 @@ function identifyUser($sentData, $SETTINGS)
         return false;
     }
 
-    // Debug
+    /*// Debug
     debugIdentify(
         DEBUGDUO,
         DEBUGDUOFILE,
         'USer exists: ' . $counter . "\n"
-    );
+    );*/
 
     
 
@@ -561,12 +561,12 @@ function identifyUser($sentData, $SETTINGS)
         }
     }
 
-    // Debug
+    /*// Debug
     debugIdentify(
         DEBUGDUO,
         DEBUGDUOFILE,
         'Proceed with Ident: ' . $proceedIdentification . "\n"
-    );
+    );*/
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
@@ -587,7 +587,7 @@ function identifyUser($sentData, $SETTINGS)
 
 
     // Check user and password
-    if (checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== true) {
+    if ($userPasswordVerified === false && checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== true) {
         echo prepareExchangedData(
             array(
                 'value' => '',
@@ -602,13 +602,7 @@ function identifyUser($sentData, $SETTINGS)
         return false;
     }
 
-    // Debug
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "User's password verified: " . /** @scrutinizer ignore-type */ $userPasswordVerified . "\n"
-    );
-
+   
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1154,8 +1148,8 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
     // Build ldap configuration array
     $config = [
         // Mandatory Configuration Options
-        'hosts'            => [$SETTINGS['ldap_domain_controler']],
-        'base_dn'          => $SETTINGS['ldap_search_base'],
+        'hosts'            => [$SETTINGS['ldap_hosts']],
+        'base_dn'          => $SETTINGS['ldap_bdn'],
         'username'         => $SETTINGS['ldap_user_attribute']."=".$username.",".(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
         'password'         => $passwordClear,
     
@@ -1184,8 +1178,34 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Contracts/Support/Arrayable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Enumerable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Collection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonTimeZone.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Units.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Week.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Timestamp.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Test.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/ObjectInitialisation.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Serialization.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/IntervalRounding.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Rounding.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Localization.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Options.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Cast.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mutability.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Modifiers.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mixin.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Macro.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Difference.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Creator.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Converter.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Comparison.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Boundaries.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Date.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonInterface.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Carbon.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
 
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
@@ -1226,7 +1246,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             'error' => true,
             'message' => langHdl('error_ad_user_expired'),
         );
-    } elseif (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+    }/* elseif (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
         // Should we restrain the search in specified user groups
         // Get immediate groups the user is apart of:
         $arrayTmp = array();
@@ -1243,7 +1263,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
                 'message' => langHdl('error_user_not_allowed_group'),
             );
         }
-    }
+    }*/
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -1252,7 +1272,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
     $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
     
     //If user has never been connected then erase current pwd with the ldap's one
-    if (empty($userInfo['pw'])) {
+    if (empty($userInfo['pw']) === true) {
         // Password are similar in Teampass and AD
         DB::update(
             prefixTable('users'),

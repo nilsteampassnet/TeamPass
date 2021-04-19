@@ -2448,7 +2448,7 @@ if (null !== $post_type) {
             }
             if ($SETTINGS['ldap_type'] === 'posix-search') {
                 $ldapURIs = '';
-                foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
+                foreach (explode(',', $SETTINGS['ldap_hosts']) as $domainControler) {
                     if ((int) $SETTINGS['ldap_ssl'] === 1) {
                         $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
                     } else {
@@ -2480,7 +2480,7 @@ if (null !== $post_type) {
                         //echo $filter;
                         $result = ldap_search(
                             $ldapconn,
-                            $SETTINGS['ldap_search_base'],
+                            $SETTINGS['ldap_bdn'],
                             $filter,
                             array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire')
                         );
@@ -2552,7 +2552,7 @@ if (null !== $post_type) {
                             $filter_group = 'memberUid=' . $dataReceived['username'];
                             $result_group = ldap_search(
                                 $ldapconn,
-                                $SETTINGS['ldap_search_base'],
+                                $SETTINGS['ldap_bdn'],
                                 $filter_group,
                                 array('dn')
                             );
@@ -2603,7 +2603,7 @@ if (null !== $post_type) {
                 $debug_ldap .= 'Get all ldap params: <br/>' .
                     '  - base_dn : ' . $SETTINGS['ldap_domain_dn'] . '<br/>' .
                     '  - account_suffix : ' . $SETTINGS['ldap_suffix'] . '<br/>' .
-                    '  - domain_controllers : ' . $SETTINGS['ldap_domain_controler'] . '<br/>' .
+                    '  - domain_controllers : ' . $SETTINGS['ldap_hosts'] . '<br/>' .
                     '  - ad_port : ' . $SETTINGS['ldap_port'] . '<br/>' .
                     '  - use_ssl : ' . $SETTINGS['ldap_ssl'] . '<br/>' .
                     '  - use_tls : ' . $SETTINGS['ldap_tls'] . '<br/>*********<br/>';
@@ -2621,7 +2621,7 @@ if (null !== $post_type) {
                     array(
                         'base_dn' => $SETTINGS['ldap_domain_dn'],
                         'account_suffix' => $ldap_suffix,
-                        'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
+                        'domain_controllers' => explode(',', $SETTINGS['ldap_hosts']),
                         'ad_port' => $SETTINGS['ldap_port'],
                         'use_ssl' => $SETTINGS['ldap_ssl'],
                         'use_tls' => $SETTINGS['ldap_tls'],
@@ -2686,7 +2686,10 @@ if (null !== $post_type) {
             $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
             $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-
+            $post_roles = filter_var_array(
+                $dataReceived['roles'],
+                FILTER_SANITIZE_NUMBER_INT
+            );
 
             // Empty user
             if (empty($post_login) === true || empty($post_email) === true) {
@@ -2762,7 +2765,7 @@ if (null !== $post_type) {
                     'gestionnaire' => '0',
                     'can_manage_all_users' => '0',
                     'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
-                    'fonction_id' => '',
+                    'fonction_id' => implode(';', $post_roles),
                     'groupes_interdits' => '',
                     'groupes_visibles' => '',
                     'last_pw_change' => time(),
@@ -2807,12 +2810,16 @@ if (null !== $post_type) {
                 $tree->rebuild();
             }
 
-            echo prepareExchangedData(
-                array(
-                    'message' => '',
-                    'error' => false,
+            // Send email to new user
+            sendEmail(
+                langHdl('email_subject_new_user'),
+                str_replace(
+                    array('#tp_login#', '#enc_code#', '#tp_link#'),
+                    array(addslashes($post_login), addslashes($password), $SETTINGS['email_server_url']),
+                    langHdl('email_body_user_added_from_ldap_encryption_code')
                 ),
-                'encode'
+                $post_email,
+                $SETTINGS
             );
 
             break;

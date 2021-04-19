@@ -317,7 +317,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-7'>
-                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_search_base' value='<?php echo isset($SETTINGS['ldap_search_base']) ? $SETTINGS['ldap_search_base'] : ''; ?>'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_search_base' value='<?php echo isset($SETTINGS['ldap_bdn']) ? $SETTINGS['ldap_bdn'] : ''; ?>'>
                                     </div>
                                 </div>
 
@@ -341,7 +341,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                         </small>
                                     </div>
                                     <div class='col-7'>
-                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_domain_controler' value='<?php echo isset($SETTINGS['ldap_domain_controler']) ? $SETTINGS['ldap_domain_controler'] : ''; ?>'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_domain_controler' value='<?php echo isset($SETTINGS['ldap_hosts']) ? $SETTINGS['ldap_hosts'] : ''; ?>'>
                                     </div>
                                 </div>
 

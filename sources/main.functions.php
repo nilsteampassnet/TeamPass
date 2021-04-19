@@ -3180,8 +3180,8 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
     // Build ldap configuration array
     $config = [
         // Mandatory Configuration Options
-        'hosts'            => [$SETTINGS['ldap_domain_controler']],
-        'base_dn'          => $SETTINGS['ldap_search_base'],
+        'hosts'            => [$SETTINGS['ldap_hosts']],
+        'base_dn'          => $SETTINGS['ldap_bdn'],
         'username'         => $SETTINGS['ldap_username'],
         'password'         => $SETTINGS['ldap_password'],
 
@@ -3205,6 +3205,8 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
 
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
@@ -3224,7 +3226,7 @@ function ldapCheckUserPassword($login, $password, $SETTINGS)
 
     // Authenticate user
     try {
-        $connection->auth()->attempt($SETTINGS['ldap_user_attribute']."=".$login.",".$SETTINGS['ldap_search_base'], $password, $stayAuthenticated = true);
+        $connection->auth()->attempt($SETTINGS['ldap_user_attribute']."=".$login.",".$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
 
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();

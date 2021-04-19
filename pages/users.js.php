@@ -1715,12 +1715,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         toastr.remove();
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
+        // what roles
+        var roles = [];
+        $("#ldap-user-roles option:selected").each(function() {
+            roles.push($(this).val())
+        });
+
         // prepare data
         var data = {
             'login': $('.selected-user').data('user-login'),
-            'name': $('.selected-user').data('user-name'),
+            'name': $('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name'),
             'lastname': $('.selected-user').data('user-lastname'),
             'email': $('.selected-user').data('user-email'),
+            'roles' : roles,
         };
         console.log(data)
 
@@ -1788,7 +1795,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                     );
                 } else {
-                    refreshListUsersLDAP()
+                    refreshListUsersLDAP();
                 }
             }
         );
@@ -1798,13 +1805,26 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         .on('click', '.add-user-icon', function() {
             $(this).addClass('selected-user');
 
-            toastr.warning(
-                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addUserInTeampass()"><?php echo langHdl('please_confirm'); ?></button>',
-                '<?php echo langHdl('add_user_in_teampass'); ?>', {
-                    positionClass: 'toast-top-center',
-                    closeButton: true
-                }
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo langHdl('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
+                '<div class="form-group">'+
+                    '<label for="ldap-user-name"><?php echo langHdl('name'); ?></label>'+
+                    '<input type="text" class="form-control required" id="ldap-user-name" value="'+ $('.selected-user').data('user-name')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="ldap-user-roles"><?php echo langHdl('roles'); ?></label>'+
+                    '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
+                    '<?php echo $optionsRoles; ?></select>'+
+                '</div>',
+                '<?php echo langHdl('confirm'); ?>',
+                '<?php echo langHdl('cancel'); ?>'
             );
+            $(document).on('click', '#warningModalButtonAction', function() {
+                if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {
+                    addUserInTeampass();
+                }
+            });
         })
         .on('click', '.auth-ldap', function() {
             $(this).addClass('selected-user');

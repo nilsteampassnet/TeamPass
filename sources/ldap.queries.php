@@ -211,7 +211,7 @@ switch ($post_type) {
         }
         if ($SETTINGS['ldap_type'] === 'posix-search') {
             $ldapURIs = '';
-            foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
+            foreach (explode(',', $SETTINGS['ldap_hosts']) as $domainControler) {
                 if ((int) $SETTINGS['ldap_ssl'] === 1) {
                     $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
                 } else {
@@ -241,7 +241,7 @@ switch ($post_type) {
                     //echo $filter;
                     $result = ldap_search(
                         $ldapconn,
-                        $SETTINGS['ldap_search_base'],
+                        $SETTINGS['ldap_bdn'],
                         $filter,
                         array('dn', 'mail', 'givenname', 'sn', 'uid', 'name', 'displayname')
                     );
@@ -250,7 +250,7 @@ switch ($post_type) {
                         $filter_group = 'memberUid=' . $dataReceived['username'];
                         $result_group = ldap_search(
                             $ldapconn,
-                            $SETTINGS['ldap_search_base'],
+                            $SETTINGS['ldap_bdn'],
                             $filter_group,
                             array('dn')
                         );
@@ -300,7 +300,7 @@ switch ($post_type) {
             $debug_ldap .= 'Get all ldap params: <br/>' .
                 '  - base_dn : ' . $SETTINGS['ldap_domain_dn'] . '<br/>' .
                 '  - account_suffix : ' . $SETTINGS['ldap_suffix'] . '<br/>' .
-                '  - domain_controllers : ' . $SETTINGS['ldap_domain_controler'] . '<br/>' .
+                '  - domain_controllers : ' . $SETTINGS['ldap_hosts'] . '<br/>' .
                 '  - ad_port : ' . $SETTINGS['ldap_port'] . '<br/>' .
                 '  - use_ssl : ' . $SETTINGS['ldap_ssl_input'] . '<br/>' .
                 '  - use_tls : ' . $SETTINGS['ldap_ssl'] . '<br/>*********<br/>';
@@ -318,7 +318,7 @@ switch ($post_type) {
                 array(
                     'base_dn' => $SETTINGS['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
+                    'domain_controllers' => explode(',', $SETTINGS['ldap_hosts']),
                     'ad_port' => $SETTINGS['ldap_port'],
                     'use_ssl' => $SETTINGS['ldap_ssl_input'],
                     'use_tls' => $SETTINGS['ldap_ssl'],
