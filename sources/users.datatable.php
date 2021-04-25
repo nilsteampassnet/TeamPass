@@ -201,7 +201,7 @@ foreach ($rows as $record) {
                 $listAlloFcts_position = true;
             }
             if (empty($listAlloFcts)) {
-                $listAlloFcts = '<i class="fa fa-exclamation-triangle text-danger tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, 'UTF-8').'"></i>';
+                $listAlloFcts = '<i class="fas fa-exclamation-triangle text-danger infotip" title="'.langHdl('user_alarm_no_function').'"></i>';
                 $listAlloFcts_position = false;
             }
         }
@@ -233,13 +233,14 @@ foreach ($rows as $record) {
                 }
             }
         }
-        $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.addslashes(str_replace("'", '&lsquo;', $record['name'])).' '.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'\"></span>", ';
+        $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.addslashes(str_replace("'", '&lsquo;', $record['name'])).' '.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'\" data-auth-type=\"'.$record['auth_type'].'\"></span>", ';
 
         //col2
         $sOutput .= '"'.
             (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\"></i>'
             : '').
-            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>" , ';
+            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
+            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').'" , ';
 
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name']).'</span>", ';

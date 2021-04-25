@@ -113,6 +113,16 @@ if (
                                         .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
                                         .removeClass('hidden');
                                     $('#dialog-ldap-user-change-password').removeClass('hidden');
+                                    
+                                    // ----
+                                } else if (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap') {
+                                    // USer's password has been reseted, he shall change it
+                                    console.log('NEW LDAP user password - we need to encrypt items')
+                                    // HIde
+                                    $('.content-header, .content').addClass('hidden');
+
+                                    // Show form
+                                    $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
                                 }
                             }
                         );
@@ -806,6 +816,45 @@ if (
                     );
                 }
             }
+        );
+    });
+    $(document).on('click', '#dialog-user-temporary-code-close', function() {
+        // HIde
+        $('.content-header, .content').removeClass('hidden');
+
+        // SHow form
+        $('#dialog-user-temporary-code').addClass('hidden');
+    });
+
+
+    /**
+    * NEW LDAP USER HAS TO BUILD THE ITEMS DATABASE
+     */
+    $(document).on('click', '#button_do_build_items_database_for_new_ldap_user', function() {
+        // Perform a renecryption based upon a temporary code
+        console.log('Building items keys database for new LDAP user');
+
+        // Show progress
+        $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        toastr.remove();
+        toastr.info(
+            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+        );
+        
+        // Disable buttons
+        $('#button_do_build_items_database_for_new_ldap_user, #button_close_build_items_database_for_new_ldap_user').attr('disabled', 'disabled');            
+        
+        // Start by testing if the temporary code is correct to decrypt an item
+        data = {
+            'user_id': store.get('teampassUser').user_id,
+        }
+        console.log(data);
+        
+        // Inform user
+        userShareKeysReencryption(
+            store.get('teampassUser').user_id,
+            true,
+            'dialog-ldap-user-build-keys-database'
         );
     });
     $(document).on('click', '#dialog-user-temporary-code-close', function() {

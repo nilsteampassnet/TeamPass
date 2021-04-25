@@ -18,6 +18,8 @@
  */
 
 return array(
+    'help_for_launching_items_encryption' => 'We need to generate the keys database for your account. Please click Launch button.',
+    'managed_through_ad' => 'Managed through AD',
     'new_ldap_user_info' => 'Please complete the definition for user',
     'email_body_user_added_from_ldap_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You now have an account in Teampass. You can use your AD credentials to get logged.<br><br>On first login, an encryption code will be expected from you, please use:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'at_tag' => 'Tag',

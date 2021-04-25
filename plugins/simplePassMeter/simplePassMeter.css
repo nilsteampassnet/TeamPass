@@ -6,8 +6,6 @@
   font-size: 0.8em;
   padding: 1px 5px 0 5px;
   margin: 0;
-  /*width: 19em;*/
-  width: 100px;
 }
 
 .meterFail { border: 1px solid #daa; background-color: #fdd; }

@@ -1834,7 +1834,7 @@ if (null !== $post_type) {
 
             $arrUsers = [];
 
-            if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
+            if ((int) $_SESSION['is_admin'] === 0 && (int) $_SESSION['user_can_manage_all_users'] === 0) {
                 $rows = DB::query(
                     'SELECT *
                     FROM ' . prefixTable('users') . '
@@ -1861,8 +1861,10 @@ if (null !== $post_type) {
                         WHERE id = %i',
                         $group
                     );
-                    array_push($groups, $tmp['title']);
-                    array_push($groupIds, $tmp['id']);
+                    if ($tmp !== null) {
+                        array_push($groups, $tmp['title']);
+                        array_push($groupIds, $tmp['id']);
+                    }
                 }
 
                 // Get managed_by
@@ -2302,6 +2304,31 @@ if (null !== $post_type) {
             // Load expected libraries
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Symfony/contracts/Translation/TranslatorInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonTimeZone.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Units.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Week.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Timestamp.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Test.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/ObjectInitialisation.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Serialization.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/IntervalRounding.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Rounding.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Localization.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Options.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Cast.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mutability.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Modifiers.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mixin.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Macro.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Difference.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Creator.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Converter.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Comparison.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Boundaries.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Date.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Carbon.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
@@ -2774,6 +2801,7 @@ if (null !== $post_type) {
                     'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
                     'public_key' => '',
                     'private_key' => '',
+                    'special' => 'user_added_from_ldap',
                     'auth_type' => 'ldap'
                 )
             );
@@ -2820,6 +2848,14 @@ if (null !== $post_type) {
                 ),
                 $post_email,
                 $SETTINGS
+            );
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
             );
 
             break;

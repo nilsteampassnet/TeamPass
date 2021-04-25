@@ -753,7 +753,7 @@ function identifyUser($sentData, $SETTINGS)
         if (empty($userInfo['groupes_visibles']) === false) {
             $superGlobal->put(
                 'groupes_visibles',
-                implode(';', $userInfo['groupes_visibles']),
+                explode(';', $userInfo['groupes_visibles']),
                 'SESSION'
             );
         } else {
@@ -762,7 +762,7 @@ function identifyUser($sentData, $SETTINGS)
         if (empty($userInfo['groupes_interdits']) === false) {
             $superGlobal->put(
                 'no_access_folders',
-                implode(';', $userInfo['groupes_visibles']),
+                explode(';', $userInfo['groupes_visibles']),
                 'SESSION'
             );
         } else {
@@ -1278,6 +1278,22 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             prefixTable('users'),
             array(
                 'pw' => $hashedPassword,
+            ),
+            'id = %i',
+            $userInfo['id']
+        );
+    } else if ($userInfo['special']=== 'user_added_from_ldap') {
+        // Case where user has been added from LDAP and never being connected to TP
+        // We need to create his keys
+        $userKeys = generateUserKeys($passwordClear);
+
+        // NOw update
+        DB::update(
+            prefixTable('users'),
+            array(
+                'pw' => $hashedPassword,
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
             ),
             'id = %i',
             $userInfo['id']

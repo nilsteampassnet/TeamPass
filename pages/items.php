@@ -192,17 +192,22 @@ foreach ($rows as $reccord) {
                                     <input id="form-item-login" type="text" class="form-control form-item-control track-change" data-field-name="login" data-change-ongoing="">
                                 </div>
                                 <!-- PASSWORD -->
-                                <div class="input-group mb-0">
+                                <div class="input-group mb-2">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text p-1">
-                                            <div id="form-item-password-strength"></div>
-                                        </span>
+                                        <span class="input-group-text"><?php echo langHdl('password'); ?></span>
                                     </div>
                                     <input id="form-item-password" type="password" class="form-control form-item-control track-change" placeholder="<?php echo langHdl('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo langHdl('pw_generate'); ?>" data-id="form-item-password"><i class="fas fa-random"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo langHdl('options'); ?>"><i class="fas fa-sliders-h"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo langHdl('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>
+                                    </div>
+                                </div>
+                                <div class="container-fluid mb-0">
+                                    <div class="row">
+                                        <div class="col-md-12 justify-content-center">
+                                            <div id="form-item-password-strength" class="justify-content-center" style=""></div>
+                                        </div>
                                     </div>
                                 </div>
                                 <input type="hidden" id="form-item-password-complex" value="0">

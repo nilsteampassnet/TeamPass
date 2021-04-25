@@ -42,7 +42,12 @@ echo '
         && empty($SETTINGS['custom_logo']) === false) ?
         '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center;" />' : '',
     '
-    <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo"><b>' . TP_TOOL_NAME . '</b>
+        <div style="margin-top:20px;">
+            <img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">
+        </div>
+        <div style="font-weight:bold;">
+            ' . TP_TOOL_NAME . '
+        </div>
     </div>
 
     <!-- /.login-logo -->

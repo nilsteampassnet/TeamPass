@@ -412,7 +412,7 @@ if (($session_validite_pw === null
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
                 <a href="<?php echo $SETTINGS['cpassman_url'] . "/index.php?page=items"; ?>" class="brand-link">
-                    <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo" class="brand-image">
+                    <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                     <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
 
@@ -900,7 +900,7 @@ if (($session_validite_pw === null
 
 
                 <!-- ENCRYPTION KEYS GENERATION -->
-                <div class="card card-warning m-3 hidden" id="dialog-encryption-keys">
+                <div class="card card-warning m-3 mt-3 hidden" id="dialog-encryption-keys">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-bullhorn mr-2"></i>
@@ -921,6 +921,37 @@ if (($session_validite_pw === null
                     <div class="card-footer">
                         <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo langHdl('launch'); ?></button>
                         <button class="btn btn-default float-right" id="button_close_sharekeys_reencryption"><?php echo langHdl('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.ENCRYPTION KEYS GENERATION -->
+
+
+                <!-- ENCRYPTION KEYS GENERATION FOR LDAP NEW USER -->
+                <div class="card card-warning m-3 mt-3 hidden" id="dialog-ldap-user-build-keys-database">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullhorn mr-2"></i>
+                            <?php echo langHdl('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-2 alert alert-info" id="warning-text-reencryption">
+                                    <i class="icon fas fa-info mr-2"></i>
+                                    <?php echo langHdl('help_for_launching_items_encryption'); ?>
+                                </div>
+                                
+                                <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-build-keys-database-progress">
+                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="sharekeys_reencryption_target_user" value="">
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="dialog-ldap-user-build-keys-database-do"><?php echo langHdl('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-ldap-user-build-keys-database-close"><?php echo langHdl('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
@@ -1200,6 +1231,10 @@ if (($session_validite_pw === null
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
         <!-- VALIDATE -->
         <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
+        <!-- PWSTRENGHT -->
+        <!--<script type="text/javascript" src="plugins/jquery.pwstrength/i18next.js"></script>-->
+        <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
+        <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
     <?php
     } elseif (in_array($pageSel, array('search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal')) === true) {
         ?>

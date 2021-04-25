@@ -2190,108 +2190,55 @@ console.log(store.get('teampassUser'))
     });
 
 
-    // For Personal Saltkey
-    $("#form-item-password").simplePassMeter({
-        "requirements": {},
-        "container": "#form-item-password-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
-        "ratings": [{
-                "minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo langHdl('complex_level0'); ?>"
+    // Password strength
+    var pwdOptions = {};
+    pwdOptions = {
+        common: {
+            zxcvbn: true,
+            debug: false,
+            minChar: 4,
+            onScore: function (options, word, totalScoreCalculated) {
+                if (word.length === 20 && totalScoreCalculated < options.ui.scores[1]) {
+                    // Score doesn't meet the score[1]. So we will return the min
+                    // numbers of points to get that score instead.
+                    return options.ui.score[1]
+                }
+                $("#form-item-password-complex").val(totalScoreCalculated);
+                return totalScoreCalculated;
             },
-            {
-                "minScore": 25,
-                "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+            usernameField: "#form-item-login",
+        },
+        rules: {},
+        ui: {
+            colorClasses: ["text-danger", "text-danger", "text-danger", "text-warning", "text-warning", "text-success"],
+            showPopover: false,
+            showStatus: true,
+            showErrors: false,
+            showVerdictsInsideProgressBar: true,
+            container: "#tab_1",
+            viewports: {
+                progress: "#form-item-password-strength",
+                score: "#form-item-password-strength"
             },
-            {
-                "minScore": 50,
-                "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
-            },
-            {
-                "minScore": 60,
-                "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
-            },
-            {
-                "minScore": 70,
-                "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
-            },
-            {
-                "minScore": 80,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
-            },
-            {
-                "minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level6'); ?>"
-            }
-        ]
-    });
-    $("#form-item-password").bind({
-        "score.simplePassMeter": function(jQEvent, score) {
-            $("#form-item-password-complex").val(score);
-        }
-    }).change({
-        "score.simplePassMeter": function(jQEvent, score) {
-            $("#form-item-password-complex").val(score);
-        }
-    });
+        },
+        i18n : {
+            t: function (key) {
+                var phrases = {
+                    veryWeak: '<?php echo langHdl('complex_level0'); ?>',
+                    weak: '<?php echo langHdl('complex_level1'); ?>',
+                    normal: '<?php echo langHdl('complex_level2'); ?>',
+                    medium: '<?php echo langHdl('complex_level3'); ?>',
+                    strong: '<?php echo langHdl('complex_level4'); ?>',
+                    veryStrong: '<?php echo langHdl('complex_level5'); ?>'
+                };
+                var result = phrases[key];
 
-    $("#form-item-suggestion-password").simplePassMeter({
-        "requirements": {},
-        "container": "#form-item-suggestion-password-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
-        "ratings": [{
-                "minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo langHdl('complex_level0'); ?>"
-            },
-            {
-                "minScore": 25,
-                "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
-            },
-            {
-                "minScore": 50,
-                "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
-            },
-            {
-                "minScore": 60,
-                "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
-            },
-            {
-                "minScore": 70,
-                "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
-            },
-            {
-                "minScore": 80,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
-            },
-            {
-                "minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level6'); ?>"
+                return result === key ? '' : result;
             }
-        ]
-    });
-    $("#form-item-suggestion-password").bind({
-        "score.simplePassMeter": function(jQEvent, scorescore) {
-            $("#form-item-suggestion-password-complex").val(score);
         }
-    }).change({
-        "score.simplePassMeter": function(jQEvent, scorescore) {
-            $("#form-item-suggestion-password-complex").val(score);
-        }
-    });
+    };
+    $('#form-item-password').pwstrength(pwdOptions);
+    
 
 
     /**
@@ -2917,7 +2864,7 @@ console.log(store.get('teampassUser'))
             userDidAChange = false;
 
             // Force update of simplepassmeter
-            $('#form-item-password').focus();
+            $('#form-item-password').pwstrength("forceUpdate");
             $('#form-item-label').focus();
 
             // Set type of action
@@ -4258,7 +4205,7 @@ console.log(store.get('teampassUser'))
                 $('#form-item-folder').val(data.folder);
                 $('#form-item-tags').val(data.tags.join(' '));
 
-                $('#form-item-password').focus();
+                $('#form-item-password').pwstrength("forceUpdate");
                 $('#form-item-label').focus();
 
                 // Editor for description field
@@ -5244,6 +5191,8 @@ console.log(store.get('teampassUser'))
                     // Form has changed
                     userDidAChange = true;
                     $('#' + elementId).data('change-ongoing', true);
+
+                    $("#form-item-password").pwstrength("forceUpdate");
 
                     // SHow button in sticky footer
                     //$('#form-item-buttons').addClass('sticky-footer');
