@@ -26,7 +26,11 @@ if (teampassApiEnabled() != "1") {
 teampassWhitelist();
 
 if (isset($_GET['apikey']) === false) {
-    restError('UNKNOWN');
+    if (isset($_POST['apikey']) === false) {
+        restError('UNKNOWN');
+    } else {
+        $GLOBALS['apikey'] = $_POST['apikey'];
+    }
 } else {
     $GLOBALS['apikey'] = $_GET['apikey'];
 }
