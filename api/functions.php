@@ -2234,7 +2234,7 @@ function restGet()
                             // if not create it
                             $folder = DB::queryFirstRow(
                                 "SELECT `id`
-                                FROM " . $pre."nested_tree
+                                FROM ".prefix_table("nested_tree")."
                                 WHERE title = %s",
                                 "teampass-connect"
                             );
@@ -2567,7 +2567,7 @@ function restGet()
                 // get user info
                 if (isset($GLOBALS['request'][3]) && !empty($GLOBALS['request'][3])) {
                     $userData = DB::queryFirstRow(
-                        "SELECT `id` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id` FROM ".prefix_table("users")." WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
                     if (DB::count() == 0) {
@@ -2664,7 +2664,7 @@ function restGet()
                 // get user info
                 if (isset($GLOBALS['request'][3]) && !empty($GLOBALS['request'][3])) {
                     $userData = DB::queryFirstRow(
-                        "SELECT `id` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id` FROM ".prefix_table("users")." WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
                     if (DB::count() > 0) {
@@ -2765,7 +2765,7 @@ function restGet()
             } elseif ($GLOBALS['request'][1] === "folder") {
                 if (!empty($GLOBALS['request'][2]) && is_numeric($GLOBALS['request'][2])) {
                     $data = DB::queryFirstRow(
-                        "SELECT * FROM ".$pre."nested_tree WHERE id = %i",
+                        "SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i",
                         $GLOBALS['request'][2]
                     );
                     if (DB::count() == 0) {
