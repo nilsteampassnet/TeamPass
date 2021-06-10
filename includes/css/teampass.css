@@ -246,3 +246,8 @@
     -webkit-transform: translate(-50%,-50%);
     transform: translate(-50%,-50%);
 }
+
+.no-link, .no-link:hover {
+    text-decoration: inherit;
+    color: inherit;
+}

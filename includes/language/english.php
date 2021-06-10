@@ -18,6 +18,7 @@
  */
 
 return array(
+    'open_website' => 'Open website',
     'bad_code' => 'Bad code',
     'generating_keys' => 'Generating keys',
     'this_may_take_time' => 'This may take a couple of minutes',

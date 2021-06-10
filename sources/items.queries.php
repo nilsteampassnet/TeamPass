@@ -3696,7 +3696,9 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
-                        MIN(l.action) AS log_action, l.id_user AS log_user
+                        MIN(l.action) AS log_action,
+                        l.id_user AS log_user,
+                        i.url AS link
                         FROM ' . prefixTable('items') . ' AS i
                         INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                         INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
@@ -3715,7 +3717,9 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
-                        MIN(l.action) AS log_action, l.id_user AS log_user
+                        MIN(l.action) AS log_action,
+                        l.id_user AS log_user,
+                        i.url AS link
                         FROM ' . prefixTable('items') . ' AS i
                         INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                         INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
@@ -3809,6 +3813,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['anyone_can_modify'] = (int) $record['anyone_can_modify'];
                         $html_json[$record['id']]['is_result_of_search'] = 0;
                         $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $_SESSION['favourites']) === true ? 1 : 0;
+                        $html_json[$record['id']]['link'] = $record['link'];
 
                         /*************** */
                         $showItem = 0;

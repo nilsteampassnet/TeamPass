@@ -2937,6 +2937,7 @@ console.log(store.get('teampassUser'))
             function(data) {
                 var pwd_error = '',
                     icon_login,
+                    incon_link,
                     icon_pwd,
                     icon_favorite;
 
@@ -3614,6 +3615,7 @@ console.log(store.get('teampassUser'))
                 icon_all_can_modify = '',
                 icon_cannot_see = '',
                 icon_login = '',
+                icon_link = '',
                 icon_pwd = '',
                 icon_favorite = '',
                 item_flag = '',
@@ -3648,6 +3650,11 @@ console.log(store.get('teampassUser'))
                     }
                 }
 
+                // Link icon
+                if (value.link !== '') {
+                    icon_link = '<span class="fa-stack fa-clickable pointer infotip mr-2" title="<?php echo langHdl('open_website'); ?>"><a href="' + sanitizeString(value.link) + '" target="_blank" class="no-link"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-link fa-stack-1x fa-inverse"></i></a></span>';
+                }
+
                 // Prepare Favorite icon
                 if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').enable_favourites) === 1 &&
                     value.rights > 10
@@ -3680,7 +3687,7 @@ console.log(store.get('teampassUser'))
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
                         '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fas fa-circle fa-stack-2x text-danger"></i><i class="far fa-handshake fa-stack-1x fa-inverse"></i></span>' :
-                        pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite) +
+                        pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_link + icon_favorite) +
                     '</span>' +
                     (value.folder !== undefined ?
                         '<br><span class="text-secondary small font-italic pointer open-folder" data-tree-id="' +
