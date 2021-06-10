@@ -237,9 +237,9 @@ foreach ($rows as $record) {
 
         //col2
         $sOutput .= '"'.
-            (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\"></i>'
+            (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
-            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
+            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').'" , ';
 
         //col3

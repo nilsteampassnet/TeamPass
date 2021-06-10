@@ -445,7 +445,7 @@ if (null !== $post_type) {
                 //Send back
                 echo prepareExchangedData(
                     array(
-                        'error' => 'no',
+                        'error' => false,
                         'message' => '',
                     ),
                     'encode'
@@ -454,7 +454,7 @@ if (null !== $post_type) {
                 //Send back
                 echo prepareExchangedData(
                     array(
-                        'error' => 'no',
+                        'error' => false,
                         'message' => langHdl('error_not_allowed_to'),
                     ),
                     'encode'
@@ -1380,7 +1380,6 @@ if (null !== $post_type) {
             $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_disabled = filter_var($dataReceived['form-user-disabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // Init post variables
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
@@ -1392,7 +1391,6 @@ if (null !== $post_type) {
                 'name' => $post_name,
                 'lastname' => $post_lastname,
                 'email' => $post_email,
-                'disabled' => empty($post_user_disabled) === true ? 0 : $post_user_disabled,
                 'admin' => empty($post_is_admin) === true ? 0 : $post_is_admin,
                 'can_manage_all_users' => empty($post_is_hr) === true ? 0 : $post_is_hr,
                 'gestionnaire' => empty($post_is_manager) === true ? 0 : $post_is_manager,
@@ -1502,13 +1500,6 @@ if (null !== $post_type) {
                         $post_id
                     );
 
-                    // manage account status
-                    if ($post_user_disabled === 1) {
-                        $logDisabledText = 'at_user_locked';
-                    } else {
-                        $logDisabledText = 'at_user_unlocked';
-                    }
-
                     // update SESSION
                     if ($_SESSION['user_id'] === $post_id) {
                         $_SESSION['user_email'] = $post_email;
@@ -1535,11 +1526,6 @@ if (null !== $post_type) {
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
                         logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
-                    }
-
-                    if ((int) $oldData['disabled'] !== (int) $post_user_disabled) {
-                        // update LOG
-                        logEvents($SETTINGS, 'user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -2444,252 +2430,9 @@ if (null !== $post_type) {
                 'encode'
             );
 
-
-        break;
-
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode');
-
-            $usersInfo = array();
-            $entries = array();
-            $teampassRoles = array();
-            $adRoles = array();
-            $debug_ldap = $ldap_suffix = '';
-
-            // Get list of existing Roles in Teampass
-            $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
-            foreach ($rows as $record) {
-                array_push(
-                    $teampassRoles,
-                    array(
-                        'id' => $record['id'],
-                        'title' => $record['title']
-                    )
-                );
-            }
-
-            //Multiple Domain Names
-            if (strpos(html_entity_decode($dataReceived['username']), '\\') === true) {
-                $ldap_suffix = '@' . substr(html_entity_decode($dataReceived['username']), 0, strpos(html_entity_decode($dataReceived['username']), '\\'));
-                $dataReceived['username'] = substr(html_entity_decode($dataReceived['username']), strpos(html_entity_decode($dataReceived['username']), '\\') + 1);
-            }
-            if ($SETTINGS['ldap_type'] === 'posix-search') {
-                $ldapURIs = '';
-                foreach (explode(',', $SETTINGS['ldap_hosts']) as $domainControler) {
-                    if ((int) $SETTINGS['ldap_ssl'] === 1) {
-                        $ldapURIs .= 'ldaps://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
-                    } else {
-                        $ldapURIs .= 'ldap://' . $domainControler . ':' . $SETTINGS['ldap_port'] . ' ';
-                    }
-                }
-
-                $debug_ldap .= 'LDAP URIs : ' . $ldapURIs . '<br/>';
-                $ldapconn = ldap_connect($ldapURIs);
-
-                if ($SETTINGS['ldap_ssl']) {
-                    ldap_start_tls($ldapconn);
-                }
-
-                $debug_ldap .= 'LDAP connection : ' . ($ldapconn ? 'Connected' : 'Failed') . '<br/>';
-
-                if ($ldapconn) {
-                    $debug_ldap .= 'DN : ' . $SETTINGS['ldap_bind_dn'] . ' -- ' . $SETTINGS['ldap_bind_passwd'] . '<br/>';
-                    ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
-                    ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
-                    $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
-
-                    $debug_ldap .= 'LDAP bind : ' . ($ldapbind ? 'Bound' : 'Failed') . '<br/>';
-
-                    if ($ldapbind) {
-                        //$filter = '(&(' . $SETTINGS['ldap_user_attribute'] . '=' . $dataReceived['username'] . ')(objectClass=' . $SETTINGS['ldap_object_class'] . '))';
-                        //objectClass=user(objectCategory=person)
-                        $filter = '(&(objectClass=person)(sn=*))';
-                        //echo $filter;
-                        $result = ldap_search(
-                            $ldapconn,
-                            $SETTINGS['ldap_bdn'],
-                            $filter,
-                            array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire')
-                        );
-
-                        if (false !== $result) {
-                            $entries = ldap_get_entries($ldapconn, $result);
-
-                            // Loop in entries and for each user:
-                            // 1- check what are the roles they have in Teampass
-                            // 2- get the ID of the user if exists in Teampass
-                            for ($i = 0; $i < $entries['count']; ++$i) {
-                                // Build the list of all groups in AD
-                                $parsr = ($entries[$i]['memberof']);
-                                for ($j = 0; $j < count($entries[$i]['memberof']); ++$j) {
-                                    if (empty($entries[$i]['memberof'][$j]) === false) {
-                                        $adGroup = substr($entries[$i]['memberof'][$j], 3, strpos($entries[$i]['memberof'][$j], ',') - 3);
-                                        if (in_array($adGroup, $adRoles) === false) {
-                                            array_push($adRoles, $adGroup);
-                                        }
-                                    }
-                                }
-
-                                // Is user in Teampass ?
-                                $userLogin = $entries[$i][$SETTINGS['ldap_user_attribute']][0];
-                                if (null !== $userLogin) {
-                                    // Get his ID
-                                    $user = DB::queryfirstrow(
-                                        'SELECT id, fonction_id, auth_type
-                                        FROM ' . prefixTable('users') . '
-                                        WHERE login = %s',
-                                        $userLogin
-                                    );
-                                    if (DB::count() > 0) {
-                                        $entries[$i]['teampass'] = array(
-                                            'id' => $user['id'],
-                                            'groups' => array(),
-                                            'auth' => $user['auth_type'],
-                                        );
-
-                                        if (empty($user['fonction_id']) === false) {
-                                            foreach (explode(';', $user['fonction_id']) as $group) {
-                                                $entry = DB::queryfirstrow(
-                                                    'SELECT title
-                                                    FROM ' . prefixTable('roles_title') . '
-                                                    WHERE id = %i',
-                                                    $group
-                                                );
-                                                if ($entry) {
-                                                    array_push(
-                                                        $entries[$i]['teampass']['groups'],
-                                                        array(
-                                                            'id' => $group,
-                                                            'title' => $entry['title']
-                                                        )
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-
-
-                        /*
-                        if (isset($SETTINGS['ldap_usergroup'])) {
-                            $GroupRestrictionEnabled = false;
-                            $filter_group = 'memberUid=' . $dataReceived['username'];
-                            $result_group = ldap_search(
-                                $ldapconn,
-                                $SETTINGS['ldap_bdn'],
-                                $filter_group,
-                                array('dn')
-                            );
-
-                            $debug_ldap .= 'Search filter (group): ' . $filter_group . '<br/>' .
-                                'Results : ' . str_replace("\n", '<br>', print_r(ldap_get_entries($ldapconn, $result_group), true)) . '<br/>';
-
-                            if ($result_group) {
-                                $entries = ldap_get_entries($ldapconn, $result_group);
-
-                                if ($entries['count'] > 0) {
-                                    // Now check if group fits
-                                    for ($i = 0; $i < $entries['count']; ++$i) {
-                                        $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
-                                        if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                            $GroupRestrictionEnabled = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            $debug_ldap .= 'Find user in Group: ' . $GroupRestrictionEnabled . '<br/>';
-                        }
-
-                        $debug_ldap .= 'Search filter : ' . $filter . '<br/>' .
-                            'Results : ' . str_replace("\n", '<br>', print_r(ldap_get_entries($ldapconn, $result), true)) . '<br/>';
-
-                        if (ldap_count_entries($ldapconn, $result)) {
-                            // try auth
-                            $result = ldap_get_entries($ldapconn, $result);
-                            $user_dn = $result[0]['dn'];
-                            $ldapbind = @ldap_bind($ldapconn, $user_dn, $dataReceived['password']);
-                            if ($ldapbind) {
-                                $debug_ldap .= 'Successfully connected';
-                            } else {
-                                $debug_ldap .= 'Error - Cannot connect user!';
-                            }
-                        }
-                        */
-                    } else {
-                        $debug_ldap .= 'Error - Could not bind server!';
-                    }
-                } else {
-                    $debug_ldap .= 'Error - Could not connect to server!';
-                }
-            } else {
-                $debug_ldap .= 'Get all ldap params: <br/>' .
-                    '  - base_dn : ' . $SETTINGS['ldap_domain_dn'] . '<br/>' .
-                    '  - account_suffix : ' . $SETTINGS['ldap_suffix'] . '<br/>' .
-                    '  - domain_controllers : ' . $SETTINGS['ldap_hosts'] . '<br/>' .
-                    '  - ad_port : ' . $SETTINGS['ldap_port'] . '<br/>' .
-                    '  - use_ssl : ' . $SETTINGS['ldap_ssl'] . '<br/>' .
-                    '  - use_tls : ' . $SETTINGS['ldap_tls'] . '<br/>*********<br/>';
-
-                $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
-                $adldap->register();
-
-                // Posix style LDAP handles user searches a bit differently
-                if ($SETTINGS['ldap_type'] === 'posix') {
-                    $ldap_suffix = ',' . $SETTINGS['ldap_suffix'] . ',' . $SETTINGS['ldap_domain_dn'];
-                } elseif ($SETTINGS['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
-                    $ldap_suffix = $SETTINGS['ldap_suffix'];
-                }
-                $adldap = new adLDAP\adLDAP(
-                    array(
-                        'base_dn' => $SETTINGS['ldap_domain_dn'],
-                        'account_suffix' => $ldap_suffix,
-                        'domain_controllers' => explode(',', $SETTINGS['ldap_hosts']),
-                        'ad_port' => $SETTINGS['ldap_port'],
-                        'use_ssl' => $SETTINGS['ldap_ssl'],
-                        'use_tls' => $SETTINGS['ldap_tls'],
-                    )
-                );
-
-                $debug_ldap .= 'Create new adldap object : ' . $adldap->getLastError() . '<br/><br/>';
-
-                // openLDAP expects an attribute=value pair
-                if ($SETTINGS['ldap_type'] === 'posix') {
-                    $auth_username = $SETTINGS['ldap_user_attribute'] . '=' . $dataReceived['username'];
-                } else {
-                    $auth_username = $dataReceived['username'];
-                }
-
-                // authenticate the user
-                if ($adldap->authenticate($auth_username, html_entity_decode($dataReceived['username_pwd']))) {
-                    $ldapConnection = 'Successfull';
-                } else {
-                    $ldapConnection = 'Not possible to get connected with this user';
-                }
-
-                $debug_ldap .= 'After authenticate : ' . $adldap->getLastError() . '<br/><br/>' .
-                    'ldap status : ' . $ldapConnection; //Debug
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    //'message' => ($debug_ldap),
-                    'entries' => $entries,
-                    'users' => json_encode($usersInfo),
-                    'adGroups' => $adRoles,
-                    'teampassGroups' => $teampassRoles
-                ),
-                'encode'
-            );
-
             break;
 
-            /*
+        /*
          * ADD USER FROM LDAP
          */
         case 'add_user_from_ldap':
@@ -2779,6 +2522,10 @@ if (null !== $post_type) {
                 break;
             }
 
+            
+            // We need to create his keys
+            $userKeys = generateUserKeys($password);
+
             // Insert user in DB
             DB::insert(
                 prefixTable('users'),
@@ -2799,8 +2546,8 @@ if (null !== $post_type) {
                     'user_language' => $SETTINGS['default_language'],
                     'encrypted_psk' => '',
                     'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
-                    'public_key' => '',
-                    'private_key' => '',
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
                     'special' => 'user_added_from_ldap',
                     'auth_type' => 'ldap'
                 )
@@ -2854,6 +2601,8 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'message' => '',
+                    'user_id' => $newUserId,
+                    'user_password' => $password,
                 ),
                 'encode'
             );
@@ -3043,6 +2792,90 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'message' => '',
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * CHANGE USER DISABLE
+         */
+        case 'manage_user_disable_status':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_disabled = filter_var($dataReceived['disabled_status'], FILTER_SANITIZE_NUMBER_INT);
+
+
+            // Empty user
+            if (empty($post_id) === true || empty($post_id) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // Check if user already exists
+            $data = DB::query(
+                'SELECT id
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_id
+            );
+
+            if (DB::count() > 0) {
+                // Change authentication type in DB
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'disabled' => empty($post_user_disabled) === true ? 0 : $post_user_disabled,
+                    ),
+                    'id = %i',
+                    $post_id
+                );
+
+                // update LOG
+                logEvents(
+                    $SETTINGS,
+                    'user_mngt',
+                    $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
+                    $_SESSION['user_id'],
+                    $_SESSION['login'],
+                    $post_id
+                );
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'message' => '',
+                    'error' => false,
                 ),
                 'encode'
             );

@@ -2075,6 +2075,9 @@ Insert the log here and especially the answer of the query that failed.
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_current_code = filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING);
             $post_new_code = filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING);
+            if (empty($post_new_code) === true) {
+                $post_new_code = $_SESSION['user_pwd'];
+            }
 
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Get user info
@@ -2550,7 +2553,7 @@ Insert the log here and especially the answer of the query that failed.
                             
                             // Encrypt Item key
                             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
+                            
                             // Save the key in DB
                             if ($post_self_change === false) {
                                 DB::insert(

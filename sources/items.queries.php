@@ -2525,7 +2525,7 @@ if (null !== $post_type) {
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
                 $arrData['pw'] = $pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
-                $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
+                $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.$dataItem['url'].'" target="_blank">'.$dataItem['url'].'</a>';
                 $arrData['folder'] = $dataItem['id_tree'];
 
                 $arrData['description'] = $dataItem['description'];
@@ -3801,7 +3801,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                         $html_json[$record['id']]['label'] = strip_tags($record['label']);
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
-                            $html_json[$record['id']]['desc'] = strip_tags((explode('<br>', $record['description'])[0]));
+                            $html_json[$record['id']]['desc'] = substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
                         } else {
                             $html_json[$record['id']]['desc'] = '';
                         }

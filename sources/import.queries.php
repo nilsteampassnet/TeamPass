@@ -203,7 +203,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $row['Comments'] = str_replace(array("\r\n", "\n", "\r"), '<br>', $row['Comments']);
 
                 // Check if current line contains a "<br>" character in order to identify an ITEM on several CSV lines
-                if (substr_count('<br>', $row['Comments']) > 0 || substr_count('<br>', $row['Label']) > 0) {
+                if (substr_count($row['Comments'], '<br>') > 0 || substr_count($row['Label'], '<br>') > 0) {
                     $continue_on_next_line = true;
                     $comment .= addslashes($row['Label']);
                 } else {

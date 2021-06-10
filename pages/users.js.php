@@ -114,6 +114,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fas fa-user-slash text-warning mr-2" disabled></i><?php echo langHdl('disable_enable'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fas fa-user-minus text-danger mr-2" disabled></i><?php echo langHdl('delete'); ?></li>' +
                         '</ul>' +
                         '</span>';
                 }
@@ -276,7 +278,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         if ($(this).data('action') === 'new') {
             // ADD NEW USER
-            $('#row-list, #group-form-user-disabled').addClass('hidden');
+            $('#row-list').addClass('hidden');
             $('#row-form, #group-create-special-folder').removeClass('hidden');
 
             // Prepare checks
@@ -307,7 +309,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // EDIT EXISTING USER
             $('#row-list, #group-create-special-folder, #group-delete-user').addClass('hidden');
-            $('#row-form, #group-form-user-disabled').removeClass('hidden');
+            $('#row-form').removeClass('hidden');
             $('.form-check-input').iCheck('enable');
 
             // Personal folder
@@ -348,7 +350,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         $('#form-name').val(data.name);
                         $('#form-lastname').val(data.lastname);
                         $('#form-create-root-folder').iCheck(data.can_create_root_folder === 1 ? 'check' : 'uncheck');
-                        $('#form-user-disabled').iCheck(data.disabled === 1 ? 'check' : 'uncheck');
                         $('#form-create-personal-folder').iCheck(data.personal_folder === 1 ? 'check' : 'uncheck');
 
                         // Case of user locked
@@ -437,85 +438,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             );
         } else if ($(this).data('action') === 'submit') {
-            // Manage case of delete
-            if ($('#form-delete-user-confirm').prop('checked') === true) {
-                // Prepare modal
-                showModalDialogBox(
-                    '#warningModal',
-                    '<i class="fas fa-user-minus fa-lg warning mr-2"></i><?php echo langHdl('please_confirm'); ?>',
-                    '<?php echo langHdl('please_confirm_user_deletion'); ?>',
-                    '<?php echo langHdl('confirm'); ?>',
-                    '<?php echo langHdl('cancel'); ?>'
-                );
-
-                // Actions on modal buttons
-                $(document).on('click', '#warningModalButtonClose', function() {
-                    // Nothing
-                });
-                $(document).on('click', '#warningModalButtonAction', function() {
-                    // SHow user
-                    toastr.remove();
-                    toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-                    $('#warningModal').modal('hide');
-
-                    // Action
-                    var data = {
-                        'user_id': store.get('teampassApplication').formUserId,
-                    }
-                    // Send query to server
-                    $.post(
-                        'sources/users.queries.php', {
-                            type: 'delete_user',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: "<?php echo $_SESSION['key']; ?>"
-                        },
-                        function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                            console.log(data);
-
-                            if (data.error !== false) {
-                                // Show error
-                                toastr.remove();
-                                toastr.error(
-                                    data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 5000,
-                                        progressBar: true
-                                    }
-                                );
-
-                                // clear form fields
-                                $(".clear-me").val('');
-                                $('.select2').val('').change();
-                                //$('#privilege-user').iCheck('check');
-                                $('.form-check-input')
-                                    .iCheck('disable')
-                                    .iCheck('uncheck');
-
-                                // refresh table content
-                                oTable.ajax.reload();
-
-                                // Show list of users
-                                $('#row-form').addClass('hidden');
-                                $('#row-list').removeClass('hidden');
-                            } else {
-                                // Inform user
-                                toastr.remove();
-                                toastr.success(
-                                    '<?php echo langHdl('done'); ?>',
-                                    '', {
-                                        timeOut: 1000
-                                    }
-                                );
-                            }
-                        }
-                    );
-                });
-
-                return false;
-            }
-
             // Loop on all changed fields
             var arrayQuery = [];
             $('.form-control').each(function(i, obj) {
@@ -625,7 +547,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Case where we need to encrypt new keys for the user
                             // Process is: 
                             // 1/ generate encryption key (to be shared by email)
-                            // 2/ clear all keyx for this user
+                            // 2/ clear all keys for this user
                             // 3/ generate keys for this user with encryption key
                             // 4/ send email to user
 
@@ -1062,6 +984,156 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     }
                 }
             );
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'disable-user') {
+            var userID = $(this).data('id');
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                '<div class="form-group">'+
+                    '<span class="mr-3"><?php echo langHdl('user_disable_status'); ?></span>'+
+                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled">' +
+                '</div>',
+                '<?php echo langHdl('perform'); ?>',
+                '<?php echo langHdl('cancel'); ?>'
+            );
+            $('input[type="checkbox"].flat-blue').iCheck({
+                checkboxClass: 'icheckbox_flat-blue',
+            });
+            $(document).on('click', '#warningModalButtonAction', function() {                
+
+                // Show spinner
+                toastr.remove();
+                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                $('#warningModal').modal('hide');
+
+                var data = {
+                    'user_id': userID,
+                    'disabled_status': $('#user-disabled').prop('checked') === true ? 1 : 0,
+                };
+
+                // Send query
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'manage_user_disable_status',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        console.log(data);
+
+                        if (data.error !== false) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo langHdl('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // Show icon or not
+                            if ($('#user-disabled').prop('checked') === true) {
+                                $('#user-login-'+userID).before('<i class="fas fa-user-slash infotip text-danger mr-2" title="<?php echo langHdl('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
+                            } else {
+                                $('#user-disable-'+userID).remove();
+                            }
+                            
+
+                            // Prepare tooltips
+                            $('.infotip').tooltip();
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo langHdl('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                    }
+                );
+            });
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'delete-user') {
+            var userID = $(this).data('id');
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                '<div class="form-group">'+
+                    '<span class="mr-3"><?php echo langHdl('by_clicking_this_checkbox_confirm_user_deletion'); ?></span>'+
+                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-to-delete">' +
+                '</div>',
+                '<?php echo langHdl('perform'); ?>',
+                '<?php echo langHdl('cancel'); ?>'
+            );
+            $('input[type="checkbox"].flat-blue').iCheck({
+                checkboxClass: 'icheckbox_flat-blue',
+            });
+            $(document).on('click', '#warningModalButtonAction', function() {
+                if ($('#user-to-delete').prop('checked') === false) {
+                    $('#warningModal').modal('hide');
+                    return false;
+                }             
+
+                // Show spinner
+                toastr.remove();
+                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                $('#warningModal').modal('hide');
+
+                var data = {
+                    'user_id': userID,
+                };
+
+                // Send query
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'delete_user',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        console.log(data);
+
+                        if (data.error !== false) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo langHdl('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // refresh table content
+                            oTable.ajax.reload();
+
+                            // Prepare tooltips
+                            $('.infotip').tooltip();
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo langHdl('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                    }
+                );
+            });
+
+            /**/
             //
             // --- END
             //
@@ -1713,6 +1785,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      */
     function addUserInTeampass() {
         toastr.remove();
+        $('#warningModal').modal('hide');
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // what roles
@@ -1752,7 +1825,138 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                     );
                 } else {
-                    refreshListUsersLDAP()
+                    // manage keys encryption for new user
+                    toastr.remove();
+                    showModalDialogBox(
+                        '#warningModal',
+                        '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('generating_keys'); ?>',
+                        '<div class="form-group">'+
+                            '<?php echo langHdl('this_may_take_time'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>' +
+                        '</div>' +
+                        '<div class="form-group" id="warningModal-progress"></form>',
+                        '',
+                        '',
+                        false,
+                        false,
+                        false,
+                    );
+
+
+                    // Case where we need to encrypt new keys for the user
+                    // Process is: 
+                    // 2/ clear all keys for this user
+                    // 3/ generate keys for this user with encryption key
+
+                    
+
+                    // call the recursive function
+                    callRecurive(data.user_id, 'step0', 0); 
+
+                    // recursive action to encrypt the keys
+                    function callRecurive(
+                        userId,
+                        step,
+                        start
+                    ) {
+                        var dfd = $.Deferred();
+                        
+                        var stepText = '';
+                        console.log('Performing '+step)
+
+                        // Prepare progress string
+                        if (step === 'step0') {
+                            stepText = '<?php echo langHdl('inititialization'); ?>';
+                        } else if (step === 'step1') {
+                            stepText = '<?php echo langHdl('items'); ?>';
+                        } else if (step === 'step2') {
+                            stepText = '<?php echo langHdl('logs'); ?>';
+                        } else if (step === 'step3') {
+                            stepText = '<?php echo langHdl('suggestions'); ?>';
+                        } else if (step === 'step4') {
+                            stepText = '<?php echo langHdl('fields'); ?>';
+                        } else if (step === 'step5') {
+                            stepText = '<?php echo langHdl('files'); ?>';
+                        } else if (step === 'step6') {
+                            stepText = '<?php echo langHdl('personal_items'); ?>';
+                        }
+
+                        if (step !== 'finished') {
+                            // Inform user
+                            $("#warningModal-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+                                stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + ']');
+
+                            // Do query
+                            $.post(
+                                "sources/main.queries.php", {
+                                    type: "user_sharekeys_reencryption_next",
+                                    'action': step,
+                                    'start': start,
+                                    'length': 200,
+                                    userId: userId,
+                                    key: '<?php echo $_SESSION['key']; ?>'
+                                },
+                                function(data) {
+                                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                    
+                                    if (data.error === true) {
+                                        // error
+                                        $('#warningModal').modal('hide');
+                                        toastr.remove();
+                                        toastr.error(
+                                            data.message,
+                                            '<?php echo langHdl('caution'); ?>', {
+                                                timeOut: 5000,
+                                                progressBar: true
+                                            }
+                                        );
+
+                                        dfd.reject();
+                                    } else {
+                                        // Prepare variables
+                                        userId = data.userId;
+                                        step = data.step;
+                                        start = data.start;
+
+                                        // Do recursive call until step = finished
+                                        callRecurive(
+                                            userId,
+                                            step,
+                                            start
+                                        ).done(function(response) {
+                                            dfd.resolve(response);
+                                        });
+                                    }
+                                }
+                            );
+                        } else {
+                            console.log('Generation des clés terminée')
+                            // Finalizing
+                            $("#warningModal-progress").html('<b><?php echo langHdl('refreshing_data'); ?></b>');
+                            
+                            // refresh the list of users in LDAP not added in Teampass
+                            refreshListUsersLDAP()
+
+                            // Rrefresh list of users in Teampass
+                            oTable.ajax.reload();
+
+                            // Done                           
+                            $('#warningModal').modal('hide');
+                            toastr.remove(); 
+                            toastr.success(
+                                '<?php echo langHdl('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                        return dfd.promise();
+                    }
+                            
+
+
+
+
+                    /**/
                 }
             }
         );
@@ -1817,7 +2021,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
                     '<?php echo $optionsRoles; ?></select>'+
                 '</div>',
-                '<?php echo langHdl('confirm'); ?>',
+                '<?php echo langHdl('perform'); ?>',
                 '<?php echo langHdl('cancel'); ?>'
             );
             $(document).on('click', '#warningModalButtonAction', function() {

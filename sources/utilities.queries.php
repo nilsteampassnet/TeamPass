@@ -169,7 +169,7 @@ if (null !== $post_type) {
                 }
                 $prev_id = $record['id'];
             }
-
+            
             // send data
             echo prepareExchangedData(
                 array(
@@ -182,7 +182,7 @@ if (null !== $post_type) {
             );
             break;
 
-            //CASE list of recycled elements
+        //CASE recycle selected recycled elements
         case 'restore_selected_objects':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -298,6 +298,130 @@ if (null !== $post_type) {
                     $_SESSION['user_id'],
                     'at_restored',
                     $_SESSION['login']
+                );
+            }
+
+            updateCacheTable('reload', $SETTINGS, '');
+
+            // send data
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+        //CASE recycle selected recycled elements
+        case 'restore_selected_objects':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
+            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_STRING);
+
+            // Folders restore
+            foreach ($post_folders as $folderId) {
+                $data = DB::queryfirstrow(
+                    'SELECT valeur
+                    FROM ' . prefixTable('misc') . "
+                    WHERE type = 'folder_deleted'
+                    AND intitule = %s",
+                    'f' . $folderId
+                );
+                if ((int) $data['valeur'] !== 0) {
+                    $folderData = explode(', ', $data['valeur']);
+                    //insert deleted folder
+                    DB::insert(
+                        prefixTable('nested_tree'),
+                        array(
+                            'id' => $folderData[0],
+                            'parent_id' => $folderData[1],
+                            'title' => $folderData[2],
+                            'nleft' => $folderData[3],
+                            'nright' => $folderData[4],
+                            'nlevel' => $folderData[5],
+                            'bloquer_creation' => $folderData[6],
+                            'bloquer_modification' => $folderData[7],
+                            'personal_folder' => $folderData[8],
+                            'renewal_period' => $folderData[9],
+                        )
+                    );
+                    // Delete folder
+                    DB::delete(
+                        prefixTable('nested_tree'),
+                        'id = %s',
+                        $folderData[0]
+                    );
+
+                    //delete log
+                    DB::delete(
+                        prefixTable('misc'),
+                        'type = %s AND intitule = %s',
+                        'folder_deleted',
+                        'f' . $folderData[0]
+                    );
+
+                    // Delete all items in this folder
+                    DB::delete(
+                        prefixTable('items'),
+                        'id_tree = %s AND inactif = %i',
+                        $folderData[0],
+                        1
+                    );
+
+                    // Get list of all items in thos folder
+                    $items = DB::query(
+                        'SELECT id
+                        FROM ' . prefixTable('items') . '
+                        WHERE id_tree = %i',
+                        $folderData[0]
+                    );
+
+                    // log
+                    foreach ($items as $item) {
+                        DB::delete(
+                            prefixTable('log_items'),
+                            'id_item = %i',
+                            $item['id']
+                        );
+                    }
+                }
+            }
+
+            //restore ITEMS
+            foreach ($post_items as $itemId) {
+                DB::delete(
+                    prefixTable('items'),
+                    'id = %i',
+                    $itemId
+                );
+                DB::delete(
+                    prefixTable('log_items'),
+                    'id_item = %i',
+                    $itemId
                 );
             }
 

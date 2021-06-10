@@ -362,15 +362,6 @@ foreach ($treeDesc as $t) {
                             <label class="form-check-label mr-2" for="form-create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
                             <input type="text" class="form-control clear-me mt-1" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
                         </div>
-                        <div class="form-group not-for-admin" id="group-form-user-disabled">
-                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-user-disabled">
-                            <label class="form-check-label mr-2" for="form-user-disabled"><?php echo langHdl('user_is_disabled'); ?></label>
-
-                            <div class="alert alert-warning mt-2 hidden" id="group-delete-user">
-                                <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-delete-user-confirm">
-                                <label class="form-check-label mr-2" for="form-delete-user-confirm"><?php echo langHdl('delete_user'); ?></label>
-                            </div>
-                        </div>
                     </div>
                     <!-- /.card-body -->
                 </form>

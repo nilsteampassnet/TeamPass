@@ -1246,24 +1246,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             'error' => true,
             'message' => langHdl('error_ad_user_expired'),
         );
-    }/* elseif (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
-        // Should we restrain the search in specified user groups
-        // Get immediate groups the user is apart of:
-        $arrayTmp = array();
-        foreach ($entry['memberof'] as $group) {
-            $group = substr($group, strpos($group, '=')+1, (strpos($group,',') - strpos($group, '=') - 1));
-            if (empty($group) === false) {
-                array_push($arrayTmp, $group);
-            }
-        }
-
-        if (in_array($SETTINGS['ldap_usergroup'], $arrayTmp) === false) {
-            return array(
-                'error' => true,
-                'message' => langHdl('error_user_not_allowed_group'),
-            );
-        }
-    }*/
+    }
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -1285,7 +1268,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
     } else if ($userInfo['special']=== 'user_added_from_ldap') {
         // Case where user has been added from LDAP and never being connected to TP
         // We need to create his keys
-        $userKeys = generateUserKeys($passwordClear);
+        /*$userKeys = generateUserKeys($passwordClear);
 
         // NOw update
         DB::update(
@@ -1297,7 +1280,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
             ),
             'id = %i',
             $userInfo['id']
-        );
+        );*/
     } else if ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.

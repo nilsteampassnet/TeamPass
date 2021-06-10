@@ -519,7 +519,7 @@ if (null !== $post_type) {
             $error = false;
             $newId = $access_level_by_role = $errorMessage = '';
 
-            if ((int) $post_parent_id === 0) {
+            //if ((int) $post_parent_id === 0) {
                 if (isset($dataReceived['accessRight']) === true) {
                     $access_level_by_role = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
                 } else {
@@ -532,7 +532,7 @@ if (null !== $post_type) {
                         $access_level_by_role = '';
                     }
                 }
-            }
+            //}
 
             // check if title is numeric
             if (is_numeric($post_title) === true) {

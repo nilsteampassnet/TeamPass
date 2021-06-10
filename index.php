@@ -941,6 +941,13 @@ if (($session_validite_pw === null
                                     <i class="icon fas fa-info mr-2"></i>
                                     <?php echo langHdl('help_for_launching_items_encryption'); ?>
                                 </div>
+
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-ldap-user-build-keys-database-code">
+                                </div>
                                 
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-build-keys-database-progress">
                                     <?php echo langHdl('provide_current_psk_and_click_launch'); ?>

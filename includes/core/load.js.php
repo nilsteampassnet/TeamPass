@@ -373,7 +373,7 @@ if (
                 //NProgress.start();
                 document.location.href = "index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
-                // Prepare modal
+                /*// Prepare modal
                 showModalDialogBox(
                     '#warningModal',
                     '<i class="fas fa-sign-out-alt fa-lg mr-2"></i><?php echo TP_TOOL_NAME; ?>',
@@ -391,7 +391,8 @@ if (
                     );
 
                     window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
-                });
+                });*/
+                window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
             }
         }
     });
@@ -830,7 +831,11 @@ if (
     /**
     * NEW LDAP USER HAS TO BUILD THE ITEMS DATABASE
      */
-    $(document).on('click', '#button_do_build_items_database_for_new_ldap_user', function() {
+    $(document).on('click', '#dialog-ldap-user-build-keys-database-do', function() {
+        if ($('#dialog-ldap-user-build-keys-database-code').val() === '') {
+
+            return false;
+        }
         // Perform a renecryption based upon a temporary code
         console.log('Building items keys database for new LDAP user');
 
@@ -842,20 +847,111 @@ if (
         );
         
         // Disable buttons
-        $('#button_do_build_items_database_for_new_ldap_user, #button_close_build_items_database_for_new_ldap_user').attr('disabled', 'disabled');            
+        $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').attr('disabled', 'disabled');            
         
         // Start by testing if the temporary code is correct to decrypt an item
         data = {
             'user_id': store.get('teampassUser').user_id,
+            'password' : $('#dialog-ldap-user-build-keys-database-code').val(),
         }
         console.log(data);
-        
+
+        $.post(
+            'sources/main.queries.php', {
+                type: 'test_current_user_password_is_correct',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+
+                    $("#dialog-ldap-user-build-keys-database-progress").html('<?php echo langHdl('bad_code'); ?>');
+
+                    // Enable buttons
+                    $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
+                } else {
+                    // Change privatekey encryption with user-s password
+                    data = {
+                        'user_id': store.get('teampassUser').user_id,
+                        'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
+                        'new_code': '',
+                    }
+                    console.log(data);
+                    
+                    $.post(
+                        'sources/main.queries.php', {
+                            type: 'change_private_key_encryption_password',
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key: "<?php echo $_SESSION['key']; ?>"
+                        },
+                        function(data) {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            console.log(data);
+
+                            if (data.error !== false) {
+                                // Show error
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+
+                                
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fas fa-exclamation-circle text-danger mr-3"></i><?php echo langHdl('bad_code'); ?>');
+
+                                // Enable buttons
+                                $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
+                            } else {
+                                // Inform user
+                                // Enable close button
+                                $('#dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
+                                $('#dialog-ldap-user-build-keys-database-do').attr('disabled', 'disabled');
+
+                                // Finished
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                toastr.remove();
+
+                                store.update(
+                                    'teampassUser', {},
+                                    function(teampassUser) {
+                                        teampassUser.special = 'none';
+                                    }
+                                );
+
+                                // refresh the page
+                                window.location.href = 'index.php?page=items';
+                            }
+                        }
+                    );
+                }
+            }
+        );
+
+
+
+
+        /*
         // Inform user
         userShareKeysReencryption(
             store.get('teampassUser').user_id,
             true,
             'dialog-ldap-user-build-keys-database'
-        );
+        );*/
     });
     $(document).on('click', '#dialog-user-temporary-code-close', function() {
         // HIde

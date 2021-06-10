@@ -4199,7 +4199,7 @@ console.log(store.get('teampassUser'))
                 $('#card-item-email').text(data.email);
                 $('#form-item-email, #form-item-suggestion-email').val(data.email);
                 $('#card-item-url').html(data.url);
-                $('#form-item-url, #form-item-suggestion-url').val(data.url);
+                $('#form-item-url, #form-item-suggestion-url').val($(data.url).text());
                 $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                 $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                 $('#form-item-folder').val(data.folder);
