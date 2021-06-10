@@ -678,7 +678,7 @@ if (null !== $post_type) {
                 $tree->rebuild();
 
                 if ((int) $isPersonal !== 1
-                    && (int) $post_parent_id === 0
+                    //&& (int) $post_parent_id === 0
                 ) {
                     //add access to this new folder
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {

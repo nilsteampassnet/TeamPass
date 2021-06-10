@@ -1642,6 +1642,14 @@ function mainQuery($SETTINGS)
                 break;
             }
 
+            $config_exclude_vars = array(
+                'bck_script_passkey',
+                'email_smtp_server',
+                'email_auth_username',
+                'email_auth_pwd',
+                'email_from',
+            );
+
             // Get data
             $post_data = json_decode(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_URL), true);
 
@@ -1669,10 +1677,13 @@ function mainQuery($SETTINGS)
                         $line = str_replace($url_found, $anonym_url, $line);
                     }
 
-                    // Clear bck_script_passkey
-                    if (strpos($line, 'bck_script_passkey') > 0) {
-                        $line = "'bck_script_passkey' => '<removed>'\n";
+                    // Clear some vars
+                    foreach ($config_exclude_vars as $var) {
+                        if (strpos($line, $var) > 0) {
+                            $line = "'".$var."' => '<removed>'\n";
+                        }
                     }
+                    
 
                     // Complete line to display
                     $list_of_options .= $line;

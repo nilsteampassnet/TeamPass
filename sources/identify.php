@@ -463,7 +463,7 @@ function identifyUser($sentData, $SETTINGS)
 
 
     $user_initial_creation_through_ldap = false;
-    $userPasswordVerified = '';
+    $userPasswordVerified = false;
     $ldapConnection = false;
     $return = '';
     $proceedIdentification = '';
@@ -587,7 +587,7 @@ function identifyUser($sentData, $SETTINGS)
 
 
     // Check user and password
-    if ($userPasswordVerified === false && checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== true) {
+    if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
             array(
                 'value' => '',
@@ -601,7 +601,6 @@ function identifyUser($sentData, $SETTINGS)
         );
         return false;
     }
-
    
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
