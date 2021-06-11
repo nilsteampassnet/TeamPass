@@ -1426,9 +1426,7 @@ function sendEmail(
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get user language
-    $session_user_language = $superGlobal->get('user_language', 'SESSION');
-    $user_language = isset($session_user_language) ? $session_user_language : 'english';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $user_language . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION') . '.php';
 
     // Load library
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
@@ -1476,22 +1474,13 @@ function sendEmail(
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
         // send email
-        if ($mail->send()) {
-            $mail->smtpClose();
-            if ($silent === false) {
-                return json_encode(
-                    array(
-                        'error' => false,
-                        'message' => langHdl('forgot_my_pw_email_sent'),
-                    )
-                );
-            }
-        } elseif ($silent === false) {
-            $mail->smtpClose();
+        $mail->send();
+        $mail->smtpClose();
+        if ($silent === false) {
             return json_encode(
                 array(
-                    'error' => true,
-                    'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
+                    'error' => false,
+                    'message' => langHdl('forgot_my_pw_email_sent'),
                 )
             );
         }

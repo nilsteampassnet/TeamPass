@@ -1381,6 +1381,27 @@ if (null !== $post_type) {
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
 
+            // If user disables administrator role 
+            // then ensure that it exists still one administrator
+            if (empty($post_is_admin) === true) {
+                // count number of admins
+                $users = DB::query(
+                    'SELECT id
+                    FROM ' . prefixTable('users') . '
+                    WHERE admin = 1 AND email != "" AND pw != ""'
+                );
+                if (DB::count() === 1) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('at_least_one_administrator_is_requested'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            }
+            
             // Init post variables
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $action_to_perform_after = '';
@@ -1428,13 +1449,25 @@ if (null !== $post_type) {
 
             // Empty user
             if (empty($post_login) === true) {
-                echo '[ { "error" : "' . langHdl('error_empty_data') . '" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_empty_data'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
             // User has email?
             if (empty($post_email) === true) {
-                echo '[ { "error" : "' . langHdl('error_no_email') . '" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_no_email'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 

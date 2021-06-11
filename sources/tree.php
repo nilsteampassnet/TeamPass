@@ -242,7 +242,8 @@ function buildNodeTree(
 
                 // get count of Items in this folder
                 DB::query(
-                    'SELECT * FROM ' . prefixTable('items') . '
+                    'SELECT *
+                    FROM ' . prefixTable('items') . '
                     WHERE inactif=%i AND id_tree = %i',
                     0,
                     $node->id
@@ -251,31 +252,24 @@ function buildNodeTree(
 
                 // get info about current folder
                 DB::query(
-                    'SELECT * FROM ' . prefixTable('nested_tree') . '
+                    'SELECT *
+                    FROM ' . prefixTable('nested_tree') . '
                     WHERE parent_id = %i',
                     $node->id
                 );
                 $childrenNb = DB::count();
 
                 // If personal Folder, convert id into user name
-                if ($node->title === $session_user_id && $node->nlevel === '1') {
-                    $node->title = $session_login;
-                }
+                $node->title = ($node->title === $session_user_id && (int) $node->nlevel === 1) ? $session_login : $node->title;
 
                 // Decode if needed
                 $node->title = htmlspecialchars_decode($node->title, ENT_QUOTES);
 
                 // prepare json return for current node
-                if ($node->parent_id == 0) {
-                    $parent = '#';
-                } else {
-                    $parent = 'li_' . $node->parent_id;
-                }
+                $parent = ($node->parent_id == 0) ? '#' : 'li_' . $node->parent_id;
 
                 // special case for READ-ONLY folder
-                if ($session_user_read_only === true && !in_array($node->id, $session_personal_folders)) {
-                    $title = langHdl('read_only_account');
-                }
+                $title = ($session_user_read_only === true && !in_array($node->id, $session_personal_folders)) ? langHdl('read_only_account') : $title;
                 $text .= str_replace('&', '&amp;', $node->title);
                 $restricted = '0';
                 $folderClass = 'folder';
@@ -289,24 +283,28 @@ function buildNodeTree(
                     } elseif ($session_user_read_only === true && !in_array($node->id, $session_personal_visible_groups)) {
                         $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                     }
-                    $text .= ' (<span class=\'items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>';
-                    // display tree counters
-                    if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] == 1) {
-                        $text .= '|' . $nbChildrenItems . '|' . (count($nodeDescendants) - 1);
-                    }
-                    $text .= ')';
+                    $text .= 
+                        ' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
+                        .((isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] == 1) ?
+                            '<span class=\'badge badge-pill badge-light ml-1\'>'.$nbChildrenItems . '</span>'.
+                            '<span class=\'badge badge-pill badge-light ml-1\'>'.(count($nodeDescendants) - 1) . '</span>' :
+                            '');
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = '1';
-                    if ($session_user_read_only === true) {
-                        $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
-                    }
-                    $text .= ' (<span class=\'items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_folders_limited[$node->id]) . '</span>';
+                    $text .= 
+                        session_user_read_only === true ? 
+                            "<i class='far fa-eye fa-xs mr-1'></i>" :
+                            ''
+                        .' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_folders_limited[$node->id]) . '</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = '1';
                     if ($session_user_read_only === true) {
                         $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                     }
-                    $text .= ' (<span class=\'items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
+                    $text .= $session_user_read_only === true ? 
+                        "<i class='far fa-eye fa-xs mr-1'></i>" :
+                        ''
+                        . ' (<span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
                 } else {
                     $restricted = '1';
                     $folderClass = 'folder_not_droppable';
@@ -515,27 +513,24 @@ function recursiveTree(
                 ) {
                     $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                 }
-                $text .= ' (<span class=\'items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . $itemsNb . '</span>';
-                // display tree counters
-                if (
-                    isset($SETTINGS['tree_counters']) === true
-                    && $SETTINGS['tree_counters'] == 1
-                ) {
-                    $text .= '|' . $nbChildrenItems . '|' . (count($nodeDescendants) - 1);
-                }
-                $text .= ')';
+                $text .= 
+                    '<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . $itemsNb . '</span>'.
+                    ((isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1) ?
+                        '<span class=\'badge badge-pill badge-light ml-1\'>'.$nbChildrenItems . '</span>'.
+                        '<span class=\'badge badge-pill badge-light ml-1\'>'.(count($nodeDescendants) - 1) . '</span>' :
+                        '');
             } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true) {
                 $restricted = '1';
                 if ($session_user_read_only === true) {
                     $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                 }
-                $text .= ' (<span class=\'items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_folders_limited[$completTree[$nodeId]->id]) . '</span>)';
+                $text .= ' (<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_folders_limited[$completTree[$nodeId]->id]) . '</span>)';
             } elseif (in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true) {
                 $restricted = '1';
                 if ($session_user_read_only === true) {
                     $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                 }
-                $text .= ' (<span class=\'items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_restricted_folders_for_items[$completTree[$nodeId]->id]) . '</span>)';
+                $text .= ' (<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_restricted_folders_for_items[$completTree[$nodeId]->id]) . '</span>)';
             } else {
                 $restricted = '1';
                 $folderClass = 'folder_not_droppable';

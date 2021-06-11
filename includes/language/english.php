@@ -19,6 +19,7 @@
 
 return array(
     'open_website' => 'Open website',
+    'at_least_one_administrator_is_requested' => 'At least one administrator is requested',
     'bad_code' => 'Bad code',
     'generating_keys' => 'Generating keys',
     'this_may_take_time' => 'This may take a couple of minutes',
