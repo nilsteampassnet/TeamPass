@@ -1,0 +1,11 @@
+# Add/remove 'critical' label if issue contains the words 'urgent' or 'critical'
+critical:
+    - '(critical|urgent)/gmi'
+3.0:
+    - '3.0'
+2.1.27:
+    - '2.1.27'
+2.1.26:
+    - '2.1.27'
+Feature Request:
+    - '(Feature Request)/gmi'
