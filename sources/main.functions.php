@@ -1772,7 +1772,7 @@ function prefixTable($table)
  * @return string
  */
 function GenerateCryptKey(
-    $size = null,
+    $size = 10,
     $secure = false,
     $numerals = false,
     $uppercase = false,
@@ -1793,7 +1793,7 @@ function GenerateCryptKey(
     }
 
     // Manage size
-    $generator->setLength(($size === null) ? 10 : (int) $size);
+    $generator->setLength((int) $size);
 
     if ($secure === true) {
         $generator->setSymbols(true);
@@ -3323,4 +3323,29 @@ function format_timezone_name($name) {
     $name = str_replace('_', ' ', $name);
     $name = str_replace('St ', 'St. ', $name);
     return $name;
+}
+
+
+/**
+ * Provides info about if user should use MFA
+ *
+ * @param string $userRolesIds  User roles ids
+ * @param string $mfaRoles      Roles for which MFA is requested
+ *
+ * @return bool
+ */
+function mfa_auth_requested($userRolesIds, $mfaRoles)
+{
+    $mfaRoles = array_values(json_decode($mfaRoles, true));
+    $userRolesIds = array_filter(explode(';' , $userRolesIds));
+
+    if (count($mfaRoles) === 0 || count($mfaRoles) === 0) {
+        return true;
+    }
+
+    if (count(array_intersect($mfaRoles, $userRolesIds)) > 0) {
+        return true;
+    } else {
+        return false;
+    }
 }

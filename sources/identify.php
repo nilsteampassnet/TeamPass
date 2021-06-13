@@ -304,13 +304,6 @@ function identifyUser($sentData, $SETTINGS)
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
 
-    // Debug
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "Content of data sent '" . filter_var($sentData, FILTER_SANITIZE_STRING) . "'\n"
-    );
-
     // connect to the server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -400,13 +393,6 @@ function identifyUser($sentData, $SETTINGS)
         return false;
     }
 
-    /*// Debug
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "Starting authentication of '" . $username . "'\n" .
-            'LDAP status: ' . $SETTINGS['ldap_mode'] . "\n"
-    );*/
 
     // Check if user exists
     $userInfo = DB::queryFirstRow(
@@ -416,6 +402,9 @@ function identifyUser($sentData, $SETTINGS)
         $username
     );
     $counter = DB::count();
+
+    // has user to be auth with mfa?
+    $userInfo['mfa_auth_requested'] = mfa_auth_requested($userInfo['fonction_id'], $SETTINGS['mfa_for_roles']);
 
     // User doesn't exist then stop
     if ($counter === 0) {
@@ -432,14 +421,6 @@ function identifyUser($sentData, $SETTINGS)
         );
         return false;
     }
-
-    /*// Debug
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        'USer exists: ' . $counter . "\n"
-    );*/
-
     
 
     // Manage Maintenance mode
@@ -507,6 +488,7 @@ function identifyUser($sentData, $SETTINGS)
         && (int) $SETTINGS['yubico_authentication'] === 1
         && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
         && $user_2fa_selection === 'yubico'
+        && $userInfo['mfa_auth_requested'] === true
     ) {
         $ret = yubicoMFACheck(
             $dataReceived,
@@ -529,6 +511,7 @@ function identifyUser($sentData, $SETTINGS)
         && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $user_2fa_selection === 'google'
+        && $userInfo['mfa_auth_requested'] === true
     ) {
         $ret = googleMFACheck(
             $username,
@@ -560,12 +543,6 @@ function identifyUser($sentData, $SETTINGS)
         }
     }
 
-    /*// Debug
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        'Proceed with Ident: ' . $proceedIdentification . "\n"
-    );*/
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
