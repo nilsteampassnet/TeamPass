@@ -46,6 +46,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
+// Generates zones
+$zones = timezone_list();
 ?>
 
 <!-- Content Header (Page header) -->
@@ -250,10 +252,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <option value=''>-- <?php echo langHdl('select'); ?> --</option>
                                     <?php
                                     // get list of all timezones
-                                    $zones = timezone_identifiers_list();
-                                    foreach ($zones as $zone) {
+                                    foreach ($zones as $key => $zone) {
                                         echo '
-                                <option value="' . $zone . '"', isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $zone ? ' selected' : '', '>' . $zone . '</option>';
+                                <option value="' . $key . '"', isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : '', '>' . $zone . '</option>';
                                     }
                                     ?>
                                 </select>

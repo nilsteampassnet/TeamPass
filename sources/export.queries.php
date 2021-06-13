@@ -29,6 +29,10 @@ if (
     die('Hacking attempt...');
 }
 
+
+// reference the Dompdf namespace
+//use Dompdf\Dompdf;
+
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
     if (file_exists('../includes/config/tp.config.php')) {
@@ -417,6 +421,8 @@ if (null !== $post_type) {
             );
             break;
 
+        
+
         case 'finalize_export_pdf':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -444,86 +450,121 @@ if (null !== $post_type) {
                 //Some variables
                 $table_full_width = 300;
                 $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
-                $table = array('label', 'login', 'pw', 'description', 'email', 'url', 'kbs', 'tags');
                 $prev_path = '';
 
                 //Prepare the PDF file
-                include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/Tfpdf/fpdf.php';
+                require_once($SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/config/tcpdf_config.php');
+                include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/tcpdf.php';
 
-                $pdf = new FPDF_Protection('P', 'mm', 'A4', 'ma page');
+                $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
 
-                //Add font for regular text
-                $pdf->AddFont('helvetica', '');
-                //Add monospace font for passwords
-                $pdf->AddFont('LiberationMono', '');
+                // set document information
+                $pdf->SetCreator(PDF_CREATOR);
+                $pdf->SetAuthor($_SESSION['lastname']." ".$_SESSION['name']);
+                $pdf->SetTitle('Teampass export');
 
-                $pdf->aliasNbPages();
+                // set default header data
+                $pdf->SetHeaderData(
+                    $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
+                    PDF_HEADER_LOGO_WIDTH,
+                    'Teampass export',
+                    $_SESSION['lastname']." ".$_SESSION['name'].' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time())
+                );
+
+                // set header and footer fonts
+                $pdf->setHeaderFont(Array('helvetica', '', PDF_FONT_SIZE_MAIN));
+                $pdf->setFooterFont(Array('helvetica', '', PDF_FONT_SIZE_DATA));
+
+                // set default monospaced font
+                $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+                // set margins
+                $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+                $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+                $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+
+                // set auto page breaks
+                $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+                
+                // set image scale factor
+                $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+                $pdf->getAliasNbPages();
                 $pdf->addPage('L');
 
                 $prev_path = '';
-                foreach ($rows as $record) {
-                    // decode
-                    $record['label'] = utf8_decode($record['label']);
-                    $record['login'] = utf8_decode($record['login']);
-                    $record['pw'] = utf8_decode($record['pw']);
-                    $record['description'] = utf8_decode($record['description']);
-                    $record['email'] = utf8_decode($record['email']);
-                    $record['url'] = utf8_decode($record['url']);
-                    $record['kbs'] = utf8_decode($record['kbs']);
-                    $record['tags'] = utf8_decode($record['tags']);
+                $html_table = '
+                <html><head>
+                <style>
+                    table {
+                        border-collapse: collapse;
+                        margin: 25px 0;
+                        /*!font-size: 0.9em;
+                        font-family: sans-serif;
+                        box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);*/
+                    }
+                    thead tr {
+                        background-color: #009879;
+                        color: #ffffff;
+                        text-align: left;
+                    }
+                    th,
+                    td {
+                        padding: 12px 15px;
+                    }
+                    tbody tr {
+                        border-bottom: 1px solid #dddddd;
+                    }
+                    tbody tr:nth-of-type(even) {
+                        background-color: #f3f3f3;
+                    }
+                    tbody tr:last-of-type {
+                        border-bottom: 2px solid #009879;
+                    }
+                </style>
+                </head>
+                <body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Login</th>
+                            <th>Password</th>
+                            <th>Description</th>
+                            <th>Email</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
 
-                    $printed_ids[] = $record['id'];
-                    if ($prev_path != $record['path']) {
-                        $pdf->SetFont('helvetica', '', 10);
-                        $pdf->SetFillColor(192, 192, 192);
-                        //error_log('key: '.$key.' - paths: '.$record['path']);
-                        $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, 'L', true);
-                        $pdf->SetFillColor(222, 222, 222);
-                        $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, 'C', true);
-                        $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, 'C', true);
+                foreach ($rows as $record) {
+                    // Manage path
+                    if ($prev_path !== $record['path']) {
+                        $html_table .= '
+                            <tr>
+                                <td colspan="6">'.$record['path'].'</td>
+                            </tr>';
                     }
                     $prev_path = $record['path'];
-                    if (!isutf8($record['pw'])) {
-                        $record['pw'] = '';
-                    }
-                    //row height calculation
-                    $nb = 0;
-                    $nb = max($nb, nbLines($table_col_width[0], $record['label']));
-                    $nb = max($nb, nbLines($table_col_width[1], $record['login']));
-                    $nb = max($nb, nbLines($table_col_width[3], $record['description']));
-                    $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
-                    $nb = max($nb, nbLines($table_col_width[5], $record['url']));
-                    $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
-                    $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
 
-                    $h = 5 * $nb;
-                    //Page break needed?
-                    checkPageBreak($h);
-                    //Draw cells
-                    $pdf->SetFont('helvetica', '', 8);
-                    for ($i = 0; $i < count($table); ++$i) {
-                        $w = $table_col_width[$i];
-                        $a = 'L';
-                        //actual position
-                        $x = $pdf->GetX();
-                        $y = $pdf->GetY();
-                        //Draw
-                        $pdf->Rect($x, $y, $w, $h);
-                        //Write
-                        $pdf->MultiCell($w, 5, iconv('UTF-8', 'windows-1252', html_entity_decode($record[$table[$i]])), 0, $a);
-                        //go to right
-                        $pdf->SetXY($x + $w, $y);
-                    }
-                    //return to line
-                    $pdf->Ln($h);
+                    // build
+                    $html_table .= '
+                    <tr>
+                        <td>'.$record['label'].'</td>
+                        <td>'.$record['login'].'</td>
+                        <td>'.$record['pw'].'</td>
+                        <td>'.$record['description'].'</td>
+                        <td>'.$record['email'].'</td>
+                        <td>'.$record['url'].'</td>
+                    </tr>';
                 }
+                $html_table .= '
+                    </tbody>
+                </table>
+                </body></html>';
+
+                $pdf->writeHTML($html_table, true, false, false, false, '');
 
                 //log
                 logEvents($SETTINGS, 'pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
@@ -980,65 +1021,6 @@ function checkPageBreak($height)
     }
 }
 
-/**
- * Calculates the number of lines inside the PDF depending of content.
- *
- * @param int    $width Width allowed
- * @param string $txt   Text to display
- *
- * @return int
- */
-function nbLines($width, $txt)
-{
-    global $pdf;
-    //Calculate the number of lines needed by a Multicell with a width of w
-    if ($width == 0) {
-        $width = $pdf->w - $pdf->rMargin - $pdf->x;
-    }
-    $wmax = ($width - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
-    $s_text = str_replace("\r", '', $txt);
-    $nb_char = strlen($s_text);
-    if ($nb_char > 0 and $s_text[$nb_char - 1] == "\n") {
-        --$nb_char;
-    }
-    $sep = -1;
-    $var_i = 0;
-    $var_j = 0;
-    $var_l = 0;
-    $var_nl = 1;
-    while ($var_i < $nb_char) {
-        $var_c = $s_text[$var_i];
-        if ($var_c == "\n") {
-            ++$var_i;
-            $sep = -1;
-            $var_j = $var_i;
-            $var_l = 0;
-            ++$var_nl;
-            continue;
-        }
-        if ($var_c == ' ') {
-            $sep = $var_i;
-        }
-        $var_l += 550;
-        if ($var_l > $wmax) {
-            if ($sep == -1) {
-                if ($var_i == $var_j) {
-                    ++$var_i;
-                }
-            } else {
-                $var_i = $sep + 1;
-            }
-            $sep = -1;
-            $var_j = $var_i;
-            $var_l = 0;
-            ++$var_nl;
-        } else {
-            ++$var_i;
-        }
-    }
-
-    return $var_nl;
-}
 
 /**
  * Converts an array to CSV format.

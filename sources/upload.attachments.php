@@ -199,7 +199,7 @@ if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $PO
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
-if (!$file_size || $file_size > $max_file_size_in_bytes) {
+if ($file_size === false || (int) $file_size > (int) $max_file_size_in_bytes) {
     handleAttachmentError('File exceeds the maximum allowed size', 120);
 }
 if ($file_size <= 0) {

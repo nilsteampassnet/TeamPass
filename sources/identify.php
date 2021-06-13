@@ -466,14 +466,13 @@ function identifyUser($sentData, $SETTINGS)
     $userPasswordVerified = false;
     $ldapConnection = false;
     $return = '';
-    $proceedIdentification = '';
 
     // Prepare LDAP connection if set up
     if (
         isset($SETTINGS['ldap_mode']) === true
         && (int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
-        && $userInfo['auth_type'] !== 'local'
+        && $userInfo['auth_type'] === 'ldap'
     ) {
         $ldapConnection = true;
 
@@ -1365,8 +1364,6 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
     $auth = $yubi->verify($yubico_key); //, null, null, null, 60
 
     if (PEAR::isError($auth)) {
-        $proceedIdentification = false;
-
         return array(
             'error' => true,
             'value' => '',
@@ -1376,14 +1373,12 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
             'error' => 'bad_user_yubico_credentials',
             'message' => langHdl('yubico_bad_code'),
         );
-    } else {
-        $proceedIdentification = true;
     }
 
     return array(
         'error' => false,
         'message' => '',
-        'proceedIdentification' => $proceedIdentification,
+        'proceedIdentification' => true,
     );
 }
 

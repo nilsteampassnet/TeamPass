@@ -85,6 +85,36 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
 
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <?php echo langHdl('mfa_for_roles'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo langHdl('mfa_for_roles_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-6'>
+                                <select class='form-control form-control-sm select2 disabled' id='mfa_for_roles' onchange='' multiple="multiple" style="width:100%;">
+                                    <?php
+                                    // Get selected groups
+                                    $arrRolesMFA = json_decode($SETTINGS['mfa_for_roles'], true);
+                                    if ($arrRolesMFA === 0 || empty($arrRolesMFA) === true) {
+                                        $arrRolesMFA = array();
+                                    }
+                                    // Get full list
+                                    $roles = performDBQuery(
+                                        $SETTINGS,
+                                        'id, title',
+                                        'roles_title'
+                                    );
+                                    foreach ($roles as $role) {
+                                        echo '
+                                <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesMFA) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs mb-4">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>

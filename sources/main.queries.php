@@ -1494,17 +1494,6 @@ function mainQuery($SETTINGS)
             echo '[{"token" : "' . $token . '"}]';
             break;
 
-            /*
-         * Create list of timezones
-         */
-        case 'generate_timezones_list':
-            $array = array();
-            foreach (timezone_identifiers_list() as $zone) {
-                $array[$zone] = $zone;
-            }
-
-            echo json_encode($array);
-            break;
 
             /*
          * Check if suggestions are existing
@@ -1948,7 +1937,7 @@ Insert the log here and especially the answer of the query that failed.
             /*
          * User's public/private keys change
          */
-        case 'change_public_private_keys':
+        /*case 'change_public_private_keys':
             // Allowed?
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo prepareExchangedData(
@@ -1975,7 +1964,7 @@ Insert the log here and especially the answer of the query that failed.
             if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
                 // Get user info
                 $userData = DB::queryFirstRow(
-                    'SELECT email, auth_type, login
+                    'SELECT email, auth_type, login, pw
                     FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
@@ -2006,7 +1995,7 @@ Insert the log here and especially the answer of the query that failed.
                         $pwdlib->register();
                         $pwdlib = new PasswordLib\PasswordLib();
                         
-                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) !== true) {
+                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userData['pw']) !== true) {
                             // BAD password
                             echo prepareExchangedData(
                                 array(
@@ -2059,7 +2048,7 @@ Insert the log here and especially the answer of the query that failed.
             }
 
             break;
-
+*/
             /*
          * User's public/private keys change
          */
@@ -3492,7 +3481,7 @@ Insert the log here and especially the answer of the query that failed.
                                     $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
     
     
-                                    $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                                    $objectKey = decryptUserObjectKey($userKeys['share_key'], $_SESSION['user']['private_key']);
     
                                     echo "-".$objectKey." -- PRovatekey = ".$privateKey;
     

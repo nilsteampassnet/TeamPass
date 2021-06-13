@@ -18,6 +18,8 @@
  */
 
 return array(
+    'mfa_for_roles' => 'MFA is requested for users in Roles',
+    'mfa_for_roles_tip' => 'By default, once an MFA method is selected, it is enabled for all users. Nevertheless, you might select the roles for which it is expected.<br>NOT YET IMPLEMENTED',
     'open_website' => 'Open website',
     'at_least_one_administrator_is_requested' => 'At least one administrator is requested',
     'bad_code' => 'Bad code',

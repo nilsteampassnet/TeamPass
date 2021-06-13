@@ -74,8 +74,11 @@ class NestedTree
         );
 
         $result = mysqli_query($this->link, $query);
-        if ($row = mysqli_fetch_object($result)) {
-            return $row;
+        // Exclude case where result is empty
+        if ($result !== false) {
+            if ($row = mysqli_fetch_object($result)) {
+                return $row;
+            }
         }
 
         return null;
@@ -375,16 +378,19 @@ class NestedTree
 
         $arr = array($root);
 
-        // populate the array and create an empty children array
-        while ($row = mysqli_fetch_object($result)) {
-            $arr[$row->$idField] = $row;
-            $arr[$row->$idField]->children = array();
-        }
+        // Exclude case where result is empty
+        if ($result !== false) {
+            // populate the array and create an empty children array
+            while ($row = mysqli_fetch_object($result)) {
+                $arr[$row->$idField] = $row;
+                $arr[$row->$idField]->children = array();
+            }
 
-        // now process the array and build the child data
-        foreach ($arr as $folder_id => $row) {
-            if (isset($row->$parentField)) {
-                $arr[$row->$parentField]->children[$folder_id] = $folder_id;
+            // now process the array and build the child data
+            foreach ($arr as $folder_id => $row) {
+                if (isset($row->$parentField)) {
+                    $arr[$row->$parentField]->children[$folder_id] = $folder_id;
+                }
             }
         }
 

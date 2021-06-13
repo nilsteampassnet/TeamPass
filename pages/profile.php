@@ -60,23 +60,12 @@ if ($_SESSION['user_admin'] === '1') {
 }
 
 // prepare list of timezones
-$zoneToPreSelect = $SETTINGS['timezone'];
-foreach (timezone_identifiers_list() as $zone) {
-    $arrayTimezones[$zone] = $zone;
-    if ($_SESSION['user']['usertimezone'] === $zone) {
-        $zoneToPreSelect = $_SESSION['user']['usertimezone'];
-    }
-}
+$zones = timezone_list();
 
-// prepare lsit of flags
-$languageToPreSelect = $SETTINGS['default_language'];
-$rows = DB::query('SELECT label FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
-foreach ($rows as $record) {
-    $arrayFlags[$record['label']] = $record['label'];
-    if ($_SESSION['user']['user_language'] === $record['label']) {
-        $zoneToPreSelect = $_SESSION['user_language']['usertimezone'];
-    }
-}
+
+// prepare list of languages
+$languages = DB::query('SELECT label FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
+
 
 // Do some stats
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $_SESSION['user_id'] . '"');
@@ -383,10 +372,13 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-timezone">
                                                 <?php
-                                                foreach ($arrayTimezones as $zone) {
-                                                    echo '<option value="' . $zone . '"',
-                                                        strtolower($zoneToPreSelect) === strtolower($zone) ? ' selected="selected"' : '',
-                                                        '>' . $zone . '</option>';
+                                                foreach ($zones as $key => $zone) {
+                                                    echo '
+                                                <option value="' . $key . '"',
+                                                    isset($_SESSION['user']['usertimezone']) === true && $_SESSION['user']['usertimezone'] === $key ?
+                                                    ' selected' :
+                                                    (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
+                                                '>' . $zone . '</option>';
                                                 }
                                                 ?>
                                             </select>
@@ -397,10 +389,13 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
-                                                foreach ($arrayFlags as $flag) {
-                                                    echo '<option value="' . $flag . '"',
-                                                        strtolower($flag) === strtolower($languageToPreSelect) ? ' selected="selected"' : '',
-                                                        '>' . $flag . '</option>';
+                                                foreach ($languages as $language) {
+                                                    echo 
+                                                '<option value="' . $language['label'] . '"',
+                                                    $_SESSION['user']['user_language'] === strtolower($language['label']) ?
+                                                    ' selected="selected"' :
+                                                    ($SETTINGS['default_language'] === strtolower($language['label']) ? ' selected="selected"' : ''),
+                                                '>' . $language['label'] . '</option>';
                                                 }
                                                 ?>
                                             </select>
