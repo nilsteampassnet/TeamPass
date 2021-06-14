@@ -522,7 +522,7 @@ if (null !== $post_type) {
                         'encrypted_data' => $post_encrypted,
                         'is_mandatory' => $post_mandatory,
                         'masked' => $post_masked,
-                        'role_visibility' => implode(',', $post_roles),
+                        'role_visibility' => isnull($post_roles) === true || count($post_roles) ===0 ? '' : implode(',', $post_roles),
                         'order' => calculateOrder($post_fieldId, $post_order),
                     ),
                     'id = %i',

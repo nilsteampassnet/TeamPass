@@ -151,7 +151,7 @@ if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $PO
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
-if (!$file_size || $file_size > $max_file_size_in_bytes) {
+if ($file_size === false || $file_size > $max_file_size_in_bytes) {
     handleUploadError('File exceeds the maximum allowed size');
 }
 if ($file_size <= 0) {
@@ -343,7 +343,7 @@ DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, (int) DB_PORT);
 
 if (
     null !== ($post_type_upload)
@@ -407,7 +407,7 @@ if (
     && $post_type_upload === 'upload_profile_photo'
 ) {
     // get file extension
-    $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+    $ext = (string) pathinfo($filePath, PATHINFO_EXTENSION);
 
     // rename the file
     rename(

@@ -174,7 +174,7 @@ if (empty($search_criteria) === false) {
     for ($i = 0; $i < count($aColumns); ++$i) {
         $sWhere .= $aColumns[$i] . ' LIKE %ss_' . $i . ' OR ';
     }
-    $sWhere = substr_replace($sWhere, '', -3) . ') ';
+    $sWhere = substr_replace((string) $sWhere, '', -3) . ') ';
 
     $crit = array(
         'idtree' => array_unique($folders),

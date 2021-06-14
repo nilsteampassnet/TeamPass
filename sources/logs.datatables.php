@@ -104,7 +104,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         for ($i = 0; $i < count($aColumns); ++$i) {
             $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
 
     DB::query(

@@ -3471,13 +3471,11 @@ if (null !== $post_type) {
                     $arrTmp = [];
                     
                     foreach ($_SESSION['user_roles'] as $role) {
-                        //db::debugmode(true);
                         $access = DB::queryFirstRow(
                             'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                             $role,
                             $post_id
                         );
-                        //db::debugmode(false);exit();
                         if (DB::count()>0) {
                             if ($access['type'] === 'R') {
                                 array_push($arrTmp, 10);
@@ -4092,7 +4090,8 @@ if (null !== $post_type) {
                     WHERE id=%i',
                     $post_item_id
                 );
-
+                
+                /*
                 // is user allowed to access this folder - readonly
                 if (null !== $post_groupe && empty($post_groupe) === false) {
                     if (
@@ -4121,6 +4120,7 @@ if (null !== $post_type) {
                         }
                     }
                 }
+                */
 
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $post_item_id);
@@ -5865,15 +5865,6 @@ if (null !== $post_type) {
                     $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
                     foreach ($nodeDescendants as $node) {
                         // manage tree counters
-                        /*if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
-                            DB::query(
-                                "SELECT * FROM ".prefixTable("items")."
-                                WHERE inactif=%i AND id_tree = %i",
-                                0,
-                                $node
-                            );
-                            $nbChildrenItems += DB::count();
-                        }*/
                         if (
                             in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
                             || @in_array($node, $listFoldersLimitedKeys)

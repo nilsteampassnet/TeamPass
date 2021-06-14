@@ -2495,6 +2495,10 @@ console.log(store.get('teampassUser'))
         if (debugJavascript === true) console.log('CHANGED FIELDS');
         if (debugJavascript === true) console.log(arrayQuery);
 
+        // is user allowed to edit this item
+        var itemsList = JSON.parse(store.get('teampassApplication').itemsList);
+        userItemRight = itemsList[store.get('teampassItem').id].rights;
+
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
             var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
@@ -2537,7 +2541,7 @@ console.log(store.get('teampassUser'))
                     }
                 );
                 return false;
-            } else if ($('#form-item-folder option:selected').attr('disabled') === 'disabled') {
+            } else if ($('#form-item-folder option:selected').attr('disabled') === 'disabled' && userItemRight <= 40) {
                 // Folder is not allowed
                 toastr.remove();
                 toastr.error(
@@ -2878,7 +2882,15 @@ console.log(store.get('teampassUser'))
                 })
             } else {
                 $('#form-item-field, .form-item-category').addClass('hidden');
+            }            
+
+            // is user allowed to edit this item - overpass readonly folder
+            var itemsList = JSON.parse(store.get('teampassApplication').itemsList);
+            userItemRight = itemsList[store.get('teampassItem').id].rights;
+            if (userItemRight > 40 && $('#form-item-folder option:selected').attr('disabled') === 'disabled') {
+                $('#form-item-folder option:selected').removeAttr('disabled');
             }
+
             toastr.remove();
             // ---
         }
@@ -3259,7 +3271,8 @@ console.log(store.get('teampassUser'))
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
-                    teampassApplication.selectedFolder = groupe_id
+                    teampassApplication.selectedFolder = groupe_id,
+                    teampassApplication.itemsList = ''
                 }
             );
 
@@ -3271,6 +3284,14 @@ console.log(store.get('teampassUser'))
             toastr.remove();
             toastr.info(
                 '<?php echo langHdl('opening_folder'); ?><i class="fas fa-circle-notch fa-spin ml-2"></i>'
+            );
+
+            // clear storage 
+            store.update(
+                'teampassUser',
+                function(teampassUser) {
+                    teampassUser.itemsList = '';
+                }
             );
 
             // Prepare data to be sent
@@ -3340,6 +3361,7 @@ console.log(store.get('teampassUser'))
                                     teampassItem.hasCustomCategories = data.categoriesStructure
                             }
                         );
+                        
 
                         // display path of folders
                         if ((initialQueryData.path.length > 0)) {
@@ -3597,6 +3619,9 @@ console.log(store.get('teampassUser'))
                                 }
                             );
                             $('.card-item-category').addClass('hidden');
+
+                            console.log('Liste complete des items')
+                            console.log(JSON.parse(store.get('teampassApplication').itemsList));
                         }
 
                         proceed_list_update(stop_listing_current_folder);
@@ -3609,6 +3634,20 @@ console.log(store.get('teampassUser'))
     function sList(data) {
         if (debugJavascript === true) console.log(data);
         var counter = 0;
+
+        // Manage store
+        if (store.get('teampassApplication').itemsList === '') {
+            var stored_datas = data;
+        } else {
+            var stored_datas = JSON.parse(store.get('teampassApplication').itemsList).concat(data);
+        }
+        store.update(
+            'teampassApplication',
+            function(teampassApplication) {
+                teampassApplication.itemsList = JSON.stringify(stored_datas);
+            }
+        );
+        
         $.each(data, function(i, value) {
             var new_line = '',
                 pwd_error = '',
@@ -3695,6 +3734,8 @@ console.log(store.get('teampassUser'))
                     '</td>' +
                     '</tr>'
                 );
+
+
 
                 //---------------------
             }
@@ -4108,6 +4149,7 @@ console.log(store.get('teampassUser'))
                     requestRunning = false;
                     return false;
                 }
+
 
                 // Store scroll position
                 userScrollPosition = $(window).scrollTop();

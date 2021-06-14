@@ -46,18 +46,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'roles', $SETTINGS) === fa
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-
 ?>
 
 <!-- Content Header (Page header) -->

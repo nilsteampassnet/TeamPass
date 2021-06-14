@@ -1702,7 +1702,7 @@ function mainQuery($SETTINGS)
                 }
             }
 
-            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT);
 
             // Now prepare text
             $txt = '### Page on which it happened
@@ -2312,7 +2312,7 @@ Insert the log here and especially the answer of the query that failed.
             $post_subject = filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING);
             $post_replace = filter_var_array($dataReceived['pre_replace'], FILTER_SANITIZE_STRING);
 
-            if (count($post_replace) > 0) {
+            if (count($post_replace) > 0 && isnull($post_replace) === false) {
                 $post_body = str_replace(
                     array_keys($post_replace),
                     array_values($post_replace),
@@ -3441,6 +3441,35 @@ Insert the log here and especially the answer of the query that failed.
                                 // GEnerate new keys
                                 $userKeys = generateUserKeys($post_current_pwd);
 
+                                // TODO : gérer changement de pass via AD
+                                /*
+                                 // Update user account
+                                 DB::update(
+                                    prefixTable('users'),
+                                    array(
+                                        'public_key' => $userKeys['public_key'],
+                                        'private_key' => $userKeys['private_key'],
+                                        'special' => 'none',
+                                    ),
+                                    'id = %i',
+                                    $post_user_id
+                                );
+                                
+                                // Load superGlobals
+                                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                                $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => false,
+                                        'message' => langHdl('done'),
+                                    ),
+                                    'encode'
+                                );
+                                break;
+                                */
+
 
                             } else {
                                 // For this, just check if it is possible to decrypt the privatekey
@@ -3481,9 +3510,9 @@ Insert the log here and especially the answer of the query that failed.
                                     $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
     
     
-                                    $objectKey = decryptUserObjectKey($userKeys['share_key'], $_SESSION['user']['private_key']);
+                                    $objectKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
     
-                                    echo "-".$objectKey." -- PRovatekey = ".$privateKey;
+                                    //echo "-".$objectKey." -- PRovatekey = ".$privateKey;
     
                                     if (empty(base64_decode($itemKey)) === false) {
                                         // GOOD password

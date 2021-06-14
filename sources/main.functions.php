@@ -1947,7 +1947,7 @@ function logItems(
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
         // Extract reason
-        $attribute = explode(' : ', $raison);
+        $attribute = isnull($raison) === true ? '' : explode(' : ', $raison);
 
         // Get item info if not known
         if (empty($item_label) === true) {
@@ -1962,7 +1962,11 @@ function logItems(
         }
 
         send_syslog(
-            'action=' . str_replace('at_', '', $action) . ' attribute=' . str_replace('at_', '', $attribute[0]) . ' itemno=' . $item_id . ' user=' . addslashes($login) . ' itemname="' . addslashes($item_label) . '"',
+            'action=' . str_replace('at_', '', $action) .
+                ' attribute=' . str_replace('at_', '', $attribute[0]) .
+                ' itemno=' . $item_id .
+                ' user=' . isnull($login) === true ? '' : addslashes($login) .
+                ' itemname="' . addslashes($item_label) . '"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             'teampass'
@@ -2654,8 +2658,8 @@ function obfuscateEmail($email)
         $end .= 'x';
     }
 
-    return substr_replace($mailname, $start, 2, $name_l / $prop)
-        . substr_replace($domain, $end, 2, $domain_l / $prop);
+    return (string) substr_replace($mailname, $start, 2, $name_l / $prop)
+        . (string) substr_replace($domain, $end, 2, $domain_l / $prop);
 }
 
 

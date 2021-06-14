@@ -125,7 +125,7 @@ $rows = DB::query(
     'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
     FROM '.prefixTable('log_system').' AS s
     WHERE s.qui = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
-    $sWhere
+    (string) $sWhere
 );
 $iTotal = DB::count();
 
@@ -139,8 +139,8 @@ $rows = DB::query(
     SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
     FROM '.prefixTable('log_system').' AS s
     WHERE s.qui = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
-    $sOrder.
-    $sLimit
+    (string) $sOrder.
+    (string) $sLimit
 );
 $iFilteredTotal = DB::count();
 

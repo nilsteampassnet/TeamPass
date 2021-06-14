@@ -514,6 +514,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                 'dataType': store.get('teampassApplication').logData,
                 'dateStart': dateRange[0].trim(),
                 'dateEnd': dateRange[1].trim(),
+                'filter_user': $('#purge-filter-user').val(),
+                'filter_action': $('#purge-filter-action').val(),
             }
             console.log(data);
             // Send query

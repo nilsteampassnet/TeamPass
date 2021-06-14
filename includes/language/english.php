@@ -18,6 +18,9 @@
  */
 
 return array(
+    'filters' => 'Filters',
+    'by' => 'by',
+    'open_website' => 'Open website',
     'mfa_for_roles' => 'MFA is requested for users in Roles',
     'mfa_for_roles_tip' => 'By default, once an MFA method is selected, it is enabled for all users. Nevertheless, you might select the roles for which it is expected.<br>NOT YET IMPLEMENTED',
     'open_website' => 'Open website',

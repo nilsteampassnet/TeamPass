@@ -387,9 +387,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         });
                         $('#form-roles').append(tmp);
 
-                        // Prepare default password
-                        //$('#form-password, #form-confirm').val(data.password);
-
                         // Generate select2
                         $('#form-roles, #form-managedby, #form-auth, #form-forbid').select2();
 

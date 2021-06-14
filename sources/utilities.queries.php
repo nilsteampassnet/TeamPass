@@ -479,6 +479,8 @@ if (null !== $post_type) {
                     'Y-m-d'
                 )
             );
+            $post_filter_user = filter_var($dataReceived['filter_user'], FILTER_SANITIZE_STRING);
+            $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_NUMBER_INT);
 
             // Check conditions
             if (
@@ -489,11 +491,15 @@ if (null !== $post_type) {
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(
-                        'SELECT * FROM ' . prefixTable('log_items') . ' WHERE action=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_items') . '
+                        WHERE action=%s ' .  'AND date BETWEEN %i AND %i'
+                        . ($post_filter_action === 'all' ? '' : ' AND action = %s')
+                        . ($post_filter_user === -1 ? '' : ' AND id_user = %i'),
                         'at_shown',
                         $post_date_from,
-                        $post_date_to
+                        $post_date_to,
+                        $post_filter_action,
+                        $post_filter_user
                     );
                     $counter = DB::count();
                     // Delete

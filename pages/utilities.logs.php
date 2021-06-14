@@ -169,7 +169,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             echo (isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1) ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
-                            <label><i class="fas fa-broom mr-2"></i><?php echo langHdl('purge') . ' ' . langHdl('date_range'); ?>:</label>
+                            <h5><i class="fas fa-broom mr-2"></i><?php echo langHdl('purge') . ' ' . langHdl('date_range'); ?></h5>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
@@ -182,6 +182,41 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </span>
                             </div>
                         </div>
+
+                        <h5><i class="fas fa-filter mr-2"></i><?php echo langHdl('filters'); ?></h5>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <!-- select -->
+                                <div class="form-group">
+                                    <label><i class="fas fa-user mr-2"></i><?php echo langHdl('user'); ?>:</label>
+                                    <select class="form-control" id="purge-filter-user">
+                                        <option value="-1"><?php echo langHdl('all'); ?></option>
+                                    <?php
+                                    $rows = DB::query('SELECT id, name, lastname FROM ' . prefixTable('users') . ' WHERE admin = 0');
+                                    foreach ($rows as $record) {
+                                        echo '
+                                        <option value="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].'</option>';
+                                    }
+                                    ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label><i class="fas fa-cog mr-2"></i><?php echo langHdl('action'); ?>:</label>
+                                    <select class="form-control" id="purge-filter-action">
+                                        <option value="all"><?php echo langHdl('all'); ?></option>
+                                        <option value="at_show"><?php echo langHdl('at_shown'); ?></option>
+                                        <option value="at_export"><?php echo langHdl('at_export'); ?></option>
+                                        <option value="at_restored"><?php echo langHdl('at_restored'); ?></option>
+                                        <option value="at_delete"><?php echo langHdl('at_delete'); ?></option>
+                                        <option value="at_copy"><?php echo langHdl('at_copy'); ?></option>
+                                        <option value="at_moved"><?php echo langHdl('at_moved'); ?></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group mt-2 group-confirm-purge hidden">
                             <input type="checkbox" class="form-check-input form-item-control" id="checkbox-purge-confirm">
                             <label class="form-check-label ml-2" for="checkbox-purge-confirm">

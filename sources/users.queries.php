@@ -222,9 +222,9 @@ if (null !== $post_type) {
                         'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
                         'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
                         'user_language' => $SETTINGS['default_language'],
-                        'fonction_id' => implode(';', $groups),
-                        'groupes_interdits' => implode(';', $forbidden_flds),
-                        'groupes_visibles' => implode(';', $allowed_flds),
+                        'fonction_id' => isnull($groups) === true ? '' : implode(';', $groups),
+                        'groupes_interdits' => isnull($forbidden_flds) === true ? '' : implode(';', $forbidden_flds),
+                        'groupes_visibles' => isnull($allowed_flds) === true ? '' : implode(';', $allowed_flds),
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
                         'last_pw_change' => time(),
@@ -1418,9 +1418,9 @@ if (null !== $post_type) {
                 'read_only' => empty($post_is_read_only) === true ? 0 : $post_is_read_only,
                 'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
                 'user_language' => $SETTINGS['default_language'],
-                'fonction_id' => implode(';', $post_groups),
-                'groupes_interdits' => implode(';', $post_forbidden_flds),
-                'groupes_visibles' => implode(';', $post_allowed_flds),
+                'fonction_id' => isnull($post_groups) === true ? '' : implode(';', $post_groups),
+                'groupes_interdits' => isnull($post_forbidden_flds) === true ? '' : implode(';', $post_forbidden_flds),
+                'groupes_visibles' => isnull($post_allowed_flds) === true ? '' : implode(';', $post_allowed_flds),
                 'isAdministratedByRole' => $post_is_administrated_by,
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
             );
@@ -1542,7 +1542,7 @@ if (null !== $post_type) {
 
                     // Has the groups changed? If yes then ask for a keys regeneration
                     $arrOldData = array_filter(explode(';', $oldData['fonction_id']));
-                    $post_groups = array_filter($post_groups);
+                    $post_groups = isnull($post_groups) === true ? array() : array_filter($post_groups);
 
                     if ($arrOldData != $post_groups && (int) $oldData['admin'] !== 1) {
                         $action_to_perform_after = 'encrypt_keys';

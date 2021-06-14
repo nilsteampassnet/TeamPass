@@ -529,7 +529,6 @@ function identifyUser($sentData, $SETTINGS)
             return false;
             // ---
         } else {
-            $proceedIdentification = $ret['proceedIdentification'];
             $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
 
             // Manage 1st usage of Google MFA
@@ -1300,8 +1299,6 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
 
     // Init
-    $proceedIdentification = false;
-
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
     $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
     $yubico_user_id = htmlspecialchars_decode($dataReceived['yubico_user_id']);
@@ -1328,6 +1325,7 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => 'no_user_yubico_credentials',
                 'message' => '',
+                'proceedIdentification' => false,
             );
         } else {
             $yubico_user_key = $userInfo['yubico_user_key'];
@@ -1349,6 +1347,7 @@ function yubicoMFACheck($dataReceived, $userInfo, $SETTINGS)
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'error' => 'bad_user_yubico_credentials',
             'message' => langHdl('yubico_bad_code'),
+            'proceedIdentification' => false,
         );
     }
 
@@ -1449,9 +1448,6 @@ function googleMFACheck($username, $userInfo, $dataReceived, $SETTINGS)
         $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
         $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
         $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
-
-        // Init
-        $proceedIdentification = false;
         
         // load library
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
