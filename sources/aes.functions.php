@@ -62,7 +62,6 @@ require_once 'main.functions.php';
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, (int) DB_PORT, null);
-//$link->set_charset(DB_ENCODING);
 
 // Protect POST
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);

@@ -39,7 +39,7 @@ class NestedTree
             'sort' => $sortField,
         );
 
-        $this->link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, DB_PORT);
+        $this->link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
         $this->link->set_charset(DB_ENCODING);
     }
 

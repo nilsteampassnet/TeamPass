@@ -1702,7 +1702,7 @@ function mainQuery($SETTINGS)
                 }
             }
 
-            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT);
+            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
 
             // Now prepare text
             $txt = '### Page on which it happened
@@ -3437,24 +3437,26 @@ Insert the log here and especially the answer of the query that failed.
                             // Now check if current password is correct (only if not ldap)
                             if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
                                 // As it is a change for an LDAP user
+                                
+                                // Now check if current password is correct
+                                // For this, just check if it is possible to decrypt the privatekey
+                                // And compare it to the one in session
+                                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
 
-                                // GEnerate new keys
-                                $userKeys = generateUserKeys($post_current_pwd);
+                                // Encrypt it with new password
+                                $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
 
-                                // TODO : gérer changement de pass via AD
-                                /*
-                                 // Update user account
-                                 DB::update(
+                                // Update user account
+                                DB::update(
                                     prefixTable('users'),
                                     array(
-                                        'public_key' => $userKeys['public_key'],
-                                        'private_key' => $userKeys['private_key'],
+                                        'private_key' => $hashedPrivateKey,
                                         'special' => 'none',
                                     ),
                                     'id = %i',
                                     $post_user_id
                                 );
-                                
+
                                 // Load superGlobals
                                 include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
                                 $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -3463,12 +3465,11 @@ Insert the log here and especially the answer of the query that failed.
                                 echo prepareExchangedData(
                                     array(
                                         'error' => false,
-                                        'message' => langHdl('done'),
+                                        'message' => langHdl('done'),'',
                                     ),
                                     'encode'
                                 );
                                 break;
-                                */
 
 
                             } else {
