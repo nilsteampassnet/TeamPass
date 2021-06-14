@@ -2312,7 +2312,7 @@ Insert the log here and especially the answer of the query that failed.
             $post_subject = filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING);
             $post_replace = filter_var_array($dataReceived['pre_replace'], FILTER_SANITIZE_STRING);
 
-            if (count($post_replace) > 0 && isnull($post_replace) === false) {
+            if (count($post_replace) > 0 && is_null($post_replace) === false) {
                 $post_body = str_replace(
                     array_keys($post_replace),
                     array_values($post_replace),

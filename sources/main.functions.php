@@ -1947,7 +1947,7 @@ function logItems(
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
         // Extract reason
-        $attribute = isnull($raison) === true ? '' : explode(' : ', $raison);
+        $attribute = is_null($raison) === true ? '' : explode(' : ', $raison);
 
         // Get item info if not known
         if (empty($item_label) === true) {
@@ -1965,7 +1965,7 @@ function logItems(
             'action=' . str_replace('at_', '', $action) .
                 ' attribute=' . str_replace('at_', '', $attribute[0]) .
                 ' itemno=' . $item_id .
-                ' user=' . isnull($login) === true ? '' : addslashes($login) .
+                ' user=' . is_null($login) === true ? '' : addslashes($login) .
                 ' itemname="' . addslashes($item_label) . '"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
