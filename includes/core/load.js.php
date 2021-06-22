@@ -160,6 +160,19 @@ if (
 
     // Countdown
     countdown();
+
+    $(".show_hide_password a").on('click', function(event) {
+        event.preventDefault();
+        if($('.how_hide_password input').attr("type") === "text"){
+            $('.show_hide_password input').attr('type', 'password');
+            $('.show_hide_password i').addClass( "fa-eye-slash" );
+            $('.show_hide_password i').removeClass( "fa-eye" );
+        }else if($('#show_hide_password input').attr("type") === "password"){
+            $('.show_hide_password input').attr('type', 'text');
+            $('.show_hide_password i').removeClass( "fa-eye-slash" );
+            $('.show_hide_password i').addClass( "fa-eye" );
+        }
+    });
     
     if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').special === 'generate-keys'
@@ -531,7 +544,8 @@ if (
     var clipboardCopy = new ClipboardJS(".clipboard-copy", {
         text: function(trigger) {
             var elementId = $(trigger).data('clipboard-text');
-            return $('#' + elementId).val();
+            console.log($('#' + elementId).val())
+            return String($('#' + elementId).val());
         }
     });
 
@@ -540,7 +554,7 @@ if (
         toastr.info(
             '<?php echo langHdl('copy_to_clipboard'); ?>',
             '<?php echo langHdl('information'); ?>', {
-                timeOut: 1000
+                timeOut: 2000
             }
         );
     });
@@ -548,7 +562,6 @@ if (
     // Progress bar
     setTimeout(
         function() {
-            //NProgress.done();
             $(".fade").removeClass("out");
         },
         1000
@@ -678,8 +691,12 @@ if (
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
-                console.log('new pwd: ' + data.debug)
+                store.set(
+                    'teampassUser', {
+                        admin_user_password: data.user_pwd,
+                        admin_user_email: data.user_email,
+                    }
+                );
 
                 if (data.error !== false) {
                     // Show error
@@ -691,8 +708,6 @@ if (
                             progressBar: true
                         }
                     );
-
-                    $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
 
                     // Enable buttons
                     $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').removeAttr('disabled');
@@ -713,6 +728,89 @@ if (
 
         // SHow form
         $('#dialog-admin-change-user-password').addClass('hidden');
+    });
+    
+    $(document).on('click', '.temp-button', function() {
+        
+        if ($(this).data('action') === "show-user-pwd") {
+            // show password
+            $('#temp-user-pwd').attr('type', 'text');
+            $(this).prop( "disabled", true );
+            setTimeout(
+                () => {
+                    $('#temp-user-pwd').attr('type', 'hidden');
+                    $(this).prop( "disabled", false );
+                },
+                5000
+            );
+        } else if ($(this).data('action') === "send-user-pwd") {
+            // Send email
+            //
+
+            
+            $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
+            
+            // Prepare data
+            var data = {
+                'receipt': $('#temp-user-email').val(),
+                'subject': '[Teampass] <?php echo langHdl('temporary_encryption_code');?>',
+                'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
+                'pre_replace' : {
+                    '#enc_code#' : $('#temp-user-pwd').val(),
+                }
+            }
+
+            // Launch action
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'mail_me',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Fianlize UI
+
+                        $('#dialog-admin-change-user-password-info').html('');
+                        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').removeAttr('disabled');
+
+                        // HIde
+                        $('.content-header, .content').removeClass('hidden');
+
+                        // SHow form
+                        $('#dialog-admin-change-user-password').addClass('hidden');
+
+                        store.set(
+                            'teampassUser', {
+                                admin_user_password: '',
+                                admin_user_email: '',
+                            }
+                        );
+                        
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                }
+            );
+        }        
     });
     
 
@@ -1415,6 +1513,8 @@ if (
                 $("#"+divIdDialog+'-progress').html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
                 toastr.remove();
 
+                console.log('ici '+store.get('teampassUser').admin_user_password)
+
                 // Unlog if same user
                 if (userId === <?php echo $_SESSION['user_id']; ?>) {
                     toastr.success(
@@ -1425,6 +1525,19 @@ if (
                     );
 
                     window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                } else if (store.get('teampassUser').admin_user_password) {
+                    // now select if sending by email
+                    $('#dialog-admin-change-user-password-info').html('<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?><br><br>'+
+                    '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
+                    '<div class="row">'+
+                        '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2 temp-button"  data-action="show-user-pwd"><?php echo langHdl('show_user_password'); ?></button></div>'+
+                        '<div class="col-lg-2"><input class="form-control form-item-control" type="hidden" id="temp-user-pwd" value="'+store.get('teampassUser').admin_user_password+'"></div>'+
+                        '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2 temp-button"  data-action="send-user-pwd"><?php echo langHdl('send_by_email'); ?></button>'+
+                        '<input class="form-control form-item-control" type="hidden" id="temp-user-email" value="'+store.get('teampassUser').admin_user_email+'"></div>'+
+                    '</div>');
+
+
+                    $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('done'); ?>');
                 }
             }
         }

@@ -18,7 +18,11 @@
  */
 
 return array(
+    'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
+    'by' => 'by',
+    'send_by_email' => 'Send by email',
     'filters' => 'Filters',
+    'show_user_password' => 'Show user password',
     'by' => 'by',
     'open_website' => 'Open website',
     'mfa_for_roles' => 'MFA is requested for users in Roles',
@@ -42,7 +46,7 @@ return array(
     'settings_ldap_additional_user_dn' => 'Additional User DN',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
     'provide_your_previous_password' => 'Your previous password',
-    'admin_change_user_password_info' => 'This operation will reset the select user current password. A random one will be send by email to the user that will have to change it on first login.',
+    'admin_change_user_password_info' => 'This operation will reset the selected user current password.',
     'sending_email_message' => 'Now sending email to user, please wait',
     'change_your_password_info_message' => 'Please provide your new authentication password and confirm it.',
     'user_has_to_change_password_info' => 'The current used password has been generated. It is expected from you to change it for security purpose.',
@@ -471,7 +475,6 @@ return array(
     'no_history' => 'No history ?!?',
     'no_custom_fields' => 'No custom fields',
     'no_attachment' => 'No attachment',
-    'copy_to_clipboard' => 'Copy to clipboard done',
     'logout_confirm' => 'Logout? Please confirm.',
     'saved' => 'Saved',
     'attachments' => 'Attachments',

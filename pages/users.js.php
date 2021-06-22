@@ -48,7 +48,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 <script type='text/javascript'>
     //<![CDATA[
     // Initialization
-    var userDidAChange = false;
+    var userDidAChange = false,
+        userTemporaryCode = '',
+        userClipboard;
 
     browserSession(
         'init',
@@ -173,10 +175,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 
 
-
-
-
-
     $('#form-email').change(function() {
         //extract domain from email
         var domain = $(this).val().split('@')[1];
@@ -204,6 +202,125 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             }
         );
     });
+
+
+
+    /**
+     * 
+     */
+    // Fires when user click on button SEND
+    $(document).on('click', '#warningModalButtonClose', function() {
+        // check if uform is the one expected
+        if ($('#warningModal-button-user-pwd').length === 0) {
+            return false;
+        } 
+        console.log('Closing warning dialog')
+        toastr.remove();
+        $('#warningModal').modal('hide');
+
+        // Fianlize UI
+        // clear form fields
+        $(".clear-me").val('');
+        $('.select2').val('').change();
+        //$('#privilege-user').iCheck('check');
+        $('.form-check-input')
+            .iCheck('disable')
+            .iCheck('uncheck');
+
+        // refresh table content
+        oTable.ajax.reload();
+
+        // Show list of users
+        $('#row-form').addClass('hidden');
+        $('#row-list').removeClass('hidden');
+    });
+
+
+    /**
+     * 
+     */
+    // Fires when user click on button SEND
+    $(document).on('click', '#warningModalButtonAction', function() {
+        // check if uform is the one expected
+        if ($('#warningModal-button-user-pwd').length === 0) {
+            return false;
+        } 
+        console.log('send email for '+store.get('teampassUser').admin_new_user_password)
+
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
+            '<?php echo langHdl('sending_email_message'); ?>',
+            '',
+            '',
+            true,
+            false,
+            false
+        );
+
+        // Prepare data
+        var data = {
+            'receipt': $('#form-email').val(),
+            'subject': 'TEAMPASS - <?php echo langHdl('temporary_encryption_code');?>',
+            'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
+            'pre_replace' : {
+                '#enc_code#' : store.get('teampassUser').admin_new_user_password,
+            }
+        }
+
+        // Launch action
+        $.post(
+            'sources/main.queries.php', {
+                type: 'mail_me',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // Fianlize UI
+                    // clear form fields
+                    $(".clear-me").val('');
+                    $('.select2').val('').change();
+                    //$('#privilege-user').iCheck('check');
+                    $('.form-check-input')
+                        .iCheck('disable')
+                        .iCheck('uncheck');
+
+                    // refresh table content
+                    oTable.ajax.reload();
+
+                    // Show list of users
+                    $('#row-form').addClass('hidden');
+                    $('#row-list').removeClass('hidden');
+
+                    
+                    $('#warningModal').modal('hide');
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
+    });
+
 
     /**
      * BUILD AND CHECK THE USER LOGIN
@@ -259,7 +376,123 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             }
         );
-    })
+    });
+
+    /**
+     * 
+     */
+    // Launch recursive action to encrypt the keys
+    function callRecursiveUserDataEncryption(
+        userId,
+        step,
+        start
+    ) {
+        var dfd = $.Deferred();
+        
+        var stepText = '';
+        console.log('Performing '+step)
+
+        // Prepare progress string
+        if (step === 'step0') {
+            stepText = '<?php echo langHdl('inititialization'); ?>';
+        } else if (step === 'step1') {
+            stepText = '<?php echo langHdl('items'); ?>';
+        } else if (step === 'step2') {
+            stepText = '<?php echo langHdl('logs'); ?>';
+        } else if (step === 'step3') {
+            stepText = '<?php echo langHdl('suggestions'); ?>';
+        } else if (step === 'step4') {
+            stepText = '<?php echo langHdl('fields'); ?>';
+        } else if (step === 'step5') {
+            stepText = '<?php echo langHdl('files'); ?>';
+        } else if (step === 'step6') {
+            stepText = '<?php echo langHdl('personal_items'); ?>';
+        }
+
+        if (step !== 'finished') {
+            // Inform user
+            $("#warningModalBody").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+                stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
+                '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+
+            // Do query
+            $.post(
+                "sources/main.queries.php", {
+                    type: "user_sharekeys_reencryption_next",
+                    'action': step,
+                    'start': start,
+                    'length': 200,
+                    userId: userId,
+                    key: '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        dfd.reject();
+                    } else {
+                        // Prepare variables
+                        userId = data.userId;
+                        step = data.step;
+                        start = data.start;
+
+                        // Do recursive call until step = finished
+                        callRecursiveUserDataEncryption(
+                            userId,
+                            step,
+                            start
+                        ).done(function(response) {
+                            dfd.resolve(response);
+                        });
+                    }
+                }
+            );
+        } else {
+            // Ask user
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?>',
+                '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
+                '<div class="row">'+
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo langHdl('show_user_password'); ?></button></div>'+
+                    '<div class="col-lg-4"><input class="form-control form-item-control" type="hidden" id="warningModal-user-pwd" value="'+store.get('teampassUser').admin_new_user_password+'"></div>'+
+                '</div>',
+                '<?php echo langHdl('send_by_email'); ?>',
+                '<?php echo langHdl('close'); ?>',
+                true,
+                false,
+                false
+            );
+            $('#warningModal').modal('show');
+
+            $(document).on('click', '#warningModal-button-user-pwd', function() {
+                $('#warningModal-user-pwd').attr('type', 'text');
+                $('#warningModal-button-user-pwd').prop( "disabled", true );
+                setTimeout(
+                    () => {
+                        $('#warningModal-user-pwd').attr('type', 'hidden');
+                        $('#warningModal-button-user-pwd').prop( "disabled", false );
+                    },
+                    5000
+                );
+            });
+
+            
+            
+        }
+        return dfd.promise();
+    }
+
 
 
     /**
@@ -540,7 +773,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
-                        } else if (store.get('teampassApplication').formUserAction === 'store_user_changes' && data.post_action === 'encrypt_keys') {
+                        } else {
                             // Case where we need to encrypt new keys for the user
                             // Process is: 
                             // 1/ generate encryption key (to be shared by email)
@@ -562,211 +795,58 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 false
                             );
 
-                            // STEP 1
-                            var data = {
-                                'user_id': formUserId,
-                            };
+                            if (formUserId === undefined || formUserId === '') {
+                                formUserId = data.user_id;
+                            }
 
-                            $.post(
-                                'sources/main.queries.php', {
-                                    type: 'generate_temporary_encryption_key',
-                                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                    key: "<?php echo $_SESSION['key']; ?>"
-                                },
-                                function(data) {
-                                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                                    userTemporaryCode = data.userTemporaryCode;
+                            // If expected to create new encryption key
+                            if (store.get('teampassApplication').formUserAction === 'store_user_changes' && data.post_action === 'encrypt_keys') {
+                                var data = {
+                                    'user_id': formUserId,
+                                };
 
-                                    if (data.error !== false) {
-                                        // Show error
-                                        toastr.remove();
-                                        toastr.error(
-                                            data.message,
-                                            '<?php echo langHdl('caution'); ?>', {
-                                                timeOut: 5000,
-                                                progressBar: true
+                                $.post(
+                                    'sources/main.queries.php', {
+                                        type: 'generate_temporary_encryption_key',
+                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    },
+                                    function(data) {
+                                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                        userTemporaryCode = data.userTemporaryCode;
+
+                                        store.set(
+                                            'teampassUser', {
+                                                admin_new_user_password: userTemporaryCode,
                                             }
                                         );
-                                    } else {
-                                        // Launch recursive action to encrypt the keys
-                                        function callRecurive(
-                                            userId,
-                                            step,
-                                            start
-                                        ) {
-                                            var dfd = $.Deferred();
-                                            
-                                            var stepText = '';
-                                            console.log('Performing '+step)
 
-                                            // Prepare progress string
-                                            if (step === 'step0') {
-                                                stepText = '<?php echo langHdl('inititialization'); ?>';
-                                            } else if (step === 'step1') {
-                                                stepText = '<?php echo langHdl('items'); ?>';
-                                            } else if (step === 'step2') {
-                                                stepText = '<?php echo langHdl('logs'); ?>';
-                                            } else if (step === 'step3') {
-                                                stepText = '<?php echo langHdl('suggestions'); ?>';
-                                            } else if (step === 'step4') {
-                                                stepText = '<?php echo langHdl('fields'); ?>';
-                                            } else if (step === 'step5') {
-                                                stepText = '<?php echo langHdl('files'); ?>';
-                                            } else if (step === 'step6') {
-                                                stepText = '<?php echo langHdl('personal_items'); ?>';
-                                            }
-
-                                            if (step !== 'finished') {
-                                                // Inform user
-                                                $("#warningModalBody").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
-                                                    stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
-                                                    '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
-
-                                                // Do query
-                                                $.post(
-                                                    "sources/main.queries.php", {
-                                                        type: "user_sharekeys_reencryption_next",
-                                                        'action': step,
-                                                        'start': start,
-                                                        'length': 200,
-                                                        userId: userId,
-                                                        key: '<?php echo $_SESSION['key']; ?>'
-                                                    },
-                                                    function(data) {
-                                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                                                        
-                                                        if (data.error === true) {
-                                                            // error
-                                                            toastr.remove();
-                                                            toastr.error(
-                                                                data.message,
-                                                                '<?php echo langHdl('caution'); ?>', {
-                                                                    timeOut: 5000,
-                                                                    progressBar: true
-                                                                }
-                                                            );
-
-                                                            dfd.reject();
-                                                        } else {
-                                                            // Prepare variables
-                                                            userId = data.userId;
-                                                            step = data.step;
-                                                            start = data.start;
-
-                                                            // Do recursive call until step = finished
-                                                            callRecurive(
-                                                                userId,
-                                                                step,
-                                                                start
-                                                            ).done(function(response) {
-                                                                dfd.resolve(response);
-                                                            });
-                                                        }
-                                                    }
-                                                );
-                                            } else {
-                                                console.log('send email for '+userTemporaryCode)
-                                                $("#warningModalBody").html('<b><?php echo langHdl('sending_email_message'); ?> <i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
-                                                
-                                                // Prepare data
-                                                var data = {
-                                                    'receipt': $('#form-email').val(),
-                                                    'subject': 'TEAMPASS - <?php echo langHdl('temporary_encryption_code');?>',
-                                                    'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
-                                                    'pre_replace' : {
-                                                        '#enc_code#' : userTemporaryCode,
-                                                    }
+                                        if (data.error !== false) {
+                                            // Show error
+                                            toastr.remove();
+                                            toastr.error(
+                                                data.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
                                                 }
-
-                                                // Launch action
-                                                $.post(
-                                                    'sources/main.queries.php', {
-                                                        type: 'mail_me',
-                                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                                        key: '<?php echo $_SESSION['key']; ?>'
-                                                    },
-                                                    function(data) {
-                                                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-
-                                                        if (data.error !== false) {
-                                                            // Show error
-                                                            toastr.remove();
-                                                            toastr.error(
-                                                                data.message,
-                                                                '', {
-                                                                    timeOut: 5000,
-                                                                    progressBar: true
-                                                                }
-                                                            );
-                                                        } else {
-                                                            toastr.remove();
-                                                            $('#warningModal').modal('hide');
-
-                                                            // Fianlize UI
-                                                            // clear form fields
-                                                            $(".clear-me").val('');
-                                                            $('.select2').val('').change();
-                                                            //$('#privilege-user').iCheck('check');
-                                                            $('.form-check-input')
-                                                                .iCheck('disable')
-                                                                .iCheck('uncheck');
-
-                                                            // refresh table content
-                                                            oTable.ajax.reload();
-
-                                                            // Show list of users
-                                                            $('#row-form').addClass('hidden');
-                                                            $('#row-list').removeClass('hidden');
-
-                                                            // Inform user
-                                                            toastr.remove();
-                                                            toastr.success(
-                                                                '<?php echo langHdl('done'); ?>',
-                                                                '', {
-                                                                    timeOut: 1000
-                                                                }
-                                                            );
-                                                        }
-                                                    }
-                                                );
-                                            }
-                                            return dfd.promise();
+                                            );
+                                        } else {
+                                            // call the recursive function
+                                            callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
                                         }
-                                               
-
-                                        // call the recursive function
-                                        callRecurive(formUserId, 'step0', 0); 
                                     }
-                                }
-                            );
-
-
-
+                                );
+                            } else {
+                                store.set(
+                                    'teampassUser', {
+                                        admin_new_user_password: data.user_pwd,
+                                    }
+                                );
+                                // call the recursive function
+                                callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
+                            }
                             // ---
-                        } else {
-                            // clear form fields
-                            $(".clear-me").val('');
-                            $('.select2').val('').change();
-                            //$('#privilege-user').iCheck('check');
-                            $('.form-check-input')
-                                .iCheck('disable')
-                                .iCheck('uncheck');
-
-                            // refresh table content
-                            oTable.ajax.reload();
-
-                            // Show list of users
-                            $('#row-form').addClass('hidden');
-                            $('#row-list').removeClass('hidden');
-
-                            // Inform user
-                            toastr.remove();
-                            toastr.success(
-                                '<?php echo langHdl('done'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
-                            );
                         }
 
                         // Remove action from store
@@ -774,7 +854,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.formUserAction = '',
-                                    teampassApplication.formUserId = '';
+                                teampassApplication.formUserId = '';
                             }
                         );
                     }

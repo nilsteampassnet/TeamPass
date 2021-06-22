@@ -2176,6 +2176,7 @@ Insert the log here and especially the answer of the query that failed.
                         // Generate new password
                         $post_user_password = generateQuickPassword();
 
+                        /*
                         // Send email to user
                         try {
                             sendEmail(
@@ -2191,7 +2192,7 @@ Insert the log here and especially the answer of the query that failed.
                             );
                         } catch (Exception $e) {
                             $emailError = $e;
-                        }
+                        }*/
                     }
 
                     // If LDAP enabled, then
@@ -2234,7 +2235,8 @@ Insert the log here and especially the answer of the query that failed.
                             array(
                                 'error' => false,
                                 'message' => '',
-                                'debug' => $post_user_password. ' - Email was sent',
+                                'user_pwd' => $post_user_password,
+                                'user_email' => $userData['email'],
                             ),
                             'encode'
                         );

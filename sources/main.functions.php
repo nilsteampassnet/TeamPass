@@ -1778,7 +1778,7 @@ function GenerateCryptKey(
     $uppercase = false,
     $symbols = false,
     $lowercase = false,
-    $SETTINGS
+    $SETTINGS = array()
 ) {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     $generator = new SplClassLoader('PasswordGenerator\Generator', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -3340,6 +3340,10 @@ function format_timezone_name($name) {
  */
 function mfa_auth_requested($userRolesIds, $mfaRoles)
 {
+	if (is_null($mfaRoles) === true) {
+		return false;
+	}
+	
     $mfaRoles = array_values(json_decode($mfaRoles, true));
     $userRolesIds = array_filter(explode(';' , $userRolesIds));
 

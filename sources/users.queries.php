@@ -222,6 +222,7 @@ if (null !== $post_type) {
                         'last_pw_change' => time(),
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
+                        'special' => 'auth-pwd-change',
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -307,6 +308,8 @@ if (null !== $post_type) {
                 if (empty($SETTINGS['email_server_url']) === true) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
+
+                /*
                 // Send email to new user
                 sendEmail(
                     langHdl('email_subject_new_user'),
@@ -318,6 +321,8 @@ if (null !== $post_type) {
                     $dataReceived['email'],
                     $SETTINGS
                 );
+                */
+
                 // update LOG
                 logEvents(
                     $SETTINGS,
@@ -331,6 +336,9 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => false,
+                        'post_action' => 'encrypt_keys',
+                        'user_id' => $new_user_id,
+                        'user_pwd' => $password,
                         'message' => '',
                     ),
                     'encode'

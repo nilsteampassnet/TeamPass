@@ -1276,7 +1276,7 @@ define("DB_NAME", "' . $db['db_bdd'] . '");
 define("DB_PREFIX", "' . $var['tbl_prefix'] . '");
 define("DB_PORT", "' . $db['db_port'] . '");
 define("DB_ENCODING", "' . $session_db_encoding . '");
-define("SECUREPATH", "' . $securePath . '");
+define("SECUREPATH", "' . str_replace('\\', '/', $securePath) . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);

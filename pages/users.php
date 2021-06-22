@@ -272,13 +272,16 @@ foreach ($treeDesc as $t) {
                                     <input type="text" class="form-control clear-me required track-change" id="form-name">
                                 </div>
                                 <div class="form-group">
-                                    <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
-                                    <input type="text" class="form-control clear-me required track-change" id="form-lastname">
-                                </div>
-                                <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('login'); ?></label>
                                     <input type="text" class="form-control clear-me required build-login track-change" id="form-login">
                                     <input type="hidden" id="form-login-conform" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
+                                    <input type="text" class="form-control clear-me required track-change" id="form-lastname">
                                 </div>
                                 <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('email'); ?></label>

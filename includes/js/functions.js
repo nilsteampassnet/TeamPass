@@ -381,6 +381,7 @@ function browserSession(action, name, data)
  * @param {string} closeButton 
  * @param {string} xlSize 
  * @param {string} warningModal 
+ * @param {string} closeCross 
  */
 function showModalDialogBox(
     modalId,
