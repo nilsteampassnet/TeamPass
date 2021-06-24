@@ -140,7 +140,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                 console.log(data);
-                if (data.error !== false) {
+                if (data.error === true) {
                     // Show error
                     toastr.remove();
                     toastr.error(
@@ -568,7 +568,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
-                    teampassApplication.formUserAction = 'add_folder';
+                    teampassApplication.formUserAction = 'add_role';
                 }
             );
 

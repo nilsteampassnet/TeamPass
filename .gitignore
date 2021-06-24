@@ -13,3 +13,5 @@ test.html
 /includes/avatars
 /includes/config/tp.config.php
 /includes/config/settings.php
+includes/libraries/csrfp/libs/csrfp.config.php
+/includes/config/tp.config.php.*

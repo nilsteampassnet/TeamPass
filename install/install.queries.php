@@ -24,37 +24,56 @@ error_reporting(E_ERROR | E_PARSE);
 header('Content-type: text/html; charset=utf-8');
 $session_db_encoding = 'utf8';
 
-function chmodRecursive($dir, $dirPermissions, $filePermissions)
-{
-    $pointer_dir = opendir($dir);
-    $res = true;
-    while ($file = readdir($pointer_dir)) {
-        if (($file == '.') || ($file == '..')) {
-            continue;
+/**
+      Chmods files and folders with different permissions.
+ 
+      This is an all-PHP alternative to using: \n
+      <tt>exec("find ".$path." -type f -exec chmod 644 {} \;");</tt> \n
+      <tt>exec("find ".$path." -type d -exec chmod 755 {} \;");</tt>
+ 
+      @author Jeppe Toustrup (tenzer at tenzer dot dk)
+      @param $path An either relative or absolute path to a file or directory
+      which should be processed.
+      @param $filePerm The permissions any found files should get.
+      @param $dirPerm The permissions any found folder should get.
+      @return Returns TRUE if the path if found and FALSE if not.
+      @warning The permission levels has to be entered in octal format, which
+      normally means adding a zero ("0") in front of the permission level. \n
+      More info at: http://php.net/chmod.
+    */
+ 
+    function recursiveChmod($path, $filePerm=0644, $dirPerm=0755) {
+        // Check if the path exists
+        if (!file_exists($path)) {
+            return(false);
         }
-
-        $fullPath = $dir . '/' . $file;
-
-        if (is_dir($fullPath)) {
-            if ($res = @chmod($fullPath, $dirPermissions)) {
-                $res = @chmodRecursive($fullPath, $dirPermissions, $filePermissions);
+ 
+        // See whether this is a file
+        if (is_file($path)) {
+            // Chmod the file with our given filepermissions
+            chmod($path, $filePerm);
+ 
+        // If this is a directory...
+        } elseif (is_dir($path)) {
+            // Then get an array of the contents
+            $foldersAndFiles = scandir($path);
+ 
+            // Remove "." and ".." from the list
+            $entries = array_slice($foldersAndFiles, 2);
+ 
+            // Parse every result...
+            foreach ($entries as $entry) {
+                // And call this function again recursively, with the same permissions
+                recursiveChmod($path."/".$entry, $filePerm, $dirPerm);
             }
-        } else {
-            $res = chmod($fullPath, $filePermissions);
+ 
+            // When we are done with the contents of the directory, we chmod the directory itself
+            chmod($path, $dirPerm);
         }
-        if (!$res) {
-            closedir($pointer_dir);
-
-            return false;
-        }
+ 
+        // Everything seemed to work out well, return true
+        return(true);
     }
-    closedir($pointer_dir);
-    if (is_dir($dir) && $res) {
-        $res = @chmod($dir, $dirPermissions);
-    }
-
-    return $res;
-}
 
 /**
  * genHash().
@@ -224,10 +243,10 @@ if (null !== $post_type) {
             }
 
             if (isset($data['activity']) && $data['activity'] === 'ini') {
-                if (ini_get($data['task']) >= 60) {
+                if (ini_get($data['task']) >= 30) {
                     echo '[{"error" : "", "index" : "' . $post_index . '"}]';
                 } else {
-                    echo '[{"error" : "PHP \"Maximum execution time\" is set to ' . ini_get('max_execution_time') . ' seconds. Please try to set to 60s at least during installation.", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                    echo '[{"error" : "PHP \"Maximum execution time\" is set to ' . ini_get('max_execution_time') . ' seconds. Please try to set to 30s at least during installation.", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
@@ -1276,7 +1295,7 @@ define("DB_NAME", "' . $db['db_bdd'] . '");
 define("DB_PREFIX", "' . $var['tbl_prefix'] . '");
 define("DB_PORT", "' . $db['db_port'] . '");
 define("DB_ENCODING", "' . $session_db_encoding . '");
-define("SECUREPATH", "' . str_replace('\\', '/', $securePath) . '");
+define("SECUREPATH", "' . $securePath . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -1294,17 +1313,17 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     // Sort out the file permissions
 
                     // is server Windows or Linux?
-                    if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
+                    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
                         // Change directory permissions
-                        $result = chmodRecursive($session_abspath, 0770, 0740);
+                        $result = recursiveChmod($session_abspath, 0770, 0740);
                         if ($result) {
-                            $result = chmodRecursive($session_abspath . '/files', 0770, 0770);
+                            $result = recursiveChmod($session_abspath . '/files', 0770, 0770);
                         }
                         if ($result) {
-                            $result = chmodRecursive($session_abspath . '/upload', 0770, 0770);
+                            $result = recursiveChmod($session_abspath . '/upload', 0770, 0770);
                         }
                     }
-
+                    $result = true;
                     if ($result === false) {
                         echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     } else {

@@ -101,7 +101,7 @@
 	// # HEADER ##
 	echo '
 	<div id="top">
-		<div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
+		<div id="logo" class="lcol"><img src="../includes/images/teampass-logo2-home.png" /></div>
 		<div class="lcol">
 			<span class="header-title">' . strtoupper(TP_TOOL_NAME) . '</span>
 		</div>
