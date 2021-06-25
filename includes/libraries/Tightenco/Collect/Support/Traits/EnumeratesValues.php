@@ -35,7 +35,11 @@ use Traversable;
  * @property-read HigherOrderCollectionProxy $some
  * @property-read HigherOrderCollectionProxy $sortBy
  * @property-read HigherOrderCollectionProxy $sortByDesc
+ * @property-read HigherOrderCollectionProxy $skipUntil
+ * @property-read HigherOrderCollectionProxy $skipWhile
  * @property-read HigherOrderCollectionProxy $sum
+ * @property-read HigherOrderCollectionProxy $takeUntil
+ * @property-read HigherOrderCollectionProxy $takeWhile
  * @property-read HigherOrderCollectionProxy $unique
  * @property-read HigherOrderCollectionProxy $until
  */
@@ -44,7 +48,7 @@ trait EnumeratesValues
     /**
      * The methods that can be proxied.
      *
-     * @var array
+     * @var string[]
      */
     protected static $proxies = [
         'average',
@@ -197,7 +201,7 @@ trait EnumeratesValues
      */
     public function dd(...$args)
     {
-        call_user_func_array([$this, 'dump'], $args);
+        $this->dump(...$args);
 
         exit(1);
     }
@@ -665,14 +669,24 @@ trait EnumeratesValues
     }
 
     /**
-     * Filter the items, removing any items that don't match the given type.
+     * Filter the items, removing any items that don't match the given type(s).
      *
-     * @param  string  $type
+     * @param  string|string[]  $type
      * @return static
      */
     public function whereInstanceOf($type)
     {
         return $this->filter(function ($value) use ($type) {
+            if (is_array($type)) {
+                foreach ($type as $classType) {
+                    if ($value instanceof $classType) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             return $value instanceof $type;
         });
     }
@@ -689,6 +703,17 @@ trait EnumeratesValues
     }
 
     /**
+     * Pass the collection into a new class.
+     *
+     * @param  string  $class
+     * @return mixed
+     */
+    public function pipeInto($class)
+    {
+        return new $class($this);
+    }
+
+    /**
      * Pass the collection to the given callback and then return it.
      *
      * @param  callable  $callback
@@ -699,6 +724,42 @@ trait EnumeratesValues
         $callback(clone $this);
 
         return $this;
+    }
+
+    /**
+     * Reduce the collection to a single value.
+     *
+     * @param  callable  $callback
+     * @param  mixed $initial
+     * @return mixed
+     */
+    public function reduce(callable $callback, $initial = null)
+    {
+        $result = $initial;
+
+        foreach ($this as $key => $value) {
+            $result = $callback($result, $value, $key);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Reduce an associative collection to a single value.
+     *
+     * @param  callable  $callback
+     * @param  mixed $initial
+     * @return mixed
+     */
+    public function reduceWithKeys(callable $callback, $initial = null)
+    {
+        $result = $initial;
+
+        foreach ($this as $key => $value) {
+            $result = $callback($result, $value, $key);
+        }
+
+        return $result;
     }
 
     /**
