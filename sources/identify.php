@@ -1143,7 +1143,7 @@ function authenticateThroughAD($username, $userInfo, $passwordClear, $SETTINGS)
     ];
     
     // Load expected libraries
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/illuminate/Contracts/Auth/Authenticatable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Auth/Authenticatable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';

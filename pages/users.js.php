@@ -2008,16 +2008,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         } else {
                             console.log('Generation des clés terminée')
                             // Finalizing
-                            $("#warningModal-progress").html('<b><?php echo langHdl('refreshing_data'); ?></b>');
+                            $('#warningModal').modal('hide');
                             
                             // refresh the list of users in LDAP not added in Teampass
-                            refreshListUsersLDAP()
+                            refreshListUsersLDAP();    
 
                             // Rrefresh list of users in Teampass
                             oTable.ajax.reload();
 
-                            // Done                           
-                            $('#warningModal').modal('hide');
                             toastr.remove(); 
                             toastr.success(
                                 '<?php echo langHdl('done'); ?>',
