@@ -137,7 +137,7 @@ if (
             // Set the permissions on the install directory and delete
             // is server Windows or Linux?
             if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-                chmodRecursive($SETTINGS['cpassman_dir'] . '/install', 0755, 0440);
+                recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0755, 0440);
             }
             delTree($SETTINGS['cpassman_dir'] . '/install');
         }

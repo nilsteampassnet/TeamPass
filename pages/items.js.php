@@ -2434,7 +2434,9 @@ console.log(store.get('teampassUser'))
      */
     $('#form-item-button-save').click(function() {
         var arrayQuery = [],
-            originalFolderId = $('#form-item-folder').val();
+            originalFolderId = $('#form-item-folder').val(),
+            itemsList = [],
+            userItemRight = '';
 
         // What action is this?
         if ($('#form-item-button-save').data('action') === '' ||
@@ -2496,8 +2498,12 @@ console.log(store.get('teampassUser'))
         if (debugJavascript === true) console.log(arrayQuery);
 
         // is user allowed to edit this item
-        var itemsList = JSON.parse(store.get('teampassApplication').itemsList);
-        userItemRight = itemsList[store.get('teampassItem').id].rights;
+        if (store.get('teampassApplication').itemsList !== undefined) {
+            itemsList = JSON.parse(store.get('teampassApplication').itemsList);
+        }
+        if (itemsList.length > 0) {
+            userItemRight = itemsList[store.get('teampassItem').id].rights;
+        }
 
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
@@ -2639,7 +2645,7 @@ console.log(store.get('teampassUser'))
                         parseInt($('#form-item-deleteAfterShown').val()) : '',
                     'url': $('#form-item-url').val(),
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
-                    'uploaded_file_id': store.get('teampassApplication').uploadedFileId,
+                    'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
                 };
                 if (debugJavascript === true) console.log('SAVING DATA');
                 if (debugJavascript === true) console.log(data);
@@ -3636,7 +3642,7 @@ console.log(store.get('teampassUser'))
         var counter = 0;
 
         // Manage store
-        if (store.get('teampassApplication').itemsList === '') {
+        if (store.get('teampassApplication').itemsList === '' || store.get('teampassApplication').itemsList === undefined) {
             var stored_datas = data;
         } else {
             var stored_datas = JSON.parse(store.get('teampassApplication').itemsList).concat(data);
