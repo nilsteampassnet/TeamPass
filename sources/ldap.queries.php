@@ -111,7 +111,7 @@ switch ($post_type) {
         // Build ldap configuration array
         $config = [
             // Mandatory Configuration Options
-            'hosts'            => [$SETTINGS['ldap_hosts']],
+            'hosts'            => [explode(",", $SETTINGS['ldap_hosts'])],
             'base_dn'          => $SETTINGS['ldap_bdn'],
             'username'         => $SETTINGS['ldap_username'],
             'password'         => $SETTINGS['ldap_password'],
@@ -130,7 +130,7 @@ switch ($post_type) {
                 LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
             ]
         ];
-
+        
         // Load expected libraries
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
