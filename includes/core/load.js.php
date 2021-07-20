@@ -752,11 +752,11 @@ if (
             
             // Prepare data
             var data = {
-                'receipt': $('#temp-user-email').val(),
+                'receipt': store.get('teampassUser').admin_user_email,
                 'subject': '[Teampass] <?php echo langHdl('temporary_encryption_code');?>',
                 'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
                 'pre_replace' : {
-                    '#enc_code#' : $('#temp-user-pwd').val(),
+                    '#enc_code#' : store.get('teampassUser').admin_user_password,
                 }
             }
 
