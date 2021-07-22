@@ -851,6 +851,7 @@ if (($session_validite_pw === null
                             </div>
                         </div>
                         <input type="hidden" id="admin_change_user_password_target_user" value="">
+                        <input type="hidden" id="admin_change_user_encryption_code_target_user" value="">
                     </div>
                     <div class="card-footer">
                         <button class="btn btn-primary" id="dialog-admin-change-user-password-do"><?php echo langHdl('launch'); ?></button>

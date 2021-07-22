@@ -2300,7 +2300,7 @@ if (null !== $post_type) {
             // Build ldap configuration array
             $config = [
                 // Mandatory Configuration Options
-                'hosts'            => [$SETTINGS['ldap_hosts']],
+                'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
                 'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],

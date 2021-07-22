@@ -675,52 +675,56 @@ if (
         // Disable buttons
         $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled');            
         
-        data = {
-            'user_id': $('#admin_change_user_password_target_user').val(),
-            'special': 'auth-pwd-change',
-            'password': '',
-            'self_change': false,
-        }
-        console.log(data);
-        
-        $.post(
-            'sources/main.queries.php', {
-                type: 'initialize_user_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                store.set(
-                    'teampassUser', {
-                        admin_user_password: data.user_pwd,
-                        admin_user_email: data.user_email,
-                    }
-                );
-
-                if (data.error !== false) {
-                    // Show error
-                    toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '<?php echo langHdl('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
+        // 2 opérations are possible
+        if ($('#admin_change_user_password_target_user').val() !== '') {
+            // Case where change is for user's account
+            data = {
+                'user_id': $('#admin_change_user_password_target_user').val(),
+                'special': 'auth-pwd-change',
+                'password': '',
+                'self_change': false,
+            }
+            console.log(data);
+            
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'initialize_user_password',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    store.set(
+                        'teampassUser', {
+                            admin_user_password: data.user_pwd,
+                            admin_user_email: data.user_email,
                         }
                     );
 
-                    // Enable buttons
-                    $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').removeAttr('disabled');
-                } else {
-                    // Inform user
-                    userShareKeysReencryption(
-                        $('#admin_change_user_password_target_user').val(),
-                        false,
-                        'dialog-admin-change-user-password'
-                    );
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        // Enable buttons
+                        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').removeAttr('disabled');
+                    } else {
+                        // Inform user
+                        userShareKeysReencryption(
+                            $('#admin_change_user_password_target_user').val(),
+                            false,
+                            'dialog-admin-change-user-password'
+                        );
+                    }
                 }
-            }
-        );
+            );
+        }
     });
     $(document).on('click', '#dialog-admin-change-user-password-close', function() {
         // HIde
