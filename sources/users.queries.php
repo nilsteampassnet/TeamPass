@@ -1680,7 +1680,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
               closedir($handle);
               }
-              if (!in_array($value[1], $allowed_languages) {
+              if (!in_array($value[1], $allowed_languages)) {
                   // error
                   exit();
               }
