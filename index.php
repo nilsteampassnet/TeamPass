@@ -698,7 +698,7 @@ if (($session_validite_pw === null
                         </ul>
                     </nav>
                     <!-- /.sidebar-menu -->
-                <div class="menu-footer" style="">
+                <div class="menu-footer">
                     <div class="" id="sidebar-footer">
                         <i class="fas fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
                                                                                                 @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']) . ' - ' .

@@ -776,7 +776,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
-                        } else {
+                        } else if (data.post_action !== "") {
                             // Case where we need to encrypt new keys for the user
                             // Process is: 
                             // 1/ generate encryption key (to be shared by email)
@@ -803,7 +803,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             }
 
                             // If expected to create new encryption key
-                            if (store.get('teampassApplication').formUserAction === 'store_user_changes' && data.post_action === 'encrypt_keys') {
+                            if (data.post_action === 'encrypt_keys') {
                                 var data = {
                                     'user_id': formUserId,
                                 };
@@ -850,6 +850,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
                             }
                             // ---
+                        } else {
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo langHdl('done'); ?>',
+                                '', {
+                                    timeOut: 2000
+                                }
+                            );
+
+                            // Reload list of users
+                            oTable.ajax.reload();
+
+                            // Prepare UI
+                            $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                            $('#row-form').addClass('hidden');
                         }
 
                         // Remove action from store

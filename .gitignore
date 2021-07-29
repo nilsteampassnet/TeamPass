@@ -15,3 +15,8 @@ test.html
 /includes/config/settings.php
 includes/libraries/csrfp/libs/csrfp.config.php
 /includes/config/tp.config.php.*
+gcommit.sh
+gdev.sh
+gpush.sh
+/.vscode/*
+/_tools/*

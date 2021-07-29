@@ -353,7 +353,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 if ($(this).attr('id') !== undefined) {
                     var elem = $(this).attr("id").split("-");
                     // Exclude previously imported items
-                    if ($("#importcsv-" + elem[1]).iCheck("disabled") !== true) {
+                    if ($("#importcsv-" + elem[1]).parent().closest('.icheckbox_flat-blue').hasClass('disabled') !== true) {
                         arrItems.push({
                             label: $(this).data('label'),
                             login: $(this).data('login'),
@@ -412,18 +412,20 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
                 } else {
+                    var counter_treated_items = 0;
                     // after inserted, disable the checkbox in order to prevent against new insert
                     $.each(data.items, function(i, value) {
-                        $("#importcsv-" + value).parent().closest('.form-group').remove();
+                        $("#importcsv-" + value).parent().closest('.icheckbox_flat-blue').addClass('disabled');
                         $('#csv-items-number').html(parseInt($('#csv-items-number').text()) - 1);
+                        counter_treated_items++;
                     });
 
                     // Show
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo langHdl('number_of_items_imported'); ?> : ' + counter_treated_items,
                         data.message, {
-                            timeOut: 2000,
+                            timeOut: 5000,
                             progressBar: true
                         }
                     );
