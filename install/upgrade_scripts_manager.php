@@ -45,8 +45,8 @@ $scripts_list = array(
     array('upgrade_run_defuse_for_categories.php', ""),
     array('upgrade_run_defuse_for_custfields.php', ""),
     array('upgrade_run_defuse_for_files.php', ""),
-    array('upgrade_run_defuse_for_files_step2.php', ""),*/
-    array('upgrade_run_final.php', "")
+    array('upgrade_run_defuse_for_files_step2.php', ""),
+    array('upgrade_run_final.php', "")*/
 );
 $param = '';
 

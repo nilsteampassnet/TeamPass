@@ -82,10 +82,58 @@ $superGlobal->put('fullurl', $post_fullurl, 'SESSION');
 $superGlobal->put('abspath', $abspath, 'SESSION');
 
 // Get POST with user info
-$post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+$post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));//print_r($post_user_info);
 $userLogin = $post_user_info[0];
 $userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
+
+
+// Populate table MISC
+$val = array(
+    array('admin', 'cpassman_version', $SETTINGS_EXT['version'], 1),
+);
+foreach ($val as $elem) {
+    //Check if exists before inserting
+    $queryRes = mysqli_query(
+        $db_link,
+        "SELECT COUNT(*) FROM ".$pre."misc
+        WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
+    );
+    if (mysqli_error($db_link)) {
+        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
+            addslashes($queryRes).'"}]';
+        exit();
+    } else {
+        $resTmp = mysqli_fetch_row($queryRes);
+        if ($resTmp[0] === 0) {
+            $queryRes = mysqli_query(
+                $db_link,
+                "INSERT INTO `".$pre."misc`
+                (`type`, `intitule`, `valeur`) VALUES
+                ('".$elem[0]."', '".$elem[1]."', '".
+                str_replace("'", "", $elem[2])."');"
+            );
+            if (mysqli_error($db_link)) {
+                echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($db_link)).'"}]';
+                exit();
+            }
+        } else {
+            // Force update for some settings
+            if ($elem[3] === 1) {
+                $queryRes = mysqli_query(
+                    $db_link,
+                    "UPDATE `".$pre."misc`
+                    SET `valeur` = '".$elem[2]."'
+                    WHERE `type` = '".$elem[0]."' AND `intitule` = '".$elem[1]."'"
+                );
+                if (mysqli_error($db_link)) {
+                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($db_link)).'"}]';
+                    exit();
+                }
+            }
+        }
+    }
+}
 
 // Add field public_key to USERS table
 $res = addColumnIfNotExist(

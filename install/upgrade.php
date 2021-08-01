@@ -116,7 +116,7 @@ if (isset($_SERVER['HTTPS'])) {
 // HEADER
 echo '
     <div id="top" class="center-screen">
-        <div id="logo" class="lcol"><img src="../includes/images/logoTeampassHome.png" /></div>
+        <div id="logo" class="lcol"><img src="../includes/images/teampass-logo2-home.png" /></div>
         <div class="lcol">
             <span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
             <!--<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>-->
@@ -234,9 +234,6 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <span>PHP extension "curl" is loaded</span><br />
                             <span>PHP version is greater or equal to 7.2.0</span><br />
                             </div>
-
-                            <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
-                            <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
                         
                         </div>
                     </div>
@@ -351,12 +348,11 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
         </div>';
 
-    echo '
-                     ';
+
 // STEP3
 } elseif ((isset($post_step) && $post_step == 3 || isset($_GET['step']) && $_GET['step'] == 3)
     && isset($post_actual_cpm_version)
-    && $_SESSION['user_granted'] === '1'
+    && intVal($_SESSION['user_granted']) === 1
 ) {
     if (version_compare($post_actual_cpm_version, '2.1.26', '<')) {
         $conversion_utf8 = true;
@@ -426,30 +422,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         <div>
             <ul>
             <li>Regenerate settings.php file to remove any dependency to saltkey file if needed <span id="step5_settingFile"></span></li>
-            <li>Anonymize old sk file if needed <span id="step5_skFile"></span></li>
             <li>Anonymize saltkey file if needed <span id="step5_saltkeyFile"></span></li>
             <li>Generate config file if needed <span id="step5_configFile"></span></li>
             <li>Generate CSRFP config file if needed <span id="step5_csrfpFile"></span></li>
             </ul>
         </div>';
 
-    if ((!isset($_SESSION['sk_file']) || !file_exists($_SESSION['sk_file'])) && defined('SECUREPATH') === true) {
-        echo '
-        <div class="card card-primary">
-            <div class="card-header">
-                <h5>Since version 2.1.13, saltkey is stored in an independent file</h5>
-            </div>
-            <div class="card-body">
-                <small class="form-text text-muted">
-                The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server.
-                </small>
-                <div class="mt-4">
-                    <input type="text" class="form-control" id="sk_path" value="', defined('SECUREPATH') === true ? SECUREPATH : '', '" placeholder="Path to folder">
-                </div>
-            </div>
-        </div>';
-    } elseif (defined('SECUREPATH') === false && version_compare($post_actual_cpm_version, '2.1.27', '<')) {
-        echo '
+    echo '
         <div class="card card-primary">
             <div class="card-header">
                 <h5>Absolute path to SaltKey</h5>
@@ -463,7 +442,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                 </div>
             </div>
         </div>';
-    }
+
     echo '
         <div class="alert alert-info mt-4 hidden" id="res_step5"></div>';
 } elseif ((isset($post_step) && $post_step == 6)
@@ -501,21 +480,21 @@ echo '
 //buttons
 if (!isset($post_step)) {
     echo '
-            <input type="button" id="but_launch" onclick="Check(\'step0\')" class="btn btn-primary" value="START">
-            <input type="button" id="but_next" target_id="1" style="" class="btn btn-primary" value="NEXT" disabled="disabled">';
-} elseif ($post_step == 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === '1') {
+            <input type="button" id="but_launch" data-step="step0" class="btn btn-primary" value="START">
+            <input type="button" id="but_next" data-target="1" style="" class="btn btn-primary" value="NEXT" disabled="disabled">';
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === '1') {
     echo '
             <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT">';
-} elseif ($post_step == 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === '1') {
     echo '
-            <input type="button" id="but_launch" onclick="Check(\'step'.$post_step.'\')" class="btn btn-primary" value="START">
-            <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
-} elseif ($post_step == 6 && $_SESSION['user_granted'] === '1') {
+            <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START">
+            <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
+} elseif (intVal($post_step) === 6 && $_SESSION['user_granted'] === '1') {
     // Nothong to do
 } else {
     echo '
-            <input type="button" id="but_launch" onclick="Check(\'step'.$post_step.'\')" class="btn btn-primary" value="START" />
-            <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
+            <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START" />
+            <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
 }
 
 echo '
@@ -539,8 +518,6 @@ echo '
 </html>
 
 
-<!--<script type="text/javascript" src="../includes/js/functions.js"></script>-->
-<script type="text/javascript" src="upgrade.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>
 <!-- jQuery -->
 <script src="../plugins/jquery/jquery.min.js"></script>
@@ -561,9 +538,11 @@ echo '
 <script type="text/javascript">
 var timeTaken = '';
 
+
 $(function(){
+    // click on button NEXT
     $("#but_next").click(function(event) {
-        $("#step").val($(this).attr("target_id"));
+        $("#step").val($(this).data("target"));
         document.install.submit();
     });
 
@@ -583,77 +562,119 @@ $(function(){
             $("#previous_sk_div").show();
         }
     });
+
+    // click on button START
+    $('#but_launch').click(function(event) {
+        var currentStep = $(this).data('step'),
+            postData = '';
+        // STEP 0
+        if (currentStep === 'step0') {
+            if ($("#user_login").val() === "" || $("#user_pwd").val() === "") {
+                alertify
+                    .error('<i class="fas fa-ban mr-2">[ERROR] You must provide credentials</i>', 10)
+                    .dismissOthers();
+                return false;
+            }
+
+            postData = {
+                type : currentStep,
+                login : $("#user_login").val(),
+                pwd : window.btoa(aesEncrypt($("#user_pwd").val()))
+            }
+            
+        } else if (currentStep === 'step1') {
+            postData = {
+                type : currentStep,
+                abspath : escape($("#root_path").val()),
+                fullurl : escape($("#root_url").val())
+            }
+        } else if (currentStep === 'step2') {
+            postData = {
+                type : currentStep,
+                abspath : escape($("#root_path").val()),
+                fullurl : escape($("#root_url").val())
+            }
+        } else if (currentStep === "step4") {
+            console.log('Step4 qui commence');
+            upgrade_file = "";
+            timeTaken = getTime();
+            manageUpgradeScripts("0");
+            return false;
+
+        } else if (currentStep === "step5") {
+            postData = {
+                type : currentStep,
+                url_path : escape($("#url_path").val())
+            }
+        }
+
+        alertify
+            .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+        $("#res_"+currentStep).html("").addClass("hidden");
+
+        // EXECUTE AJAX REQUEST
+        return $.ajax({
+            url: "upgrade_ajax.php",
+            type : "POST",
+            dataType : "json",
+            async: false,
+            data : postData,
+            complete : function(result, status){
+                //console.log(result.responseText)
+                data = $.parseJSON(result.responseText)[0];
+                console.log(data)
+                // manage error
+                if (data.error !== "") {
+                    $("#user_granted").val("0");
+                    $('#but_next').attr('disabled');
+                    alertify
+                        .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error+'</i>', 5)
+                        .dismissOthers();
+                    return false;
+                } else {
+                    $("#step").val(data.index);
+                    $("#user_granted").val("1");
+                    $('#but_next').removeAttr('disabled');
+
+                    // Special
+                    if (currentStep === 'step0') {
+                        $("#infotmp").val(data.info);
+                    } else if (currentStep === 'step1') {
+                        $('#res_step1').html(data.info).removeClass('hidden');
+                    } else if (currentStep === 'step2') {
+                        
+                        $('#res_step2').html(data.info).removeClass('hidden');
+                        $('#cpm_isUTF8').val(data.isUtf8);
+                        if (parseInt(data.isUtf8) === 1) {
+                            $('#step').val(4);
+                            $('#but_next').data('target', "4");
+                        }
+                    } else if (currentStep === 'step5') {
+                        $("#res_step5").html("Operations are successfully completed.").removeClass("hidden");
+                        var res = $.parseJSON(atob(data.info));
+                        
+                        $.each(res, function(index, value) {
+                            $('#'+value.id).html(value.html);
+                        });
+                    }
+
+                    // Display
+                    alertify
+                        .success('<i class="fas fa-thumbs-up mr-2">  Done</i>', 5)
+                        .dismissOthers();
+                }
+            }
+        });
+    });
+
 });
 
-function aes_encrypt(text)
+function aesEncrypt(text)
 {
     return Aes.Ctr.encrypt(text, "cpm", 128);
 }
 
-function Check(step)
-{
-    if (step != "") {
-        var upgrade_file = "upgrade_ajax.php";
-        if (step === "step0") {
-            if (document.getElementById("user_login").value === "" || document.getElementById("user_pwd").value === "") {
-                return false;
-            }
-            var data = "type="+step+
-            "&login="+escape(document.getElementById("user_login").value)+
-            "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
-            alertify
-                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
-                $("#res_step0").html("").addClass("hidden");
-        } else if (step === "step1") {
-            var data = "type="+step+
-            "&abspath="+escape(document.getElementById("root_path").value)+
-                "&fullurl="+escape(document.getElementById("root_url").value);
-            alertify
-                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
-        } else if (step === "step2") {
-            var maintenance = 1;
-            if ($("#no_maintenance_mode").is(':checked')) {
-                maintenance = 0;
-            }
-            var data = "type="+step+
-            "&no_maintenance_mode="+maintenance+
-            "&session_salt="+escape(document.getElementById("session_salt").value)+
-            "&previous_sk="+escape(document.getElementById("previous_sk").value)+
-            "&no_previous_sk="+document.getElementById("no_key_selection").value;
-            alertify
-                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
-        } else if (step === "step3") {
-            var data = "type="+step+
-            "&prefix_before_convert="+document.getElementById("prefix_before_convert").checked;
-            alertify
-                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
-        } else if (step === "step4") {
-            upgrade_file = "";
-            var data = "type="+step;
-            timeTaken = getTime();
-            manageUpgradeScripts("0");
-
-        } else if (step === "step5") {
-            //document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
-            if (document.getElementById("sk_path") == null)
-                var data = "type="+step+"&url_path="+document.getElementById("url_path").value;
-            else
-                var data = "type="+step+"&url_path="+document.getElementById("url_path").value+"&sk_path="+escape(document.getElementById("sk_path").value);
-
-            alertify
-                .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-                .dismissOthers();
-        }
-        if (upgrade_file !== "") {
-            console.log(data);
-            httpRequest(upgrade_file, data);
-        }
-    }
-}
 
 function manageUpgradeScripts(file_number)
 {
@@ -673,6 +694,7 @@ function manageUpgradeScripts(file_number)
             file_number : parseInt(file_number)
         },
         function(data) {
+            console.log(data[0])
             // work not finished
             if (data[0].finish !== "1") {
                 // loop
@@ -950,7 +972,7 @@ function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop
     $("#step4_progress").html("<div>" + getTime() +" - <i>"+script_file+"</i> - Loop #"+loop_number+" <span id='span_"+rand_number+"'>is now running ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
 
     if (type_parameter === 'user_id') {
-        info = document.getElementById("infotmp").value;
+        info = $("#infotmp").val();
     }
 
     request = $.post(
@@ -964,6 +986,8 @@ function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop
             info        : info,
         },
         function(data) {
+            console.info(type_parameter)
+            console.log(data)
             // work not finished
             if (data[0].finish !== "1") {
                 $("#span_"+rand_number).html("<i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>")
@@ -1048,11 +1072,11 @@ function launch_database_dump() {
                 $("#dump_result").html(data[0].error);
 
                 alertify
-                    .Error('Done', 1)
+                    .Error('Error', 1)
                     .dismissOthers();
             } else {
                 // DONE
-                $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in folder <b>' + data[0].filename + '</b></div>');
+                $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in file <b>' + data[0].filename + '</b></div>');
                 $('#but_next').attr("disabled", false);
                 alertify
                     .success('Success', 1)

@@ -25,34 +25,10 @@ $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
-
-// manage settings.php file
-if (!file_exists('../includes/config/settings.php')) {
-    if (file_exists('../includes/settings.php')) {
-        // since 2.1.27, this file has changed location
-        if (copy('../includes/settings.php', '../includes/config/settings.php')) {
-            unlink('../includes/settings.php');
-        } else {
-            echo 'document.getElementById("res_step1_error").innerHTML = ' .
-                '"Could not copy /includes/settings.php to /includes/config/settings.php! ' .
-                'Please do it manually and press button Launch.";';
-            echo 'document.getElementById("loader").style.display = "none";';
-            exit;
-        }
-    } else {
-        echo 'document.getElementById("res_step1_error").innerHTML = ' .
-            '"File settings.php does not exist in folder includes/! ' .
-            'If it is an upgrade, it should be there, otherwise select install!";';
-        echo 'document.getElementById("loader").style.display = "none";';
-        exit;
-    }
-}
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once 'tp.functions.php';
 
-//define pbkdf2 iteration count
-define('ITCOUNT', '2072');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -84,8 +60,10 @@ if (defined("DB_PASSWD") === false) {
 				mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
 			)
 		)) {
-			echo 'document.getElementById("but_next").disabled = "disabled";';
-			echo 'alertify.warning("Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", 0).dismissOthers();';
+            echo '[{
+                "error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.",
+                "index" : ""
+            }]';
 			exit;
 		} else {
 			unlink($settingsFile);
@@ -190,7 +168,7 @@ if (defined("DB_PASSWD") === false) {
 		}
 
 		// Ensure DB is read as UTF8
-		if (DB_ENCODING === "") {
+		if (defined('DB_ENCODING') === false) {
 			define('DB_ENCODING', "utf8");
 		}
 
@@ -241,11 +219,20 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
 			fclose($file_handled);
 			if ($fileCreation === false) {
-				echo 'document.getElementById("but_next").disabled = "disabled";';
-				echo 'alertify.warning("Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.", 0).dismissOthers();';
+                echo '[{
+                    "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
+                    "index" : ""
+                }]';
 				exit;
 			}
-			include $settingsFile;
+			
+            define("DB_HOST", "' . $server . '");
+            define("DB_USER", "' . $user . '");
+            define("DB_PASSWD", "' . $pass . '");
+            define("DB_NAME", "' . $database . '");
+            define("DB_PREFIX", "' . $pre . '");
+            define("DB_PORT", "' . $port . '");
+            define("DB_ENCODING", "' . $encoding . '");
 		}
 	}
 }
@@ -255,7 +242,7 @@ $pass = defuse_return_decrypted(DB_PASSWD);
 $server = DB_HOST;
 $pre = DB_PREFIX;
 $database = DB_NAME;
-$port = DB_PORT;
+$port = intval(DB_PORT);
 $user = DB_USER;
 
 if (mysqli_connect(
@@ -275,9 +262,10 @@ if (mysqli_connect(
     $res = 'Connection is successful';
     $db_link->set_charset(DB_ENCODING);
 } else {
-    $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
-    echo 'document.getElementById("but_next").disabled = "disabled";';
-	echo 'alertify.error("' . $res . '", 0).dismissOthers();';
+    echo '[{
+        "error" : "Impossible to get connected to server. Error is: " . addslashes(mysqli_connect_error()),
+        "index" : ""
+    }]';
     exit;
 }
 
@@ -312,13 +300,17 @@ if (isset($post_type)) {
             // check if path in settings.php are consistent
             if (defined(SECUREPATH) === true) {
                 if (!is_dir(SECUREPATH)) {
-                    echo '$("#but_next").prop("disabled", true);';
-                    echo '$("#res_step0").html("Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.").removeClass("hidden");';
+                    echo '[{'.
+                        '"error" : "Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.",'.
+                        '"index" : ""'.
+                    '}]';
                     break;
                 }
                 if (!file_exists(SECUREPATH . '/sk.php')) {
-                    echo '$("#but_next").prop("disabled", true);';
-                    echo '$("#res_step0").html("Error in settings.php file!<br>Check that file `sk.php` exists as defined in `includes/config/settings.php`.<br>Reload this page and retry.").removeClass("hidden");';
+                    echo '[{'.
+                        '"error" : "Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.",'.
+                        '"index" : ""'.
+                    '}]';
                     break;
                 }
             }
@@ -361,30 +353,30 @@ if (isset($post_type)) {
             );
 
             if (empty($user_info['pw']) || $user_info['pw'] === null) {
-                echo '$("#but_next").attr("disabled", "disabled");';
-                echo '$("#res_step0").html("This user is not allowed!").removeClass("hidden");';
-                echo '$("#user_granted").val("0");';
+                echo '[{'.
+                    '"error" : "User is not allowed",'.
+                    '"index" : ""'.
+                '}]';
                 $superGlobal->put('user_granted', false, 'SESSION');
             } else {
                 if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), $user_info['pw']) === true && $user_info['admin'] === '1') {
-                    echo 'document.getElementById("but_next").disabled = "";';
-                    echo '$("#res_step0").html("res_step0").html("User is granted.").removeClass("hidden");';
-                    echo 'document.getElementById("step").value = "1";';
-                    echo 'document.getElementById("user_granted").value = "1";';
                     $superGlobal->put('user_granted', true, 'SESSION');
                     $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
                     $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
                     $superGlobal->put('user_id', $user_info['id'], 'SESSION');
-                    $userArray = array(mysqli_escape_string($db_link, stripslashes($post_login)), $post_pwd, $user_info['id']);
-                    echo 'document.getElementById("infotmp").value = "' . base64_encode(json_encode($userArray)) . '";';
-					echo 'alertify.success("Done", 1).dismissOthers();';
+                    echo '[{'.
+                        '"error" : "",'.
+                        '"index" : 1,'.
+                        '"info" : "' . base64_encode(json_encode(
+                            array(mysqli_escape_string($db_link, stripslashes($post_login)), $post_pwd, $user_info['id'])
+                        )) . '"'.
+                    '}]';
                 } else {
-                    echo '$("#but_next").attr("disabled", "disabled");';
-                    echo '$("#res_step0").html("This user is not allowed!").removeClass("hidden");';
-                    echo 'document.getElementById("user_granted").value = "0";';
-                    echo 'document.getElementById("infotmp").value = "";';
                     $superGlobal->put('user_granted', false, 'SESSION');
-					echo 'alertify.success("Done", 1).dismissOthers();';
+                    echo '[{'.
+                        '"error" : "User is not allowed",'.
+                        '"index" : ""'.
+                    '}]';
                 }
             }
 
@@ -394,9 +386,10 @@ if (isset($post_type)) {
             $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
 
             if (intval($session_user_granted) !== 1) {
-				echo '$("#but_next").attr("disabled", "disabled");';
-				echo 'alertify.error("User not connected anymore!", 0).dismissOthers();';
-                echo '$("#user_granted").val("0");';
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
                 break;
             }
 
@@ -537,13 +530,16 @@ if (isset($post_type)) {
             }
 
             if ($okWritable === true && $okExtensions === true && $okEncryptKey === true) {
-                echo 'document.getElementById("but_next").disabled = "";';
+                $error = "";
             } else {
-                echo 'document.getElementById("but_next").disabled = "disabled";';
+                $error = "Something went wrong. Please check messages.";
             }
 
-            echo 'document.getElementById("res_step1").innerHTML = "' . $txt . '";';
-            echo 'alertify.success("Done", 1).dismissOthers();';
+            echo '[{'.
+                '"error" : "' . $error . '",'.
+                '"info" : "' . $txt . '",'.
+                '"index" : "'.($error === "" ? "" : "2").'"'.
+            '}]';
             break;
 
             //==========================
@@ -552,100 +548,18 @@ if (isset($post_type)) {
             $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
 
             if ($session_user_granted !== '1') {
-                echo 'document.getElementById("res_step2").innerHTML = "User not connected anymore!";';
-                echo 'alertify.success("Done", 1).dismissOthers();';
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
                 break;
             }
             //decrypt the password
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
 
-            // check in db if previous saltk exists
-            if ($post_no_previous_sk === 'false' || $post_no_previous_sk === 'previous_sk_sel') {
-                $db_sk = mysqli_fetch_row(
-                    mysqli_query(
-                        $db_link,
-                        'SELECT count(*)
-                        FROM ' . $pre . "misc
-                        WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
-                    )
-                );
-                if (!empty($post_previous_sk) || !empty($post_session_salt)) {
-                    // get sk
-                    if (!empty($post_session_salt)) {
-                        $sk_val = filter_var($post_session_salt, FILTER_SANITIZE_STRING);
-                    } else {
-                        $sk_val = filter_var($post_previous_sk, FILTER_SANITIZE_STRING);
-                    }
-
-                    // Update
-                    if (!empty($db_sk[0])) {
-                        mysqli_query(
-                            $db_link,
-                            "UPDATE `" . $pre . "misc`
-                            SET `valeur` = '" . $sk_val . "'
-                            WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
-                        );
-                    } else {
-                        mysqli_query(
-                            $db_link,
-                            "INSERT INTO `" . $pre . "misc`
-                            (`valeur`, `type`, `intitule`)
-                            VALUES ('" . $sk_val . "', 'admin', 'saltkey_ante_2127')"
-                        );
-                    }
-                } elseif (empty($db_sk[0])) {
-                    $res = 'Please provide Teampass instance history.';
-                    echo 'document.getElementById("but_next").disabled = "disabled";';
-                    echo 'document.getElementById("res_step2").innerHTML = "' . $res . '";';
-                    echo 'alertify.success("Done", 1).dismissOthers();';
-                    echo '$("#no_encrypt_key").removeClass("hidden");';
-                }
-            } else {
-                // user said that database has not being used for an older version
-                // no old sk is available
-                $tmp = mysqli_num_rows(mysqli_query(
-                    $db_link,
-                    "SELECT INTO `" . $pre . "misc`
-                    WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
-                ));
-                if ($tmp == 0) {
-                    mysqli_query(
-                        $db_link,
-                        "INSERT INTO `" . $pre . "misc`
-                        (`valeur`, `type`, `intitule`)
-                        VALUES ('none', 'admin', 'saltkey_ante_2127')"
-                    );
-                } else {
-                    mysqli_query(
-                        $db_link,
-                        "INSERT INTO `" . $pre . "misc`
-                        (`valeur`, `type`, `intitule`)
-                        VALUES ('none', 'admin', 'saltkey_ante_2127')"
-                    );
-                }
-                $superGlobal->put('tp_defuse_installed', true, 'SESSION');
-            }
-
-            //What CPM version
-            if (mysqli_query(
-                $db_link,
-                'SELECT valeur FROM ' . $pre . "misc
-                WHERE type='admin' AND intitule = 'cpassman_version'"
-            )) {
-                $tmpResult = mysqli_query(
-                    $db_link,
-                    'SELECT valeur FROM ' . $pre . "misc
-                    WHERE type='admin' AND intitule = 'cpassman_version'"
-                );
-                $cpmVersion = mysqli_fetch_row($tmpResult);
-                echo 'document.getElementById("actual_cpm_version").value = "' .
-                    $cpmVersion[0] . '";';
-            } else {
-                echo 'document.getElementById("actual_cpm_version").value = "0";';
-            }
-
             //Get some infos from DB
+            $cpmIsUTF8[0] = 0;
             if (@mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
@@ -660,12 +574,8 @@ if (isset($post_type)) {
                         WHERE type='admin' AND intitule = 'utf8_enabled'"
                     )
                 );
-                echo 'document.getElementById("cpm_isUTF8").value = "' . $cpmIsUTF8[0] . '";';
-                $superGlobal->put('utf8_enabled', $cpmIsUTF8[0], 'SESSION');
-            } else {
-                echo 'document.getElementById("cpm_isUTF8").value = "0";';
-                $superGlobal->put('utf8_enabled', 0, 'SESSION');
             }
+            $superGlobal->put('utf8_enabled', $cpmIsUTF8[0], 'SESSION');
 
             // put TP in maintenance mode or not
             @mysqli_query(
@@ -675,9 +585,12 @@ if (isset($post_type)) {
                 WHERE type = 'admin' AND intitule = '" . $post_no_maintenance_mode . "'"
             );
 
-            echo '$("#res_step2").html("' . $res . '");
-            $("#but_next").removeAttr("disabled");
-            alertify.success("Done", 1).dismissOthers();';
+            echo '[{'.
+                '"error" : "",'.
+                '"index" : "",'.
+                '"info" : "'.$res.'",'.
+                '"isUtf8" : "'.$cpmIsUTF8[0].'"'.
+            '}]';
             break;
 
             //==========================
@@ -685,8 +598,10 @@ if (isset($post_type)) {
             $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
 
             if ($session_user_granted !== '1') {
-                echo 'document.getElementById("res_step3").innerHTML = "User not connected anymore!";';
-                echo 'alertify.success("Done", 1).dismissOthers();';
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
                 break;
             }
 
@@ -725,9 +640,10 @@ if (isset($post_type)) {
                 }
             }
 
-            echo 'alertify.success("Done", 1).dismissOthers();';
-            echo 'document.getElementById("but_next").disabled = "";';
-            echo 'document.getElementById("but_launch").disabled = "disabled";';
+            echo '[{'.
+                '"error" : "",'.
+                '"index" : ""'.
+            '}]';
 
             mysqli_close($db_link);
             break;
@@ -738,12 +654,15 @@ if (isset($post_type)) {
         case 'step5':
             $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
 
-            if ($session_user_granted !== '1') {
-                echo '$("#res_step5").html("User not connected anymore!");
-                alertify.success("Done", 1).dismissOthers();';
+            if (intVal($session_user_granted) !== 1) {
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
                 break;
             }
 
+            $returnStatus = array();
             // If settings.php file doesn't contain DB_HOST then regenerate it
             $settingsFile = '../includes/config/settings.php';
             include_once $settingsFile;
@@ -756,7 +675,10 @@ if (isset($post_type)) {
                         mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
                     )
                 )) {
-                    echo '$("#res_step5").html("<span class=\"text-info font-italic\">Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.</span>");';
+                    echo '[{'.
+                        '"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch",'.
+                        '"index" : ""'.
+                    '}]';
                     break;
                 } else {
                     unlink($settingsFile);
@@ -895,23 +817,22 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
                 fclose($file_handled);
                 if ($fileCreation === false) {
-                    echo '$("#step5_settingFile").html("<i class=\"far fa-times-circle fa-lg text-danger ml-2 mr-2\"></i><span class=\"text-info font-italic\">Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.</span>");';
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_settingFile', 
+                            'html' => '<i class="far fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.</span>',
+                        )
+                    );
                 } else {
-                    echo '$("#step5_settingFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i>");';
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_settingFile', 
+                            'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2"></i>',
+                        )
+                    );
                 }
-            }
-
-            // Manage SK.php file --> remove it
-            if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-                $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
-                if (file_exists($filename)) {
-                    unlink($filename);
-                    echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i>");';
-                } else {
-                    echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
-                }
-            } else {
-                echo '$("#step5_skFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
             }
 
             // Manage saltkey.txt file
@@ -927,9 +848,21 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
                 }
                 */
-                echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_saltkeyFile', 
+                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
             } else {
-                echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_saltkeyFile', 
+                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
             }
 
             // Do tp.config.php file
@@ -938,9 +871,22 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 $settingsFile = '../includes/config/settings.php';
                 include_once $settingsFile;
                 handleConfigFile('rebuild', $SETTINGS);
-                echo '$("#step5_configFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2\"></i>");';
+                
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_configFile', 
+                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i>',
+                    )
+                );
             } else {
-                echo '$("#step5_configFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_configFile', 
+                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
             }
 
             // Do csrfp.config.php file
@@ -958,7 +904,13 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                             )
                         ) === false
                     ) {
-                        echo '$("#step5_csrfpFile").html("<i class=\"fas fa-times-circle fa-lg text-danger ml-2 mr-2\"></i><span class=\"text-info font-italic\">The file could not be renamed. Please rename it by yourself and restart operation.</span>");';
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_csrfpFile', 
+                                'html' => '<i class="fas fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">The file could not be renamed. Please rename it by yourself and restart operation.</span>',
+                            )
+                        );
                         break;
                     }
                 }
@@ -978,13 +930,27 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     'INSERT INTO `' . $pre . 'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
                 );
 
-                echo '$("#step5_csrfpFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");
-                    $("#but_next").removeAttr("disabled");
-                    $("#res_step5").html("Operations are successfully completed.").removeClass("hidden");
-                    $("#but_launch").prop("disabled", true);
-                    alertify.success("Done", 1).dismissOthers();';
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_csrfpFile', 
+                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
+
+                echo '[{'.
+                    '"error" : "",'.
+                    '"info" : "'.base64_encode(json_encode($returnStatus)).'",'.
+                    '"index" : ""'.
+                '}]';
             } else {
-                echo '$("#step5_csrfpFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_csrfpFile', 
+                        'html' => '<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>',
+                    )
+                );
             }
 
             break;
@@ -1015,7 +981,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             foreach ($mtables as $table) {
                 $contents = '-- Table `' . $table . "` --\n";
                 if (fwrite($fp, $contents) === false) {
-                    echo '[{ "error" : "Backup fails - please do it manually."}]';
+                    echo '[{'.
+                        '"error" : "Backup fails - please do it manually",'.
+                        '"index" : ""'.
+                    '}]';
                     fclose($fp);
                     return false;
                 }
@@ -1024,7 +993,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 while ($row = $results->fetch_array()) {
                     $contents = $row[1] . ";\n\n";
                     if (fwrite($fp, $contents) === false) {
-                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                        echo '[{'.
+                            '"error" : "Backup fails - please do it manually",'.
+                            '"index" : ""'.
+                        '}]';
                         fclose($fp);
                         return false;
                     }
@@ -1051,14 +1023,20 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         if (($r % 400) == 0) {
                             //$contents .= $insert_head;
                             if (fwrite($fp, $insert_head) === false) {
-                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
                                 fclose($fp);
                                 return false;
                             }
                         }
                         //$contents .= '(';
                         if (fwrite($fp, '(') === false) {
-                            echo '[{ "error" : "Backup fails - please do it manually."}]';
+                            echo '[{'.
+                                '"error" : "Backup fails - please do it manually",'.
+                                '"index" : ""'.
+                            '}]';
                             fclose($fp);
                             return false;
                         }
@@ -1070,7 +1048,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 case 3:
                                     //$contents .= $row_content;
                                     if (fwrite($fp, $row_content) === false) {
-                                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                        echo '[{'.
+                                            '"error" : "Backup fails - please do it manually",'.
+                                            '"index" : ""'.
+                                        '}]';
                                         fclose($fp);
                                         return false;
                                     }
@@ -1078,7 +1059,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 default:
                                     //$contents .= "'".$row_content."'";
                                     if (fwrite($fp, "'" . $row_content . "'") === false) {
-                                        echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                        echo '[{'.
+                                            '"error" : "Backup fails - please do it manually",'.
+                                            '"index" : ""'.
+                                        '}]';
                                         fclose($fp);
                                         return false;
                                     }
@@ -1086,7 +1070,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                             if ($i < $fields_count - 1) {
                                 //$contents .= ', ';
                                 if (fwrite($fp, ', ') === false) {
-                                    echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                    echo '[{'.
+                                        '"error" : "Backup fails - please do it manually",'.
+                                        '"index" : ""'.
+                                    '}]';
                                     fclose($fp);
                                     return false;
                                 }
@@ -1095,14 +1082,20 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         if (($r + 1) == $row_count || ($r % 400) == 399) {
                             //$contents .= ");\n\n";
                             if (fwrite($fp, ");\n\n") === false) {
-                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
                                 fclose($fp);
                                 return false;
                             }
                         } else {
                             //$contents .= "),\n";
                             if (fwrite($fp, "),\n") === false) {
-                                echo '[{ "error" : "Backup fails - please do it manually."}]';
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
                                 fclose($fp);
                                 return false;
                             }
@@ -1114,7 +1107,11 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
             fclose($fp);
 			
-			echo '[{ "error" : "" , "filename" : "'.$backup_file_name.'"}]';
+            echo '[{'.
+                '"error" : "",'.
+                '"filename" : "'.$backup_file_name.'",'.
+                '"index" : ""'.
+            '}]';
 
             break;
     }
