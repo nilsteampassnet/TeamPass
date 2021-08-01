@@ -115,7 +115,10 @@ if (
                                     $('#dialog-ldap-user-change-password').removeClass('hidden');
                                     
                                     // ----
-                                } else if (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap') {
+                                } else if (
+                                    (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap')
+                                    || data.queryResults.special ==='otc_is_required_on_next_login'
+                                ) {
                                     // USer's password has been reseted, he shall change it
                                     console.log('NEW LDAP user password - we need to encrypt items')
                                     // HIde
