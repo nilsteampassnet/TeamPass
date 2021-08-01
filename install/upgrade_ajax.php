@@ -937,12 +937,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
                     )
                 );
-
-                echo '[{'.
-                    '"error" : "",'.
-                    '"info" : "'.base64_encode(json_encode($returnStatus)).'",'.
-                    '"index" : ""'.
-                '}]';
             } else {
                 array_push(
                     $returnStatus, 
@@ -952,6 +946,23 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     )
                 );
             }
+
+            // update with correct version
+            @mysqli_query(
+                $db_link,
+                "UPDATE `" . $pre . "misc`
+                SET `valeur` = '".TP_VERSION_FULL."'
+                WHERE type = 'admin' AND intitule = 'cpassman_version'"
+            );
+
+            // save change in config file
+            handleConfigFile('update', $SETTINGS, 'cpassman_version', TP_VERSION_FULL);
+
+            echo '[{'.
+                '"error" : "",'.
+                '"info" : "'.base64_encode(json_encode($returnStatus)).'",'.
+                '"index" : ""'.
+            '}]';
 
             break;
 
