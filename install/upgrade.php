@@ -10,7 +10,7 @@
  * @file      upgrade.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2019 Teampass.net
+ * @copyright 2009-2021 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -839,9 +839,31 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 loop_start = userSteps[step].start;
                 step = 'step2';
             } else {
+                // Prepare list of users to be displayed
+                var htmlUsersList = '<ul>';
+                $.each(usersList, function(index, user) {
+                    htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otc+'</li>'
+                });
+                htmlUsersList += '</ul>';
+
                 // Done
                 $("#user_"+rand_number).parent()
-                .prepend('<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
+                .prepend(
+                    '<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
+                    '<br>'+
+                    '<button type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</button>'+
+                    '<div class="hidden" id="htmlListOfUsers">'+htmlUsersList+'</div>'
+                    '</div>'
+                );
+
+                // Act on button click
+                $('#buttonListOfUsers').on('click', function(event) {
+                    if ($('#htmlListOfUsers').hasClass('hidden') === true) {
+                        $('#htmlListOfUsers').removeClass('hidden');
+                    } else {
+                        $('#htmlListOfUsers').addClass('hidden');
+                    }
+                });
 
                 console.log(usersList);
                 // Now send passwords
@@ -870,6 +892,9 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 'otp' : usersList[number].otp,
                 'public_key' : usersList[number].public_key,
                 'private_key' : usersList[number].private_key,
+                'login' : usersList[number].login,
+                'name' : usersList[number].name,
+                'lastname' : usersList[number].lastname,
             };
         }
     }

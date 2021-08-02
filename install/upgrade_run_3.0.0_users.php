@@ -11,7 +11,7 @@
  * @file      upgrade_run_3.0.0_users.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2019 Teampass.net
+ * @copyright 2009-2021 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -117,7 +117,7 @@ if (null !== $post_step) {
                 $userQuery = mysqli_fetch_array(
                     mysqli_query(
                         $db_link,
-                        'SELECT pw, public_key, private_key
+                        'SELECT pw, public_key, private_key, name, lastname, login
                         FROM ' . $pre . 'users
                         WHERE id = ' . (int) $post_number
                     )
@@ -199,6 +199,9 @@ if (null !== $post_step) {
                         'otp' => $random_string,
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
+                        'login' => $userQuery['login'],
+                        'name' => $userQuery['name'],
+                        'lastname' => $userQuery['lastname'],
                     );
                 }
 

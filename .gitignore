@@ -20,3 +20,5 @@ gdev.sh
 gpush.sh
 /.vscode/*
 /_tools/*
+/files/*
+/upload/*
