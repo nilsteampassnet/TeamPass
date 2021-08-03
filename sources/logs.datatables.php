@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      logs.datatables.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -40,12 +48,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
-    exit();
+    exit;
 }
 
 /*
  * Define Timezone
-**/
+*/
 if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set($SETTINGS['timezone']);
 } else {
@@ -57,7 +65,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
-
 //Connect to DB
 include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -69,13 +76,11 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 // prepare the queries
 if (isset($_GET['action']) === true) {
     //init SQL variables
     $sWhere = $sOrder = $sLimit = '';
-    $aSortTypes = array('asc', 'desc');
-
+    $aSortTypes = ['asc', 'desc'];
     /* BUILD QUERY */
     //Paging
     if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
@@ -85,8 +90,7 @@ if (isset($_GET['action']) === true) {
 
 if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     //Columns name
-    $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname');
-
+    $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -115,43 +119,35 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as date, l.label as label, l.qui as who, 
+    'SELECT l.date as date, l.label as label, l.qui as who, 
         u.login as login, u.name AS name, u.lastname AS lastname
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     /*
-       * Output
-    */
+           * Output
+        */
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col2
-        $sOutput .= '"'.str_replace(array(chr(10), chr(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
-
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -164,10 +160,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 
     /* ERRORS LOG */
-} elseif (isset($_GET['action']) && $_GET['action'] == 'access') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'access') {
     //Columns name
-    $aColumns = array('l.date', 'i.label', 'u.login');
-
+    $aColumns = ['l.date', 'i.label', 'u.login'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -180,7 +175,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
 
     // Filtering
     $sWhere = " WHERE l.action = 'at_shown'";
-    if ($_GET['sSearch'] != '') {
+    if ($_GET['sSearch'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
             $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
@@ -194,33 +189,30 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
         $sWhere,
-        array(
+        [
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        )
+        ]
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as date, u.login as login, i.label as label
+    'SELECT l.date as date, u.login as login, i.label as label
         FROM '.prefixTable('log_items').' as l
         INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
         $sWhere
         $sOrder
-        $sLimit',
-        array(
+                                                                                                                                                                                                                                                                                                                                                                                                $sLimit',
+    [
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        )
-    );
-
+        ]
+);
     $iFilteredTotal = DB::count();
-
     // Output
-    if ($iTotal == '') {
+    if ($iTotal === '') {
         $iTotal = 0;
     }
     $sOutput = '{';
@@ -228,22 +220,17 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col2
-        $sOutput .= '"'.str_replace(array(chr(10), chr(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
-
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -256,10 +243,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 
     /* COPY LOG */
-} elseif (isset($_GET['action']) && $_GET['action'] == 'copy') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'copy') {
     //Columns name
-    $aColumns = array('l.date', 'i.label', 'u.login');
-
+    $aColumns = ['l.date', 'i.label', 'u.login'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -289,41 +275,33 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
+    'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
         FROM '.prefixTable('log_items').' as l
         INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col2
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
-
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -337,11 +315,10 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
 
     /*
     * ADMIN LOG
-     **/
+     */
 } elseif (isset($_GET['action']) && $_GET['action'] === 'admin') {
     //Columns name
-    $aColumns = array('l.date', 'u.login', 'l.label');
-
+    $aColumns = ['l.date', 'u.login', 'l.label'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -369,43 +346,34 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label
+    'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     /*
-     * Output
-    */
+         * Output
+        */
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
-
     foreach ($rows as $record) {
         $get_item_in_list = true;
         $sOutput_item = '[';
-
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
-
         //col3
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'" ';
-
         //Finish the line
         $sOutput_item .= '], ';
-
         if ($get_item_in_list === true) {
             $sOutput .= $sOutput_item;
         }
@@ -414,13 +382,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput = substr_replace($sOutput, '', -2);
     }
     $sOutput .= '] }';
-
 /* ITEMS */
 } elseif (isset($_GET['action']) && $_GET['action'] === 'items') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
-    $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title');
-
+    $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -455,9 +421,8 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
+    'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
             i.perso AS perso, l.action AS action, t.title AS folder,
             i.id AS id
             FROM '.prefixTable('log_items').' AS l
@@ -467,42 +432,33 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere.
         $sOrder.
         $sLimit
-    );
+);
     $iFilteredTotal = DB::count();
-
     /*
-     * Output
-    */
+         * Output
+        */
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
-
     foreach ($rows as $record) {
         $get_item_in_list = true;
         $sOutput_item = '[';
-
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col3
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['id']), ENT_QUOTES).'", ';
-
         //col3
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
-
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'", ';
-
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
-
         //col4
         $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl($record['action'])), ENT_QUOTES).'", ';
-
         //col5
-        if ($record['perso'] == 1) {
+        if ($record['perso'] === 1) {
             $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('yes')), ENT_QUOTES).'"';
         } else {
             $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('no')), ENT_QUOTES).'"';
@@ -510,7 +466,6 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
 
         //Finish the line
         $sOutput_item .= '], ';
-
         if ($get_item_in_list === true) {
             $sOutput .= $sOutput_item;
         }
@@ -520,10 +475,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sOutput .= '] }';
 /* FAILED AUTHENTICATION */
-} elseif (isset($_GET['action']) && $_GET['action'] == 'failed_auth') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'failed_auth') {
     //Columns name
-    $aColumns = array('l.date', 'l.label', 'l.qui', 'l.field_1');
-
+    $aColumns = ['l.date', 'l.label', 'l.qui', 'l.field_1'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -555,19 +509,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
+    'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
         FROM '.prefixTable('log_system').' as l '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     // Output
-    if ($iTotal == '') {
+    if ($iTotal === '') {
         $iTotal = 0;
     }
     $sOutput = '{';
@@ -575,16 +526,13 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['auth_date']).'", ';
-
         //col2 - 3
         if ($record['label'] === 'user_password_not_correct' || $record['label'] === 'user_not_exists') {
             $sOutput .= '"'.langHdl($record['label']).'", "'.$record['field_1'].'", ';
@@ -594,7 +542,6 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -607,8 +554,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 } elseif (isset($_GET['action']) && $_GET['action'] === 'errors') {
     //Columns name
-    $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname');
-
+    $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -642,41 +588,33 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT l.date as date, l.label as label, l.qui as who,
+    'SELECT l.date as date, l.label as label, l.qui as who,
         u.login as login, u.name AS name, u.lastname AS lastname
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
-
         //col2
-        $sOutput .= '"'.addslashes(str_replace(array(chr(10), chr(13), '`', '<br />@', "'"), array('<br>', '<br>', "'", '', '&#39;'), ($record['label']))).'", ';
-
+        $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -687,10 +625,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] == 'items_in_edition') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'items_in_edition') {
     //Columns name
-    $aColumns = array('e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname');
-
+    $aColumns = ['e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -724,47 +661,38 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder
     );
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
+    'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
         FROM '.prefixTable('items_edition').' AS e
         INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"<span data-id=\"'.$record['item_id'].'\">", ';
-
         //col2
         $time_diff = intval(time() - $record['timestamp']);
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m'.'", ';
-
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
-
         //col5 - TAGS
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'"';
-
         //Finish the line
         $sOutput .= '],';
     }
@@ -775,10 +703,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] == 'users_logged_in') {
+} elseif (isset($_GET['action']) && $_GET['action'] === 'users_logged_in') {
     //Columns name
-    $aColumns = array('login', 'name', 'lastname', 'timestamp', 'last_connexion');
-
+    $aColumns = ['login', 'name', 'lastname', 'timestamp', 'last_connexion'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -798,43 +725,35 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
     $sWhere .= ') ';
-
     DB::query(
-        'SELECT COUNT(timestamp)
+    'SELECT COUNT(timestamp)
         FROM '.prefixTable('users').' '.
         $sWhere
-    );
+);
     $iTotal = DB::count();
-
     $rows = DB::query(
-        'SELECT *
+    'SELECT *
         FROM '.prefixTable('users').' '.
         $sWhere.
         $sOrder.
         $sLimit
-    );
-
+);
     $iFilteredTotal = DB::count();
-
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
-
     if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
         $sOutput .= '[';
-
         //col1
         $sOutput .= '"<span data-id=\"'.$record['id'].'\">", ';
-
         //col2
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
-
         //col3
         if ($record['admin'] === '1') {
             $user_role = langHdl('god');
@@ -844,13 +763,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $user_role = langHdl('user');
         }
         $sOutput .= '"'.$user_role.'", ';
-
         //col4
         $time_diff = intval(time() - $record['timestamp']);
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
-
         //Finish the line
         $sOutput .= '],';
     }

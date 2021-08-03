@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      fields.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,12 +47,11 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'fields', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
 $tree->register();
@@ -145,23 +151,23 @@ $tree->rebuild();
                                     <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-category-folders">
                                         <?php
                                         $folders = $tree->getDescendants();
-                                        foreach ($folders as $folder) {
-                                            DB::query(
-                                                'SELECT * FROM ' . prefixTable('nested_tree') . '
+foreach ($folders as $folder) {
+    DB::query(
+        'SELECT * FROM ' . prefixTable('nested_tree') . '
                                         WHERE personal_folder = %i AND id = %i',
-                                                '0',
-                                                $folder->id
-                                            );
-                                            $counter = DB::count();
-                                            if ($counter > 0) {
-                                                $ident = '';
-                                                for ($x = 1; $x < $folder->nlevel; ++$x) {
-                                                    $ident .= '-';
-                                                }
-                                                echo '
+        '0',
+        $folder->id
+    );
+    $counter = DB::count();
+    if ($counter > 0) {
+        $ident = '';
+        for ($x = 1; $x < $folder->nlevel; ++$x) {
+            $ident .= '-';
+        }
+        echo '
                                         <option value="' . $folder->id . '">' . $ident . '&nbsp;' . str_replace('&', '&amp;', $folder->title) . '</option>';
-                                            }
-                                        }
+    }
+}
                                         ?>
                                     </select>
                                 </div>
@@ -190,9 +196,9 @@ $tree->rebuild();
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-field-type">
                                         <?php
                                         // Build list of Types
-                                        echo '<option value="">-- ' . langHdl('select') . ' --</option>' .
-                                            '<option value="text">' . langHdl('text') . '</option>' .
-                                            '<option value="textarea">' . langHdl('textarea') . '</option>';
+                                        echo '<option value="">-- ' . langHdl('select') . ' --</option>
+                                            <option value="text">' . langHdl('text') . '</option>
+                                            <option value="textarea">' . langHdl('textarea') . '</option>';
                                         ?>
                                     </select>
                                 </div>
@@ -221,14 +227,14 @@ $tree->rebuild();
                                         <?php
                                         // Build list of Roles
                                         echo '<option value="all">' . langHdl('every_roles') . '</option>';
-                                        $rows = DB::query(
-                                            'SELECT id, title
+$rows = DB::query(
+    'SELECT id, title
                                     FROM ' . prefixTable('roles_title') . '
                                     ORDER BY title ASC'
-                                        );
-                                        foreach ($rows as $record) {
-                                            echo '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
-                                        }
+);
+foreach ($rows as $record) {
+    echo '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
+}
                                         ?>
                                     </select>
                                 </div>

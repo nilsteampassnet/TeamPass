@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      aes.functions.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -41,12 +48,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === fa
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 /*
  * Define Timezone
-**/
+*/
 if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set($SETTINGS['timezone']);
 } else {
@@ -58,16 +65,13 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, (int) DB_PORT, null);
-
 // Protect POST
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-
-if (null !== $post_type) {
+if ($post_type !== null) {
     switch ($post_type) {
             /*
         * CASE
@@ -75,38 +79,37 @@ if (null !== $post_type) {
         */
         case 'user_change_pair_keys':
             // Decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_STRING);
 
-            // Get user info
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          $dataReceived = prepareExchangedData(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              $post_data,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              'decode'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          );
+$post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+$post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_STRING);
+// Get user info
             $userInfo = DB::queryFirstRow(
                 'SELECT id, public_key, private_key
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_user_id
             );
-
-            // Generate keys
+// Generate keys
             $userKeys = generateUserKeys($post_user_pwd);
-
-            // Store
+// Store
             DB::update(
                 prefixTable('users'),
-                array(
+                [
                     'public_key' => $userKeys['public_key'],
                     'private_key' => $userKeys['private_key'],
-                ),
+                ],
                 'id = %i',
                 $post_user_id
             );
+
             break;
+
     }
 }
-
 
 /**
  * Delete all objects keys for one user.

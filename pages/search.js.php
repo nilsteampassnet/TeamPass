@@ -1,23 +1,31 @@
 <?php
 
-/**
- * Teampass - a collaborative passwords manager.
- * ---
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * ---
- * @project   Teampass
- * @file      search.js.php
- * ---
- * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2021 Teampass.net
- * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
- * @see       https://www.teampass.net
- */
+declare(strict_types=1);
 
+ /**
+  * Teampass - a collaborative passwords manager.
+  * ---
+  * This library is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  * ---
+  *
+  * @project   Teampass
+  *
+  * @file      search.js.php
+  * ---
+  *
+  * @author    Nils Laumaillé (nils@teampass.net)
+  *
+  * @copyright 2009-2021 Teampass.net
+  *
+  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+  * ---
+  *
+  * @see       https://www.teampass.net
+  */
 
+ $var = [];
 $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
 ?>
@@ -454,7 +462,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('.pwd-show-spinner')
                     .removeClass('fas fa-circle-notch fa-spin text-warning')
                     .addClass('far fa-eye');
-            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay'] * 1000) : 4000; ?>);
+            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
         } else {
             $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
         }

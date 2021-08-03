@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Encrypt PHP session data for the internal PHP save handlers
  *
@@ -7,9 +9,9 @@
  * authentication is provided using HMAC with SHA256.
  *
  * @author    Enrico Zimuel (enrico@zimuel.it)
+ *
  * @copyright MIT License
  */
-
 
 namespace PHPSecureSession;
 
@@ -19,37 +21,31 @@ class SecureHandler extends SessionHandler
 {
     /**
      * Encryption and authentication key
-     * @var string
      */
-    protected $key;
-
+    protected string $key;
     /**
      * Constructor
      */
     public function __construct()
     {
-        if (!extension_loaded('openssl')) {
+        if (! extension_loaded('openssl')) {
             throw new \RuntimeException(sprintf(
-                "You need the OpenSSL extension to use %s",
-                __CLASS__
+                'You need the OpenSSL extension to use %s',
+                self::class
             ));
         }
-        if (!extension_loaded('mbstring')) {
+        if (! extension_loaded('mbstring')) {
             throw new \RuntimeException(sprintf(
-                "You need the Multibytes extension to use %s",
-                __CLASS__
+                'You need the Multibytes extension to use %s',
+                self::class
             ));
         }
     }
 
     /**
      * Open the session
-     *
-     * @param string $save_path
-     * @param string $session_name
-     * @return bool
      */
-    public function open($save_path, $session_name)
+    public function open(string $save_path, string $session_name): bool
     {
         $this->key = $this->getKey('KEY_' . $session_name);
         return parent::open($save_path, $session_name);
@@ -57,39 +53,32 @@ class SecureHandler extends SessionHandler
 
     /**
      * Read from session and decrypt
-     *
-     * @param string $session_id
      */
-    public function read($session_id)
+    public function read(string $session_id)
     {
         $data = parent::read($session_id);
         if (is_null($data)) {
-            $data = '';  //use empty string instead of null!
+            $data = '';
+            //use empty string instead of null!
         }
         return empty($data) ? '' : $this->decrypt($data, $this->key);
     }
 
     /**
      * Encrypt the data and write into the session
-     *
-     * @param string $session_id
-     * @param string $data
      */
-    public function write($session_id, $data)
+    public function write(string $session_id, string $data)
     {
         return parent::write($session_id, $this->encrypt($data, $this->key));
     }
 
     /**
      * Encrypt and authenticate
-     *
-     * @param string $data
-     * @param string $key
-     * @return string
      */
-    protected function encrypt($data, $key)
+    protected function encrypt(string $data, string $key): string
     {
-        $block_iv = random_bytes(16); // AES block size in CBC mode
+        $block_iv = random_bytes(16);
+        // AES block size in CBC mode
         // Encryption
         $ciphertext = openssl_encrypt(
             $data,
@@ -110,15 +99,11 @@ class SecureHandler extends SessionHandler
 
     /**
      * Authenticate and decrypt
-     *
-     * @param string $data
-     * @param string $key
-     * @return string
      */
-    protected function decrypt($data, $key)
+    protected function decrypt(string $data, string $key): string
     {
-        $hmac       = mb_substr($data, 0, 32, '8bit');
-        $block_iv   = mb_substr($data, 32, 16, '8bit');
+        $hmac = mb_substr($data, 0, 32, '8bit');
+        $block_iv = mb_substr($data, 32, 16, '8bit');
         $ciphertext = mb_substr($data, 48, null, '8bit');
         // Authentication
         $hmacNew = hash_hmac(
@@ -127,7 +112,7 @@ class SecureHandler extends SessionHandler
             mb_substr($key, 32, null, '8bit'),
             true
         );
-        if (!$this->hash_equals($hmac, $hmacNew)) {
+        if (! $this->hash_equals($hmac, $hmacNew)) {
             throw new \RuntimeException('Authentication failed');
         }
         // Decrypt
@@ -142,28 +127,24 @@ class SecureHandler extends SessionHandler
 
     /**
      * Get the encryption and authentication keys from cookie
-     *
-     * @param string $name
-     * @return string
      */
-    protected function getKey($name)
+    protected function getKey(string $name): string
     {
         if (empty($_COOKIE[$name]) === true) {
             // 32 for encryption and 32 for authentication
             $key = random_bytes(64);
             $cookieParam = session_get_cookie_params();
             setcookie(
-                $name,
-                base64_encode($key),
-                // if session cookie lifetime > 0 then add to current time
+    $name,
+    base64_encode($key), // if session cookie lifetime > 0 then add to current time
                 // otherwise leave it as zero, honoring zero's special meaning
                 // expire at browser close.
-                ($cookieParam['lifetime'] > 0) ? time() + $cookieParam['lifetime'] : 0,
-                $cookieParam['path'],
-                $cookieParam['domain'],
-                $cookieParam['secure'],
-                $cookieParam['httponly']
-            );
+                $cookieParam['lifetime'] > 0 ? time() + $cookieParam['lifetime'] : 0,
+    $cookieParam['path'],
+    $cookieParam['domain'],
+    $cookieParam['secure'],
+    $cookieParam['httponly']
+);
             return $key;
         }
 
@@ -173,39 +154,35 @@ class SecureHandler extends SessionHandler
 
     /**
      * Hash equals function for PHP 5.5+
-     *
-     * @param string $expected
-     * @param string $actual
-     * @return bool
      */
-    protected function hash_equals($expected, $actual)
+    protected function hash_equals(string $expected, string $actual): bool
     {
-        $expected     = filter_var($expected, FILTER_SANITIZE_STRING);
-        $actual       = filter_var($actual, FILTER_SANITIZE_STRING);
+        $expected = filter_var($expected, FILTER_SANITIZE_STRING);
+        $actual = filter_var($actual, FILTER_SANITIZE_STRING);
         if (function_exists('hash_equals')) {
             return hash_equals($expected, $actual);
         }
-        $lenExpected  = mb_strlen($expected, '8bit');
-        $lenActual    = mb_strlen($actual, '8bit');
-        $len          = min($lenExpected, $lenActual);
+        $lenExpected = mb_strlen($expected, '8bit');
+        $lenActual = mb_strlen($actual, '8bit');
+        $len = min($lenExpected, $lenActual);
         $result = 0;
         for ($i = 0; $i < $len; $i++) {
             $result |= ord($expected[$i]) ^ ord($actual[$i]);
         }
         $result |= $lenExpected ^ $lenActual;
-        return ($result === 0);
+        return $result === 0;
     }
 }
 
 // random_bytes is a PHP7 new function required by SecureHandler.
 // random_compat has been written to define it in PHP5
 if (file_exists('./includes/libraries/misc/random_compat/random.php')) {
-    require_once('./includes/libraries/misc/random_compat/random.php');
+    require_once './includes/libraries/misc/random_compat/random.php';
 } else {
     if (file_exists('../includes/libraries/misc/random_compat/random.php')) {
-        require_once('../includes/libraries/misc/random_compat/random.php');
+        require_once '../includes/libraries/misc/random_compat/random.php';
     } else {
-        require_once('../../includes/libraries/misc/random_compat/random.php');
+        require_once '../../includes/libraries/misc/random_compat/random.php';
     }
 }
 

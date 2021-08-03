@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,19 +9,23 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      checks.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
 
-
 require_once 'SecureHandler.php';
-
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
     include_once '../includes/config/tp.config.php';
@@ -32,29 +38,28 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-
 /*
 Handle CASES
  */
 switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     case 'checkSessionExists':
         // Case permit to check if SESSION is still valid
-        session_name('teampass_session');
-        session_start();
 
-        if (isset($_SESSION['CPM']) === true) {
-            echo 1;
-        } else {
-            // In case that no session is available
-            // Force the page to be reloaded and attach the CSRFP info
-            // Load CSRFP
-            $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
-
-            // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
-        }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               session_name('teampass_session');
+session_start();
+if (isset($_SESSION['CPM']) === true) {
+    echo 1;
+} else {
+    // In case that no session is available
+    // Force the page to be reloaded and attach the CSRFP info
+    // Load CSRFP
+    $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
+    // Send back CSRFP info
+    echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+}
 
         break;
+
 }
 
 /**
@@ -62,12 +67,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
  *
  * @return string The page name
  */
-function curPage($SETTINGS)
+function curPage($SETTINGS): string
 {
     // Load libraries
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
     // Parse the url
     parse_str(
         substr(
@@ -76,7 +80,6 @@ function curPage($SETTINGS)
         ),
         $result
     );
-
     return $result['page'];
 }
 
@@ -87,10 +90,8 @@ function curPage($SETTINGS)
  * @param int    $userKey     User's temporary key
  * @param string $pageVisited Page visited
  * @param array  $SETTINGS    Settings
- *
- * @return bool
  */
-function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
+function checkUser(int $userId, int $userKey, string $pageVisited, array $SETTINGS): bool
 {
     // Should we start?
     if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
@@ -98,43 +99,40 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     }
 
     // Definition
-    $pagesRights = array(
-        'user' => array(
+    $pagesRights = [
+        'user' => [
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'folders', 'offline',
-        ),
-        'manager' => array(
+        ],
+        'manager' => [
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
             'import', 'export', 'offline',
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
-        ),
-        'human_resources' => array(
+        ],
+        'human_resources' => [
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
             'import', 'export', 'offline',
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
-        ),
-        'admin' => array(
+        ],
+        'admin' => [
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
             'import', 'export', 'offline',
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
             'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
             'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
             'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
-        ),
-    );
+        ],
+    ];
     // Convert to array
-    $pageVisited = array($pageVisited);
-
+    $pageVisited = [$pageVisited];
     // Load
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-
     // Load libraries
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
     // Securize language
     if (
-        null === $superGlobal->get('user_language', 'SESSION')
+        $superGlobal->get('user_language', 'SESSION') === null
         || empty($superGlobal->get('user_language', 'SESSION')) === true
     ) {
         $superGlobal->put('user_language', 'english', 'SESSION');
@@ -143,7 +141,6 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION') . '.php';
     include_once 'SplClassLoader.php';
     include_once 'main.functions.php';
-
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -165,7 +162,8 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     // check if user exists and tempo key is coherant
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;
-    } else if (
+    }
+    if (
         ((int) $data['admin'] === 1
         && isInArray($pageVisited, $pagesRights['admin']) === true)
         ||
@@ -185,10 +183,8 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
  *
  * @param array $pages Input
  * @param array $table Checked against this array
- *
- * @return bool
  */
-function isInArray($pages, $table)
+function isInArray(array $pages, array $table): bool
 {
     foreach ($pages as $page) {
         if (in_array($page, $table) === true) {

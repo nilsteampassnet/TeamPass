@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,39 +9,45 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      login.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
 
-
 // Automatic redirection
 $nextUrl = '';
-if (strpos($server_request_uri, '?') > 0) {
+if (strpos($server['request_uri'], '?') > 0) {
     $nextUrl = filter_var(
-        substr($server_request_uri, strpos($server_request_uri, '?')),
+        substr($server['request_uri'], strpos($server['request_uri'], '?')),
         FILTER_SANITIZE_URL
     );
 }
 
+require_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$get = [];
+$get['post_type'] = $superGlobal->get('post_type', 'GET');
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_duo_login = filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
 $post_duo_pwd = filter_input(INPUT_POST, 'duo_pwd', FILTER_SANITIZE_STRING);
 $post_duo_data = filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
-$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-$post_pw = filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
-
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
     <div class="login-logo">',
-    (isset($SETTINGS['custom_logo']) === true
-        && empty($SETTINGS['custom_logo']) === false) ?
+    isset($SETTINGS['custom_logo']) === true
+        && empty($SETTINGS['custom_logo']) === false ?
         '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center;" />' : '',
     '
         <div style="margin-top:20px;">
@@ -54,8 +62,8 @@ echo '
     <div class="card">
         <div class="card-header text-center">
             <h3>',
-    (isset($SETTINGS['custom_login_text']) === true
-        && empty($SETTINGS['custom_login_text']) === false) ? $SETTINGS['custom_login_text'] : langHdl('index_get_identified'),
+    isset($SETTINGS['custom_login_text']) === true
+        && empty($SETTINGS['custom_login_text']) === false ? $SETTINGS['custom_login_text'] : langHdl('index_get_identified'),
     '
             </h3>
         </div>
@@ -65,20 +73,19 @@ echo '
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
                 </div>';
-
 if (
     isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && isset($_SERVER['PHP_AUTH_USER']) === true
-    && !(isset($SETTINGS['maintenance_mode']) === true
+    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
+    && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
-    if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-        $username = explode('@', $_SERVER['PHP_AUTH_USER'])[0];
-    } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-        $username = explode('\\', $_SERVER['PHP_AUTH_USER'])[1];
+    if (strpos($superGlobal('PHP_AUTH_USER', 'SERVER'), '@') !== false) {
+        $username = explode('@', $superGlobal('PHP_AUTH_USER', 'SERVER'))[0];
+    } elseif (strpos($superGlobal('PHP_AUTH_USER', 'SERVER'), '\\') !== false) {
+        $username = explode('\\', $superGlobal('PHP_AUTH_USER', 'SERVER'))[1];
     } else {
-        $username = $_SERVER['PHP_AUTH_USER'];
+        $username = $superGlobal('PHP_AUTH_USER', 'SERVER');
     }
     echo '
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_STRING), '" readonly>';
@@ -89,17 +96,17 @@ if (
 
 echo '
         </div>';
-if (!(isset($SETTINGS['enable_http_request_login']) === true
+if (! (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && isset($_SERVER['PHP_AUTH_USER']) === true
-    && !(isset($SETTINGS['maintenance_mode']) === true
+    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
+    && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fas fa-lock fa-fw"></i></span>
             </div>
-          <input type="password" id="pw" class="form-control submit-button" placeholder="' . langHdl('index_password') . '">
+            <input type="password" id="pw" class="form-control submit-button" placeholder="' . langHdl('index_password') . '">
         </div>';
 }
 
@@ -108,16 +115,17 @@ echo '
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fas fa-clock fa-fw"></i></span>
             </div>
-          <input type="text" id="session_duration" class="form-control submit-button" placeholder="' . langHdl('index_session_duration') . '&nbsp;(' . langHdl('minutes') . ')" value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
+            <input type="text" id="session_duration" class="form-control submit-button" 
+            placeholder="' . langHdl('index_session_duration') .'&nbsp;(' . langHdl('minutes') . ')" 
+            value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
-
 // 2FA auth selector
 echo '
         <input type="hidden" id="2fa_user_selection" value="',
-    (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : ''),
+    (isset($get['post_type']) === true && $get['post_type'] === 'duo' ? 'duo' : ''),
     '" />
         <input type="hidden" id="duo_sig_response" value="',
-    null !== $post_sig_response ? $post_sig_response : '',
+    $post_sig_response !== null ? $post_sig_response : '',
     '" />
         <div class="row mb-3 hidden" id="2fa_methods_selector">
             <div class="col-12">
@@ -141,16 +149,15 @@ echo '
                 </div>
             </div>
         </div>';
-
 // DUO box
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
     echo '
         <div id="div-2fa-duo" class="row mb-3 div-2fa-method hidden">
             <div id="div-2fa-duo-progress" class="text-center hidden"></div>
             <form method="post" id="duo_form" action="">
-                <input type="hidden" id="duo_login" name="duo_login" value="', null !== $post_duo_login ? $post_duo_login : '', '" />
-                <input type="hidden" id="duo_pwd" name="duo_pwd" value="', null !== $post_duo_pwd ? $post_duo_pwd : '', '" />
-                <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? $post_duo_data : '', '" />
+                <input type="hidden" id="duo_login" name="duo_login" value="', $post_duo_login !== null ? $post_duo_login : '', '" />
+                <input type="hidden" id="duo_pwd" name="duo_pwd" value="', $post_duo_pwd !== null ? $post_duo_pwd : '', '" />
+                <input type="hidden" id="duo_data" name="duo_data" value="', $post_duo_data !== null ? $post_duo_data : '', '" />
             </form>
         </div>';
 }
@@ -173,7 +180,8 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
                     <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
                 </div>
                 <div class="col-1">
-                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info" title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></i>
+                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info" 
+                    title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></i>
                 </div>
             </div>
             <div id="div-2fa-google-qr" class="row mt-2 "></div>
@@ -182,7 +190,7 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
 
 if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && isset($_SERVER['PHP_AUTH_USER']) === true
+    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
     && (isset($SETTINGS['maintenance_mode']) === false
     && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
@@ -262,11 +270,8 @@ echo '
         </div>
     </div>';
 
-
-// 
 echo '
     <!-- /.login-card-body -->';
-
 // In case of password change
 echo '
     <div class="card-body confirm-password-card-body hidden">

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      profile.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,12 +47,16 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+// Prepare GET variables
+$get = [];
+$get['tab'] = $superGlobal->get('tab', 'GET') === null ? '' : $superGlobal->get('tab', 'GET');
 // user type
 if ($_SESSION['user_admin'] === '1') {
     $_SESSION['user_privilege'] = langHdl('god');
@@ -61,25 +72,17 @@ if ($_SESSION['user_admin'] === '1') {
 
 // prepare list of timezones
 $zones = timezone_list();
-
-
 // prepare list of languages
 $languages = DB::query('SELECT label FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
-
-
 // Do some stats
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userItemsNumber = DB::count();
-
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_modification" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userModificationNumber = DB::count();
-
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenItemsNumber = DB::count();
-
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenPasswordsNumber = DB::count();
-
 $userInfo = DB::queryFirstRow(
     'SELECT avatar 
     FROM ' . prefixTable('users') . ' 
@@ -92,7 +95,7 @@ if (empty($userInfo['avatar']) === true) {
 }
 
 // Get Groups name
-$userParOfGroups = array();
+$userParOfGroups = [];
 foreach ($_SESSION['user_roles'] as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
@@ -180,10 +183,10 @@ foreach ($_SESSION['user_roles'] as $role) {
                     <div class="card-header p-2">
                         <ul class="nav nav-pills" id="profile-tabs">
                             <li class="nav-item">
-                                <a class="nav-link<?php echo isset($_GET['tab']) === false ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a>
+                                <a class="nav-link<?php echo empty($get['tab']) === true ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" href="#timeline" data-toggle="tab">Timeline</a>
+                                <a class="nav-link<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" href="#timeline" data-toggle="tab">Timeline</a>
                             </li>
                             <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
                         </ul>
@@ -191,7 +194,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                     <div class="card-body">
                         <div class="tab-content">
                             <!-- INFO -->
-                            <div class="<?php echo isset($_GET['tab']) === false ? 'active ' : ''; ?> tab-pane" id="tab_information">
+                            <div class="<?php echo empty($get['tab']) === true ? 'active ' : ''; ?> tab-pane" id="tab_information">
                                 <ul class="list-group list-group-unbordered mb-3">
                                     <li class="list-group-item">
                                         <b><i class="fas fa-users fa-fw fa-lg mr-2"></i><?php echo langHdl('part_of_groups'); ?></b>
@@ -209,16 +212,16 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 echo date('d/m/Y', $_SESSION['last_connection']);
                                             }
                                             echo ' ' . langHdl('at') . ' ';
-                                            if (isset($SETTINGS['time_format']) === true) {
-                                                echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
-                                            } else {
-                                                echo date('H:i:s', $_SESSION['last_connection']);
-                                            }
+if (isset($SETTINGS['time_format']) === true) {
+    echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
+} else {
+    echo date('H:i:s', $_SESSION['last_connection']);
+}
                                             ?>
                                         </a>
                                     </li>
                                     <?php
-                                    if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
+                                    if (isset($_SESSION['last_pw_change']) && ! empty($_SESSION['last_pw_change'])) {
                                         // Handle last password change string
                                         if (isset($_SESSION['last_pw_change']) === true) {
                                             if (isset($SETTINGS['date_format']) === true) {
@@ -277,7 +280,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>' . langHdl('user_profile_agses_card_id') . '</b>
                                         <a class="float-right">',
-                                            isset($_SESSION['user']['agses-usercardid']) ? $_SESSION['user']['agses-usercardid'] : '',
+                                            $_SESSION['user']['agses-usercardid'] ?? '',
                                             '</a>
                                     </li>';
                                     }
@@ -286,7 +289,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                             </div>
 
                             <!-- TIMELINE -->
-                            <div class="tab-pane<?php echo isset($_GET['tab']) === true && $_GET['tab'] === 'timeline' ? ' active' : ''; ?>" id="timeline">
+                            <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="timeline">
                                 <?php
                                 if (
                                     isset($_SESSION['user']['unsuccessfull_login_attempts_list']) === true
@@ -311,7 +314,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <ul class="list-group list-group-flush">
                                         <?php
                                         $rows = DB::query(
-                                            'SELECT label AS labelAction, date, null
+                                    'SELECT label AS labelAction, date, null
                                             FROM ' . prefixTable('log_system') . '
                                             WHERE qui = %i
                                             UNION
@@ -321,27 +324,24 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             WHERE l.id_user = %i AND l.action IN ("at_access")
                                             ORDER BY date DESC
                                             LIMIT 0, 40',
-                                            $_SESSION['user_id'],
-                                            $_SESSION['user_id']
-                                        );
-                                        foreach ($rows as $record) {
-                                            if (substr($record['labelAction'], 0, 3) === 'at_') {
-                                                $text = langHdl(substr($record['labelAction'], 3));
-                                            } else {
-                                                $text = langHdl($record['labelAction']);
-                                            }
-                                            if (empty($record['NULL']) === false) {
-                                                $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
-                                            }
-                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - ' . $text . '</li>';
-                                        }
+                                    $_SESSION['user_id'],
+                                    $_SESSION['user_id']
+                                );
+foreach ($rows as $record) {
+    if (substr($record['labelAction'], 0, 3) === 'at_') {
+        $text = langHdl(substr($record['labelAction'], 3));
+    } else {
+        $text = langHdl($record['labelAction']);
+    }
+    if (empty($record['NULL']) === false) {
+        $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
+    }
+    echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - ' . $text . '</li>';
+}
                                         ?>
                                     </ul>
                                 </div>
-                                <?php
-
-                                ?>
-                            </div>
+                                                            </div>
 
                             <!-- SETTINGS -->
                             <div class="tab-pane" id="tab_settings">
@@ -390,8 +390,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
                                                 foreach ($languages as $language) {
-                                                    echo 
-                                                '<option value="' . $language['label'] . '"',
+                                                    echo '<option value="' . $language['label'] . '"',
                                                     $_SESSION['user']['user_language'] === strtolower($language['label']) ?
                                                     ' selected="selected"' :
                                                     ($SETTINGS['default_language'] === strtolower($language['label']) ? ' selected="selected"' : ''),

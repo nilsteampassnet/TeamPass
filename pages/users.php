@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      users.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,16 +47,13 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
-
 // Load superGlobals
 include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -61,7 +65,6 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
 $optionsRoles = '';
@@ -84,7 +87,7 @@ foreach ($rows as $record) {
     if (
         (int) $_SESSION['is_admin'] === 1
         || (((int) $superGlobal->get('user_manager', 'SESSION') === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-            && (in_array($record['id'], $userRoles) === true)|| (int) $record['creator_id'] === (int) $_SESSION['user_id'])
+            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $_SESSION['user_id'])
     ) {
         $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
     }
@@ -94,7 +97,6 @@ foreach ($rows as $record) {
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 $treeDesc = $tree->getDescendants();
 $foldersList = '';
 foreach ($treeDesc as $t) {
@@ -107,7 +109,6 @@ foreach ($treeDesc as $t) {
             $ident .= '&nbsp;&nbsp;';
         }
         $foldersList .= '<option value="' . $t->id . '">' . $ident . htmlspecialchars($t->title, ENT_COMPAT, 'UTF-8') . '</option>';
-        $prev_level = $t->nlevel;
     }
 }
 
@@ -142,7 +143,7 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button><?php
-                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1  && (int) $_SESSION['is_admin'] === 1 ?
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
                             <i class="fas fa-address-card mr-2"></i>' . langHdl('ldap_synchronization') . '
                         </button>' : '';

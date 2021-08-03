@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      options.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,12 +47,11 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
 // Generates zones
 $zones = timezone_list();
 ?>
@@ -173,7 +179,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_maintenance_mode'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='maintenance_mode' data-toggle-on='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] == 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='maintenance_mode_input' value='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] == 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='maintenance_mode' data-toggle-on='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='maintenance_mode_input' value='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 
@@ -182,7 +188,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_default_session_expiration_time'); ?>
                             </div>
                             <div class='col-2 mb-2'>
-                                <input type='text' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : '60'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo $SETTINGS['default_session_expiration_time'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -191,7 +197,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('enable_http_request_login'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_http_request_login' data-toggle-on='<?php echo isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] == 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_http_request_login_input' value='<?php echo isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] == 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_http_request_login' data-toggle-on='<?php echo isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_http_request_login_input' value='<?php echo isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 
@@ -203,7 +209,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && $SETTINGS['enable_sts'] == 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && $SETTINGS['enable_sts'] == 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 
@@ -215,7 +221,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='proxy_ip' value='<?php echo isset($SETTINGS['proxy_ip']) ? $SETTINGS['proxy_ip'] : '60'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='proxy_ip' value='<?php echo $SETTINGS['proxy_ip'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -227,7 +233,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='proxy_port' value='<?php echo isset($SETTINGS['proxy_port']) ? $SETTINGS['proxy_port'] : '60'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='proxy_port' value='<?php echo $SETTINGS['proxy_port'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -239,7 +245,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo isset($SETTINGS['pwd_maximum_length']) ? $SETTINGS['pwd_maximum_length'] : '60'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo $SETTINGS['pwd_maximum_length'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -269,13 +275,13 @@ $zones = timezone_list();
                                 <select class='form-control form-control-sm' id='date_format'>
                                     <option value=''>-- <?php echo langHdl('select'); ?> --</option>
                                     <option value="d/m/Y" <?php echo isset($SETTINGS['date_format']) === false || $SETTINGS['date_format'] === 'd/m/Y' ? ' selected' : ''; ?>>d/m/Y</option>
-                                    <option value="m/d/Y" <?php echo $SETTINGS['date_format'] == 'm/d/Y' ? ' selected' : ''; ?>>m/d/Y</option>
-                                    <option value="d-M-Y" <?php echo $SETTINGS['date_format'] == 'd-M-Y' ? ' selected' : ''; ?>>d-M-Y</option>
-                                    <option value="d/m/y" <?php echo $SETTINGS['date_format'] == 'd/m/y' ? ' selected' : ''; ?>>d/m/y</option>
-                                    <option value="m/d/y" <?php echo $SETTINGS['date_format'] == 'm/d/y' ? ' selected' : ''; ?>>m/d/y</option>
-                                    <option value="d-M-y" <?php echo $SETTINGS['date_format'] == 'd-M-y' ? ' selected' : ''; ?>>d-M-y</option>
-                                    <option value="d-m-y" <?php echo $SETTINGS['date_format'] == 'd-m-y' ? ' selected' : ''; ?>>d-m-y</option>
-                                    <option value="Y-m-d" <?php echo $SETTINGS['date_format'] == 'Y-m-d' ? ' selected' : ''; ?>>Y-m-d</option>
+                                    <option value="m/d/Y" <?php echo $SETTINGS['date_format'] === 'm/d/Y' ? ' selected' : ''; ?>>m/d/Y</option>
+                                    <option value="d-M-Y" <?php echo $SETTINGS['date_format'] === 'd-M-Y' ? ' selected' : ''; ?>>d-M-Y</option>
+                                    <option value="d/m/y" <?php echo $SETTINGS['date_format'] === 'd/m/y' ? ' selected' : ''; ?>>d/m/y</option>
+                                    <option value="m/d/y" <?php echo $SETTINGS['date_format'] === 'm/d/y' ? ' selected' : ''; ?>>m/d/y</option>
+                                    <option value="d-M-y" <?php echo $SETTINGS['date_format'] === 'd-M-y' ? ' selected' : ''; ?>>d-M-y</option>
+                                    <option value="d-m-y" <?php echo $SETTINGS['date_format'] === 'd-m-y' ? ' selected' : ''; ?>>d-m-y</option>
+                                    <option value="Y-m-d" <?php echo $SETTINGS['date_format'] === 'Y-m-d' ? ' selected' : ''; ?>>Y-m-d</option>
                                 </select>
                             </div>
                         </div>
@@ -288,9 +294,9 @@ $zones = timezone_list();
                                 <select class='form-control form-control-sm' id='time_format'>
                                     <option value=''>-- <?php echo langHdl('select'); ?> --</option>
                                     <option value="H:i:s" <?php echo isset($SETTINGS['time_format']) === false || $SETTINGS['time_format'] === 'H:i:s' ? ' selected' : ''; ?>>H:i:s</option>
-                                    <option value="H:i:s a" <?php echo $SETTINGS['time_format'] == 'H:i:s a' ? ' selected' : ''; ?>>H:i:s a</option>
-                                    <option value="g:i:s a" <?php echo $SETTINGS['time_format'] == 'g:i:s a' ? ' selected' : ''; ?>>g:i:s a</option>
-                                    <option value="G:i:s" <?php echo $SETTINGS['time_format'] == 'G:i:s' ? ' selected' : ''; ?>>G:i:s</option>
+                                    <option value="H:i:s a" <?php echo $SETTINGS['time_format'] === 'H:i:s a' ? ' selected' : ''; ?>>H:i:s a</option>
+                                    <option value="g:i:s a" <?php echo $SETTINGS['time_format'] === 'g:i:s a' ? ' selected' : ''; ?>>g:i:s a</option>
+                                    <option value="G:i:s" <?php echo $SETTINGS['time_format'] === 'G:i:s' ? ' selected' : ''; ?>>G:i:s</option>
                                 </select>
                             </div>
                         </div>
@@ -318,7 +324,7 @@ $zones = timezone_list();
                             <?php echo langHdl('number_of_used_pw'); ?>
                         </div>
                         <div class='col-2'>
-                            <input type='text' class='form-control form-control-sm' id='number_of_used_pw' value='<?php echo isset($SETTINGS['number_of_used_pw']) ? $SETTINGS['number_of_used_pw'] : '5'; ?>'>
+                            <input type='text' class='form-control form-control-sm' id='number_of_used_pw' value='<?php echo $SETTINGS['number_of_used_pw'] ?? '5'; ?>'>
                         </div>
                     </div>
                     -->
@@ -328,7 +334,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('pw_life_duration'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo isset($SETTINGS['pw_life_duration']) ? $SETTINGS['pw_life_duration'] : '5'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo $SETTINGS['pw_life_duration'] ?? '5'; ?>'>
                             </div>
                         </div>
 
@@ -337,7 +343,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo isset($SETTINGS['nb_bad_authentication']) ? $SETTINGS['nb_bad_authentication'] : '0'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo $SETTINGS['nb_bad_authentication'] ?? '0'; ?>'>
                             </div>
                         </div>
 
@@ -388,7 +394,7 @@ $zones = timezone_list();
                           <?php echo langHdl('personal_saltkey_cookie_duration'); ?>
                       </div>
                       <div class='col-2'>
-                      <input type='text' class='form-control form-control-sm' id='personal_saltkey_cookie_duration' value='<?php echo isset($SETTINGS['personal_saltkey_cookie_duration']) ? $SETTINGS['personal_saltkey_cookie_duration'] : '31'; ?>'>
+                      <input type='text' class='form-control form-control-sm' id='personal_saltkey_cookie_duration' value='<?php echo $SETTINGS['personal_saltkey_cookie_duration'] ?? '31'; ?>'>
                       </div>
                   </div>
 
@@ -402,7 +408,7 @@ $zones = timezone_list();
                                 <?php
                                 foreach (TP_PW_COMPLEXITY as $complex) {
                                     echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['personal_saltkey_security_level']) === true && $SETTINGS['personal_saltkey_security_level'] == $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
+                                <option value="' . $complex[0] . '"', isset($SETTINGS['personal_saltkey_security_level']) === true && $SETTINGS['personal_saltkey_security_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
                                 }
                                 ?>
                             </select>
@@ -495,7 +501,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo isset($SETTINGS['delay_item_edition']) ? $SETTINGS['delay_item_edition'] : '9'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
                             </div>
                         </div>
 
@@ -513,7 +519,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_otv_expiration_period'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo isset($SETTINGS['otv_expiration_period']) ? $SETTINGS['otv_expiration_period'] : '7'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo $SETTINGS['otv_expiration_period'] ?? '7'; ?>'>
                             </div>
                         </div>
 
@@ -703,19 +709,19 @@ $zones = timezone_list();
                                     <?php
                                     // Get selected groups
                                     $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
-                                    if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
-                                        $arrRolesToPrint = array();
-                                    }
+if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
+    $arrRolesToPrint = [];
+}
                                     // Get full list
                                     $roles = performDBQuery(
                                         $SETTINGS,
                                         'id, title',
                                         'roles_title'
                                     );
-                                    foreach ($roles as $role) {
-                                        echo '
+foreach ($roles as $role) {
+    echo '
                                 <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
-                                    }
+}
                                     ?>
                                 </select>
                             </div>
@@ -886,7 +892,7 @@ $zones = timezone_list();
                                     <?php
                                     foreach (TP_PW_COMPLEXITY as $complex) {
                                         echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && $SETTINGS['offline_key_level'] == $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
+                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && $SETTINGS['offline_key_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
                                     }
                                     ?>
                                 </select>

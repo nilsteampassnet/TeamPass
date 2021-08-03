@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,29 +9,33 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      export.queries.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
 if (
     isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
+    || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
 }
-
 
 // reference the Dompdf namespace
 //use Dompdf\Dompdf;
@@ -53,18 +60,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === fa
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // No time limit
 set_time_limit(0);
-
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 error_reporting(E_ERROR);
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -76,15 +81,12 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 // Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre . 'nested_tree', 'id', 'parent_id', 'title');
-
 // User's language loading
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
-
 // Prepare POST variables
 $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -96,42 +98,39 @@ $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
 $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
 $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
 $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
-
 //Manage type of action asked
-if (null !== $post_type) {
+if ($post_type !== null) {
     switch ($post_type) {
             //CASE export in CSV format
         case 'export_to_csv_format':
             //Init
-            $full_listing = array();
-            $full_listing[0] = array(
-                'id' => 'id',
-                'label' => 'label',
-                'description' => 'description',
-                'pw' => 'pw',
-                'login' => 'login',
-                'restricted_to' => 'restricted_to',
-                'perso' => 'perso',
-                'url' => 'url',
-                'email' => 'email',
-                'kbs' => 'kb',
-                'tags' => 'tag',
-            );
 
-            $id_managed = '';
-            $i = 1;
-            $items_id_list = array();
-
-            foreach (json_decode(html_entity_decode($post_ids)) as $id) {
-                if (
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    $full_listing = [];
+$full_listing[0] = [
+    'id' => 'id',
+    'label' => 'label',
+    'description' => 'description',
+    'pw' => 'pw',
+    'login' => 'login',
+    'restricted_to' => 'restricted_to',
+    'perso' => 'perso',
+    'url' => 'url',
+    'email' => 'email',
+    'kbs' => 'kb',
+    'tags' => 'tag',
+];
+$id_managed = '';
+$i = 1;
+$items_id_list = [];
+foreach (json_decode(html_entity_decode($post_ids)) as $id) {
+    if (
                     in_array($id, $_SESSION['forbiden_pfs']) === false
                     && in_array($id, $_SESSION['groupes_visibles']) === true
                 ) {
-                    $rows = DB::query(
-                        'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
+        $rows = DB::query(
+            'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
                             i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
                             i.email as email,l.date as date, i.pw_iv as pw_iv,n.renewal_period as renewal_period
                         FROM ' . prefixTable('items') . ' as i
@@ -141,158 +140,154 @@ if (null !== $post_type) {
                         AND i.id_tree= %i
                         AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                         ORDER BY i.label ASC, l.date DESC',
-                        '0',
-                        intval($id),
-                        'at_creation',
-                        'at_modification',
-                        'at_pw :%'
-                    );
-                    foreach ($rows as $record) {
-                        $restricted_users_array = explode(';', $record['restricted_to']);
-                        //exclude all results except the first one returned by query
-                        if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
-                            if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
+            '0',
+            intval($id),
+            'at_creation',
+            'at_modification',
+            'at_pw :%'
+        );
+        foreach ($rows as $record) {
+            $restricted_users_array = explode(';', $record['restricted_to']);
+            //exclude all results except the first one returned by query
+            if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
+                if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
                                 || (in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
                                     && (empty($record['restricted_to']) === true
                                         || (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true)))
                             ) {
-                                // Run query
-                                $dataItem = DB::queryfirstrow(
-                                    'SELECT i.pw AS pw, s.share_key AS share_key
+                    // Run query
+                    $dataItem = DB::queryfirstrow(
+                        'SELECT i.pw AS pw, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
-                                    $_SESSION['user_id'],
-                                    $record['id']
-                                );
+                        $_SESSION['user_id'],
+                        $record['id']
+                    );
+                    // Uncrypt PW
+                    if (DB::count() === 0) {
+                        // No share key found
+                        $pw = '';
+                    } else {
+                        $pw = base64_decode(doDataDecryption(
+                            $dataItem['pw'],
+                            decryptUserObjectKey(
+                                $dataItem['share_key'],
+                                $_SESSION['user']['private_key']
+                            )
+                        ));
+                    }
 
-                                // Uncrypt PW
-                                if (DB::count() === 0) {
-                                    // No share key found
-                                    $pw = '';
-                                } else {
-                                    $pw = base64_decode(doDataDecryption(
-                                        $dataItem['pw'],
-                                        decryptUserObjectKey(
-                                            $dataItem['share_key'],
-                                            $_SESSION['user']['private_key']
-                                        )
-                                    ));
-                                }
-
-                                // get KBs
-                                $arr_kbs = [];
-                                $rows_kb = DB::query(
-                                    'SELECT b.label, b.id
+                    // get KBs
+                    $arr_kbs = [];
+                    $rows_kb = DB::query(
+                        'SELECT b.label, b.id
                                     FROM ' . prefixTable('kb_items') . ' AS a
                                     INNER JOIN ' . prefixTable('kb') . ' AS b ON (a.kb_id = b.id)
                                     WHERE a.item_id = %i',
-                                    $record['id']
-                                );
-                                foreach ($rows_kb as $rec_kb) {
-                                    array_push($arr_kbs, $rec_kb['label']);
-                                }
+                        $record['id']
+                    );
+                    foreach ($rows_kb as $rec_kb) {
+                        array_push($arr_kbs, $rec_kb['label']);
+                    }
 
-                                // get TAGS
-                                $arr_tags = [];
-                                $rows_tag = DB::query(
-                                    'SELECT tag
+                    // get TAGS
+                    $arr_tags = [];
+                    $rows_tag = DB::query(
+                        'SELECT tag
                                     FROM ' . prefixTable('tags') . '
                                     WHERE item_id = %i',
-                                    $record['id']
-                                );
-                                foreach ($rows_tag as $rec_tag) {
-                                    array_push($arr_tags, $rec_tag['tag']);
-                                }
-
-                                $full_listing[$i] = array(
-                                    'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
-                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
-                                    'perso' => $record['perso'] === '0' ? 'False' : 'True',
-                                    'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
-                                    'email' => $record['email'] !== 'none' ? htmlspecialchars_decode($record['email']) : '',
-                                    'kbs' => implode(' | ', $arr_kbs),
-                                    'tags' => implode(' ', $arr_tags),
-                                );
-                                ++$i;
-
-                                // log
-                                logItems(
-                                    $SETTINGS,
-                                    (int) $record['id'],
-                                    $record['label'],
-                                    $_SESSION['user_id'],
-                                    'at_export',
-                                    $_SESSION['login'],
-                                    'csv'
-                                );
-                            }
-                        }
-                        $id_managed = $record['id'];
+                        $record['id']
+                    );
+                    foreach ($rows_tag as $rec_tag) {
+                        array_push($arr_tags, $rec_tag['tag']);
                     }
+
+                    $full_listing[$i] = [
+                        'id' => $record['id'],
+                        'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'description' => htmlspecialchars_decode(addslashes(str_replace([';', '<br />'], ['|', "\n\r"], mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
+                        'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'restricted_to' => $record['restricted_to'] ?? '',
+                        'perso' => $record['perso'] === '0' ? 'False' : 'True',
+                        'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
+                        'email' => $record['email'] !== 'none' ? htmlspecialchars_decode($record['email']) : '',
+                        'kbs' => implode(' | ', $arr_kbs),
+                        'tags' => implode(' ', $arr_tags),
+                    ];
+                    ++$i;
+                    // log
+                    logItems(
+                        $SETTINGS,
+                        (int) $record['id'],
+                        $record['label'],
+                        $_SESSION['user_id'],
+                        'at_export',
+                        $_SESSION['login'],
+                        'csv'
+                    );
                 }
             }
+            $id_managed = $record['id'];
+        }
+    }
+}
 
             // Loop on Results, decode to UTF8 and write in CSV file
             $tmp = '';
-            foreach ($full_listing as $value) {
-                $value = array_map('utf8_decode', $value);
-                $tmp .= array2csv($value);
-            }
+foreach ($full_listing as $value) {
+    $value = array_map('utf8_decode', $value);
+    $tmp .= array2csv($value);
+}
 
             echo '[{"content":"' . base64_encode($tmp) . '"}]';
-            break;
 
-            /*
+            break;
+/*
          * PDF - step 1 - Prepare database
          */
         case 'initialize_export_table':
-            DB::query('TRUNCATE TABLE ' . prefixTable('export'));
-            break;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    DB::query('TRUNCATE TABLE ' . prefixTable('export'));
 
-            /*
+            break;
+/*
          * PDF - step 2 - Export the items inside database
          */
         case 'export_to_pdf_format':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if ($post_key !== $_SESSION['key']) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo prepareExchangedData(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            [
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                'error' => true,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                'message' => langHdl('key_is_not_correct'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ],
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'encode'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        break;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
-
-            // Prepare variables
+// Prepare variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_ids = filter_var_array($dataReceived['ids'], FILTER_SANITIZE_NUMBER_INT);
-
-            if (
+$post_ids = filter_var_array($dataReceived['ids'], FILTER_SANITIZE_NUMBER_INT);
+if (
                 in_array($post_id, $_SESSION['forbiden_pfs']) === false
                 && in_array($post_id, $_SESSION['groupes_visibles']) === true
             ) {
-                // get path
-                $tree->rebuild();
-                $folders = $tree->getPath($post_id, true);
-                $path = array();
-                foreach ($folders as $val) {
-                    array_push($path, $val->title);
-                }
-                $path = implode(' » ', $path);
-
-                // send query
-                $rows = DB::query(
-                    'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
+    // get path
+    $tree->rebuild();
+    $folders = $tree->getPath($post_id, true);
+    $path = [];
+    foreach ($folders as $val) {
+        array_push($path, $val->title);
+    }
+    $path = implode(' » ', $path);
+    // send query
+    $rows = DB::query(
+        'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
                         l.date as date, i.pw_iv as pw_iv,
                         n.renewal_period as renewal_period
                         FROM ' . prefixTable('items') . ' as i
@@ -302,199 +297,182 @@ if (null !== $post_type) {
                         AND i.id_tree= %i
                         AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                         ORDER BY i.label ASC, l.date DESC',
-                    '0',
-                    $post_id,
-                    'at_creation',
-                    'at_modification',
-                    'at_pw :%'
-                );
-
-                $id_managed = '';
-                $i = 0;
-                $items_id_list = array();
-                foreach ($rows as $record) {
-                    $restricted_users_array = explode(';', $record['restricted_to']);
-                    //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $record['id']) {
-                        if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                            || (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+        '0',
+        $post_id,
+        'at_creation',
+        'at_modification',
+        'at_pw :%'
+    );
+    $id_managed = '';
+    $i = 0;
+    $items_id_list = [];
+    foreach ($rows as $record) {
+        $restricted_users_array = explode(';', $record['restricted_to']);
+        //exclude all results except the first one returned by query
+        if (empty($id_managed) || $id_managed !== $record['id']) {
+            if ((in_array($post_id, $_SESSION['personal_visible_groups']) && ! ($record['perso'] === 1 && $_SESSION['user_id'] === $record['restricted_to']) && ! empty($record['restricted_to']))
+                            || (! empty($record['restricted_to']) && ! in_array($_SESSION['user_id'], $restricted_users_array))
                         ) {
-                            //exclude this case
-                        } else {
-                            // Run query
-                            $dataItem = DB::queryfirstrow(
-                                'SELECT i.pw AS pw, s.share_key AS share_key
+                //exclude this case
+            } else {
+                // Run query
+                $dataItem = DB::queryfirstrow(
+                    'SELECT i.pw AS pw, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
-                                $_SESSION['user_id'],
-                                $record['id']
-                            );
+                    $_SESSION['user_id'],
+                    $record['id']
+                );
+                // Uncrypt PW
+                if (DB::count() === 0) {
+                    // No share key found
+                    $pw = '';
+                } else {
+                    $pw = base64_decode(doDataDecryption(
+                        $dataItem['pw'],
+                        decryptUserObjectKey(
+                            $dataItem['share_key'],
+                            $_SESSION['user']['private_key']
+                        )
+                    ));
+                }
 
-                            // Uncrypt PW
-                            if (DB::count() === 0) {
-                                // No share key found
-                                $pw = '';
-                            } else {
-                                $pw = base64_decode(doDataDecryption(
-                                    $dataItem['pw'],
-                                    decryptUserObjectKey(
-                                        $dataItem['share_key'],
-                                        $_SESSION['user']['private_key']
-                                    )
-                                ));
-                            }
-
-                            // get KBs
-                            $arr_kbs = '';
-                            $rows_kb = DB::query(
-                                'SELECT b.label, b.id
+                // get KBs
+                $arr_kbs = '';
+                $rows_kb = DB::query(
+                    'SELECT b.label, b.id
                                 FROM ' . prefixTable('kb_items') . ' AS a
                                 INNER JOIN ' . prefixTable('kb') . ' AS b ON (a.kb_id = b.id)
                                 WHERE a.item_id = %i',
-                                $record['id']
-                            );
-                            foreach ($rows_kb as $rec_kb) {
-                                if (empty($arr_kbs)) {
-                                    $arr_kbs = $rec_kb['label'];
-                                } else {
-                                    $arr_kbs .= ' | ' . $rec_kb['label'];
-                                }
-                            }
+                    $record['id']
+                );
+                foreach ($rows_kb as $rec_kb) {
+                    if (empty($arr_kbs)) {
+                        $arr_kbs = $rec_kb['label'];
+                    } else {
+                        $arr_kbs .= ' | ' . $rec_kb['label'];
+                    }
+                }
 
-                            // get TAGS
-                            $arr_tags = '';
-                            $rows_tag = DB::query(
-                                'SELECT tag
+                // get TAGS
+                $arr_tags = '';
+                $rows_tag = DB::query(
+                    'SELECT tag
                                 FROM ' . prefixTable('tags') . '
                                 WHERE item_id = %i',
-                                $record['id']
-                            );
-                            foreach ($rows_tag as $rec_tag) {
-                                if (empty($arr_tags)) {
-                                    $arr_tags = $rec_tag['tag'];
-                                } else {
-                                    $arr_tags .= ' ' . $rec_tag['tag'];
-                                }
-                            }
-
-                            // store
-                            DB::insert(
-                                prefixTable('export'),
-                                array(
-                                    'id' => $record['id'],
-                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
-                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'path' => $path,
-                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'kbs' => $arr_kbs,
-                                    'tags' => $arr_tags,
-                                )
-                            );
-
-                            // log
-                            logItems(
-                                $SETTINGS,
-                                (int) $record['id'],
-                                $record['label'],
-                                $_SESSION['user_id'],
-                                'at_export',
-                                $_SESSION['login'],
-                                'pdf'
-                            );
-                        }
+                    $record['id']
+                );
+                foreach ($rows_tag as $rec_tag) {
+                    if (empty($arr_tags)) {
+                        $arr_tags = $rec_tag['tag'];
+                    } else {
+                        $arr_tags .= ' ' . $rec_tag['tag'];
                     }
-                    $id_managed = $record['id'];
-                    $folder_title = $record['folder_title'];
                 }
+
+                // store
+                DB::insert(
+                    prefixTable('export'),
+                    [
+                        'id' => $record['id'],
+                        'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
+                        'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'path' => $path,
+                        'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                        'kbs' => $arr_kbs,
+                        'tags' => $arr_tags,
+                    ]
+                );
+                // log
+                logItems(
+                    $SETTINGS,
+                    (int) $record['id'],
+                    $record['label'],
+                    $_SESSION['user_id'],
+                    'at_export',
+                    $_SESSION['login'],
+                    'pdf'
+                );
             }
+        }
+        $id_managed = $record['id'];
+        $folder_title = $record['folder_title'];
+    }
+}
 
             echo prepareExchangedData(
-                array(
+                [
                     'error' => false,
                     'message' => '',
-                ),
+                ],
                 'encode'
             );
+
             break;
-
-        
-
-        case 'finalize_export_pdf':
+case 'finalize_export_pdf':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if ($post_key !== $_SESSION['key']) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo prepareExchangedData(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            [
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                'error' => true,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                'message' => langHdl('key_is_not_correct'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ],
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'encode'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        break;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
-
-            // Adapt header to pdf
+// Adapt header to pdf
             header('Content-type: application/pdf');
-
-            // query
+// query
             $rows = DB::query('SELECT * FROM ' . prefixTable('export'));
-            $counter = DB::count();
-            if ($counter > 0) {
-                // print
-                //Some variables
-                $table_full_width = 300;
-                $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
-                $prev_path = '';
-
-                //Prepare the PDF file
-                require_once($SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/config/tcpdf_config.php');
-                include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/tcpdf.php';
-
-                $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-                $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
-
-                // set document information
-                $pdf->SetCreator(PDF_CREATOR);
-                $pdf->SetAuthor($_SESSION['lastname']." ".$_SESSION['name']);
-                $pdf->SetTitle('Teampass export');
-
-                // set default header data
-                $pdf->SetHeaderData(
-                    $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
-                    PDF_HEADER_LOGO_WIDTH,
-                    'Teampass export',
-                    $_SESSION['lastname']." ".$_SESSION['name'].' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time())
-                );
-
-                // set header and footer fonts
-                $pdf->setHeaderFont(Array('helvetica', '', PDF_FONT_SIZE_MAIN));
-                $pdf->setFooterFont(Array('helvetica', '', PDF_FONT_SIZE_DATA));
-
-                // set default monospaced font
-                $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
-
-                // set margins
-                $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-                $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-                $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
-
-                // set auto page breaks
-                $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
-                
-                // set image scale factor
-                $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-
-                $pdf->getAliasNbPages();
-                $pdf->addPage('L');
-
-                $prev_path = '';
-                $html_table = '
+$counter = DB::count();
+if ($counter > 0) {
+    // print
+    //Some variables
+    $table_full_width = 300;
+    $table_col_width = [40, 30, 30, 60, 27, 40, 25, 25];
+    $prev_path = '';
+    //Prepare the PDF file
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/config/tcpdf_config.php';
+    include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/tcpdf.php';
+    $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    $pdf->SetProtection(['print'], $dataReceived['pdf_password'], null);
+    // set document information
+    $pdf->SetCreator(PDF_CREATOR);
+    $pdf->SetAuthor($_SESSION['lastname'].' '.$_SESSION['name']);
+    $pdf->SetTitle('Teampass export');
+    // set default header data
+    $pdf->SetHeaderData(
+        $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
+        PDF_HEADER_LOGO_WIDTH,
+        'Teampass export',
+        $_SESSION['lastname'].' '.$_SESSION['name'].' @ '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], time())
+    );
+    // set header and footer fonts
+    $pdf->setHeaderFont(['helvetica', '', PDF_FONT_SIZE_MAIN]);
+    $pdf->setFooterFont(['helvetica', '', PDF_FONT_SIZE_DATA]);
+    // set default monospaced font
+    $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+    // set margins
+    $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+    $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+    $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+    // set auto page breaks
+    $pdf->SetAutoPageBreak(true, PDF_MARGIN_BOTTOM);
+    // set image scale factor
+    $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+    $pdf->getAliasNbPages();
+    $pdf->addPage('L');
+    $prev_path = '';
+    $html_table = '
                 <html><head>
                 <style>
                     table {
@@ -537,19 +515,17 @@ if (null !== $post_type) {
                         </tr>
                     </thead>
                     <tbody>';
-
-                foreach ($rows as $record) {
-                    // Manage path
-                    if ($prev_path !== $record['path']) {
-                        $html_table .= '
+    foreach ($rows as $record) {
+        // Manage path
+        if ($prev_path !== $record['path']) {
+            $html_table .= '
                             <tr>
                                 <td colspan="6">'.$record['path'].'</td>
                             </tr>';
-                    }
-                    $prev_path = $record['path'];
-
-                    // build
-                    $html_table .= '
+        }
+        $prev_path = $record['path'];
+        // build
+        $html_table .= '
                     <tr>
                         <td>'.$record['label'].'</td>
                         <td>'.$record['login'].'</td>
@@ -558,44 +534,40 @@ if (null !== $post_type) {
                         <td>'.$record['email'].'</td>
                         <td>'.$record['url'].'</td>
                     </tr>';
-                }
-                $html_table .= '
+    }
+    $html_table .= '
                     </tbody>
                 </table>
                 </body></html>';
+    $pdf->writeHTML($html_table, true, false, false, false, '');
+    //log
+    logEvents($SETTINGS, 'pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
+    //clean table
+    DB::query('TRUNCATE TABLE ' . prefixTable('export'));
+    // Send back the file in Blob
+    echo $pdf->Output(null, 'I');
+}
 
-                $pdf->writeHTML($html_table, true, false, false, false, '');
-
-                //log
-                logEvents($SETTINGS, 'pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
-
-                //clean table
-                DB::query('TRUNCATE TABLE ' . prefixTable('export'));
-
-                // Send back the file in Blob
-                echo $pdf->Output(null, 'I');
-            }
-            break;
-
-            //CASE export in HTML format
+    break;
+//CASE export in HTML format
         case 'export_to_html_format':
             // step 1:
-            // - prepare export file
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    // - prepare export file
             // - get full list of objects id to export
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
-            $idsList = array();
-            $objNumber = 0;
-
-            foreach (explode(';', $post_ids) as $id) {
-                if (
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+$idsList = [];
+$objNumber = 0;
+foreach (explode(';', $post_ids) as $id) {
+    if (
                     in_array($id, $_SESSION['forbiden_pfs']) === false
                     && in_array($id, $_SESSION['groupes_visibles']) === true
                     && (in_array($id, $_SESSION['no_access_folders']) === false)
                 ) {
-                    // count elements to display
-                    $result = DB::query(
-                        'SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
+        // count elements to display
+        $result = DB::query(
+            'SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
                     FROM ' . prefixTable('items') . ' as i
                     INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
                     INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
@@ -603,37 +575,37 @@ if (null !== $post_type) {
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                     ORDER BY i.label ASC, l.date DESC',
-                        '0',
-                        $id,
-                        'at_creation',
-                        'at_modification',
-                        'at_pw :%'
-                    );
-                    foreach ($result as $record) {
-                        $restricted_users_array = explode(';', $record['restricted_to']);
-                        if (((in_array($id, $_SESSION['personal_visible_groups']) === true
-                                && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to'])
+            '0',
+            $id,
+            'at_creation',
+            'at_modification',
+            'at_pw :%'
+        );
+        foreach ($result as $record) {
+            $restricted_users_array = explode(';', $record['restricted_to']);
+            if (((in_array($id, $_SESSION['personal_visible_groups']) === true
+                                && ! ($record['perso'] === 1 && $_SESSION['user_id'] === $record['restricted_to'])
                                 && empty($record['restricted_to']) === false)
                                 || (empty($record['restricted_to']) === false
                                     && in_array($_SESSION['user_id'], $restricted_users_array) === false)
                                 || (in_array($id, $_SESSION['groupes_visibles']))) && (in_array($record['id'], $idsList) === false)
                         ) {
-                            array_push($idsList, $record['id']);
-                            ++$objNumber;
-                        }
-                    }
-                }
+                array_push($idsList, $record['id']);
+                ++$objNumber;
             }
+        }
+    }
+}
 
             // prepare export file
             //save the file
             $html_file = '/teampass_export_' . time() . '_' . generateKey() . '.html';
-            //print_r($full_listing);
+//print_r($full_listing);
             $outstream = fopen($SETTINGS['path_to_files_folder'] . $html_file, 'w');
-            if ($outstream === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+if ($outstream === false) {
+    echo '[{"error":"true"}]';
+    break;
+}
             fwrite(
                 $outstream,
                 '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -677,20 +649,19 @@ if (null !== $post_type) {
         </tr></thead>
         <tbody id="itemsTable_tbody">'
             );
-
-            fclose($outstream);
-
-            // send back and continue
+fclose($outstream);
+// send back and continue
             //echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
-            break;
 
-            //CASE export in HTML format - Iteration loop
+            break;
+//CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
             // do checks ... if fails, return an error
-            if (null === $post_idTree || null === $post_idsList) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if ($post_idTree === null || $post_idsList === null) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        echo '[{"error":"true"}]';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        break;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 
             // exclude this folder if not allowed
             if (
@@ -702,13 +673,12 @@ if (null !== $post_type) {
                 break;
             }
 
-            $full_listing = array();
-            $items_id_list = array();
-            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
-
-            $rows = DB::query(
-                'SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
+            $full_listing = [];
+$items_id_list = [];
+include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+$rows = DB::query(
+    'SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
                 l.date as date, i.pw_iv as pw_iv,
                 n.renewal_period as renewal_period
             FROM ' . prefixTable('items') . ' as i
@@ -718,49 +688,47 @@ if (null !== $post_type) {
             AND i.id_tree= %i
             AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
             ORDER BY i.label ASC, l.date DESC',
-                '0',
-                $post_idTree,
-                'at_creation',
-                'at_modification',
-                'at_pw :%'
+    '0',
+    $post_idTree,
+    'at_creation',
+    'at_modification',
+    'at_pw :%'
+);
+foreach ($rows as $record) {
+    //exclude all results except the first one returned by query
+    if (empty($id_managed) || $id_managed !== $record['id']) {
+        // decrypt PW
+        if (empty($post_salt_key) === false && $post_salt_key !== null) {
+            $pw = cryption(
+                $record['pw'],
+                mysqli_escape_string($link, stripslashes($post_salt_key)),
+                'decrypt',
+                $SETTINGS
             );
-
-            foreach ($rows as $record) {
-                //exclude all results except the first one returned by query
-                if (empty($id_managed) || $id_managed != $record['id']) {
-                    // decrypt PW
-                    if (empty($post_salt_key) === false && null !== $post_salt_key) {
-                        $pw = cryption(
-                            $record['pw'],
-                            mysqli_escape_string($link, stripslashes($post_salt_key)),
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    } else {
-                        $pw = cryption(
-                            $record['pw'],
-                            '',
-                            'decrypt',
-                            $SETTINGS
-                        );
-                    }
-                    array_push(
-                        $full_listing,
-                        array(
-                            'id_tree' => $record['id_tree'],
-                            'id' => $record['id'],
-                            'label' => $record['label'],
-                            'description' => addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                            'pw' => $pw['string'],
-                            'login' => $record['login'],
-                            'url' => $record['url'],
-                            'perso' => $record['perso'],
-                        )
-                    );
-                    ++$i;
-                    array_push($items_id_list, $record['id']);
-
-                    // log
+        } else {
+            $pw = cryption(
+                $record['pw'],
+                '',
+                'decrypt',
+                $SETTINGS
+            );
+        }
+        array_push(
+            $full_listing,
+            [
+                'id_tree' => $record['id_tree'],
+                'id' => $record['id'],
+                'label' => $record['label'],
+                'description' => addslashes(str_replace([';', '<br />'], ['|', "\n\r"], mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
+                'pw' => $pw['string'],
+                'login' => $record['login'],
+                'url' => $record['url'],
+                'perso' => $record['perso'],
+            ]
+        );
+        ++$i;
+        array_push($items_id_list, $record['id']);
+        // log
                     /*logItems(
                         $record['id'],
                         $record['l SeekableIteratorabel'],
@@ -769,64 +737,64 @@ if (null !== $post_type) {
                         $_SESSION['login'],
                         'html'
                     );*/
-                }
-                $id_managed = $record['id'];
-            }
+    }
+    $id_managed = $record['id'];
+}
 
             //save in export file
             $outstream = fopen($post_file . '.txt', 'a');
-            if ($outstream === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+if ($outstream === false) {
+    echo '[{"error":"true"}]';
+    break;
+}
 
             $lineType = 'line1';
-            $idTree = '';
-            foreach ($full_listing as $elem) {
-                if ($lineType == 'line0') {
-                    $lineType = 'line1';
-                } else {
-                    $lineType = 'line0';
-                }
-                if (empty($elem['description'])) {
-                    $desc = '&nbsp;';
-                } else {
-                    $desc = addslashes($elem['description']);
-                }
-                if (empty($elem['login'])) {
-                    $login = '&nbsp;';
-                } else {
-                    $login = addslashes($elem['login']);
-                }
-                if (empty($elem['url'])) {
-                    $url = '&nbsp;';
-                } else {
-                    $url = addslashes($elem['url']);
-                }
+$idTree = '';
+foreach ($full_listing as $elem) {
+    if ($lineType === 'line0') {
+        $lineType = 'line1';
+    } else {
+        $lineType = 'line0';
+    }
+    if (empty($elem['description'])) {
+        $desc = '&nbsp;';
+    } else {
+        $desc = addslashes($elem['description']);
+    }
+    if (empty($elem['login'])) {
+        $login = '&nbsp;';
+    } else {
+        $login = addslashes($elem['login']);
+    }
+    if (empty($elem['url'])) {
+        $url = '&nbsp;';
+    } else {
+        $url = addslashes($elem['url']);
+    }
 
-                // Prepare tree
-                if ($idTree != $elem['id_tree']) {
-                    $arbo = $tree->getPath($elem['id_tree'], true);
-                    foreach ($arbo as $folder) {
-                        $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
-                        if (empty($arboHtml)) {
-                            $arboHtml = $arboHtml_tmp;
-                        } else {
-                            $arboHtml .= ' » ' . $arboHtml_tmp;
-                        }
-                    }
-                    fputs(
-                        $outstream,
-                        '
+    // Prepare tree
+    if ($idTree !== $elem['id_tree']) {
+        $arbo = $tree->getPath($elem['id_tree'], true);
+        foreach ($arbo as $folder) {
+            $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
+            if (empty($arboHtml)) {
+                $arboHtml = $arboHtml_tmp;
+            } else {
+                $arboHtml .= ' » ' . $arboHtml_tmp;
+            }
+        }
+        fputs(
+            $outstream,
+            '
         <tr class="path"><td colspan="5">' . $arboHtml . '</td></tr>'
-                    );
-                    $idTree = $elem['id_tree'];
-                }
+        );
+        $idTree = $elem['id_tree'];
+    }
 
-                $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
-                fputs(
-                    $outstream,
-                    '
+    $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
+    fputs(
+        $outstream,
+        '
         <tr class="' . $lineType . '">
             <td>' . addslashes($elem['label']) . '</td>
             <td align="center"><span class="span_pw" id="span_' . $elem['id'] . '"><a href="#" onclick="decryptme(' . $elem['id'] . ', \'' . $encPw . '\');return false;">Decrypt </a></span><input type="hidden" id="hide_' . $elem['id'] . '" value="' . $encPw . '" /></td>
@@ -834,55 +802,54 @@ if (null !== $post_type) {
             <td align="center">' . $login . '</td>
             <td align="center">' . $url . '</td>
             </tr>'
-                );
-            }
+    );
+}
 
             fclose($outstream);
-
-            // send back and continue
+// send back and continue
             echo '[{"loop":"true", "number":"' . $post_number . '", "cpt":"' . $post_cpt . '", "file":"' . $post_file . '", "idsList":"' . $post_idsList . '" , "file_link":"' . $post_file_link . '"}]';
-            break;
 
-            //CASE export in HTML format - Iteration loop
+            break;
+//CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
             // Load includes
-            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
-            // read the content of the temporary file
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+// read the content of the temporary file
             $handle = fopen($post_file . '.txt', 'r');
-            if ($handle === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+if ($handle === false) {
+    echo '[{"error":"true"}]';
+    break;
+}
             $contents = fread($handle, filesize($post_file . '.txt'));
-            if ($contents === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+if ($contents === false) {
+    echo '[{"error":"true"}]';
+    break;
+}
             fclose($handle);
-            if (is_file($post_file . '.txt')) {
-                unlink($post_file . '.txt');
-            }
+if (is_file($post_file . '.txt')) {
+    unlink($post_file . '.txt');
+}
 
             // Encrypt its content
             //$contents = GibberishAES::enc($contents, $post_pdf_password);
             $encrypted_text = '';
-            $chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
-            foreach ($chunks as $chunk) {
-                if (empty($encrypted_text) === true) {
-                    $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
-                } else {
-                    $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
-                }
-            }
+$chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
+foreach ($chunks as $chunk) {
+    if (empty($encrypted_text) === true) {
+        $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
+    } else {
+        $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
+    }
+}
 
             // open file
             $outstream = fopen($post_file, 'a');
-            if ($outstream === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
+if ($outstream === false) {
+    echo '[{"error":"true"}]';
+    break;
+}
 
             fputs(
                 $outstream,
@@ -995,13 +962,13 @@ if (null !== $post_type) {
         });
     </script>'
             );
-
-            fclose($outstream);
-
-            echo '[{"text":"<a href=\'' .
+fclose($outstream);
+echo '[{"text":"<a href=\'' .
                 $post_file_link .
                 '\' target=\'_blank\'>' . $LANG['pdf_download'] . '</a>"}]';
+
             break;
+
     }
 }
 
@@ -1012,7 +979,7 @@ if (null !== $post_type) {
  *
  * @param int $height Height of cell to add
  */
-function checkPageBreak($height)
+function checkPageBreak(int $height): void
 {
     global $pdf;
     //Continue on a new page if needed
@@ -1021,7 +988,6 @@ function checkPageBreak($height)
     }
 }
 
-
 /**
  * Converts an array to CSV format.
  *
@@ -1029,19 +995,16 @@ function checkPageBreak($height)
  * @param string $delimiter   What delimiter is used in CSV
  * @param string $enclosure   What enclosure is used in CSV
  * @param string $escape_char What escape character is used in CSV
- *
- * @return string
  */
-function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
+function array2csv(array $fields, string $delimiter = ';', string $enclosure = '"', string $escape_char = '\\'): string
 {
     $buffer = fopen('php://temp', 'r+');
     if ($buffer === false) {
-        return "";
+        return '';
     }
     fputcsv($buffer, $fields, $delimiter, $enclosure, $escape_char);
     rewind($buffer);
     $csv = fgets($buffer);
     fclose($buffer);
-
     return $csv;
 }

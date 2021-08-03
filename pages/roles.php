@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      roles.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,7 +47,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'roles', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
@@ -85,21 +92,20 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <option></option>
                                 <?php
                                 $arrUserRoles = array_filter($_SESSION['user_roles']);
-                                $where = '';
-                                if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
-                                    $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
-                                }
+$where = '';
+if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
+    $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
+}
                                 $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
-
-                                foreach ($rows as $reccord) {
-                                    echo '
-                                <option value="' . $reccord['id'] . '" ' .
-                                        'data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '" ' .
-                                        'data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '" ' .
-                                        'data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '" ' .
-                                        'data-allow-edit-all="' . $reccord['allow_pw_change'] . '">' .
-                                        $reccord['title'] . '</option>';
-                                }
+foreach ($rows as $reccord) {
+    echo '
+                                <option value="' . $reccord['id'] . '"
+                                    data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '"
+                                    data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '"
+                                    data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '"
+                                    data-allow-edit-all="' . $reccord['allow_pw_change'] . '">'.
+                                    $reccord['title'] . '</option>';
+}
                                 ?>
                             </select>
                         </div>

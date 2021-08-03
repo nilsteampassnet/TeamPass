@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      find.queries.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -40,7 +48,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === fa
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
@@ -48,7 +56,6 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
-
 // if no folders are visible then return no results
 if (isset($_SESSION['groupes_visibles']) === false
     || empty($_SESSION['groupes_visibles']) === true
@@ -68,14 +75,13 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 //Columns name
-$aColumns = array('id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
-$aSortTypes = array('ASC', 'DESC');
-
+$aColumns = ['id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url'];
+$aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
 $sOrder = $sLimit = $sWhere = '';
-$sWhere = 'id_tree IN %ls_idtree'; //limit search to the visible folders
+$sWhere = 'id_tree IN %ls_idtree';
+//limit search to the visible folders
 
 if (isset($_GET['limited']) === false
     || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
@@ -86,7 +92,6 @@ if (isset($_GET['limited']) === false
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
     $folders = $tree->getDescendants(filter_var($_GET['limited'], FILTER_SANITIZE_NUMBER_INT), true);
     $folders = array_keys($folders);
 }
@@ -96,10 +101,9 @@ $row = DB::query(
     'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
     intval($_SESSION['user_id'])
 );
-
 //get list of personal folders
-$arrayPf = array();
-$crit = array();
+$arrayPf = [];
+$crit = [];
 $listPf = '';
 if (empty($row['id']) === false) {
     $rows = DB::query(
@@ -110,7 +114,7 @@ if (empty($row['id']) === false) {
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
     );
     foreach ($rows as $record) {
-        if (!in_array($record['id'], $arrayPf)) {
+        if (! in_array($record['id'], $arrayPf)) {
             //build an array of personal folders ids
             array_push($arrayPf, $record['id']);
             //build also a string with those ids
@@ -126,7 +130,7 @@ if (empty($row['id']) === false) {
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
-if (isset($_GET['start']) === true && $_GET['length'] != '-1') {
+if (isset($_GET['start']) === true && $_GET['length'] !== '-1') {
     $sLimit = 'LIMIT ' . filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT) . ', ' . filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT) . '';
 }
 
@@ -137,17 +141,16 @@ if (isset($_GET['order']) === true) {
         // possible attack - stop
         echo '[{}]';
         exit;
-    } else {
-        $sOrder = 'ORDER BY  ';
-        if ($_GET['order'][0]['column'] >= 0) {
-            $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
+    }
+    $sOrder = 'ORDER BY  ';
+    if ($_GET['order'][0]['column'] >= 0) {
+        $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
                 . filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING) . ', ';
-        }
+    }
 
-        $sOrder = substr_replace($sOrder, '', -2);
-        if ($sOrder == 'ORDER BY') {
-            $sOrder = '';
-        }
+    $sOrder = substr_replace($sOrder, '', -2);
+    if ($sOrder === 'ORDER BY') {
+        $sOrder = '';
     }
 } else {
     $sOrder = 'ORDER BY ' . $aColumns[1] . ' ASC';
@@ -175,8 +178,7 @@ if (empty($search_criteria) === false) {
         $sWhere .= $aColumns[$i] . ' LIKE %ss_' . $i . ' OR ';
     }
     $sWhere = substr_replace((string) $sWhere, '', -3) . ') ';
-
-    $crit = array(
+    $crit = [
         'idtree' => array_unique($folders),
         '0' => $search_criteria,
         '1' => $search_criteria,
@@ -188,12 +190,12 @@ if (empty($search_criteria) === false) {
         '7' => $search_criteria,
         '8' => $search_criteria,
         'pf' => $arrayPf,
-    );
+    ];
 }
 
 // Define default search criteria
 if (count($crit) === 0) {
-    $crit = array(
+    $crit = [
         'idtree' => $folders,
         '0' => $search_criteria,
         '1' => $search_criteria,
@@ -205,7 +207,7 @@ if (count($crit) === 0) {
         '7' => $search_criteria,
         '8' => $search_criteria,
         'pf' => $arrayPf,
-    );
+    ];
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
@@ -220,23 +222,21 @@ if (empty($listPf) === false) {
 
 DB::query(
     'SELECT id FROM ' . prefixTable('cache') . "
-    $sWhere
-    $sOrder",
+    ${sWhere}
+    ${sOrder}",
     $crit
 );
 $iTotal = DB::count();
-
 $rows = DB::query(
     'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
     FROM ' . prefixTable('cache') . "
-    $sWhere
-    $sOrder
-    $sLimit",
+    ${sWhere}
+    ${sOrder}
+    ${sLimit}",
     $crit
 );
 db::debugmode(false);
 $iFilteredTotal = DB::count();
-
 /*
  * Output
  */
@@ -247,19 +247,16 @@ if (isset($_GET['type']) === false) {
     }
     $sOutput .= '"data": [';
     $sOutputConst = '';
-
     foreach ($rows as $record) {
         $getItemInList = true;
         $sOutputItem = '[';
         $right = 0;
         $checkbox = '';
-
         // massive move/delete enabled?
         if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === '1') {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
                     'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
@@ -310,7 +307,7 @@ if (isset($_GET['type']) === false) {
         }
 
         // Manage the restricted_to variable
-        if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
+        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING) !== null) {
             $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
             $restrictedTo = '';
@@ -327,13 +324,10 @@ if (isset($_GET['type']) === false) {
         //col1
         $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
             '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . langHdl('see_item_title') . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '", ';
-
         //col2
         $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . stripslashes($record['label']) . '</span>", ';
-
         //col3
         $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';
-
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
@@ -347,14 +341,14 @@ if (isset($_GET['type']) === false) {
             $restrictedToRole = true;
         }
 
-        if (($record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
+        if (($record['perso'] === 1 && $record['author'] !== $_SESSION['user_id'])
             || (empty($record['restricted_to']) === false
             && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
             || ($restrictedToRole === true)
         ) {
             $getItemInList = false;
         } else {
-            $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', '', ' '), strip_tags($record['description']));
+            $txt = str_replace(['\n', '<br />', '\\'], [' ', ' ', '', ' '], strip_tags($record['description']));
             if (strlen($txt) > 50) {
                 $sOutputItem .= '"' . substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50) . '", ';
             } else {
@@ -364,9 +358,8 @@ if (isset($_GET['type']) === false) {
 
         //col5 - TAGS
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
-
         // col6 - URL
-        if ($record['url'] != '0') {
+        if ($record['url'] !== '0') {
             $sOutputItem .= '"'.filter_var($record['url'], FILTER_SANITIZE_URL).'", ';
         } else {
             $sOutputItem .= '"", ';
@@ -374,10 +367,8 @@ if (isset($_GET['type']) === false) {
 
         //col7 - Prepare the Treegrid
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
-
         //Finish the line
         $sOutputItem .= '], ';
-
         if ($getItemInList === true) {
             $sOutputConst .= $sOutputItem;
         } else {
@@ -385,32 +376,27 @@ if (isset($_GET['type']) === false) {
             --$iTotal;
         }
     }
-    if (!empty($sOutputConst)) {
+    if (! empty($sOutputConst)) {
         $sOutput .= substr_replace($sOutputConst, '', -2);
     }
     $sOutput .= '], ';
-
     $sOutput .= '"recordsTotal": ' . $iTotal . ', ';
     $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
-
     echo $sOutput;
-} elseif (isset($_GET['type']) && ($_GET['type'] == 'search_for_items' || $_GET['type'] == 'search_for_items_with_tags')) {
+} elseif (isset($_GET['type']) && ($_GET['type'] === 'search_for_items' || $_GET['type'] === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
     $sOutput = '';
     $init_personal_folder = false;
     $arr_data = [];
-
     foreach ($rows as $record) {
         $displayItem = false;
-
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];
         $arr_data[$record['id']]['tree_id'] = (int) $record['id_tree'];
         $arr_data[$record['id']]['label'] = $record['label'];
         $arr_data[$record['id']]['desc'] = strip_tags(explode('<br>', $record['description'])[0]);
         $arr_data[$record['id']]['folder'] = $record['folder'];
         $arr_data[$record['id']]['login'] = strtr($record['login'], '"', '&quot;');
-
         // Is favorite?
         if (in_array($record['id'], $_SESSION['favourites']) === true) {
             $arr_data[$record['id']]['enable_favourites'] = 1;
@@ -430,7 +416,6 @@ if (isset($_GET['type']) === false) {
         }
 
         $arr_data[$record['id']]['is_result_of_search'] = 1;
-
         if ((int) $SETTINGS['activate_expiration'] === 1) {
             if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
@@ -466,7 +451,7 @@ if (isset($_GET['type']) === false) {
             }
         }
         // Manage the restricted_to variable
-        if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
+        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING) !== null) {
             $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
             $restrictedTo = '';
@@ -481,7 +466,6 @@ if (isset($_GET['type']) === false) {
         }
 
         $arr_data[$record['id']]['restricted'] = $restrictedTo;
-
         // Get log for this item
         $logs = DB::query(
             'SELECT *
@@ -492,7 +476,6 @@ if (isset($_GET['type']) === false) {
             $_SESSION['user_id']
         );
 
-        /* ************** */
         $right = 0;
         // Possible values:
         // 0 -> no access to item
@@ -502,7 +485,6 @@ if (isset($_GET['type']) === false) {
         // 40 -> can edit but not move
         // 50 -> can edit and move
         $itemIsPersonal = false;
-
         // Let's identify the rights belonging to this ITEM
         if ((int) $record['perso'] === 1
             && DB::count() > 0
@@ -512,8 +494,7 @@ if (isset($_GET['type']) === false) {
             // If no then continue
             $itemIsPersonal = true;
             $right = 70;
-
-            // ----- END CASE 1 -----
+        // ----- END CASE 1 -----
         } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
             || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
@@ -522,8 +503,7 @@ if (isset($_GET['type']) === false) {
             // Case 2 - Is user manager and option "manager_edit" set to true?
             // Allow all rights
             $right = 70;
-
-            // ----- END CASE 3 -----
+        // ----- END CASE 3 -----
         } elseif (empty($record['restricted_to']) === false
             && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
             && $record['perso'] !== 1
@@ -532,8 +512,7 @@ if (isset($_GET['type']) === false) {
             // Case 4 - Is this item limited to Users? Is current user in this list?
             // Allow all rights
             $right = 70;
-
-            // ----- END CASE 4 -----
+        // ----- END CASE 4 -----
         } elseif ($user_is_included_in_role === true
             && $record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] !== 1
@@ -541,32 +520,28 @@ if (isset($_GET['type']) === false) {
             // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
             // Allow all rights
             $right = 60;
-
-            // ----- END CASE 5 -----
+        // ----- END CASE 5 -----
         } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 6 - Is user readonly?
             // Allow limited rights
             $right = 10;
-
-            // ----- END CASE 6 -----
+        // ----- END CASE 6 -----
         } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 7 - Is user readonly?
             // Allow limited rights
             $right = 10;
-
-            // ----- END CASE 7 -----
+        // ----- END CASE 7 -----
         } elseif ($record['perso'] !== 1
             && (int) $_SESSION['user_read_only'] === 1
         ) {
             // Case 8 - Is user allowed to access?
             // Allow rights
             $right = 10;
-
-            // ----- END CASE 8 -----
+        // ----- END CASE 8 -----
         } elseif (((empty($record['restricted_to']) === false
             && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
             || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
@@ -576,8 +551,7 @@ if (isset($_GET['type']) === false) {
             // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
             // If no then Allow none
             $right = 10;
-
-            // ----- END CASE 9 -----
+        // ----- END CASE 9 -----
         } else {
             // Define the access based upon setting on folder
             // 0 -> no access to item
@@ -592,7 +566,6 @@ if (isset($_GET['type']) === false) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
                     'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
@@ -633,9 +606,8 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
         $arr_data[$record['id']]['sk'] = $itemIsPersonal === true ? 1 : 0;
         $arr_data[$record['id']]['display'] = $right > 0 ? 1 : 0;
-        $arr_data[$record['id']]['open_edit'] = in_array($right, array(40, 50, 60, 70)) === true ? 1 : 0;
-        $arr_data[$record['id']]['canMove'] = in_array($right, array(30, 60, 70)) === true ? 1 : 0;
-
+        $arr_data[$record['id']]['open_edit'] = in_array($right, [40, 50, 60, 70]) === true ? 1 : 0;
+        $arr_data[$record['id']]['canMove'] = in_array($right, [30, 60, 70]) === true ? 1 : 0;
         //*************** */
 
         // prepare pwd copy if enabled
@@ -682,15 +654,14 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
     }
 
-    $returnValues = array(
+    $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_STRING),
         'message' => filter_var(
             str_replace('%X%', $iTotal, langHdl('find_message')),
             FILTER_SANITIZE_STRING
         ),
         'total' => (int) $iTotal,
-        'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? ((int) $_GET['start'] + (int) $_GET['length']) : -1,
-    );
-
+        'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
+    ];
     echo prepareExchangedData($returnValues, 'encode');
 }
