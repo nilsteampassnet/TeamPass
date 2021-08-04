@@ -2958,7 +2958,7 @@ function format_timezone_name($name)
  */
 function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
 {
-    if (is_null($mfaRoles) === true) {
+    if (empty($mfaRoles) === true) {
         return false;
     }
 

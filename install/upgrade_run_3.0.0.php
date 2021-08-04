@@ -357,6 +357,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'mfa_for_roles'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'mfa_for_roles'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'mfa_for_roles', '')"
+    );
+}
+
 // Convert the roles_allowed_to_print value to an array
 $roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
     $db_link,

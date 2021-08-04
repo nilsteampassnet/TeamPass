@@ -8,14 +8,14 @@ declare(strict_types=1);
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * ---
+ *
  * @project   Teampass
  * @file      tree.php
- * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2021 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
+ *
  * @see       https://www.teampass.net
  */
 
@@ -74,9 +74,11 @@ DB::$encoding = DB_ENCODING;
 // Superglobal load
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
-$sessionTreeStructure = $superGlobal->get('user_tree_structure', 'GET');
-$sessionLastTreeRefresh = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
+$get = [];
+$get['user_tree_structure'] = $superGlobal->get('user_tree_structure', 'GET');
+$get['user_tree_last_refresh_timestamp'] = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
+$get['force_refresh'] = $superGlobal->get('force_refresh', 'GET');
+$get['id'] = $superGlobal->get('id', 'GET');
 
 
 $lastFolderChange = DB::query(
@@ -86,9 +88,9 @@ $lastFolderChange = DB::query(
     'last_folder_change'
 );
 if (
-    empty($sessionTreeStructure) === true
-    || strtotime($lastFolderChange) > strtotime($sessionLastTreeRefresh)
-    || (isset($_GET['force_refresh']) === true && (int) $_GET['force_refresh'] === 1)
+    empty($get['user_tree_structure']) === true
+    || strtotime($lastFolderChange) > strtotime($get['user_tree_last_refresh_timestamp'])
+    || (isset($get['force_refresh']) === true && (int) $get['force_refresh'] === 1)
 ) {
     // Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
@@ -119,13 +121,13 @@ if (
 
     // build the tree to be displayed
     if (
-        isset($_GET['id']) === true
-        && is_numeric(intval($_GET['id'])) === true
+        isset($get['id']) === true
+        && is_numeric(intval($get['id'])) === true
         && isset($_SESSION['user']['treeloadstrategy']) === true
         && $_SESSION['user']['treeloadstrategy'] === 'sequential'
     ) {
         $ret_json = buildNodeTree(
-            $_GET['id'],
+            $get['id'],
             $listFoldersLimitedKeys,
             $listRestrictedFoldersForItemsKeys,
             /** @scrutinizer ignore-type */ $tree,
@@ -166,8 +168,8 @@ if (
     // Send back
     echo json_encode($ret_json);
 } else {
-    //echo '['.$sessionTreeStructure.']';
-    echo $sessionTreeStructure;
+    //echo '['.$get['user_tree_structure'].']';
+    echo $get['user_tree_structure'];
 }
 
 /**
@@ -228,8 +230,8 @@ function buildNodeTree(
                     $node->id,
                     array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
                 ) === true
-                    || @in_array($node->id, $listFoldersLimitedKeys) === true
-                    || @in_array($node->id, $listRestrictedFoldersForItemsKeys) === true
+                    || (is_array($listFoldersLimitedKeys) === true && in_array($node->id, $listFoldersLimitedKeys) === true)
+                    || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node->id, $listRestrictedFoldersForItemsKeys) === true)
                     || in_array($node->id, $session_no_access_folders) === true)
             ) {
                 $displayThisNode = true;
@@ -260,15 +262,15 @@ function buildNodeTree(
                 $childrenNb = DB::count();
 
                 // If personal Folder, convert id into user name
-                $node->title = ($node->title === $session_user_id && (int) $node->nlevel === 1) ?
-                    $session_login : 
+                $node->title = $node->title === $session_user_id && (int) $node->nlevel === 1 ?
+                    $session_login :
                     ($node->title === null ? '' : htmlspecialchars_decode($node->title, ENT_QUOTES));
 
                 // prepare json return for current node
-                $parent = ($node->parent_id == 0) ? '#' : 'li_' . $node->parent_id;
+                $parent = $node->parent_id === 0 ? '#' : 'li_' . $node->parent_id;
 
                 // special case for READ-ONLY folder
-                $title = ($session_user_read_only === true && !in_array($node->id, $session_personal_folders)) ? langHdl('read_only_account') : $title;
+                $title = $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : $title;
                 $text .= str_replace('&', '&amp;', $node->title);
                 $restricted = '0';
                 $folderClass = 'folder';
@@ -282,20 +284,18 @@ function buildNodeTree(
                     } elseif ($session_user_read_only === true && !in_array($node->id, $session_personal_visible_groups)) {
                         $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
                     }
-                    $text .= 
+                    $text .=
                         ' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-                        .((isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] == 1) ?
-                            '/'.$nbChildrenItems .
-                            '/'.(count($nodeDescendants) - 1)  :
+                        .(isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === 1 ?
+                            '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
                             '')
                         .'</span>';
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = '1';
                     $text .= 
-                        $session_user_read_only === true ? 
+                        $session_user_read_only === true ?
                             "<i class='far fa-eye fa-xs mr-1'></i>" :
-                            ''
-                        .'<span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_folders_limited[$node->id]) . '</span>';
+                            '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_folders_limited[$node->id]) . '</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = '1';
                     if ($session_user_read_only === true) {
@@ -303,8 +303,7 @@ function buildNodeTree(
                     }
                     $text .= $session_user_read_only === true ? 
                         "<i class='far fa-eye fa-xs mr-1'></i>" :
-                        ''
-                        . '<span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
+                        '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
                 } else {
                     $restricted = '1';
                     $folderClass = 'folder_not_droppable';
@@ -333,7 +332,7 @@ function buildNodeTree(
                             'id' => 'li_' . $node->id,
                             'parent' => $parent,
                             'text' => $text,
-                            'children' => $childrenNb == 0 ? false : true,
+                            'children' => $childrenNb === 0 ? false : true,
                             'li_attr' => array(
                                 'class' => 'jstreeopen',
                                 'title' => 'ID [' . $node->id . '] ' . $title,
@@ -352,7 +351,7 @@ function buildNodeTree(
                         array(
                             'id' => 'li_' . $node->id,
                             'parent' =>  $parent,
-                            'children' => $childrenNb == 0 ? false : true,
+                            'children' => $childrenNb === 0 ? false : true,
                             'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>' . $text,
                             'li_attr' => array(
                                 'class' => '',
@@ -371,13 +370,13 @@ function buildNodeTree(
 /**
  * Get through complete tree
  *
- * @param integer $nodeId                            Id
+ * @param int     $nodeId                            Id
  * @param array   $completTree                       Tree info
  * @param array   $tree                              The tree
  * @param array   $listFoldersLimitedKeys            Limited
  * @param array   $listRestrictedFoldersForItemsKeys Restricted
- * @param integer $last_visible_parent               Visible parent
- * @param integer $last_visible_parent_level         Parent level
+ * @param int     $last_visible_parent               Visible parent
+ * @param int     $last_visible_parent_level         Parent level
  * @param array   $SETTINGS                          Teampass settings
  * @param array   $ret_json                          Array
  *
@@ -483,7 +482,7 @@ function recursiveTree(
             $itemsNb = DB::count();
 
             // If personal Folder, convert id into user name
-            if ($completTree[$nodeId]->title == $session_user_id && $completTree[$nodeId]->nlevel == 1) {
+            if ($completTree[$nodeId]->title === $session_user_id && $completTree[$nodeId]->nlevel === 1) {
                 $completTree[$nodeId]->title = $session_login;
             }
 
@@ -516,8 +515,7 @@ function recursiveTree(
                 $text .= 
                     '<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . $itemsNb .
                     ((isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1) ?
-                        '/'.$nbChildrenItems .
-                        '/'.(count($nodeDescendants) - 1)  :
+                        '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
                         '')
                     . '</span>';
             } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true) {
@@ -568,7 +566,7 @@ function recursiveTree(
             }
 
             // prepare json return for current node
-            $parent = ($completTree[$nodeId]->parent_id === '0') ? '#' : 'li_' . $completTree[$nodeId]->parent_id;
+            $parent = $completTree[$nodeId]->parent_id === '0' ? '#' : 'li_' . $completTree[$nodeId]->parent_id;
 
             // handle displaying
             if (
