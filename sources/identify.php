@@ -319,7 +319,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         && isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1
     ) {
+<<<<<<< HEAD
         if (is_null($server['PHP_AUTH_USER']) === false && strpos($server['PHP_AUTH_USER'], '@') !== false) {
+=======
+        if (strpos($server['PHP_AUTH_USER'], '@') !== false) {
+>>>>>>> 11332ff33acfc03079b875975f27798cf755ac7f
             $username = explode('@', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
         } elseif (strpos($server['PHP_AUTH_USER'], '\\') !== false) {
             $username = explode('\\', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
