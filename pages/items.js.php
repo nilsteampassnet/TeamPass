@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,13 +9,19 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      items.js.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
 
@@ -35,12 +44,14 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+if (! checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
+$var = [];
 $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
 ?>
@@ -357,7 +368,7 @@ console.log(store.get('teampassUser'))
                 $('.pwd-show-spinner')
                     .removeClass('fas fa-circle-notch fa-spin text-warning')
                     .addClass('far fa-eye');
-            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? ($SETTINGS['password_overview_delay'] * 1000) : 4000; ?>);
+            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
         } else {
             $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
         }
@@ -1922,7 +1933,7 @@ console.log(store.get('teampassUser'))
                 $('.clear-me-html, .card-item-field-value').html('');
                 $('.form-check-input').attr('checked', '');
                 //$('.card-item-extra').collapse();
-				$('.collapse').removeClass('show');
+               $('.collapse').removeClass('show');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo langHdl('none'); ?>');
@@ -3474,7 +3485,7 @@ console.log(store.get('teampassUser'))
                                 e.trigger.dataset.itemId,
                                 e.trigger.dataset.itemLabel
                             );
-							
+                           
                             // Warn user about clipboard clear
                             if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
@@ -4807,7 +4818,7 @@ console.log(store.get('teampassUser'))
 
                 // Prepare datePicker
                 $('#form-item-deleteAfterDate, .datepicker').datepicker({
-                    format: '<?php echo str_replace(array('Y', 'M'), array('yyyy', 'mm'), $SETTINGS['date_format']); ?>',
+                    format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
                     language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
@@ -4822,7 +4833,7 @@ console.log(store.get('teampassUser'))
                     showInputs: false,
                     explicitMode: true
                 });
-				
+               
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
                     'item_id': store.get('teampassItem').id,
@@ -5102,20 +5113,20 @@ console.log(store.get('teampassUser'))
         // Clear memory
         //localStorage.setItem("teampassItem", '');
         if (debugJavascript === true) console.log('Get privilege for folder ' + val);
-			
-		if (val === "") {
-			toastr.remove();
-			toastr.error(
-				'<?php echo langHdl('error'); ?>',
-				'<?php echo langHdl('data_inconsistency'); ?>',
-				{
-					timeOut: 5000,
-					positionClass: 'toast-top-right',
-					progressBar: true
-				}
-			);
-			return false;
-		}
+            
+       if (val === "") {
+          toastr.remove();
+           toastr.error(
+                '<?php echo langHdl('error'); ?>',
+                '<?php echo langHdl('data_inconsistency'); ?>',
+               {
+                  timeOut: 5000,
+                 positionClass: 'toast-top-right',
+                  progressBar: true
+              }
+          );
+         return false;
+      }
 
         return $.post(
             "sources/items.queries.php", {

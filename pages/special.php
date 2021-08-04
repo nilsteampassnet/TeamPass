@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,40 +9,45 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      special.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
   isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
   || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
   || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
-  die('Hacking attempt...');
+    die('Hacking attempt...');
 }
 
 // Load config
 if (file_exists('../includes/config/tp.config.php') === true) {
-  include_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php') === true) {
-  include_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
-  throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], "special", $SETTINGS) === false) {
-  $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-  include $SETTINGS['cpassman_dir'] . '/error.php';
-  exit();
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'special', $SETTINGS) === false) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
 }
 
 // Load template

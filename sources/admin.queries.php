@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -23,7 +25,7 @@ session_name('teampass_session');
 session_start();
 if (
     isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
+    || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
     || isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
@@ -49,7 +51,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
@@ -82,15 +84,10 @@ $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-// Load AntiXSS
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-$antiXss = new voku\helper\AntiXSS();
-
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_session_key = filter_input(INPUT_POST, 'session_key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
 $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
@@ -110,7 +107,7 @@ switch ($post_type) {
         $text = '<ul>';
         $error = '';
         if (TP_ADMIN_NO_INFO === false) {
-            if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
+            if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] === 1) {
                 // Get info about Teampass
                 if (
                     isset($SETTINGS['proxy_ip']) === true && empty($SETTINGS['proxy_ip']) === false &&
@@ -214,7 +211,7 @@ switch ($post_type) {
                 0
             );
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 //If not exist then add it
                 DB::insert(
                     prefixTable('nested_tree'),
@@ -309,7 +306,6 @@ switch ($post_type) {
 
         //init
         $foldersIds = array();
-        $text = '';
         $nbItemsDeleted = 0;
 
         // Get an array of all folders
@@ -322,7 +318,6 @@ switch ($post_type) {
 
         $items = DB::query('SELECT id,label FROM ' . prefixTable('items') . ' WHERE id_tree NOT IN %li', $foldersIds);
         foreach ($items as $item) {
-            $text .= $item['label'] . '[' . $item['id'] . '] - ';
             //Delete item
             DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
 
@@ -352,7 +347,7 @@ switch ($post_type) {
                 'at_creation'
             );
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
                 DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
                 DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
@@ -379,8 +374,8 @@ switch ($post_type) {
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
-                    '<i class="fas fa-check text-success ml-2 mr-3"></i>' .
-                    '<i class="fas fa-chevron-right mr-2"></i>' .
+                    '<i class="fas fa-check text-success ml-2 mr-3"></i>
+                    <i class="fas fa-chevron-right mr-2"></i>' .
                     $nbItemsDeleted . ' ' . langHdl('deleted_items'),
             ),
             'encode'
@@ -428,7 +423,7 @@ switch ($post_type) {
             if (defined('DB_PREFIX') || substr_count($table, DB_PREFIX) > 0) {
                 // Do query
                 $result = DB::queryRaw('SELECT * FROM ' . $table);
-                $mysqli_result = DB::queryRaw(
+                DB::queryRaw(
                     'SELECT *
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE table_schema = %s
@@ -580,18 +575,17 @@ switch ($post_type) {
         }
 
         //read sql file
-        if ($handle = fopen($file, 'r')) {
-            $query = '';
-            while (!feof($handle)) {
-                $query .= fgets($handle, 4096);
-                if (substr(rtrim($query), -1) == ';') {
-                    //launch query
-                    DB::queryRaw($query);
-                    $query = '';
-                }
+        $handle = fopen($file, 'r');
+        $query = '';
+        while (!feof($handle)) {
+            $query .= fgets($handle, 4096);
+            if (substr(rtrim($query), -1) === ';') {
+                //launch query
+                DB::queryRaw($query);
+                $query = '';
             }
-            fclose($handle);
         }
+        fclose($handle);
 
         //delete file
         unlink($SETTINGS['path_to_files_folder'] . '/' . $file);
@@ -651,7 +645,7 @@ switch ($post_type) {
                 'at_creation'
             );
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 //Create new at_creation entry
                 $rowTmp = DB::queryFirstRow(
                     'SELECT date, id_user FROM ' . prefixTable('log_items') . ' WHERE id_item=%i ORDER BY date ASC',
@@ -718,7 +712,6 @@ switch ($post_type) {
             break;
         }
 
-        $nbFilesDeleted = 0;
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
         //read folder
@@ -737,10 +730,9 @@ switch ($post_type) {
         if ($dir !== false) {
             //delete file FILES
             while (false !== ($f = readdir($dir))) {
-                if ($f != '.' && $f !== '..' && $f !== '.htaccess') {
+                if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
                     if (file_exists($dir . $f) && ((time() - filectime($dir . $f)) > 604800)) {
                         fileDelete($dir . '/' . $f, $SETTINGS);
-                        ++$nbFilesDeleted;
                     }
                 }
             }
@@ -766,10 +758,9 @@ switch ($post_type) {
         if ($dir !== false) {
             //delete file
             while (false !== ($f = readdir($dir))) {
-                if ($f != '.' && $f !== '..') {
+                if ($f !== '.' && $f !== '..') {
                     if (strpos($f, '_delete.') > 0) {
                         fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $f, $SETTINGS);
-                        ++$nbFilesDeleted;
                     }
                 }
             }
@@ -793,8 +784,8 @@ switch ($post_type) {
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
-                    '<i class="fas fa-check text-success ml-2 mr-3"></i>' .
-                    '<i class="fas fa-chevron-right mr-2"></i>' .
+                    '<i class="fas fa-check text-success ml-2 mr-3"></i>
+                    <i class="fas fa-chevron-right mr-2"></i>' .
                     $nbItemsDeleted . ' ' . langHdl('deleted_items'),
             ),
             'encode'
@@ -842,12 +833,12 @@ switch ($post_type) {
         );
 
         echo prepareExchangedData(
-            array(
+            [
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
                     '<i class="fas fa-check text-success mr-2"></i>',
-            ),
+            ],
             'encode'
         );
         break;
@@ -859,10 +850,10 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                array(
+                [
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
-                ),
+                ],
                 'encode'
             );
             break;
@@ -946,6 +937,7 @@ switch ($post_type) {
         $msg = '';
         $result = '';
         $filename = $post_option;
+        $tp_settings = [];
         //get backups infos
         $rows = DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s', 'admin');
         foreach ($rows as $record) {
@@ -1003,14 +995,14 @@ switch ($post_type) {
                 );
 
                 //save the file
-                $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear' . '.sql', 'w+');
+                $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
                 if ($handle !== false) {
                     fwrite($handle, $return);
                     fclose($handle);
                 }
             }
             $result = 'backup_decrypt_success';
-            $msg = $tp_settings['bck_script_path'] . '/' . $filename . '.clear' . '.sql';
+            $msg = $tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql';
         } else {
             $result = 'backup_decrypt_fails';
             $msg = 'File not found: ' . $Fnm;
@@ -1052,7 +1044,7 @@ switch ($post_type) {
         $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
 
         // generate new saltkey
-        $old_sk_filename = SECUREPATH . '/teampass-seckey.txt' . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
+        $old_sk_filename = SECUREPATH . '/teampass-seckey.txt.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
         copy(
             SECUREPATH . '/teampass-seckey.txt',
             $old_sk_filename
@@ -1998,23 +1990,19 @@ switch ($post_type) {
 
         $cpt = 0;
         $continu = true;
-        $error = '';
         $newFilesList = array();
         $message = '';
 
         // load PhpEncryption library
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'Crypto.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'Encoding.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'Key.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'File.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/' . 'Core.php';
-
-        // Get KEY
-        $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
 
         // treat 10 files
         foreach ($post_list as $file) {
@@ -2282,7 +2270,7 @@ switch ($post_type) {
         // Do query
         DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'api');
         $counter = DB::count();
-        if ($counter == 0) {
+        if ($counter === 0) {
             DB::insert(
                 prefixTable('misc'),
                 array(
@@ -2308,7 +2296,7 @@ switch ($post_type) {
     case 'save_duo_status':
         DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'duo');
         $counter = DB::count();
-        if ($counter == 0) {
+        if ($counter === 0) {
             DB::insert(
                 prefixTable('misc'),
                 array(
@@ -2412,14 +2400,14 @@ switch ($post_type) {
         );
 
         // Google Authentication
-        if (htmlspecialchars_decode($dataReceived['google_authentication']) == 'false') {
+        if (htmlspecialchars_decode($dataReceived['google_authentication']) === 'false') {
             $tmp = 0;
         } else {
             $tmp = 1;
         }
         DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'google_authentication');
         $counter = DB::count();
-        if ($counter == 0) {
+        if ($counter === 0) {
             DB::insert(
                 prefixTable('misc'),
                 array(
@@ -2445,7 +2433,7 @@ switch ($post_type) {
         if (is_null($dataReceived['ga_website_name']) === false) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'ga_website_name');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2499,7 +2487,7 @@ switch ($post_type) {
         if (!is_null($dataReceived['agses_hosted_url'])) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_url');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2528,7 +2516,7 @@ switch ($post_type) {
         if (!is_null($dataReceived['agses_hosted_id'])) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_id');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2557,7 +2545,7 @@ switch ($post_type) {
         if (!is_null($dataReceived['agses_hosted_apikey'])) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_apikey');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2658,7 +2646,7 @@ switch ($post_type) {
             // in case of stats enabled, update the actual time
             if ($dataReceived['field'] === 'send_stats') {
                 // Check if previous time exists, if not them insert this value in DB
-                $data_time = DB::query(
+                DB::query(
                     'SELECT * FROM ' . prefixTable('misc') . '
                     WHERE type = %s AND intitule = %s',
                     $type,
@@ -2765,7 +2753,7 @@ switch ($post_type) {
         if (null !== $post_status) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'send_stats');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2797,7 +2785,7 @@ switch ($post_type) {
         if (null !== $post_list) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'send_statistics_items');
             $counter = DB::count();
-            if ($counter == 0) {
+            if ($counter === 0) {
                 DB::insert(
                     prefixTable('misc'),
                     array(
@@ -2842,14 +2830,14 @@ switch ($post_type) {
             break;
         }
 
-        if ($result = DB::query("SHOW TABLES LIKE '" . prefixTable('sk_reencrypt_backup') . "'")) {
+        if (DB::query("SHOW TABLES LIKE '" . prefixTable('sk_reencrypt_backup') . "'")) {
             if (DB::count() === 1) {
-                echo '1';
+                echo true;
             } else {
-                echo '0';
+                echo false;
             }
         } else {
-            echo '0';
+            echo false;
         }
 
         break;

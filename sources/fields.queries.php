@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -70,13 +73,10 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Prepare POST variables
-$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
-$post_field_title = filter_input(INPUT_POST, 'field_title', FILTER_SANITIZE_STRING);
-$post_field_type = filter_input(INPUT_POST, 'field_type', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+//$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -103,7 +103,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            $categoriesSelect = '';
+            //$categoriesSelect = '';
             $arrCategories = $arrFields = array();
             $rows = DB::query(
                 'SELECT *
@@ -114,7 +114,8 @@ if (null !== $post_type) {
             );
             foreach ($rows as $record) {
                 // get associated folders
-                $foldersList = $foldersNumList = '';
+                //$foldersList = '';
+                //$foldersNumList = '';
                 $arrayFolders = array();
                 $arrayRoles = array();
 
@@ -619,8 +620,6 @@ if (null !== $post_type) {
             $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING);
             $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING);
             $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_STRING);
-            $post_fieldId = isset($dataReceived['fieldId']) === false ? '' :
-                filter_var($dataReceived['fieldId'], FILTER_SANITIZE_NUMBER_INT);
 
             // NEW FIELD
             DB::insert(

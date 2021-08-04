@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      user.logs.datatables.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -40,7 +48,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
-    exit();
+    exit;
 }
 
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -48,7 +56,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -56,12 +63,10 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 }
 
 //Columns name
-$aColumns = array('date', 'label', 'action');
-$aSortTypes = array('asc', 'desc');
-
+$aColumns = ['date', 'label', 'action'];
+$aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
-
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
@@ -72,7 +77,6 @@ if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
 //Ordering
 if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
     $sOrder = ' ORDER BY ';
-
     if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['dir'])
     ) {
         $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
@@ -120,7 +124,6 @@ $rows = DB::query(
     (string) $sWhere
 );
 $iTotal = DB::count();
-
 $rows = DB::query(
     'SELECT l.date as date, i.label as label, l.action as action, i.id as id
     FROM '.prefixTable('log_items').' as l
@@ -135,10 +138,8 @@ $rows = DB::query(
     (string) $sLimit
 );
 $iFilteredTotal = DB::count();
-
 $sOutput = '{';
 $sOutput .= '"aaData": ';
-
 if (DB::count() > 0) {
     $sOutput .= '[';
 } else {
@@ -171,7 +172,7 @@ foreach ($rows as $record) {
 }
 
 if (count($rows) > 0) {
-    if (strrchr($sOutput, '[') != '[') {
+    if (strrchr($sOutput, '[') !== '[') {
         $sOutput = substr_replace($sOutput, '', -1);
     }
     $sOutput .= ']';

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      items.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -38,9 +45,10 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load
@@ -49,16 +57,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-// Prepare GET variables
-$get_group = $superGlobal->get('group', 'GET');
-$get_id = $superGlobal->get('id', 'GET');
-
 // Prepare SESSION variables
 $session_user_admin = $superGlobal->get('user_admin', 'SESSION');
-$session_user_upgrade_needed = $superGlobal->get('user_upgrade_needed', 'SESSION');
-
-// Prepare COOKIE variables
-$cookie_jstree_select = $superGlobal->get('jstree_select', 'COOKIE');
 
 if (
     (int) $session_user_admin === 1
@@ -68,24 +68,24 @@ if (
 }
 
 // Get list of users
-$usersList = array();
+$usersList = [];
 $rows = DB::query('SELECT id,login,email FROM ' . prefixTable('users') . ' ORDER BY login ASC');
 foreach ($rows as $record) {
-    $usersList[$record['login']] = array(
+    $usersList[$record['login']] = [
         'id' => $record['id'],
         'login' => $record['login'],
         'email' => $record['email'],
-    );
+    ];
 }
 // Get list of roles
-$arrRoles = array();
+$arrRoles = [];
 $listRoles = '';
 $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
 foreach ($rows as $reccord) {
-    $arrRoles[$reccord['title']] = array(
+    $arrRoles[$reccord['title']] = [
         'id' => $reccord['id'],
         'title' => $reccord['title'],
-    );
+    ];
     if (empty($listRoles)) {
         $listRoles = $reccord['id'] . '#' . $reccord['title'];
     } else {
@@ -164,7 +164,7 @@ foreach ($rows as $reccord) {
                         <?php
                         echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fas fa-cubes mr-2"></i>' . langHdl('fields') . '</a></li>' : '';
-                        echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? '
+echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_5" data-toggle="tab"><i class="fas fa-history mr-2"></i>' . langHdl('history') . '</a></li>' : '';
                         ?>
                     </ul>
@@ -737,10 +737,7 @@ foreach ($rows as $reccord) {
 
 
     <?php
-    if (
-        isset($SETTINGS['enable_suggestion']) === true
-        && (int) $SETTINGS['enable_suggestion'] === 1
-    ) {
+    if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
         /*
             // TODO: NOT YET PORTED ?>
         <div class="row hidden item-details-card">
@@ -817,7 +814,8 @@ foreach ($rows as $reccord) {
             </div>
         </div>
         <?php
-        */ }
+        */
+    }
     ?>
 
     <!--
@@ -917,8 +915,8 @@ foreach ($rows as $reccord) {
         </div>
 
     <?php
-    } else {
-        ?>
+                            } else {
+                                ?>
         <!--
             <div class="mt-4">
             <div class="alert alert-warning">
@@ -927,7 +925,7 @@ foreach ($rows as $reccord) {
         </div>
         -->
     <?php
-    }
+                            }
     ?>
 
 
@@ -1049,10 +1047,10 @@ foreach ($rows as $reccord) {
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                         <p><?php
                             echo str_replace(
-                                array('##otv_expiration_period##', '. '),
-                                array('<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'),
-                                langHdl('otv_message')
-                            );
+        ['##otv_expiration_period##', '. '],
+        ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
+        langHdl('otv_message')
+    );
                             ?></p>
                     </div>
 

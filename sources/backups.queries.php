@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -62,7 +64,6 @@ DB::$encoding = DB_ENCODING;
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_data = filter_input(
     INPUT_POST,
     'data',
@@ -117,7 +118,7 @@ if (null !== $post_type) {
                 if (empty($pre) || substr_count($table, $pre) > 0) {
                     // Do query
                     $result = DB::queryRaw('SELECT * FROM ' . $table);
-                    $mysqli_result = DB::queryRaw(
+                    DB::queryRaw(
                         'SELECT *
                         FROM INFORMATION_SCHEMA.COLUMNS
                         WHERE table_schema = %s
@@ -294,18 +295,17 @@ if (null !== $post_type) {
             }
 
             //read sql file
-            if ($handle = fopen($post_backupFile, 'r')) {
-                $query = '';
-                while (!feof($handle)) {
-                    $query .= fgets($handle, 4096);
-                    if (substr(rtrim($query), -1) == ';') {
-                        //launch query
-                        DB::queryRaw($query);
-                        $query = '';
-                    }
+            $handle = fopen($post_backupFile, 'r');
+            $query = '';
+            while (!feof($handle)) {
+                $query .= fgets($handle, 4096);
+                if (substr(rtrim($query), -1) == ';') {
+                    //launch query
+                    DB::queryRaw($query);
+                    $query = '';
                 }
-                fclose($handle);
             }
+            fclose($handle);
 
             //delete file
             unlink($post_backupFile);

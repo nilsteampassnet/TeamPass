@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -134,7 +136,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 
     // Securize language
     if (
-        null === $superGlobal->get('user_language', 'SESSION')
+        is_null($superGlobal->get('user_language', 'SESSION')) === true
         || empty($superGlobal->get('user_language', 'SESSION')) === true
     ) {
         $superGlobal->put('user_language', 'english', 'SESSION');

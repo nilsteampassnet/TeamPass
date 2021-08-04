@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -406,7 +408,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
                 prefixTable('sharekeys_files'),
                 array(
                     'object_id' => $newID,
-                    'user_id' => $user['id'],
+                    'user_id' => (int) $user['id'],
                     'share_key' => encryptUserObjectKey($newFile['objectKey'], $user['public_key']),
                 )
             );
@@ -415,8 +417,8 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         DB::insert(
             prefixTable('sharekeys_files'),
             array(
-                'object_id' => $newID,
-                'user_id' => $_SESSION['user_id'],
+                'object_id' => (int) $newID,
+                'user_id' => (int) $_SESSION['user_id'],
                 'share_key' => encryptUserObjectKey($newFile['objectKey'], $_SESSION['user']['public_key']),
             )
         );

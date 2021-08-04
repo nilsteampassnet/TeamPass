@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -157,14 +160,6 @@ if (null !== $post_type) {
                         ' . prefixTable('nested_tree') . ' AS n
                         WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i',
                         'complex',
-                        $t->id
-                    );
-
-                    // get number of items in folder
-                    $data_items = DB::query(
-                        'SELECT id
-                        FROM ' . prefixTable('items') . '
-                        WHERE id_tree = %i',
                         $t->id
                     );
 
@@ -773,7 +768,6 @@ if (null !== $post_type) {
             foreach ($post_folders as $folderId) {
                 // Exclude a folder with id alreay in the list
                 if (in_array($folderId, $folderForDel) === false) {
-                    $foldersDeleted = '';
                     // Get through each subfolder
                     $folders = $tree->getDescendants($folderId, true);
                     foreach ($folders as $folder) {
@@ -826,7 +820,7 @@ if (null !== $post_type) {
                                 );
 
                                 // delete folder from SESSION
-                                if (($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
+                                if (array_search($item['id'], $_SESSION['groupes_visibles']) !== false) {
                                     unset($_SESSION['groupes_visibles'][$item['id']]);
                                 }
 

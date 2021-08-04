@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      error.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (file_exists('../sources/SecureHandler.php')) {
     include_once '../sources/SecureHandler.php';
@@ -43,7 +50,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 if (
-    null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
+    filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) !== null
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired'
 ) {
     //Include files
@@ -51,7 +58,6 @@ if (
     require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
     require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
     // connect to DB
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -60,21 +66,20 @@ if (
 
     // Include main functions used by TeamPass
     require_once 'sources/main.functions.php';
-
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
         DB::update(
             DB_PREFIX . 'users',
-            array(
+            [
                 'key_tempo' => '',
-            ),
+            ],
             'id=%i',
             $_SESSION['user_id']
         );
     }
 
     //Log into DB the user's disconnection
-    if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] == 1) {
+    if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === 1) {
         logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
@@ -111,10 +116,8 @@ if (
 }
 
 // erase session table
-$_SESSION = array();
-
+$_SESSION = [];
 // Kill session
 session_destroy();
-
-die();
+die;
 ?>

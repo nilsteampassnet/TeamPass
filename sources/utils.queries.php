@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -68,12 +71,9 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
 $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
 $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
-$post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
-$post_data_to_share = filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING);
 $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
 // Construction de la requ?te en fonction du type de valeur
@@ -116,7 +116,6 @@ if (null !== $post_type) {
 
                     $id_managed = '';
                     $i = 1;
-                    $items_id_list = array();
                     foreach ($rows as $record) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
@@ -224,7 +223,7 @@ if (null !== $post_type) {
             echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
             break;
 
-            //CASE auto update server password
+        //CASE auto update server password
         case 'server_auto_update_password':
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
@@ -303,10 +302,10 @@ if (null !== $post_type) {
                 // store new password
                 DB::update(
                     prefixTable('items'),
-                    array(
+                    [
                         'pw' => $encrypt['string'],
                         'pw_iv' => '',
-                        ),
+                    ],
                     'id = %i',
                     $dataReceived['currentId']
                 );
@@ -355,10 +354,10 @@ if (null !== $post_type) {
             // store new frequency
             DB::update(
                 prefixTable('items'),
-                array(
+                [
                     'auto_update_pwd_frequency' => $post_freq,
                     'auto_update_pwd_next_date' => time() + (2592000 * $post_freq),
-                    ),
+                ],
                 'id = %i',
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
             );

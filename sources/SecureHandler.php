@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Encrypt PHP session data for the internal PHP save handlers
  *

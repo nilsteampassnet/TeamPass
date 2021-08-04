@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,18 +9,23 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      core.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
 
-
-if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Please login...');
 }
 
@@ -38,16 +45,14 @@ if (file_exists('../includes/config/tp.config.php')) {
  *
  * @return string refresh page to url
  */
-function redirect($url)
+function redirect(string $url): string
 {
     // Load AntiXSS
     include_once '../includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
-
-    if (!headers_sent()) {    //If headers not sent yet... then do php redirect
+    if (! headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: ' . $antiXss->xss_clean($url));
-
-        return;
+        exit;
     }
 
     //If headers are sent... do java redirect... if java disabled, do html redirect.
@@ -57,22 +62,34 @@ function redirect($url)
     echo '<noscript>';
     echo '<meta http-equiv="refresh" content="0;url=' . $antiXss->xss_clean($url) . '" />';
     echo '</noscript>';
+    exit;
 }
 
 // Include files
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
 // Prepare GET variables
-$get_group = $superGlobal->get('group', 'GET');
+$server = [];
+$server['https'] = $superGlobal->get('HTTPS', 'SERVER');
+$server['request_uri'] = $superGlobal->get('REQUEST_URI', 'SERVER');
+$server['http_host'] = $superGlobal->get('HTTP_HOST', 'SERVER');
+$server['ssl_server_cert'] = $superGlobal->get('ssl_server_cert', 'SERVER');
+$server['remote_addr'] = $superGlobal->get('remote_addr', 'SERVER');
+$server['http_user_agent'] = $superGlobal->get('http_user_agent', 'SERVER');
+
+$get = [];
+$get['session'] = $superGlobal->get('session', 'GET');
+$get['action'] = $superGlobal->get('action', 'GET');
+$get['type'] = $superGlobal->get('type', 'GET');
+$get['page'] = $superGlobal->get('page', 'GET');
 
 // Redirect needed?
-if (isset($_SERVER['HTTPS']) === true
-    && $_SERVER['HTTPS'] !== 'on'
+if (isset($server['https']) === true
+    && $server['https'] !== 'on'
     && isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
 ) {
-    redirect('https://' . $superGlobal->get('HTTP_HOST', 'SERVER') . $superGlobal->get('REQUEST_URI', 'SERVER'));
+    redirect('https://' . $server['http_host'] . $server['request_uri']);
 }
 
 // Load pwComplexity
@@ -81,15 +98,15 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== '0') {
         define(
             'TP_PW_COMPLEXITY',
-            array(
-                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-            )
+            [
+                0 => [0, langHdl('complex_level0'), 'fas fa-bolt text-danger'],
+                25 => [25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+                50 => [50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+                60 => [60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
+                70 => [70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+                80 => [80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
+                90 => [90, langHdl('complex_level6'), 'far fa-gem text-success'],
+            ]
         );
     }
 }
@@ -108,13 +125,16 @@ if (
     if (DB::count() > 0 && $row['valeur'] === 'true') {
         /**
          * Permits to delete files and folders recursively.
+         *
+         * @param string $dir Path
+         *
+         * @return bool
          */
         function delTree($dir)
         {
             $directories = scandir($dir);
             if ($directories !== false) {
-                $files = array_diff($directories, array('.', '..'));
-
+                $files = array_diff($directories, ['.', '..']);
                 foreach ($files as $file) {
                     if (is_dir($dir . '/' . $file)) {
                         delTree($dir . '/' . $file);
@@ -144,7 +164,6 @@ if (
 
         // Delete temporary install table
         DB::query('DROP TABLE IF EXISTS `_install`');
-
         // Delete tag
         DB::delete(
             prefixTable('misc'),
@@ -157,11 +176,11 @@ if (
 
 // Load Languages stuff
 if (isset($languagesList) === false) {
-    $languagesList = array();
+    $languagesList = [];
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
+        if (isset($_SESSION['user_language']) && $record['name'] === $_SESSION['user_language']) {
             $_SESSION['user_language_flag'] = $record['flag'];
             $_SESSION['user_language_code'] = $record['code'];
             $_SESSION['user_language_label'] = $record['label'];
@@ -183,20 +202,20 @@ if (isset($_SESSION['user']['usertimezone']) === true && $_SESSION['user']['user
 }
 
 // CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
-if ((isset($_GET['session']) === true
-        && $_GET['session'] == 'expired')
-    || (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
+if ((isset($get['session']) === true
+        && $get['session'] === 'expired')
+    || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) !== null
         && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired')
 ) {
     // Clear User tempo key
     if (isset($_SESSION['user_id']) === true) {
         DB::update(
             prefixTable('users'),
-            array(
+            [
                 'key_tempo' => '',
                 'timestamp' => '',
                 'session_end' => '',
-            ),
+            ],
             'id=%i',
             $_SESSION['user_id']
         );
@@ -225,15 +244,15 @@ if (empty($_SESSION['sessionDuration']) === false) {
 
 // get some init
 if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
-    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false, true, array('cpassman_dir' => '.'));
+    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']);
     $_SESSION['user_id'] = 0;
     $_SESSION['id'] = 1;
 }
 
 if (
     isset($_SESSION['user_id']) === true
-    && isset($_GET['type']) === false
-    && isset($_GET['action']) === false
+    && isset($get['type']) === false
+    && isset($get['action']) === false
     && (int) $_SESSION['user_id'] !== 0
     && (empty($_SESSION['sessionDuration']) === true
         || $_SESSION['sessionDuration'] < time()
@@ -243,15 +262,14 @@ if (
     // Update table by deleting ID
     DB::update(
         prefixTable('users'),
-        array(
+        [
             'key_tempo' => '',
             'timestamp' => '',
             'session_end' => '',
-        ),
+        ],
         'id=%i',
         $_SESSION['user_id']
     );
-
     //Log into DB the user's disconnection
     if (
         isset($SETTINGS['log_connections']) === true
@@ -265,8 +283,7 @@ if (
     // erase session table
     session_unset();
     session_destroy();
-    $_SESSION = array();
-
+    $_SESSION = [];
     //Redirection
     echo '
     <script language="javascript" type="text/javascript">
@@ -279,16 +296,16 @@ if (
 // CHECK IF UPDATE IS NEEDED
 if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !== false
         || empty($SETTINGS['update_needed']) === true))
-    && (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] == 1)
+    && (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] === 1)
 ) {
     $row = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s_type AND intitule=%s_intitule',
-        array(
+        [
             'type' => 'admin',
             'intitule' => 'cpassman_version',
-        )
+        ]
     );
-    if ($row['valeur'] != TP_VERSION_FULL) {
+    if ($row['valeur'] !== TP_VERSION_FULL) {
         $SETTINGS['update_needed'] = true;
     } else {
         $SETTINGS['update_needed'] = false;
@@ -325,31 +342,28 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
         if (isset($_SESSION['user_id']) === true) {
             DB::update(
                 prefixTable('users'),
-                array(
+                [
                     'key_tempo' => '',
                     'timestamp' => '',
                     'session_end' => '',
-                ),
+                ],
                 'id=%i',
                 $_SESSION['user_id']
             );
         }
 
         //Log into DB the user's disconnection
-        if (isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] == 1) {
+        if (isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] === 1) {
             logEvents($SETTINGS, 'user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
         }
 
         syslog(
             LOG_WARNING,
-            'Unlog user: ' . date('Y/m/d H:i:s') . " {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
+            'Unlog user: ' . date('Y/m/d H:i:s') . " {$server['remote_addr']} ({$server['http_user_agent']})"
         );
-
         // erase session table
-        $_SESSION = array();
-
+        $_SESSION = [];
         setcookie('pma_end_session');
-
         // REDIRECTION PAGE ERREUR
         echo '
         <script language="javascript" type="text/javascript">
@@ -370,24 +384,24 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
 if (
     isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
-    && isset($_SERVER['SSL_SERVER_CERT']) === true
+    && isset($server['ssl_server_cert']) === true
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
-    $server_cert = openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
+    $server_cert = openssl_x509_parse($server['ssl_server_cert']);
     $cert_name = $server_cert['name'];
     $cert_issuer = '';
     foreach ($server_cert['issuer'] as $key => $value) {
         if (is_array($value) === false) {
-            $cert_issuer .= "/$key=$value";
+            $cert_issuer .= "/${key}=${value}";
         }
     }
-    if (isset($cert_name) === true && empty($cert_name) === false && $cert_name != $cert_issuer) {
-        if (isset($_SERVER['HTTPS'])) {
+    if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
+        if (isset($server['HTTPS'])) {
             header('Strict-Transport-Security: max-age=500');
             $_SESSION['error']['sts'] = 0;
         }
-    } elseif ($cert_name == $cert_issuer) {
+    } elseif ($cert_name === $cert_issuer) {
         $_SESSION['error']['sts'] = 1;
     }
 }
@@ -399,15 +413,12 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
         'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ' . prefixTable('users') . ' WHERE id=%i',
         $_SESSION['user_id']
     );
-
     //Check if user has been deleted or unlogged
     if (empty($data) === true) {
         // erase session table
-        $_SESSION = array();
-
+        $_SESSION = [];
         // Kill session
         session_destroy();
-
         //redirection to index
         echo '
         <script language="javascript" type="text/javascript">
@@ -420,8 +431,8 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
         $_SESSION['user_admin'] = $data['admin'];
         $_SESSION['user_manager'] = $data['gestionnaire'];
         $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
-        $_SESSION['groupes_visibles'] = array();
-        $_SESSION['no_access_folders'] = array();
+        $_SESSION['groupes_visibles'] = [];
+        $_SESSION['no_access_folders'] = [];
         if (empty($data['groupes_visibles']) === false) {
             $_SESSION['groupes_visibles'] = array_filter(explode(';', $data['groupes_visibles']));
         }
@@ -432,9 +443,9 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
         if (isset($_SESSION['sessionDuration']) === false) {
             DB::update(
                 prefixTable('users'),
-                array(
+                [
                     'timestamp' => time(),
-                ),
+                ],
                 'id=%i',
                 $_SESSION['user_id']
             );
@@ -448,10 +459,9 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $data['fonction_id'],
             $SETTINGS
         );
-
         if (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1) {
             array_push($_SESSION['groupes_visibles'], 0);
-        };
+        }
 
         // user type
         if (isset($LANG) === true) {
@@ -474,20 +484,19 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 if (
     isset($SETTINGS['item_extra_fields']) === true
     && (int) $SETTINGS['item_extra_fields'] === 1
-    && isset($_GET['page']) === true
-    && $_GET['page'] === 'items'
+    && isset($get['page']) === true
+    && $get['page'] === 'items'
     && isset($_SESSION['fonction_id']) === true
 ) {
-    $_SESSION['item_fields'] = array();
+    $_SESSION['item_fields'] = [];
     $rows = DB::query(
         'SELECT *
-        FROM ' . prefixTable('categories') . '
-        WHERE level=%i',
+            FROM ' . prefixTable('categories') . '
+            WHERE level=%i',
         '0'
     );
     foreach ($rows as $record) {
-        $arrFields = array();
-
+        $arrFields = [];
         // get each field
         $rows2 = DB::query(
             'SELECT *
@@ -496,7 +505,6 @@ if (
             ORDER BY `order` ASC',
             $record['id']
         );
-
         if (DB::count() > 0) {
             foreach ($rows2 as $field) {
                 // Is this Field visibile by user?
@@ -511,14 +519,14 @@ if (
                 ) {
                     array_push(
                         $arrFields,
-                        array(
+                        [
                             'id' => $field['id'],
                             'title' => addslashes($field['title']),
                             'encrypted_data' => $field['encrypted_data'],
                             'type' => $field['type'],
                             'masked' => $field['masked'],
                             'is_mandatory' => $field['is_mandatory'],
-                        )
+                        ]
                     );
                 }
             }
@@ -527,11 +535,11 @@ if (
         // store the categories
         array_push(
             $_SESSION['item_fields'],
-            array(
+            [
                 'id' => $record['id'],
                 'title' => addslashes($record['title']),
                 'fields' => $arrFields,
-            )
+            ]
         );
     }
 }
@@ -540,7 +548,8 @@ if (
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$_SESSION['numDaysBeforePwExpiration'] = ''; //initiliaze variable
+$_SESSION['numDaysBeforePwExpiration'] = '';
+//initiliaze variable
 if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
@@ -564,14 +573,11 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
     }
 }
 
-/*
-**
-*/
 $_SESSION['temporary']['user_can_printout'] = false;
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true
     && isset($_SESSION['user_roles']) === true
-    && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
+    && (! isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
 ) {
     foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {
         if (in_array($role, $_SESSION['user_roles']) === true) {

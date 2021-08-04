@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      folders.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,25 +47,24 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
-        array(
-            0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-        )
+        [
+            0 => [0, langHdl('complex_level0'), 'fas fa-bolt text-danger'],
+            25 => [25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+            50 => [50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+            60 => [60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
+            70 => [70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+            80 => [80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
+            90 => [90, langHdl('complex_level6'), 'far fa-gem text-success'],
+        ]
     );
 }
 
@@ -68,20 +74,15 @@ foreach (TP_PW_COMPLEXITY as $level) {
     $complexitySelect .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
 }
 $complexityHtml .= $complexitySelect . '</select></div>';
-
 // Prepare folders
 require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 /* Get full tree structure */
 $tst = $tree->getDescendants();
-
 // prepare options list
-$prev_level = 0;
 $droplist = '<option value="na">---' . langHdl('select') . '---</option>';
 if ((int) $_SESSION['is_admin'] === 1 || (int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['can_create_root_folder'] === 1) {
     $droplist .= '<option value="0">' . langHdl('root') . '</option>';
@@ -228,12 +229,12 @@ foreach ($tst as $t) {
                     <h3 class="card-title" id="folders-alphabet"></h3>
                 </div>-->
                 <!-- /.card-header -->
-				
-				
+              
+               
                     
-				
+              
                 <div class="card-body form table-responsive1" id="folders-list">
-					<div class="callout callout-info mt-3">
+                  <div class="callout callout-info mt-3">
                         <div class="callout-body row">
                             <div class="input-group input-group-sm col-8">
                                 <div class="input-group-prepend">

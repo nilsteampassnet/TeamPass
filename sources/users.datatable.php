@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      users.datatable.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -40,7 +48,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
-    exit();
+    exit;
 }
 
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -48,7 +56,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once 'main.functions.php';
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -60,33 +67,26 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
-
 // Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 $treeDesc = $tree->getDescendants();
 // Build FUNCTIONS list
-$rolesList = array();
+$rolesList = [];
 $rows = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
 foreach ($rows as $record) {
-    $rolesList[$record['id']] = array('id' => $record['id'], 'title' => $record['title']);
+    $rolesList[$record['id']] = ['id' => $record['id'], 'title' => $record['title']];
 }
 
-$listAvailableUsers = $listAdmins = $html = '';
-$listAlloFcts_position = false;
-
+$listAdmins = $html = '';
 //Columns name
-$aColumns = array('id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id');
-$aSortTypes = array('asc', 'desc');
-
+$aColumns = ['id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id'];
+$aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
-
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
@@ -104,7 +104,7 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
-    if ($sOrder == 'ORDER BY') {
+    if ($sOrder === 'ORDER BY') {
         $sOrder = '';
     }
 }
@@ -147,16 +147,15 @@ if ((int) $_SESSION['is_admin'] === 0
 
 $rows = DB::query(
     'SELECT * FROM '.prefixTable('users').
-    $sWhere
+    $sWhere.
+    $sOrder
 );
 $iTotal = DB::count();
-
 $rows = DB::query(
     'SELECT * FROM '.prefixTable('users').
     $sWhere.
     $sLimit
 );
-$iFilteredTotal = DB::count();
 
 // Output
 $sOutput = '{';
@@ -164,7 +163,6 @@ $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';
-
 if (DB::count() > 0) {
     $sOutput .= '[';
 } else {
@@ -184,10 +182,12 @@ foreach ($rows as $record) {
 
     // Display Grid
     if ($showUserFolders === true) {
+        /*
         // Build list of available users
         if ((int) $record['admin'] !== 1 && (int) $record['disabled'] !== 1) {
             $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
         }
+        */
 
         // Get list of allowed functions
         $listAlloFcts = '';
@@ -198,13 +198,12 @@ foreach ($rows as $record) {
                         $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'<br />';
                     }
                 }
-                $listAlloFcts_position = true;
             }
             if (empty($listAlloFcts)) {
                 $listAlloFcts = '<i class="fas fa-exclamation-triangle text-danger infotip" title="'.langHdl('user_alarm_no_function').'"></i>';
-                $listAlloFcts_position = false;
             }
         }
+        /*
         // Get list of allowed groups
         $listAlloGrps = '';
         if ((int) $record['admin'] !== 1) {
@@ -233,21 +232,18 @@ foreach ($rows as $record) {
                 }
             }
         }
+        */
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.addslashes(str_replace("'", '&lsquo;', $record['name'])).' '.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'\" data-auth-type=\"'.$record['auth_type'].'\"></span>", ';
-
         //col2
         $sOutput .= '"'.
-            (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
+            ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').'" , ';
-
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name']).'</span>", ';
-
         //col4
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes($record['lastname']).'</span>", ';
-
         //col5 - MANAGED BY
         $txt = '<span id=\"managedby-'.$record['id'].'\" data-id=\"'.$record['id'].'\" data-field=\"isAdministratedByRole\" data-html=\"true\">';
         $rows2 = DB::query(
@@ -264,10 +260,8 @@ foreach ($rows as $record) {
             $txt .= langHdl('god');
         }
         $sOutput .= '"'.$txt.'</span>", ';
-
         //col6
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"fonction_id\" data-html=\"true\">'.addslashes($listAlloFcts).'</span>", ';
-
         // Get the user maximum privilege
         if ((int) $record['admin'] === 1) {
             $sOutput .= '"<i class=\"fa fa-user-cog infotip\" title=\"'.langHdl('god').'\"></i>", ';
@@ -296,14 +290,11 @@ foreach ($rows as $record) {
 
         //Finish the line
         $sOutput .= '],';
-
-        //++$iFilteredTotal;
-        ++$iTotal;
     }
 }
 
 if (count($rows) > 0) {
-    if (strrchr($sOutput, '[') != '[') {
+    if (strrchr($sOutput, '[') !== '[') {
         $sOutput = substr_replace($sOutput, '', -1);
     }
     $sOutput .= ']';

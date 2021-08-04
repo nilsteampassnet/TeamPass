@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -6,21 +9,26 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      duo.load.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 require_once '../../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
+if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
 
@@ -36,7 +44,6 @@ if (file_exists('../../includes/config/tp.config.php') === true) {
 }
 
 require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-
 
 /*
 ** This page contains the javascript call for DUOSecurity api

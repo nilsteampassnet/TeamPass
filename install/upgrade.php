@@ -585,14 +585,14 @@ $(function(){
         } else if (currentStep === 'step1') {
             postData = {
                 type : currentStep,
-                abspath : escape($("#root_path").val()),
-                fullurl : escape($("#root_url").val())
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val()
             }
         } else if (currentStep === 'step2') {
             postData = {
                 type : currentStep,
-                abspath : escape($("#root_path").val()),
-                fullurl : escape($("#root_url").val())
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val()
             }
         } else if (currentStep === "step4") {
             console.log('Step4 qui commence');
@@ -604,7 +604,7 @@ $(function(){
         } else if (currentStep === "step5") {
             postData = {
                 type : currentStep,
-                url_path : escape($("#url_path").val())
+                url_path : $("#url_path").val()
             }
         }
 
@@ -840,7 +840,8 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 step = 'step2';
             } else {
                 // Prepare list of users to be displayed
-                var htmlUsersList = '<ul>';
+                var htmlUsersList = '<i class="fas fa-info-circle mr-2"></i>You could provide those unique codes to users by your own.<br>'+
+                    '<ul>';
                 $.each(usersList, function(index, user) {
                     htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otc+'</li>'
                 });
@@ -848,22 +849,22 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
 
                 // Done
                 $("#user_"+rand_number).parent()
-                .prepend(
-                    '<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
-                    '<br>'+
-                    '<button type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</button>'+
-                    '<div class="hidden" id="htmlListOfUsers">'+htmlUsersList+'</div>'
-                    '</div>'
-                );
+					.prepend(
+						'<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
+						'<br>'+
+						'<div type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</div>'+
+						'<div class="hidden alert alert-secondary mt-2" id="htmlListOfUsers" role="alert">'+htmlUsersList+'</div>'+
+						'</div>'
+					);
 
-                // Act on button click
-                $('#buttonListOfUsers').on('click', function(event) {
-                    if ($('#htmlListOfUsers').hasClass('hidden') === true) {
-                        $('#htmlListOfUsers').removeClass('hidden');
-                    } else {
-                        $('#htmlListOfUsers').addClass('hidden');
-                    }
-                });
+				// Act on button click
+				$(document).on('click', '#buttonListOfUsers', function() { 
+					if ($('#htmlListOfUsers').hasClass('hidden') === true) {
+						$('#htmlListOfUsers').removeClass('hidden');
+					} else {
+						$('#htmlListOfUsers').addClass('hidden');
+					}
+				});
 
                 console.log(usersList);
                 // Now send passwords

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -73,7 +75,6 @@ DB::$encoding = DB_ENCODING;
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-$session_user_admin = $superGlobal->get('user_admin', 'GET');
 $sessionTreeStructure = $superGlobal->get('user_tree_structure', 'GET');
 $sessionLastTreeRefresh = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
 
@@ -114,7 +115,6 @@ if (
 
     $ret_json = array();
     $last_visible_parent = -1;
-    $parent = '#';
     $last_visible_parent_level = 1;
 
     // build the tree to be displayed

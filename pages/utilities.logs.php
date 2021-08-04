@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      utilities.logs.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -40,7 +47,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load template
@@ -166,7 +173,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     </div>
 
                     <div class="card-footer<?php
-                                            echo (isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1) ? '' : ' hidden';
+                                            echo isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1 ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
                             <h5><i class="fas fa-broom mr-2"></i><?php echo langHdl('purge') . ' ' . langHdl('date_range'); ?></h5>
@@ -193,10 +200,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <option value="-1"><?php echo langHdl('all'); ?></option>
                                     <?php
                                     $rows = DB::query('SELECT id, name, lastname FROM ' . prefixTable('users') . ' WHERE admin = 0');
-                                    foreach ($rows as $record) {
-                                        echo '
+foreach ($rows as $record) {
+    echo '
                                         <option value="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].'</option>';
-                                    }
+}
                                     ?>
                                     </select>
                                 </div>

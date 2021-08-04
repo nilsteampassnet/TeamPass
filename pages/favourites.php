@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      favourites.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -37,10 +44,11 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+if (! checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // Load
@@ -68,7 +76,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <h3 class="card-title">&nbsp;</h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body p-0<?php echo (empty($_SESSION['favourites']) === false) ? '' : ' hidden'; ?>" id="favorites">
+                <div class="card-body p-0<?php echo empty($_SESSION['favourites']) === false ? '' : ' hidden'; ?>" id="favorites">
                     <table class="table table-condensed">
                         <tr>
                             <th style="width: 100px"></th>
@@ -86,7 +94,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     WHERE i.id = %i',
                                     $fav
                                 );
-                                if (!empty($data['label'])) {
+                                if (! empty($data['label'])) {
                                     ?>
                                     <tr>
                                         <td>
@@ -95,7 +103,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </td>
                                         <td><?php echo $data['label']; ?></td>
                                         <td><?php echo $data['description']; ?></td>
-                                        <td><?php echo $data['title'] == $_SESSION['user_id'] ? $_SESSION['login'] : $data['title']; ?></td>
+                                        <td><?php echo $data['title'] === $_SESSION['user_id'] ? $_SESSION['login'] : $data['title']; ?></td>
                                     </tr>
                         <?php
                                 }
@@ -104,7 +112,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     </table>
                 </div>
 
-                <div class="card-body<?php echo (empty($_SESSION['favourites']) === false) ? ' hidden' : ''; ?>" id="no-favorite">
+                <div class="card-body<?php echo empty($_SESSION['favourites']) === false ? ' hidden' : ''; ?>" id="no-favorite">
                     <div class="alert alert-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('currently_no_favorites'); ?></h5>
                     </div>

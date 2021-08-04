@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -7,16 +9,21 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
+ *
  * @project   Teampass
+ *
  * @file      import.js.php
  * ---
+ *
  * @author    Nils Laumaillé (nils@teampass.net)
+ *
  * @copyright 2009-2021 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
  */
-
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -38,9 +45,10 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 ?>
 
@@ -108,8 +116,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             BeforeUpload: function(up, file) {
                 // Show spinner
-				toastr.remove();
-				toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+                toastr.remove();
+               toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
                     "PHPSESSID": "<?php echo session_id(); ?>",
@@ -252,7 +260,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         // Show spinner
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
-		
+       
 
         // Perform query
         $.post(
@@ -275,15 +283,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 );
 
                 if (data.error == "bad_structure") {
-					toastr.remove();
-					toastr.error(
-						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-						'', {
-							timeOut: 10000,
-							closeButton: true,
-							progressBar: true
-						}
-					);
+                 toastr.remove();
+                   toastr.error(
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                      '', {
+                          timeOut: 10000,
+                            closeButton: true,
+                         progressBar: true
+                      }
+                  );
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -368,15 +376,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         });
 
         if (arrItems.length === 0) {
-			toastr.remove();
-			toastr.error(
-				'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
-				'', {
-					timeOut: 10000,
-					closeButton: true,
-					progressBar: true
-				}
-			);
+            toastr.remove();
+           toastr.error(
+                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
+               '', {
+                  timeOut: 10000,
+                    closeButton: true,
+                 progressBar: true
+              }
+          );
             return false;
         }
 
@@ -399,15 +407,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-					toastr.remove();
-					toastr.error(
-						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-						'', {
-							timeOut: 10000,
-							closeButton: true,
-							progressBar: true
-						}
-					);
+                 toastr.remove();
+                   toastr.error(
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                      '', {
+                          timeOut: 10000,
+                            closeButton: true,
+                         progressBar: true
+                      }
+                  );
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -484,8 +492,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             BeforeUpload: function(up, file) {
                 // Show spinner
-				toastr.remove();
-				toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+             toastr.remove();
+               toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
                     "PHPSESSID": "<?php echo session_id(); ?>",
@@ -498,15 +506,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-					toastr.remove();
-					toastr.error(
-						'<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
-						'', {
-							timeOut: 10000,
-							closeButton: true,
-							progressBar: true
-						}
-					);
+                  toastr.remove();
+                   toastr.error(
+                      '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '', {
+                          timeOut: 10000,
+                            closeButton: true,
+                         progressBar: true
+                      }
+                  );
                 } else {
                     toastr.remove();
                     toastr.success(
@@ -575,15 +583,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-					toastr.remove();
-					toastr.error(
-						'<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-						'', {
-							timeOut: 10000,
-							closeButton: true,
-							progressBar: true
-						}
-					);
+                  toastr.remove();
+                   toastr.error(
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                      '', {
+                          timeOut: 10000,
+                            closeButton: true,
+                         progressBar: true
+                      }
+                  );
 
                     $('#import-feedback').addClass('hidden');
                     $('#import-feedback div').html('');

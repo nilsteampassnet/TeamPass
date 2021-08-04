@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -140,10 +143,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         // do some initializations
         $file = $SETTINGS['path_to_files_folder'].'/'.$data['valeur'];
-        $size = 4096;
-        $separator = ',';
-        $enclosure = '"';
-        $fields_expected = array('Label', 'Login', 'Password', 'URL', 'Comments'); //requiered fields from CSV
         $importation_possible = true;
         $itemsArray = array();
         $line_number = 0;

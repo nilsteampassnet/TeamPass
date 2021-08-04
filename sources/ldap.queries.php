@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -68,18 +71,9 @@ if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
 }
 
-//Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
-
-// Load AntiXSS
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-$antiXss = new voku\helper\AntiXSS();
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -205,11 +199,6 @@ switch ($post_type) {
             );
             break;
         }
-        
-        // Get the groups from the user.
-        $userGroups = $user['memberof'];
-//        print_r($user);
-
         
         echo prepareExchangedData(
             array(

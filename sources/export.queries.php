@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -310,7 +313,6 @@ if (null !== $post_type) {
                 );
 
                 $id_managed = '';
-                $i = 0;
                 $items_id_list = array();
                 foreach ($rows as $record) {
                     $restricted_users_array = explode(';', $record['restricted_to']);
@@ -408,7 +410,6 @@ if (null !== $post_type) {
                         }
                     }
                     $id_managed = $record['id'];
-                    $folder_title = $record['folder_title'];
                 }
             }
 
@@ -448,8 +449,6 @@ if (null !== $post_type) {
             if ($counter > 0) {
                 // print
                 //Some variables
-                $table_full_width = 300;
-                $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
                 $prev_path = '';
 
                 //Prepare the PDF file
@@ -585,7 +584,6 @@ if (null !== $post_type) {
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
             include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
             $idsList = array();
-            $objNumber = 0;
 
             foreach (explode(';', $post_ids) as $id) {
                 if (
@@ -619,7 +617,6 @@ if (null !== $post_type) {
                                 || (in_array($id, $_SESSION['groupes_visibles']))) && (in_array($record['id'], $idsList) === false)
                         ) {
                             array_push($idsList, $record['id']);
-                            ++$objNumber;
                         }
                     }
                 }
@@ -757,7 +754,6 @@ if (null !== $post_type) {
                             'perso' => $record['perso'],
                         )
                     );
-                    ++$i;
                     array_push($items_id_list, $record['id']);
 
                     // log

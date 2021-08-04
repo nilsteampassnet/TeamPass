@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -16,9 +18,6 @@
  * ---
  * @see       https://www.teampass.net
  */
-
-
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
 
 if (isset($_SESSION) === false) {
     include_once 'SecureHandler.php';
@@ -1483,7 +1482,7 @@ function mainQuery($SETTINGS)
             DB::insert(
                 prefixTable('tokens'),
                 array(
-                    'user_id' => $_SESSION['user_id'],
+                    'user_id' => (int) $_SESSION['user_id'],
                     'token' => $token,
                     'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
                     'creation_timestamp' => time(),
@@ -3120,8 +3119,8 @@ Insert the log here and especially the answer of the query that failed.
                                     DB::insert(
                                         prefixTable('sharekeys_items'),
                                         array(
-                                            'object_id' => $record['id'],
-                                            'user_id' => $post_user_id,
+                                            'object_id' => (int) $record['id'],
+                                            'user_id' => (int) $post_user_id,
                                             'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
                                         )
                                     );
@@ -3164,8 +3163,8 @@ Insert the log here and especially the answer of the query that failed.
                                         DB::insert(
                                             prefixTable('sharekeys_files'),
                                             array(
-                                                'object_id' => $record2['id'],
-                                                'user_id' => $_SESSION['user_id'],
+                                                'object_id' => (int) $record2['id'],
+                                                'user_id' => (int) $_SESSION['user_id'],
                                                 'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
                                             )
                                         );
@@ -3511,12 +3510,7 @@ Insert the log here and especially the answer of the query that failed.
                                     // Decrypt itemkey with user key
                                     // use old password to decrypt private_key
                                     $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-    
-    
-                                    $objectKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-    
-                                    //echo "-".$objectKey." -- PRovatekey = ".$privateKey;
-    
+                                    
                                     if (empty(base64_decode($itemKey)) === false) {
                                         // GOOD password
                                         // Encrypt it with current password

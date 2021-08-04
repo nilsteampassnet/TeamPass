@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -79,7 +82,6 @@ $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$password_do_not_change = 'do_not_change';
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -408,9 +410,9 @@ if (null !== $post_type) {
                         // store in DB
                         DB::update(
                             prefixTable('users'),
-                            array(
+                            [
                                 'fonction_id' => $_SESSION['fonction_id'],
-                                ),
+                            ],
                             'id = %i',
                             $_SESSION['user_id']
                         );
@@ -432,25 +434,25 @@ if (null !== $post_type) {
             // Prepare returned values
             define(
                 'TP_PW_COMPLEXITY',
-                array(
+                [
                     0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-                )
+                    25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                    50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                    60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                    70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                    80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                    90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+                ]
             );
 
             $return = array_merge(
                 $return,
-                array(
+                [
                     'icon' => TP_PW_COMPLEXITY[$post_complexity][2],
                     'text' => TP_PW_COMPLEXITY[$post_complexity][1],
                     'value' => TP_PW_COMPLEXITY[$post_complexity][0],
                     'allow_pw_change' => $post_allowEdit,
-                )
+                ]
             );
 
             // send data
@@ -507,7 +509,8 @@ if (null !== $post_type) {
             );
             foreach ($rows as $record) {
                 $tab = explode(';', $record['fonction_id']);
-                if (($key = array_search($post_roleId, $tab)) !== false) {
+                $key = array_search($post_roleId, $tab);
+                if ($key !== false) {
                     // remove the deleted role id
                     unset($tab[$key]);
 

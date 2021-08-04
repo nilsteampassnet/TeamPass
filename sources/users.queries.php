@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -898,12 +900,6 @@ if (null !== $post_type) {
                             WHERE id=%i',
                             $record['qui']
                         );
-                        $user_1 = DB::queryfirstrow(
-                            'SELECT login
-                            from ' . prefixTable('users') . '
-                            WHERE id=%i',
-                            filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-                        );
                         $tmp = explode(':', $record['label']);
                         // extract action done
                         $label = '';
@@ -958,13 +954,7 @@ if (null !== $post_type) {
                     intval($_SESSION['user_id']),
                     '1'
                 );
-                // Get folder id for User
-                $user_folder = DB::queryFirstRow(
-                    'SELECT id FROM ' . prefixTable('nested_tree') . '
-                    WHERE title=%i AND personal_folder = %i',
-                    intval($user_id),
-                    '1'
-                );
+                
                 // Get through each subfolder
                 foreach ($tree->getDescendants($admin_folder['id'], true) as $folder) {
                     // Get each Items in PF
@@ -1373,8 +1363,6 @@ if (null !== $post_type) {
             $post_is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
             $post_has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
-            $post_domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_STRING);
             $post_is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_STRING);
             $post_groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
@@ -1725,7 +1713,6 @@ if (null !== $post_type) {
             );
 
             // get rights
-            $functionsList = '';
             $arrFolders = [];
             $html = '';
 
@@ -1796,9 +1783,6 @@ if (null !== $post_type) {
                                     '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
                                     '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
                             } else {
-                                $color = '#FEBC11';
-                                $allowed = 'R';
-                                $title = langHdl('read');
                                 $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . langHdl('read') . '"></i>';
                             }
 
@@ -2164,7 +2148,7 @@ if (null !== $post_type) {
             $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_STRING);
 
             // If
-            if (empty($post_context) === false && $post_context = 'add_one_role_to_user') {
+            if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
                 $data_user = DB::queryfirstrow(
                     'SELECT fonction_id
                     FROM ' . prefixTable('users') . '
@@ -2405,7 +2389,7 @@ if (null !== $post_type) {
                 $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
                 if (null !== $userLogin) {
                     // Get his ID
-                    $user = DB::queryfirstrow(
+                    DB::queryfirstrow(
                         'SELECT id, fonction_id, auth_type
                         FROM ' . prefixTable('users') . '
                         WHERE login = %s',
@@ -2867,7 +2851,7 @@ if (null !== $post_type) {
                 break;
             }
             // Check if user already exists
-            $data = DB::query(
+            DB::query(
                 'SELECT id
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
