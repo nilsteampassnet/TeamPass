@@ -45,6 +45,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 if (! isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === true || $SETTINGS['cpassman_dir'] === '.') {
+    $SETTINGS = [];
     $SETTINGS['cpassman_dir'] = '..';
 }
 
@@ -70,6 +71,7 @@ $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 //$post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+
 // connect to the server
 if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
@@ -97,6 +99,7 @@ if ($post_type === 'identify_duo_user') {
         WHERE type = %s',
         'duoSecurity'
     );
+    $_GLOBALS = [];
     foreach ($duoData as $value) {
         $_GLOBALS[strtoupper($value['intitule'])] = $value['valeur'];
     }
@@ -162,7 +165,7 @@ if ($post_type === 'identify_duo_user') {
             );
             if (DB::count() === 0) {
                 // Ask your administrator to create your account in Teampass
-                // TODO
+                echo '[{"authenticated_username" : "ERR|This user is not yet imported inside Teampass."}]';
             }
         }
 
@@ -183,7 +186,7 @@ if ($post_type === 'identify_duo_user') {
     // Prepare GET variables
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     // increment counter of login attempts
-    if (empty($sessionPwdAttempts) === true) {
+    if ($sessionPwdAttempts === '') {
         $sessionPwdAttempts = 1;
     } else {
         ++$sessionPwdAttempts;
@@ -248,10 +251,12 @@ if ($post_type === 'identify_duo_user') {
 }
 
 /**
- * Complete authentication of user through Teampass.
+ * Complete authentication of user through Teampass
  *
  * @param string $sentData Credentials
- * @param array  $SETTINGS Teamapss settings
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return bool
  */
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
@@ -280,6 +285,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $server = [];
+    $server['PHP_AUTH_USER'] = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
+    $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
+
     // connect to the server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -306,18 +315,18 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if (
         isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['enable_http_request_login'] === 1
-        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && isset($server['PHP_AUTH_USER']) === true
         && isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1
     ) {
-        if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-            $username = explode('@', filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
-        } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-            $username = explode('\\', filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
+        if (strpos($server['PHP_AUTH_USER'], '@') !== false) {
+            $username = explode('@', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
+        } elseif (strpos($server['PHP_AUTH_USER'], '\\') !== false) {
+            $username = explode('\\', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
         } else {
-            $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
+            $username = filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
         }
-        $passwordClear = $_SERVER['PHP_AUTH_PW'];
+        $passwordClear = $server['PHP_AUTH_PW'];
     } else {
         $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
         $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
@@ -372,8 +381,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $username
     );
     $counter = DB::count();
-    // has user to be auth with mfa?
-    $userInfo['mfa_auth_requested'] = mfa_auth_requested($userInfo['fonction_id'], $SETTINGS['mfa_for_roles']);
     // User doesn't exist then stop
     if ($counter === 0) {
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
@@ -388,6 +395,16 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'encode'
         );
         return false;
+    }
+
+    // has user to be auth with mfa?
+    if (is_null($userInfo['fonction_id']) === true) {
+        $userInfo['fonction_id'] = false;
+    } else {
+        $userInfo['mfa_auth_requested'] = mfa_auth_requested(
+            $userInfo['fonction_id'],
+            is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
+        );
     }
 
     // Manage Maintenance mode
@@ -1056,9 +1073,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
  * Authenticate a user through AD.
  *
  * @param string $username      Username
- * @param array  $userInfo      User account information
+ * @param array $userInfo       User account information
  * @param string $passwordClear Password
- * @param array  $SETTINGS      Teampass settings
+ * @param array $SETTINGS       Teampass settings
  *
  * @return array
  */
