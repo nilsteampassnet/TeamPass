@@ -203,8 +203,8 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
         $sWhere
         $sOrder
-                                                                                                                                                                                                                                                                                                                                                                                                $sLimit',
-    [
+        $sLimit',
+        [
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),

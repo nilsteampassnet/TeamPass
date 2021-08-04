@@ -45,7 +45,7 @@ if (file_exists('../includes/config/tp.config.php')) {
  *
  * @return string refresh page to url
  */
-function redirect(string $url): string
+function redirect($url)
 {
     // Load AntiXSS
     include_once '../includes/libraries/voku/helper/AntiXSS.php';

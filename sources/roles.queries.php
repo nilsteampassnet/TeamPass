@@ -517,9 +517,9 @@ if (null !== $post_type) {
                     // store new list of functions
                     DB::update(
                         prefixTable('users'),
-                        array(
+                        [
                             'fonction_id' => rtrim(implode(';', $tab), ';'),
-                            ),
+                        ],
                         'id = %i',
                         $record['id']
                     );
@@ -528,10 +528,10 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData(
-                array(
+                [
                     'error' => false,
                     'message' => '',
-                ),
+                ],
                 'encode'
             );
             break;

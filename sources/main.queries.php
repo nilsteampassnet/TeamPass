@@ -431,7 +431,6 @@ function mainQuery($SETTINGS)
                 );
                 break;
             }
-            $ldap_user_never_auth = false;
 
             // Check if user exists
             if (null === $post_id || empty($post_id) === true) {
@@ -507,68 +506,15 @@ function mainQuery($SETTINGS)
                     $gaSecretKey = $tfa->createSecret();
                     $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true, $SETTINGS);
 
-                    // save the code
-                    if ($ldap_user_never_auth === false) {
-                        DB::update(
-                            prefixTable('users'),
-                            array(
-                                'ga' => $gaSecretKey,
-                                'ga_temporary_code' => $gaTemporaryCode,
-                            ),
-                            'id = %i',
-                            $data['id']
-                        );
-                    } else {
-                        // save the code but also create an account in database
-                        DB::insert(
-                            prefixTable('users'),
-                            array(
-                                'login' => $post_login,
-                                'pw' => $pwdlib->createPasswordHash($post_pwd),
-                                'email' => $data['email'],
-                                'name' => isset($ldap_info_user) === true ? $ldap_info_user->{'name'} : '',
-                                'lastname' => isset($ldap_info_user) === true ? $ldap_info_user->{'lastname'} : '',
-                                'admin' => '0',
-                                'gestionnaire' => '0',
-                                'can_manage_all_users' => '0',
-                                'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-                                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
-                                'groupes_interdits' => '',
-                                'groupes_visibles' => '',
-                                'last_pw_change' => time(),
-                                'user_language' => $SETTINGS['default_language'],
-                                'encrypted_psk' => '',
-                                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
-                                'ga' => $gaSecretKey,
-                                'ga_temporary_code' => $gaTemporaryCode,
-                                'avatar_thumb' => '',
-                                'avatar' => '',
-                                'psk' => '',
-                                'favourites' => '',
-                                'session_end' => '',
-                                'last_pw' => '',
-                                'latest_items' => '',
-                                'last_pw_change' => '',
-                                'key_tempo' => '',
-                                'derniers' => '',
-                            )
-                        );
-                        $newUserId = DB::insertId();
-                        // Create personnal folder
-                        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
-                            DB::insert(
-                                prefixTable('nested_tree'),
-                                array(
-                                    'parent_id' => '0',
-                                    'title' => $newUserId,
-                                    'bloquer_creation' => '0',
-                                    'bloquer_modification' => '0',
-                                    'personal_folder' => '1',
-                                )
-                            );
-                        }
-                        $data['id'] = $newUserId;
-                    }
+                    DB::update(
+                        prefixTable('users'),
+                        [
+                            'ga' => $gaSecretKey,
+                            'ga_temporary_code' => $gaTemporaryCode,
+                        ],
+                        'id = %i',
+                        $data['id']
+                    );
 
                     // Log event
                     logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($post_login), stripslashes($post_login));

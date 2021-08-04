@@ -260,21 +260,21 @@ if (null !== $post_type) {
             // Store in DB
             DB::insert(
                 prefixTable('categories'),
-                array(
+                [
                     'parent_id' => 0,
                     'title' => $post_label,
                     'level' => 0,
                     'order' => 1,
-                )
+                ]
             );
             $newCategoryId = DB::insertId();
 
             // Order the new item
             DB::update(
                 prefixTable('categories'),
-                array(
+                [
                     'order' => calculateOrder($newCategoryId, $post_position),
-                    ),
+                ],
                 'id = %i',
                 $newCategoryId
             );
@@ -284,18 +284,18 @@ if (null !== $post_type) {
                 //add CF Category to this subfolder
                 DB::insert(
                     prefixTable('categories_folders'),
-                    array(
+                    [
                         'id_category' => $newCategoryId,
                         'id_folder' => $folder,
-                    )
+                    ]
                 );
             }
 
             echo prepareExchangedData(
-                array(
+                [
                     'error' => false,
                     'message' => '',
-                ),
+                ],
                 'encode'
             );
             break;
@@ -305,19 +305,19 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    array(
+                    [
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
-                    ),
+                    ],
                     'encode'
                 );
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-                    array(
+                    [
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
-                    ),
+                    ],
                     'encode'
                 );
                 break;
@@ -335,10 +335,10 @@ if (null !== $post_type) {
             // Update category
             DB::update(
                 prefixTable('categories'),
-                array(
+                [
                     'title' => $post_label,
                     'order' => calculateOrder($post_categoryId, $post_position),
-                    ),
+                ],
                 'id = %i',
                 $post_categoryId
             );
@@ -355,10 +355,10 @@ if (null !== $post_type) {
                 //add Category to this subfolder
                 DB::insert(
                     prefixTable('categories_folders'),
-                    array(
+                    [
                         'id_category' => $post_categoryId,
                         'id_folder' => $folder,
-                    )
+                    ]
                 );
             }
 
@@ -555,11 +555,11 @@ if (null !== $post_type) {
                     if ($encryption_type !== '') {
                         DB::update(
                             prefixTable('categories_items'),
-                            array(
+                            [
                                 'data' => $encrypt['string'],
                                 'data_iv' => '',
                                 'encryption_type' => $encryption_type,
-                                ),
+                            ],
                             'id = %i',
                             $recordF['id']
                         );
@@ -567,20 +567,20 @@ if (null !== $post_type) {
                 }
             } else {
                 echo prepareExchangedData(
-                    array(
+                    [
                         'error' => true,
                         'message' => langHdl('error_could_not_update_the_field'),
-                    ),
+                    ],
                     'encode'
                 );
                 break;
             }
 
             echo prepareExchangedData(
-                array(
+                [
                     'error' => false,
                     'message' => '',
-                ),
+                ],
                 'encode'
             );
             break;
@@ -641,18 +641,18 @@ if (null !== $post_type) {
             // Order the new item
             DB::update(
                 prefixTable('categories'),
-                array(
+                [
                     'order' => calculateOrder($newFieldId, $post_order),
-                    ),
+                ],
                 'id = %i',
                 $newFieldId
             );
 
             echo prepareExchangedData(
-                array(
+                [
                     'error' => false,
                     'message' => '',
-                ),
+                ],
                 'encode'
             );
             break;
@@ -675,9 +675,8 @@ function calculateOrder($id, $position)
             WHERE level = %i',
             0
         );
-        $orderNewCategory = DB::count() + 1;
 
-        return $orderNewCategory;
+        return DB::count() + 1;
     } else {
         // Get position of selected folder
         $data = DB::queryFirstRow(
@@ -715,9 +714,9 @@ function calculateOrder($id, $position)
         if ($record['id'] !== $id) {
             DB::update(
                 prefixTable('categories'),
-                array(
+                [
                     'order' => $newOrder,
-                    ),
+                ],
                 'id = %i',
                 $record['id']
             );

@@ -131,8 +131,8 @@ $rows = DB::query(
     'SELECT a.item_id, i.label, a.del_value, i.id_tree
     FROM ' . prefixTable('automatic_del') . ' AS a
     INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = a.item_id)' .
-        $sWhere.
-        $sOrder
+    $sWhere.
+    (string) $sOrder
 );
 $iTotal = DB::count();
 $rows = DB::query(

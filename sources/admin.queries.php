@@ -2832,12 +2832,12 @@ switch ($post_type) {
 
         if (DB::query("SHOW TABLES LIKE '" . prefixTable('sk_reencrypt_backup') . "'")) {
             if (DB::count() === 1) {
-                echo true;
+                echo 1;
             } else {
-                echo false;
+                echo 0;
             }
         } else {
-            echo false;
+            echo 0;
         }
 
         break;

@@ -180,7 +180,7 @@ switch ($post_type) {
         }
 
         // User try to auth
-        $user = $connection->query()
+        $connection->query()
             ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
             ->firstOrFail();
 

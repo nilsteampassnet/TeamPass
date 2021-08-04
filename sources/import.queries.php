@@ -459,8 +459,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $post_edit_role = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
 
         //Initialization
-        $root = $meta = $group = $entry = $key = $title = $notes = $pwd = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
-        $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = '';
+        //$root = $meta = $group = $entry = $key = $title = $notes = $pwd = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
+        //$name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = '';
         $numGroups = $numItems = 0;
         $arrFolders = array();
         $temparray = array();

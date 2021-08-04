@@ -76,20 +76,23 @@ function langHdl(string $string): string
         return 'ERROR in language strings!';
     }
     return str_replace(
-            ['"', "'"],
-            ['&quot;', '&apos;'],
-            $session_language
-        );
-
-
+        ['"', "'"],
+        ['&quot;', '&apos;'],
+        $session_language
+    );
 }
 
 /**
  * genHash().
  *
  * Generate a hash for user login
+ *
+ * @param string $password What password
+ * @param string $cost     What cost
+ *
+ * @return string
  */
-function bCrypt(string $password, $cost)
+function bCrypt(string $password, string $cost): string
 {
     $salt = sprintf('$2y$%02d$', $cost);
     if (function_exists('openssl_random_pseudo_bytes')) {
@@ -163,8 +166,10 @@ function cryption(string $message, string $ascii_key, string $type, array $SETTI
 
 /**
  * Generating a defuse key.
+ *
+ * @return string
  */
-function defuse_generate_key(): string
+function defuse_generate_key()
 {
     // load PhpEncryption library
     if (file_exists('../includes/config/tp.config.php') === true) {
@@ -323,6 +328,8 @@ function cleanString(string $string, bool $special = false): string
  * Erro manager for DB.
  *
  * @param array $params output from query
+ *
+ * @return void
  */
 function db_error_handler(array $params): void
 {
@@ -334,12 +341,12 @@ function db_error_handler(array $params): void
 /**
  * [identifyUserRights description].
  *
- * @param string $groupesVisiblesUser  [description]
- * @param string $groupesInterditsUser [description]
- * @param string $isAdmin              [description]
- * @param string $idFonctions          [description]
+ * @param string|array $groupesVisiblesUser  [description]
+ * @param string|array $groupesInterditsUser [description]
+ * @param string       $isAdmin              [description]
+ * @param string       $idFonctions          [description]
  *
- * @return string [description]
+ * @return bool [description]
  */
 function identifyUserRights(
     $groupesVisiblesUser,
@@ -372,7 +379,7 @@ function identifyUserRights(
     if ((int) $isAdmin === 1) {
         identAdmin(
             $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */ 
+            $SETTINGS, /** @scrutinizer ignore-type */
             $tree
         );
     } else {
@@ -380,7 +387,7 @@ function identifyUserRights(
             $groupesVisiblesUser,
             $groupesInterditsUser,
             $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */ 
+            $SETTINGS, /** @scrutinizer ignore-type */
             $tree
         );
     }
@@ -467,9 +474,9 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     // get complete list of ROLES
     $tmp = explode(';', $idFonctions);
     $rows = DB::query(
-    'SELECT * FROM ' . prefixTable('roles_title') . '
+        'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'
-);
+    );
     foreach ($rows as $record) {
         if (! empty($record['id']) && ! in_array($record['id'], $tmp)) {
             array_push($tmp, $record['id']);
@@ -503,8 +510,6 @@ function convertToArray($element): array
         );
     }
     return $element;
-
-    
 }
 
 /**
@@ -577,11 +582,11 @@ function identUser(
     // Does this user is allowed to see other items
     $inc = 0;
     $rows = DB::query(
-    'SELECT id, id_tree FROM ' . prefixTable('items') . '
-        WHERE restricted_to LIKE %ss AND inactif = %s',
-    $globalsUserId . ';',
-    '0'
-);
+        'SELECT id, id_tree FROM ' . prefixTable('items') . '
+            WHERE restricted_to LIKE %ss AND inactif = %s',
+        $globalsUserId . ';',
+        '0'
+    );
     foreach ($rows as $record) {
         // Exclude restriction on item if folder is fully accessible
         if (in_array($record['id_tree'], $allowedFolders) === false) {
@@ -679,15 +684,15 @@ function identUser(
     $superGlobal->put('list_restricted_folders_for_items', $restrictedFoldersForItems, 'SESSION');
     $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
     $superGlobal->put(
-    'all_folders_including_no_access',
-    array_merge(
+        'all_folders_including_no_access',
+        array_merge(
             $allowedFolders,
             $personalFolders,
             $noAccessFolders,
             $readOnlyFolders
         ),
-    'SESSION'
-);
+        'SESSION'
+    );
     // Folders and Roles numbers
     DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     $superGlobal->put('nb_folders', DB::count(), 'SESSION');
@@ -775,11 +780,11 @@ function cacheTableRefresh(array $SETTINGS): void
             // Get all TAGS
             $tags = '';
             $itemTags = DB::query(
-    'SELECT tag
-                FROM ' . prefixTable('tags') . '
-                WHERE item_id = %i AND tag != ""',
-    $record['id']
-);
+                'SELECT tag
+                            FROM ' . prefixTable('tags') . '
+                            WHERE item_id = %i AND tag != ""',
+                $record['id']
+            );
             foreach ($itemTags as $itemTag) {
                 $tags .= $itemTag['tag'] . ' ';
             }
@@ -871,11 +876,11 @@ function cacheTableUpdate(array $SETTINGS, ?string $ident = null): void
     // Get all TAGS
     $tags = '';
     $itemTags = DB::query(
-    'SELECT tag
-        FROM ' . prefixTable('tags') . '
-        WHERE item_id = %i AND tag != ""',
-    $ident
-);
+        'SELECT tag
+            FROM ' . prefixTable('tags') . '
+            WHERE item_id = %i AND tag != ""',
+        $ident
+    );
     foreach ($itemTags as $itemTag) {
         $tags .= $itemTag['tag'] . ' ';
     }
@@ -961,11 +966,11 @@ function cacheTableAdd(array $SETTINGS, ?string $ident = null): void
     // Get all TAGS
     $tags = '';
     $itemTags = DB::query(
-    'SELECT tag
-        FROM ' . prefixTable('tags') . '
-        WHERE item_id = %i AND tag != ""',
-    $ident
-);
+        'SELECT tag
+            FROM ' . prefixTable('tags') . '
+            WHERE item_id = %i AND tag != ""',
+        $ident
+    );
     foreach ($itemTags as $itemTag) {
         $tags .= $itemTag['tag'] . ' ';
     }
@@ -1024,44 +1029,44 @@ function getStatisticsData(array $SETTINGS): array
     );
     $counter_folders = DB::count();
     DB::query(
-    'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
-    1
-);
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
+        1
+    );
     $counter_folders_perso = DB::count();
     DB::query(
-    'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
-    0
-);
+        'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
+        0
+    );
     $counter_items = DB::count();
-    DB::query(
-    'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
-    1
-);
+        DB::query(
+        'SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i',
+        1
+    );
     $counter_items_perso = DB::count();
-    DB::query(
-    'SELECT id FROM ' . prefixTable('users') . ''
-);
+        DB::query(
+        'SELECT id FROM ' . prefixTable('users') . ''
+    );
     $counter_users = DB::count();
-    DB::query(
-    'SELECT id FROM ' . prefixTable('users') . ' WHERE admin = %i',
-    1
-);
+        DB::query(
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE admin = %i',
+        1
+    );
     $admins = DB::count();
     DB::query(
-    'SELECT id FROM ' . prefixTable('users') . ' WHERE gestionnaire = %i',
-    1
-);
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE gestionnaire = %i',
+        1
+    );
     $managers = DB::count();
     DB::query(
-    'SELECT id FROM ' . prefixTable('users') . ' WHERE read_only = %i',
-    1
-);
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE read_only = %i',
+        1
+    );
     $readOnly = DB::count();
     // list the languages
     $usedLang = [];
     $tp_languages = DB::query(
-    'SELECT name FROM ' . prefixTable('languages')
-);
+        'SELECT name FROM ' . prefixTable('languages')
+    );
     foreach ($tp_languages as $tp_language) {
         DB::query(
             'SELECT * FROM ' . prefixTable('users') . ' WHERE user_language = %s',
@@ -1073,11 +1078,11 @@ function getStatisticsData(array $SETTINGS): array
     // get list of ips
     $usedIp = [];
     $tp_ips = DB::query(
-    'SELECT user_ip FROM ' . prefixTable('users')
-);
+        'SELECT user_ip FROM ' . prefixTable('users')
+    );
     foreach ($tp_ips as $ip) {
         if (array_key_exists($ip['user_ip'], $usedIp)) {
-            $usedIp[$ip['user_ip']] = $usedIp[$ip['user_ip']] + 1;
+            $usedIp[$ip['user_ip']] += $usedIp[$ip['user_ip']];
         } elseif (! empty($ip['user_ip']) && $ip['user_ip'] !== 'none') {
             $usedIp[$ip['user_ip']] = 1;
         }
@@ -1126,13 +1131,13 @@ function getStatisticsData(array $SETTINGS): array
  * @return string some json info
  */
 function sendEmail(
-    string $subject,
-    string $textMail,
-    string $email,
-    array $SETTINGS,
-    ?string $textMailAlt = null,
-    bool $silent = true
-): string {
+    $subject,
+    $textMail,
+    $email,
+    $SETTINGS,
+    $textMailAlt = null,
+    $silent = true
+) {
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
         return json_encode(
@@ -1269,6 +1274,8 @@ function generateKey(): string
  *
  * @param string $date     The date
  * @param array  $SETTINGS Teampass settings
+ *
+ * @return string
  */
 function dateToStamp(string $date, array $SETTINGS): string
 {
@@ -1277,14 +1284,14 @@ function dateToStamp(string $date, array $SETTINGS): string
         return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     }
     return '';
-
-
 }
 
 /**
  * Is this a date.
  *
  * @param string $date Date
+ *
+ * @return bool
  */
 function isDate(string $date): bool
 {
@@ -1293,6 +1300,8 @@ function isDate(string $date): bool
 
 /**
  * Check if isUTF8().
+ *
+ * @param string $string Is the string
  *
  * @return int is the string in UTF8 format
  */
@@ -1383,7 +1392,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         $data = utf8Converter($data);
         // Now encode
         if (isset($SETTINGS['encryptClientServer'])
-            && $SETTINGS['encryptClientServer'] === '0'
+            && (int) $SETTINGS['encryptClientServer'] === 0
         ) {
             return json_encode(
                 $data,
@@ -1391,36 +1400,33 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             );
         }
         return Encryption\Crypt\aesctr::encrypt(
-                json_encode(
-                    $data,
-                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-                ),
-                $globalsKey,
-                256
-            );
-
-    
-    } elseif ($type === 'decode' && is_array($data) === false) {
+            json_encode(
+                $data,
+                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+            ),
+            $globalsKey,
+            256
+        );
+    }
+    if ($type === 'decode' && is_array($data) === false) {
         if (isset($SETTINGS['encryptClientServer'])
-            && $SETTINGS['encryptClientServer'] === '0'
+            && (int) $SETTINGS['encryptClientServer'] === 0
         ) {
             return json_decode(
-                /** @scrutinizer ignore-type */ 
+                /** @scrutinizer ignore-type */
                 (string) $data,
                 true
             );
         }
         return json_decode(
-                Encryption\Crypt\aesctr::decrypt(
-                    /** @scrutinizer ignore-type */ 
-                    (string) $data,
-                    $globalsKey,
-                    256
-                ),
-                true
-            );
-
-    
+            Encryption\Crypt\aesctr::decrypt(
+                /** @scrutinizer ignore-type */
+                (string) $data,
+                $globalsKey,
+                256
+            ),
+            true
+        );
     }
 }
 
@@ -1471,10 +1477,8 @@ function prefixTable(string $table): string
         // sanitize string
         return $safeTable;
     }
-        // stop error no table
+    // stop error no table
     return 'table_not_exists';
-
-
 }
 
 /**
@@ -1820,8 +1824,6 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
         return empty($path) === true ? addslashes($label) : addslashes($label) . ' (' . $path . ')';
     }
     return empty($path) === true ? '' : $path;
-
-    
 }
 
 /**
@@ -1869,7 +1871,7 @@ function noHTML(string $input, string $encoding = 'UTF-8'): string
  * @param array  $SETTINGS Teampass settings
  * @param string $field    Field to refresh
  * @param string $value    Value to set
- * 
+ *
  * @return string|bool
  */
 function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
@@ -1900,9 +1902,9 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
         $data[1] = "global \$SETTINGS;\n";
         $data[2] = "\$SETTINGS = array (\n";
         $rows = DB::query(
-    'SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s',
-    'admin'
-);
+            'SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s',
+            'admin'
+        );
         foreach ($rows as $record) {
             array_push($data, "    '" . $record['intitule'] . "' => '" . $record['valeur'] . "',\n");
         }
@@ -1946,7 +1948,7 @@ function handleBackslash(string $input): string
 }
 
 /*
-** Permits to loas settings
+** Permits to load settings
 */
 function loadSettings(): void
 {
@@ -1988,22 +1990,22 @@ function checkCFconsistency($source_id, $target_id)
 {
     $source_cf = [];
     $rows = DB::QUERY(
-    'SELECT id_category
-        FROM ' . prefixTable('categories_folders') . '
-        WHERE id_folder = %i',
-    $source_id
-);
+        'SELECT id_category
+            FROM ' . prefixTable('categories_folders') . '
+            WHERE id_folder = %i',
+        $source_id
+    );
     foreach ($rows as $record) {
         array_push($source_cf, $record['id_category']);
     }
 
     $target_cf = [];
     $rows = DB::QUERY(
-    'SELECT id_category
-        FROM ' . prefixTable('categories_folders') . '
-        WHERE id_folder = %i',
-    $target_id
-);
+        'SELECT id_category
+            FROM ' . prefixTable('categories_folders') . '
+            WHERE id_folder = %i',
+        $target_id
+    );
     foreach ($rows as $record) {
         array_push($target_cf, $record['id_category']);
     }
@@ -2025,7 +2027,7 @@ function checkCFconsistency($source_id, $target_id)
  * @param array  $SETTINGS    Settings
  * @param string $password    A password
  *
- * @return string|boolean
+ * @return string|bool
  */
 function prepareFileWithDefuse(
     $type,
@@ -2059,16 +2061,15 @@ function prepareFileWithDefuse(
         $err = defuseFileDecrypt(
             $source_file,
             $target_file,
-            $SETTINGS, /** @scrutinizer ignore-type */ 
+            $SETTINGS, /** @scrutinizer ignore-type */
             $password
         );
-    // ---
     } elseif ($type === 'encrypt') {
         // Encrypt file
         $err = defuseFileEncrypt(
             $source_file,
             $target_file,
-            $SETTINGS, /** @scrutinizer ignore-type */ 
+            $SETTINGS, /** @scrutinizer ignore-type */
             $password
         );
     }
@@ -2217,27 +2218,27 @@ function getFileExtension(string $file): string
     return substr($file, strrpos($file, '.') + 1);
 }
 
-
-
 /**
-*    Chmods files and folders with different permissions.
-*
-*    This is an all-PHP alternative to using: \n
-*    <tt>exec("find ".$path." -type f -exec chmod 644 {} \;");</tt> \n
-*    <tt>exec("find ".$path." -type d -exec chmod 755 {} \;");</tt>
-*
-*    @author Jeppe Toustrup (tenzer at tenzer dot dk)
-*    @param $path An either relative or absolute path to a file or directory
-*    which should be processed.
-*    @param $filePerm The permissions any found files should get.
-*    @param $dirPerm The permissions any found folder should get.
-*    @return Returns TRUE if the path if found and FALSE if not.
-*    @warning The permission levels has to be entered in octal format, which
-*    normally means adding a zero ("0") in front of the permission level. \n
-*    More info at: http://php.net/chmod.
+ * Chmods files and folders with different permissions.
+ *
+ * This is an all-PHP alternative to using: \n
+ * <tt>exec("find ".$path." -type f -exec chmod 644 {} \;");</tt> \n
+ * <tt>exec("find ".$path." -type d -exec chmod 755 {} \;");</tt>
+ *
+ * @author Jeppe Toustrup (tenzer at tenzer dot dk)
+  *
+ * @param string $path      An either relative or absolute path to a file or directory which should be processed.
+ * @param int    $filePerm The permissions any found files should get.
+ * @param int    $dirPerm  The permissions any found folder should get.
+ *
+ * @return bool Returns TRUE if the path if found and FALSE if not.
+ *
+ * @warning The permission levels has to be entered in octal format, which
+ * normally means adding a zero ("0") in front of the permission level. \n
+ * More info at: http://php.net/chmod.
 */
 
-function recursiveChmod($path, $filePerm=0644, $dirPerm=0755) {
+function recursiveChmod($path, $filePerm = 0644, $dirPerm = 0755) {
     // Check if the path exists
     if (! file_exists($path)) {
         return false;
@@ -2894,7 +2895,11 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS): bool
     return false;
 }
 
-// Manage list of timezones
+/**
+ * Manage list of timezones   $SETTINGS Teampass settings
+ *
+ * @return array
+ */
 function timezone_list()
 {
     static $timezones = null;
@@ -2914,6 +2919,13 @@ function timezone_list()
     return $timezones;
 }
 
+/**
+ * Provide timezone offset
+ *
+ * @param int $offset Timezone offset
+ *
+ * @return string
+ */
 function format_GMT_offset($offset)
 {
     $hours = intval($offset / 3600);
@@ -2921,12 +2933,19 @@ function format_GMT_offset($offset)
     return 'GMT' . ($offset ? sprintf('%+03d:%02d', $hours, $minutes) : '');
 }
 
+/**
+ * Provides timezone name
+ *
+ * @param string $name Timezone name
+ *
+ * @return string
+ */
 function format_timezone_name($name)
 {
     $name = str_replace('/', ', ', $name);
     $name = str_replace('_', ' ', $name);
-    return str_replace('St ', 'St. ', $name);
 
+    return str_replace('St ', 'St. ', $name);
 }
 
 /**

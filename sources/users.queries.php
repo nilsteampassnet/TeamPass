@@ -2662,7 +2662,7 @@ if (null !== $post_type) {
                 break;
             }
             // Check if user already exists
-            $data = DB::query(
+            DB::query(
                 'SELECT id
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -3029,9 +3029,9 @@ function evaluateFolderAccesLevel($new_val, $existing_val)
         return 'NDNE';
     } else {
         if ($current_level_points > $new_level_points) {
-            return  $existing_val;
+            return $existing_val;
         } else {
-            return  $new_val;
+            return $new_val;
         }
     }
 }

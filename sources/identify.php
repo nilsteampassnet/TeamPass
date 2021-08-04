@@ -1179,10 +1179,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             'id = %i',
             $userInfo['id']
         );
-    } elseif ($userInfo['special'] === 'user_added_from_ldap') {
+    /*} elseif ($userInfo['special'] === 'user_added_from_ldap') {
         // Case where user has been added from LDAP and never being connected to TP
         // We need to create his keys
-        /*$userKeys = generateUserKeys($passwordClear);
+        $userKeys = generateUserKeys($passwordClear);
 
         // NOw update
         DB::update(

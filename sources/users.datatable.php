@@ -73,7 +73,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-$treeDesc = $tree->getDescendants();
+//$treeDesc = $tree->getDescendants();
 // Build FUNCTIONS list
 $rolesList = [];
 $rows = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
@@ -81,7 +81,7 @@ foreach ($rows as $record) {
     $rolesList[$record['id']] = ['id' => $record['id'], 'title' => $record['title']];
 }
 
-$listAdmins = $html = '';
+$html = '';
 //Columns name
 $aColumns = ['id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id'];
 $aSortTypes = ['asc', 'desc'];
@@ -148,7 +148,7 @@ if ((int) $_SESSION['is_admin'] === 0
 $rows = DB::query(
     'SELECT * FROM '.prefixTable('users').
     $sWhere.
-    $sOrder
+    (string) $sOrder
 );
 $iTotal = DB::count();
 $rows = DB::query(
