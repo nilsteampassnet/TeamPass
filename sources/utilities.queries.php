@@ -146,7 +146,7 @@ if (null !== $post_type) {
                         array(
                             'id' => $record['id'],
                             'label' => $record['label'],
-                            'date' => date($SETTINGS['date_format'], $record['date']),
+                            'date' => date($SETTINGS['date_format'], (int) $record['date']),
                             'login' => $record['login'],
                             'name' => $record['name'] . ' ' . $record['lastname'],
                             'folder_label' => $record['folder_title'],

@@ -92,20 +92,20 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <option></option>
                                 <?php
                                 $arrUserRoles = array_filter($_SESSION['user_roles']);
-$where = '';
-if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
-    $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
-}
+                                $where = '';
+                                if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
+                                    $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
+                                }
                                 $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
-foreach ($rows as $reccord) {
-    echo '
-                                <option value="' . $reccord['id'] . '"
-                                    data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '"
-                                    data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '"
-                                    data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '"
-                                    data-allow-edit-all="' . $reccord['allow_pw_change'] . '">'.
-                                    $reccord['title'] . '</option>';
-}
+                                foreach ($rows as $reccord) {
+                                    echo '
+                                    <option value="' . $reccord['id'] . '"
+                                        data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '"
+                                        data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '"
+                                        data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '"
+                                        data-allow-edit-all="' . $reccord['allow_pw_change'] . '">'.
+                                        $reccord['title'] . '</option>';
+                                }
                                 ?>
                             </select>
                         </div>
@@ -202,6 +202,12 @@ foreach ($rows as $reccord) {
                                         </div>
                                         <select class="form-control form-control-sm w-10" id="folders-compare">
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="input-group input-group-sm col-12">
+                                        <input type="checkbox" id="cb-all-selection" class="folder-select mr-2">
+                                        <span id="cb-all-selection-lang" class="ml-2"><?php echo langHdl('select_all'); ?></span>
                                     </div>
                                 </div>
                             </div>

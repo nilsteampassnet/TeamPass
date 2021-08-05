@@ -1135,9 +1135,9 @@ if (null !== $post_type) {
                         // Create sharekeys for users of this new ITEM
                         storeUsersShareKey(
                             prefixTable('sharekeys_items'),
-                            $record['perso'],
-                            $newFolderId,
-                            $newItemId,
+                            (int) $record['perso'],
+                            (int) $newFolderId,
+                            (int) $newItemId,
                             $cryptedStuff['objectKey'],
                             $SETTINGS
                         );
@@ -1194,9 +1194,9 @@ if (null !== $post_type) {
                             if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_fields'),
-                                    $record['id'],
-                                    $newFolderId,
-                                    $newFieldId,
+                                    (int) $record['id'],
+                                    (int) $newFolderId,
+                                    (int) $newFieldId,
                                     $cryptedStuff['objectKey'],
                                     $SETTINGS
                                 );
@@ -1268,9 +1268,9 @@ if (null !== $post_type) {
                                 // Step5 - create sharekeys
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_files'),
-                                    $record['perso'],
-                                    $newFolderId,
-                                    $newFileId,
+                                    (int) $record['perso'],
+                                    (int) $newFolderId,
+                                    (int) $newFileId,
                                     $newFile['objectKey'],
                                     $SETTINGS
                                 );

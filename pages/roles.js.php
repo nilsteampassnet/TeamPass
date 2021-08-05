@@ -267,6 +267,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             var selected_cb = $(this),
                 id = $(this).data('id');
 
+            // change language string
+            if ($(this).attr('id') === 'cb-all-selection') {
+                $('#cb-all-selection-lang').html('<?php echo langHdl('unselect_all'); ?>');
+            }
+
             // Now get subfolders
             $.post(
                 'sources/folders.queries.php', {
@@ -307,6 +312,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             // Show selection of folders
             var selected_cb = $(this),
                 id = $(this).data('id');
+
+            // change language string
+            if ($(this).attr('id') === 'cb-all-selection') {
+                $('#cb-all-selection-lang').html('<?php echo langHdl('select_all'); ?>');
+            }
 
             // Now get subfolders
             $.post(

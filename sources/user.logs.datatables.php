@@ -166,7 +166,7 @@ foreach ($rows as $record) {
     }
 
     $sOutput .= '["'.
-        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", '.
+        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", '.
         '"'.$col2.'", '.
         '"'.$col3.'"],';
 }

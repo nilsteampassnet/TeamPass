@@ -330,9 +330,9 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     'at_user_added',
-                    $_SESSION['user_id'],
+                    (string) $_SESSION['user_id'],
                     $_SESSION['login'],
-                    $new_user_id
+                    (string) $new_user_id
                 );
 
                 echo prepareExchangedData(
@@ -439,10 +439,10 @@ if (null !== $post_type) {
                 }
 
                 // Delete objects keys
-                deleteUserObjetsKeys($post_id, $SETTINGS);
+                deleteUserObjetsKeys((int) $post_id, $SETTINGS);
 
                 // update LOG
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
 
                 //Send back
                 echo prepareExchangedData(
@@ -758,7 +758,7 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     'at_user_unlocked',
-                    $_SESSION['user_id'],
+                    (string) $_SESSION['user_id'],
                     $_SESSION['login'],
                     $post_id
                 );
@@ -917,9 +917,9 @@ if (null !== $post_type) {
                             $label = langHdl('log_user_pwd_changed');
                         }
                         // prepare log
-                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . '</td><td align=\"center\">' . $label . '</td><td align=\"center\">' . $user['login'] . '</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . '</td><td align=\"center\">' . $label . '</td><td align=\"center\">' . $user['login'] . '</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . '</td><td align=\"center\">' . str_replace('"', '\"', $record['label']) . '</td><td align=\"center\">' . $record['login'] . '</td><td align=\"center\">' . langHdl($record['action']) . '</td></tr>';
+                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . '</td><td align=\"center\">' . str_replace('"', '\"', $record['label']) . '</td><td align=\"center\">' . $record['login'] . '</td><td align=\"center\">' . langHdl($record['action']) . '</td></tr>';
                     }
                 }
             }
@@ -1512,7 +1512,7 @@ if (null !== $post_type) {
                         $tree->rebuild();
                     }
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
                 } else {
                     // Get old data about user
                     $oldData = DB::queryfirstrow(
@@ -1546,7 +1546,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -2874,7 +2874,7 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
-                    $_SESSION['user_id'],
+                    (string) $_SESSION['user_id'],
                     $_SESSION['login'],
                     $post_id
                 );
@@ -2941,7 +2941,7 @@ if (null !== $post_type) {
                 $SETTINGS,
                 'user_mngt',
                 'at_user_new_' . $value[0] . ':' . $value[1],
-                $_SESSION['user_id'],
+                (string) $_SESSION['user_id'],
                 $_SESSION['login'],
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
             );

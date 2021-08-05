@@ -104,19 +104,19 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <?php
                                     // Get selected groups
                                     $arrRolesMFA = json_decode($SETTINGS['mfa_for_roles'], true);
-if ($arrRolesMFA === 0 || empty($arrRolesMFA) === true) {
-    $arrRolesMFA = [];
-}
+                                    if ($arrRolesMFA === 0 || empty($arrRolesMFA) === true) {
+                                        $arrRolesMFA = [];
+                                    }
                                     // Get full list
                                     $roles = performDBQuery(
                                         $SETTINGS,
                                         'id, title',
                                         'roles_title'
                                     );
-foreach ($roles as $role) {
-    echo '
-                                <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesMFA) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
-}
+                                    foreach ($roles as $role) {
+                                        echo '
+                                    <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesMFA) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
+                                    }
                                     ?>
                                 </select>
                             </div>

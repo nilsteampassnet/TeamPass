@@ -241,9 +241,9 @@ foreach ($rows as $record) {
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').'" , ';
         //col3
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name']).'</span>", ';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name'] === NULL ? '' : $record['name']).'</span>", ';
         //col4
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes($record['lastname']).'</span>", ';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes($record['lastname'] === NULL ? '' : $record['lastname']).'</span>", ';
         //col5 - MANAGED BY
         $txt = '<span id=\"managedby-'.$record['id'].'\" data-id=\"'.$record['id'].'\" data-field=\"isAdministratedByRole\" data-html=\"true\">';
         $rows2 = DB::query(

@@ -41,7 +41,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 } else {
     throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
 }
-
+echo "ici";
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === false) {

@@ -721,9 +721,9 @@ function identUser(
  *
  * @param string $action   What to do
  * @param array  $SETTINGS Teampass settings
- * @param string $ident    Ident format
+ * @param int    $ident    Ident format
  */
-function updateCacheTable(string $action, array $SETTINGS, ?string $ident = null): void
+function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): void
 {
     if ($action === 'reload') {
         // Rebuild full cache table
@@ -843,9 +843,9 @@ function cacheTableRefresh(array $SETTINGS): void
  * Cache table - update existing value.
  *
  * @param array  $SETTINGS Teampass settings
- * @param string $ident    Ident format
+ * @param int    $ident    Ident format
  */
-function cacheTableUpdate(array $SETTINGS, ?string $ident = null): void
+function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // Load superglobal
@@ -928,9 +928,9 @@ function cacheTableUpdate(array $SETTINGS, ?string $ident = null): void
  * Cache table - add new value.
  *
  * @param array  $SETTINGS Teampass settings
- * @param string $ident    Ident format
+ * @param int    $ident    Ident format
  */
-function cacheTableAdd(array $SETTINGS, ?string $ident = null): void
+function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // Load superglobal

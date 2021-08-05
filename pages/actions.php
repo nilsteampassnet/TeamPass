@@ -97,7 +97,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -126,7 +126,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -153,7 +153,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -182,7 +182,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -208,7 +208,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -237,7 +237,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -267,7 +267,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {
@@ -297,7 +297,7 @@ $data = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']);
+                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
     $tmp .= $data['field_1'] === 'success' ?
                                         '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
 } else {

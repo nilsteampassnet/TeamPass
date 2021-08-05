@@ -281,7 +281,7 @@ function mainQuery($SETTINGS)
                         $post_user_id
                     );
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
 
                     // Send back
                     echo prepareExchangedData(
@@ -517,7 +517,7 @@ function mainQuery($SETTINGS)
                     );
 
                     // Log event
-                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($post_login), stripslashes($post_login));
+                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $data['id'], stripslashes($post_login), stripslashes($post_login));
 
                     // send mail?
                     if ((int) $post_send_mail === 1) {
@@ -984,7 +984,7 @@ function mainQuery($SETTINGS)
             );
 
             // Log event
-            logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             // Change encryption
             // Build list of items to be re-encrypted
@@ -1099,7 +1099,7 @@ function mainQuery($SETTINGS)
                     );
 
                     // Log event
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
                     // change salt
                     setcookie(
@@ -1110,7 +1110,7 @@ function mainQuery($SETTINGS)
                     );
 
                     // Log event
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_reseted', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_reseted', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                 }
             }
             break;
@@ -1223,7 +1223,7 @@ function mainQuery($SETTINGS)
                     $SETTINGS,
                     'error',
                     urldecode(filter_input(INPUT_POST, 'error', FILTER_SANITIZE_STRING)),
-                    $_SESSION['user_id'],
+                    (string) $_SESSION['user_id'],
                     $_SESSION['login']
                 );
             }
@@ -1415,7 +1415,7 @@ function mainQuery($SETTINGS)
          */
         case 'save_token':
             $token = GenerateCryptKey(
-                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
+                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
                 null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
@@ -1639,10 +1639,9 @@ function mainQuery($SETTINGS)
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
                     if (empty($teampass_errors) === true) {
-                        $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['error_date']) . ' - ' . $record['label'];
+                        $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
                     } else {
-                        $teampass_errors .= '
- * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['error_date']) . ' - ' . $record['label'];
+                        $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
                     }
                 }
             }
@@ -2266,15 +2265,16 @@ Insert the log here and especially the answer of the query that failed.
                     $post_body
                 );
             }
-            $ret = json_decode(
-                sendEmail(
-                    $post_subject,
-                    $post_body,
-                    $post_receipt,
-                    $SETTINGS
-                ),
-                true
+            $ret = sendEmail(
+                $post_subject,
+                $post_body,
+                $post_receipt,
+                $SETTINGS,
+                '',
+                false
             );
+
+            $ret = json_decode($ret, true);
 
             echo (string) prepareExchangedData(
                 array(

@@ -207,16 +207,16 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <a class="float-right">
                                             <?php
                                             if (isset($SETTINGS['date_format']) === true) {
-                                                echo date($SETTINGS['date_format'], $_SESSION['last_connection']);
+                                                echo date($SETTINGS['date_format'], (int) $_SESSION['last_connection']);
                                             } else {
-                                                echo date('d/m/Y', $_SESSION['last_connection']);
+                                                echo date('d/m/Y', (int) $_SESSION['last_connection']);
                                             }
                                             echo ' ' . langHdl('at') . ' ';
-if (isset($SETTINGS['time_format']) === true) {
-    echo date($SETTINGS['time_format'], $_SESSION['last_connection']);
-} else {
-    echo date('H:i:s', $_SESSION['last_connection']);
-}
+                                            if (isset($SETTINGS['time_format']) === true) {
+                                                echo date($SETTINGS['time_format'], (int) $_SESSION['last_connection']);
+                                            } else {
+                                                echo date('H:i:s', (int) $_SESSION['last_connection']);
+                                            }
                                             ?>
                                         </a>
                                     </li>
@@ -225,9 +225,9 @@ if (isset($SETTINGS['time_format']) === true) {
                                         // Handle last password change string
                                         if (isset($_SESSION['last_pw_change']) === true) {
                                             if (isset($SETTINGS['date_format']) === true) {
-                                                $last_pw_change = date($SETTINGS['date_format'], $_SESSION['last_pw_change']);
+                                                $last_pw_change = date($SETTINGS['date_format'], (int) $_SESSION['last_pw_change']);
                                             } else {
-                                                $last_pw_change = date('d/m/Y', $_SESSION['last_pw_change']);
+                                                $last_pw_change = date('d/m/Y', (int) $_SESSION['last_pw_change']);
                                             }
                                         } else {
                                             $last_pw_change = '-';
@@ -314,30 +314,30 @@ if (isset($SETTINGS['time_format']) === true) {
                                     <ul class="list-group list-group-flush">
                                         <?php
                                         $rows = DB::query(
-                                    'SELECT label AS labelAction, date, null
-                                            FROM ' . prefixTable('log_system') . '
-                                            WHERE qui = %i
-                                            UNION
-                                            SELECT l.action, l.date, i.label AS itemLabel
-                                            FROM ' . prefixTable('log_items') . ' AS l
-                                            INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
-                                            WHERE l.id_user = %i AND l.action IN ("at_access")
-                                            ORDER BY date DESC
-                                            LIMIT 0, 40',
-                                    $_SESSION['user_id'],
-                                    $_SESSION['user_id']
-                                );
-foreach ($rows as $record) {
-    if (substr($record['labelAction'], 0, 3) === 'at_') {
-        $text = langHdl(substr($record['labelAction'], 3));
-    } else {
-        $text = langHdl($record['labelAction']);
-    }
-    if (empty($record['NULL']) === false) {
-        $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
-    }
-    echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - ' . $text . '</li>';
-}
+                                            'SELECT label AS labelAction, date, null
+                                                    FROM ' . prefixTable('log_system') . '
+                                                    WHERE qui = %i
+                                                    UNION
+                                                    SELECT l.action, l.date, i.label AS itemLabel
+                                                    FROM ' . prefixTable('log_items') . ' AS l
+                                                    INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
+                                                    WHERE l.id_user = %i AND l.action IN ("at_access")
+                                                    ORDER BY date DESC
+                                                    LIMIT 0, 40',
+                                            $_SESSION['user_id'],
+                                            $_SESSION['user_id']
+                                        );
+                                        foreach ($rows as $record) {
+                                            if (substr($record['labelAction'], 0, 3) === 'at_') {
+                                                $text = langHdl(substr($record['labelAction'], 3));
+                                            } else {
+                                                $text = langHdl($record['labelAction']);
+                                            }
+                                            if (empty($record['NULL']) === false) {
+                                                $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
+                                            }
+                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - ' . $text . '</li>';
+                                        }
                                         ?>
                                     </ul>
                                 </div>
@@ -427,9 +427,9 @@ foreach ($rows as $record) {
                                             <label class="col-sm-2 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
                                             <div class="col-sm-10">
                                                 <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
-                                                                                                                                                                    if (isset($_SESSION['user']['agses-usercardid']) === true) {
-                                                                                                                                                                        echo $_SESSION['user']['agses-usercardid'];
-                                                                                                                                                                    } ?>">
+                                                if (isset($_SESSION['user']['agses-usercardid']) === true) {
+                                                    echo $_SESSION['user']['agses-usercardid'];
+                                                } ?>">
                                             </div>
                                         </div>
                                     <?php

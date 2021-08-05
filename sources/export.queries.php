@@ -468,7 +468,7 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
                     PDF_HEADER_LOGO_WIDTH,
                     'Teampass export',
-                    $_SESSION['lastname']." ".$_SESSION['name'].' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time())
+                    $_SESSION['lastname']." ".$_SESSION['name'].' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) time())
                 );
 
                 // set header and footer fonts
@@ -566,7 +566,7 @@ if (null !== $post_type) {
                 $pdf->writeHTML($html_table, true, false, false, false, '');
 
                 //log
-                logEvents($SETTINGS, 'pdf_export', '', $_SESSION['user_id'], $_SESSION['login']);
+                logEvents($SETTINGS, 'pdf_export', '', (string) $_SESSION['user_id'], $_SESSION['login']);
 
                 //clean table
                 DB::query('TRUNCATE TABLE ' . prefixTable('export'));

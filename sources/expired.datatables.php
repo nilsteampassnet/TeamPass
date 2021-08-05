@@ -161,7 +161,7 @@ foreach ($rows as $record) {
     // Column 2
     $sOutput .= '"' . $record['label'] . '", ';
     // Column 3
-    $sOutput .= '"' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['del_value']) . '", ';
+    $sOutput .= '"' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['del_value']) . '", ';
     // Column 4
     $path = [];
     $treeDesc = $tree->getPath($record['id_tree'], true);

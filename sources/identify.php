@@ -316,10 +316,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['enable_http_request_login'] === 1
         && isset($server['PHP_AUTH_USER']) === true
+        && $server['PHP_AUTH_USER'] !== null
         && isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1
     ) {
-        if (is_null($server['PHP_AUTH_USER']) === false && strpos($server['PHP_AUTH_USER'], '@') !== false) {
+        if (strpos($server['PHP_AUTH_USER'], '@') !== false) {
             $username = explode('@', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
         } elseif (strpos($server['PHP_AUTH_USER'], '\\') !== false) {
             $username = explode('\\', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
@@ -596,7 +597,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             foreach ($rows as $record) {
                 array_push(
                     $arrAttempts,
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date'])
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date'])
                 );
             }
         }
@@ -608,19 +609,19 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             isset($SETTINGS['log_connections']) === true
             && (int) $SETTINGS['log_connections'] === 1
         ) {
-            logEvents($SETTINGS, 'user_connection', 'connection', $userInfo['id'], stripslashes($username));
+            logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfo['id'], stripslashes($username));
         }
         // Save account in SESSION
         $superGlobal->put('login', stripslashes($username), 'SESSION');
         $superGlobal->put('name', stripslashes($userInfo['name']), 'SESSION');
         $superGlobal->put('lastname', stripslashes($userInfo['lastname']), 'SESSION');
-        $superGlobal->put('user_id', $userInfo['id'], 'SESSION');
+        $superGlobal->put('user_id', (int) $userInfo['id'], 'SESSION');
         $superGlobal->put('user_pwd', $passwordClear, 'SESSION');
         $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
         $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
         $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
         $superGlobal->put('user_read_only', $userInfo['read_only'], 'SESSION');
-        $superGlobal->put('last_pw_change', $userInfo['last_pw_change'], 'SESSION');
+        $superGlobal->put('last_pw_change', (int) $userInfo['last_pw_change'], 'SESSION');
         $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
         $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');
         $superGlobal->put('personal_folder', $userInfo['personal_folder'], 'SESSION');
@@ -645,10 +646,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('auth_type', $userInfo['auth_type'], 'SESSION', 'user');
         // manage session expiration
         $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
+
         /*
-                * CHECK PASSWORD VALIDITY
-                * Don't take into consideration if LDAP in use
-                */
+        * CHECK PASSWORD VALIDITY
+        * Don't take into consideration if LDAP in use
+        */
         if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
             $superGlobal->put('validite_pw', true, 'SESSION');
             $superGlobal->put('last_pw_change', true, 'SESSION');
@@ -677,9 +679,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
 
         if (empty($userInfo['last_connexion'])) {
-            $superGlobal->put('last_connection', time(), 'SESSION');
+            $superGlobal->put('last_connection', (int) time(), 'SESSION');
         } else {
-            $superGlobal->put('last_connection', $userInfo['last_connexion'], 'SESSION');
+            $superGlobal->put('last_connection', (int) $userInfo['last_connexion'], 'SESSION');
         }
 
         if (empty($userInfo['latest_items']) === false) {
@@ -711,8 +713,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         } else {
             $superGlobal->put('no_access_folders', [], 'SESSION');
         }
+        
         // User's roles
-        if (strpos($userInfo['fonction_id'], ',') !== -1) {
+        if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
             // Convert , to ;
             $userInfo['fonction_id'] = str_replace(',', ';', $userInfo['fonction_id']);
             DB::update(
@@ -893,8 +896,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                         ],
                         [
                             ' ' . $superGlobal->get('login', 'SESSION') . ' (IP: ' . getClientIpServer() . ')',
-                            date($SETTINGS['date_format'], $superGlobal->get('last_connection', 'SESSION')),
-                            date($SETTINGS['time_format'], $superGlobal->get('last_connection', 'SESSION')),
+                            date($SETTINGS['date_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
+                            date($SETTINGS['time_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
                         ],
                         langHdl('email_body_on_user_login')
                     ),
@@ -967,7 +970,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 isset($SETTINGS['log_connections']) === true
                 && (int) $SETTINGS['log_connections'] === 1
             ) {
-                logEvents($SETTINGS, 'user_locked', 'connection', $userInfo['id'], stripslashes($username));
+                logEvents($SETTINGS, 'user_locked', 'connection', (string) $userInfo['id'], stripslashes($username));
             }
         }
         DB::update(
@@ -1340,7 +1343,7 @@ function ldapCreateUser(string $username, string $passwordClear, string $retLDAP
             'fonction_id' => (empty($retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass']) === false ? $retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass'] . ';' : '') . (isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0'),
             'groupes_interdits' => '',
             'groupes_visibles' => '',
-            'last_pw_change' => time(),
+            'last_pw_change' => (int) time(),
             'user_language' => $SETTINGS['default_language'],
             'encrypted_psk' => '',
             'isAdministratedByRole' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,

@@ -143,7 +143,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
         //col3
@@ -226,7 +226,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
         //col3
@@ -297,7 +297,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
         //col3
@@ -367,7 +367,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
-        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
         //col3
@@ -446,7 +446,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
-        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col3
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['id']), ENT_QUOTES).'", ';
         //col3
@@ -532,7 +532,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['auth_date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']).'", ';
         //col2 - 3
         if ($record['label'] === 'user_password_not_correct' || $record['label'] === 'user_not_exists') {
             $sOutput .= '"'.langHdl($record['label']).'", "'.$record['field_1'].'", ';
@@ -610,7 +610,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3

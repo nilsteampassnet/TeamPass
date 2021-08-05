@@ -369,9 +369,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Create sharekeys for users
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
-                $personalFolder,
-                filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
-                $newId,
+                (int) $personalFolder,
+                (int) filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                (int) $newId,
                 $cryptedStuff['objectKey'],
                 $SETTINGS
             );
@@ -1077,8 +1077,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         storeUsersShareKey(
                             prefixTable('sharekeys_items'),
                             $import_perso === true ? 1 : 0,
-                            filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
-                            $newId,
+                            (int) filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                            (int) $newId,
                             $cryptedStuff['objectKey'],
                             $SETTINGS
                         );

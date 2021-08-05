@@ -99,7 +99,6 @@ var CSRFP = {
         // remove current file name (or empty string)
         // (omit if "base" is the current folder without trailing slash)
         stack.pop(); 
-             
         for (var i = 0; i < parts.length; i++) {
             if (parts[i] == ".")
                 continue;
@@ -143,7 +142,10 @@ var CSRFP = {
      * @return void
      */
     _init: function() {
-        CSRFP.CSRFP_TOKEN = document.getElementById(CSRFP_FIELD_TOKEN_NAME).value;
+        var csrfp_token = document.getElementById(CSRFP_FIELD_TOKEN_NAME);
+        if (csrfp_token) {
+            CSRFP.CSRFP_TOKEN = document.getElementById(CSRFP_FIELD_TOKEN_NAME).value;
+        }
         try {
             CSRFP.checkForUrls = JSON.parse(document.getElementById(CSRFP_FIELD_URLS).value);
         } catch (err) {

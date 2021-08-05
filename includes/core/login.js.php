@@ -191,6 +191,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
         // Click on log in button
         $('#but_identify_user').click(function() {
+            console.log('User starts auth');
             launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 

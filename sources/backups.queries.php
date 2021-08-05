@@ -196,7 +196,7 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'admin_action',
                     'dataBase backup',
-                    $_SESSION['user_id'],
+                    (string) $_SESSION['user_id'],
                     $_SESSION['login']
                 );
 

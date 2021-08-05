@@ -278,6 +278,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 '#enc_code#' : store.get('teampassUser').admin_new_user_password,
             }
         }
+        console.log(data);
 
         // Launch action
         $.post(
@@ -288,6 +289,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
 
                 if (data.error !== false) {
                     // Show error

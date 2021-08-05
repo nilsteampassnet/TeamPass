@@ -259,7 +259,7 @@ switch ($post_type) {
             $SETTINGS,
             '$SETTINGS,system',
             'admin_action_check_pf',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             'success'
         );
@@ -268,7 +268,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
             'encode'
@@ -363,7 +363,7 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_db_clean_items',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             'success'
         );
@@ -373,7 +373,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2 mr-3"></i>
                     <i class="fas fa-chevron-right mr-2"></i>' .
                     $nbItemsDeleted . ' ' . langHdl('deleted_items'),
@@ -497,7 +497,7 @@ switch ($post_type) {
             $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
 
             //update LOG
-            logEvents($SETTINGS, 'admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
+            logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $_SESSION['user_id'], $_SESSION['login']);
 
             echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $_SESSION['key'] . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
         }
@@ -669,7 +669,7 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_db_optimize',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             'success'
         );
@@ -679,7 +679,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
             'encode'
@@ -773,7 +773,7 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_purge_old_files',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             'success'
         );
@@ -783,7 +783,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2 mr-3"></i>
                     <i class="fas fa-chevron-right mr-2"></i>' .
                     $nbItemsDeleted . ' ' . langHdl('deleted_items'),
@@ -827,7 +827,7 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_reload_cache_table',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             'success'
         );
@@ -836,7 +836,7 @@ switch ($post_type) {
             [
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success mr-2"></i>',
             ],
             'encode'
@@ -879,7 +879,7 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_rebuild_config_file',
-            $_SESSION['user_id'],
+            (string) $_SESSION['user_id'],
             $_SESSION['login'],
             $ret === true ? 'success' : $ret
         );
@@ -899,7 +899,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
             'encode'
@@ -1069,7 +1069,7 @@ switch ($post_type) {
             'admin'
         );
         //log
-        logEvents($SETTINGS, 'system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'system', 'change_salt_key', (string) $_SESSION['user_id'], $_SESSION['login']);
 
         // get number of items to change
         DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i', 0);
@@ -1712,14 +1712,11 @@ switch ($post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
             //send email
-            $ret = json_decode(
-                sendEmail(
-                    langHdl('admin_email_test_subject'),
-                    langHdl('admin_email_test_body'),
-                    $_SESSION['user_email'],
-                    $SETTINGS
-                ),
-                true
+            sendEmail(
+                langHdl('admin_email_test_subject'),
+                langHdl('admin_email_test_body'),
+                $_SESSION['user_email'],
+                $SETTINGS
             );
             echo prepareExchangedData(
                 array(
@@ -1801,7 +1798,7 @@ switch ($post_type) {
                         $SETTINGS,
                         'admin_action',
                         'Emails backlog',
-                        $_SESSION['user_id'],
+                        (string) $_SESSION['user_id'],
                         $_SESSION['login']
                     );
                 }
@@ -1869,7 +1866,7 @@ switch ($post_type) {
         }
 
         //update LOG
-        logEvents($SETTINGS, 'admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'admin_action', 'Emails backlog', (string) $_SESSION['user_id'], $_SESSION['login']);
 
         echo prepareExchangedData(
             array(
@@ -2068,13 +2065,13 @@ switch ($post_type) {
                 $SETTINGS,
                 'admin_action',
                 'attachments_encryption_changed',
-                $_SESSION['user_id'],
+                (string) $_SESSION['user_id'],
                 $_SESSION['login'],
                 $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
             );
 
             $message = langHdl('last_execution') . ' ' .
-                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) .
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                 '<i class="fas fa-check text-success ml-2 mr-3"></i>';
         }
 
@@ -2120,7 +2117,7 @@ switch ($post_type) {
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData($post_data, 'decode');
 
-        $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+        $post_label = isset($dataReceived['label']) === true ? filter_var($dataReceived['label'], FILTER_SANITIZE_STRING) : '';
         $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
 
         // add new key
@@ -2145,7 +2142,6 @@ switch ($post_type) {
             // Update existing key
         } elseif (null !== $post_action && $post_action === 'update') {
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
 
             DB::update(
                 prefixTable('api'),

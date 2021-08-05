@@ -53,6 +53,7 @@ if (file_exists('includes/config/settings.php') === false) {
 require_once './includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
 session_id();
+
 // Load config
 if (file_exists('../includes/config/tp.config.php') === true) {
     include_once '../includes/config/tp.config.php';
@@ -149,7 +150,7 @@ if (empty($get['language']) === false) {
         'SELECT m.valeur AS valeur, l.flag AS flag
         FROM ' . prefixTable('misc') . ' AS m
         INNER JOIN ' . prefixTable('languages') . ' AS l ON (m.valeur = l.name)
-                                                                                                                                                                                                                                                                                                                                                                                                WHERE m.type=%s_type AND m.intitule=%s_intitule',
+        WHERE m.type=%s_type AND m.intitule=%s_intitule',
         [
             'type' => 'admin',
             'intitule' => 'default_language',
@@ -666,8 +667,8 @@ if (($session_validite_pw === null
                 <div class="menu-footer">
                     <div class="" id="sidebar-footer">
                         <i class="fas fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
-                            date($SETTINGS['date_format'], $server['request_time']) . ' - ' .
-                            date($SETTINGS['time_format'], $server['request_time']); ?>"></i>
+                            date($SETTINGS['date_format'], (int) $server['request_time']) . ' - ' .
+                            date($SETTINGS['time_format'], (int) $server['request_time']); ?>"></i>
                         <i class="fas fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . langHdl('users_online'); ?>"></i>
                         <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
                         <a href="<?php echo REDDIT_URL; ?>" target="_blank" class="text-info"><i class="fab fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
@@ -1161,6 +1162,8 @@ if (($session_validite_pw === null
     <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script>
 
     <?php
+    $get = [];
+    $get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
     if ($menuAdmin === true) {
         ?>
         <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
@@ -1269,6 +1272,8 @@ if (($session_validite_pw === null
 
 
 <?php
+$get = [];
+$get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
 
 // Load links, css and javascripts
 if (
@@ -1299,7 +1304,7 @@ if (
         } elseif ($get['page'] === 'statistics') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/statistics.js.php';
         }
-    } elseif (isset($get['page']) === true) {
+    } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/items.js.php';
         } elseif ($get['page'] === 'import') {

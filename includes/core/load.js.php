@@ -760,9 +760,6 @@ if (
         } else if ($(this).data('action') === "send-user-pwd") {
             // Send email
             //
-
-            
-            $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
             
             // Prepare data
             var data = {
@@ -773,6 +770,9 @@ if (
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }
             }
+
+            // Prepare form
+            $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
 
             // Launch action
             $.post(

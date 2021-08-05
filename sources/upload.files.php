@@ -113,10 +113,12 @@ if (null === $post_user_token) {
             $post_user_token
         );
 
-        if (time() > $data['end_timestamp']) {
-            // too old
-            handleUploadError('User token expired.');
-            die();
+        if (count($data) > 0) {
+            if (time() > $data['end_timestamp']) {
+                // too old
+                handleUploadError('User token expired.');
+                die();
+            }
         }
     }
 }

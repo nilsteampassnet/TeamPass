@@ -109,12 +109,12 @@ $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
 $post_cat = filter_input(INPUT_POST, 'cat', FILTER_SANITIZE_STRING);
 $post_receipt = filter_input(INPUT_POST, 'receipt', FILTER_SANITIZE_STRING);
-$post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
-$post_folder_id = filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
-$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-$post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_NUMBER_INT);
-$post_source = filter_input(INPUT_POST, 'source', FILTER_SANITIZE_NUMBER_INT);
-$post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+$post_item_id = (int) filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
+$post_folder_id = (int) filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
+$post_id = (int) filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_destination = (int) filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_NUMBER_INT);
+$post_source = (int) filter_input(INPUT_POST, 'source', FILTER_SANITIZE_NUMBER_INT);
+$post_user_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
 $get = [];
 $get['type'] = $superGlobal->get('type', 'GET');
@@ -163,36 +163,32 @@ if (is_null($post_type) === false) {
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
                 $post_description = ($dataReceived['description']);
-                $post_diffusion_list = json_decode(
-                    filter_var(
-                        $dataReceived['diffusion_list'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_diffusion_list = filter_var(
+                    $dataReceived['diffusion_list'],
+                    FILTER_SANITIZE_STRING
                 );
+                $post_diffusion_list = $post_diffusion_list !== false ? json_decode($post_diffusion_list) : '';
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $post_fields = json_decode(
-                    filter_var(
-                        $dataReceived['fields'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_fields = filter_var(
+                    $dataReceived['fields'],
+                    FILTER_SANITIZE_STRING
                 );
+                $post_fields = $post_fields !== false ? json_decode($post_fields) : '';
                 $post_folder_id = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
                 $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
                 $post_password = htmlspecialchars_decode($dataReceived['pw']);
-                $post_restricted_to = json_decode(
-                    filter_var(
-                        $dataReceived['restricted_to'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_restricted_to = filter_var(
+                    $dataReceived['restricted_to'],
+                    FILTER_SANITIZE_STRING
                 );
-                $post_restricted_to_roles = json_decode(
-                    filter_var(
-                        $dataReceived['restricted_to_roles'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_restricted_to = $post_restricted_to !== false ? json_decode($post_restricted_to) : '';
+                $post_restricted_to_roles = filter_var(
+                    $dataReceived['restricted_to_roles'],
+                    FILTER_SANITIZE_STRING
                 );
+                $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
                 $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
                     && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
@@ -426,9 +422,9 @@ if (is_null($post_type) === false) {
                     // Create sharekeys for users
                     storeUsersShareKey(
                         prefixTable('sharekeys_items'),
-                        $post_folder_is_personal,
-                        $post_folder_id,
-                        $newID,
+                        (int) $post_folder_is_personal,
+                        (int) $post_folder_id,
+                        (int) $newID,
                         $cryptedStuff['objectKey'],
                         $SETTINGS
                     );
@@ -490,9 +486,9 @@ if (is_null($post_type) === false) {
                                     // Create sharekeys for users
                                     storeUsersShareKey(
                                         prefixTable('sharekeys_fields'),
-                                        $post_folder_is_personal,
-                                        $post_folder_id,
-                                        $newId,
+                                        (int) $post_folder_is_personal,
+                                        (int) $post_folder_id,
+                                        (int) $newId,
                                         $cryptedStuff['objectKey'],
                                         $SETTINGS
                                     );
@@ -614,6 +610,7 @@ if (is_null($post_type) === false) {
                     }
                     if (
                         $post_restricted_to !== null
+                        && $data !== null
                         && $data['restricted_to'] !== $post_restricted_to
                         && (int) $SETTINGS['restricted_to'] === 1
                     ) {
@@ -828,12 +825,12 @@ if (is_null($post_type) === false) {
                 $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
-                $post_item_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-                $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-                $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
-                $post_folder_id = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-                $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
+                $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
+                $post_item_id = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+                $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
+                $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+                $post_folder_id = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
+                $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $post_restricted_to = filter_var_array(
                     $dataReceived['restricted_to'],
                     FILTER_SANITIZE_STRING
@@ -1066,9 +1063,9 @@ if (is_null($post_type) === false) {
                         // Create sharekeys for users
                         storeUsersShareKey(
                             prefixTable('sharekeys_items'),
-                            $post_folder_is_personal,
-                            $post_folder_id,
-                            $post_item_id,
+                            (int) $post_folder_is_personal,
+                            (int) $post_folder_id,
+                            (int) $post_item_id,
                             $cryptedStuff['objectKey'],
                             $SETTINGS
                         );
@@ -1201,9 +1198,9 @@ if (is_null($post_type) === false) {
                                         // Create sharekeys for users
                                         storeUsersShareKey(
                                             prefixTable('sharekeys_fields'),
-                                            $post_folder_is_personal,
-                                            $post_folder_id,
-                                            $newId,
+                                            (int) $post_folder_is_personal,
+                                            (int) $post_folder_id,
+                                            (int) $newId,
                                             $cryptedStuff['objectKey'],
                                             $SETTINGS
                                         );
@@ -1287,9 +1284,9 @@ if (is_null($post_type) === false) {
                                             // Create sharekeys for users
                                             storeUsersShareKey(
                                                 prefixTable('sharekeys_fields'),
-                                                $post_folder_is_personal,
-                                                $post_folder_id,
-                                                $dataTmpCat['field_item_id'],
+                                                (int) $post_folder_is_personal,
+                                                (int) $post_folder_id,
+                                                (int) $dataTmpCat['field_item_id'],
                                                 $cryptedStuff['objectKey'],
                                                 $SETTINGS
                                             );
@@ -1591,7 +1588,7 @@ if (is_null($post_type) === false) {
                         }
                     }
                     // Update CACHE table
-                    updateCacheTable('update_value', $SETTINGS, $post_item_id);
+                    updateCacheTable('update_value', $SETTINGS, (int) $post_item_id);
 
                     //---- Log all modifications done ----
 
@@ -1712,7 +1709,7 @@ if (is_null($post_type) === false) {
                         );
                     }
                     // FOLDER
-                    if ($data['id_tree'] !== $post_folder_id) {
+                    if ((int) $data['id_tree'] !== (int) $post_folder_id) {
                         // Get name of folders
                         $dataTmp = DB::query('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li', array($data['id_tree'], $post_folder_id));
 
@@ -1734,7 +1731,7 @@ if (is_null($post_type) === false) {
                         );
                     }
                     // ANYONE_CAN_MODIFY
-                    if ($post_anyone_can_modify !== $data['anyone_can_modify']) {
+                    if ((int) $post_anyone_can_modify !== (int) $data['anyone_can_modify']) {
                         // Store updates performed
                         array_push(
                             $arrayOfChanges,
@@ -1773,9 +1770,10 @@ if (is_null($post_type) === false) {
                         $post_item_id
                     );
                     foreach ($rows as $record) {
+                        if ($record['raison'] === NULL) continue;
                         $reason = explode(':', $record['raison']);
                         if (count($reason) > 0) {
-                            $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $record['date']) . ' - '
+                            $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - '
                                 . $record['login'] . ' - ' . langHdl($record['action']) . ' - '
                                 . (empty($record['raison']) === false ? (count($reason) > 1 ? langHdl(trim($reason[0])) . ' : ' . $reason[1]
                                     : langHdl(trim($reason[0]))) : '');
@@ -1872,10 +1870,10 @@ if (is_null($post_type) === false) {
             );
 
             // Prepare POST variables
-            $post_new_label = filter_var($dataReceived['new_label'], FILTER_SANITIZE_STRING);
-            $post_source_id = filter_var($dataReceived['source_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_dest_id = filter_var($dataReceived['dest_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_new_label = (string) filter_var($dataReceived['new_label'], FILTER_SANITIZE_STRING);
+            $post_source_id = (int) filter_var($dataReceived['source_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_dest_id = (int) filter_var($dataReceived['dest_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
             if (
@@ -1992,9 +1990,9 @@ if (is_null($post_type) === false) {
                 // Create sharekeys for users of this new ITEM
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
-                    $dataDestination['personal_folder'],
-                    $post_dest_id,
-                    $newItemId,
+                    (int) $dataDestination['personal_folder'],
+                    (int) $post_dest_id,
+                    (int) $newItemId,
                     $cryptedStuff['objectKey'],
                     $SETTINGS
                 );
@@ -2034,9 +2032,9 @@ if (is_null($post_type) === false) {
                     if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
                         storeUsersShareKey(
                             prefixTable('sharekeys_fields'),
-                            $dataDestination['personal_folder'],
-                            $post_dest_id,
-                            $newFieldId,
+                            (int) $dataDestination['personal_folder'],
+                            (int) $post_dest_id,
+                            (int) $newFieldId,
                             $cryptedStuff['objectKey'],
                             $SETTINGS
                         );
@@ -2107,9 +2105,9 @@ if (is_null($post_type) === false) {
                         // Step5 - create sharekeys
                         storeUsersShareKey(
                             prefixTable('sharekeys_files'),
-                            $dataDestination['personal_folder'],
-                            $post_dest_id,
-                            $newFileId,
+                            (int) $dataDestination['personal_folder'],
+                            (int) $post_dest_id,
+                            (int) $newFileId,
                             $newFile['objectKey'],
                             $SETTINGS
                         );
@@ -2722,7 +2720,7 @@ if (is_null($post_type) === false) {
                             $arrData['show_detail_option'] = 1;
                             $arrData['to_be_deleted'] = 0;
                         } elseif ($dataDelete['del_type'] === '2') {
-                            $arrData['to_be_deleted'] = date($SETTINGS['date_format'], $dataDelete['del_value']);
+                            $arrData['to_be_deleted'] = date($SETTINGS['date_format'], (int) $dataDelete['del_value']);
                         }
                     } else {
                         $arrData['to_be_deleted'] = '';
@@ -3052,9 +3050,9 @@ if (is_null($post_type) === false) {
 
             // Prepare POST variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_folder_id = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_access_level = filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
+            $post_folder_id = (int) filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_access_level = (int) filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
             if (($_SESSION['user_read_only'] === true
@@ -4005,7 +4003,7 @@ if (is_null($post_type) === false) {
             }
 
             // Prepare POST variables
-            $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = (int) filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
 
             // Run query
             $dataItem = DB::queryfirstrow(
@@ -4523,8 +4521,8 @@ if (is_null($post_type) === false) {
                 $post_data,
                 'decode'
             );
-            $post_folder_id = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_folder_id = (int) filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // get data about item
             $dataSource = DB::queryfirstrow(
@@ -6179,7 +6177,7 @@ if (is_null($post_type) === false) {
                 prefixTable('sharekeys_items'),
                 0,
                 (int) $folder,
-                $newID,
+                (int) $newID,
                 $cryptedStuff['objectKey'],
                 $SETTINGS
             );
@@ -6264,7 +6262,7 @@ if (is_null($post_type) === false) {
 
             // prepare variables
             //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_STRING);
-            $post_item_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_item_id = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Send email
             $dataItem = DB::queryfirstrow(
