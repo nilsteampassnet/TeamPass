@@ -2443,11 +2443,7 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
         $cipher->setPassword($userPwd);
-        $decryptedPrivateKey = $cipher->decrypt(base64_decode($userPrivateKey));
-        if ($decryptedPrivateKey === false) {
-            return 'error';
-        }
-        return base64_encode($decryptedPrivateKey);
+        return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
     }
     return '';
 }

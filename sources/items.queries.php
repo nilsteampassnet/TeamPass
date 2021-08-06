@@ -407,8 +407,8 @@ if (is_null($post_type) === false) {
                             'id_tree' => $post_folder_id,
                             'login' => $post_login,
                             'inactif' => 0,
-                            'restricted_to' => empty($post_restricted_to) === true || count((int) $post_restricted_to) === 0 ?
-                                '' : (is_array($post_restricted_to) === true ? implode($post_restricted_to, ';') : ''),
+                            'restricted_to' => empty($post_restricted_to) === true ?
+                                '' : (is_array($post_restricted_to) === true ? implode(';', $post_restricted_to) : $post_restricted_to),
                             'perso' => (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) ?
                                 1 : 0,
                             'anyone_can_modify' => (isset($post_anyone_can_modify) === true
@@ -1134,7 +1134,7 @@ if (is_null($post_type) === false) {
                             'email' => $post_email,
                             'login' => $post_login,
                             'url' => $post_url,
-                            'id_tree' => $post_folder_id === null ? $dataItem['id_tree'] : $post_folder_id,
+                            'id_tree' => $post_folder_id,
                             'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
                             'anyone_can_modify' => (int) $post_anyone_can_modify,
                             'complexity_level' => (int) $post_complexity_level,

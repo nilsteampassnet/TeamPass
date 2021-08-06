@@ -110,6 +110,7 @@ if (
 
     if (
         isset($session['list_folders_limited']) === true
+        && is_array($session['list_folders_limited']) === true
         && count($session['list_folders_limited']) > 0
     ) {
         $listFoldersLimitedKeys = array_keys($session['list_folders_limited']);
@@ -521,8 +522,6 @@ function recursiveTree(
                 $session_personal_visible_groups,
                 $text,
                 $title,
-                $hide_node,
-                $show_but_block,
                 $nbChildrenItems,
                 $nodeDescendants,
                 $nodeDirectDescendants
@@ -555,8 +554,6 @@ function handleNode(
     $session_personal_visible_groups,
     $text,
     $title,
-    $hide_node,
-    $show_but_block,
     $nbChildrenItems,
     $nodeDescendants,
     $nodeDirectDescendants
@@ -593,7 +590,8 @@ function handleNode(
         (int) $SETTINGS['tree_counters'],
         (int) $session_user_read_only,
         $listFoldersLimitedKeys,
-        $listRestrictedFoldersForItemsKeys
+        $listRestrictedFoldersForItemsKeys,
+        $session_list_restricted_folders_for_items
     );
     /*
     if (in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true) {
@@ -753,10 +751,12 @@ function prepareNodeData(
     $tree_counters,
     $session_user_read_only,
     $listFoldersLimitedKeys,
-    $listRestrictedFoldersForItemsKeys
+    $listRestrictedFoldersForItemsKeys,
+    $session_list_restricted_folders_for_items
 ): array
 {
     // special case for READ-ONLY folder
+    $title = '';
     if (
         $session_user_read_only === true
         && in_array($completTree[$nodeId]->id, $session_user_read_only) === false
@@ -784,30 +784,30 @@ function prepareNodeData(
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
                     ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
-                    'title' => $isset($title) === true ? $title : '',
-                    'restricted' => 0,
-                    'folderClass' => 'folder',
-                    'show_but_block' => false,
-                    'hide_node' => false,
+                'title' => $title,
+                'restricted' => 0,
+                'folderClass' => 'folder',
+                'show_but_block' => false,
+                'hide_node' => false,
             ];
         }
         
         return [
             'html' => '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
                 ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
-                'title' => isset($title) === true ? $title : '',
-                'restricted' => 0,
-                'folderClass' => 'folder',
-                'show_but_block' => false,
-                'hide_node' => false,
+            'title' => $title,
+            'restricted' => 0,
+            'folderClass' => 'folder',
+            'show_but_block' => false,
+            'hide_node' => false,
         ];
     }
     
     if (in_array($nodeId, $listFoldersLimitedKeys) === true) {
         return [
-            'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
+            'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>',
-            'title' => $isset($title) === true ? $title : '',
+            'title' => $title,
             'restricted' => 1,
             'folderClass' => 'folder',
             'show_but_block' => false,
@@ -819,7 +819,7 @@ function prepareNodeData(
         return [
             'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
-            'title' => $isset($title) === true ? $title : '',
+            'title' => $title,
             'restricted' => 1,
             'folderClass' => 'folder',
             'show_but_block' => false,
@@ -827,9 +827,7 @@ function prepareNodeData(
         ];
     }
     
-    if (
-        isset($SETTINGS['show_only_accessible_folders']) === true
-        && (int) $SETTINGS['show_only_accessible_folders'] === 1
+    if ((int) $show_only_accessible_folders === 1
         && $nbChildrenItems === 0
     ) {
         // folder should not be visible
@@ -848,7 +846,7 @@ function prepareNodeData(
             // show it but block it
             return [
                 'html' => '',
-                'title' => $isset($title) === true ? $title : '',
+                'title' => $title,
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => true,
@@ -859,7 +857,7 @@ function prepareNodeData(
         // hide it
         return [
             'html' => '',
-            'title' => $isset($title) === true ? $title : '',
+            'title' => $title,
             'restricted' => 1,
             'folderClass' => 'folder_not_droppable',
             'show_but_block' => false,
