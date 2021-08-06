@@ -429,6 +429,7 @@ if (
     /**
      * When clicking save Personal saltkey
      */
+    /*
     $('#button_save_user_psk').click(function() {
         toastr.remove();
         toastr.info(
@@ -486,6 +487,7 @@ if (
             }
         );
     });
+    */
 
     // For Personal Saltkey
     $("#profile-password").simplePassMeter({

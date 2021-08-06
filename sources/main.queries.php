@@ -48,8 +48,8 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 if (
     isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
-        || $post_type === 'recovery_send_pw_by_email'
-        || $post_type === 'recovery_generate_new_password'
+        //|| $post_type === 'recovery_send_pw_by_email'
+        //|| $post_type === 'recovery_generate_new_password'
         || $post_type === 'get_teampass_settings')
 ) {
     // continue
@@ -63,7 +63,8 @@ if (
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
         && isset($_SESSION['key'])) === true
-    || (isset($post_type) === true && $post_type === 'change_user_language'
+    || (isset($post_type) === true
+        //&& $post_type === 'change_user_language'
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
@@ -144,430 +145,57 @@ function mainQuery($SETTINGS)
         );
     }
 
+    // Check KEY
+    if (isset($post_key) === false || empty($post_key) === true) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        return false;
+    }
+
+    // decrypt and retreive data in JSON format
+    $dataReceived = prepareExchangedData(
+        $post_data,
+        'decode'
+    );
+
     // Manage type of action asked
     switch ($post_type) {
         case 'change_pw':
-            // Check KEY
-            if (isset($post_key) === false || empty($post_key) === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
-
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
+            $return = changePassword(
+                (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING),
+                isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '',
+                (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING),
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                $SETTINGS
             );
 
-            $post_new_password = filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING);
-            $post_current_password = isset($dataReceived['current_pw']) === true ?
-                filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '';
-            $post_password_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_change_request = filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING);
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-
-            // Prepare variables
-            $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
-
-            // User has decided to change is PW
-            if (
-                $post_change_request === 'reset_user_password_expected'
-                || $post_change_request === 'user_decides_to_change_password'
-            ) {
-                // Check that current user is correct
-                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('error_not_allowed_to') . '</div>',
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // check if expected security level is reached
-                $dataUser = DB::queryfirstrow(
-                    'SELECT *
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-
-                // check if badly written
-                $dataUser['fonction_id'] = array_filter(
-                    explode(',', str_replace(';', ',', $dataUser['fonction_id']))
-                );
-                $dataUser['fonction_id'] = implode(',', $dataUser['fonction_id']);
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'fonction_id' => $dataUser['fonction_id'],
-                    ),
-                    'id = %i',
-                    $post_user_id
-                );
-
-                if (empty($dataUser['fonction_id']) === false) {
-                    $data = DB::queryFirstRow(
-                        'SELECT complexity
-                        FROM ' . prefixTable('roles_title') . '
-                        WHERE id IN (' . $dataUser['fonction_id'] . ')
-                        ORDER BY complexity DESC'
-                    );
-                } else {
-                    // In case user has no roles yet
-                    $data = array();
-                    $data['complexity'] = 0;
-                }
-
-                if (intval($post_password_complexity) < intval($data['complexity'])) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
-                                langHdl('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // Check that the 2 passwords are differents
-                if ($post_current_password === $post_new_password) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('password_already_used'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                // update sessions
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
-                $_SESSION['validite_pw'] = true;
-
-                // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true) {
-                    $special_action = 'none';
-                    if ($post_change_request === 'reset_user_password_expected') {
-                        $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
-                    }
-
-                    // update DB
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'pw' => $post_new_password_hashed,
-                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                            'last_pw' => $post_current_password,
-                            'special' => $special_action,
-                            'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
-                        ),
-                        'id = %i',
-                        $post_user_id
-                    );
-                    // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
-
-                    // Send back
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    // Send back
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('pwd_hash_not_correct'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            }
-            /*
-                                // ADMIN has decided to change the USER's PW
-                            } elseif (null !== $post_change_pw_origine
-                                && (($post_change_pw_origine === 'admin_change'
-                                    || $post_change_pw_origine === 'user_change'
-                                    ) && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1
-                                    || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                                )
-                            ) {
-                                // check if user is admin / Manager
-                                $userInfo = DB::queryFirstRow(
-                                    'SELECT *
-                                    FROM '.prefixTable('users').'
-                                    WHERE id = %i',
-                                    $_SESSION['user_id']
-                                );
-                                if ((int) $userInfo['admin'] !== 1 && (int) $userInfo['gestionnaire'] !== 1) {
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => langHdl('not_admin_or_manager'),
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-
-                                // BEfore updating, check that the pwd is correct
-                                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_new_password, $post_new_password_hashed)) === true) {
-                                    // adapt
-                                    if ($post_change_pw_origine === 'user_change') {
-                                        $post_user_id = $_SESSION['user_id'];
-                                        $post_user_privatekey = $_SESSION['user']['private_key'];
-                                    } else {
-                                        // Request
-                                    }
-                                    echo $post_new_password.' -- '.$_SESSION['user']['private_key'];
-                                    break;
-                                    // update DB
-                                    DB::update(
-                                        prefixTable('users'),
-                                        array(
-                                            'pw' => $post_new_password_hashed,
-                                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                                            'private_key' => encryptPrivateKey($post_new_password, $post_user_privatekey),
-                                            ),
-                                        'id = %i',
-                                        $post_user_id
-                                    );
-
-                                    // update LOG
-                                    logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
-
-                                    // Send back
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => false,
-                                            'message' => '',
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                } else {
-                                    // Send back
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => langHdl('pwd_hash_not_correct'),
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-
-                                // ADMIN first login
-                            } else {
-                                // DEFAULT case
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => false,
-                                        'message' => '',
-                                    ),
-                                    'encode'
-                                );
-                                */
+            echo $return;
+            
             break;
 
-            /*
+        /*
          * This will generate the QR Google Authenticator
          */
         case 'ga_generate_qr':
-            // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+            $return = generateQRCode(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode');
+            echo $return;
 
-            // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING);
-            $post_send_mail = filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING);
-            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
-            $post_pwd = filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING);
-
-            // is this allowed by setting
-            if ((isset($SETTINGS['ga_reset_by_user']) === false || (int) $SETTINGS['ga_reset_by_user'] !== 1)
-                && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
-            ) {
-                // User cannot ask for a new code
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // Check if user exists
-            if (null === $post_id || empty($post_id) === true) {
-                // Get data about user
-                $data = DB::queryfirstrow(
-                    'SELECT id, email, pw
-                    FROM ' . prefixTable('users') . '
-                    WHERE login = %s',
-                    $post_login
-                );
-            } else {
-                $data = DB::queryfirstrow(
-                    'SELECT id, login, email, pw
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_id
-                );
-                $post_login = $data['login'];
-                //$post_pwd = $data['pw'];
-            }
-            // Get number of returned users
-            $counter = DB::count();
-
-            // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
-
-            // If LDAP enabled and counter = 0 then perhaps new user to add
-            // REMOVED - No user is added automatically from AD
-
-            // Do treatment
-            if ($counter === 0) {
-                // Not a registered user !
-                logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('no_user'),
-                        'tst' => 1,
-                    ),
-                    'encode'
-                );
-            } elseif (
-                isset($post_pwd) === true
-                && isset($data['pw']) === true
-                && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
-                && $post_demand_origin !== 'users_management_list'
-            ) {
-                // checked the given password
-                logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($post_login), stripslashes($post_login));
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('no_user'),
-                        'tst' => $post_demand_origin,
-                    ),
-                    'encode'
-                );
-            } else {
-                if (empty($data['email']) === true) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('no_email'),
-                        ),
-                        'encode'
-                    );
-                } else {
-                    // generate new GA user code
-                    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
-                    $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
-                    $gaSecretKey = $tfa->createSecret();
-                    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true, $SETTINGS);
-
-                    DB::update(
-                        prefixTable('users'),
-                        [
-                            'ga' => $gaSecretKey,
-                            'ga_temporary_code' => $gaTemporaryCode,
-                        ],
-                        'id = %i',
-                        $data['id']
-                    );
-
-                    // Log event
-                    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $data['id'], stripslashes($post_login), stripslashes($post_login));
-
-                    // send mail?
-                    if ((int) $post_send_mail === 1) {
-                        json_decode(
-                            sendEmail(
-                                langHdl('email_ga_subject'),
-                                str_replace(
-                                    '#2FACode#',
-                                    $gaTemporaryCode,
-                                    langHdl('email_ga_text')
-                                ),
-                                $data['email'],
-                                $SETTINGS
-                            ),
-                            true
-                        );
-
-                        // send back
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => $post_send_mail,
-                                'email' => $data['email'],
-                                'email_result' => str_replace(
-                                    '#email#',
-                                    '<b>' . obfuscateEmail($data['email']) . '</b>',
-                                    addslashes(langHdl('admin_email_result_ok'))
-                                ),
-                            ),
-                            'encode'
-                        );
-                    } else {
-                        // send back
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'email' => $data['email'],
-                                'email_result' => str_replace(
-                                    '#email#',
-                                    '<b>' . obfuscateEmail($data['email']) . '</b>',
-                                    addslashes(langHdl('admin_email_result_ok'))
-                                ),
-                            ),
-                            'encode'
-                        );
-                    }
-                }
-            }
             break;
+        
             /*
          * Increase the session time of User
          */
@@ -587,817 +215,63 @@ function mainQuery($SETTINGS)
                 );
                 // Return data
                 echo '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
-            } else {
-                echo '[{"new_value":"expired"}]';
+
+                break;
             }
+            
+            echo '[{"new_value":"expired"}]';
+
             break;
+        
             /*
          * Hide maintenance message
          */
         case 'hide_maintenance':
             $_SESSION['hide_maintenance'] = 1;
-            break;
-
-            /*
-         * Used in order to send the password to the user by email
-         */
-        case 'recovery_send_pw_by_email':
-            // generate key
-            $key = GenerateCryptKey(50, false, true, true, false, true, $SETTINGS);
-
-            // Prepare post variables
-            $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-
-            // Get account and pw associated to email
-            DB::query(
-                'SELECT *
-                FROM ' . prefixTable('users') . '
-                WHERE login = %s',
-                $post_login
-            );
-            $counter = DB::count();
-            if ($counter != 0) {
-                $data = DB::queryFirstRow(
-                    'SELECT login, pw, email FROM ' . prefixTable('users') . ' WHERE login = %s',
-                    $post_login
-                );
-                $textMail = langHdl('forgot_pw_email_body_1') . ' <a href="' .
-                    $SETTINGS['cpassman_url'] . '/index.php?action=password_recovery&key=' . $key .
-                    '&login=' . $post_login . '">' . $SETTINGS['cpassman_url'] .
-                    '/index.php?action=password_recovery&key=' . $key . '&login=' . $post_login . '</a>.<br><br>' . langHdl('thku');
-                $textMailAlt = langHdl('forgot_pw_email_altbody_1') . ' ' . langHdl('at_login') . ' : ' . $post_login . ' - ' .
-                    langHdl('index_password') . ' : ' . md5($data['pw']);
-
-                // Check if email has already a key in DB
-                DB::query(
-                    'SELECT * FROM ' . prefixTable('misc') . ' WHERE intitule = %s AND type = %s',
-                    $post_login,
-                    'password_recovery'
-                );
-                $counter = DB::count();
-                if ($counter != 0) {
-                    DB::update(
-                        prefixTable('misc'),
-                        array(
-                            'valeur' => $key,
-                        ),
-                        'type = %s and intitule = %s',
-                        'password_recovery',
-                        $post_login
-                    );
-                } else {
-                    // store in DB the password recovery informations
-                    DB::insert(
-                        prefixTable('misc'),
-                        array(
-                            'type' => 'password_recovery',
-                            'intitule' => $post_login,
-                            'valeur' => $key,
-                        )
-                    );
-                }
-
-                $ret = json_decode(
-                    sendEmail(
-                        langHdl('forgot_pw_email_subject'),
-                        $textMail,
-                        $data['email'],
-                        $SETTINGS,
-                        $textMailAlt
-                    ),
-                    true
-                );
-
-                echo '[{"error":"' . $ret['error'] . '" , "message":"' . $ret['message'] . '"}]';
-            } else {
-                // no one has this email ... alert
-                echo '[{"error":"error_email" , "message":"' . langHdl('forgot_my_pw_error_email_not_exist') . '"}]';
-            }
-            break;
-
-            // Send to user his new pw if key is conform
-        case 'recovery_generate_new_password':
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            // Prepare variables
-            $login = htmlspecialchars_decode($dataReceived['login']);
-            $key = htmlspecialchars_decode($dataReceived['key']);
-
-            // check if key is okay
-            $data = DB::queryFirstRow(
-                'SELECT valeur
-                FROM ' . prefixTable('misc') . '
-                WHERE intitule = %s AND type = %s',
-                $login,
-                'password_recovery'
-            );
-            if ($key == $data['valeur']) {
-                // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
-
-                // generate key
-                $newPwNotCrypted = $pwdlib->getRandomToken(10);
-
-                // Prepare variables
-                $newPw = $pwdlib->createPasswordHash(($newPwNotCrypted));
-
-                // update DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'pw' => $newPw,
-                    ),
-                    'login = %s',
-                    $login
-                );
-                // Delete recovery in DB
-                DB::delete(
-                    prefixTable('misc'),
-                    'type = %s AND intitule = %s AND valeur = %s',
-                    'password_recovery',
-                    $login,
-                    $key
-                );
-                // Get email
-                $dataUser = DB::queryFirstRow(
-                    'SELECT email FROM ' . prefixTable('users') . ' WHERE login = %s',
-                    $login
-                );
-
-                $_SESSION['validite_pw'] = false;
-                // send to user
-                $ret = json_decode(
-                    sendEmail(
-                        langHdl('forgot_pw_email_subject_confirm'),
-                        langHdl('forgot_pw_email_body') . ' ' . $newPwNotCrypted,
-                        $dataUser['email'],
-                        $SETTINGS,
-                        strip_tags(langHdl('forgot_pw_email_body')) . ' ' . $newPwNotCrypted
-                    ),
-                    true
-                );
-                // send email
-                if (empty($ret['error'])) {
-                    echo 'done';
-                } else {
-                    echo $ret['message'];
-                }
-            }
-            break;
-            /*
-         * Store the personal saltkey
-         */
-        case 'store_personal_saltkey':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-            $filter_score = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-
-            // manage store
-            if ($filter_psk !== '') {
-                // store in session the cleartext for psk
-                $_SESSION['user']['clear_psk'] = $filter_psk;
-
-                // check if encrypted_psk is in database. If not, add it
-                if (
-                    isset($_SESSION['user']['encrypted_psk']) === false
-                    || (isset($_SESSION['user']['encrypted_psk']) === true && empty($_SESSION['user']['encrypted_psk']) === true)
-                ) {
-                    // Check if security level is reach (if enabled)
-                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
-                        // Did we received the pass score
-                        if (empty($filter_score) === false) {
-                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => true,
-                                        'message' => langHdl('security_level_not_reached_but_psk_correct'),
-                                    ),
-                                    'encode'
-                                );
-                                break;
-                            }
-                        }
-                    }
-                    // generate it based upon clear psk
-                    $_SESSION['user']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
-
-                    // store it in DB
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'encrypted_psk' => $_SESSION['user']['encrypted_psk'],
-                        ),
-                        'id = %i',
-                        $_SESSION['user_id']
-                    );
-                }
-
-                // check if psk is correct.
-                $user_key_encoded = defuse_validate_personal_key(
-                    $filter_psk,
-                    $_SESSION['user']['encrypted_psk']
-                );
-
-                if (strpos($user_key_encoded, 'Error ') !== false) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('bad_psk'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    // Check if security level is reach (if enabled)
-                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
-                        // Did we received the pass score
-                        if (empty($filter_score) === false) {
-                            if (intval($SETTINGS['personal_saltkey_security_level']) > intval($filter_score)) {
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => true,
-                                        'message' => langHdl('security_level_not_reached_but_psk_correct'),
-                                    ),
-                                    'encode'
-                                );
-                                break;
-                            }
-                        }
-                    }
-                    // Store PSK
-                    $_SESSION['user']['session_psk'] = $user_key_encoded;
-                    setcookie(
-                        'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                        $user_key_encoded,
-                        (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                        '/'
-                    );
-                }
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('psk_required'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'encrypted_psk' => $user_key_encoded,
-                ),
-                'encode'
-            );
 
             break;
-            /*
-         * Change the personal saltkey
-         */
-        case 'change_personal_saltkey':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //init
-            $list = '';
-
-            // Get key from user
-            $userInfo = DB::queryfirstrow(
-                'SELECT encrypted_psk
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $_SESSION['user_id']
-            );
-
-            // If never set then exit
-            if (empty($userInfo['encrypted_psk']) === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('psk_never_set_by_user'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
-                // Prepare variables
-                $post_psk = filter_var($dataReceived['new-saltkey'], FILTER_SANITIZE_STRING);
-                $post_old_psk = filter_var($dataReceived['current-saltkey'], FILTER_SANITIZE_STRING);
-                $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_STRING);
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_empty_data'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // check old psk
-            $user_key_encoded = defuse_validate_personal_key(
-                $post_old_psk,
-                $userInfo['encrypted_psk']
-            );
-            if (strpos($user_key_encoded, 'Error ') !== false) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('bad_psk'),
-                    ),
-                    'encode'
-                );
-                break;
-            } else {
-                // Store PSK
-                $_SESSION['user']['encrypted_oldpsk'] = $userInfo['encrypted_psk'];
-            }
-
-            // Check if security level is reach (if enabled)
-            if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
-                // Did we received the pass score
-                if (empty($post_complexity) === false) {
-                    if (intval($SETTINGS['personal_saltkey_security_level']) > intval($post_complexity)) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('security_level_not_reached_but_psk_correct'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-                }
-            }
-
-            // generate the new encrypted psk based upon clear psk
-            $_SESSION['user']['session_psk'] = defuse_generate_personal_key($post_psk);
-
-            // store it in DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'encrypted_psk' => $_SESSION['user']['session_psk'],
-                ),
-                'id = %i',
-                $_SESSION['user_id']
-            );
-
-            // Log event
-            logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-
-            // Change encryption
-            // Build list of items to be re-encrypted
-            $rows = DB::query(
-                'SELECT i.id as id, i.pw as pw
-                FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
-                WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
-                '1',
-                $_SESSION['user_id'],
-                'at_creation'
-            );
-            $number = DB::count();
-            foreach ($rows as $record) {
-                if (!empty($record['pw'])) {
-                    if (empty($list)) {
-                        $list = $record['id'];
-                    } else {
-                        $list .= ',' . $record['id'];
-                    }
-                }
-            }
-
-            // change salt
-            setcookie(
-                'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                $_SESSION['user']['session_psk'],
-                time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                '/'
-            );
-
-            echo prepareExchangedData(
-                array(
-                    'list' => $list,
-                    'error' => false,
-                    'nb_total' => $number,
-                ),
-                'encode'
-            );
-            break;
-
-            /*
-         * Reset the personal saltkey
-         */
-        case 'reset_personal_saltkey':
-            // Allowed?
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            if (is_array($dataReceived) === true && count($dataReceived) > 0) {
-                // Prepare variables
-                $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-                $post_delete_items = filter_var($dataReceived['delete_items'], FILTER_SANITIZE_NUMBER_INT);
-
-                if (empty($_SESSION['user_id']) === false) {
-                    // delete all previous items of this user
-                    $rows = DB::query(
-                        'SELECT i.id as id
-                        FROM ' . prefixTable('items') . ' as i
-                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
-                        WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
-                        '1',
-                        $_SESSION['user_id'],
-                        'at_creation'
-                    );
-                    foreach ($rows as $record) {
-                        if ($post_delete_items === 1) {
-                            // delete in ITEMS table
-                            DB::delete(prefixTable('items'), 'id = %i', $record['id']);
-                            // delete in LOGS table
-                            DB::delete(prefixTable('log_items'), 'id_item = %i', $record['id']);
-                            // delete from CACHE table
-                            updateCacheTable('delete_value', $SETTINGS, $record['id']);
-                        } else {
-                            // Delete password
-                            DB::update(
-                                prefixTable('items'),
-                                array(
-                                    'pw' => '',
-                                ),
-                                'id = %i',
-                                $record['id']
-                            );
-                        }
-                    }
-
-                    // generate the new encrypted psk based upon clear psk
-                    $_SESSION['user']['session_psk'] = defuse_generate_personal_key($post_psk);
-
-                    // store it in DB
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'encrypted_psk' => $_SESSION['user']['session_psk'],
-                        ),
-                        'id = %i',
-                        $_SESSION['user_id']
-                    );
-
-                    // Log event
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-
-                    // change salt
-                    setcookie(
-                        'TeamPass_PFSK_' . md5($_SESSION['user_id']),
-                        $_SESSION['user']['session_psk'],
-                        time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                        '/'
-                    );
-
-                    // Log event
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_psk_reseted', (string) $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-                }
-            }
-            break;
-            /*
-         * Change the user's language
-         */
-        case 'change_user_language':
-            if (!empty($_SESSION['user_id'])) {
-                // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    'decode'
-                );
-                // Prepare variables
-                $language = $dataReceived['lang'];
-                // update DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'user_language' => $language,
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-                $_SESSION['user_language'] = $language;
-                echo 'done';
-            } else {
-                $_SESSION['user_language'] = '';
-                echo 'done';
-            }
-            break;
-            /*
+        
+        /*
          * Send emails not sent
          */
         case 'send_waiting_emails':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
-            }
-
-            if (
-                isset($SETTINGS['enable_send_email_on_user_login'])
-                && $SETTINGS['enable_send_email_on_user_login'] === '1'
-            ) {
-                $row = DB::queryFirstRow(
-                    'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
-                    'cron',
-                    'sending_emails'
-                );
-
-                if ((int) (time() - $row['valeur']) >= 300 || (int) $row['valeur'] === 0) {
-                    $rows = DB::query(
-                        'SELECT *
-                        FROM ' . prefixTable('emails') .
-                            ' WHERE status != %s',
-                        'sent'
-                    );
-                    foreach ($rows as $record) {
-                        echo $record['increment_id'] . " >> ";
-                        // Send email
-                        $ret = json_decode(
-                            sendEmail(
-                                $record['subject'],
-                                $record['body'],
-                                $record['receivers'],
-                                $SETTINGS
-                            ),
-                            true
-                        );
-                        print_r($ret);
-                        echo " ;; ";
-
-                        if ($ret['error'] === 'error_mail_not_send') {
-                            $status = 'not_sent';
-                        } else {
-                            $status = 'sent';
-                        }
-
-                        // update item_id in files table
-                        DB::update(
-                            prefixTable('emails'),
-                            array(
-                                'status' => $status,
-                            ),
-                            'timestamp = %s',
-                            $record['timestamp']
-                        );
-                    }
-                }
-                // update cron time
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => time(),
-                    ),
-                    'intitule = %s AND type = %s',
-                    'sending_emails',
-                    'cron'
-                );
-            }
+            sendEmailsNotSent(
+                $SETTINGS
+            );
+            
             break;
 
-            /*
-         * Store error
-         */
-        case 'store_error':
-            if (!empty($_SESSION['user_id'])) {
-                // update DB
-                logEvents(
-                    $SETTINGS,
-                    'error',
-                    urldecode(filter_input(INPUT_POST, 'error', FILTER_SANITIZE_STRING)),
-                    (string) $_SESSION['user_id'],
-                    $_SESSION['login']
-                );
-            }
-            break;
-
-            /*
+        /*
          * Generate a password generic
          */
         case 'generate_password':
-            if (filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) > $SETTINGS['pwd_maximum_length']) {
-                echo prepareExchangedData(
-                    array(
-                        'error_msg' => 'Password length is too long! ',
-                        'error' => 'true',
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
-            $generator->register();
-            $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
-
-            // Is PHP7 being used?
-            if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
-                $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', '../includes/libraries');
-                $php7generator->register();
-                $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
-            }
-
-            // Manage size
-            $size = (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT);
-            $generator->setLength(($size <= 0) ? 10 : $size);
-
-            if (
-                null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === 'true'
-            ) {
-                $generator->setSymbols(true);
-                $generator->setLowercase(true);
-                $generator->setUppercase(true);
-                $generator->setNumbers(true);
-            } else {
-                $generator->setLowercase((filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING) === 'true') ? true : false);
-                $generator->setUppercase((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === 'true') ? true : false);
-                $generator->setNumbers((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === 'true') ? true : false);
-                $generator->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === 'true') ? true : false);
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'key' => $generator->generatePasswords(),
-                    'error' => '',
-                ),
-                'encode'
+            $return = generateGenericPassword(
+                (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
+                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING),
+                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING),
+                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING),
+                (bool) filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING),
+                (bool) filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_NUMBER_INT),
+                $SETTINGS
             );
-            break;
-            /*
-         * Check if user exists and send back if psk is set
-         */
-        case 'check_login_exists':
-            $data = DB::query(
-                'SELECT login, psk FROM ' . prefixTable('users') . '
-                WHERE login = %i',
-                stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT))
-            );
-            if (empty($data['login'])) {
-                $userOk = false;
-            } else {
-                $userOk = true;
-            }
 
-            echo '[{"login" : "' . $userOk . '", "psk":"0"}]';
+            echo $return;
+            
             break;
-            /*
-         * Make statistics on item
-         */
-        case 'item_stat':
-            if (
-                null !== filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === 'item'
-            ) {
-                $data = DB::queryfirstrow(
-                    'SELECT view FROM ' . prefixTable('statistics') . ' WHERE scope = %s AND item_id = %i',
-                    'item',
-                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-                );
-                $counter = DB::count();
-                if ($counter == 0) {
-                    DB::insert(
-                        prefixTable('statistics'),
-                        array(
-                            'scope' => 'item',
-                            'view' => '1',
-                            'item_id' => filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
-                        )
-                    );
-                } else {
-                    DB::update(
-                        prefixTable('statistics'),
-                        array(
-                            'scope' => 'item',
-                            'view' => $data['view'] + 1,
-                        ),
-                        'item_id = %i',
-                        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-                    );
-                }
-            }
 
-            break;
-            /*
+        /*
          * Refresh list of last items seen
          */
         case 'refresh_list_items_seen':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
-            }
-
-            // get list of last items seen
-            $arr_html = array();
-            $rows = DB::query(
-                'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
-                FROM ' . prefixTable('log_items') . ' AS l
-                RIGHT JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
-                WHERE l.action = %s AND l.id_user = %i
-                ORDER BY l.date DESC
-                LIMIT 0, 100',
-                'at_shown',
-                $_SESSION['user_id']
+            $return = refreshUserItemsSeenList(
+                $SETTINGS
             );
-            if (DB::count() > 0) {
-                foreach ($rows as $record) {
-                    if (in_array($record['id']->id, array_column($arr_html, 'id')) === false) {
-                        array_push(
-                            $arr_html,
-                            array(
-                                'id' => $record['id'],
-                                'label' => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
-                                'tree_id' => $record['id_tree'],
-                                'perso' => $record['perso'],
-                                'restricted' => $record['restricted'],
-                            )
-                        );
-                        if (count($arr_html) >= (int) $SETTINGS['max_latest_items']) {
-                            break;
-                        }
-                    }
-                }
-            }
 
-            // get wainting suggestions
-            $nb_suggestions_waiting = 0;
-            if (
-                isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
-                && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
-            ) {
-                DB::query('SELECT * FROM ' . prefixTable('suggestion'));
-                $nb_suggestions_waiting = DB::count();
-            }
+            echo $return;
 
-            echo json_encode(
-                array(
-                    'error' => '',
-                    'existing_suggestions' => $nb_suggestions_waiting,
-                    'html_json' => $arr_html,
-                ),
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-            );
             break;
 
-            /*
+        /*
          * Generates a KEY with CRYPT
          */
         case 'generate_new_key':
@@ -1410,7 +284,7 @@ function mainQuery($SETTINGS)
             echo '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
             break;
 
-            /*
+        /*
          * Generates a TOKEN with CRYPT
          */
         case 'save_token':
@@ -1440,15 +314,11 @@ function mainQuery($SETTINGS)
             break;
 
 
-            /*
-         * Check if suggestions are existing
+        /*
+         * TODO Check if suggestions are existing
          */
+        /*
         case 'is_existings_suggestions':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
-            }
-
             if ($_SESSION['user_manager'] === '1' || $_SESSION['is_admin'] === '1') {
                 $count = 0;
                 DB::query('SELECT * FROM ' . prefixTable('items_change'));
@@ -1457,199 +327,889 @@ function mainQuery($SETTINGS)
                 $count += DB::count();
 
                 echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
-            } elseif (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
-                echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
-            } else {
-                echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
-            }
-
-            break;
-
-            /*
-         * Check if suggestions are existing
-         */
-        case 'sending_statistics':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-
-            if (
-                isset($SETTINGS['send_statistics_items']) === true
-                && isset($SETTINGS['send_stats']) === true
-                && isset($SETTINGS['send_stats_time']) === true
-                && (int) $SETTINGS['send_stats'] === 1
-                && ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
-            ) {
-                // get statistics data
-                $stats_data = getStatisticsData($SETTINGS);
-
-                // get statistics items to share
-                $statsToSend = [];
-                $statsToSend['ip'] = $_SERVER['SERVER_ADDR'];
-                $statsToSend['timestamp'] = time();
-                foreach (array_filter(explode(';', $SETTINGS['send_statistics_items'])) as $data) {
-                    if ($data === 'stat_languages') {
-                        $tmp = '';
-                        foreach ($stats_data[$data] as $key => $value) {
-                            if (empty($tmp)) {
-                                $tmp = $key . '-' . $value;
-                            } else {
-                                $tmp .= ',' . $key . '-' . $value;
-                            }
-                        }
-                        $statsToSend[$data] = $tmp;
-                    } elseif ($data === 'stat_country') {
-                        $tmp = '';
-                        foreach ($stats_data[$data] as $key => $value) {
-                            if (empty($tmp)) {
-                                $tmp = $key . '-' . $value;
-                            } else {
-                                $tmp .= ',' . $key . '-' . $value;
-                            }
-                        }
-                        $statsToSend[$data] = $tmp;
-                    } else {
-                        $statsToSend[$data] = $stats_data[$data];
-                    }
-                }
-
-                // connect to Teampass Statistics database
-                $link2 = new MeekroDB(
-                    'teampass.pw',
-                    'teampass_user',
-                    'ZMlEfRzKzFLZNzie',
-                    'teampass_followup',
-                    '3306',
-                    'utf8'
-                );
-
-                $link2->insert(
-                    'statistics',
-                    $statsToSend
-                );
-
-                // update table misc with current timestamp
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => time(),
-                    ),
-                    'type = %s AND intitule = %s',
-                    'admin',
-                    'send_stats_time'
-                );
-
-                //permits to test only once by session
-                $_SESSION['temporary']['send_stats_done'] = true;
-                $SETTINGS['send_stats_time'] = time();
-
-                // save change in config file
-                handleConfigFile('update', $SETTINGS, 'send_stats_time', $SETTINGS['send_stats_time']);
-
-                echo '[ { "error" : "" , "done" : "1"} ]';
-            } else {
-                echo '[ { "error" : "" , "done" : "0"} ]';
+            
+            if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
+                echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
+                break;
             }
+            
+            echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
+
+            break;
+        */
+
+        /*
+         * Sending statistics
+         */
+        case 'sending_statistics':
+            sendingStatistics(
+                $SETTINGS
+            );
 
             break;
 
-            /*
+        /*
          * delete a file
          */
         case 'file_deletion':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
-            }
-
             fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING), $SETTINGS);
 
             break;
 
-            /*
+        /*
          * Generate BUG report
          */
         case 'generate_bug_report':
+            $return = generateBugReport(
+                (string) filter_var(INPUT_POST, 'data', FILTER_SANITIZE_URL),
+                $SETTINGS
+            );
+
+            echo $return;
+        
+            break;
+
+        /**
+         * 
+         */
+        case 'update_user_field':
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            // Prepare variables
+            $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
+            $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
+            $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
+
+            DB::update(
+                prefixTable('users'),
+                array(
+                    $field => $new_value,
+                ),
+                'id = %i',
+                $user_id
+            );
+
+            // Update session
+            if ($field === 'user_api_key') {
+                $_SESSION['user']['api-key'] = $new_value;
+            }
+            break;
+
+        /*
+        * get_teampass_settings
+        */
+        case 'get_teampass_settings':
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            $config_exclude_vars = array(
-                'bck_script_passkey',
-                'email_smtp_server',
-                'email_auth_username',
-                'email_auth_pwd',
-                'email_from',
+            // Encrypt data to return
+            echo prepareExchangedData($SETTINGS, 'encode');
+
+            break;
+
+
+        /*
+        * test_current_user_password_is_correct
+        */
+        case 'test_current_user_password_is_correct':
+            $return = isUserPasswordCorrect(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
+                $SETTINGS
             );
 
-            // Get data
-            $post_data = json_decode(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_URL), true);
+            echo $return;
 
-            // Read config file
-            $list_of_options = '';
-            $url_found = '';
-            $anonym_url = '';
-            $tp_config_file = '../includes/config/tp.config.php';
-            $data = file($tp_config_file);
-            foreach ($data as $line) {
-                if (substr($line, 0, 4) === '    ') {
-                    // Remove extra spaces
-                    $line = str_replace('    ', '', $line);
+            break;
 
-                    // Identify url to anonymize it
-                    if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
-                        $url_found = substr($line, 19, strlen($line) - 22);
-                        $tmp = parse_url($url_found);
-                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
-                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
-                    }
+        /*
+         * User's public/private keys change
+         */
+        case 'change_private_key_encryption_password':
+            $return = changePrivateKeyEncryptionPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
 
-                    // Anonymize all urls
-                    if (empty($anonym_url) === false) {
-                        $line = str_replace($url_found, $anonym_url, $line);
-                    }
+            echo $return;
+        
+            break;
 
-                    // Clear some vars
-                    foreach ($config_exclude_vars as $var) {
-                        if (strpos($line, $var) > 0) {
-                            $line = "'".$var."' => '<removed>'\n";
-                        }
-                    }
-                    
+        /*
+         * User's password has to be initialized
+         */
+        case 'initialize_user_password':
+            $return = initializeUserPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['special'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
 
-                    // Complete line to display
-                    $list_of_options .= $line;
-                }
+            echo $return;
+
+            break;
+
+        /*
+        * CASE
+        * Send email
+        */
+        case 'mail_me':
+            $return = sendMailToUser(
+                filter_var($dataReceived['receipt'], FILTER_SANITIZE_NUMBER_INT),
+                $dataReceived['body'],
+                (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['pre_replace'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+
+            echo $return;
+
+            break;
+
+        /*
+        * Generate a temporary encryption key for user
+        */
+        case 'generate_temporary_encryption_key':
+            $return = generateOneTimeCode(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+
+        /*
+        * user_sharekeys_reencryption_start
+        */
+        case 'user_sharekeys_reencryption_start':
+            $return = startReEncryptingUserSharekeys(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+
+        /*
+        * user_sharekeys_reencryption_next
+        */
+        case 'user_sharekeys_reencryption_next':
+            $return = continueReEncryptingUserSharekeys(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
+                (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+
+        /*
+        * user_psk_reencryption
+        */
+        case 'user_psk_reencryption':
+            $return = migrateTo3_DoUserPersonalItemsEncryption(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            
+            echo $return;
+        
+            break;
+
+        /*
+        * Get info 
+        */
+        case 'get_user_info':
+            $return = getUserInfo(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+
+        /*
+        * Change user's authenticataion password
+        */
+        case 'change_user_auth_password':
+            $return = changeUserAuthenticationPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+
+
+        /*
+        * User's authenticataion password in LDAP has changed
+        */
+        case 'change_user_ldap_auth_password':
+            $return = changeUserLDAPAuthenticationPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
+                filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            
+            echo $return;
+
+            break;
+    }
+}
+
+
+/**
+ * 
+ */
+function changePassword(
+    string $post_new_password,
+    string $post_current_password,
+    int $post_password_complexity,
+    string $post_change_request,
+    int $post_user_id,
+    array $SETTINGS
+): string
+{
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+
+    // Prepare variables
+    $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
+
+    // User has decided to change is PW
+    if (
+        $post_change_request === 'reset_user_password_expected'
+        || $post_change_request === 'user_decides_to_change_password'
+    ) {
+        // Check that current user is correct
+        if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('error_not_allowed_to') . '</div>',
+                ),
+                'encode'
+            );
+        }
+
+        // check if expected security level is reached
+        $dataUser = DB::queryfirstrow(
+            'SELECT *
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+
+        // check if badly written
+        $dataUser['fonction_id'] = array_filter(
+            explode(',', str_replace(';', ',', $dataUser['fonction_id']))
+        );
+        $dataUser['fonction_id'] = implode(',', $dataUser['fonction_id']);
+        DB::update(
+            prefixTable('users'),
+            array(
+                'fonction_id' => $dataUser['fonction_id'],
+            ),
+            'id = %i',
+            $post_user_id
+        );
+
+        if (empty($dataUser['fonction_id']) === false) {
+            $data = DB::queryFirstRow(
+                'SELECT complexity
+                FROM ' . prefixTable('roles_title') . '
+                WHERE id IN (' . $dataUser['fonction_id'] . ')
+                ORDER BY complexity DESC'
+            );
+        } else {
+            // In case user has no roles yet
+            $data = array();
+            $data['complexity'] = 0;
+        }
+
+        if ((int) $post_password_complexity < (int) $data['complexity']) {
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
+                        langHdl('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
+                ),
+                'encode'
+            );
+        }
+
+        // Check that the 2 passwords are differents
+        if ($post_current_password === $post_new_password) {
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('password_already_used'),
+                ),
+                'encode'
+            );
+        }
+
+        // update sessions
+        $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
+        $_SESSION['validite_pw'] = true;
+
+        // BEfore updating, check that the pwd is correct
+        if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true) {
+            $special_action = 'none';
+            if ($post_change_request === 'reset_user_password_expected') {
+                $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
             }
 
-            // Get error
-            $err = error_get_last();
+            // update DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'pw' => $post_new_password_hashed,
+                    'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
+                    'last_pw' => $post_current_password,
+                    'special' => $special_action,
+                    'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
+                ),
+                'id = %i',
+                $post_user_id
+            );
+            // update LOG
+            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
 
-            // Get 10 latest errors in Teampass
-            $teampass_errors = '';
+            // Send back
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+        }
+        // Send back
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('pwd_hash_not_correct'),
+            ),
+            'encode'
+        );
+    }
+}
+
+
+
+function generateQRCode(
+    $post_id,
+    $post_demand_origin,
+    $post_send_mail,
+    $post_login,
+    $post_pwd,
+    array $SETTINGS
+): string
+{
+    // is this allowed by setting
+    if ((isset($SETTINGS['ga_reset_by_user']) === false || (int) $SETTINGS['ga_reset_by_user'] !== 1)
+        && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
+    ) {
+        // User cannot ask for a new code
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('error_not_allowed_to'),
+            ),
+            'encode'
+        );
+    }
+
+    // Check if user exists
+    if (null === $post_id || empty($post_id) === true) {
+        // Get data about user
+        $data = DB::queryfirstrow(
+            'SELECT id, email, pw
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $post_login
+        );
+    } else {
+        $data = DB::queryfirstrow(
+            'SELECT id, login, email, pw
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_id
+        );
+        $post_login = $data['login'];
+    }
+    // Get number of returned users
+    $counter = DB::count();
+
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+
+    // Do treatment
+    if ($counter === 0) {
+        // Not a registered user !
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('no_user'),
+                'tst' => 1,
+            ),
+            'encode'
+        );
+    }
+
+    if (
+        isset($post_pwd) === true
+        && isset($data['pw']) === true
+        && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
+        && $post_demand_origin !== 'users_management_list'
+    ) {
+        // checked the given password
+        logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($post_login), stripslashes($post_login));
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('no_user'),
+                'tst' => $post_demand_origin,
+            ),
+            'encode'
+        );
+    }
+    
+    if (empty($data['email']) === true) {
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('no_email'),
+            ),
+            'encode'
+        );
+    }
+    
+    // generate new GA user code
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
+    $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
+    $gaSecretKey = $tfa->createSecret();
+    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true, $SETTINGS);
+
+    DB::update(
+        prefixTable('users'),
+        [
+            'ga' => $gaSecretKey,
+            'ga_temporary_code' => $gaTemporaryCode,
+        ],
+        'id = %i',
+        $data['id']
+    );
+
+    // Log event
+    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $data['id'], stripslashes($post_login), stripslashes($post_login));
+
+    // send mail?
+    if ((int) $post_send_mail === 1) {
+        json_decode(
+            sendEmail(
+                langHdl('email_ga_subject'),
+                str_replace(
+                    '#2FACode#',
+                    $gaTemporaryCode,
+                    langHdl('email_ga_text')
+                ),
+                $data['email'],
+                $SETTINGS
+            ),
+            true
+        );
+
+        // send back
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $post_send_mail,
+                'email' => $data['email'],
+                'email_result' => str_replace(
+                    '#email#',
+                    '<b>' . obfuscateEmail($data['email']) . '</b>',
+                    addslashes(langHdl('admin_email_result_ok'))
+                ),
+            ),
+            'encode'
+        );
+    }
+    
+    // send back
+    return prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => '',
+            'email' => $data['email'],
+            'email_result' => str_replace(
+                '#email#',
+                '<b>' . obfuscateEmail($data['email']) . '</b>',
+                addslashes(langHdl('admin_email_result_ok'))
+            ),
+        ),
+        'encode'
+    );
+}
+
+function sendEmailsNotSent(
+    array $SETTINGS
+)
+{
+    if (isset($SETTINGS['enable_send_email_on_user_login'])
+        && (int) $SETTINGS['enable_send_email_on_user_login'] === 1
+    ) {
+        $row = DB::queryFirstRow(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+            'cron',
+            'sending_emails'
+        );
+
+        if ((int) (time() - $row['valeur']) >= 300 || (int) $row['valeur'] === 0) {
             $rows = DB::query(
-                'SELECT label, date AS error_date
-                FROM ' . prefixTable('log_system') . "
-                WHERE `type` LIKE 'error'
-                ORDER BY `date` DESC
-                LIMIT 0, 10"
+                'SELECT *
+                FROM ' . prefixTable('emails') .
+                ' WHERE status != %s',
+                'sent'
             );
-            if (DB::count() > 0) {
-                foreach ($rows as $record) {
-                    if (empty($teampass_errors) === true) {
-                        $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-                    } else {
-                        $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-                    }
+            foreach ($rows as $record) {
+                echo $record['increment_id'] . " >> ";
+                // Send email
+                $ret = json_decode(
+                    sendEmail(
+                        $record['subject'],
+                        $record['body'],
+                        $record['receivers'],
+                        $SETTINGS
+                    ),
+                    true
+                );
+
+                // update item_id in files table
+                DB::update(
+                    prefixTable('emails'),
+                    array(
+                        'status' => $ret['error'] === 'error_mail_not_send' ? 'not_sent' : 'sent',
+                    ),
+                    'timestamp = %s',
+                    $record['timestamp']
+                );
+            }
+        }
+        // update cron time
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => time(),
+            ),
+            'intitule = %s AND type = %s',
+            'sending_emails',
+            'cron'
+        );
+    }
+}
+
+function generateGenericPassword(
+    int $size,
+    bool $secure,
+    bool $lowercase,
+    bool $capitalize,
+    bool $numerals,
+    bool $symbols,
+    array $SETTINGS
+): string
+{
+    if ((int) $size > (int) $SETTINGS['pwd_maximum_length']) {
+        return prepareExchangedData(
+            array(
+                'error_msg' => 'Password length is too long! ',
+                'error' => 'true',
+            ),
+            'encode'
+        );
+    }
+
+    $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+    $generator->register();
+    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+
+    // Is PHP7 being used?
+    if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
+        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', '../includes/libraries');
+        $php7generator->register();
+        $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+    }
+
+    // Manage size
+    $generator->setLength(($size <= 0) ? 10 : $size);
+
+    if ($secure === true) {
+        $generator->setSymbols(true);
+        $generator->setLowercase(true);
+        $generator->setUppercase(true);
+        $generator->setNumbers(true);
+    } else {
+        $generator->setLowercase($lowercase);
+        $generator->setUppercase($capitalize);
+        $generator->setNumbers($numerals);
+        $generator->setSymbols($symbols);
+    }
+
+    return prepareExchangedData(
+        array(
+            'key' => $generator->generatePasswords(),
+            'error' => '',
+        ),
+        'encode'
+    );
+}
+
+function refreshUserItemsSeenList(
+    array $SETTINGS
+): string
+{
+    // get list of last items seen
+    $arr_html = array();
+    $rows = DB::query(
+        'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
+        FROM ' . prefixTable('log_items') . ' AS l
+        RIGHT JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
+        WHERE l.action = %s AND l.id_user = %i
+        ORDER BY l.date DESC
+        LIMIT 0, 100',
+        'at_shown',
+        $_SESSION['user_id']
+    );
+    if (DB::count() > 0) {
+        foreach ($rows as $record) {
+            if (in_array($record['id']->id, array_column($arr_html, 'id')) === false) {
+                array_push(
+                    $arr_html,
+                    array(
+                        'id' => $record['id'],
+                        'label' => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
+                        'tree_id' => $record['id_tree'],
+                        'perso' => $record['perso'],
+                        'restricted' => $record['restricted'],
+                    )
+                );
+                if (count($arr_html) >= (int) $SETTINGS['max_latest_items']) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // get wainting suggestions
+    $nb_suggestions_waiting = 0;
+    if (
+        isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1
+        && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1)
+    ) {
+        DB::query('SELECT * FROM ' . prefixTable('suggestion'));
+        $nb_suggestions_waiting = DB::count();
+    }
+
+    return json_encode(
+        array(
+            'error' => '',
+            'existing_suggestions' => $nb_suggestions_waiting,
+            'html_json' => $arr_html,
+        ),
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+    );
+}
+
+function sendingStatistics(
+    array $SETTINGS
+): void
+{
+    if (
+        isset($SETTINGS['send_statistics_items']) === true
+        && isset($SETTINGS['send_stats']) === true
+        && isset($SETTINGS['send_stats_time']) === true
+        && (int) $SETTINGS['send_stats'] === 1
+        && (int) ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
+    ) {
+        // get statistics data
+        $stats_data = getStatisticsData($SETTINGS);
+
+        // get statistics items to share
+        $statsToSend = [];
+        $statsToSend['ip'] = $_SERVER['SERVER_ADDR'];
+        $statsToSend['timestamp'] = time();
+        foreach (array_filter(explode(';', $SETTINGS['send_statistics_items'])) as $data) {
+            if ($data === 'stat_languages') {
+                $tmp = '';
+                foreach ($stats_data[$data] as $key => $value) {
+                    $tmp .= $tmp === '' ? $key . '-' . $value : ',' . $key . '-' . $value;
+                }
+                $statsToSend[$data] = $tmp;
+            } elseif ($data === 'stat_country') {
+                $tmp = '';
+                foreach ($stats_data[$data] as $key => $value) {
+                    $tmp .= $tmp === '' ? $key . '-' . $value : ',' . $key . '-' . $value;
+                }
+                $statsToSend[$data] = $tmp;
+            } else {
+                $statsToSend[$data] = $stats_data[$data];
+            }
+        }
+
+        // connect to Teampass Statistics database
+        $link2 = new MeekroDB(
+            'teampass.pw',
+            'teampass_user',
+            'ZMlEfRzKzFLZNzie',
+            'teampass_followup',
+            '3306',
+            'utf8'
+        );
+
+        $link2->insert(
+            'statistics',
+            $statsToSend
+        );
+
+        // update table misc with current timestamp
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => time(),
+            ),
+            'type = %s AND intitule = %s',
+            'admin',
+            'send_stats_time'
+        );
+
+        //permits to test only once by session
+        $_SESSION['temporary']['send_stats_done'] = true;
+        $SETTINGS['send_stats_time'] = time();
+
+        // save change in config file
+        handleConfigFile('update', $SETTINGS, 'send_stats_time', $SETTINGS['send_stats_time']);
+    }
+}
+
+function generateBugReport(
+    string $data,
+    array $SETTINGS
+): string
+{
+    $config_exclude_vars = array(
+        'bck_script_passkey',
+        'email_smtp_server',
+        'email_auth_username',
+        'email_auth_pwd',
+        'email_from',
+    );
+
+    // Get data
+    $post_data = json_decode($data, true);
+
+    // Read config file
+    $list_of_options = '';
+    $url_found = '';
+    $anonym_url = '';
+    $tp_config_file = '../includes/config/tp.config.php';
+    $data = file($tp_config_file);
+    foreach ($data as $line) {
+        if (substr($line, 0, 4) === '    ') {
+            // Remove extra spaces
+            $line = str_replace('    ', '', $line);
+
+            // Identify url to anonymize it
+            if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
+                $url_found = substr($line, 19, strlen($line) - 22);
+                $tmp = parse_url($url_found);
+                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                $line = "'cpassman_url' => '" . $anonym_url . "\n";
+            }
+
+            // Anonymize all urls
+            if (empty($anonym_url) === false) {
+                $line = str_replace($url_found, $anonym_url, $line);
+            }
+
+            // Clear some vars
+            foreach ($config_exclude_vars as $var) {
+                if (strpos($line, $var) > 0) {
+                    $line = "'".$var."' => '<removed>'\n";
                 }
             }
 
-            $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
+            // Complete line to display
+            $list_of_options .= $line;
+        }
+    }
 
-            // Now prepare text
-            $txt = '### Page on which it happened
+    // Get error
+    $err = error_get_last();
+
+    // Get 10 latest errors in Teampass
+    $teampass_errors = '';
+    $rows = DB::query(
+        'SELECT label, date AS error_date
+        FROM ' . prefixTable('log_system') . "
+        WHERE `type` LIKE 'error'
+        ORDER BY `date` DESC
+        LIMIT 0, 10"
+    );
+    if (DB::count() > 0) {
+        foreach ($rows as $record) {
+            if (empty($teampass_errors) === true) {
+                $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
+            } else {
+                $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
+            }
+        }
+    }
+
+    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
+
+    // Now prepare text
+    $txt = '### Page on which it happened
 ' . $post_data['current_page'] . '
 
 ### Steps to reproduce
@@ -1706,343 +1266,1474 @@ Insert the log here and especially the answer of the query that failed.
 ```
 ';
 
-            echo prepareExchangedData(
-                array(
-                    'html' => $txt,
-                    'error' => '',
-                ),
-                'encode'
+    return prepareExchangedData(
+        array(
+            'html' => $txt,
+            'error' => '',
+        ),
+        'encode'
+    );
+}
+
+function isUserPasswordCorrect(
+    int $post_user_id,
+    string $post_user_password,
+    array $SETTINGS
+): string
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Check if user exists
+        $userInfo = DB::queryFirstRow(
+            'SELECT public_key, private_key, pw
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            // Get one item
+            $record = DB::queryFirstRow(
+                'SELECT id, pw
+                FROM ' . prefixTable('items') . '
+                WHERE perso = 0'
             );
 
-            break;
+            // Get itemKey from current user
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                $post_user_id
+            );
 
-        case 'update_user_field':
-            // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
+            if (count($currentUserKey) > 0) {
+                // Decrypt itemkey with user key
+                // use old password to decrypt private_key
+                $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
+                $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
+                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                if (empty(base64_decode($itemKey)) === false) {
+                    // GOOD password
+                    return prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'debug' => '',
+                        ),
+                        'encode'
+                    );
+                }
+            }
+            
+            // Use the password check
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            
+            if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
+                // GOOD password
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+            }
+        }
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('password_is_not_correct'),
+            'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
+        ),
+        'encode'
+    );
+}
+
+function changePrivateKeyEncryptionPassword(
+    int $post_user_id,
+    string $post_current_code,
+    string $post_new_code,
+    string $post_action_type,
+    array $SETTINGS
+): string
+{
+    if (empty($post_new_code) === true) {
+        $post_new_code = $_SESSION['user_pwd'];
+    }
+
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT private_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            if ($post_action_type === 'encrypt_privkey_with_user_password') {
+                // Here the user has his private key encrypted with an OTC.
+                // We need to encrypt it with his real password
+                $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
+                $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
+            } else {
+                $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
+                $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
             }
 
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            // Prepare variables
-            $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
-            $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
-            $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
-
+            // Update user account
             DB::update(
                 prefixTable('users'),
                 array(
-                    $field => $new_value,
+                    'private_key' => $hashedPrivateKey,
+                    'special' => 'none',
                 ),
                 'id = %i',
-                $user_id
+                $post_user_id
             );
 
-            // Update session
-            if ($field === 'user_api_key') {
-                $_SESSION['user']['api-key'] = $new_value;
-            }
-            break;
+            // Load superGlobals
+            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+            $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-            /*
-            * get_teampass_settings
-            */
-        case 'get_teampass_settings':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
+            $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+        }
+
+        // Return
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+    }
+    
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+            'debug' => '',
+        ),
+        'encode'
+    );
+}
+
+function initializeUserPassword(
+    int $post_user_id,
+    string $post_special,
+    string $post_user_password,
+    string $post_self_change,
+    array $SETTINGS
+): string
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT email, auth_type, login
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0 && empty($userData['email']) === false) {
+            // If user pwd is empty then generate a new one and send it to user
+            if (isset($post_user_password) === false || empty($post_user_password) === true) {
+                // Generate new password
+                $post_user_password = generateQuickPassword();
+            }
+
+            // If LDAP enabled, then
+            // check that this password is correct
+            $continue = true;
+            if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
+                $continue = ldapCheckUserPassword(
+                    $userData['login'],
+                    $post_user_password,
+                    $SETTINGS
                 );
-                break;
             }
 
-            // Encrypt data to return
-            echo prepareExchangedData($SETTINGS, 'encode');
+            if ($continue === true) {
+                // Only change if email is successfull
+                // GEnerate new keys
+                $userKeys = generateUserKeys($post_user_password);
 
-            break;
+                // load passwordLib library
+                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                $pwdlib->register();
+                $pwdlib = new PasswordLib\PasswordLib();
 
-
-            /*
-            * test_current_user_password_is_correct
-            *
-            * Check if we can decrypt one password
-            */
-        case 'test_current_user_password_is_correct':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
+                // Update user account
+                DB::update(
+                    prefixTable('users'),
                     array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'special' => $post_special,
+                        'pw' => $pwdlib->createPasswordHash($post_user_password),
+                        'public_key' => $userKeys['public_key'],
+                        'private_key' => $userKeys['private_key'],
+                        'last_pw_change' => time(),
                     ),
-                    'encode'
-                );
-                break;
-            }
-
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            // Variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Check if user exists
-                $userInfo = DB::queryFirstRow(
-                    'SELECT public_key, private_key, pw
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
+                    'id = %i',
                     $post_user_id
                 );
-                if (DB::count() > 0) {
-                    // Get one item
-                    $record = DB::queryFirstRow(
-                        'SELECT id, pw
-                        FROM ' . prefixTable('items') . '
-                        WHERE perso = 0'
-                    );
 
-                    // Get itemKey from current user
+                // Return
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'user_pwd' => $post_user_password,
+                        'user_email' => $userData['email'],
+                    ),
+                    'encode'
+                );
+            }
+            // Return error
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $continue === false ? langHdl('password_doesnot_correspond_to_ldap_one') : $emailError,
+                    'debug' => '',
+                    'self_change' => $post_self_change,
+                ),
+                'encode'
+            );
+        }
+
+        // Error
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('no_email_set'),
+                'debug' => '',
+            ),
+            'encode'
+        );
+    }
+    
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+            'debug' => '',
+        ),
+        'encode'
+    );
+}
+
+function sendMailToUser(
+    string $post_receipt,
+    string $post_body,
+    string $post_subject,
+    string $post_replace,
+    array $SETTINGS
+): string
+{
+    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+        $post_body = str_replace(
+            array_keys($post_replace),
+            array_values($post_replace),
+            $post_body
+        );
+    }
+    $ret = sendEmail(
+        $post_subject,
+        $post_body,
+        $post_receipt,
+        $SETTINGS,
+        '',
+        false
+    );
+
+    $ret = json_decode($ret, true);
+
+    return prepareExchangedData(
+        array(
+            'error' => empty($ret['error']) === true ? false : true,
+            'message' => $ret['message'],
+        ),
+        'encode'
+    );
+}
+
+function generateOneTimeCode(
+    int $post_user_id,
+    array $SETTINGS
+): string
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT email, auth_type, login
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0 && empty($userData['email']) === false) {
+            // Generate pwd
+            $password = generateQuickPassword();
+
+            // GEnerate new keys
+            $userKeys = generateUserKeys($password);
+
+            // Save in DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                    'special' => 'generate-keys',
+                ),
+                'id=%i',
+                $post_user_id
+            );
+
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'userTemporaryCode' => $password,
+                ),
+                'encode'
+            );
+        }
+        
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('no_email_set'),
+            ),
+            'encode'
+        );
+    }
+}
+
+function startReEncryptingUserSharekeys(
+    int $post_user_id,
+    string $post_self_change,
+    array $SETTINGS
+): string
+{
+    $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
+
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Check if user exists
+        DB::queryFirstRow(
+            'SELECT *
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            // Include libraries
+            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
+
+            // CLear old sharekeys
+            if ($post_self_change === false) {
+                deleteUserObjetsKeys($post_user_id, $SETTINGS);
+            }
+
+            // Continu with next step
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'step' => 'step1',
+                    'userId' => $post_user_id,
+                    'start' => 0,
+                    'self_change' => $post_self_change,
+                ),
+                'encode'
+            );
+        }
+        // Nothing to do
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('error_no_user'),
+            ),
+            'encode'
+        );
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
+}
+
+function continueReEncryptingUserSharekeys(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    array $SETTINGS
+): string
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Check if user exists
+        $userInfo = DB::queryFirstRow(
+            'SELECT public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            // Include libraries
+            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
+
+            // WHAT STEP TO PERFORM?
+            if ($post_action === 'step0') {
+                // CLear old sharekeys
+                if ($post_self_change === false) {
+                    deleteUserObjetsKeys($post_user_id, $SETTINGS);
+                }
+
+                $post_action = 'step1';
+            }
+
+            // STEP 1 - ITEMS
+            if ($post_action === 'step1') {
+                $return = continueReEncryptingUserSharekeysStep1(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+
+            // STEP 2 - LOGS
+            if ($post_action === 'step2') {
+                $return = continueReEncryptingUserSharekeysStep2(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+
+            // STEP 3 - FIELDS
+            if ($post_action === 'step3') {
+                $return = continueReEncryptingUserSharekeysStep3(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+            
+            // STEP 4 - SUGGESTIONS
+            if ($post_action === 'step4') {
+                $return = continueReEncryptingUserSharekeysStep4(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+            
+            // STEP 5 - FILES
+            if ($post_action === 'step5') {
+                $return = continueReEncryptingUserSharekeysStep5(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+            
+            // STEP 6 - PERSONAL ITEMS
+            if ($post_action === 'step6') {
+                $return = continueReEncryptingUserSharekeysStep6(
+                    $post_user_id,
+                    $post_self_change,
+                    $post_action,
+                    $post_start,
+                    $post_length,
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                $next_start = $return['next_start'];
+                $post_action = $return['post_action'];
+            }
+
+            // Continu with next step
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'step' => $post_action,
+                    'start' => isset($next_start) === true ? $next_start : 0,
+                    'userId' => $post_user_id,
+                    'self_change' => $post_self_change,
+                ),
+                'encode'
+            );
+        }
+        
+        // Nothing to do
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'step' => 'finished',
+                'start' => 0,
+                'userId' => $post_user_id,
+                'self_change' => $post_self_change,
+            ),
+            'encode'
+        );
+    }
+    
+    // Nothing to do
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
+}
+
+function continueReEncryptingUserSharekeysStep1(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // Loop on items
+    $rows = DB::query(
+        'SELECT id, pw
+        FROM ' . prefixTable('items') . '
+        WHERE perso = 0
+        LIMIT ' . $post_start . ', ' . $post_length
+    );
+    foreach ($rows as $record) {
+        // Get itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT share_key, increment_id
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $_SESSION['user_id']
+        );
+        if (count($currentUserKey) === 0) continue;
+
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        
+        // Encrypt Item key
+        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+        
+        // Save the key in DB
+        if ($post_self_change === false) {
+            DB::insert(
+                prefixTable('sharekeys_items'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        } else {
+            // Get itemIncrement from selected user
+            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('sharekeys_items') . '
+                    WHERE object_id = %i AND user_id = %i',
+                    $record['id'],
+                    $post_user_id
+                );
+
+                if (DB::count() > 0) {
+                    // NOw update
+                    DB::update(
+                        prefixTable('sharekeys_items'),
+                        array(
+                            'share_key' => $share_key_for_item,
+                        ),
+                        'increment_id = %i',
+                        $currentUserKey['increment_id']
+                    );
+                } else {
+                    DB::insert(
+                        prefixTable('sharekeys_items'),
+                        array(
+                            'object_id' => (int) $record['id'],
+                            'user_id' => (int) $post_user_id,
+                            'share_key' => $share_key_for_item,
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    // SHould we change step?
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('items') . '
+        WHERE perso = 0'
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'step2' : 'step1',
+    ];
+}
+
+function continueReEncryptingUserSharekeysStep2(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // Loop on logs
+    $rows = DB::query(
+        'SELECT increment_id
+        FROM ' . prefixTable('log_items') . '
+        WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"
+        LIMIT ' . $post_start . ', ' . $post_length
+    );
+    foreach ($rows as $record) {
+        // Get itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT share_key
+            FROM ' . prefixTable('sharekeys_logs') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['increment_id'],
+            $_SESSION['user_id']
+        );
+
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+        // Encrypt Item key
+        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+
+        // Save the key in DB
+        if ($post_self_change === false) {
+            DB::insert(
+                prefixTable('sharekeys_logs'),
+                array(
+                    'object_id' => (int) $record['increment_id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        } else {
+            // Get itemIncrement from selected user
+            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('sharekeys_items') . '
+                    WHERE object_id = %i AND user_id = %i',
+                    $record['id'],
+                    $post_user_id
+                );
+            }
+
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_logs'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        }
+    }
+
+    // SHould we change step?
+    DB::query(
+        'SELECT increment_id
+        FROM ' . prefixTable('log_items') . '
+        WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"'
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'step3' : 'step2',
+    ];
+}
+
+function continueReEncryptingUserSharekeysStep3(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // Loop on fields
+    $rows = DB::query(
+        'SELECT id
+        FROM ' . prefixTable('categories_items') . '
+        WHERE encryption_type = "teampass_aes"
+        LIMIT ' . $post_start . ', ' . $post_length
+    );
+    foreach ($rows as $record) {
+        // Get itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT share_key
+            FROM ' . prefixTable('sharekeys_fields') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $_SESSION['user_id']
+        );
+
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+        // Encrypt Item key
+        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+
+        // Save the key in DB
+        if ($post_self_change === false) {
+            DB::insert(
+                prefixTable('sharekeys_fields'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        } else {
+            // Get itemIncrement from selected user
+            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('sharekeys_items') . '
+                    WHERE object_id = %i AND user_id = %i',
+                    $record['id'],
+                    $post_user_id
+                );
+            }
+
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_fields'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        }
+    }
+
+    // SHould we change step?
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('categories_items') . '
+        WHERE encryption_type = "teampass_aes"'
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'step4' : 'step3',
+    ];
+}
+
+function continueReEncryptingUserSharekeysStep4(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // Loop on suggestions
+    $rows = DB::query(
+        'SELECT id
+        FROM ' . prefixTable('suggestion') . '
+        LIMIT ' . $post_start . ', ' . $post_length
+    );
+    foreach ($rows as $record) {
+        // Get itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT share_key
+            FROM ' . prefixTable('sharekeys_suggestions') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $_SESSION['user_id']
+        );
+
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+        // Encrypt Item key
+        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+
+        // Save the key in DB
+        if ($post_self_change === false) {
+            DB::insert(
+                prefixTable('sharekeys_suggestions'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        } else {
+            // Get itemIncrement from selected user
+            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('sharekeys_items') . '
+                    WHERE object_id = %i AND user_id = %i',
+                    $record['id'],
+                    $post_user_id
+                );
+            }
+
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_suggestions'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        }
+    }
+
+    // SHould we change step?
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('suggestion')
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'step5' : 'step4',
+    ];
+}
+
+function continueReEncryptingUserSharekeysStep5(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // Loop on files
+    $rows = DB::query(
+        'SELECT id
+        FROM ' . prefixTable('files') . '
+        WHERE status = "' . TP_ENCRYPTION_NAME . '"
+        LIMIT ' . $post_start . ', ' . $post_length
+    ); //aes_encryption
+    foreach ($rows as $record) {
+        // Get itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT share_key
+            FROM ' . prefixTable('sharekeys_files') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $_SESSION['user_id']
+        );
+
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+        // Encrypt Item key
+        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+
+        // Save the key in DB
+        if ($post_self_change === false) {
+            DB::insert(
+                prefixTable('sharekeys_files'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        } else {
+            // Get itemIncrement from selected user
+            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('sharekeys_items') . '
+                    WHERE object_id = %i AND user_id = %i',
+                    $record['id'],
+                    $post_user_id
+                );
+            }
+
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_files'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        }
+    }
+
+    // SHould we change step?
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('files') . '
+        WHERE status = "' . TP_ENCRYPTION_NAME . '"'
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'step6' : 'step5',
+    ];
+}
+
+function continueReEncryptingUserSharekeysStep6(
+    int $post_user_id,
+    string $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    string $user_public_key,
+    array $SETTINGS
+): string
+{
+    // IF USER IS NOT THE SAME
+    if ((int) $post_user_id === (int) $_SESSION['user_id']) {
+        return [
+            'next_start' => 0,
+            'post_action' => 'finished',
+        ];
+    }
+    
+    // Loop on persoanl items
+    if (count($_SESSION['personal_folders']) > 0) {
+        $rows = DB::query(
+            'SELECT id, pw
+            FROM ' . prefixTable('items') . '
+            WHERE perso = 1 AND id_tree IN %ls
+            LIMIT ' . $post_start . ', ' . $post_length,
+            $_SESSION['personal_folders']
+        );
+        foreach ($rows as $record) {
+            // Get itemKey from current user
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                $_SESSION['user_id']
+            );
+
+            // Decrypt itemkey with admin key
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+
+            // Save the key in DB
+            if ($post_self_change === false) {
+                DB::insert(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'object_id' => (int) $record['id'],
+                        'user_id' => (int) $post_user_id,
+                        'share_key' => $share_key_for_item,
+                    )
+                );
+            } else {
+                // Get itemIncrement from selected user
+                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
                     $currentUserKey = DB::queryFirstRow(
-                        'SELECT share_key, increment_id
+                        'SELECT increment_id
                         FROM ' . prefixTable('sharekeys_items') . '
                         WHERE object_id = %i AND user_id = %i',
                         $record['id'],
                         $post_user_id
                     );
+                }
 
-                    if (count($currentUserKey) > 0) {
-                        // Decrypt itemkey with user key
-                        // use old password to decrypt private_key
-                        $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
-                        $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
-                        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+                // NOw update
+                DB::update(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'share_key' => $share_key_for_item,
+                    ),
+                    'increment_id = %i',
+                    $currentUserKey['increment_id']
+                );
+            }
+        }
+    }
 
-                        if (empty(base64_decode($itemKey)) === false) {
-                            // GOOD password
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => false,
-                                    'message' => '',
-                                    'debug' => '',
-                                ),
-                                'encode'
+    // SHould we change step?
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('items') . '
+        WHERE perso = 0'
+    );
+
+    $next_start = (int) $post_start + (int) $post_length;
+    return [
+        'next_start' => $next_start > DB::count() ? 0 : $next_start,
+        'post_action' => $next_start > DB::count() ? 'finished' : 'step6',
+    ];
+}
+
+function migrateTo3_DoUserPersonalItemsEncryption(
+    int $post_user_id,
+    int $post_start,
+    int $post_length,
+    string $post_user_psk,
+    array $SETTINGS
+) {
+    $next_step = '';
+
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Check if user exists
+        $userInfo = DB::queryFirstRow(
+            'SELECT public_key, encrypted_psk
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            // check if psk is correct.
+            if (empty($userInfo['encrypted_psk']) === false) {
+                $user_key_encoded = defuse_validate_personal_key(
+                    $post_user_psk,
+                    $userInfo['encrypted_psk']
+                );
+
+                if (strpos($user_key_encoded, "Error ") !== false) {
+                    return prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('bad_psk'),
+                        ),
+                        'encode'
+                    );
+                }
+
+                // Loop on persoanl items
+                $rows = DB::query(
+                    'SELECT id, pw
+                    FROM ' . prefixTable('items') . '
+                    WHERE perso = 1 AND id_tree IN %ls
+                    LIMIT ' . $post_start . ', ' . $post_length,
+                    $_SESSION['personal_folders']
+                );
+                $countUserPersonalItems = DB::count();
+                foreach ($rows as $record) {
+                    if ($record['encryption_type'] !== 'teampass_aes') {
+                        // Decrypt with Defuse
+                        $passwd = cryption(
+                            $record['pw'],
+                            $user_key_encoded,
+                            'decrypt',
+                            $SETTINGS
+                        );
+
+                        // Encrypt with Object Key
+                        $cryptedStuff = doDataEncryption($passwd['string']);
+
+                        // Store new password in DB
+                        DB::update(
+                            prefixTable('items'),
+                            array(
+                                'pw' => $cryptedStuff['encrypted'],
+                                'encryption_type' => 'teampass_aes',
+                            ),
+                            'id = %i',
+                            $record['id']
+                        );
+
+                        // Insert in DB the new object key for this item by user
+                        DB::insert(
+                            prefixTable('sharekeys_items'),
+                            array(
+                                'object_id' => (int) $record['id'],
+                                'user_id' => (int) $post_user_id,
+                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
+                            )
+                        );
+
+
+                        // Does this item has Files?
+                        // Loop on files
+                        $rows = DB::query(
+                            'SELECT id, file
+                            FROM ' . prefixTable('files') . '
+                            WHERE status != %s
+                            AND id_item = %i',
+                            TP_ENCRYPTION_NAME,
+                            $record['id']
+                        );
+                        //aes_encryption
+                        foreach ($rows as $record2) {
+                            // Now decrypt the file
+                            prepareFileWithDefuse(
+                                'decrypt',
+                                $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
+                                $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
+                                $post_user_psk
                             );
 
-                            break;
-                        }
-                    } else {
-                        // Use the password check
-                        // load passwordLib library
-                        $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                        $pwdlib->register();
-                        $pwdlib = new PasswordLib\PasswordLib();
-                        
-                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
-                            // GOOD password
-                            echo prepareExchangedData(
+                            // Encrypt the file
+                            $encryptedFile = encryptFile($record2['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
+
+                            DB::update(
+                                prefixTable('files'),
                                 array(
-                                    'error' => false,
-                                    'message' => '',
-                                    'debug' => '',
+                                    'file' => $encryptedFile['fileHash'],
+                                    'status' => TP_ENCRYPTION_NAME,
                                 ),
-                                'encode'
+                                'id = %i',
+                                $record2['id']
                             );
 
-                            break;
+                            // Save key
+                            DB::insert(
+                                prefixTable('sharekeys_files'),
+                                array(
+                                    'object_id' => (int) $record2['id'],
+                                    'user_id' => (int) $_SESSION['user_id'],
+                                    'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
+                                )
+                            );
+
+                            // Unlink original file
+                            unlink($SETTINGS['path_to_upload_folder'] . '/' . $record2['file']);
                         }
                     }
                 }
-            }
 
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => langHdl('password_is_not_correct'),
-                    'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
-                ),
-                'encode'
-            );
-
-            break;
-
-            /*
-         * User's public/private keys change
-         */
-        /*case 'change_public_private_keys':
-            // Allowed?
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            // Variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
-            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Get user info
-                $userData = DB::queryFirstRow(
-                    'SELECT email, auth_type, login, pw
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-                if (DB::count() > 0) {
-                    // If LDAP enabled, then
-                    // check that this password is correct
-                    if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
-                        if (ldapCheckUserPassword(
-                                $userData['login'],
-                                $post_user_password,
-                                $SETTINGS
-                            ) !== true)
-                        {
-                            // BAD password
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => langHdl('password_is_not_correct'),
-                                ),
-                                'encode'
-                            );
-                        }
-                    } else {
-                        // Use the password check
-                        // load passwordLib library
-                        $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                        $pwdlib->register();
-                        $pwdlib = new PasswordLib\PasswordLib();
-                        
-                        if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userData['pw']) !== true) {
-                            // BAD password
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => langHdl('password_is_not_correct'),
-                                    'debug' => '',
-                                ),
-                                'encode'
-                            );
-
-                            break;
-                        }
-                    }
-
-                    // GEnerate new keys
-                    $userKeys = generateUserKeys($post_user_password);
-
-                    // Update user account
+                // SHould we change step?
+                $next_start = (int) $post_start + (int) $post_length;
+                if ($next_start > $countUserPersonalItems) {
+                    // Now update user
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'special' => $post_special,
-                            'public_key' => $userKeys['public_key'],
-                            'private_key' => $userKeys['private_key'],
+                            'special' => 'none',
+                            'upgrade_needed' => 0,
+                            'encrypted_psk' => '',
                         ),
                         'id = %i',
                         $post_user_id
                     );
 
-                    // Return
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'debug' => $post_user_password,
-                        ),
-                        'encode'
-                    );
+                    $next_step = 'finished';
+                    $next_start = 0;
                 }
-            } else {
-                echo prepareExchangedData(
+
+                // Continu with next step
+                return prepareExchangedData(
                     array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                        'debug' => '',
+                        'error' => false,
+                        'message' => '',
+                        'step' => $next_step,
+                        'start' => $next_start,
+                        'userId' => $post_user_id
                     ),
                     'encode'
                 );
-                break;
             }
+        }
+        
+        // Nothing to do
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('error_no_user'),
+            ),
+            'encode'
+        );
+    }
+    
+    // Nothing to do
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
+}
 
-            break;
-*/
-            /*
-         * User's public/private keys change
-         */
-        case 'change_private_key_encryption_password':
-            // Allowed?
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
 
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
+function getUserInfo(
+    int $post_user_id,
+    string $post_fields,
+    array $SETTINGS
+)
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT '.$post_fields.'
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'queryResults' => $userData,
+                ),
+                'encode'
             );
+        }
+    }
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
+}
 
-            // Variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_current_code = filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING);
-            $post_new_code = filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING);
-            $post_action_type = filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING);
-            if (empty($post_new_code) === true) {
-                $post_new_code = $_SESSION['user_pwd'];
-            }
+function changeUserAuthenticationPassword(
+    int $post_user_id,
+    string $post_current_pwd,
+    string $post_new_pwd,
+    array $SETTINGS
+)
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT auth_type, login, private_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        if (DB::count() > 0) {
+            // Now check if current password is correct
+            // For this, just check if it is possible to decrypt the privatekey
+            // And compare it to the one in session
+            $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
 
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Get user info
-                $userData = DB::queryFirstRow(
-                    'SELECT private_key
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
+            // Load superGlobals
+            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+            $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+            if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
+                // Encrypt it with new password
+                $hashedPrivateKey = encryptPrivateKey($post_new_pwd, $privateKey);
+
+                // Generate new hash for auth password
+                // load passwordLib library
+                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                $pwdlib->register();
+                $pwdlib = new PasswordLib\PasswordLib();
+
+                // Prepare variables
+                $newPw = $pwdlib->createPasswordHash($post_new_pwd);
+
+                // Update user account
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'private_key' => $hashedPrivateKey,
+                        'pw' => $newPw,
+                        'special' => 'none',
+                    ),
+                    'id = %i',
                     $post_user_id
                 );
-                if (DB::count() > 0) {
-                    if ($post_action_type === 'encrypt_privkey_with_user_password') {
-                        // Here the user has his private key encrypted with an OTC.
-                        // We need to encrypt it with his real password
-                        $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
-                        $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
-                    } else {
-                        $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-                        $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
-                    }
 
+                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => langHdl('done'),'',
+                    ),
+                    'encode'
+                );
+            }
+            
+            // ERROR
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('bad_password'),
+                ),
+                'encode'
+            );
+        }
+    }
+        
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
+}
+
+            
+function changeUserLDAPAuthenticationPassword(
+    int $post_user_id,
+    string $post_previous_pwd,
+    string $post_current_pwd
+)
+{
+    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+        // Get user info
+        $userData = DB::queryFirstRow(
+            'SELECT auth_type, login, private_key, special
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $post_user_id
+        );
+        
+        if (DB::count() > 0) {
+            // Now check if current password is correct (only if not ldap)
+            if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
+                // As it is a change for an LDAP user
+                
+                // Now check if current password is correct
+                // For this, just check if it is possible to decrypt the privatekey
+                // And compare it to the one in session
+                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+
+                // Encrypt it with new password
+                $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+
+                // Update user account
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'private_key' => $hashedPrivateKey,
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $post_user_id
+                );
+
+                // Load superGlobals
+                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => langHdl('done'),'',
+                    ),
+                    'encode'
+                );
+            }
+
+            // For this, just check if it is possible to decrypt the privatekey
+            // And try to decrypt one existing key
+            $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+
+            if (empty($privateKey) === true) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('password_is_not_correct'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // Test if possible to decvrypt one key
+            // Get one item
+            $record = DB::queryFirstRow(
+                'SELECT id, pw
+                FROM ' . prefixTable('items') . '
+                WHERE perso = 0'
+            );
+
+            // Get itemKey from current user
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                $post_user_id
+            );
+
+            if (count($currentUserKey) > 0) {
+                // Decrypt itemkey with user key
+                // use old password to decrypt private_key
+                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+                
+                if (empty(base64_decode($itemKey)) === false) {
+                    // GOOD password
+                    // Encrypt it with current password
+                    $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+                    
                     // Update user account
                     DB::update(
                         prefixTable('users'),
@@ -2053,1473 +2744,39 @@ Insert the log here and especially the answer of the query that failed.
                         'id = %i',
                         $post_user_id
                     );
-
+                    
                     // Load superGlobals
                     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
                     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
-                }
 
-                // Return
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                    ),
-                    'encode'
-                );
-                break;
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                        'debug' => '',
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            break;
-
-        /*
-         * User's password has to be initialized
-         */
-        case 'initialize_user_password':
-            // Allowed?
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
-            // Variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_special = filter_var($dataReceived['special'], FILTER_SANITIZE_STRING);
-            $post_user_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-            $post_self_change = filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING);
-            $emailError = false;
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Get user info
-                $userData = DB::queryFirstRow(
-                    'SELECT email, auth_type, login
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-                if (DB::count() > 0 && empty($userData['email']) === false) {
-                    // If user pwd is empty then generate a new one and send it to user
-                    if (isset($post_user_password) === false || empty($post_user_password) === true) {
-                        // Generate new password
-                        $post_user_password = generateQuickPassword();
-
-                        /*
-                        // Send email to user
-                        try {
-                            sendEmail(
-                                langHdl('email_new_user_password'),
-                                str_replace(
-                                    array('#tp_password#'),
-                                    array($post_user_password),
-                                    langHdl('email_new_user_password_body')
-                                ),
-                                $userData['email'],
-                                $SETTINGS,
-                                ''
-                            );
-                        } catch (Exception $e) {
-                            $emailError = $e;
-                        }*/
-                    }
-
-                    // If LDAP enabled, then
-                    // check that this password is correct
-                    $continue = true;
-                    if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
-                        $continue = ldapCheckUserPassword(
-                            $userData['login'],
-                            $post_user_password,
-                            $SETTINGS
-                        );
-                    }
-
-                    if ($emailError === false && $continue === true) {
-                        // Only change if email is successfull
-                        // GEnerate new keys
-                        $userKeys = generateUserKeys($post_user_password);
-
-                        // load passwordLib library
-                        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                        $pwdlib->register();
-                        $pwdlib = new PasswordLib\PasswordLib();
-
-                        // Update user account
-                        DB::update(
-                            prefixTable('users'),
-                            array(
-                                'special' => $post_special,
-                                'pw' => $pwdlib->createPasswordHash($post_user_password),
-                                'public_key' => $userKeys['public_key'],
-                                'private_key' => $userKeys['private_key'],
-                                'last_pw_change' => time(),
-                            ),
-                            'id = %i',
-                            $post_user_id
-                        );
-
-                        // Return
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'user_pwd' => $post_user_password,
-                                'user_email' => $userData['email'],
-                            ),
-                            'encode'
-                        );
-                    } else {
-                        // Return error
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => $continue === false ? langHdl('password_doesnot_correspond_to_ldap_one') : $emailError,
-                                'debug' => '',
-                                'self_change' => $post_self_change,
-                            ),
-                            'encode'
-                        );
-                    }
-                    break;
-                } else {
-                    // Error
-                    echo prepareExchangedData(
+                    return prepareExchangedData(
                         array(
-                            'error' => true,
-                            'message' => langHdl('no_email_set'),
-                            'debug' => '',
+                            'error' => false,
+                            'message' => langHdl('done'),
                         ),
                         'encode'
                     );
-                    break;
                 }
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                        'debug' => '',
-                    ),
-                    'encode'
-                );
-                break;
             }
-
-            break;
-
-        /*
-        * CASE
-        * Send email
-        */
-        case 'mail_me':
-            // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($_SESSION['user_read_only'] === true) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode');
-
-            // Prepare variables
-            $post_receipt = filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING);
-            $post_body = ($dataReceived['body']);
-            $post_subject = filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING);
-            $post_replace = filter_var_array($dataReceived['pre_replace'], FILTER_SANITIZE_STRING);
-
-            if (count($post_replace) > 0 && is_null($post_replace) === false) {
-                $post_body = str_replace(
-                    array_keys($post_replace),
-                    array_values($post_replace),
-                    $post_body
-                );
-            }
-            $ret = sendEmail(
-                $post_subject,
-                $post_body,
-                $post_receipt,
-                $SETTINGS,
-                '',
-                false
-            );
-
-            $ret = json_decode($ret, true);
-
-            echo (string) prepareExchangedData(
+            
+            // ERROR
+            return prepareExchangedData(
                 array(
-                    'error' => empty($ret['error']) === true ? false : true,
-                    'message' => $ret['message'],
+                    'error' => true,
+                    'message' => langHdl('bad_password'),
                 ),
                 'encode'
             );
-
-            break;
-
-            /*
-             * Generate a temporary encryption key for user
-             */
-            case 'generate_temporary_encryption_key':
-                // Allowed?
-                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('key_is_not_correct'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                //decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    'decode'
-                );
-
-                // Variables
-                $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-
-                if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                    // Get user info
-                    $userData = DB::queryFirstRow(
-                        'SELECT email, auth_type, login
-                        FROM ' . prefixTable('users') . '
-                        WHERE id = %i',
-                        $post_user_id
-                    );
-                    if (DB::count() > 0 && empty($userData['email']) === false) {
-                        // Generate pwd
-                        $password = generateQuickPassword();
-
-                        // GEnerate new keys
-                        $userKeys = generateUserKeys($password);
-
-                        // Save in DB
-                        DB::update(
-                            prefixTable('users'),
-                            array(
-                                'public_key' => $userKeys['public_key'],
-                                'private_key' => $userKeys['private_key'],
-                                'special' => 'generate-keys',
-                            ),
-                            'id=%i',
-                            $post_user_id
-                        );
-
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'userTemporaryCode' => $password,
-                            ),
-                            'encode'
-                        );
-                        break;
-                    } else {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('no_email_set'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-                }
-    
-                break;
-
-        /*
-        * user_sharekeys_reencryption_start
-        */
-        case 'user_sharekeys_reencryption_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
-            $post_self_change = filter_var($_POST['self_change'], FILTER_SANITIZE_STRING);
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Check if user exists
-                DB::queryFirstRow(
-                    'SELECT *
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-                if (DB::count() > 0) {
-                    // Include libraries
-                    include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
-
-                    // CLear old sharekeys
-                    if ($post_self_change === false) {
-                        deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                    }
-
-                    // Continu with next step
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'step' => 'step1',
-                            'userId' => $post_user_id,
-                            'start' => 0,
-                            'self_change' => $post_self_change,
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    // Nothing to do
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_no_user'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            break;
-
-            /*
-        * user_sharekeys_reencryption_next
-        */
-        case 'user_sharekeys_reencryption_next':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_start = filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT);
-            $post_length = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
-            $post_action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
-            $post_self_change = filter_var($_POST['self_change'], FILTER_SANITIZE_STRING);
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Check if user exists
-                $userInfo = DB::queryFirstRow(
-                    'SELECT public_key
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-                if (DB::count() > 0) {
-                    // Include libraries
-                    include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
-
-                    // WHAT STEP TO PERFORM?
-                    if ($post_action === 'step0') {
-                        // CLear old sharekeys
-                        if ($post_self_change === false) {
-                            deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                        }
-
-                        $post_action = 'step1';
-                    } elseif ($post_action === 'step1') {
-                        // STEP 1 - ITEMS
-                        //
-                        // Loop on items
-                        $rows = DB::query(
-                            'SELECT id, pw
-                            FROM ' . prefixTable('items') . '
-                            WHERE perso = 0
-                            LIMIT ' . $post_start . ', ' . $post_length
-                        );
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key, increment_id
-                                FROM ' . prefixTable('sharekeys_items') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['id'],
-                                $_SESSION['user_id']
-                            );
-                            if (count($currentUserKey) === 0) continue;
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-                            
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-                            
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_items'),
-                                    array(
-                                        'object_id' => (int) $record['id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                // Get itemIncrement from selected user
-                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $post_user_id
-                                    );
-
-                                    if (DB::count() > 0) {
-                                        // NOw update
-                                        DB::update(
-                                            prefixTable('sharekeys_items'),
-                                            array(
-                                                'share_key' => $share_key_for_item,
-                                            ),
-                                            'increment_id = %i',
-                                            $currentUserKey['increment_id']
-                                        );
-                                    } else {
-                                        DB::insert(
-                                            prefixTable('sharekeys_items'),
-                                            array(
-                                                'object_id' => (int) $record['id'],
-                                                'user_id' => (int) $post_user_id,
-                                                'share_key' => $share_key_for_item,
-                                            )
-                                        );
-                                    }
-                                }
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('items') . '
-                            WHERE perso = 0'
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
-                            $post_action = 'step2';
-                            $next_start = 0;
-                        }
-                        // ---
-                        // ---
-                    } elseif ($post_action === 'step2') {
-                        // STEP 2 - LOGS
-                        //
-                        // Loop on logs
-                        $rows = DB::query(
-                            'SELECT increment_id
-                            FROM ' . prefixTable('log_items') . '
-                            WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"
-                            LIMIT ' . $post_start . ', ' . $post_length
-                        );
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key
-                                FROM ' . prefixTable('sharekeys_logs') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['increment_id'],
-                                $_SESSION['user_id']
-                            );
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_logs'),
-                                    array(
-                                        'object_id' => (int) $record['increment_id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                // Get itemIncrement from selected user
-                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $post_user_id
-                                    );
-                                }
-
-                                // NOw update
-                                DB::update(
-                                    prefixTable('sharekeys_logs'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT increment_id
-                            FROM ' . prefixTable('log_items') . '
-                            WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"'
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
-                            $post_action = 'step3';
-                            $next_start = 0;
-                        }
-                        // ---
-                        // ---
-                    } elseif ($post_action === 'step3') {
-                        // STEP 3 - FIELDS
-                        //
-                        // Loop on fields
-                        $rows = DB::query(
-                            'SELECT id
-                            FROM ' . prefixTable('categories_items') . '
-                            WHERE encryption_type = "teampass_aes"
-                            LIMIT ' . $post_start . ', ' . $post_length
-                        );
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key
-                                FROM ' . prefixTable('sharekeys_fields') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['id'],
-                                $_SESSION['user_id']
-                            );
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_fields'),
-                                    array(
-                                        'object_id' => (int) $record['id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                // Get itemIncrement from selected user
-                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $post_user_id
-                                    );
-                                }
-
-                                // NOw update
-                                DB::update(
-                                    prefixTable('sharekeys_fields'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('categories_items') . '
-                            WHERE encryption_type = "teampass_aes"'
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
-                            $post_action = 'step4';
-                            $next_start = 0;
-                        }
-                        // ---
-                        // ---
-                    } elseif ($post_action === 'step4') {
-                        // STEP 4 - SUGGESTIONS
-                        //
-                        // Loop on suggestions
-                        $rows = DB::query(
-                            'SELECT id
-                            FROM ' . prefixTable('suggestion') . '
-                            LIMIT ' . $post_start . ', ' . $post_length
-                        );
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key
-                                FROM ' . prefixTable('sharekeys_suggestions') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['id'],
-                                $_SESSION['user_id']
-                            );
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_suggestions'),
-                                    array(
-                                        'object_id' => (int) $record['id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                // Get itemIncrement from selected user
-                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $post_user_id
-                                    );
-                                }
-
-                                // NOw update
-                                DB::update(
-                                    prefixTable('sharekeys_suggestions'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('suggestion')
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
-                            $post_action = 'step5';
-                            $next_start = 0;
-                        }
-                        // ---
-                        // ---
-                    } elseif ($post_action === 'step5') {
-                        // STEP 5 - FILES
-                        //
-                        // Loop on files
-                        $rows = DB::query(
-                            'SELECT id
-                            FROM ' . prefixTable('files') . '
-                            WHERE status = "' . TP_ENCRYPTION_NAME . '"
-                            LIMIT ' . $post_start . ', ' . $post_length
-                        ); //aes_encryption
-                        foreach ($rows as $record) {
-                            // Get itemKey from current user
-                            $currentUserKey = DB::queryFirstRow(
-                                'SELECT share_key
-                                FROM ' . prefixTable('sharekeys_files') . '
-                                WHERE object_id = %i AND user_id = %i',
-                                $record['id'],
-                                $_SESSION['user_id']
-                            );
-
-                            // Decrypt itemkey with admin key
-                            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                            // Encrypt Item key
-                            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                            // Save the key in DB
-                            if ($post_self_change === false) {
-                                DB::insert(
-                                    prefixTable('sharekeys_files'),
-                                    array(
-                                        'object_id' => (int) $record['id'],
-                                        'user_id' => (int) $post_user_id,
-                                        'share_key' => $share_key_for_item,
-                                    )
-                                );
-                            } else {
-                                // Get itemIncrement from selected user
-                                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $post_user_id
-                                    );
-                                }
-
-                                // NOw update
-                                DB::update(
-                                    prefixTable('sharekeys_files'),
-                                    array(
-                                        'share_key' => $share_key_for_item,
-                                    ),
-                                    'increment_id = %i',
-                                    $currentUserKey['increment_id']
-                                );
-                            }
-                        }
-
-                        // SHould we change step?
-                        DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('files') . '
-                            WHERE status = "' . TP_ENCRYPTION_NAME . '"'
-                        );
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > DB::count()) {
-                            $post_action = 'step6';
-                            $next_start = 0;
-                        }
-                        // ---
-                        // ---
-                    } elseif ($post_action === 'step6') {
-                        // STEP 6 - PERSONAL ITEMS
-                        //
-                        // IF USER IS NOT THE SAME
-                        if ((int) $post_user_id === (int) $_SESSION['user_id']) {
-                            $post_action = 'finished';
-                        } else {
-                            // Loop on persoanl items
-                            if (count($_SESSION['personal_folders']) > 0) {
-                                $rows = DB::query(
-                                    'SELECT id, pw
-                                    FROM ' . prefixTable('items') . '
-                                    WHERE perso = 1 AND id_tree IN %ls
-                                    LIMIT ' . $post_start . ', ' . $post_length,
-                                    $_SESSION['personal_folders']
-                                );
-                                foreach ($rows as $record) {
-                                    // Get itemKey from current user
-                                    $currentUserKey = DB::queryFirstRow(
-                                        'SELECT share_key, increment_id
-                                        FROM ' . prefixTable('sharekeys_items') . '
-                                        WHERE object_id = %i AND user_id = %i',
-                                        $record['id'],
-                                        $_SESSION['user_id']
-                                    );
-
-                                    // Decrypt itemkey with admin key
-                                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-
-                                    // Encrypt Item key
-                                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                                    // Save the key in DB
-                                    if ($post_self_change === false) {
-                                        DB::insert(
-                                            prefixTable('sharekeys_items'),
-                                            array(
-                                                'object_id' => (int) $record['id'],
-                                                'user_id' => (int) $post_user_id,
-                                                'share_key' => $share_key_for_item,
-                                            )
-                                        );
-                                    } else {
-                                        // Get itemIncrement from selected user
-                                        if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
-                                            $currentUserKey = DB::queryFirstRow(
-                                                'SELECT increment_id
-                                                FROM ' . prefixTable('sharekeys_items') . '
-                                                WHERE object_id = %i AND user_id = %i',
-                                                $record['id'],
-                                                $post_user_id
-                                            );
-                                        }
-        
-                                        // NOw update
-                                        DB::update(
-                                            prefixTable('sharekeys_items'),
-                                            array(
-                                                'share_key' => $share_key_for_item,
-                                            ),
-                                            'increment_id = %i',
-                                            $currentUserKey['increment_id']
-                                        );
-                                    }
-                                }
-                            }
-
-                            // SHould we change step?
-                            DB::query(
-                                'SELECT *
-                                FROM ' . prefixTable('items') . '
-                                WHERE perso = 0'
-                            );
-                            $next_start = (int) $post_start + (int) $post_length;
-                            if ($next_start > DB::count()) {
-                                $post_action = 'finished';
-                                $next_start = 0;
-                            }
-                        }
-                        // ---
-                        // ---
-                    }
-
-                    // Continu with next step
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'step' => $post_action,
-                            'start' => isset($next_start) === true ? $next_start : 0,
-                            'userId' => $post_user_id,
-                            'self_change' => $post_self_change,
-                        ),
-                        'encode'
-                    );
-                    break;
-                } else {
-                    // Nothing to do
-                    $post_action = 'finished';
-                    $next_start = 0;
-                    echo prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => '',
-                            'step' => $post_action,
-                            'start' => $next_start,
-                            'userId' => $post_user_id,
-                            'self_change' => $post_self_change,
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else {
-                // Nothing to do
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            break;
-
-            /*
-        * user_psk_reencryption
-        */
-        case 'user_psk_reencryption':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $post_user_id = filter_var($_POST['userId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_start = filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT);
-            $post_length = filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT);
-            $next_step = '';
-
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
-            if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                // Check if user exists
-                $userInfo = DB::queryFirstRow(
-                    'SELECT public_key, encrypted_psk
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $post_user_id
-                );
-                if (DB::count() > 0) {
-                    // check if psk is correct.
-                    if (empty($userInfo['encrypted_psk']) === false) {
-                        $user_key_encoded = defuse_validate_personal_key(
-                            $dataReceived['userPsk'],
-                            $userInfo['encrypted_psk']
-                        );
-
-                        if (strpos($user_key_encoded, "Error ") !== false) {
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => langHdl('bad_psk'),
-                                ),
-                                'encode'
-                            );
-                            break;
-                        } else {
-                            // Loop on persoanl items
-                            $rows = DB::query(
-                                'SELECT id, pw
-                                FROM ' . prefixTable('items') . '
-                                WHERE perso = 1 AND id_tree IN %ls
-                                LIMIT ' . $post_start . ', ' . $post_length,
-                                $_SESSION['personal_folders']
-                            );
-                            $countUserPersonalItems = DB::count();
-                            foreach ($rows as $record) {
-                                if ($record['encryption_type'] !== 'teampass_aes') {
-                                    // Decrypt with Defuse
-                                    $passwd = cryption(
-                                        $record['pw'],
-                                        $user_key_encoded,
-                                        'decrypt',
-                                        $SETTINGS
-                                    );
-
-                                    // Encrypt with Object Key
-                                    $cryptedStuff = doDataEncryption($passwd['string']);
-
-                                    // Store new password in DB
-                                    DB::update(
-                                        prefixTable('items'),
-                                        array(
-                                            'pw' => $cryptedStuff['encrypted'],
-                                            'encryption_type' => 'teampass_aes',
-                                        ),
-                                        'id = %i',
-                                        $record['id']
-                                    );
-
-                                    // Insert in DB the new object key for this item by user
-                                    DB::insert(
-                                        prefixTable('sharekeys_items'),
-                                        array(
-                                            'object_id' => (int) $record['id'],
-                                            'user_id' => (int) $post_user_id,
-                                            'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
-                                        )
-                                    );
-
-
-                                    // Does this item has Files?
-                                    // Loop on files
-                                    $rows = DB::query(
-                                        'SELECT id, file
-                                        FROM ' . prefixTable('files') . '
-                                        WHERE status != %s
-                                        AND id_item = %i',
-                                        TP_ENCRYPTION_NAME,
-                                        $record['id']
-                                    );
-                                    //aes_encryption
-                                    foreach ($rows as $record2) {
-                                        // Now decrypt the file
-                                        prepareFileWithDefuse(
-                                            'decrypt',
-                                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
-                                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
-                                            $dataReceived['userPsk']
-                                        );
-
-                                        // Encrypt the file
-                                        $encryptedFile = encryptFile($record2['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
-
-                                        DB::update(
-                                            prefixTable('files'),
-                                            array(
-                                                'file' => $encryptedFile['fileHash'],
-                                                'status' => TP_ENCRYPTION_NAME,
-                                            ),
-                                            'id = %i',
-                                            $record2['id']
-                                        );
-
-                                        // Save key
-                                        DB::insert(
-                                            prefixTable('sharekeys_files'),
-                                            array(
-                                                'object_id' => (int) $record2['id'],
-                                                'user_id' => (int) $_SESSION['user_id'],
-                                                'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
-                                            )
-                                        );
-
-                                        // Unlink original file
-                                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $record2['file']);
-                                    }
-                                }
-                            }
-                        }
-
-                        // SHould we change step?
-                        $next_start = (int) $post_start + (int) $post_length;
-                        if ($next_start > $countUserPersonalItems) {
-                            // Now update user
-                            DB::update(
-                                prefixTable('users'),
-                                array(
-                                    'special' => 'none',
-                                    'upgrade_needed' => 0,
-                                    'encrypted_psk' => '',
-                                ),
-                                'id = %i',
-                                $post_user_id
-                            );
-
-                            $next_step = 'finished';
-                            $next_start = 0;
-                        }
-
-                        // Continu with next step
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'step' => $next_step,
-                                'start' => $next_start,
-                                'userId' => $post_user_id
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-                } else {
-                    // Nothing to do
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_no_user'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else {
-                // Nothing to do
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_no_user'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        break;
-        
-
-            /*
-             * Get info 
-             */
-            case 'get_user_info':
-                // Allowed?
-                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('key_is_not_correct'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
-                //decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    'decode'
-                );
-
-                // Variables
-                $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-                $post_fields = filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING);
-
-                if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                    // Get user info
-                    $userData = DB::queryFirstRow(
-                        'SELECT '.$post_fields.'
-                        FROM ' . prefixTable('users') . '
-                        WHERE id = %i',
-                        $post_user_id
-                    );
-                    if (DB::count() > 0) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => false,
-                                'message' => '',
-                                'queryResults' => $userData,
-                            ),
-                            'encode'
-                        );
-                        break;
-                    } else {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('error_no_user'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-                }
-    
-                break;
-        
-
-                /*
-                 * Change user's authenticataion password
-                 */
-                case 'change_user_auth_password':
-                    // Allowed?
-                    if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('key_is_not_correct'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-    
-                    //decrypt and retreive data in JSON format
-                    $dataReceived = prepareExchangedData(
-                        filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                        'decode'
-                    );
-    
-                    // Variables
-                    $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-                    $post_current_pwd = filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING);
-                    $post_new_pwd = filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING);
-    
-                    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                        // Get user info
-                        $userData = DB::queryFirstRow(
-                            'SELECT auth_type, login, private_key
-                            FROM ' . prefixTable('users') . '
-                            WHERE id = %i',
-                            $post_user_id
-                        );
-                        if (DB::count() > 0) {
-                            // Now check if current password is correct
-                            // For this, just check if it is possible to decrypt the privatekey
-                            // And compare it to the one in session
-                            $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
-
-                            // Load superGlobals
-                            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-                            $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
-                            if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
-                                // Encrypt it with new password
-                                $hashedPrivateKey = encryptPrivateKey($post_new_pwd, $privateKey);
-
-                                // Generate new hash for auth password
-                                // load passwordLib library
-                                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                                $pwdlib->register();
-                                $pwdlib = new PasswordLib\PasswordLib();
-
-                                // Prepare variables
-                                $newPw = $pwdlib->createPasswordHash($post_new_pwd);
-
-                                // Update user account
-                                DB::update(
-                                    prefixTable('users'),
-                                    array(
-                                        'private_key' => $hashedPrivateKey,
-                                        'pw' => $newPw,
-                                        'special' => 'none',
-                                    ),
-                                    'id = %i',
-                                    $post_user_id
-                                );
-
-                                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
-
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => false,
-                                        'message' => langHdl('done'),'',
-                                    ),
-                                    'encode'
-                                );
-                                break;
-                            } else {
-                                // ERROR
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => true,
-                                        'message' => langHdl('bad_password'),
-                                    ),
-                                    'encode'
-                                );
-                                break;
-                            }
-                        } else {
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => langHdl('error_no_user'),
-                                ),
-                                'encode'
-                            );
-                            break;
-                        }
-                    }
-        
-                    break;
-        
-
-                /*
-                 * User's authenticataion password in LDAP has changed
-                 */
-                case 'change_user_ldap_auth_password':
-                    // Allowed?
-                    if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => langHdl('key_is_not_correct'),
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-    
-                    //decrypt and retreive data in JSON format
-                    $dataReceived = prepareExchangedData(
-                        filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                        'decode'
-                    );
-
-                    // Variables
-                    $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-                    $post_previous_pwd = filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING);
-                    $post_current_pwd = filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING);
-    
-                    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
-                        // Get user info
-                        $userData = DB::queryFirstRow(
-                            'SELECT auth_type, login, private_key, special
-                            FROM ' . prefixTable('users') . '
-                            WHERE id = %i',
-                            $post_user_id
-                        );
-                        
-                        if (DB::count() > 0) {
-                            // Now check if current password is correct (only if not ldap)
-                            if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
-                                // As it is a change for an LDAP user
-                                
-                                // Now check if current password is correct
-                                // For this, just check if it is possible to decrypt the privatekey
-                                // And compare it to the one in session
-                                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-
-                                // Encrypt it with new password
-                                $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
-
-                                // Update user account
-                                DB::update(
-                                    prefixTable('users'),
-                                    array(
-                                        'private_key' => $hashedPrivateKey,
-                                        'special' => 'none',
-                                    ),
-                                    'id = %i',
-                                    $post_user_id
-                                );
-
-                                // Load superGlobals
-                                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-                                $superGlobal = new protect\SuperGlobal\SuperGlobal();
-                                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
-
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => false,
-                                        'message' => langHdl('done'),'',
-                                    ),
-                                    'encode'
-                                );
-                                break;
-
-
-                            } else {
-                                // For this, just check if it is possible to decrypt the privatekey
-                                // And try to decrypt one existing key
-                                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-
-                                if (empty($privateKey) === true) {
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => langHdl('password_is_not_correct'),
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-
-                                // Test if possible to decvrypt one key
-                                // Get one item
-                                $record = DB::queryFirstRow(
-                                    'SELECT id, pw
-                                    FROM ' . prefixTable('items') . '
-                                    WHERE perso = 0'
-                                );
-
-                                // Get itemKey from current user
-                                $currentUserKey = DB::queryFirstRow(
-                                    'SELECT share_key, increment_id
-                                    FROM ' . prefixTable('sharekeys_items') . '
-                                    WHERE object_id = %i AND user_id = %i',
-                                    $record['id'],
-                                    $post_user_id
-                                );
-
-                                if (count($currentUserKey) > 0) {
-                                    // Decrypt itemkey with user key
-                                    // use old password to decrypt private_key
-                                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-                                    
-                                    if (empty(base64_decode($itemKey)) === false) {
-                                        // GOOD password
-                                        // Encrypt it with current password
-                                        $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
-                                        
-                                        // Update user account
-                                        DB::update(
-                                            prefixTable('users'),
-                                            array(
-                                                'private_key' => $hashedPrivateKey,
-                                                'special' => 'none',
-                                            ),
-                                            'id = %i',
-                                            $post_user_id
-                                        );
-                                        
-                                        // Load superGlobals
-                                        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-                                        $superGlobal = new protect\SuperGlobal\SuperGlobal();
-                                        $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
-    
-                                        echo prepareExchangedData(
-                                            array(
-                                                'error' => false,
-                                                'message' => langHdl('done'),
-                                            ),
-                                            'encode'
-                                        );
-                                        break;
-                                    }
-                                } else {
-                                    // ERROR
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => langHdl('bad_password'),
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-                            }
-                        } else {
-                            // ERROR
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => langHdl('error_no_user'),
-                                ),
-                                'encode'
-                            );
-                            break;
-                        }
-                    }
-        
-                    break;
+        }
     }
+
+    // ERROR
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
 }

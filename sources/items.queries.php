@@ -6020,10 +6020,10 @@ if (is_null($post_type) === false) {
                 'at_shown'
             );
             foreach ($rows as $record) {
-                if (is_null($record['raison']) === false || empty($record['raison']) === true) {
+                if (empty($record['raison']) === true) {
                     $reason[0] = '';
                 } else {
-                    $reason = explode(' :', $record['raison']);
+                    $reason = explode(' : ', $record['raison']);
                 }
                 
                 // imported via API

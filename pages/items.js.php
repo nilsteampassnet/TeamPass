@@ -2277,7 +2277,7 @@ console.log(store.get('teampassUser'))
                 if (
                     isset($SETTINGS['upload_all_extensions_file']) === false
                     || (isset($SETTINGS['upload_all_extensions_file']) === true
-                        && $SETTINGS['upload_all_extensions_file'] === '0')
+                        && (int) $SETTINGS['upload_all_extensions_file'] === 0)
                 ) {
                     ?> {
                         title: 'Image files',
@@ -2300,7 +2300,7 @@ console.log(store.get('teampassUser'))
                 ?>
             ],
             <?php
-            if (isset($SETTINGS['upload_zero_byte_file']) === true && $SETTINGS['upload_zero_byte_file'] === '1') {
+            if (isset($SETTINGS['upload_zero_byte_file']) === true && (int) $SETTINGS['upload_zero_byte_file'] === 1) {
                 ?>
                 prevent_empty: false
             <?php
@@ -2308,7 +2308,7 @@ console.log(store.get('teampassUser'))
             ?>
         },
         <?php
-        if ($SETTINGS['upload_imageresize_options'] === '1') {
+        if ((int) $SETTINGS['upload_imageresize_options'] === 1) {
             ?>
             resize: {
                 width: <?php echo $SETTINGS['upload_imageresize_width']; ?>,
@@ -2354,6 +2354,7 @@ console.log(store.get('teampassUser'))
 
     // Uploader options
     uploader_attachments.bind('UploadProgress', function(up, file) {
+        console.log('uploader_attachments.bind')
         $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' - ' + file.percent + '%');
     });
     uploader_attachments.bind('Error', function(up, err) {
@@ -2393,7 +2394,8 @@ console.log(store.get('teampassUser'))
                     numeric: true,
                     ambiguous: true,
                     reason: "item_attachments",
-                    duration: 10
+                    duration: 10,
+                    key: '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
                     store.update(
@@ -2402,6 +2404,7 @@ console.log(store.get('teampassUser'))
                             teampassApplication.attachmentToken = data[0].token;
                         }
                     );
+                    console.log('start upload')
                     uploader_attachments.start();
                 },
                 "json"
@@ -2420,6 +2423,7 @@ console.log(store.get('teampassUser'))
     });
     uploader_attachments.init();
     uploader_attachments.bind('FilesAdded', function(up, files) {
+        if (debugJavascript === true) console.log('uploader_attachments.FilesAdded')
         $('#form-item-upload-pickfilesList').removeClass('hidden');
         var addedFiles = '';
         $.each(files, function(i, file) {
@@ -2432,7 +2436,10 @@ console.log(store.get('teampassUser'))
             $("#form-item-hidden-pickFilesNumber").val(
                 parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1
             );
-            //if (debugJavascript === true) console.log(file);
+            if (debugJavascript === true) {
+                console.info('Info du fichier :');
+                console.log(file);
+            }
         });
         up.refresh(); // Reposition Flash/Silverlight
     });
@@ -5133,7 +5140,8 @@ console.log(store.get('teampassUser'))
                 type: "get_complixity_level",
                 groupe: val,
                 context: context,
-                item_id: store.get('teampassItem').id
+                item_id: store.get('teampassItem').id,
+                key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
                 //decrypt data
@@ -5235,11 +5243,12 @@ console.log(store.get('teampassUser'))
                 capitalize: $('#pwd-definition-ucl').prop("checked"),
                 symbols: $('#pwd-definition-symbols').prop("checked"),
                 secure_pwd: secure_pwd,
-                force: "false"
+                force: "false",
+                key: "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                //if (debugJavascript === true) console.log(data)
+                if (debugJavascript === true) console.log(data)
                 if (data.error == "true") {
                     // error
                     toastr.remove();

@@ -454,7 +454,6 @@ function recursiveTree(
         || in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true
     ) {
         $displayThisNode = false;
-        $hide_node = false;
         $nbChildrenItems = 0;
         $nodeDirectDescendants = $tree->getDescendants($completTree[$nodeId]->id, false, false, true);
 
@@ -494,7 +493,7 @@ function recursiveTree(
                     $displayThisNode = true;
                     // not adding a break in order to permit a correct count of items
                 }
-                $hide_node = $show_but_block = false;
+                $hide_node = false;
                 $text = $title = '';
             }
         }
