@@ -781,6 +781,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'public_key' => $userKeys['public_key'],
                 'private_key' => $userKeys['private_key'],
             ];
+        } elseif ($userInfo['special'] === 'generate-keys') {
+            $arrayUserKeys = [];
         } else {
             // Uncrypt private key
             $superGlobal->put('private_key', decryptPrivateKey($passwordClear, $userInfo['private_key']), 'SESSION', 'user');
@@ -814,7 +816,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // Get user's rights
         if ($user_initial_creation_through_ldap === false) {
             identifyUserRights(
-                //implode(';', $userInfo['groupes_visibles']),
                 $userInfo['groupes_visibles'],
                 $superGlobal->get('no_access_folders', 'SESSION'),
                 $userInfo['admin'],

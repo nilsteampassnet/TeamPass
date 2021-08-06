@@ -2019,6 +2019,7 @@ Insert the log here and especially the answer of the query that failed.
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_current_code = filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING);
             $post_new_code = filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING);
+            $post_action_type = filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING);
             if (empty($post_new_code) === true) {
                 $post_new_code = $_SESSION['user_pwd'];
             }
@@ -2032,9 +2033,15 @@ Insert the log here and especially the answer of the query that failed.
                     $post_user_id
                 );
                 if (DB::count() > 0) {
-                    $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-
-                    $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
+                    if ($post_action_type === 'encrypt_privkey_with_user_password') {
+                        // Here the user has his private key encrypted with an OTC.
+                        // We need to encrypt it with his real password
+                        $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
+                        $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
+                    } else {
+                        $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
+                        $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
+                    }
 
                     // Update user account
                     DB::update(
@@ -2494,6 +2501,7 @@ Insert the log here and especially the answer of the query that failed.
                                 $record['id'],
                                 $_SESSION['user_id']
                             );
+                            if (count($currentUserKey) === 0) continue;
 
                             // Decrypt itemkey with admin key
                             $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);

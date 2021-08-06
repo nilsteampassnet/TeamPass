@@ -288,7 +288,7 @@ if (null !== $post_type) {
                 );
             }
 
-            updateCacheTable('reload', $SETTINGS, '');
+            updateCacheTable('reload', $SETTINGS, null);
 
             // send data
             echo prepareExchangedData(

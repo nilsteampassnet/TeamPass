@@ -356,7 +356,7 @@ switch ($post_type) {
         }
 
         //Update CACHE table
-        updateCacheTable('reload', $SETTINGS, '');
+        updateCacheTable('reload', $SETTINGS, null);
 
         // Log
         logEvents(

@@ -400,49 +400,51 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
-                                    foreach ($_SESSION['item_fields'] as $category) {
-                                        echo '
-                                    <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
-                                        <h5>' . $category['title'] . '</h5>
-                                        <p>';
-                                        foreach ($category['fields'] as $field) {
-                                            if ($field['type'] === 'textarea') {
+                                        if (isset($_SESSION['item_fields']) === true) {
+                                            foreach ($_SESSION['item_fields'] as $category) {
                                                 echo '
-                                            <div class="form-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
-                                                <label>' . $field['title'],
-                                                    $field['is_mandatory'] === '1' ?
-                                                        '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
-                                                    '</label>
-                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0"></textarea>
-                                            </div>';
-                                            } else {
+                                            <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
+                                                <h5>' . $category['title'] . '</h5>
+                                                <p>';
+                                                foreach ($category['fields'] as $field) {
+                                                    if ($field['type'] === 'textarea') {
+                                                        echo '
+                                                    <div class="form-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
+                                                        <label>' . $field['title'],
+                                                            $field['is_mandatory'] === '1' ?
+                                                                '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
+                                                            '</label>
+                                                        <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0"></textarea>
+                                                    </div>';
+                                                    } else {
+                                                        echo '
+                                                    <div class="input-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">' . $field['title'],
+                                                            $field['is_mandatory'] === '1' ?
+                                                                '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
+                                                            '</span>
+                                                        </div>
+                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom track-change" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0">
+                                                    </div>';
+                                                    }
+                                                }
+                                                // Manage template
+                                                if (
+                                                    isset($SETTINGS['item_creation_templates']) === true
+                                                    && $SETTINGS['item_creation_templates'] === '1'
+                                                ) {
+                                                    echo '
+                                                    <div class="form-check icheck-blue">
+                                                        <input type="checkbox" class="form-check-input form-check-input-template form-item-control flat-blue" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
+                                                        <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . langHdl('main_template') . '</label>
+                                                    </div>';
+                                                }
                                                 echo '
-                                            <div class="input-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text">' . $field['title'],
-                                                    $field['is_mandatory'] === '1' ?
-                                                        '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
-                                                    '</span>
-                                                </div>
-                                                <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom track-change" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0">
+                                                </p>
                                             </div>';
                                             }
-                                        }
-                                        // Manage template
-                                        if (
-                                            isset($SETTINGS['item_creation_templates']) === true
-                                            && $SETTINGS['item_creation_templates'] === '1'
-                                        ) {
-                                            echo '
-                                            <div class="form-check icheck-blue">
-                                                <input type="checkbox" class="form-check-input form-check-input-template form-item-control flat-blue" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
-                                                <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . langHdl('main_template') . '</label>
-                                            </div>';
-                                        }
-                                        echo '
-                                        </p>
-                                    </div>';
-                                    } ?>
+                                        } ?>
                                 </div>
                                 <div class="alert alert-info hidden no-item-fields">
                                     <h5><i class="icon fa fa-info mr-3"></i><?php echo langHdl('information'); ?></h5>

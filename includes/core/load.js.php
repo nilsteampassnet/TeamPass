@@ -848,7 +848,7 @@ if (
         // Start by testing if the temporary code is correct to decrypt an item
         data = {
             'user_id': store.get('teampassUser').user_id,
-            'password': $('#dialog-user-temporary-code-value').val(),
+            'password': $('#dialog-user-temporary-code-current-password').val(),
         }
         console.log(data);
         $.post(
@@ -880,8 +880,9 @@ if (
                     // Change privatekey encryption with user-s password
                     data = {
                         'user_id': store.get('teampassUser').user_id,
-                        'current_code': $('#dialog-user-temporary-code-value').val(),
-                        'new_code': $('#dialog-user-temporary-code-current-password').val(),
+                        'current_code': $('#dialog-user-temporary-code-current-password').val(),
+                        'new_code': $('#dialog-user-temporary-code-value').val(),
+                        'action_type' : 'encrypt_privkey_with_user_password',
                     }
                     console.log(data);
                     
@@ -999,6 +1000,7 @@ if (
                         'user_id': store.get('teampassUser').user_id,
                         'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
                         'new_code': '',
+                        'action_type' : '',
                     }
                     console.log(data);
                     

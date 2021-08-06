@@ -583,16 +583,17 @@ function identUser(
     $inc = 0;
     $rows = DB::query(
         'SELECT id, id_tree FROM ' . prefixTable('items') . '
-            WHERE restricted_to LIKE %ss AND inactif = %s',
+            WHERE restricted_to LIKE %ss AND inactif = %s'.
+            (count($allowedFolders) > 0 ? ' AND id_tree NOT IN ('.implode(',', $allowedFolders).')' : ''),
         $globalsUserId . ';',
         '0'
     );
     foreach ($rows as $record) {
         // Exclude restriction on item if folder is fully accessible
-        if (in_array($record['id_tree'], $allowedFolders) === false) {
+        //if (in_array($record['id_tree'], $allowedFolders) === false) {
             $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
             ++$inc;
-        }
+        //}
     }
 
     // Check for the users roles if some specific rights exist on items
@@ -600,17 +601,17 @@ function identUser(
         'SELECT i.id_tree, r.item_id
         FROM ' . prefixTable('items') . ' as i
         INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (r.item_id=i.id)
-        WHERE r.role_id IN %li
+        WHERE r.role_id IN %li AND i.id_tree <> ""
         ORDER BY i.id_tree ASC',
         $userRoles
     );
     $inc = 0;
     foreach ($rows as $record) {
-        if (isset($record['id_tree'])) {
+        //if (isset($record['id_tree'])) {
             $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
             array_push($foldersLimitedFull, $record['item_id']);
             ++$inc;
-        }
+        //}
     }
 
     // Get list of Personal Folders
@@ -621,12 +622,13 @@ function identUser(
         $persoFld = DB::queryfirstrow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
-            WHERE title = %s AND personal_folder = %i',
+            WHERE title = %s AND personal_folder = %i'.
+            (count($allowedFolders) > 0 ? ' AND id NOT IN ('.implode(',', $allowedFolders).')' : ''),
             $globalsUserId,
             1
         );
         if (empty($persoFld['id']) === false) {
-            if (in_array($persoFld['id'], $allowedFolders) === false) {
+            //if (in_array($persoFld['id'], $allowedFolders) === false) {
                 array_push($personalFolders, $persoFld['id']);
                 array_push($allowedFolders, $persoFld['id']);
                 // get all descendants
@@ -637,7 +639,7 @@ function identUser(
                         array_push($personalFolders, $ident->id);
                     }
                 }
-            }
+            //}
         }
     }
 
@@ -663,6 +665,7 @@ function identUser(
 
     // All folders visibles
     $allowedFolders = array_merge(
+        $allowedFolders,
         $foldersLimitedFull,
         $allowedFoldersByRoles,
         $restrictedFoldersForItems,
@@ -2440,7 +2443,11 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
         $cipher->setPassword($userPwd);
-        return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
+        $decryptedPrivateKey = $cipher->decrypt(base64_decode($userPrivateKey));
+        if ($decryptedPrivateKey === false) {
+            return 'error';
+        }
+        return base64_encode($decryptedPrivateKey);
     }
     return '';
 }
