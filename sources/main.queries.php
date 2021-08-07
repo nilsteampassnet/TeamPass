@@ -363,7 +363,7 @@ function mainQuery($SETTINGS)
          */
         case 'generate_bug_report':
             $return = generateBugReport(
-                (string) filter_var(INPUT_POST, 'data', FILTER_SANITIZE_URL),
+                (string) $post_data,
                 $SETTINGS
             );
 
@@ -477,7 +477,7 @@ function mainQuery($SETTINGS)
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_NUMBER_INT),
                 $dataReceived['body'],
                 (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['pre_replace'], FILTER_SANITIZE_STRING),
+                (array) filter_var($dataReceived['pre_replace'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
 
@@ -504,7 +504,7 @@ function mainQuery($SETTINGS)
         case 'user_sharekeys_reencryption_start':
             $return = startReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
             
@@ -518,7 +518,7 @@ function mainQuery($SETTINGS)
         case 'user_sharekeys_reencryption_next':
             $return = continueReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
@@ -579,7 +579,7 @@ function mainQuery($SETTINGS)
         * User's authenticataion password in LDAP has changed
         */
         case 'change_user_ldap_auth_password':
-            $return = changeUserLDAPAuthenticationPassword(
+            $return = /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
@@ -1450,7 +1450,7 @@ function initializeUserPassword(
 
             // If LDAP enabled, then
             // check that this password is correct
-            $continue = true;
+            $continue = false;
             if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
                 $continue = ldapCheckUserPassword(
                     $userData['login'],
@@ -1531,7 +1531,7 @@ function sendMailToUser(
     string $post_receipt,
     string $post_body,
     string $post_subject,
-    string $post_replace,
+    array $post_replace,
     array $SETTINGS
 ): string
 {
@@ -1612,11 +1612,19 @@ function generateOneTimeCode(
             'encode'
         );
     }
+        
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_no_user'),
+        ),
+        'encode'
+    );
 }
 
 function startReEncryptingUserSharekeys(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     array $SETTINGS
 ): string
 {
@@ -1742,6 +1750,7 @@ function continueReEncryptingUserSharekeys(
                     $post_action,
                     $post_start,
                     $post_length,
+                    $userInfo['public_key'],
                     $SETTINGS
                 );
 
@@ -1936,7 +1945,7 @@ function continueReEncryptingUserSharekeysStep2(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array
 {
     // Loop on logs
     $rows = DB::query(
@@ -2017,7 +2026,7 @@ function continueReEncryptingUserSharekeysStep3(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array
 {
     // Loop on fields
     $rows = DB::query(
@@ -2098,7 +2107,7 @@ function continueReEncryptingUserSharekeysStep4(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array
 {
     // Loop on suggestions
     $rows = DB::query(
@@ -2177,7 +2186,7 @@ function continueReEncryptingUserSharekeysStep5(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array
 {
     // Loop on files
     $rows = DB::query(
@@ -2258,7 +2267,7 @@ function continueReEncryptingUserSharekeysStep6(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array
 {
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $_SESSION['user_id']) {
@@ -2438,6 +2447,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                                 'decrypt',
                                 $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
                                 $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
+                                $SETTINGS,
                                 $post_user_psk
                             );
 
@@ -2643,7 +2653,8 @@ function changeUserAuthenticationPassword(
 function changeUserLDAPAuthenticationPassword(
     int $post_user_id,
     string $post_previous_pwd,
-    string $post_current_pwd
+    string $post_current_pwd,
+    array $SETTINGS
 )
 {
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
