@@ -224,6 +224,22 @@ if ($post_type === 'identify_duo_user') {
         );
         return false;
     }
+
+    // Ensure Complexity levels are translated
+    if (defined('TP_PW_COMPLEXITY') === false) {
+        define(
+            'TP_PW_COMPLEXITY',
+            array(
+                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            )
+        );
+    }
     // ---
     // ---
     // ---
@@ -341,114 +357,45 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     $userInfo = $userInitialData['userInfo'];
-
     $user_initial_creation_through_ldap = false;
-    $userPasswordVerified = false;
-    $ldapConnection = false;
     $return = '';
-    // Prepare LDAP connection if set up
-    if (
-        isset($SETTINGS['ldap_mode']) === true
-        && (int) $SETTINGS['ldap_mode'] === 1
-        && $username !== 'admin'
-        && $userInfo['auth_type'] === 'ldap'
-    ) {
-        $ldapConnection = true;
-        $retLDAP = authenticateThroughAD(
-            $username,
-            $userInfo,
-            $passwordClear,
-            $SETTINGS
-        );
-        if ($retLDAP['error'] === true) {
-            echo prepareExchangedData(
-                [
-                    'value' => '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                    'pwd_attempts' => (int) $sessionPwdAttempts,
-                    'error' => true,
-                    'message' => $retLDAP['message'],
-                ],
-                'encode'
-            );
-            return false;
-        }
-        $userPasswordVerified = true;
-    }
 
-    // Check Yubico
-    if (
-        isset($SETTINGS['yubico_authentication']) === true
-        && (int) $SETTINGS['yubico_authentication'] === 1
-        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInitialData['user_mfa_mode'] === 'yubico'
-        && $userInfo['mfa_auth_requested'] === true
-    ) {
-        $ret = yubicoMFACheck(
-            $dataReceived,
-            $userInfo,
-            $SETTINGS
-        );
-        if ($ret['error'] !== '') {
-            echo prepareExchangedData(
-                $ret,
-                'encode'
-            );
-            return false;
-        }
-    }
 
-    // check GA code
-    if (
-        isset($SETTINGS['google_authentication']) === true
-        && (int) $SETTINGS['google_authentication'] === 1
-        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-        && $userInitialData['user_mfa_mode'] === 'google'
-        && $userInfo['mfa_auth_requested'] === true
-    ) {
-        $ret = googleMFACheck(
-            $username,
-            $userInfo,
-            $dataReceived,
-            $SETTINGS
-        );
-        if ($ret['error'] !== false) {
-            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
-            echo prepareExchangedData(
-                $ret,
-                'encode'
-            );
-            return false;
-            // ---
-        }
-        $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
-        // Manage 1st usage of Google MFA
-        if (count($ret['firstTime']) > 0) {
-            echo prepareExchangedData(
-                $ret['firstTime'],
-                'encode'
-            );
-            return false;
-        }
-    }
-
-    // If admin user then check if folder install exists
-    // if yes then refuse connection
-    if ((int) $userInfo['admin'] === 1 && is_dir('../install') === true) {
+    $userLdap = identifyDoLDAPChecks(
+        $SETTINGS,
+        $userInfo,
+        (string) $username,
+        (string) $passwordClear,
+        (int) $sessionAdmin,
+        (string) $sessionUrl
+    );
+    if ($userLdap['error'] === true) {
         echo prepareExchangedData(
-            [
-                'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => true,
-                'message' => langHdl('remove_install_folder'),
-            ],
+            $userLdap['array'],
             'encode'
         );
         return false;
     }
+    $userPasswordVerified = $userLdap['ldapConnection'];
+    $ldapConnection = $userLdap['ldapConnection'];
+    $retLDAP = $userLdap['retLDAP'];
+    
+
+    $userLdap = identifyDoMFAChecks(
+        $SETTINGS,
+        $userInfo,
+        $dataReceived,
+        (string) $username
+    );
+    if ($identifyDoMFAChecks['error'] === true) {
+        echo prepareExchangedData(
+            $userLdap['array'],
+            'encode'
+        );
+        return false;
+    }
+
+    $firstTime = $identifyDoMFAChecks['firstTime'];
 
     // Check user and password
     if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
@@ -1543,7 +1490,7 @@ function identifyDoInitialChecks(
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        
+
         return [
             'error' => true,
             'array' => [
@@ -1582,9 +1529,9 @@ function identifyDoInitialChecks(
         FROM ' . prefixTable('users') . ' WHERE login=%s',
         $username
     );
-    $counter = DB::count();
+    
     // User doesn't exist then stop
-    if ($counter === 0) {
+    if (DB::count() === 0) {
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
 
         return [
@@ -1600,18 +1547,16 @@ function identifyDoInitialChecks(
     }
 
     // has user to be auth with mfa?
-    if (is_null($userInfo['fonction_id']) === true) {
-        $userInfo['fonction_id'] = false;
-    } else {
-        $userInfo['mfa_auth_requested'] = mfa_auth_requested(
-            $userInfo['fonction_id'],
-            is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
-        );
-    }
+    $userInfo['fonction_id'] = is_null($userInfo['fonction_id']) === true ? false : $userInfo['fonction_id'];
+    
+    // user should use MFA?
+    $userInfo['mfa_auth_requested'] = mfa_auth_requested(
+        $userInfo['fonction_id'],
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
+    );
 
     // Manage Maintenance mode
-    if ((int) $SETTINGS['maintenance_mode'] === 1 && (int) $userInfo['admin'] === 0
-    ) {
+    if ((int) $SETTINGS['maintenance_mode'] === 1 && (int) $userInfo['admin'] === 0) {
         return [
             'error' => true,
             'array' => [
@@ -1625,10 +1570,139 @@ function identifyDoInitialChecks(
         ];
     }
 
+    // If admin user then check if folder install exists
+    // if yes then refuse connection
+    if ((int) $userInfo['admin'] === 1 && is_dir('../install') === true) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => true,
+                'message' => langHdl('remove_install_folder'),
+            ]
+        ];
+    }
+
     // Return some usefull information about user
     return [
         'error' => false,
         'user_mfa_mode' => $user_2fa_selection,
         'userInfo' => $userInfo,
+    ];
+}
+
+function identifyDoLDAPChecks(
+    $SETTINGS,
+    $userInfo,
+    string $username,
+    string $passwordClear,
+    int $sessionAdmin,
+    string $sessionUrl
+): array
+{
+    // Prepare LDAP connection if set up
+    $ldapConnection = false;
+    $userPasswordVerified = false;
+
+    if ($SETTINGS['ldap_mode'] === 1
+        && $username !== 'admin'
+        && (string) $userInfo['auth_type'] === 'ldap'
+    ) {
+        $retLDAP = authenticateThroughAD(
+            $username,
+            $userInfo,
+            $passwordClear,
+            $SETTINGS
+        );
+        if ($retLDAP['error'] === true) {
+            return [
+                'error' => true,
+                'array' => [
+                    'value' => '',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => true,
+                    'message' => $retLDAP['message'],
+                ]
+            ];
+        }
+        $userPasswordVerified = true;
+        $ldapConnection = true;
+    }
+    return [
+        'error' => false,
+        'retLDAP' => $retLDAP,
+        'ldapConnection' => $ldapConnection,
+        'userPasswordVerified' => $userPasswordVerified,
+    ];
+}
+
+
+function identifyDoMFAChecks(
+    $SETTINGS,
+    $userInfo,
+    $dataReceived,
+    string $username
+): array
+{
+    // Check Yubico
+    if (
+        isset($SETTINGS['yubico_authentication']) === true
+        && (int) $SETTINGS['yubico_authentication'] === 1
+        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+        && $userInitialData['user_mfa_mode'] === 'yubico'
+        && $userInfo['mfa_auth_requested'] === true
+    ) {
+        $ret = yubicoMFACheck(
+            $dataReceived,
+            $userInfo,
+            $SETTINGS
+        );
+        if ($ret['error'] !== '') {
+            return [
+                'error' => true,
+                'array' => $ret,
+            ];
+        }
+    }
+
+    // check GA code
+    if ((int) $SETTINGS['google_authentication'] === 1
+        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
+        && $userInitialData['user_mfa_mode'] === 'google'
+        && $userInfo['mfa_auth_requested'] === true
+    ) {
+        $ret = googleMFACheck(
+            $username,
+            $userInfo,
+            $dataReceived,
+            $SETTINGS
+        );
+        if ($ret['error'] !== false) {
+            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+            
+            return [
+                'error' => true,
+                'array' => $ret,
+            ];
+            // ---
+        }
+        $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
+        // Manage 1st usage of Google MFA
+        if (count($ret['firstTime']) > 0) {
+            return [
+                'error' => false,
+                'firstTime' => $ret['firstTime'],
+            ];
+        }
+    }
+
+    return [
+        'error' => false,
+        'firstTime' => '',
     ];
 }

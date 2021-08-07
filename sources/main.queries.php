@@ -124,22 +124,6 @@ function mainQuery(array $SETTINGS)
         return false;
     }
 
-    // Ensure Complexity levels are translated
-    if (defined('TP_PW_COMPLEXITY') === false) {
-        define(
-            'TP_PW_COMPLEXITY',
-            array(
-                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-            )
-        );
-    }
-
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData(
         $post_data,
@@ -337,26 +321,6 @@ function mainQuery(array $SETTINGS)
 
             echo $return;
         
-            break;
-
-        /**
-         * 
-         */
-        case 'update_user_field':
-            // Prepare variables
-            DB::update(
-                prefixTable('users'),
-                array(
-                    $dataReceived['field'] => noHTML(htmlspecialchars_decode($dataReceived['new_value'])),
-                ),
-                'id = %i',
-                (int) $dataReceived['user_id']
-            );
-
-            // Update session
-            if ($dataReceived['field'] === 'user_api_key') {
-                $_SESSION['user']['api-key'] = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
-            }
             break;
 
         /*

@@ -2898,6 +2898,46 @@ if (null !== $post_type) {
             );
 
             break;
+
+        /**
+         * 
+         */
+        case 'update_user_field':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_new_value = filter_var($dataReceived['new_value'], FILTER_SANITIZE_STRING);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
+
+            // Prepare variables
+            DB::update(
+                prefixTable('users'),
+                array(
+                    $post_field => noHTML(htmlspecialchars_decode($post_new_value)),
+                ),
+                'id = %i',
+                (int) $dataReceived['user_id']
+            );
+
+            // Update session
+            if ($post_field === 'user_api_key') {
+                $_SESSION['user']['api-key'] = noHTML(htmlspecialchars_decode($post_new_value));
+            }
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING))) {
