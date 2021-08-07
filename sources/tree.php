@@ -493,7 +493,6 @@ function recursiveTree(
                     $displayThisNode = true;
                     // not adding a break in order to permit a correct count of items
                 }
-                $hide_node = false;
                 $text = $title = '';
             }
         }
@@ -520,7 +519,6 @@ function recursiveTree(
                 $session_read_only_folders,
                 $session_personal_visible_groups,
                 $text,
-                $title,
                 $nbChildrenItems,
                 $nodeDescendants,
                 $nodeDirectDescendants
@@ -552,7 +550,6 @@ function handleNode(
     $session_read_only_folders,
     $session_personal_visible_groups,
     $text,
-    $title,
     $nbChildrenItems,
     $nodeDescendants,
     $nodeDirectDescendants
@@ -576,6 +573,7 @@ function handleNode(
     $completTree[$nodeId]->title = htmlspecialchars_decode($completTree[$nodeId]->title, ENT_QUOTES);
 
     $nodeData = prepareNodeData(
+        $completTree,
         (int) $completTree[$nodeId]->id,
         $session_groupes_visibles,
         $session_read_only_folders,
@@ -737,6 +735,7 @@ function handleNode(
 
 
 function prepareNodeData(
+    $completTree,
     $nodeId,
     $session_groupes_visibles,
     $session_read_only_folders,

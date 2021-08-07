@@ -90,9 +90,12 @@ function langHdl(string $string): string
  * @param string $password What password
  * @param string $cost     What cost
  *
- * @return string
+ * @return string|void
  */
-function bCrypt(string $password, string $cost): string
+function bCrypt(
+    string $password,
+    string $cost
+): ?string
 {
     $salt = sprintf('$2y$%02d$', $cost);
     if (function_exists('openssl_random_pseudo_bytes')) {
@@ -1304,7 +1307,7 @@ function isDate(string $date): bool
 /**
  * Check if isUTF8().
  *
- * @param string $string Is the string
+ * @param string|array $string Is the string
  *
  * @return int is the string in UTF8 format
  */

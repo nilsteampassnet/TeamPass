@@ -2396,8 +2396,7 @@ if (is_null($post_type) === false) {
             if (
                 (int) $_SESSION['user_admin'] === 1
                 && (int) $dataItem['perso'] !== 1
-                && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
-                || null === TP_ADMIN_FULL_RIGHT
+                && TP_ADMIN_FULL_RIGHT === true
             ) {
                 $arrData['show_details'] = 0;
                 // ---

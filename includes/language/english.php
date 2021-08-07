@@ -18,6 +18,7 @@
  */
 
 return array(
+    'no_email_set' => 'No email defined',
     'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
     'by' => 'by',
     'admin_change_user_encryption_code_info' => 'This operation will reset the encryption code for this user.',

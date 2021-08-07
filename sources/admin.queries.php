@@ -820,7 +820,7 @@ switch ($post_type) {
         }
 
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        updateCacheTable('reload', $SETTINGS, '');
+        updateCacheTable('reload', $SETTINGS, NULL);
 
         // Log
         logEvents(

@@ -1306,7 +1306,7 @@ if (null !== $post_type) {
 
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, '');
+            updateCacheTable('reload', $SETTINGS, NULL);
 
             $data = array(
                 'error' => '',

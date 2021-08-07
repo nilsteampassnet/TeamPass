@@ -347,15 +347,15 @@ function mainQuery(array $SETTINGS)
             DB::update(
                 prefixTable('users'),
                 array(
-                    noHTML(htmlspecialchars_decode($dataReceived['field'])) => noHTML(htmlspecialchars_decode($dataReceived['new_value'])),
+                    $dataReceived['field'] => noHTML(htmlspecialchars_decode($dataReceived['new_value'])),
                 ),
                 'id = %i',
                 (int) $dataReceived['user_id']
             );
 
             // Update session
-            if ($field === 'user_api_key') {
-                $_SESSION['user']['api-key'] = $new_value;
+            if ($dataReceived['field'] === 'user_api_key') {
+                $_SESSION['user']['api-key'] = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
             }
             break;
 
@@ -570,7 +570,7 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('error_not_allowed_to') . '</div>',
+                    'message' => langHdl('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -678,6 +678,13 @@ function changePassword(
             'encode'
         );
     }
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => langHdl('error_not_allowed_to'),
+        ),
+        'encode'
+    );
 }
 
 
@@ -1376,7 +1383,7 @@ function initializeUserPassword(
     int $post_user_id,
     string $post_special,
     string $post_user_password,
-    string $post_self_change,
+    bool $post_self_change,
     array $SETTINGS
 ): string
 {
@@ -1445,7 +1452,7 @@ function initializeUserPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $continue === false ? langHdl('password_doesnot_correspond_to_ldap_one') : $emailError,
+                    'message' => langHdl('no_email_set'),
                     'debug' => '',
                     'self_change' => $post_self_change,
                 ),
@@ -1575,7 +1582,7 @@ function startReEncryptingUserSharekeys(
     array $SETTINGS
 ): string
 {
-    $post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
+    //$post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
 
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
         // Check if user exists
@@ -1793,7 +1800,7 @@ function continueReEncryptingUserSharekeys(
 
 function continueReEncryptingUserSharekeysStep1(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -1886,7 +1893,7 @@ function continueReEncryptingUserSharekeysStep1(
 
 function continueReEncryptingUserSharekeysStep2(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -1967,7 +1974,7 @@ function continueReEncryptingUserSharekeysStep2(
 
 function continueReEncryptingUserSharekeysStep3(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -2048,7 +2055,7 @@ function continueReEncryptingUserSharekeysStep3(
 
 function continueReEncryptingUserSharekeysStep4(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -2127,7 +2134,7 @@ function continueReEncryptingUserSharekeysStep4(
 
 function continueReEncryptingUserSharekeysStep5(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -2208,7 +2215,7 @@ function continueReEncryptingUserSharekeysStep5(
 
 function continueReEncryptingUserSharekeysStep6(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,

@@ -62,7 +62,6 @@ function redirect($url)
     echo '<noscript>';
     echo '<meta http-equiv="refresh" content="0;url=' . $antiXss->xss_clean($url) . '" />';
     echo '</noscript>';
-    exit;
 }
 
 // Include files
