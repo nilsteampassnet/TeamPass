@@ -493,7 +493,7 @@ function recursiveTree(
                     $displayThisNode = true;
                     // not adding a break in order to permit a correct count of items
                 }
-                $text = $title = '';
+                $text = '';
             }
         }
 

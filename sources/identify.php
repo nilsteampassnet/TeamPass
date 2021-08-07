@@ -269,16 +269,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    header('Content-type: text/html; charset=utf-8');
-    error_reporting(E_ERROR);
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    
+    header('Content-type: text/html; charset=utf-8');
+    error_reporting(E_ERROR);
+
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
+
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
     // Prepare GET variables
     $sessionUserLanguage = $superGlobal->get('user_language', 'SESSION');
     $sessionKey = $superGlobal->get('key', 'SESSION');
@@ -291,18 +295,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
+    DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
     // User's language loading
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $sessionUserLanguage . '.php';
-    //echo $dataReceived." -->".empty($sessionKey)."<-- ".$sessionKey." ** " ;
+    
     // decrypt and retreive data in JSON format
     if (empty($sessionKey) === true) {
         $dataReceived = $sentData;
@@ -311,121 +312,35 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('key', $sessionKey, 'SESSION');
     }
 
-    // prepare variables
-    if (
-        isset($SETTINGS['enable_http_request_login']) === true
-        && (int) $SETTINGS['enable_http_request_login'] === 1
-        && isset($server['PHP_AUTH_USER']) === true
-        && $server['PHP_AUTH_USER'] !== null
-        && isset($SETTINGS['maintenance_mode']) === true
-        && (int) $SETTINGS['maintenance_mode'] === 1
-    ) {
-        if (strpos($server['PHP_AUTH_USER'], '@') !== false) {
-            $username = explode('@', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
-        } elseif (strpos($server['PHP_AUTH_USER'], '\\') !== false) {
-            $username = explode('\\', filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
-        } else {
-            $username = filter_var($server['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
-        }
-        $passwordClear = $server['PHP_AUTH_PW'];
-    } else {
-        $passwordClear = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
-        $username = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
-    }
-
-    // Brute force management
-    if ($sessionPwdAttempts > 3) {
-        $superGlobal->put('next_possible_pwd_attempts', time() + 10, 'SESSION');
-        $superGlobal->put('pwd_attempts', 0, 'SESSION');
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        echo prepareExchangedData(
-            [
-                'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => true,
-                'message' => langHdl('error_bad_credentials_more_than_3_times'),
-            ],
-            'encode'
-        );
-        return false;
-    }
-
-    // User's 2FA method
-    $user_2fa_selection = filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING);
-    // Check 2FA
-    if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
-            || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
-        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-    ) {
-        echo prepareExchangedData(
-            [
-                'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => '2fa_not_set',
-                'message' => langHdl('2fa_credential_not_correct'),
-            ],
-            'encode'
-        );
-        return false;
-    }
-
-    // Check if user exists
-    $userInfo = DB::queryFirstRow(
-        'SELECT *
-        FROM ' . prefixTable('users') . '
-        WHERE login=%s',
-        $username
+    // prepare variables    
+    $userCredentials = identifyGetUserCredentials(
+        $SETTINGS,
+        (string) $server['PHP_AUTH_USER'],
+        (string) $server['PHP_AUTH_PW'],
+        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING),
+        (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING)
     );
-    $counter = DB::count();
-    // User doesn't exist then stop
-    if ($counter === 0) {
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+    $username = $userCredentials['username'];
+    $passwordClear = $userCredentials['passwordClear'];
+
+    // DO initial checks
+    $userInitialData = identifyDoInitialChecks(
+        $SETTINGS,
+        (int) $sessionPwdAttempts,
+        (string) $username,
+        (int) $sessionAdmin,
+        (string) $sessionUrl,
+        (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING)
+    );
+    if ($userInitialData['error'] === true) {
         echo prepareExchangedData(
-            [
-                'error' => 'user_not_exists',
-                'message' => langHdl('error_bad_credentials'),
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            ],
+            $userInitialData['array'],
             'encode'
         );
         return false;
     }
 
-    // has user to be auth with mfa?
-    if (is_null($userInfo['fonction_id']) === true) {
-        $userInfo['fonction_id'] = false;
-    } else {
-        $userInfo['mfa_auth_requested'] = mfa_auth_requested(
-            $userInfo['fonction_id'],
-            is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
-        );
-    }
-
-    // Manage Maintenance mode
-    if (
-        isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1
-        && (int) $userInfo['admin'] === 0
-    ) {
-        echo prepareExchangedData(
-            [
-                'value' => '',
-                'user_admin' => (int) $userInfo['admin'],
-                'initial_url' => '',
-                'pwd_attempts' => '',
-                'error' => 'maintenance_mode_enabled',
-                'message' => '',
-            ],
-            'encode'
-        );
-        return false;
-    }
+    $userInfo = $userInitialData['userInfo'];
 
     $user_initial_creation_through_ldap = false;
     $userPasswordVerified = false;
@@ -467,7 +382,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         isset($SETTINGS['yubico_authentication']) === true
         && (int) $SETTINGS['yubico_authentication'] === 1
         && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $user_2fa_selection === 'yubico'
+        && $userInitialData['user_mfa_mode'] === 'yubico'
         && $userInfo['mfa_auth_requested'] === true
     ) {
         $ret = yubicoMFACheck(
@@ -489,7 +404,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         isset($SETTINGS['google_authentication']) === true
         && (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-        && $user_2fa_selection === 'google'
+        && $userInitialData['user_mfa_mode'] === 'google'
         && $userInfo['mfa_auth_requested'] === true
     ) {
         $ret = googleMFACheck(
@@ -1565,4 +1480,155 @@ function debugIdentify(bool $enabled, string $dbgFile, string $text): void
             );
         }
     }
+}
+
+
+
+function identifyGetUserCredentials(
+    array $SETTINGS,
+    string $serverPHPAuthUser,
+    string $serverPHPAuthPw,
+    string $userPassword,
+    string $userLogin
+): array
+{
+    if ((int) $SETTINGS['enable_http_request_login'] === 1
+        && $serverPHPAuthUser !== null
+        && (int) $SETTINGS['maintenance_mode'] === 1
+    ) {
+        if (strpos($serverPHPAuthUser, '@') !== false) {
+            return [
+                'username' => explode('@', $serverPHPAuthUser)[0],
+                'passwordClear' => $serverPHPAuthPw
+            ];
+        }
+        
+        if (strpos($serverPHPAuthUser, '\\') !== false) {
+            return [
+                'username' => explode('\\', $serverPHPAuthUser)[1],
+                'passwordClear' => $serverPHPAuthPw
+            ];
+        }
+
+        return [
+            'username' => $serverPHPAuthPw,
+            'passwordClear' => $serverPHPAuthPw
+        ];
+    }
+    
+    return [
+        'username' => $userLogin,
+        'passwordClear' => $userPassword
+    ];
+}
+
+
+    
+
+function identifyDoInitialChecks(
+    $SETTINGS,
+    int $sessionPwdAttempts,
+    string $username,
+    int $sessionAdmin,
+    string $sessionUrl,
+    string $user_2fa_selection
+): array
+{
+    // Brute force management
+    if ($sessionPwdAttempts > 3) {
+        // Load superGlobals
+        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal->put('next_possible_pwd_attempts', time() + 10, 'SESSION');
+        $superGlobal->put('pwd_attempts', 0, 'SESSION');
+
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        
+        return [
+            'error' => true,
+            'array' => [
+                'value' => 'bruteforce_wait',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => 0,
+                'error' => true,
+                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+            ]
+        ];
+    }
+
+    // Check 2FA
+    if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
+        || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
+        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
+    ) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '2fa_not_set',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => '2fa_not_set',
+                'message' => langHdl('2fa_credential_not_correct'),
+            ]
+        ];
+    }
+
+    // Check if user exists
+    $userInfo = DB::queryFirstRow(
+        'SELECT *
+        FROM ' . prefixTable('users') . ' WHERE login=%s',
+        $username
+    );
+    $counter = DB::count();
+    // User doesn't exist then stop
+    if ($counter === 0) {
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+
+        return [
+            'error' => true,
+            'array' => [
+                'error' => 'user_not_exists',
+                'message' => langHdl('error_bad_credentials'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+            ]
+        ];
+    }
+
+    // has user to be auth with mfa?
+    if (is_null($userInfo['fonction_id']) === true) {
+        $userInfo['fonction_id'] = false;
+    } else {
+        $userInfo['mfa_auth_requested'] = mfa_auth_requested(
+            $userInfo['fonction_id'],
+            is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
+        );
+    }
+
+    // Manage Maintenance mode
+    if ((int) $SETTINGS['maintenance_mode'] === 1 && (int) $userInfo['admin'] === 0
+    ) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '',
+                'user_admin' => (int) $userInfo['admin'],
+                'initial_url' => '',
+                'pwd_attempts' => '',
+                'error' => 'maintenance_mode_enabled',
+                'message' => '',
+            ]
+        ];
+    }
+
+    // Return some usefull information about user
+    return [
+        'error' => false,
+        'user_mfa_mode' => $user_2fa_selection,
+        'userInfo' => $userInfo,
+    ];
 }

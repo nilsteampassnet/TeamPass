@@ -407,7 +407,7 @@ function mainQuery(array $SETTINGS)
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['special'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
 
@@ -561,8 +561,7 @@ function changePassword(
     $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
 
     // User has decided to change is PW
-    if (
-        $post_change_request === 'reset_user_password_expected'
+    if ($post_change_request === 'reset_user_password_expected'
         || $post_change_request === 'user_decides_to_change_password'
     ) {
         // Check that current user is correct
@@ -579,8 +578,7 @@ function changePassword(
         // check if expected security level is reached
         $dataUser = DB::queryfirstrow(
             'SELECT *
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            FROM ' . prefixTable('users') . ' WHERE id = %i',
             $post_user_id
         );
 
