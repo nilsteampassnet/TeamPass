@@ -41,6 +41,9 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
 // DO CHECKS
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
@@ -78,45 +81,25 @@ if (
 /**
  * Undocumented function.
  */
-function mainQuery($SETTINGS)
+function mainQuery(array $SETTINGS)
 {
     header('Content-type: text/html; charset=utf-8');
     header('Cache-Control: no-cache, must-revalidate');
     error_reporting(E_ERROR);
 
-    // Load config
-    if (file_exists('../includes/config/tp.config.php')) {
-        include '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include './includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
-
-    /*
-    * Define Timezone
-    **/
-    if (isset($SETTINGS['timezone']) === true) {
-        date_default_timezone_set($SETTINGS['timezone']);
-    } else {
-        date_default_timezone_set('UTC');
-    }
-
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
     // Includes
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
+
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
+    DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
@@ -128,6 +111,18 @@ function mainQuery($SETTINGS)
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
     $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
     $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+
+    // Check KEY
+    if (isset($post_key) === false || empty($post_key) === true) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => langHdl('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        return false;
+    }
 
     // Ensure Complexity levels are translated
     if (defined('TP_PW_COMPLEXITY') === false) {
@@ -145,24 +140,12 @@ function mainQuery($SETTINGS)
         );
     }
 
-    // Check KEY
-    if (isset($post_key) === false || empty($post_key) === true) {
-        echo prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => langHdl('key_is_not_correct'),
-            ),
-            'encode'
-        );
-        return false;
-    }
-
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData(
         $post_data,
         'decode'
     );
-
+    
     // Manage type of action asked
     switch ($post_type) {
         case 'change_pw':
@@ -200,26 +183,11 @@ function mainQuery($SETTINGS)
          * Increase the session time of User
          */
         case 'increase_session_time':
-            // check if session is not already expired.
-            if ($_SESSION['sessionDuration'] > time()) {
-                // Calculate end of session
-                $_SESSION['sessionDuration'] = (int) ($_SESSION['sessionDuration'] + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT));
-                // Update table
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'session_end' => $_SESSION['sessionDuration'],
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-                // Return data
-                echo '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
+            $return = increaseSessionDuration(
+                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
+            );
 
-                break;
-            }
-            
-            echo '[{"new_value":"expired"}]';
+            echo $return;
 
             break;
         
@@ -375,24 +343,14 @@ function mainQuery($SETTINGS)
          * 
          */
         case 'update_user_field':
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
-
             // Prepare variables
-            $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
-            $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
-            $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
-
             DB::update(
                 prefixTable('users'),
                 array(
-                    $field => $new_value,
+                    noHTML(htmlspecialchars_decode($dataReceived['field'])) => noHTML(htmlspecialchars_decode($dataReceived['new_value'])),
                 ),
                 'id = %i',
-                $user_id
+                (int) $dataReceived['user_id']
             );
 
             // Update session
@@ -405,17 +363,6 @@ function mainQuery($SETTINGS)
         * get_teampass_settings
         */
         case 'get_teampass_settings':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
             // Encrypt data to return
             echo prepareExchangedData($SETTINGS, 'encode');
 
@@ -1681,7 +1628,7 @@ function startReEncryptingUserSharekeys(
 
 function continueReEncryptingUserSharekeys(
     int $post_user_id,
-    string $post_self_change,
+    bool $post_self_change,
     string $post_action,
     int $post_start,
     int $post_length,
@@ -2790,4 +2737,29 @@ function changeUserLDAPAuthenticationPassword(
         ),
         'encode'
     );
+}
+
+
+function increaseSessionDuration(
+    int $duration
+): string
+{
+    // check if session is not already expired.
+    if ($_SESSION['sessionDuration'] > time()) {
+        // Calculate end of session
+        $_SESSION['sessionDuration'] = (int) ($_SESSION['sessionDuration'] + $duration);
+        // Update table
+        DB::update(
+            prefixTable('users'),
+            array(
+                'session_end' => $_SESSION['sessionDuration'],
+            ),
+            'id = %i',
+            $_SESSION['user_id']
+        );
+        // Return data
+        return '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
+    }
+    
+    return '[{"new_value":"expired"}]';
 }

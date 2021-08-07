@@ -52,6 +52,33 @@ if (
 
 <script type="text/javascript">
     var userScrollPosition = 0;
+    let hourInMinutes = 60;
+
+    /**
+    *   Add 1 hour to session duration
+    **/
+    function IncreaseSessionTime(duration)
+    {
+        duration = duration || hourInMinutes;
+        $.post(
+            'sources/main.queries.php',
+            {
+                type     : 'increase_session_time',
+                duration : parseInt(duration, 10) * hourInMinutes,
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                if (data[0].new_value !== 'expired') {
+                    $('#temps_restant').val(data[0].new_value);
+                    $('#date_end_session').val(data[0].new_value);
+                    $('#countdown').css('color', 'white');
+                } else {
+                    $(location).attr('href', 'index.php?session=expired');
+                }
+            },
+            'json'
+        );
+    }
 
     // Start real time
     // get list of last items
