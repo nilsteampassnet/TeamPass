@@ -367,7 +367,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (string) $username,
         (string) $passwordClear,
         (int) $sessionAdmin,
-        (string) $sessionUrl
+        (string) $sessionUrl,
+        (int) $sessionPwdAttempts
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
@@ -378,16 +379,17 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
     $userPasswordVerified = $userLdap['ldapConnection'];
     $ldapConnection = $userLdap['ldapConnection'];
-    $retLDAP = $userLdap['retLDAP'];
+    //$retLDAP = $userLdap['retLDAP'];
     
 
     $userLdap = identifyDoMFAChecks(
         $SETTINGS,
         $userInfo,
         $dataReceived,
+        $userInitialData,
         (string) $username
     );
-    if ($identifyDoMFAChecks['error'] === true) {
+    if ($userLdap['error'] === true) {
         echo prepareExchangedData(
             $userLdap['array'],
             'encode'
@@ -395,7 +397,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    $firstTime = $identifyDoMFAChecks['firstTime'];
+    $firstTime = $userLdap['firstTime'];
+    $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
 
     // Check user and password
     if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
@@ -1600,7 +1603,8 @@ function identifyDoLDAPChecks(
     string $username,
     string $passwordClear,
     int $sessionAdmin,
-    string $sessionUrl
+    string $sessionUrl,
+    int $sessionPwdAttempts
 ): array
 {
     // Prepare LDAP connection if set up
@@ -1646,6 +1650,7 @@ function identifyDoMFAChecks(
     $SETTINGS,
     $userInfo,
     $dataReceived,
+    $userInitialData,
     string $username
 ): array
 {
@@ -1704,5 +1709,6 @@ function identifyDoMFAChecks(
     return [
         'error' => false,
         'firstTime' => '',
+        'user_initial_creation_through_ldap' => $ret['user_initial_creation_through_ldap'],
     ];
 }
