@@ -91,7 +91,6 @@ $session['list_folders_limited'] = $superGlobal->get('list_folders_limited', 'SE
 $session['read_only_folders'] = $superGlobal->get('read_only_folders', 'SESSION');
 $session['personal_visible_groups'] = $superGlobal->get('personal_visible_groups', 'SESSION');
 
-
 $lastFolderChange = DB::query(
     'SELECT * FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
@@ -117,6 +116,7 @@ if (
     } else {
         $listFoldersLimitedKeys = array();
     }
+    
     // list of items accessible but not in an allowed folder
     if (
         isset($session['list_restricted_folders_for_items']) === true
@@ -168,7 +168,6 @@ if (
                 $last_visible_parent,
                 $last_visible_parent_level,
                 $SETTINGS,
-                $ret_json,
                 $session['forbiden_pfs'],
                 $session['groupes_visibles'],
                 $session['list_restricted_folders_for_items'],
@@ -178,7 +177,8 @@ if (
                 $session['personal_folder'],
                 $session['list_folders_limited'],
                 $session['read_only_folders'],
-                $session['personal_visible_groups']
+                $session['personal_visible_groups'],
+                $ret_json
             );
         }
     }
@@ -400,7 +400,6 @@ function buildNodeTree(
  * @param int     $last_visible_parent               Visible parent
  * @param int     $last_visible_parent_level         Parent level
  * @param array   $SETTINGS                          Teampass settings
- * @param array   $ret_json                          Array
  * @param string  $session_forbiden_pfs,
  * @param string  $session_groupes_visibles,
  * @param string  $session_list_restricted_folders_for_items,
@@ -411,6 +410,7 @@ function buildNodeTree(
  * @param string  $session_list_folders_limited,
  * @param string  $session_read_only_folders,
  * @param string  $session_personal_visible_groups
+ * @param array   $ret_json                          Array
  *
  * @return array
  */
@@ -423,7 +423,6 @@ function recursiveTree(
     $last_visible_parent,
     $last_visible_parent_level,
     $SETTINGS,
-    &$ret_json = array(),
     $session_forbiden_pfs,
     $session_groupes_visibles,
     $session_list_restricted_folders_for_items,
@@ -433,7 +432,8 @@ function recursiveTree(
     $session_personal_folder,
     $session_list_folders_limited,
     $session_read_only_folders,
-    $session_personal_visible_groups
+    $session_personal_visible_groups,
+    &$ret_json = array()
 ) {
     $text = '';
     $title = '';
@@ -507,7 +507,6 @@ function recursiveTree(
                 $last_visible_parent,
                 $last_visible_parent_level,
                 $SETTINGS,
-                $ret_json,
                 $session_forbiden_pfs,
                 $session_groupes_visibles,
                 $session_list_restricted_folders_for_items,
@@ -521,7 +520,8 @@ function recursiveTree(
                 $text,
                 $nbChildrenItems,
                 $nodeDescendants,
-                $nodeDirectDescendants
+                $nodeDirectDescendants,
+                $ret_json
             );
         }
     }
@@ -538,7 +538,6 @@ function handleNode(
     $last_visible_parent,
     $last_visible_parent_level,
     $SETTINGS,
-    &$ret_json = array(),
     $session_forbiden_pfs,
     $session_groupes_visibles,
     $session_list_restricted_folders_for_items,
@@ -552,7 +551,8 @@ function handleNode(
     $text,
     $nbChildrenItems,
     $nodeDescendants,
-    $nodeDirectDescendants
+    $nodeDirectDescendants,
+    &$ret_json = array()
 )
 {
     // get info about current folder
@@ -717,7 +717,6 @@ function handleNode(
             $last_visible_parent,
             $last_visible_parent_level,
             $SETTINGS,
-            $ret_json,
             $session_forbiden_pfs,
             $session_groupes_visibles,
             $session_list_restricted_folders_for_items,
@@ -727,7 +726,8 @@ function handleNode(
             $session_personal_folder,
             $session_list_folders_limited,
             $session_read_only_folders,
-            $session_personal_visible_groups
+            $session_personal_visible_groups,
+            $ret_json
         );
     }
 }

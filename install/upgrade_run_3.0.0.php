@@ -366,6 +366,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'tree_counters'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'tree_counters'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tree_counters', '0')"
+    );
+}
+
 // Convert the roles_allowed_to_print value to an array
 $roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
     $db_link,

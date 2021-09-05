@@ -663,6 +663,7 @@ $SETTINGS = array (';
                             array('admin', 'roles_allowed_to_print_select', ''),
                             array('admin', 'clipboard_life_duration', '30'),
                             array('admin', 'mfa_for_roles', ''),
+                            array('admin', 'tree_counters', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

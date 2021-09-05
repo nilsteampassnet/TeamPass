@@ -119,7 +119,10 @@ console.log(store.get('teampassUser'))
                     'url': './sources/tree.php',
                     'dataType': 'json',
                     'data': function(node) {
-                        if (debugJavascript === true) console.log(node);
+                        if (debugJavascript === true) {
+                            console.info('Les répertoires sont chargés');
+                            console.log(node);
+                        }
                         return {
                             'id': node.id.split('_')[1],
                             'force_refresh': store.get('teampassApplication') !== undefined ?
