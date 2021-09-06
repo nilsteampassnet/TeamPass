@@ -2796,7 +2796,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
     $config = [
         // Mandatory Configuration Options
         'hosts' => [$SETTINGS['ldap_hosts']],
-        'base_dn' => $SETTINGS['ldap_bdn'],
+        'base_dn' => (isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
         'username' => $SETTINGS['ldap_username'],
         'password' => $SETTINGS['ldap_password'],
 
@@ -2835,8 +2835,12 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
     }
 
     // Authenticate user
+    $userLogin = $connection->query()
+        ->where($SETTINGS['ldap_user_attribute'], '=', $login)
+        ->firstOrFail();
+
     try {
-        $connection->auth()->attempt($SETTINGS['ldap_user_attribute'].'='.$login.','.$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
+        $connection->auth()->attempt($userLogin['distinguishedName'][0], $password, $stayAuthenticated = true);
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
         echo 'Error : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage();
