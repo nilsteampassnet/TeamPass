@@ -2285,7 +2285,7 @@ if (null !== $post_type) {
             $config = [
                 // Mandatory Configuration Options
                 'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
-                'base_dn'          => $SETTINGS['ldap_bdn'],
+                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
@@ -2364,24 +2364,23 @@ if (null !== $post_type) {
             $teampassRoles = array();
             $adUsedAttributes = array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire');
 
-
             $users = $connection->query()->where([
                 ['objectclass', '=', 'top'],
                 ['objectclass', '=', 'person'],
                 ['objectclass', '=', 'organizationalperson'],
-                ['objectclass', '=', 'inetorgperson'],
             ])->get();
             
             foreach($users as $i => $adUser) {
-                //print_r($user);
+                //print_r($adUser);
 
                 // Build the list of all groups in AD
                 foreach($adUser['memberof'] as $j => $adUserGroup) {
-                    if (empty($adUserGroup) === false) {
+                    if (empty($adUserGroup) === false && $j !== "count") {
                         $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
                         if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
                             array_push($adRoles, $adGroup);
                         }
+                        sort($adRoles);
                     }
                 }
 

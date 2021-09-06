@@ -106,7 +106,7 @@ switch ($post_type) {
         $config = [
             // Mandatory Configuration Options
             'hosts'            => [explode(",", $SETTINGS['ldap_hosts'])],
-            'base_dn'          => $SETTINGS['ldap_bdn'],
+            'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
             'username'         => $SETTINGS['ldap_username'],
             'password'         => $SETTINGS['ldap_password'],
         
@@ -180,13 +180,12 @@ switch ($post_type) {
         }
 
         // User try to auth
-        $connection->query()
+        $userLogin = $connection->query()
             ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
             ->firstOrFail();
 
         try {
-            $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
-
+            $connection->auth()->bind($userLogin[$SETTINGS['ldap_user_attribute']][0], $post_password);
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
             
