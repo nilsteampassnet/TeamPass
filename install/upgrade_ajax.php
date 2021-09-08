@@ -880,6 +880,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     )
                 );
             } else {
+                // Update config file
+                include_once $settingsFile;
+                handleConfigFile('rebuild', $SETTINGS);
+
                 array_push(
                     $returnStatus, 
                     array(

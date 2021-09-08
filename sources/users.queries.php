@@ -1219,7 +1219,7 @@ if (null !== $post_type) {
 
                 // get FOLDERS FORBIDDEN
                 $forbiddenFolders = array();
-                $userForbidFolders = explode(';', $rowUser['groupes_interdits']);
+                $userForbidFolders = explode(';', is_null($rowUser['groupes_interdits']) === true ? '' : $rowUser['groupes_interdits']);
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
@@ -1288,8 +1288,8 @@ if (null !== $post_type) {
 
                 $arrData['error'] = false;
                 $arrData['login'] = $rowUser['login'];
-                $arrData['name'] = htmlspecialchars_decode($rowUser['name'], ENT_QUOTES);
-                $arrData['lastname'] = htmlspecialchars_decode($rowUser['lastname'], ENT_QUOTES);
+                $arrData['name'] = empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? htmlspecialchars_decode($rowUser['name'], ENT_QUOTES) : '';
+                $arrData['lastname'] = empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? htmlspecialchars_decode($rowUser['lastname'], ENT_QUOTES) : '';
                 $arrData['email'] = $rowUser['email'];
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;

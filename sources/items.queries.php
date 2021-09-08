@@ -978,7 +978,7 @@ if (is_null($post_type) === false) {
 
                 // check that actual user can access this item
                 $restrictionActive = true;
-                $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+                $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
                 if (in_array($_SESSION['user_id'], $restrictedTo) === true) {
                     $restrictionActive = false;
                 }
@@ -2284,7 +2284,7 @@ if (is_null($post_type) === false) {
             }
 
             // Get all USERS infos
-            $listRest = array_filter(explode(';', $dataItem['restricted_to']));
+            $listRest = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
             $_SESSION['listNotificationEmails'] = '';
             $listeRestriction = array();
 
@@ -2346,7 +2346,7 @@ if (is_null($post_type) === false) {
             // TODO -> improve this check
             // check that actual user can access this item
             $restrictionActive = true;
-            $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+            $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
             if (
                 in_array($_SESSION['user_id'], $restrictedTo) === true
                 || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
@@ -2805,7 +2805,7 @@ if (is_null($post_type) === false) {
 
             // check that actual user can access this item
             $restrictionActive = true;
-            $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+            $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
             if (
                 in_array($_SESSION['user_id'], $restrictedTo)
                 || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
@@ -5407,7 +5407,7 @@ if (is_null($post_type) === false) {
             );
             // check that actual user can access this item
             $restrictionActive = true;
-            $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+            $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
             if (in_array($_SESSION['user_id'], $restrictedTo)) {
                 $restrictionActive = false;
             }

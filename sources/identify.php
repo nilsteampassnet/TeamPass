@@ -478,8 +478,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
         // Save account in SESSION
         $superGlobal->put('login', stripslashes($username), 'SESSION');
-        $superGlobal->put('name', stripslashes($userInfo['name']), 'SESSION');
-        $superGlobal->put('lastname', stripslashes($userInfo['lastname']), 'SESSION');
+        $superGlobal->put('name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '', 'SESSION');
+        $superGlobal->put('lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '', 'SESSION');
         $superGlobal->put('user_id', (int) $userInfo['id'], 'SESSION');
         $superGlobal->put('user_pwd', $passwordClear, 'SESSION');
         $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
@@ -582,7 +582,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // User's roles
         if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
             // Convert , to ;
-            $userInfo['fonction_id'] = str_replace(',', ';', $userInfo['fonction_id']);
+            $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
             DB::update(
                 prefixTable('users'),
                 [
@@ -1554,8 +1554,8 @@ function identifyDoInitialChecks(
     
     // user should use MFA?
     $userInfo['mfa_auth_requested'] = mfa_auth_requested(
-        $userInfo['fonction_id'],
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : $SETTINGS['mfa_for_roles']
+        (string) $userInfo['fonction_id'],
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
 
     // Manage Maintenance mode

@@ -1200,7 +1200,7 @@ function isUserPasswordCorrect(
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
-            'SELECT public_key, private_key, pw
+            'SELECT public_key, private_key, pw, auth_type
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_user_id
@@ -1226,7 +1226,7 @@ function isUserPasswordCorrect(
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
-                $_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
+                //$_SESSION['user']['public_key'] = decryptPrivateKey($post_user_password, $userInfo['public_key']);
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
 
                 if (empty(base64_decode($itemKey)) === false) {

@@ -843,7 +843,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 var htmlUsersList = '<i class="fas fa-info-circle mr-2"></i>You could provide those unique codes to users by your own.<br>'+
                     '<ul>';
                 $.each(usersList, function(index, user) {
-                    htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otc+'</li>'
+                    htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otp+'</li>'
                 });
                 htmlUsersList += '</ul>';
 

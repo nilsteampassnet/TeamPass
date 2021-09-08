@@ -82,7 +82,7 @@ if (isset($SETTINGS['cpassman_version']) === true && version_compare(TP_VERSION,
     } else {
         header('Location: install/upgrade.php');
     }
-    // Now either way, we should stop processing further
+    // No other way, we should stop processing further
     exit;
 }
 
