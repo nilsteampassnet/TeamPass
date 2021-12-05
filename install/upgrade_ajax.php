@@ -22,6 +22,9 @@ session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['CPM'] = 1;
+define('MIN_PHP_VERSION', 7.4);
+define('MIN_MYSQL_VERSION', '8.0.13');
+define('MIN_MARIADB_VERSION', '10.2.1');
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
@@ -493,16 +496,25 @@ if (isset($post_type)) {
                     'execution time\" is set to ' . ini_get('max_execution_time') . ' seconds' .
                     '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
             }
-            if (version_compare(phpversion(), '7.2.0', '<')) {
-                $okVersion = false;
+            if (version_compare(phpversion(), MIN_PHP_VERSION, '<')) {
                 $txt .= '<span>PHP version ' .
-                    phpversion() . ' is not OK (minimum is 7.2.0) &nbsp;&nbsp;' .
+                    phpversion() . ' is not OK (minimum is '.MIN_PHP_VERSION.') &nbsp;&nbsp;' .
                     '<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span>PHP version ' .
                     phpversion() . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
                     '</span><br />';
             }
+            if (version_compare($db_link -> server_info, MIN_MYSQL_VERSION, '<') || version_compare($db_link -> server_info, MIN_MARIADB_VERSION, '<')) {
+                $txt .= '<span>PHP version ' .
+                    $db_link -> server_info . ' is not OK (minimum is '.MIN_MYSQL_VERSION.') &nbsp;&nbsp;' .
+                    '<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span>PHP version ' .
+                    $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                    '</span><br />';
+            }
+            
 
             // check if 2.1.27 already installed
             if (defined(SECUREPATH) === true) {
