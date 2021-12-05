@@ -594,6 +594,14 @@ $(function(){
                 abspath : $("#root_path").val(),
                 fullurl : $("#root_url").val()
             }
+        } else if (currentStep === 'step3') {
+            postData = {
+                type : currentStep,
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val(),
+                prefix_before_convert : $('#prefix_before_convert').prop("checked")
+            }
+
         } else if (currentStep === "step4") {
             console.log('Step4 qui commence');
             upgrade_file = "";
@@ -628,10 +636,13 @@ $(function(){
                 if (data.error !== "") {
                     $("#user_granted").val("0");
                     $('#but_next').attr('disabled');
+
+                    if (data.info !== "") {
+                        $('#res'+currentStep).html(data.info).removeClass("hidden");
+                    }
                     alertify
                         .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error+'</i>', 5)
                         .dismissOthers();
-                    return false;
                 } else {
                     $("#step").val(data.index);
                     $("#user_granted").val("1");

@@ -531,14 +531,16 @@ if (isset($post_type)) {
 
             if ($okWritable === true && $okExtensions === true && $okEncryptKey === true) {
                 $error = "";
+                $nextStep = 2;
             } else {
                 $error = "Something went wrong. Please check messages.";
+                $nextStep = 1;
             }
 
             echo '[{'.
                 '"error" : "' . $error . '",'.
                 '"info" : "' . $txt . '",'.
-                '"index" : "'.($error === "" ? "" : "2").'"'.
+                '"index" : "'.($error === "" ? "" : $nextStep).'"'.
             '}]';
             break;
 
