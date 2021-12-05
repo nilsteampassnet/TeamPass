@@ -179,7 +179,6 @@ switch ($post_type) {
             break;
         }
 
-        // User try to auth
         $connection->query()
             ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
             ->firstOrFail();
@@ -204,6 +203,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'message' => "User is successfully authenticated",
+                'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
             ),
             'encode'
         );

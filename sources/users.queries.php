@@ -2373,11 +2373,10 @@ if (null !== $post_type) {
             ])->get();
             
             foreach($users as $i => $adUser) {
-                //print_r($user);
 
                 // Build the list of all groups in AD
                 foreach($adUser['memberof'] as $j => $adUserGroup) {
-                    if (empty($adUserGroup) === false) {
+                    if (empty($adUserGroup) === false && $j !== "count") {
                         $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
                         if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
                             array_push($adRoles, $adGroup);

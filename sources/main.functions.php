@@ -131,15 +131,19 @@ function cryption(string $message, string $ascii_key, string $type, array $SETTI
         $path = $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    // Check if class already exists
+    if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Crypto.php';
+		include_once $path . 'Encoding.php';
+		include_once $path . 'DerivedKeys.php';
+		include_once $path . 'Key.php';
+		include_once $path . 'KeyOrPassword.php';
+		include_once $path . 'File.php';
+		include_once $path . 'RuntimeTests.php';
+		include_once $path . 'KeyProtectedByPassword.php';
+		include_once $path . 'Core.php';
+	}
+    
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
     try {

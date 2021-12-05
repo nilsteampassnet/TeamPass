@@ -23,6 +23,7 @@ session_start();
 error_reporting(E_ERROR | E_PARSE);
 header('Content-type: text/html; charset=utf-8');
 $session_db_encoding = 'utf8';
+define('MIN_PHP_VERSION', 7.4);
 
 /**
       Chmods files and folders with different permissions.
@@ -234,10 +235,10 @@ if (null !== $post_type) {
             }
 
             if (isset($data['activity']) && $data['activity'] === 'version') {
-                if (version_compare(phpversion(), '7.2.0', '>=')) {
+                if (version_compare(phpversion(), MIN_PHP_VERSION, '>=')) {
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : "PHP version ' . phpversion() . ' is not OK (minimum is 7.2.0)", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                    echo '[{"error" : "PHP version ' . phpversion() . ' is not OK (minimum is '.MIN_PHP_VERSION.')", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }

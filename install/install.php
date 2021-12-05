@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 
+define('MIN_PHP_VERSION', 7.4);
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -207,7 +208,7 @@
 					<li>PHP extension "xml" is loaded&nbsp;<span id="res2_check11"></span></li>
 					<li>PHP extension "gd" is loaded&nbsp;<span id="res2_check12"></span></li>
 					<li>PHP extension "curl" is loaded&nbsp;<span id="res2_check13"></span></li>
-					<li>PHP version is greater or equal to 7.2.0&nbsp;<span id="res2_check14"></span></li>
+					<li>PHP version is greater or equal to '.MIN_PHP_VERSION.'&nbsp;<span id="res2_check14"></span></li>
 					<li>Execution time limit&nbsp;<span id="res2_check15"></span></li>
 					</ul>
 					
