@@ -296,7 +296,7 @@ if (
             {
                 if (step === 'psk') {
                     // Inform user
-                    $("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
+                    $("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
                         '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
                     var data = {'userPsk' : $('#user-current-defuse-psk').val()};
@@ -305,7 +305,7 @@ if (
                         "sources/main.queries.php", {
                             type: "user_psk_reencryption",
                             'start': start,
-                            'length': 200,
+                            'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                             userId: userId,
                             data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key: '<?php echo $_SESSION['key']; ?>'
@@ -733,6 +733,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    console.log(data)
                     store.set(
                         'teampassUser', {
                             admin_user_password: data.user_pwd,
@@ -877,7 +878,7 @@ if (
         // Start by testing if the temporary code is correct to decrypt an item
         data = {
             'user_id': store.get('teampassUser').user_id,
-            'password': $('#dialog-user-temporary-code-current-password').val(),
+            'password': $('#dialog-user-temporary-code-value').val(),
         }
         console.log(data);
         $.post(
@@ -1448,11 +1449,15 @@ if (
             '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
+        var data = {
+            'user_id': userId,
+            'self_change': erase_existing_keys,
+        }
+        console.log(data)
         $.post(
             "sources/main.queries.php", {
                 type: "user_sharekeys_reencryption_start",
-                userId: userId,
-                self_change: erase_existing_keys,
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -1513,21 +1518,25 @@ if (
         if (step !== 'finished') {
             // Inform user
             $("#"+divIdDialog+'-progress').html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
-                stepText + '</b> [' + start + ' - ' + (parseInt(start) + 200) + '] ' +
+                stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
                 '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
+            var data = {
+                'action': step,
+                'start': start,
+                'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
+                'user_id': userId,
+            }
             // Do query
             $.post(
                 "sources/main.queries.php", {
                     type: "user_sharekeys_reencryption_next",
-                    'action': step,
-                    'start': start,
-                    'length': 200,
-                    userId: userId,
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    console.log(data);
                     
                     if (data.error === true) {
                         // error

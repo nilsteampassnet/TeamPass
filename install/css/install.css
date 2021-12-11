@@ -21,6 +21,7 @@ body{
 .lcol {
 	vertical-align:middle;
 	display:inline-block;
+	margin-bottom: 15px;
 }
 
 .header-title{

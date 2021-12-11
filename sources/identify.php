@@ -180,6 +180,22 @@ if ($post_type === 'identify_duo_user') {
     // NORMAL IDENTICATION STEP
     //--------
 
+    // Ensure Complexity levels are translated
+    if (defined('TP_PW_COMPLEXITY') === false) {
+        define(
+            'TP_PW_COMPLEXITY',
+            array(
+                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            )
+        );
+    }
+
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -196,6 +212,7 @@ if ($post_type === 'identify_duo_user') {
     // manage brute force
     if ($sessionPwdAttempts <= 3) {
         $sessionPwdAttempts = 0;
+
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -223,22 +240,6 @@ if ($post_type === 'identify_duo_user') {
             'encode'
         );
         return false;
-    }
-
-    // Ensure Complexity levels are translated
-    if (defined('TP_PW_COMPLEXITY') === false) {
-        define(
-            'TP_PW_COMPLEXITY',
-            array(
-                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
-            )
-        );
     }
     // ---
     // ---
@@ -673,11 +674,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $userInfo['id']
         );
         // Debug
-        debugIdentify(
+        /*debugIdentify(
             DEBUGDUO,
             DEBUGDUOFILE,
             "Preparing to identify the user rights\n"
         );
+        */
         // Get user's rights
         if ($user_initial_creation_through_ldap === false) {
             identifyUserRights(
@@ -903,12 +905,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // Debug
+    /*
     debugIdentify(
         DEBUGDUO,
         DEBUGDUOFILE,
         "\n\n----\n" .
             'Identified : ' . filter_var($return, FILTER_SANITIZE_STRING) . "\n\n"
     );
+    */
     echo prepareExchangedData(
         [
             'value' => $return,

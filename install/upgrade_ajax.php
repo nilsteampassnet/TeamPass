@@ -505,14 +505,29 @@ if (isset($post_type)) {
                     phpversion() . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
                     '</span><br />';
             }
-            if (version_compare($db_link -> server_info, MIN_MYSQL_VERSION, '<') || version_compare($db_link -> server_info, MIN_MARIADB_VERSION, '<')) {
-                $txt .= '<span>PHP version ' .
-                    $db_link -> server_info . ' is not OK (minimum is '.MIN_MYSQL_VERSION.') &nbsp;&nbsp;' .
-                    '<img src=\"images/minus-circle.png\"></span><br />';
+            $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
+            $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
+            if ($mysqlVersion && $mariadbVersion) {
+                if ($mariadbVersion === '') {
+                    $txt .= '<span>MySQL version ' .
+                        $db_link -> server_version . ' is not OK (minimum is '.MIN_MYSQL_VERSION.') &nbsp;&nbsp;' .
+                        '<img src=\"images/minus-circle.png\"></span><br />';
+                } else {
+                    $txt .= '<span>MySQL version ' .
+                        $db_link -> server_version . ' is not OK (minimum is '.MIN_MARIADB_VERSION.') &nbsp;&nbsp;' .
+                        '<img src=\"images/minus-circle.png\"></span><br />';
+                }
             } else {
-                $txt .= '<span>PHP version ' .
-                    $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
-                    '</span><br />';
+                if ($mariadbVersion === '') {
+                    $txt .= '<span>MySQL version ' .
+                        $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                        '</span><br />';
+                } else {
+                    $txt .= '<span>MySQL version ' .
+                        $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                        '</span><br />';
+                }
+                
             }
             
 

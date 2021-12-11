@@ -228,6 +228,12 @@ if (null !== $post_step) {
             // Get POST with user info
             $userInfo = json_decode($post_user_info, true);
 
+            if ($userInfo['public_key'] === null) {
+                echo '[{"finish":"1" , "next":"step3", "error":"Public key is null; provided key is '.$post_user_info.'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                exit();
+                break;
+            }
+
             // Get POST with admin info
             $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
             $adminId = $post_admin_info[2];
@@ -241,6 +247,11 @@ if (null !== $post_step) {
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
+            if ($adminPrivateKey === null) {
+                echo '[{"finish":"1" , "next":"step3", "error":"Admin PWD is null; provided key is '.$post_admin_info[1].'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                exit();
+                break;
+            }
 
             // Count Items
             $db_count = mysqli_fetch_row(
@@ -275,18 +286,33 @@ if (null !== $post_step) {
                         )
                     );
 
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    if ($adminItem !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+                        // Encrypt Item key
+                        if ($userInfo['public_key'] === null) {
+                            $dataTmp = mysqli_fetch_array(
+                                mysqli_query(
+                                    $db_link,
+                                    'SELECT public_key
+                                    FROM ' . $pre . 'users
+                                    WHERE id = ' . (int) $userInfo['id']
+                                )
+                            );
+                            $userInfo['public_key'] = $dataTmp['public_key'];
+                        }
 
-                    // Save the key in DB
-                    mysqli_query(
-                        $db_link,
-                        'INSERT INTO `' . $pre . 'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                    );
+                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
+
+
+                        // Save the key in DB
+                        mysqli_query(
+                            $db_link,
+                            'INSERT INTO `' . $pre . 'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                        );
+                    }
                 }
 
                 echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
@@ -357,18 +383,20 @@ if (null !== $post_step) {
                         )
                     );
 
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    if ($adminItem !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+                        // Encrypt Item key
+                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
-                    // Save the key in DB
-                    mysqli_query(
-                        $db_link,
-                        'INSERT INTO `' . $pre . 'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                    );
+                        // Save the key in DB
+                        mysqli_query(
+                            $db_link,
+                            'INSERT INTO `' . $pre . 'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                        );
+                    }
                 }
 
                 echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
@@ -436,18 +464,20 @@ if (null !== $post_step) {
                         )
                     );
 
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    if ($adminItem !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+                        // Encrypt Item key
+                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
-                    // Save the key in DB
-                    mysqli_query(
-                        $db_link,
-                        'INSERT INTO `' . $pre . 'sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                    );
+                        // Save the key in DB
+                        mysqli_query(
+                            $db_link,
+                            'INSERT INTO `' . $pre . 'sharekeys_fields`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                        );
+                    }
                 }
 
                 echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
@@ -516,24 +546,26 @@ if (null !== $post_step) {
                         )
                     );
 
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    if ($adminItem !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Decrypt password
-                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
+                        // Decrypt password
+                        //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
-                    // Encrypt with Password
-                    //$cryptedStuff = doDataEncryption($itemPwd);
+                        // Encrypt with Password
+                        //$cryptedStuff = doDataEncryption($itemPwd);
 
-                    // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+                        // Encrypt Item key
+                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
-                    // Save the key in DB
-                    mysqli_query(
-                        $db_link,
-                        'INSERT INTO `' . $pre . 'sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                    );
+                        // Save the key in DB
+                        mysqli_query(
+                            $db_link,
+                            'INSERT INTO `' . $pre . 'sharekeys_suggestions`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                        );
+                    }
                 }
 
                 echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
@@ -601,24 +633,26 @@ if (null !== $post_step) {
                         )
                     );
 
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    if ($adminItem !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                    // Decrypt password
-                    //$itemPwd = doDataDecryption($item['pw'], $itemKey);
+                        // Decrypt password
+                        //$itemPwd = doDataDecryption($item['pw'], $itemKey);
 
-                    // Encrypt with Password
-                    //$cryptedStuff = doDataEncryption($itemPwd);
+                        // Encrypt with Password
+                        //$cryptedStuff = doDataEncryption($itemPwd);
 
-                    // Encrypt Item key
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+                        // Encrypt Item key
+                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
-                    // Save the key in DB
-                    mysqli_query(
-                        $db_link,
-                        'INSERT INTO `' . $pre . 'sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                        VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                    );
+                        // Save the key in DB
+                        mysqli_query(
+                            $db_link,
+                            'INSERT INTO `' . $pre . 'sharekeys_files`(`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                        );
+                    }
                 }
 
                 echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';

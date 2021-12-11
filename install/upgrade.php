@@ -909,8 +909,8 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 'public_key' : usersList[number].public_key,
                 'private_key' : usersList[number].private_key,
                 'login' : usersList[number].login,
-                'name' : usersList[number].name,
-                'lastname' : usersList[number].lastname,
+                'name' : encode_utf8(usersList[number].name),
+                'lastname' : encode_utf8(usersList[number].lastname),
             };
         }
     }
@@ -1138,6 +1138,11 @@ function getTime()
 {
     var d = new Date();
     return ("0" +d.getHours()).slice(-2)+":"+("0" + d.getMinutes()).slice(-2)+":"+("0" + d.getSeconds()).slice(-2)
+}
+
+function encode_utf8( s )
+{
+  return unescape( encodeURIComponent( s ) );
 }
 
 </script>

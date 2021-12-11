@@ -759,6 +759,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             },
             function(check_data) {
                 if (parseInt(check_data) === 1) {
+                    console.info('Session existance check:')
                     console.log(data);
                     //send query
                     $.post(

@@ -1365,7 +1365,7 @@ function initializeUserPassword(
 
             // If LDAP enabled, then
             // check that this password is correct
-            $continue = false;
+            $continue = true;
             if ($userData['auth_type'] === 'ldap' && (int) $SETTINGS['ldap_mode'] === 1) {
                 $continue = ldapCheckUserPassword(
                     $userData['login'],
@@ -1754,6 +1754,7 @@ function continueReEncryptingUserSharekeys(
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
+            'extra' => 'On est ici '.$post_user_id,
         ),
         'encode'
     );
@@ -1767,7 +1768,7 @@ function continueReEncryptingUserSharekeysStep1(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): string
+): array 
 {
     // Loop on items
     $rows = DB::query(

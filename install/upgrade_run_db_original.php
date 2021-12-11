@@ -258,7 +258,7 @@ $val = array(
     array('admin', 'enable_email_notification_on_item_shown', '0', 0),
     array('admin', 'enable_email_notification_on_user_pw_change', '0', 0),
     array('admin', 'enable_sts', '0', 0),
-    array('admin', 'encryptClientServer', '1', 0),
+    array('admin', 'encryptClientServer', '1', 1),
     array('admin', 'use_md5_password_as_salt', '0', 0),
     array('admin', 'api', '0', 0),
     array('admin', 'subfolder_rights_as_parent', '0', 0),
