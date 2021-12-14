@@ -649,7 +649,7 @@ function identUser(
             //}
         }
     }
-
+    
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
@@ -682,7 +682,6 @@ function identUser(
     if (count($noAccessFolders) > 0) {
         $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
     }
-
     // Return data
     $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
     $superGlobal->put('groupes_visibles', array_merge($allowedFolders, $personalFolders), 'SESSION');
@@ -1401,14 +1400,6 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        if (isset($SETTINGS['encryptClientServer'])
-            && (int) $SETTINGS['encryptClientServer'] === 0
-        ) {
-            return json_encode(
-                $data,
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-            );
-        }
         return Encryption\Crypt\aesctr::encrypt(
             json_encode(
                 $data,
@@ -1419,15 +1410,6 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         );
     }
     if ($type === 'decode' && is_array($data) === false) {
-        if (isset($SETTINGS['encryptClientServer'])
-            && (int) $SETTINGS['encryptClientServer'] === 0
-        ) {
-            return json_decode(
-                /** @scrutinizer ignore-type */
-                (string) $data,
-                true
-            );
-        }
         return json_decode(
             Encryption\Crypt\aesctr::decrypt(
                 /** @scrutinizer ignore-type */

@@ -573,7 +573,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if (empty($userInfo['groupes_interdits']) === false) {
             $superGlobal->put(
                 'no_access_folders',
-                explode(';', $userInfo['groupes_visibles']),
+                explode(';', $userInfo['groupes_interdits']),
                 'SESSION'
             );
         } else {
@@ -681,15 +681,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         */
         // Get user's rights
-        if ($user_initial_creation_through_ldap === false) {
-            identifyUserRights(
-                $userInfo['groupes_visibles'],
-                $superGlobal->get('no_access_folders', 'SESSION'),
-                $userInfo['admin'],
-                $userInfo['fonction_id'],
-                $SETTINGS
-            );
-        } else {
+        if ($user_initial_creation_through_ldap !== false) {
             // is new LDAP user. Show only his personal folder
             if ($SETTINGS['enable_pf_feature'] === '1') {
                 $superGlobal->put('personal_visible_groups', [$userInfo['id']], 'SESSION');
@@ -706,6 +698,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $superGlobal->put('list_restricted_folders_for_items', [], 'SESSION');
             $superGlobal->put('nb_folders', 1, 'SESSION');
             $superGlobal->put('nb_roles', 0, 'SESSION');
+        } else {
+            identifyUserRights(
+                $userInfo['groupes_visibles'],
+                $superGlobal->get('no_access_folders', 'SESSION'),
+                $userInfo['admin'],
+                $userInfo['fonction_id'],
+                $SETTINGS
+            );
         }
         // Get some more elements
         $superGlobal->put('screenHeight', $dataReceived['screenHeight'], 'SESSION');

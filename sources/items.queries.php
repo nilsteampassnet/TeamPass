@@ -3375,6 +3375,17 @@ if (is_null($post_type) === false) {
                 'decode'
             );
 
+            if (array_key_exists('id', $dataReceived) === false) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_unknown'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Prepare POST variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_restricted = filter_var($dataReceived['restricted'], FILTER_SANITIZE_NUMBER_INT);
@@ -6022,7 +6033,7 @@ if (is_null($post_type) === false) {
                 if (empty($record['raison']) === true) {
                     $reason[0] = '';
                 } else {
-                    $reason = explode(' : ', $record['raison']);
+                    $reason = array_map('trim', explode(':', $record['raison']));
                 }
                 
                 // imported via API
@@ -6114,7 +6125,7 @@ if (is_null($post_type) === false) {
                 'error' => '',
                 'history' => $history,
             );
-
+            
             // send data
             echo (string) prepareExchangedData($data, 'encode');
 

@@ -178,25 +178,25 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('label'); ?></span>
                                     </div>
-                                    <input id="form-item-label" type="text" class="form-control form-item-control track-change" data-change-ongoing="" data-field-name="label">
+                                    <input id="form-item-label" type="text" class="form-control form-item-control" data-change-ongoing="" data-field-name="label">
                                 </div>
                                 <!-- DESCRIPTION -->
                                 <div class="mb-3">
-                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html track-change" data-field-name="description" data-change-ongoing=""></div>
+                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html" data-field-name="description" data-change-ongoing=""></div>
                                 </div>
                                 <!-- LOGIN -->
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('login'); ?></span>
                                     </div>
-                                    <input id="form-item-login" type="text" class="form-control form-item-control track-change" data-field-name="login" data-change-ongoing="">
+                                    <input id="form-item-login" type="text" class="form-control form-item-control" data-field-name="login" data-change-ongoing="">
                                 </div>
                                 <!-- PASSWORD -->
                                 <div class="input-group mb-2">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('password'); ?></span>
                                     </div>
-                                    <input id="form-item-password" type="password" class="form-control form-item-control track-change" placeholder="<?php echo langHdl('password'); ?>" data-field-name="pwd" data-change-ongoing="">
+                                    <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo langHdl('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
                                         <button class="btn btn-outline-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo langHdl('pw_generate'); ?>" data-id="form-item-password"><i class="fas fa-random"></i></button>
                                         <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo langHdl('options'); ?>"><i class="fas fa-sliders-h"></i></button>
@@ -246,14 +246,14 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('email'); ?></span>
                                     </div>
-                                    <input id="form-item-email" type="email" class="form-control form-item-control track-change" data-field-name="email" data-change-ongoing="">
+                                    <input id="form-item-email" type="email" class="form-control form-item-control" data-field-name="email" data-change-ongoing="">
                                 </div>
                                 <!-- URL -->
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('url'); ?></span>
                                     </div>
-                                    <input id="form-item-url" type="url" class="form-control form-item-control track-change" data-field-name="url" data-change-ongoing="">
+                                    <input id="form-item-url" type="url" class="form-control form-item-control" data-field-name="url" data-change-ongoing="">
                                 </div>
                             </div>
 
@@ -261,13 +261,13 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                 <!-- FOLDERS -->
                                 <div class="form-group mb-3">
                                     <label><?php echo langHdl('folder'); ?></label>
-                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root track-change" style="width:100%;" data-change-ongoing=""></select>
+                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root" style="width:100%;" data-change-ongoing=""></select>
                                 </div>
 
                                 <!-- RESTRICTED TO -->
                                 <div class="input-group mb-3">
                                     <label><?php echo langHdl('restricted_to'); ?></label>
-                                    <select id="form-item-restrictedto" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
+                                    <select id="form-item-restrictedto" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
                                     <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
                                     <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
                                 </div>
@@ -276,7 +276,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('tags'); ?></span>
                                     </div>
-                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete track-change" data-change-ongoing="">
+                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete" data-change-ongoing="">
                                 </div>
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
@@ -286,7 +286,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                 ) {
                                     ?>
                                     <div class="form-check mb-3 icheck-blue">
-                                        <input type="checkbox" class="form-check-input form-item-control track-change flat-blue" id="form-item-anyoneCanModify" <?php
+                                        <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-anyoneCanModify" <?php
                                                                                                                                                                     echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
                                                                                                                                                                         && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                         <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
@@ -315,7 +315,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                                     <?php echo langHdl('item_deleted_after_being_viewed_x_times'); ?>
                                                 </div>
                                                 <div class="d-inline p-2">
-                                                    <input type="text" class="form-control form-item-control track-change" id="form-item-deleteAfterShown" data-change-ongoing="">
+                                                    <input type="text" class="form-control form-item-control" id="form-item-deleteAfterShown" data-change-ongoing="">
                                                 </div>
                                             </div>
                                             <div class="row">
@@ -329,7 +329,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                                                 <i class="fas fa-calendar"></i>
                                                             </span>
                                                         </div>
-                                                        <input type="text" class="form-control float-right form-item-control track-change" id="form-item-deleteAfterDate" data-change-ongoing="">
+                                                        <input type="text" class="form-control float-right form-item-control" id="form-item-deleteAfterDate" data-change-ongoing="">
                                                     </div>
                                                 </div>
                                             </div>
@@ -348,7 +348,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                     </div>
                                     <!-- /.card-header -->
                                     <div class="card-body">
-                                        <select id="form-item-anounce" class="form-control form-item-control select2 track-change" style="width:100%;" multiple="multiple" data-placeholder="<?php echo langHdl('select_users_if_needed'); ?>" data-change-ongoing=""></select>
+                                        <select id="form-item-anounce" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-placeholder="<?php echo langHdl('select_users_if_needed'); ?>" data-change-ongoing=""></select>
                                     </div>
                                 </div>
                             </div>
@@ -414,7 +414,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                                             $field['is_mandatory'] === '1' ?
                                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
                                                             '</label>
-                                                        <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0"></textarea>
+                                                        <textarea class="form-control form-item-control form-item-field-custom" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0"></textarea>
                                                     </div>';
                                                     } else {
                                                         echo '
@@ -425,7 +425,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
                                                             '</span>
                                                         </div>
-                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom track-change" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0">
+                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0">
                                                     </div>';
                                                     }
                                                 }

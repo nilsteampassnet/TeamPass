@@ -293,7 +293,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             }
         }
-        console.log(data);
+        //console.log(data);
 
         // Launch action
         $.post(
@@ -304,7 +304,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                //console.log(data);
 
                 if (data.error !== false) {
                     $('#warningModal').modal('hide');
@@ -456,9 +456,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         }
 
         if (step !== 'finished') {
+            if (store.get('teampassUser').related_items_number !== null) {
+                $nbItemsToConvert = " / " + store.get('teampassUser').related_items_number;
+            } else {
+                $nbItemsToConvert = '';
+            }
             // Inform user
             $("#warningModalBody").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
-                stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra"></span> ' +
+                stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
                 '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
             var data = {
@@ -467,6 +472,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 length: <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                 user_id: userId,
             }
+            //console.info("Envoi des données :")
+            //console.log(data);
 
             // Do query
             $.post(
@@ -477,7 +484,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    console.log(data);
+                    //console.info("Réception des données :")
+                    //console.log(data);
                     
                     if (data.error === true) {
                         // error
@@ -515,9 +523,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 '<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?>',
                 '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
                 '<div class="row">'+
+                    (store.get('teampassApplication').formUserAction === "add_new_user" ?
                     '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo langHdl('show_user_password'); ?></button></div>'+
                     '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><div><?php echo langHdl('user_password'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_password+'"></div>'+
-                    '<div><?php echo langHdl('user_temporary_encryption_code'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'+
+                    '<div><?php echo langHdl('user_temporary_encryption_code'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
+                    :
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo langHdl('show_user_temporary_encryption_code'); ?></button></div>'+
+                    '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
+                    )+
                 '</div>',
                 '<?php echo langHdl('send_by_email'); ?>',
                 '<?php echo langHdl('close'); ?>',
@@ -784,6 +797,28 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 toastr.remove();
                 toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
+                // Get number of items to treat
+                data_tmp = {
+                    'user_id': <?php echo $_SESSION['user_id']; ?>,
+                }
+                $.post(
+                    'sources/main.queries.php', {
+                        type: 'get_number_of_items_to_treat',
+                        data: prepareExchangedData(JSON.stringify(data_tmp), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key: "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data_tmp) {
+                        data_tmp = prepareExchangedData(data_tmp, 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                        store.update(
+                            'teampassUser',
+                            function(teampassUser) {
+                                teampassUser.related_items_number = data_tmp.nbItems;
+                            }
+                        );
+                    }
+                );
+
                 //prepare data
                 var data = {
                     'user_id': store.get('teampassApplication').formUserId,
@@ -852,11 +887,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 false
                             );
 
-                            
-                            store.set(
-                                'teampassUser', {
-                                    admin_new_user_password: data.user_pwd,
-                                    admin_new_user_login: $('#form-login').val(),
+                            store.update(
+                                'teampassUser',
+                                function(teampassUser) {
+                                    teampassUser.admin_new_user_password = data_tmp.user_pwd,
+                                    teampassUser.admin_new_user_login = $('#form-login').val();
                                 }
                             );
 
@@ -881,7 +916,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                                        console.log(data);
+                                        //console.log(data);
 
                                         store.update(
                                             'teampassUser',

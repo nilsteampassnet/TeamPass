@@ -500,7 +500,51 @@ function mainQuery(array $SETTINGS)
             echo $return;
 
             break;
+
+
+        /*
+        * How many items for this user
+        */
+        case 'get_number_of_items_to_treat':
+            echo getNumberOfItemsToTreat(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                $SETTINGS
+            );
+
+            break;
     }
+}
+
+
+/**
+ * Provides the number of items
+ *
+ * @param int   $userId     User ID
+ * @param array $SETTINGS   TeampassSettings
+ *
+ * @return int
+ */
+function getNumberOfItemsToTreat(
+    int $userId,
+    array $SETTINGS
+): string
+{
+    // get number of items
+    DB::queryFirstRow(
+        'SELECT increment_id
+        FROM ' . prefixTable('sharekeys_items') .
+        ' WHERE user_id = %i',
+        $userId
+    );
+
+    // Send back
+    return prepareExchangedData(
+        array(
+            'error' => false,
+            'nbItems' => DB::count(),
+        ),
+        'encode'
+    );
 }
 
 

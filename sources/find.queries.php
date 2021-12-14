@@ -109,7 +109,6 @@ if (empty($row['id']) === false) {
     $rows = DB::query(
         'SELECT id FROM ' . prefixTable('nested_tree') . '
         WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
-        '1',
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
     );
@@ -235,6 +234,7 @@ $rows = DB::query(
     ${sLimit}",
     $crit
 );
+
 /*
  * Output
  */

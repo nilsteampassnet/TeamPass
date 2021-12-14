@@ -18,6 +18,7 @@
  */
 
 return array(
+    'show_user_temporary_encryption_code' => 'Show user encryption code',
     'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
     'user_password' => 'User password',
     'user_temporary_encryption_code' => 'User encryption code',

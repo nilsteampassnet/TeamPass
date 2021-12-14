@@ -230,8 +230,8 @@ console.log(store.get('teampassUser'))
         $.when(
             Details(itemIdToShow, 'show', true)
         ).then(function() {
-            requestRunning = false;
-
+            //requestRunning = false;
+            console.log('Item detail affiché')
             // Force previous view to Tree folders
             store.update(
                 'teampassUser',
@@ -936,12 +936,14 @@ console.log(store.get('teampassUser'))
         .on('change', function() {
             if (requestRunning === false) {
                 userDidAChange = true;
+                if (debugJavascript === true) console.log('User did a change on #form-item > ' + userDidAChange + " - Element" + $(this).attr('id'));
                 $(this).data('change-ongoing', true);
             }
         })
         .on('ifToggled', function() {
             if (requestRunning === false) {
                 userDidAChange = true;
+                if (debugJavascript === true) console.log('User did a change on ifToggled > ' + userDidAChange);
                 $(this).data('change-ongoing', true);
             }
         });
@@ -1936,7 +1938,7 @@ console.log(store.get('teampassUser'))
                 $('.clear-me-html, .card-item-field-value').html('');
                 $('.form-check-input').attr('checked', '');
                 //$('.card-item-extra').collapse();
-               $('.collapse').removeClass('show');
+                $('.collapse').removeClass('show');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo langHdl('none'); ?>');
@@ -2025,12 +2027,13 @@ console.log(store.get('teampassUser'))
         .on('change', '.form-check-input-template', function() {
             $('.form-check-input-template').not(this).prop('checked', false);
             userDidAChange = true;
-            if (debugJavascript === true) console.log('> ' + userDidAChange);
+            if (debugJavascript === true) console.log('User did a change on .form-check-input-template > ' + userDidAChange);
         });
 
     $('.form-check-input-template').on('ifChecked', function() {
         $('.form-check-input-template').not(this).iCheck('uncheck');
         userDidAChange = true;
+        if (debugJavascript === true) console.log('User did a change on .form-check-input-template > ' + userDidAChange);
         $('.form-check-input-template').data('change-ongoing', true);
     });
 
@@ -2698,7 +2701,7 @@ console.log(store.get('teampassUser'))
                         } catch (e) {
                             // error
                             $("#div_loading").addClass("hidden");
-                            requestRunning = false;
+                            //requestRunning = false;
                             $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
                             $("#div_dialog_message").dialog("open");
 
@@ -3235,7 +3238,7 @@ console.log(store.get('teampassUser'))
 
         // case where we should stop listing the items
         if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').itemsListStop === 1) {
-            requestRunning = false;
+            //requestRunning = false;
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
@@ -4151,6 +4154,9 @@ console.log(store.get('teampassUser'))
                 if (debugJavascript === true) console.log("RECEIVED");
                 if (debugJavascript === true) console.log(data);
 
+                // remove any track-change class on item form
+                $('.form-item-control').removeClass('track-change');
+
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
@@ -4307,6 +4313,7 @@ console.log(store.get('teampassUser'))
                                 if (userDidAChange === false && requestRunning === false) {
                                     if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
+                                    if (debugJavascript === true) console.log('User did a change on #form-item-description > ' + userDidAChange);
                                     $('#form-item-description').data('change-ongoing', true);
                                 }
                             }
@@ -4334,6 +4341,7 @@ console.log(store.get('teampassUser'))
                                 if (userDidAChange === false && requestRunning === false) {
                                     if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
+                                    if (debugJavascript === true) console.log('User did a change on #form-item-suggestion-description > ' + userDidAChange);
                                     $('#form-item-suggestion-description').data('change-ongoing', true);
                                 }
                             }
@@ -4624,7 +4632,6 @@ console.log(store.get('teampassUser'))
                     $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
                     $('#div_loading').addClass('hidden');
                 }
-                requestRunning = false;
 
                 // Inform user
                 toastr.remove();
@@ -4645,6 +4652,7 @@ console.log(store.get('teampassUser'))
      * Loading Item details step 2
      */
     function showDetailsStep2(id, actionType) {
+        requestRunning = true;
         $.post(
             'sources/items.queries.php', {
                 type: 'showDetailsStep2',
@@ -4843,7 +4851,7 @@ console.log(store.get('teampassUser'))
                     showInputs: false,
                     explicitMode: true
                 });
-               
+
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
                     'item_id': store.get('teampassItem').id,
@@ -4854,6 +4862,15 @@ console.log(store.get('teampassUser'))
                         type: 'delete_uploaded_files_but_not_saved',
                         data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                         key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function (data) {
+                        // add track-change class on item form
+                        setTimeout(
+                            $('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change'),
+                            2000
+                        );
+
+                        requestRunning = false;
                     }
                 );
             }
@@ -5268,6 +5285,7 @@ console.log(store.get('teampassUser'))
 
                     // Form has changed
                     userDidAChange = true;
+                    if (debugJavascript === true) console.log('User did a change during generate_password > ' + userDidAChange);
                     $('#' + elementId).data('change-ongoing', true);
 
                     $("#form-item-password").pwstrength("forceUpdate");

@@ -200,7 +200,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <div id="unsent-emails">
                             <?php
                             DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
-echo str_replace('#nb_emails#', DB::count(), langHdl('email_send_backlog'));
+echo str_replace('#nb_emails#', (string) DB::count(), langHdl('email_send_backlog'));
                             ?>
                         </div>
 
