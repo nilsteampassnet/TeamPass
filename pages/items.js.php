@@ -656,6 +656,10 @@ console.log(store.get('teampassUser'))
                 } else {
                     $('#form-item-field, .form-item-category').addClass('hidden');
                 }
+                
+                // Add track-change class
+                $('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change');
+
                 // Update variable
                 userDidAChange = false;
 
@@ -5141,19 +5145,19 @@ console.log(store.get('teampassUser'))
         //localStorage.setItem("teampassItem", '');
         if (debugJavascript === true) console.log('Get privilege for folder ' + val);
             
-       if (val === "") {
-          toastr.remove();
-           toastr.error(
+        if (val === "") {
+            toastr.remove();
+            toastr.error(
                 '<?php echo langHdl('error'); ?>',
                 '<?php echo langHdl('data_inconsistency'); ?>',
-               {
-                  timeOut: 5000,
-                 positionClass: 'toast-top-right',
-                  progressBar: true
-              }
-          );
-         return false;
-      }
+                {
+                    timeOut: 5000,
+                    positionClass: 'toast-top-right',
+                    progressBar: true
+                }
+            );
+            return false;
+        }
 
         return $.post(
             "sources/items.queries.php", {

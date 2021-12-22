@@ -742,7 +742,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
     //console.log("> "+step+" - Number: "+number + " - Previous step: "+previousStep);
     //console.log(usersList);
     var d = new Date(),
-        count_in_loop = 200,
+        count_in_loop = <?php echo (int) NUMBER_ITEMS_IN_BATCH;?>,
         userSteps = {};
 
 

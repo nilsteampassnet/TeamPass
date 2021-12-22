@@ -522,7 +522,7 @@ function mainQuery(array $SETTINGS)
  * @param int   $userId     User ID
  * @param array $SETTINGS   TeampassSettings
  *
- * @return int
+ * @return string
  */
 function getNumberOfItemsToTreat(
     int $userId,
