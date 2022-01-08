@@ -20,6 +20,5 @@ gdev.sh
 gpush.sh
 /.vscode/*
 /_tools/*
-/files/*
-/upload/*
 phpinsights.php
+EncryptedFile_*
