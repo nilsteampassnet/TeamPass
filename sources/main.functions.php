@@ -1170,6 +1170,7 @@ function sendEmail(
     $mail = new SplClassLoader('PHPMailer\PHPMailer', '../includes/libraries');
     $mail->register();
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    
     try {
         // send to user
         $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');

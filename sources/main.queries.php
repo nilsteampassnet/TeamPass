@@ -385,10 +385,13 @@ function mainQuery(array $SETTINGS)
         */
         case 'mail_me':
             $return = sendMailToUser(
-                filter_var($dataReceived['receipt'], FILTER_SANITIZE_NUMBER_INT),
+                filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING),
                 $dataReceived['body'],
                 (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
-                (array) filter_var($dataReceived['pre_replace'], FILTER_SANITIZE_STRING),
+                (array) filter_var_array(
+                    $dataReceived['pre_replace'],
+                    FILTER_SANITIZE_STRING
+                ),
                 $SETTINGS
             );
 
@@ -1501,6 +1504,7 @@ function sendMailToUser(
             $post_body
         );
     }
+    
     $ret = sendEmail(
         $post_subject,
         $post_body,
@@ -1798,7 +1802,7 @@ function continueReEncryptingUserSharekeys(
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
-            'extra' => 'On est ici '.$post_user_id,
+            'extra' => $post_user_id,
         ),
         'encode'
     );
@@ -1830,7 +1834,7 @@ function continueReEncryptingUserSharekeysStep1(
             $record['id'],
             $_SESSION['user_id']
         );
-        if (count($currentUserKey) === 0) continue;
+        if ($currentUserKey === null || count($currentUserKey) === 0) continue;
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);

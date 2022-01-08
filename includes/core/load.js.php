@@ -789,7 +789,7 @@ if (
             );
         } else if ($(this).data('action') === "send-user-pwd") {
             // Send email
-            //
+            console.log('Preparing for email sending');
             
             // Prepare data
             var data = {
@@ -800,9 +800,13 @@ if (
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }
             }
-
+            console.log(data);
             // Prepare form
             $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
+            toastr.remove();
+            toastr.info(
+                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            );
 
             // Launch action
             $.post(
@@ -813,7 +817,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-
+                    console.log(data);
                     if (data.error !== false) {
                         // Show error
                         toastr.remove();
@@ -1567,8 +1571,6 @@ if (
                 $("#"+divIdDialog+'-progress').html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
                 toastr.remove();
 
-                console.log('ici '+store.get('teampassUser').admin_user_password)
-
                 // Unlog if same user
                 if (userId === <?php echo $_SESSION['user_id']; ?>) {
                     toastr.success(
@@ -1592,6 +1594,7 @@ if (
 
 
                     $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('done'); ?>');
+                    $("#dialog-admin-change-user-password-do").removeAttr('disabled');
                 }
             }
         }
