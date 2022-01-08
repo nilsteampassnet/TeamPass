@@ -2289,14 +2289,14 @@ if (null !== $post_type) {
             $config = [
                 // Mandatory Configuration Options
                 'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
-                'base_dn'          => $SETTINGS['ldap_bdn'],
+                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
-                'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
-                'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+                'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+                'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
                 'version'          => 3,
                 'timeout'          => 5,
                 'follow_referrals' => false,
@@ -2346,7 +2346,7 @@ if (null !== $post_type) {
             $ad->register();
             $connection = new Connection($config);
 
-            // COnnect to LDAP
+            // Connect to LDAP
             try {
                 $connection->connect();
             
@@ -2368,13 +2368,12 @@ if (null !== $post_type) {
             $teampassRoles = array();
             $adUsedAttributes = array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire');
 
-
             $users = $connection->query()->where([
                 ['objectclass', '=', 'top'],
                 ['objectclass', '=', 'person'],
                 ['objectclass', '=', 'organizationalperson'],
                 ['objectclass', '=', 'inetorgperson'],
-            ])->get();
+            ], null, null, 'or')->get();
             
             foreach($users as $i => $adUser) {
 

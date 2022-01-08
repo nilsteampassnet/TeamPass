@@ -431,7 +431,7 @@ function mainQuery(array $SETTINGS)
         */
         case 'user_sharekeys_reencryption_next':
             $return = continueReEncryptingUserSharekeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
@@ -768,7 +768,7 @@ function generateQRCode(
         && $post_demand_origin !== 'users_management_list'
     ) {
         // checked the given password
-        logEvents($SETTINGS, 'failed_auth', 'user_password_not_correct', '', stripslashes($post_login), stripslashes($post_login));
+        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
         return prepareExchangedData(
             array(
                 'error' => true,

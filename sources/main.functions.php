@@ -2789,8 +2789,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
 
         // Optional Configuration Options
         'port' => $SETTINGS['ldap_port'],
-        'use_ssl' => $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls' => $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls' => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
         'version' => 3,
         'timeout' => 5,
         'follow_referrals' => false,
@@ -2812,7 +2812,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
     $ad->register();
     $connection = new Connection($config);
-    // COnnect to LDAP
+    // Connect to LDAP
     try {
         $connection->connect();
     } catch (\LdapRecord\Auth\BindException $e) {
@@ -2823,7 +2823,11 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
 
     // Authenticate user
     try {
-        $connection->auth()->attempt($SETTINGS['ldap_user_attribute'].'='.$login.','.$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
+        if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+            $connection->auth()->attempt($login, $password, $stayAuthenticated = true);
+        } else {
+            $connection->auth()->attempt($SETTINGS['ldap_user_attribute'].'='.$login.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
+        }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
         echo 'Error : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage();

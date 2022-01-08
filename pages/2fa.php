@@ -88,7 +88,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </small>
                             </div>
                             <div class="col-3">
-                                <div class="toggle toggle-modern" id="admin_2fa_required" data-toggle-on="<?php echo isset($SETTINGS['admin_2fa_required']) && $SETTINGS['admin_2fa_required'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="admin_2fa_required_input" value="<?php echo isset($SETTINGS['admin_2fa_required']) && $SETTINGS['admin_2fa_required'] === 1 ? '1' : '0'; ?>">
+                                <div class="toggle toggle-modern" id="admin_2fa_required" data-toggle-on="<?php echo isset($SETTINGS['admin_2fa_required']) && (int) $SETTINGS['admin_2fa_required'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="admin_2fa_required_input" value="<?php echo isset($SETTINGS['admin_2fa_required']) && (int) $SETTINGS['admin_2fa_required'] === 1 ? '1' : '0'; ?>">
                             </div>
                         </div>
 
@@ -144,7 +144,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="<?php echo isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="google_authentication_input" value="<?php echo isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="<?php echo isset($SETTINGS['google_authentication']) && (int) $SETTINGS['google_authentication'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="google_authentication_input" value="<?php echo isset($SETTINGS['google_authentication']) && (int) $SETTINGS['google_authentication'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
 
@@ -168,7 +168,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="<?php echo isset($SETTINGS['ga_reset_by_user']) && $SETTINGS['ga_reset_by_user'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="ga_reset_by_user_input" value="<?php echo isset($SETTINGS['ga_reset_by_user']) && $SETTINGS['ga_reset_by_user'] === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="<?php echo isset($SETTINGS['ga_reset_by_user']) && (int) $SETTINGS['ga_reset_by_user'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="ga_reset_by_user_input" value="<?php echo isset($SETTINGS['ga_reset_by_user']) && (int) $SETTINGS['ga_reset_by_user'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
 
@@ -183,7 +183,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="toggle toggle-modern" id="duo" data-toggle-on="<?php echo isset($SETTINGS['duo']) && $SETTINGS['duo'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="duo_input" value="<?php echo isset($SETTINGS['duo']) && $SETTINGS['duo'] === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern" id="duo" data-toggle-on="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="duo_input" value="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
 
@@ -248,7 +248,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </small>
                                     </div>
                                     <div class="col-3">
-                                        <div class="toggle toggle-modern" id="yubico_authentication" data-toggle-on="<?php echo isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="yubico_authentication_input" value="<?php echo isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern" id="yubico_authentication" data-toggle-on="<?php echo isset($SETTINGS['yubico_authentication']) && (int) $SETTINGS['yubico_authentication'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="yubico_authentication_input" value="<?php echo isset($SETTINGS['yubico_authentication']) && (int) $SETTINGS['yubico_authentication'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
                             </div>
