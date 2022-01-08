@@ -229,12 +229,9 @@ foreach ($tst as $t) {
                     <h3 class="card-title" id="folders-alphabet"></h3>
                 </div>-->
                 <!-- /.card-header -->
-              
-               
-                    
-              
+
                 <div class="card-body form table-responsive1" id="folders-list">
-                  <div class="callout callout-info mt-3">
+                    <div class="callout callout-info mt-3">
                         <div class="callout-body row">
                             <div class="input-group input-group-sm col-8">
                                 <div class="input-group-prepend">

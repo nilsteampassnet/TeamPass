@@ -445,7 +445,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     );
 
                     // Adapt select
-                    $('#folders-depth').val('').change();
+                    $('#folders-depth').empty();
                     $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
                     for (x = 1; x < max_folder_depth; x++) {
                         $('#folders-depth').append('<option value="' + x + '">' + x + '</option>');
