@@ -13,7 +13,7 @@ declare(strict_types=1);
  * @file      main.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2021 Teampass.net
+ * @copyright 2009-2022 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -1255,9 +1255,10 @@ function isUserPasswordCorrect(
         if (DB::count() > 0) {
             // Get one item
             $record = DB::queryFirstRow(
-                'SELECT id, pw
-                FROM ' . prefixTable('items') . '
-                WHERE perso = 0'
+                'SELECT object_id
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE user_id = %i',
+                $post_user_id
             );
 
             // Get itemKey from current user
@@ -1265,11 +1266,11 @@ function isUserPasswordCorrect(
                 'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE object_id = %i AND user_id = %i',
-                $record['id'],
+                $record['object_id'],
                 $post_user_id
             );
 
-            if (count($currentUserKey) > 0) {
+            if ($currentUserKey !== null) {
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);

@@ -13,7 +13,7 @@ declare(strict_types=1);
  * @file      users.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2021 Teampass.net
+ * @copyright 2009-2022 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -310,20 +310,6 @@ if (null !== $post_type) {
                 if (empty($SETTINGS['email_server_url']) === true) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
-
-                /*
-                // Send email to new user
-                sendEmail(
-                    langHdl('email_subject_new_user'),
-                    str_replace(
-                        array('#tp_login#', '#tp_pw#', '#tp_link#'),
-                        array(addslashes($login), addslashes($password), $SETTINGS['email_server_url']),
-                        langHdl('email_new_user_mail')
-                    ),
-                    $dataReceived['email'],
-                    $SETTINGS
-                );
-                */
 
                 // update LOG
                 logEvents(

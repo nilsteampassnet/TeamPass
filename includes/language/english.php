@@ -1,28 +1,34 @@
-<?php
-
+﻿<?php
 /**
  * Teampass - a collaborative passwords manager.
  * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
- * @file      english.php
+ *
  * @project   Teampass
+ *
+ * @file      english.php
  * ---
- * @author    Nils Laumaillé <nils@teampass.net>
+ *
+ * @author    Nils Laumaillé (nils@teampass.net)
+ *
+ * @copyright 2009-2022 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
+ *
  * @see       https://www.teampass.net
- * @copyright 2009 - 2019 Nils Laumaillé, Teampass.net
  */
-
 return array(
+    'email_body_temporary_login_password' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has changed your login password for Teampass. Next time you will connect to Teampass, please use the next one:<br><br><b>#enc_code#</b><br><br><br>Cheers',
+    'your_new_password' => 'Your new password',
     'show_user_temporary_encryption_code' => 'Show user encryption code',
     'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
     'user_password' => 'User password',
     'user_temporary_encryption_code' => 'User encryption code',
-    'no_email_set' => 'No email defined',
+    'no_email_set' => 'No email has been registered',
     'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
     'admin_change_user_encryption_code_info' => 'This operation will reset the encryption code for this user.',
     'send_by_email' => 'Send by email',
@@ -31,7 +37,6 @@ return array(
     'open_website' => 'Open website',
     'mfa_for_roles' => 'MFA is requested for users in Roles',
     'mfa_for_roles_tip' => 'By default, once an MFA method is selected, it is enabled for all users. Nevertheless, you might select the roles for which it is expected.<br>NOT YET IMPLEMENTED',
-    'open_website' => 'Open website',
     'at_least_one_administrator_is_requested' => 'At least one administrator is requested',
     'bad_code' => 'Bad code',
     'generating_keys' => 'Generating keys',
@@ -162,7 +167,6 @@ return array(
     'password_already_used' => 'Password already used',
     'change_login_password' => 'Change login password',
     'current_password_mandatory' => 'Current password is mandatory',
-    'current_password' => 'Current password',
     'objects_encryption_explanation' => 'Teampass has been upgraded to a new version which includes a new encryption protocol. It expects from you to re-encrypt your personal items. For this, you need to provide your current Personal Salt Key (PSK). Once odne, please click on button Launch and wait until the process reached the final step. This could take several minutes depending on the number of objects.',
     'description_has_changed' => 'Description has changed',
     'number_of_folders_imported' => 'Number of Folders imported',
@@ -241,7 +245,6 @@ return array(
     'email_configuration' => 'Email configuration',
     'email_configuration_test' => 'Email configuration test',
     'send_a_test_email' => 'Send a test email',
-    'no_email_set' => 'No email has been registered',
     'manage_emails_not_sent' => 'Manage not sent emails',
     'email_send_backlog' => '#nb_emails# unsent emails',
     'send_waiting_emails' => 'Send waiting emails',
@@ -264,7 +267,6 @@ return array(
     'please_confirm_by_clicking_checkbox' => 'Please confirm by clicking the checkbox',
     'date_range' => 'Date range',
     'purge' => 'Purge',
-    'ip' => 'IP',
     'belong_of_deleted_folder' => 'Belong to deleted folder',
     'highlight_selected' => 'Highlight selected',
     'number_of_selected_objects' => 'Number of selected objects',
@@ -305,7 +307,6 @@ return array(
     'user_definition' => 'User definition',
     'no_selection_done' => 'No selection done',
     'tick_confirmation_box' => 'Please tick the checkbox to confirm',
-    'caution' => 'Caution',
     'next_list_to_be_deleted' => 'Next list will be deleted',
     'delete_folders' => 'Delete Folders',
     'submit' => 'Submit',
@@ -342,7 +343,7 @@ return array(
     'upload_feature' => 'Upload feature',
     'profile' => 'Profile',
     'language' => 'Language',
-    'upload_new_avatar' => 'Upload new avatar',
+    'upload_new_avatar' => 'Select profile image file',
     'settings' => 'Settings',
     'created_items' => 'Created items',
     'modification_performed' => 'Modification performed',
@@ -368,7 +369,6 @@ return array(
     'emails' => 'Emails',
     'backups' => 'Backups',
     'api' => 'API',
-    'copy_folder' => 'Copy folder',
     'add_folder' => 'Add new folder',
     'select_folder_parent' => 'Select parent folder',
     'add' => 'Add',
@@ -387,14 +387,12 @@ return array(
     'perform' => 'Perform',
     'delete_item' => 'Delete item',
     'copy_item' => 'Copy item',
-    'select_destination_folder' => 'Select destination folder',
     'new_item' => 'New item',
     'error_not_allowed_to_edit_item' => 'You are not allowed to edit this item',
     'error_not_allowed_to_access_this_folder' => 'You are not allowed to access this folder',
     'error_personal_saltkey_is_not_set' => 'Your personal saltkey is not provided.',
     'provide_your_personal_saltkey' => 'Please provide your personal saltkey',
     'no_fields' => 'No field is related to this item.',
-    'information' => 'Information',
     'uploaded' => 'uploaded',
     'changes_ongoing' => 'Some changes were not saved. Do you confirm to quit without saving?',
     'no_file_to_upload' => 'No file to upload',
@@ -421,16 +419,13 @@ return array(
     'saved' => 'Saved',
     'attachments' => 'Attachments',
     'success' => 'Success',
-    'warning' => 'Warning',
     'server_answer_error' => 'An error appears. Answer from Server cannot be parsed!',
     'server_returned_data' => 'Returned data',
     'version_alone' => 'version',
     'statistics' => 'Statistics',
     'options' => 'Options',
-    'statistics' => 'Statistics',
     'users' => 'Users',
     'folders' => 'Folders',
-    'roles' => 'Roles',
     'find_message' => '%X% objects found',
     'auto_update_server_password_info' => 'Next steps will be performed automatically:<ul><li>Connect through SSH to server using login credentials and field `URL`,</li><li>Change user password on server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has rights to log in and change password on the server (if not, indicate the root login and password) before starting.</b>',
     'share' => 'Share',
@@ -439,7 +434,7 @@ return array(
     'email_subject_item_updated' => '[Teampass] One item you are following has been updated',
     'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You have asked to be notified on changes performed on item `#item_label#` in folder `#folder_name#`.<br><br>User <b>#name# #lastname#</b> did next changes:<br>#changes#<br><br>You can open it by clicking next <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>LINK</a>.<br><br>Cheers',
     'import_kp_finished' => 'Import using KeePass file is now finished! The required password strength for new folders has been set to Medium.',
-    'password_is_empty' => 'No password',
+    'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
     'bugs_page' => 'If you are facing a defect, please report it.',
@@ -471,7 +466,6 @@ return array(
     'main_template' => 'Use as template',
     'is_mandatory' => 'Is mandatory',
     'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',
     'every_roles' => 'Every roles',
     'masked_text' => 'Masked text',
@@ -590,7 +584,6 @@ return array(
     'email_on_open_notification_subject' => 'Notification on password item view',
     'email_on_open_notification_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has opened and viewed the password item \'#tp_item#\'. <a href=\'#tp_link#\'>Click this link</a> to access the item.',
     'pdf' => 'PDF',
-    'csv' => 'CSV',
     'email_subject_new_user' => 'Password management account created for you',
     'email_new_user_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created an account for you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=#tp_link#>Click this link</a> to log in.',
     'error_empty_data' => 'No data to proceed!',
@@ -700,7 +693,6 @@ return array(
     'error_user_exists' => 'User already exists',
     'expiration_date' => 'Expiration date',
     'find' => 'Search',
-    'folders' => 'Folders',
     'forbidden_groups' => 'Denied Folders',
     'forgot_my_pw_email_sent' => 'Email has been sent',
     'functions' => 'Roles',
@@ -734,12 +726,10 @@ return array(
     'item_menu_del_from_fav' => 'Delete from favorites',
     'kbs' => 'KBs',
     'kb_menu' => 'Knowledge Base',
-    'label' => 'Label',
     'last_items_title' => 'Last items seen',
     'ldap_extension_not_loaded' => 'The LDAP PHP extension is not loaded on the server.',
     'level' => 'Level',
     'login' => 'Login',
-    'logs' => 'Logs',
     'mask_pw' => 'Mask/display password',
     'max_last_items' => 'Recently viewed password item list size (default is 10)',
     'minutes' => 'minutes',
@@ -767,7 +757,6 @@ return array(
     'restore' => 'Restore',
     'restricted_to' => 'Restricted to',
     'restricted_to_roles' => 'Allow restricting items to users and roles',
-    'roles' => 'Roles',
     'root' => 'Root',
     'secure' => 'Secure',
     'see_logs' => 'See Logs',
@@ -798,7 +787,6 @@ return array(
     'time_format' => 'Time format',
     'url' => 'URL',
     'user' => 'User',
-    'users' => 'Users',
     'users_online' => 'users online',
     'user_alarm_no_function' => 'This user has no roles assigned!',
     'yes' => 'Yes',
@@ -838,7 +826,6 @@ return array(
     'admin_email_security' => 'SMTP security type',
     'alert_page_will_reload' => 'The page will now be reloaded',
     'file_protection_password' => 'Define file password',
-    'upload_new_avatar' => 'Select profile image file',
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'settings_ldap_user_attribute' => 'User name attribute',
@@ -870,7 +857,6 @@ return array(
     'list_items_with_tag' => 'List items with this tag',
     'no_item_to_display' => 'No items to display',
     'opening_folder' => 'Reading folder ...',
-    'please_confirm' => 'Please confirm',
     'suggestion_notify_subject' => 'A new password item suggestion was submitted',
     'suggestion_notify_body' => 'A user has submitted a password item suggestion to the password manager. You need to accept the submission before it can be used by other users.<br>Info:<br>- Label: #tp_label#<br>- Folder: #tp_folder#<br>- User: #tp_user#<br><br>This email has been sent to all managers.',
     'error_unknown' => 'An unexpected error occurred!',
@@ -906,10 +892,9 @@ return array(
     'error_bad_credentials_more_than_3_times' => 'Login credentials incorrect!<br>Please wait 10 seconds before next attempt',
     'settings_ldap_object_class' => 'Class to search',
     'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX account',
-    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file' => 'Rebuild configuration file',
     'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./includes/config/tp.config.php, but the file should be located outside the www directory for security.',
     'error_folder_complexity_lower_than_top_folder' => 'Subfolders must have password strength set the same or higher than parent folder',
-    'rebuild_config_file' => 'Rebuild configuration file',
     'new_item_email_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
     'failed_logins' => 'Failed Logins',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
@@ -924,7 +909,6 @@ return array(
     'share_rights_info' => 'This dialogbox permits you to share the rights of one user with a selection of users.<br>Notice that the selected users will have their existing rights reseted and replaced with exactely the same rights as the source user.',
     'share_rights_source' => 'Source user',
     'share_rights_destination' => 'Destination users',
-    'password_is_empty' => 'Item has no password',
     'ga_reset_by_user' => 'User can reset his 2FA code',
     'ga_reset_by_user_tip' => 'If enabled, the user will have the possibility to reset his 2FA code using the link in the login page. This could be useful in case he has changed mobile device for example. If not enabled, the user will have to ask the Administrator to generate a new code.',
     'enable_massive_move_delete' => 'Allow user to perform massive move and delete operations',
@@ -936,14 +920,12 @@ return array(
     'you_decided_to_delete_items' => 'You decided to delete items',
     'suggest_password_change' => 'Suggest a password change',
     'otv_is_enabled' => 'User can propose One-Time-View links',
-    'copy_folder' => 'Copy folder',
     'error_source_and_destination_are_equal' => 'Source and Destination cannot be the same!',
     'sending_anonymous_statistics' => 'Sending anonymous statistics',
     'favourites_option_enabled' => 'Favourites option enabled',
     'personalfolders_option_enabled' => 'Personal Folders option enabled',
     'country_statistics' => 'Worldmap usage',
     'country' => 'Country',
-    'users_statistics' => 'Average number of users by instance',
     'users_statistics' => 'Average number of users by instance',
     'items_all' => 'All items',
     'folders_all' => 'All folders',
@@ -982,7 +964,6 @@ return array(
     'documentation_canal' => 'Complete documentation at',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
     'item_has_change_proposal' => 'This Item has a change proposal',
-    'select_all' => 'Select all',
     'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
     'revert' => 'Revert?',
     'revert_the_database' => 'You have decided to revert the database. Please confirm?',

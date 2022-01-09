@@ -10,7 +10,7 @@
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2021 Teampass.net
+ * @copyright 2009-2022 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net

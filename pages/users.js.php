@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2021 Teampass.net
+ * @copyright 2009-2022 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -334,7 +334,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $('#row-form').addClass('hidden');
                     $('#row-list').removeClass('hidden');
 
-                    
+                    // Hide dialogbox
+                    $('#warningModal').modal('hide');
 
                     // Inform user
                     toastr.remove();
@@ -825,7 +826,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'login': $('#form-login').val(),
                     'name': $('#form-name').val(),
                     'lastname': $('#form-lastname').val(),
-                    //'pw' : $('#form-password').val(),
                     'email': $('#form-email').val(),
                     'admin': $('#privilege-admin').prop('checked'),
                     'manager': $('#privilege-manager').prop('checked'),
@@ -890,7 +890,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             store.update(
                                 'teampassUser',
                                 function(teampassUser) {
-                                    teampassUser.admin_new_user_password = data_tmp.user_pwd,
+                                    teampassUser.admin_new_user_password = data.user_pwd,
                                     teampassUser.admin_new_user_login = $('#form-login').val();
                                 }
                             );

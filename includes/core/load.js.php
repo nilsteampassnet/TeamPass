@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2021 Teampass.net
+ * @copyright 2009-2022 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -714,7 +714,7 @@ if (
         // Disable buttons
         $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled');            
         
-        // 2 opérations are possible
+        // ENsure we have a user id
         if ($('#admin_change_user_password_target_user').val() !== '') {
             // Case where change is for user's account
             data = {
@@ -794,8 +794,8 @@ if (
             // Prepare data
             var data = {
                 'receipt': $('#temp-user-email').val(),
-                'subject': '[Teampass] <?php echo langHdl('temporary_encryption_code');?>',
-                'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
+                'subject': '[Teampass] <?php echo langHdl('your_new_password');?>',
+                'body': '<?php echo langHdl('email_body_temporary_login_password');?>',
                 'pre_replace' : {
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }
