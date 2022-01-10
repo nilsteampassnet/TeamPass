@@ -22,6 +22,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'email_debug_level' => 'Select a debug level',
+    'email_debug_client' => 'Client commands',
+    'email_debug_server' => 'Client commands and server responses',
+    'email_debug_connection' => 'Client commands, server responses and connection status',
+    'email_debug_low_level' => 'Low-level data output, all messages',
+    'email_debug_level_usage' => 'This setting should be set to None. Only to be used for email debuging during testing purpose. When enabled, it will permit to show an output of the email commands.',
     'email_body_temporary_login_password' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has changed your login password for Teampass. Next time you will connect to Teampass, please use the next one:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'your_new_password' => 'Your new password',
     'show_user_temporary_encryption_code' => 'Show user encryption code',
@@ -957,7 +963,7 @@ return array(
     'characteristic' => 'Characteristic',
     'current_value' => 'Current value',
     'communication_means' => 'Communication means',
-    'consider_a_donation' => 'You may consider a donation',
+    'consider_a_donation' => 'Teampass is a free project for everyone. It has required days and days of work, and will still require as much as already done. You may consider a donation or even becoming a sponsor.',
     'more_information' => 'More information',
     'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',

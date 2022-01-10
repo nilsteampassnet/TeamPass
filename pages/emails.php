@@ -177,6 +177,25 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     </div>
 
                     <div class="card-body">
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo langHdl('email_debug_level'); ?>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <select class='form-control form-control-sm' id='email_debug_level'>
+                                    <option value='0'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '0' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
+                                    <option value='1'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '1' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_client'); ?></option>
+                                    <option value='2'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '2' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_server'); ?></option>
+                                    <option value='3'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '3' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_connection'); ?></option>
+                                    <option value='4'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '4' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_low_level'); ?></option>
+                                </select>
+                                <small class='form-text text-muted'>
+                                    <?php echo langHdl('email_debug_level_usage'); ?>
+                                </small>
+                            </div>
+                        </div>
+
                         <button class="btn btn-primary button" data-action="send-test-email">
                             <?php echo langHdl('send_a_test_email'); ?>
                         </button>

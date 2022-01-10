@@ -1174,8 +1174,7 @@ function sendEmail(
     try {
         // send to user
         $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
-        $mail->SMTPDebug = 0;
-        //value 1 can be used to debug - 4 for debuging connections
+        $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true ? $SETTINGS['email_debug_level'] : 0;
         $mail->Port = $SETTINGS['email_port'];
         //COULD BE USED
         $mail->CharSet = 'utf-8';
@@ -1227,8 +1226,17 @@ function sendEmail(
                 ]
             );
         }
+        // Debug purpose
+        if ((int) $SETTINGS['email_debug_level'] !== 0) {
+            return json_encode(
+                [
+                    'error' => true,
+                    'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+                ]
+            );
+        }
     } catch (Exception $e) {
-        if ($silent === false) {
+        if ($silent === false || (int) $SETTINGS['email_debug_level'] !== 0) {
             return json_encode(
                 [
                     'error' => true,
