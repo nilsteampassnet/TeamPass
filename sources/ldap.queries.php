@@ -112,8 +112,8 @@ switch ($post_type) {
         
             // Optional Configuration Options
             'port'             => $SETTINGS['ldap_port'],
-            'use_ssl'          => $SETTINGS['ldap_ssl'] === 1 ? true : false,
-            'use_tls'          => $SETTINGS['ldap_tls'] === 1 ? true : false,
+            'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+            'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
             'version'          => 3,
             'timeout'          => 5,
             'follow_referrals' => false,
@@ -124,7 +124,7 @@ switch ($post_type) {
                 LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
             ]
         ];
-        
+
         // Load expected libraries
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
@@ -184,8 +184,11 @@ switch ($post_type) {
             ->firstOrFail();
 
         try {
-            $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
-
+            if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+                $connection->auth()->bind($post_username, $post_password);
+            } else {
+                $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
+            }
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
             

@@ -79,7 +79,7 @@ if (
     }
 
     //Log into DB the user's disconnection
-    if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === 1) {
+    if (isset($SETTINGS['log_connections']) && (int) $SETTINGS['log_connections'] === 1) {
         logEvents($SETTINGS, 'user_connection', 'disconnection', (string) $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {

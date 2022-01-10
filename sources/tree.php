@@ -308,7 +308,7 @@ function buildNodeTree(
                     }
                     $text .=
                         ' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-                        .(isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === 1 ?
+                        .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
                             '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
                             '')
                         .'</span>';

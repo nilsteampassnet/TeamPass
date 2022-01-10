@@ -534,7 +534,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']).'", ';
         //col2 - 3
-        if ($record['label'] === 'user_password_not_correct' || $record['label'] === 'user_not_exists') {
+        if ($record['label'] === 'password_is_not_correct' || $record['label'] === 'user_not_exists') {
             $sOutput .= '"'.langHdl($record['label']).'", "'.$record['field_1'].'", ';
         } else {
             $sOutput .= '"'.langHdl($record['label']).'", "", ';

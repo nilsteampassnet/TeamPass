@@ -378,10 +378,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
+
     $userPasswordVerified = $userLdap['ldapConnection'];
     $ldapConnection = $userLdap['ldapConnection'];
     //$retLDAP = $userLdap['retLDAP'];
-    
 
     $userLdap = identifyDoMFAChecks(
         $SETTINGS,
@@ -420,7 +420,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
-    // 3-  LDAP mode + user enabled + pw ok + usre is admin
+    // 3- LDAP mode + user enabled + pw ok + usre is admin
     // This in order to allow admin by default to connect even if LDAP is activated
     if ((isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 0
             && (int) $userInfo['disabled'] === 0)
@@ -450,7 +450,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             FROM ' . prefixTable('log_system') . "
             WHERE field_1 = %s
             AND type = 'failed_auth'
-            AND label = 'user_password_not_correct'
+            AND label = 'password_is_not_correct'
             AND date >= %s AND date < %s",
             $userInfo['login'],
             $userInfo['last_connexion'],
@@ -959,13 +959,13 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         // Mandatory Configuration Options
         'hosts' => [explode(',', $SETTINGS['ldap_hosts'])],
         'base_dn' => $SETTINGS['ldap_bdn'],
-        'username' => $SETTINGS['ldap_user_attribute'].'='.$username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+        'username' => $SETTINGS['ldap_user_attribute'].'='.$username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
         'password' => $passwordClear,
 
         // Optional Configuration Options
         'port' => $SETTINGS['ldap_port'],
-        'use_ssl' => $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls' => $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls' => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
         'version' => 3,
         'timeout' => 5,
         'follow_referrals' => false,
@@ -976,6 +976,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD,
         ],
     ];
+    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+        $config['username'] = $username;
+    }
+
     // Load expected libraries
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Auth/Authenticatable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
@@ -1018,7 +1022,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
     $ad->register();
     $connection = new Connection($config);
-    // COnnect to LDAP
+    // Connect to LDAP
     try {
         $connection->connect();
         Container::addConnection($connection);
@@ -1069,12 +1073,12 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             'id = %i',
             $userInfo['id']
         );
-    /*} elseif ($userInfo['special'] === 'user_added_from_ldap') {
+    } elseif ($userInfo['special'] === 'user_added_from_ldap') {
         // Case where user has been added from LDAP and never being connected to TP
         // We need to create his keys
         $userKeys = generateUserKeys($passwordClear);
 
-        // NOw update
+        // Now update
         DB::update(
             prefixTable('users'),
             array(
@@ -1084,7 +1088,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ),
             'id = %i',
             $userInfo['id']
-        );*/
+        );
     } elseif ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
@@ -1404,7 +1408,7 @@ function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $
                 logEvents(
                     $SETTINGS,
                     'failed_auth',
-                    'user_password_not_correct',
+                    'password_is_not_correct',
                     '',
                     '',
                     stripslashes($username)
@@ -1615,7 +1619,7 @@ function identifyDoLDAPChecks(
     $ldapConnection = false;
     $userPasswordVerified = false;
 
-    if ($SETTINGS['ldap_mode'] === 1
+    if ((int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
         && (string) $userInfo['auth_type'] === 'ldap'
     ) {

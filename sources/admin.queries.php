@@ -107,7 +107,7 @@ switch ($post_type) {
         $text = '<ul>';
         $error = '';
         if (TP_ADMIN_NO_INFO === false) {
-            if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] === 1) {
+            if (isset($SETTINGS['get_tp_info']) && (int) $SETTINGS['get_tp_info'] === 1) {
                 // Get info about Teampass
                 if (
                     isset($SETTINGS['proxy_ip']) === true && empty($SETTINGS['proxy_ip']) === false &&

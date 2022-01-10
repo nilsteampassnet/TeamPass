@@ -115,7 +115,7 @@ if (empty($superGlobal->get('code', 'GET')) === true
                 'SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i',
                 $data['item_id']
             );
-            if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] === 1) {
+            if (isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1) {
                 if ((int) $dataDelete['del_enabled'] === 1) {
                     if ((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] >= 1) {
                         // decrease counter
