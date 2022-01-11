@@ -19,8 +19,8 @@ class Entry extends BaseEntry implements ActiveDirectory
      * @var array
      */
     protected $defaultDates = [
-        'whenchanged'           => 'windows',
-        'whencreated'           => 'windows',
+        'whenchanged' => 'windows',
+        'whencreated' => 'windows',
         'dscorepropagationdata' => 'windows',
     ];
 
@@ -32,7 +32,7 @@ class Entry extends BaseEntry implements ActiveDirectory
     protected $sidKey = 'objectsid';
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getObjectSidKey()
     {
@@ -40,7 +40,7 @@ class Entry extends BaseEntry implements ActiveDirectory
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getObjectSid()
     {
@@ -48,7 +48,7 @@ class Entry extends BaseEntry implements ActiveDirectory
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getConvertedSid()
     {
@@ -78,7 +78,7 @@ class Entry extends BaseEntry implements ActiveDirectory
      */
     public function isDeleted()
     {
-        return strtoupper($this->getFirstAttribute('isDeleted')) === 'TRUE';
+        return strtoupper((string) $this->getFirstAttribute('isDeleted')) === 'TRUE';
     }
 
     /**
@@ -109,10 +109,9 @@ class Entry extends BaseEntry implements ActiveDirectory
             }
         });
 
-        $this->save([
-            'isDeleted'         => null,
-            'distinguishedName' => $newDn,
-        ]);
+        $this->setRawAttribute('distinguishedname', $newDn);
+
+        $this->save(['isDeleted' => null]);
     }
 
     /**
@@ -126,7 +125,7 @@ class Entry extends BaseEntry implements ActiveDirectory
      */
     public static function getRootDse($connection = null)
     {
-        return static::on($connection ?? (new static)->getConnectionName())
+        return static::on($connection ?? (new static())->getConnectionName())
             ->in(null)
             ->read()
             ->whereHas('objectclass')

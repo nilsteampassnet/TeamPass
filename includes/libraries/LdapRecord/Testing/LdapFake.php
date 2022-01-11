@@ -2,14 +2,20 @@
 
 namespace LdapRecord\Testing;
 
+use Closure;
 use Exception;
 use LdapRecord\DetailedError;
-use LdapRecord\LdapBase;
+use LdapRecord\DetectsErrors;
+use LdapRecord\HandlesConnection;
+use LdapRecord\LdapInterface;
+use LdapRecord\Support\Arr;
 use PHPUnit\Framework\Assert as PHPUnit;
 use PHPUnit\Framework\Constraint\Constraint;
 
-class LdapFake extends LdapBase
+class LdapFake implements LdapInterface
 {
+    use HandlesConnection, DetectsErrors;
+
     /**
      * The expectations of the LDAP fake.
      *
@@ -73,14 +79,17 @@ class LdapFake extends LdapBase
      */
     public function expect($expectations = [])
     {
-        $expectations = is_array($expectations) ? $expectations : [$expectations];
+        $expectations = Arr::wrap($expectations);
 
         foreach ($expectations as $key => $expectation) {
-            // If the key is non-numeric, we will assume
-            // that the string is the method name and
-            // the expectation is the return value.
-            if (! is_numeric($key)) {
-                $expectation = static::operation($key)->andReturn($expectation);
+            if (! is_int($key)) {
+                $operation = static::operation($key);
+
+                $expectation instanceof Closure
+                    ? $expectation($operation)
+                    : $operation->andReturn($expectation);
+
+                $expectation = $operation;
             }
 
             if (! $expectation instanceof LdapExpectation) {
@@ -100,7 +109,7 @@ class LdapFake extends LdapBase
      *
      * @return bool
      */
-    protected function hasExpectations($method)
+    public function hasExpectations($method)
     {
         return count($this->getExpectations($method)) > 0;
     }
@@ -112,7 +121,7 @@ class LdapFake extends LdapBase
      *
      * @return LdapExpectation[]|mixed
      */
-    protected function getExpectations($method)
+    public function getExpectations($method)
     {
         return $this->expectations[$method] ?? [];
     }
@@ -125,7 +134,7 @@ class LdapFake extends LdapBase
      *
      * @return void
      */
-    protected function removeExpectation($method, $key)
+    public function removeExpectation($method, $key)
     {
         unset($this->expectations[$method][$key]);
     }
@@ -193,7 +202,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getDiagnosticMessage()
     {
@@ -215,7 +224,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getEntries($searchResults)
     {
@@ -223,37 +232,37 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function isUsingSSL()
     {
         return $this->hasExpectations('isUsingSSL')
             ? $this->resolveExpectation('isUsingSSL')
-            : parent::isUsingSSL();
+            : $this->useSSL;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function isUsingTLS()
     {
         return $this->hasExpectations('isUsingTLS')
             ? $this->resolveExpectation('isUsingTLS')
-            : parent::isUsingTLS();
+            : $this->useTLS;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function isBound()
     {
         return $this->hasExpectations('isBound')
             ? $this->resolveExpectation('isBound')
-            : parent::isBound();
+            : $this->bound;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function setOption($option, $value)
     {
@@ -263,7 +272,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getOption($option, &$value = null)
     {
@@ -271,7 +280,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function startTLS()
     {
@@ -279,13 +288,13 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function connect($hosts = [], $port = 389)
     {
         $this->bound = false;
 
-        $this->host = $this->getConnectionString($hosts, $port);
+        $this->host = $this->makeConnectionUris($hosts, $port);
 
         return $this->connection = $this->hasExpectations('connect')
             ? $this->resolveExpectation('connect', func_get_args())
@@ -293,7 +302,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function close()
     {
@@ -307,7 +316,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function bind($username, $password)
     {
@@ -315,31 +324,31 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function search($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = null, $serverControls = [])
+    public function search($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = LDAP_DEREF_NEVER, $serverControls = [])
     {
         return $this->resolveExpectation('search', func_get_args());
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function listing($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = null, $serverControls = [])
+    public function listing($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = LDAP_DEREF_NEVER, $serverControls = [])
     {
         return $this->resolveExpectation('listing', func_get_args());
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function read($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = null, $serverControls = [])
+    public function read($dn, $filter, array $fields, $onlyAttributes = false, $size = 0, $time = 0, $deref = LDAP_DEREF_NEVER, $serverControls = [])
     {
         return $this->resolveExpectation('read', func_get_args());
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function parseResult($result, &$errorCode, &$dn, &$errorMessage, &$referrals, &$serverControls = [])
     {
@@ -347,7 +356,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function add($dn, array $entry)
     {
@@ -355,7 +364,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function delete($dn)
     {
@@ -363,7 +372,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function rename($dn, $newRdn, $newParent, $deleteOldRdn = false)
     {
@@ -371,7 +380,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function modify($dn, array $entry)
     {
@@ -379,7 +388,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function modifyBatch($dn, array $values)
     {
@@ -387,7 +396,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function modAdd($dn, array $entry)
     {
@@ -395,7 +404,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function modReplace($dn, array $entry)
     {
@@ -403,7 +412,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function modDelete($dn, array $entry)
     {
@@ -411,7 +420,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function controlPagedResult($pageSize = 1000, $isCritical = false, $cookie = '')
     {
@@ -419,7 +428,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function controlPagedResultResponse($result, &$cookie)
     {
@@ -427,7 +436,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function freeResult($result)
     {
@@ -435,7 +444,7 @@ class LdapFake extends LdapBase
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function err2Str($number)
     {
@@ -452,7 +461,7 @@ class LdapFake extends LdapBase
      *
      * @throws Exception
      */
-    protected function resolveExpectation($method, $args = [])
+    protected function resolveExpectation($method, array $args = [])
     {
         foreach ($this->getExpectations($method) as $key => $expectation) {
             $this->assertMethodArgumentsMatch($method, $expectation->getExpectedArgs(), $args);
@@ -500,17 +509,20 @@ class LdapFake extends LdapBase
      *
      * @return void
      */
-    protected function assertMethodArgumentsMatch($method, $expectedArgs = [], $methodArgs = [])
+    protected function assertMethodArgumentsMatch($method, array $expectedArgs = [], array $methodArgs = [])
     {
         foreach ($expectedArgs as $key => $constraint) {
             $argNumber = $key + 1;
 
             PHPUnit::assertArrayHasKey(
-                $key, $methodArgs, "LDAP method [$method] argument #{$argNumber} does not exist."
+                $key,
+                $methodArgs,
+                "LDAP method [$method] argument #{$argNumber} does not exist."
             );
 
             $constraint->evaluate(
-                $methodArgs[$key], "LDAP method [$method] expectation failed."
+                $methodArgs[$key],
+                "LDAP method [$method] expectation failed."
             );
         }
     }

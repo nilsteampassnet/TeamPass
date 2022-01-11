@@ -14,10 +14,10 @@ use LdapRecord\LdapRecordException;
 use LdapRecord\Models\Model;
 use LdapRecord\Query\Events\QueryExecuted;
 use LdapRecord\Query\Model\Builder as ModelBuilder;
-use LdapRecord\Query\Pagination\DeprecatedPaginator;
+use LdapRecord\Query\Pagination\LazyPaginator;
 use LdapRecord\Query\Pagination\Paginator;
+use LdapRecord\Support\Arr;
 use LdapRecord\Utilities;
-use Tightenco\Collect\Support\Arr;
 
 class Builder
 {
@@ -37,7 +37,7 @@ class Builder
      */
     public $filters = [
         'and' => [],
-        'or'  => [],
+        'or' => [],
         'raw' => [],
     ];
 
@@ -238,12 +238,12 @@ class Builder
      *
      * After running the callback, the columns are reset to the original value.
      *
-     * @param array    $columns
-     * @param callable $callback
+     * @param array   $columns
+     * @param Closure $callback
      *
      * @return mixed
      */
-    protected function onceWithColumns($columns, $callback)
+    protected function onceWithColumns($columns, Closure $callback)
     {
         $original = $this->columns;
 
@@ -382,7 +382,9 @@ class Builder
     protected function substituteBaseInDn($dn)
     {
         return str_replace(
-            '{base}', $this->baseDn, $dn instanceof Model ? $dn->getDn() : $dn
+            '{base}',
+            $this->baseDn ?: '',
+            (string) ($dn instanceof Model ? $dn->getDn() : $dn)
         );
     }
 
@@ -483,6 +485,87 @@ class Builder
     }
 
     /**
+     * Runs the paginate operation with the given filter.
+     *
+     * @param string $filter
+     * @param int    $perPage
+     * @param bool   $isCritical
+     *
+     * @return array
+     */
+    protected function runPaginate($filter, $perPage, $isCritical)
+    {
+        return $this->connection->run(function (LdapInterface $ldap) use ($filter, $perPage, $isCritical) {
+            return (new Paginator($this, $filter, $perPage, $isCritical))->execute($ldap);
+        });
+    }
+
+    /**
+     * Execute a callback over each item while chunking.
+     *
+     * @param Closure $callback
+     * @param int     $count
+     *
+     * @return bool
+     */
+    public function each(Closure $callback, $count = 1000)
+    {
+        return $this->chunk($count, function ($results) use ($callback) {
+            foreach ($results as $key => $value) {
+                if ($callback($value, $key) === false) {
+                    return false;
+                }
+            }
+        });
+    }
+
+    /**
+     * Chunk the results of a paginated LDAP query.
+     *
+     * @param int     $pageSize
+     * @param Closure $callback
+     * @param bool    $isCritical
+     *
+     * @return bool
+     */
+    public function chunk($pageSize, Closure $callback, $isCritical = false)
+    {
+        $start = microtime(true);
+
+        $query = $this->getQuery();
+
+        $page = 1;
+
+        foreach ($this->runChunk($query, $pageSize, $isCritical) as $chunk) {
+            if ($callback($this->process($chunk), $page) === false) {
+                return false;
+            }
+
+            $page++;
+        }
+
+        $this->logQuery($this, 'chunk', $this->getElapsedTime($start));
+
+        return true;
+    }
+
+    /**
+     * Runs the chunk operation with the given filter.
+     *
+     * @param string $filter
+     * @param int    $perPage
+     * @param bool   $isCritical
+     *
+     * @return array
+     */
+    protected function runChunk($filter, $perPage, $isCritical)
+    {
+        return $this->connection->run(function (LdapInterface $ldap) use ($filter, $perPage, $isCritical) {
+            return (new LazyPaginator($this, $filter, $perPage, $isCritical))->execute($ldap);
+        });
+    }
+
+    /**
      * Processes and converts the given LDAP results into models.
      *
      * @param array $results
@@ -493,7 +576,11 @@ class Builder
     {
         unset($results['count']);
 
-        return $this->paginated ? $this->flattenPages($results) : $results;
+        if ($this->paginated) {
+            return $this->flattenPages($results);
+        }
+
+        return $results;
     }
 
     /**
@@ -526,9 +613,7 @@ class Builder
      */
     protected function getCachedResponse($query, Closure $callback)
     {
-        // If caching is enabled and we have a cache instance available,
-        // we will try to retrieve the cached results instead.
-        if ($this->caching && $this->cache) {
+        if ($this->cache && $this->caching) {
             $key = $this->getCacheKey($query);
 
             if ($this->flushCache) {
@@ -538,7 +623,6 @@ class Builder
             return $this->cache->remember($key, $this->cacheUntil, $callback);
         }
 
-        // Otherwise, we will simply execute the callback.
         return $callback();
     }
 
@@ -569,26 +653,6 @@ class Builder
                 $onlyAttributes = false,
                 $this->limit
             );
-        });
-    }
-
-    /**
-     * Runs the paginate operation with the given filter.
-     *
-     * @param string $filter
-     * @param int    $perPage
-     * @param bool   $isCritical
-     *
-     * @return array
-     */
-    protected function runPaginate($filter, $perPage, $isCritical)
-    {
-        return $this->connection->run(function (LdapInterface $ldap) use ($filter, $perPage, $isCritical) {
-            $paginator = $ldap->supportsServerControlsInMethods()
-                ? new Paginator($this, $filter, $perPage, $isCritical)
-                : new DeprecatedPaginator($this, $filter, $perPage, $isCritical);
-
-            return $paginator->execute($ldap);
         });
     }
 
@@ -648,7 +712,9 @@ class Builder
      */
     public function first($columns = ['*'])
     {
-        return Arr::get($this->limit(1)->get($columns), 0);
+        return Arr::first(
+            $this->limit(1)->get($columns)
+        );
     }
 
     /**
@@ -658,7 +724,7 @@ class Builder
      *
      * @param array|string $columns
      *
-     * @return Model|static
+     * @return Model|array
      *
      * @throws ObjectNotFoundException
      */
@@ -669,6 +735,75 @@ class Builder
         }
 
         return $record;
+    }
+
+    /**
+     * Return the first entry in a result, or execute the callback.
+     *
+     * @param Closure $callback
+     *
+     * @return Model|mixed
+     */
+    public function firstOr(Closure $callback)
+    {
+        return $this->first() ?: $callback();
+    }
+
+    /**
+     * Execute the query and get the first result if it's the sole matching record.
+     *
+     * @param array|string $columns
+     *
+     * @return Model|array
+     *
+     * @throws ObjectsNotFoundException
+     * @throws MultipleObjectsFoundException
+     */
+    public function sole($columns = ['*'])
+    {
+        $result = $this->limit(2)->get($columns);
+
+        if (empty($result)) {
+            throw new ObjectsNotFoundException;
+        }
+
+        if (count($result) > 1) {
+            throw new MultipleObjectsFoundException;
+        }
+
+        return reset($result);
+    }
+
+    /**
+     * Determine if any results exist for the current query.
+     *
+     * @return bool
+     */
+    public function exists()
+    {
+        return ! is_null($this->first());
+    }
+
+    /**
+     * Determine if no results exist for the current query.
+     *
+     * @return bool
+     */
+    public function doesntExist()
+    {
+        return ! $this->exists();
+    }
+
+    /**
+     * Execute the given callback if no rows exist for the current query.
+     *
+     * @param Closure $callback
+     *
+     * @return bool|mixed
+     */
+    public function existsOr(Closure $callback)
+    {
+        return $this->exists() ? true : $callback();
     }
 
     /**
@@ -922,20 +1057,17 @@ class Builder
     public function where($field, $operator = null, $value = null, $boolean = 'and', $raw = false)
     {
         if (is_array($field)) {
-            // If the field is an array, we will assume it is an array of
-            // key-value pairs and can add them each as a where clause.
+            // If the field is an array, we will assume we have been
+            // provided with an array of key-value pairs and can
+            // add them each as their own seperate where clause.
             return $this->addArrayOfWheres($field, $boolean, $raw);
         }
 
-        // We'll bypass the 'has' and 'notHas' operator since they
-        // only require two arguments inside the where method.
-        $bypass = ['*', '!*'];
-
-        // Here we will make some assumptions about the operator. If only
-        // 2 values are passed to the method, we will assume that
-        // the operator is 'equals' and keep going.
-        if (func_num_args() === 2 && in_array($operator, $bypass) === false) {
-            list($value, $operator) = [$operator, '='];
+        // If we have been provided with two arguments not a "has" or
+        // "not has" operator, we'll assume the developer is creating
+        // an "equals" clause and set the proper operator in place.
+        if (func_num_args() === 2 && ! in_array($operator, ['*', '!*'])) {
+            [$value, $operator] = [$operator, '='];
         }
 
         if (! in_array($operator, $this->grammar->getOperators())) {
@@ -1376,7 +1508,7 @@ class Builder
     }
 
     /**
-     * Adds a filter onto the current query.
+     * Adds a filter binding onto the current query.
      *
      * @param string $type     The type of filter to add.
      * @param array  $bindings The bindings of the filter.
@@ -1388,23 +1520,37 @@ class Builder
     public function addFilter($type, array $bindings)
     {
         if (! array_key_exists($type, $this->filters)) {
-            throw new InvalidArgumentException("Filter type [$type] is invalid.");
+            throw new InvalidArgumentException("Filter type: [$type] is invalid.");
         }
 
-        // The required filter key bindings.
-        $required = ['field', 'operator', 'value'];
+        // Each filter clause require key bindings to be set. We
+        // will validate this here to ensure all of them have
+        // been provided, or throw an exception otherwise.
+        if ($missing = $this->missingBindingKeys($bindings)) {
+            $keys = implode(', ', $missing);
 
-        // Here we will ensure the proper key bindings are given.
-        if (count(array_intersect_key(array_flip($required), $bindings)) !== count($required)) {
-            // Retrieve the keys that are missing in the bindings array.
-            $missing = implode(', ', array_diff($required, array_flip($bindings)));
-
-            throw new InvalidArgumentException("Invalid filter bindings. Missing: [$missing] keys.");
+            throw new InvalidArgumentException("Invalid filter bindings. Missing: [$keys] keys.");
         }
 
         $this->filters[$type][] = $bindings;
 
         return $this;
+    }
+
+    /**
+     * Extract any missing required binding keys.
+     *
+     * @param array $bindings
+     *
+     * @return array
+     */
+    protected function missingBindingKeys($bindings)
+    {
+        $required = array_flip(['field', 'operator', 'value']);
+
+        $existing = array_intersect_key($required, $bindings);
+
+        return array_keys(array_diff_key($required, $existing));
     }
 
     /**
@@ -1424,7 +1570,7 @@ class Builder
      */
     public function clearFilters()
     {
-        foreach ($this->filters as $type => $filters) {
+        foreach (array_keys($this->filters) as $type) {
             $this->filters[$type] = [];
         }
 
@@ -1758,7 +1904,7 @@ class Builder
             if (is_numeric($key) && is_array($value)) {
                 // If the key is numeric and the value is an array, we'll
                 // assume we've been given an array with conditionals.
-                list($field, $condition) = $value;
+                [$field, $condition] = $value;
 
                 // Since a value is optional for some conditionals, we will
                 // try and retrieve the third parameter from the array,
@@ -1815,6 +1961,9 @@ class Builder
                 break;
             case 'read':
                 $event = new Events\Read(...$args);
+                break;
+            case 'chunk':
+                $event = new Events\Chunk(...$args);
                 break;
             case 'paginate':
                 $event = new Events\Paginate(...$args);

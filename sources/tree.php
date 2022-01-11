@@ -135,8 +135,8 @@ if (
     if (
         isset($get['id']) === true
         && is_numeric(intval($get['id'])) === true
-        && isset($_SESSION['user']['treeloadstrategy']) === true
-        && $_SESSION['user']['treeloadstrategy'] === 'sequential'
+        && isset($_SESSION['user_treeloadstrategy']) === true
+        && $_SESSION['user_treeloadstrategy'] === 'sequential'
     ) {
         $ret_json = buildNodeTree(
             $get['id'],
@@ -146,8 +146,8 @@ if (
             $SETTINGS
         );
     } elseif (
-        isset($_SESSION['user']['treeloadstrategy']) === true
-        && $_SESSION['user']['treeloadstrategy'] === 'sequential'
+        isset($_SESSION['user_treeloadstrategy']) === true
+        && $_SESSION['user_treeloadstrategy'] === 'sequential'
     ) {
         $ret_json = buildNodeTree(
             0,

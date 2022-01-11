@@ -3,6 +3,7 @@
 namespace LdapRecord\Models\Attributes;
 
 use LdapRecord\EscapesValues;
+use LdapRecord\Support\Arr;
 
 class DistinguishedNameBuilder
 {
@@ -44,7 +45,7 @@ class DistinguishedNameBuilder
      */
     public function __call($method, $args)
     {
-        return $this->get()->{$method}($args);
+        return $this->get()->{$method}(...$args);
     }
 
     /**
@@ -107,7 +108,7 @@ class DistinguishedNameBuilder
         // RDN's have been given if the value is null, and
         // attempt to break them into their components.
         if (is_null($value)) {
-            $attributes = is_array($attribute) ? $attribute : [$attribute];
+            $attributes = Arr::wrap($attribute);
 
             $components = array_map([$this, 'makeComponentizedArray'], $attributes);
         } else {
@@ -190,6 +191,36 @@ class DistinguishedNameBuilder
         $this->reverse = true;
 
         return $this;
+    }
+
+    /**
+     * Get the components of the DN.
+     *
+     * @param null|string $type
+     *
+     * @return array
+     */
+    public function components($type = null)
+    {
+        return is_null($type)
+            ? $this->components
+            : $this->componentsOfType($type);
+    }
+
+    /**
+     * Get the components of a particular type.
+     *
+     * @param string $type
+     *
+     * @return array
+     */
+    protected function componentsOfType($type)
+    {
+        $components = array_filter($this->components, function ($component) use ($type) {
+            return ([$name] = $component) && strtolower($name) === strtolower($type);
+        });
+
+        return array_values($components);
     }
 
     /**

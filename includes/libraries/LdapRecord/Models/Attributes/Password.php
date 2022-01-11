@@ -325,7 +325,7 @@ class Password
      *
      * @throws \ReflectionException
      */
-    public static function hashMethodRequiresSalt($method) : bool
+    public static function hashMethodRequiresSalt($method): bool
     {
         $parameters = (new ReflectionMethod(static::class, $method))->getParameters();
 

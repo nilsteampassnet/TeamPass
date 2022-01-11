@@ -9,7 +9,7 @@ use LdapRecord\Query\Model\Builder;
 
 /**
  * @method bool exists($models = null) Determine if the relation contains all of the given models, or any models
- * @method bool contains($models) Determine if any of the given models are contained in the relation
+ * @method bool contains($models)      Determine if any of the given models are contained in the relation
  */
 abstract class Relation
 {
@@ -343,13 +343,11 @@ abstract class Relation
      */
     protected function determineModelFromRelated(Model $model, array $related)
     {
-        $objectClasses = $model->getAttribute('objectclass') ?? [];
-
         // We must normalize all the related models object class
         // names to the same case so we are able to properly
         // determine the owning model from search results.
         return array_search(
-            $this->normalizeObjectClasses($objectClasses),
+            $this->normalizeObjectClasses($model->getObjectClasses()),
             array_map([$this, 'normalizeObjectClasses'], $related)
         );
     }

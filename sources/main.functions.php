@@ -133,6 +133,11 @@ function cryption(string $message, string $ascii_key, string $type, array $SETTI
 
     // Check if class already exists
     if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Exception/CryptoException.php';
+		include_once $path . 'Exception/BadFormatException.php';
+		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+		include_once $path . 'Exception/IOException.php';
+		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
 		include_once $path . 'Crypto.php';
 		include_once $path . 'Encoding.php';
 		include_once $path . 'DerivedKeys.php';
@@ -187,15 +192,24 @@ function defuse_generate_key()
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    // Check if class already exists
+    if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Exception/CryptoException.php';
+		include_once $path . 'Exception/BadFormatException.php';
+		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+		include_once $path . 'Exception/IOException.php';
+		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+		include_once $path . 'Crypto.php';
+		include_once $path . 'Encoding.php';
+		include_once $path . 'DerivedKeys.php';
+		include_once $path . 'Key.php';
+		include_once $path . 'KeyOrPassword.php';
+		include_once $path . 'File.php';
+		include_once $path . 'RuntimeTests.php';
+		include_once $path . 'KeyProtectedByPassword.php';
+		include_once $path . 'Core.php';
+	}
+
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
@@ -217,15 +231,23 @@ function defuse_generate_personal_key(string $psk): string
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    // Check if class already exists
+    if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Exception/CryptoException.php';
+		include_once $path . 'Exception/BadFormatException.php';
+		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+		include_once $path . 'Exception/IOException.php';
+		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+		include_once $path . 'Crypto.php';
+		include_once $path . 'Encoding.php';
+		include_once $path . 'DerivedKeys.php';
+		include_once $path . 'Key.php';
+		include_once $path . 'KeyOrPassword.php';
+		include_once $path . 'File.php';
+		include_once $path . 'RuntimeTests.php';
+		include_once $path . 'KeyProtectedByPassword.php';
+		include_once $path . 'Core.php';
+	}
     $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
@@ -247,15 +269,24 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    // Check if class already exists
+    if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Exception/CryptoException.php';
+		include_once $path . 'Exception/BadFormatException.php';
+		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+		include_once $path . 'Exception/IOException.php';
+		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+		include_once $path . 'Crypto.php';
+		include_once $path . 'Encoding.php';
+		include_once $path . 'DerivedKeys.php';
+		include_once $path . 'Key.php';
+		include_once $path . 'KeyOrPassword.php';
+		include_once $path . 'File.php';
+		include_once $path . 'RuntimeTests.php';
+		include_once $path . 'KeyProtectedByPassword.php';
+		include_once $path . 'Core.php';
+	}
+
     try {
         $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key->unlockKey($psk);

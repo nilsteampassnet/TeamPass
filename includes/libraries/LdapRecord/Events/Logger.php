@@ -118,8 +118,8 @@ class Logger
 
             $message = "LDAP ({$connection->getHost()})"
                 ." - Operation: {$this->getOperationName($event)}"
-                ." - Base DN: {$query->getDn()}"
-                ." - Filter: {$query->getUnescapedQuery()}"
+                ." - Base DN: {$query->getBaseDn()}"
+                ." - Filter: {$query->getQuery()}"
                 ." - Selected: ({$selected})"
                 ." - Time Elapsed: {$event->getTime()}";
 

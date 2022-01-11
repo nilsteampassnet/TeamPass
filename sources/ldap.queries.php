@@ -34,16 +34,14 @@ if (isset($_SESSION['CPM']) === false
 }
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+if (file_exists('../includes/config/tp.config.php')) {
+    include_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    include_once './includes/config/tp.config.php';
+} elseif (file_exists('../../includes/config/tp.config.php')) {
+    include_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 /* do checks */
@@ -162,6 +160,7 @@ switch ($post_type) {
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
         $connection = new Connection($config);
+        //set_error_handler(E_ERROR);
 
         try {
             $connection->connect();
@@ -179,10 +178,24 @@ switch ($post_type) {
             break;
         }
 
-        $connection->query()
-            ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
-            ->firstOrFail();
+        try {
+            $connection->query()
+                ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
+                ->firstOrFail();
 
+        } catch (\LdapRecord\Query\LdapRecordException $e) {
+            $error = $e->getDetailedError();
+            
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
         try {
             if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
                 $connection->auth()->bind($post_username, $post_password);

@@ -8,7 +8,10 @@ final class KeyProtectedByPassword
 {
     const PASSWORD_KEY_CURRENT_VERSION = "\xDE\xF1\x00\x00";
 
-    private $encrypted_key = null;
+    /**
+     * @var string
+     */
+    private $encrypted_key = '';
 
     /**
      * Creates a random key protected by the provided password.
@@ -95,10 +98,39 @@ final class KeyProtectedByPassword
              * here in order to make the API simpler, avoiding the need to
              * document that this method might throw an Ex\BadFormatException. */
             throw new Ex\WrongKeyOrModifiedCiphertextException(
-                "The decrypted key was found to be in an invalid format. ".
+                "The decrypted key was found to be in an invalid format. " .
                 "This very likely indicates it was modified by an attacker."
             );
         }
+    }
+
+    /**
+     * Changes the password.
+     *
+     * @param string $current_password
+     * @param string $new_password
+     *
+     * @throws Ex\EnvironmentIsBrokenException
+     * @throws Ex\WrongKeyOrModifiedCiphertextException
+     *
+     * @return KeyProtectedByPassword
+     */
+    public function changePassword($current_password, $new_password)
+    {
+        $inner_key = $this->unlockKey($current_password);
+        /* The password is hashed as a form of poor-man's domain separation
+         * between this use of encryptWithPassword() and other uses of
+         * encryptWithPassword() that the user may also be using as part of the
+         * same protocol. */
+        $encrypted_key = Crypto::encryptWithPassword(
+            $inner_key->saveToAsciiSafeString(),
+            \hash(Core::HASH_FUNCTION_NAME, $new_password, true),
+            true
+        );
+
+        $this->encrypted_key = $encrypted_key;
+
+        return $this;
     }
 
     /**

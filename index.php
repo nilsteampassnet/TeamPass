@@ -134,17 +134,7 @@ $get['language'] = $superGlobal->get('language', 'GET') === null ? '' : $superGl
 $get['otv'] = $superGlobal->get('otv', 'GET') === null ? '' : $superGlobal->get('otv', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (empty($get['language']) === false) {
-    // case of user has change language in the login page
-    $dataLanguage = DB::queryFirstRow(
-        'SELECT flag, name
-        FROM ' . prefixTable('languages') . '
-        WHERE name = %s',
-        $get['language']
-    );
-    $superGlobal->put('user_language', $dataLanguage['name'], 'SESSION');
-    $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');
-} elseif ($session_user_id === null && $post_language === null && $session_user_language === null) {
+if ($session_user_id === null && $post_language === null && $session_user_language === null) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         'SELECT m.valeur AS valeur, l.flag AS flag

@@ -259,7 +259,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
                                         <a class="float-right">
-                                            <span id="profile-plupload-runtime"><?php echo $_SESSION['user']['treeloadstrategy']; ?></span>
+                                            <span id="profile-plupload-runtime"><?php echo $_SESSION['user_treeloadstrategy']; ?></span>
                                         </a>
                                     </li>
                                     <?php
@@ -280,7 +280,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>' . langHdl('user_profile_agses_card_id') . '</b>
                                         <a class="float-right">',
-                                            $_SESSION['user']['agses-usercardid'] ?? '',
+                                            $_SESSION['user_agsescardid'] ?? '',
                                             '</a>
                                     </li>';
                                     }
@@ -375,7 +375,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 foreach ($zones as $key => $zone) {
                                                     echo '
                                                 <option value="' . $key . '"',
-                                                    isset($_SESSION['user']['usertimezone']) === true && $_SESSION['user']['usertimezone'] === $key ?
+                                                    isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] === $key ?
                                                     ' selected' :
                                                     (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
                                                 '>' . $zone . '</option>';
@@ -391,7 +391,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 <?php
                                                 foreach ($languages as $language) {
                                                     echo '<option value="' . $language['label'] . '"',
-                                                    $_SESSION['user']['user_language'] === strtolower($language['label']) ?
+                                                    $_SESSION['user_language'] === strtolower($language['label']) ?
                                                     ' selected="selected"' :
                                                     ($SETTINGS['default_language'] === strtolower($language['label']) ? ' selected="selected"' : ''),
                                                 '>' . $language['label'] . '</option>';
@@ -406,11 +406,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
                                                 <option value="<?php echo langHdl('sequential'); ?>" <?php
-                                                                                                        if ($_SESSION['user']['treeloadstrategy'] === 'sequential') {
+                                                                                                        if ($_SESSION['user_treeloadstrategy'] === 'sequential') {
                                                                                                             echo ' selected';
                                                                                                         } ?>><?php echo langHdl('sequential'); ?></option>
                                                 <option value="<?php echo langHdl('full'); ?>" <?php
-                                                                                                if ($_SESSION['user']['treeloadstrategy'] === 'full') {
+                                                                                                if ($_SESSION['user_treeloadstrategy'] === 'full') {
                                                                                                     echo ' selected';
                                                                                                 } ?>><?php echo langHdl('full'); ?></option>
                                             </select>
@@ -427,8 +427,8 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <label class="col-sm-2 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
                                             <div class="col-sm-10">
                                                 <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
-                                                if (isset($_SESSION['user']['agses-usercardid']) === true) {
-                                                    echo $_SESSION['user']['agses-usercardid'];
+                                                if (isset($_SESSION['user_agsescardid']) === true) {
+                                                    echo $_SESSION['user_agsescardid'];
                                                 } ?>">
                                             </div>
                                         </div>

@@ -144,7 +144,8 @@ class AccountControl
         // of possible flags. This will allow us to see if
         // our AccountControl object contains any of them.
         $flagsUsed = array_intersect(
-            $this->extractFlags($flag), $this->values
+            $this->extractFlags($flag),
+            $this->values
         );
 
         return in_array($flag, $flagsUsed);
@@ -325,7 +326,7 @@ class AccountControl
      *
      * For information about how to programmatically set this permission, visit the following link:
      *
-     * @link http://msdn2.microsoft.com/en-us/library/aa746398.aspx
+     * @see http://msdn2.microsoft.com/en-us/library/aa746398.aspx
      *
      * @return $this
      */

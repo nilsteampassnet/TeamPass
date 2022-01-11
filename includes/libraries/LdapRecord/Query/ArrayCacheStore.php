@@ -16,7 +16,7 @@ class ArrayCacheStore implements CacheInterface
     protected $storage = [];
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function get($key, $default = null)
     {
@@ -38,20 +38,44 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function set($key, $value, $ttl = null)
     {
         $this->storage[$key] = [
-            'value'     => $value,
-            'expiresAt' => $this->parseDateInterval($ttl),
+            'value' => $value,
+            'expiresAt' => $this->calculateExpiration($ttl),
         ];
 
         return true;
     }
 
     /**
-     * {@inheritdoc}
+     * Get the expiration time of the key.
+     *
+     * @param int $seconds
+     *
+     * @return int
+     */
+    protected function calculateExpiration($seconds)
+    {
+        return $this->toTimestamp($seconds);
+    }
+
+    /**
+     * Get the UNIX timestamp for the given number of seconds.
+     *
+     * @param int $seconds
+     *
+     * @return int
+     */
+    protected function toTimestamp($seconds)
+    {
+        return $seconds > 0 ? $this->availableAt($seconds) : 0;
+    }
+
+    /**
+     * @inheritdoc
      */
     public function delete($key)
     {
@@ -61,7 +85,7 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function clear()
     {
@@ -71,7 +95,7 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function getMultiple($keys, $default = null)
     {
@@ -85,7 +109,7 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function setMultiple($values, $ttl = null)
     {
@@ -97,7 +121,7 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function deleteMultiple($keys)
     {
@@ -109,7 +133,7 @@ class ArrayCacheStore implements CacheInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function has($key)
     {

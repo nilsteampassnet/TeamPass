@@ -17,6 +17,7 @@ class RuntimeTests extends Crypto
      * Runs the runtime tests.
      *
      * @throws Ex\EnvironmentIsBrokenException
+     * @return void
      */
     public static function runtimeTest()
     {
@@ -46,10 +47,10 @@ class RuntimeTests extends Crypto
             Core::ensureFunctionExists('openssl_get_cipher_methods');
             if (\in_array(Core::CIPHER_METHOD, \openssl_get_cipher_methods()) === false) {
                 throw new Ex\EnvironmentIsBrokenException(
-                    'Cipher method not supported. This is normally caused by an outdated '.
-                    'version of OpenSSL (and/or OpenSSL compiled for FIPS compliance). '.
-                    'Please upgrade to a newer version of OpenSSL that supports '.
-                    Core::CIPHER_METHOD.' to use this library.'
+                    'Cipher method not supported. This is normally caused by an outdated ' .
+                    'version of OpenSSL (and/or OpenSSL compiled for FIPS compliance). ' .
+                    'Please upgrade to a newer version of OpenSSL that supports ' .
+                    Core::CIPHER_METHOD . ' to use this library.'
                 );
             }
 
@@ -58,13 +59,9 @@ class RuntimeTests extends Crypto
             RuntimeTests::HKDFTestVector();
 
             RuntimeTests::testEncryptDecrypt();
-            if (Core::ourStrlen(Key::createNewRandomKey()->getRawBytes()) != Core::KEY_BYTE_SIZE) {
-                throw new Ex\EnvironmentIsBrokenException();
-            }
+            Core::ensureTrue(Core::ourStrlen(Key::createNewRandomKey()->getRawBytes()) === Core::KEY_BYTE_SIZE);
 
-            if (Core::ENCRYPTION_INFO_STRING == Core::AUTHENTICATION_INFO_STRING) {
-                throw new Ex\EnvironmentIsBrokenException();
-            }
+            Core::ensureTrue(Core::ENCRYPTION_INFO_STRING !== Core::AUTHENTICATION_INFO_STRING);
         } catch (Ex\EnvironmentIsBrokenException $ex) {
             // Do this, otherwise it will stay in the "tests are running" state.
             $test_state = 3;
@@ -79,6 +76,7 @@ class RuntimeTests extends Crypto
      * High-level tests of Crypto operations.
      *
      * @throws Ex\EnvironmentIsBrokenException
+     * @return void
      */
     private static function testEncryptDecrypt()
     {
@@ -95,13 +93,11 @@ class RuntimeTests extends Crypto
             // the user into thinking it's just an invalid ciphertext!
             throw new Ex\EnvironmentIsBrokenException();
         }
-        if ($decrypted !== $data) {
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue($decrypted === $data);
 
         // Modifying the ciphertext: Appending a string.
         try {
-            Crypto::decrypt($ciphertext.'a', $key, true);
+            Crypto::decrypt($ciphertext . 'a', $key, true);
             throw new Ex\EnvironmentIsBrokenException();
         } catch (Ex\WrongKeyOrModifiedCiphertextException $e) { /* expected */
         }
@@ -148,6 +144,7 @@ class RuntimeTests extends Crypto
      * Test HKDF against test vectors.
      *
      * @throws Ex\EnvironmentIsBrokenException
+     * @return void
      */
     private static function HKDFTestVector()
     {
@@ -159,33 +156,30 @@ class RuntimeTests extends Crypto
         $info   = Encoding::hexToBin('f0f1f2f3f4f5f6f7f8f9');
         $length = 42;
         $okm    = Encoding::hexToBin(
-            '3cb25f25faacd57a90434f64d0362f2a'.
-            '2d2d0a90cf1a5a4c5db02d56ecc4c5bf'.
+            '3cb25f25faacd57a90434f64d0362f2a' .
+            '2d2d0a90cf1a5a4c5db02d56ecc4c5bf' .
             '34007208d5b887185865'
         );
         $computed_okm = Core::HKDF('sha256', $ikm, $length, $info, $salt);
-        if ($computed_okm !== $okm) {
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue($computed_okm === $okm);
 
         // Test Case 7
         $ikm    = \str_repeat("\x0c", 22);
         $length = 42;
         $okm    = Encoding::hexToBin(
-            '2c91117204d745f3500d636a62f64f0a'.
-            'b3bae548aa53d423b0d1f27ebba6f5e5'.
+            '2c91117204d745f3500d636a62f64f0a' .
+            'b3bae548aa53d423b0d1f27ebba6f5e5' .
             '673a081d70cce7acfc48'
         );
         $computed_okm = Core::HKDF('sha1', $ikm, $length, '', null);
-        if ($computed_okm !== $okm) {
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue($computed_okm === $okm);
     }
 
     /**
      * Test HMAC against test vectors.
      *
      * @throws Ex\EnvironmentIsBrokenException
+     * @return void
      */
     private static function HMACTestVector()
     {
@@ -193,50 +187,42 @@ class RuntimeTests extends Crypto
         $key     = \str_repeat("\x0b", 20);
         $data    = 'Hi There';
         $correct = 'b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7';
-        if (\hash_hmac(Core::HASH_FUNCTION_NAME, $data, $key) !== $correct) {
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue(
+            \hash_hmac(Core::HASH_FUNCTION_NAME, $data, $key) === $correct
+        );
     }
 
     /**
      * Test AES against test vectors.
      *
      * @throws Ex\EnvironmentIsBrokenException
+     * @return void
      */
     private static function AESTestVector()
     {
         // AES CTR mode test vector from NIST SP 800-38A
         $key = Encoding::hexToBin(
-            '603deb1015ca71be2b73aef0857d7781'.
+            '603deb1015ca71be2b73aef0857d7781' .
             '1f352c073b6108d72d9810a30914dff4'
         );
         $iv        = Encoding::hexToBin('f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff');
         $plaintext = Encoding::hexToBin(
-            '6bc1bee22e409f96e93d7e117393172a'.
-            'ae2d8a571e03ac9c9eb76fac45af8e51'.
-            '30c81c46a35ce411e5fbc1191a0a52ef'.
+            '6bc1bee22e409f96e93d7e117393172a' .
+            'ae2d8a571e03ac9c9eb76fac45af8e51' .
+            '30c81c46a35ce411e5fbc1191a0a52ef' .
             'f69f2445df4f9b17ad2b417be66c3710'
         );
         $ciphertext = Encoding::hexToBin(
-            '601ec313775789a5b7a7f504bbf3d228'.
-            'f443e3ca4d62b59aca84e990cacaf5c5'.
-            '2b0930daa23de94ce87017ba2d84988d'.
+            '601ec313775789a5b7a7f504bbf3d228' .
+            'f443e3ca4d62b59aca84e990cacaf5c5' .
+            '2b0930daa23de94ce87017ba2d84988d' .
             'dfc9c58db67aada613c2dd08457941a6'
         );
 
         $computed_ciphertext = Crypto::plainEncrypt($plaintext, $key, $iv);
-        if ($computed_ciphertext !== $ciphertext) {
-            echo \str_repeat("\n", 30);
-            echo \bin2hex($computed_ciphertext);
-            echo "\n---\n";
-            echo \bin2hex($ciphertext);
-            echo \str_repeat("\n", 30);
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue($computed_ciphertext === $ciphertext);
 
         $computed_plaintext = Crypto::plainDecrypt($ciphertext, $key, $iv, Core::CIPHER_METHOD);
-        if ($computed_plaintext !== $plaintext) {
-            throw new Ex\EnvironmentIsBrokenException();
-        }
+        Core::ensureTrue($computed_plaintext === $plaintext);
     }
 }

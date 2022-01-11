@@ -4,7 +4,6 @@ namespace LdapRecord;
 
 use Carbon\Carbon;
 use Closure;
-use Exception;
 use LdapRecord\Auth\Guard;
 use LdapRecord\Configuration\DomainConfiguration;
 use LdapRecord\Events\DispatcherInterface;
@@ -75,7 +74,7 @@ class Connection
     /**
      * The authentication guard resolver.
      *
-     * @var \Closure
+     * @var Closure
      */
     protected $authGuardResolver;
 
@@ -138,8 +137,6 @@ class Connection
     {
         $this->ldap = $ldap;
 
-        $this->initialize();
-
         return $this;
     }
 
@@ -186,8 +183,8 @@ class Connection
             $this->configuration->get('options'),
             [
                 LDAP_OPT_PROTOCOL_VERSION => $this->configuration->get('version'),
-                LDAP_OPT_NETWORK_TIMEOUT  => $this->configuration->get('timeout'),
-                LDAP_OPT_REFERRALS        => $this->configuration->get('follow_referrals'),
+                LDAP_OPT_NETWORK_TIMEOUT => $this->configuration->get('timeout'),
+                LDAP_OPT_REFERRALS => $this->configuration->get('follow_referrals'),
             ]
         ));
     }
@@ -404,6 +401,10 @@ class Connection
      */
     public function auth()
     {
+        if (! $this->ldap->isConnected()) {
+            $this->initialize();
+        }
+
         $guard = call_user_func($this->authGuardResolver);
 
         $guard->setDispatcher(

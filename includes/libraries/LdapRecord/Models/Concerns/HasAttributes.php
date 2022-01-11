@@ -9,7 +9,7 @@ use LdapRecord\LdapRecordException;
 use LdapRecord\Models\Attributes\MbString;
 use LdapRecord\Models\Attributes\Timestamp;
 use LdapRecord\Models\DetectsResetIntegers;
-use Tightenco\Collect\Support\Arr;
+use LdapRecord\Support\Arr;
 
 trait HasAttributes
 {
@@ -42,6 +42,13 @@ trait HasAttributes
      * @var array
      */
     protected $casts = [];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [];
 
     /**
      * The format that dates must be output to for serialization.
@@ -83,13 +90,20 @@ trait HasAttributes
 
         $attributes = $this->addMutatedAttributesToArray(
             $attributes,
-            $mutatedAttributes = $this->getMutatedAttributes()
+            $this->getMutatedAttributes()
         );
 
         // Before we go ahead and encode each value, we'll attempt
         // converting any necessary attribute values to ensure
         // they can be encoded, such as GUIDs and SIDs.
         $attributes = $this->convertAttributesForJson($attributes);
+
+        // Here we will grab all of the appended, calculated attributes to this model
+        // as these attributes are not really in the attributes array, but are run
+        // when we need to array or JSON the model for convenience to the coder.
+        foreach ($this->getArrayableAppends() as $key) {
+            $attributes[$key] = $this->mutateAttributeForArray($key, null);
+        }
 
         // Now we will go through each attribute to make sure it is
         // properly encoded. If attributes aren't in UTF-8, we will
@@ -176,7 +190,7 @@ trait HasAttributes
             // We want to spin through all the mutated attributes for this model and call
             // the mutator for the attribute. We cache off every mutated attributes so
             // we don't have to constantly check on attributes that actually change.
-            if (! array_key_exists($key, $attributes)) {
+            if (! Arr::exists($attributes, $key)) {
                 continue;
             }
 
@@ -224,26 +238,28 @@ trait HasAttributes
      * Returns the models attribute by its key.
      *
      * @param int|string $key
+     * @param mixed      $default
      *
      * @return mixed
      */
-    public function getAttribute($key)
+    public function getAttribute($key, $default = null)
     {
         if (! $key) {
             return;
         }
 
-        return $this->getAttributeValue($key);
+        return $this->getAttributeValue($key, $default);
     }
 
     /**
      * Get an attributes value.
      *
      * @param string $key
+     * @param mixed  $default
      *
      * @return mixed
      */
-    public function getAttributeValue($key)
+    public function getAttributeValue($key, $default = null)
     {
         $key = $this->normalizeAttributeKey($key);
         $value = $this->getAttributeFromArray($key);
@@ -260,7 +276,7 @@ trait HasAttributes
             return $this->castAttribute($key, $value);
         }
 
-        return $value;
+        return is_null($value) ? $default : $value;
     }
 
     /**
@@ -494,6 +510,16 @@ trait HasAttributes
     }
 
     /**
+     * Convert the model to its JSON representation.
+     *
+     * @return string
+     */
+    public function toJson()
+    {
+        return json_encode($this);
+    }
+
+    /**
      * Encode the given value as JSON.
      *
      * @param mixed $value
@@ -597,6 +623,22 @@ trait HasAttributes
     }
 
     /**
+     * Get all of the appendable values that are arrayable.
+     *
+     * @return array
+     */
+    protected function getArrayableAppends()
+    {
+        if (empty($this->appends)) {
+            return [];
+        }
+
+        return $this->getArrayableItems(
+            array_combine($this->appends, $this->appends)
+        );
+    }
+
+    /**
      * Get the format for date serialization.
      *
      * @return string
@@ -646,13 +688,14 @@ trait HasAttributes
      * Returns the first attribute by the specified key.
      *
      * @param string $key
+     * @param mixed  $default
      *
      * @return mixed
      */
-    public function getFirstAttribute($key)
+    public function getFirstAttribute($key, $default = null)
     {
         return Arr::first(
-            Arr::wrap($this->getAttribute($key))
+            Arr::wrap($this->getAttribute($key, $default)),
         );
     }
 
@@ -667,10 +710,10 @@ trait HasAttributes
     }
 
     /**
-     * Set an attribute value by the specified key and sub-key.
+     * Set an attribute value by the specified key.
      *
-     * @param mixed $key
-     * @param mixed $value
+     * @param string $key
+     * @param mixed  $value
      *
      * @return $this
      */
@@ -691,6 +734,23 @@ trait HasAttributes
         if ($this->isJsonCastable($key) && ! is_null($value)) {
             $value = $this->castAttributeAsJson($key, $value);
         }
+
+        $this->attributes[$key] = Arr::wrap($value);
+
+        return $this;
+    }
+
+    /**
+     * Set an attribute on the model. No checking is done.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return $this
+     */
+    public function setRawAttribute($key, $value)
+    {
+        $key = $this->normalizeAttributeKey($key);
 
         $this->attributes[$key] = Arr::wrap($value);
 
@@ -836,9 +896,9 @@ trait HasAttributes
         // LDAP search results will contain the distinguished
         // name inside of the `dn` key. We will retrieve this,
         // and then set it on the model for accessibility.
-        if (array_key_exists('dn', $attributes)) {
-            $this->dn = is_array($attributes['dn'])
-                ? reset($attributes['dn'])
+        if (Arr::exists($attributes, 'dn')) {
+            $this->dn = Arr::accessible($attributes['dn'])
+                ? Arr::first($attributes['dn'])
                 : $attributes['dn'];
         }
 
@@ -938,6 +998,42 @@ trait HasAttributes
     public function isDirty($key)
     {
         return ! $this->originalIsEquivalent($key);
+    }
+
+    /**
+     * Get the accessors being appended to the models array form.
+     *
+     * @return array
+     */
+    public function getAppends()
+    {
+        return $this->appends;
+    }
+
+    /**
+     * Set the accessors to append to model arrays.
+     *
+     * @param array $appends
+     *
+     * @return $this
+     */
+    public function setAppends(array $appends)
+    {
+        $this->appends = $appends;
+
+        return $this;
+    }
+
+    /**
+     * Return whether the accessor attribute has been appended.
+     *
+     * @param string $attribute
+     *
+     * @return bool
+     */
+    public function hasAppended($attribute)
+    {
+        return in_array($attribute, $this->appends);
     }
 
     /**

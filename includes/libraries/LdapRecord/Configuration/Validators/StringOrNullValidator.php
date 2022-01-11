@@ -2,19 +2,20 @@
 
 namespace LdapRecord\Configuration\Validators;
 
-use LdapRecord\Configuration\ConfigurationException;
-
 class StringOrNullValidator extends Validator
 {
     /**
-     * {@inheritdoc}
+     * The validation exception message.
+     *
+     * @var string
      */
-    public function validate()
-    {
-        if (is_string($this->value) || is_null($this->value)) {
-            return true;
-        }
+    protected $message = 'Option [:option] must be a string or null.';
 
-        throw new ConfigurationException("Option {$this->key} must be a string or null.");
+    /**
+     * @inheritdoc
+     */
+    public function passes()
+    {
+        return is_string($this->value) || is_null($this->value);
     }
 }
