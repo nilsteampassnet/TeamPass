@@ -23,6 +23,7 @@ session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = 'utf8';
 $_SESSION['CPM'] = 1;
+require_once '../includes/config/include.php';
 
 // Prepare POST variables
 $post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);
@@ -34,19 +35,6 @@ $scripts_list = array(
     array('upgrade_run_3.0.0_fields.php', 'user_id'),
     array('upgrade_run_3.0.0_suggestions.php', 'user_id'),
     array('upgrade_run_3.0.0_files.php', 'user_id'),
-    //array('./tools/upgrade.tools.field.php', 'user_id'),
-    /*array('upgrade_run_db_original.php', ""),
-    array('upgrade_run_2.1.26.php', ""),
-    array('upgrade_run_encryption_pwd.php', ""),
-    array('upgrade_run_encryption_suggestions.php', ""),
-    array('upgrade_run_2.1.27.php', ""),
-    array('upgrade_run_defuse_for_pwds.php', ""),
-    array('upgrade_run_defuse_for_logs.php', ""),
-    array('upgrade_run_defuse_for_categories.php', ""),
-    array('upgrade_run_defuse_for_custfields.php', ""),
-    array('upgrade_run_defuse_for_files.php', ""),
-    array('upgrade_run_defuse_for_files_step2.php', ""),
-    array('upgrade_run_final.php', "")*/
 );
 $param = '';
 

@@ -249,7 +249,7 @@ function mainQuery(array $SETTINGS)
                 null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 $SETTINGS
             );
-
+            
             // store in DB
             DB::insert(
                 prefixTable('tokens'),
@@ -877,7 +877,7 @@ function sendEmailsNotSent(
                 'sent'
             );
             foreach ($rows as $record) {
-                echo $record['increment_id'] . " >> ";
+                //echo $record['increment_id'] . " >> ";
                 // Send email
                 $ret = json_decode(
                     sendEmail(

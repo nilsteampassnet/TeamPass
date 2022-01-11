@@ -259,7 +259,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
                                         <a class="float-right">
-                                            <span id="profile-plupload-runtime"><?php echo $_SESSION['user_treeloadstrategy']; ?></span>
+                                            <span id="profile-plupload-runtime"><?php echo isset($_SESSION['user_treeloadstrategy']) === true ? $_SESSION['user_treeloadstrategy'] : ''; ?></span>
                                         </a>
                                     </li>
                                     <?php
@@ -368,7 +368,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     </div>
 
                                     <div class="form-group">
-                                        <label class="col-sm-2 control-label"><?php echo langHdl('timezone_selection'); ?></label>
+                                        <label class="col-sm-10 control-label"><?php echo langHdl('timezone_selection'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-timezone">
                                                 <?php
@@ -385,7 +385,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label class="col-sm-2 control-label"><?php echo langHdl('language'); ?></label>
+                                        <label class="col-sm-10 control-label"><?php echo langHdl('language'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
@@ -402,17 +402,15 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     </div>
 
                                     <div class="form-group">
-                                        <label class="col-sm-2 control-label"><?php echo langHdl('tree_load_strategy'); ?></label>
+                                        <label class="col-sm-10 control-label"><?php echo langHdl('tree_load_strategy'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
-                                                <option value="<?php echo langHdl('sequential'); ?>" <?php
-                                                                                                        if ($_SESSION['user_treeloadstrategy'] === 'sequential') {
-                                                                                                            echo ' selected';
-                                                                                                        } ?>><?php echo langHdl('sequential'); ?></option>
-                                                <option value="<?php echo langHdl('full'); ?>" <?php
-                                                                                                if ($_SESSION['user_treeloadstrategy'] === 'full') {
-                                                                                                    echo ' selected';
-                                                                                                } ?>><?php echo langHdl('full'); ?></option>
+                                                <option value="<?php echo langHdl('sequential'); ?>"
+                                                    <?php echo isset($_SESSION['user_treeloadstrategy']) === true && $_SESSION['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>
+                                                ><?php echo langHdl('sequential'); ?></option>
+                                                <option value="<?php echo langHdl('full'); ?>"
+                                                    <?php echo isset($_SESSION['user_treeloadstrategy']) === true && $_SESSION['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>
+                                                ><?php echo langHdl('full'); ?></option>
                                             </select>
                                         </div>
                                     </div>
@@ -420,11 +418,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <?php
                                     if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true
-                                        && $SETTINGS['agses_authentication_enabled'] === '1'
+                                        && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
                                         ?>
                                         <div class="form-group">
-                                            <label class="col-sm-2 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
+                                            <label class="col-sm-10 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
                                             <div class="col-sm-10">
                                                 <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
                                                 if (isset($_SESSION['user_agsescardid']) === true) {

@@ -392,7 +392,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
             <div class="card-body">
                 <small class="form-text text-muted">
-                    The database needs to be adapted. This step can take several minutes depending on the data volume.
+                    The database needs to be adapted. This step can take a very long time depending on the data volume and server performance.
                 </small>
                 <div class="row card card-primary mt-2">
                     <div class="card-body col-12 font-weight-light" id="step4_progress" style="overflow-y: scroll; height:400px;">
@@ -402,7 +402,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 
                 <div class="hidden" id="change_pw_encryption">
                     <br />
-                    <p><b>Encryption protocol of existing passwords now has to be started. It may take several minutes.</b></p>
+                    <p><b>Encryption protocol of existing passwords now has to be started. It may take a very long time depending on the data volume and server performance.</b></p>
                     <p>
                         <div style="display:none;" id="change_pw_encryption_progress"></div>
                     </p>

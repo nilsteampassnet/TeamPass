@@ -540,5 +540,9 @@ if (
     }
 }
 
+//---> 3.0.0.10
+// no action on DB
+//---<
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

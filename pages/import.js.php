@@ -117,7 +117,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             BeforeUpload: function(up, file) {
                 // Show spinner
                 toastr.remove();
-               toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
                     "PHPSESSID": "<?php echo session_id(); ?>",

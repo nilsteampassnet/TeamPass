@@ -103,10 +103,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         type: 'save_token',
                         size: 25,
                         capital: true,
+                        secure: true,
                         numeric: true,
-                        ambiguous: true,
+                        symbols: true,
+                        lowercase: true,
                         reason: 'avatar_profile_upload',
-                        duration: 10
+                        duration: 10,
+                        key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
                         $('#profile-user-token').val(data[0].token);
@@ -123,6 +126,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     'type_upload': 'upload_profile_photo',
                     'user_token': $('#profile-user-token').val()
                 };
+            },
+            FileUploaded: function(upldr, file, object) {
+                // Decode returned data
+                var myData = prepareExchangedData(object.response, 'decode', '<?php echo $_SESSION['key']; ?>');
+                // update form
+                $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
+                $('#profile-avatar-file-list').html('').addClass('hidden');
             }
         }
     });
@@ -144,16 +154,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             '</div>'
         );
         up.refresh(); // Reposition Flash/Silverlight
-    });
-
-    // get response
-    uploader_photo.bind('FileUploaded', function(up, file, object) {
-        // Decode returned data
-        var myData = prepareExchangedData(object.response, 'decode', '<?php echo $_SESSION['key']; ?>');
-        //console.log(myData);
-        // update form
-        $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
-        $('#profile-avatar-file-list').html('').addClass('hidden');
     });
 
     uploader_photo.init();
@@ -209,15 +209,38 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         }
                     );
                 } else {
-                    $('#profile-username').html($('#profile-user-name').val() + ' ' + $('#profile-user-lastname').val())
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo langHdl('done'); ?>',
-                        '', {
-                            timeOut: 2000,
-                            progressBar: true
-                        }
-                    );
+                    $('#profile-username').html($('#profile-user-name').val() + ' ' + $('#profile-user-lastname').val());
+
+                    // reload page in case of language change
+                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $_SESSION['user_language'];?>') {
+                        // prepare reload
+                        $(this).delay(3000).queue(function() {
+                            document.location.href = "index.php?page=profile";
+
+                            $(this).dequeue();
+                        });
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('alert_page_will_reload') . ' ... ' . langHdl('please_wait'); ?>',
+                            '', {
+                                timeOut: 3000,
+                                progressBar: true
+                            }
+                        );
+
+                    } else {
+                        // just inform user
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 2000,
+                                progressBar: true
+                            }
+                        );
+                    }
                 }
 
             }

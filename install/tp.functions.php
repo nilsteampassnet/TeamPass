@@ -15,15 +15,22 @@ function defuseCryption($message, $ascii_key, $type)
     // load PhpEncryption library
     $path = '../includes/libraries/Encryption/Encryption/';
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    if (!class_exists('Defuse\Crypto\Crypto', false)) {
+		include_once $path . 'Exception/CryptoException.php';
+		include_once $path . 'Exception/BadFormatException.php';
+		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+		include_once $path . 'Exception/IOException.php';
+		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+		include_once $path . 'Crypto.php';
+		include_once $path . 'Encoding.php';
+		include_once $path . 'DerivedKeys.php';
+		include_once $path . 'Key.php';
+		include_once $path . 'KeyOrPassword.php';
+		include_once $path . 'File.php';
+		include_once $path . 'RuntimeTests.php';
+		include_once $path . 'KeyProtectedByPassword.php';
+		include_once $path . 'Core.php';
+	}
 
     include_once '../includes/config/settings.php';
 

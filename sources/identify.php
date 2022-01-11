@@ -499,13 +499,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('user_upgrade_needed', $userInfo['upgrade_needed'], 'SESSION');
         $superGlobal->put('user_force_relog', $userInfo['force-relog'], 'SESSION');
         // get personal settings
-        if (! isset($userInfo['treeloadstrategy']) || empty($userInfo['treeloadstrategy'])) {
+        if (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) {
             $userInfo['treeloadstrategy'] = 'full';
         }
-        $superGlobal->put('treeloadstrategy', $userInfo['treeloadstrategy'], 'SESSION', 'user');
-        $superGlobal->put('agses-usercardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
+        $superGlobal->put('user_treeloadstrategy', $userInfo['treeloadstrategy'], 'SESSION', 'user');
+        $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
-        $superGlobal->put('usertimezone', $userInfo['usertimezone'], 'SESSION', 'user');
+        $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
         $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
