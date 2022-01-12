@@ -131,23 +131,20 @@ function cryption(string $message, string $ascii_key, string $type, array $SETTI
         $path = $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
     }
 
-    // Check if class already exists
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
+    include_once $path . 'Exception/CryptoException.php';
+    include_once $path . 'Exception/BadFormatException.php';
+    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $path . 'Exception/IOException.php';
+    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
     
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
@@ -192,23 +189,20 @@ function defuse_generate_key()
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    // Check if class already exists
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
+    include_once $path . 'Exception/CryptoException.php';
+    include_once $path . 'Exception/BadFormatException.php';
+    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $path . 'Exception/IOException.php';
+    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
@@ -219,6 +213,8 @@ function defuse_generate_key()
  * Generate a Defuse personal key.
  *
  * @param string $psk psk used
+ *
+ * @return string
  */
 function defuse_generate_personal_key(string $psk): string
 {
@@ -231,23 +227,21 @@ function defuse_generate_personal_key(string $psk): string
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    // Check if class already exists
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
+    include_once $path . 'Exception/CryptoException.php';
+    include_once $path . 'Exception/BadFormatException.php';
+    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $path . 'Exception/IOException.php';
+    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
+    
     $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
@@ -257,6 +251,8 @@ function defuse_generate_personal_key(string $psk): string
  *
  * @param string $psk                   the user's psk
  * @param string $protected_key_encoded special key
+ *
+ * @return string
  */
 function defuse_validate_personal_key(string $psk, string $protected_key_encoded): string
 {
@@ -269,23 +265,20 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
         $path = '../includes/libraries/Encryption/Encryption/';
     }
 
-    // Check if class already exists
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
+    include_once $path . 'Exception/CryptoException.php';
+    include_once $path . 'Exception/BadFormatException.php';
+    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $path . 'Exception/IOException.php';
+    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
+    include_once $path . 'Crypto.php';
+    include_once $path . 'Encoding.php';
+    include_once $path . 'DerivedKeys.php';
+    include_once $path . 'Key.php';
+    include_once $path . 'KeyOrPassword.php';
+    include_once $path . 'File.php';
+    include_once $path . 'RuntimeTests.php';
+    include_once $path . 'KeyProtectedByPassword.php';
+    include_once $path . 'Core.php';
 
     try {
         $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
@@ -322,6 +315,8 @@ function defuseReturnDecrypted(string $value, $SETTINGS): string
  *
  * @param string|array $chaine  what to trim
  * @param string       $element trim on what
+ *
+ * @return string
  */
 function trimElement($chaine, string $element): string
 {
@@ -346,6 +341,8 @@ function trimElement($chaine, string $element): string
  *
  * @param string $string  what to clean
  * @param bool   $special use of special chars?
+ *
+ * @return string
  */
 function cleanString(string $string, bool $special = false): string
 {
@@ -377,14 +374,14 @@ function db_error_handler(array $params): void
 }
 
 /**
- * [identifyUserRights description].
+ * Identify user's rights
  *
  * @param string|array $groupesVisiblesUser  [description]
  * @param string|array $groupesInterditsUser [description]
  * @param string       $isAdmin              [description]
  * @param string       $idFonctions          [description]
  *
- * @return bool [description]
+ * @return bool
  */
 function identifyUserRights(
     $groupesVisiblesUser,
@@ -449,6 +446,8 @@ function identifyUserRights(
  * @param string $idFonctions Roles of user
  * @param array  $SETTINGS    Teampass settings
  * @param array  $tree        Tree of folders
+ *
+ * @return bool
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
@@ -527,6 +526,8 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $superGlobal->put('nb_folders', DB::count(), 'SESSION');
     DB::query('SELECT * FROM ' . prefixTable('roles_title'));
     $superGlobal->put('nb_roles', DB::count(), 'SESSION');
+
+    return true;
 }
 
 /**
@@ -558,6 +559,8 @@ function convertToArray($element): array
  * @param string|array $userRoles       Roles of user
  * @param array        $SETTINGS        Teampass settings
  * @param object       $tree            Tree of folders
+ * 
+ * @return bool
  */
 function identUser(
     $allowedFolders,
@@ -762,6 +765,8 @@ function identUser(
  * @param string $action   What to do
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
+ * 
+ * @return void
  */
 function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): void
 {
@@ -784,6 +789,8 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
  * Cache table - refresh.
  *
  * @param array $SETTINGS Teampass settings
+ * 
+ * @return void
  */
 function cacheTableRefresh(array $SETTINGS): void
 {
@@ -884,6 +891,8 @@ function cacheTableRefresh(array $SETTINGS): void
  *
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
+ * 
+ * @return void
  */
 function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
 {
@@ -969,6 +978,8 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
  *
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
+ * 
+ * @return void
  */
 function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
 {
@@ -1312,6 +1323,8 @@ function emailBody(string $textMail): string
 
 /**
  * Generate a Key.
+ * 
+ * @return string
  */
 function generateKey(): string
 {
@@ -1468,6 +1481,8 @@ function prepareExchangedData($data, string $type, ?string $key = null)
  * @param string  $src           Source
  * @param string  $dest          Destination
  * @param int $desired_width Size of width
+ * 
+ * @return void|string
  */
 function makeThumbnail(string $src, string $dest, int $desired_width)
 {
@@ -1501,6 +1516,8 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
  * Check table prefix in SQL query.
  *
  * @param string $table Table name
+ * 
+ * @return string
  */
 function prefixTable(string $table): string
 {
@@ -1523,6 +1540,8 @@ function prefixTable(string $table): string
  * @param bool $symbols Symbols
  * @param bool $lowercase Lowercase
  * @param array   $SETTINGS  SETTINGS
+ * 
+ * @return string
  */
 function GenerateCryptKey(
     int $size = 10,
@@ -1561,10 +1580,15 @@ function GenerateCryptKey(
     return $generator->generatePasswords()[0];
 }
 
-/*
-* Send sysLOG message
-* @param string $message
-* @param string $host
+/**
+ * Send sysLOG message
+ *
+ * @param string    $message
+ * @param string    $host
+ * @param int       $port
+ * @param string    $component
+ * 
+ * @return void
 */
 function send_syslog($message, $host, $port, $component = 'teampass'): void
 {
@@ -1583,6 +1607,8 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $who      Who
  * @param string $login    Login
  * @param string $field_1  Field
+ * 
+ * @return void
  */
 function logEvents(array $SETTINGS, string $type, string $label, string $who, ?string $login = null, ?string $field_1 = null): void
 {
@@ -1642,6 +1668,8 @@ function logEvents(array $SETTINGS, string $type, string $label, string $who, ?s
  * @param string $login           User login
  * @param string $raison          Code for reason
  * @param string $encryption_type Encryption on
+ * 
+ * @return void
  */
 function logItems(
     array $SETTINGS,
@@ -1727,6 +1755,8 @@ function logItems(
  * @param int    $item_id  Item id
  * @param string $action   Action to do
  * @param array  $SETTINGS Teampass settings
+ * 
+ * @return void
  */
 function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
 {
@@ -1779,6 +1809,8 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
  * @param string $label    Item label
  * @param array  $changes  List of changes
  * @param array  $SETTINGS Teampass settings
+ * 
+ * @return void
  */
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
@@ -1832,6 +1864,8 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
  * @param int    $id_tree  Node id
  * @param string $label    Label
  * @param array  $SETTINGS TP settings
+ * 
+ * @return string
  */
 function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): string
 {
@@ -1889,6 +1923,8 @@ function getClientIpServer(): string
  *
  * @param string $input    The input string
  * @param string $encoding Which character encoding are we using?
+ * 
+ * @return string
  */
 function noHTML(string $input, string $encoding = 'UTF-8'): string
 {
@@ -1973,14 +2009,18 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
  * Permits to replace &#92; to permit correct display
  *
  * @param string $input Some text
+ * 
+ * @return string
  */
 function handleBackslash(string $input): string
 {
     return str_replace('&amp;#92;', '&#92;', $input);
 }
 
-/*
-** Permits to load settings
+/**
+ * Permits to load settings
+ * 
+ * @return void
 */
 function loadSettings(): void
 {
@@ -2014,11 +2054,16 @@ function loadSettings(): void
     }
 }
 
-/*
-** check if folder has custom fields.
-** Ensure that target one also has same custom fields
+/**
+ * check if folder has custom fields.
+ * Ensure that target one also has same custom fields
+ * 
+ * @param int $source_id
+ * @param int $target_id 
+ * 
+ * @return bool
 */
-function checkCFconsistency($source_id, $target_id)
+function checkCFconsistency(int $source_id, int $target_id): bool
 {
     $source_cf = [];
     $rows = DB::QUERY(
@@ -2062,11 +2107,11 @@ function checkCFconsistency($source_id, $target_id)
  * @return string|bool
  */
 function prepareFileWithDefuse(
-    $type,
-    $source_file,
-    $target_file,
-    $SETTINGS,
-    $password = null
+    string $type,
+    string $source_file,
+    string $target_file,
+    array $SETTINGS,
+    string $password = null
 ) {
     // Load AntiXSS
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
@@ -2121,10 +2166,10 @@ function prepareFileWithDefuse(
  * @return string|bool
  */
 function defuseFileEncrypt(
-    $source_file,
-    $target_file,
-    $SETTINGS,
-    $password = null
+    string $source_file,
+    string $target_file,
+    array $SETTINGS,
+    string $password = null
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
@@ -2166,10 +2211,10 @@ function defuseFileEncrypt(
  * @return string|bool
  */
 function defuseFileDecrypt(
-    $source_file,
-    $target_file,
-    $SETTINGS,
-    $password = null
+    string $source_file,
+    string $target_file,
+    array $SETTINGS,
+    string $password = null
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
@@ -2222,6 +2267,8 @@ function debugTeampass(string $text): void
  *
  * @param string $file     Path to file
  * @param array  $SETTINGS Teampass settings
+ *
+ * @return void
  */
 function fileDelete(string $file, array $SETTINGS): void
 {
@@ -2240,6 +2287,8 @@ function fileDelete(string $file, array $SETTINGS): void
  * Permits to extract the file extension.
  *
  * @param string $file File name
+ *
+ * @return string
  */
 function getFileExtension(string $file): string
 {
@@ -2270,7 +2319,11 @@ function getFileExtension(string $file): string
  * More info at: http://php.net/chmod.
 */
 
-function recursiveChmod($path, $filePerm = 0644, $dirPerm = 0755) {
+function recursiveChmod(
+    string $path,
+    int $filePerm = 0644,
+    int  $dirPerm = 0755
+) {
     // Check if the path exists
     if (! file_exists($path)) {
         return false;
@@ -2303,9 +2356,12 @@ function recursiveChmod($path, $filePerm = 0644, $dirPerm = 0755) {
 /**
  * Check if user can access to this item.
  *
- * @param int $item_id ID of item
+ * @param int   $item_id ID of item
+ * @param array $SETTINGS
+ *
+ * @return bool
  */
-function accessToItemIsGranted(int $item_id, $SETTINGS)
+function accessToItemIsGranted(int $item_id, array $SETTINGS): bool
 {
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -2336,6 +2392,8 @@ function accessToItemIsGranted(int $item_id, $SETTINGS)
  * Creates a unique key.
  *
  * @param int $lenght Key lenght
+ *
+ * @return string
  */
 function uniqidReal(int $lenght = 13): string
 {
@@ -2354,6 +2412,8 @@ function uniqidReal(int $lenght = 13): string
  * Obfuscate an email.
  *
  * @param string $email Email address
+ *
+ * @return string
  */
 function obfuscateEmail(string $email): string
 {
@@ -2410,6 +2470,8 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
  * Undocumented function.
  *
  * @param int $bytes Size of file
+ *
+ * @return string
  */
 function formatSizeUnits(int $bytes): string
 {
@@ -2463,6 +2525,8 @@ function generateUserKeys(string $userPwd): array
  *
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
+ *
+ * @return string
  */
 function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
@@ -2482,6 +2546,8 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
+ *
+ * @return string
  */
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
@@ -2524,6 +2590,8 @@ function doDataEncryption(string $data): array
  *
  * @param string $data Encrypted data
  * @param string $key  Key to uncrypt
+ *
+ * @return string
  */
 function doDataDecryption(string $data, string $key): string
 {
@@ -2541,6 +2609,8 @@ function doDataDecryption(string $data, string $key): string
  *
  * @param string $key       Key to be encrypted
  * @param string $publicKey User public key
+ *
+ * @return string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
@@ -2559,6 +2629,8 @@ function encryptUserObjectKey(string $key, string $publicKey): string
  *
  * @param string $key        Encrypted key
  * @param string $privateKey User private key
+ *
+ * @return string
  */
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
@@ -2629,6 +2701,8 @@ function encryptFile(string $fileInName, string $fileInPath): array
  * @param string $fileName File name
  * @param string $filePath Path to file
  * @param string $key      Key to use
+ *
+ * @return string
  */
 function decryptFile(string $fileName, string $filePath, string $key): string
 {
@@ -2661,6 +2735,8 @@ function decryptFile(string $fileName, string $filePath, string $key): string
  *
  * @param int $length Length of string
  * @param bool $symbolsincluded Allow symbols
+ *
+ * @return string
  */
 function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): string
 {
@@ -2691,6 +2767,8 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
+ *
+ * @return void
  */
 function storeUsersShareKey(
     string $object_name,
@@ -2769,6 +2847,8 @@ function storeUsersShareKey(
  * Is this string base64 encoded?
  *
  * @param string $str Encoded string?
+ *
+ * @return bool
  */
 function isBase64(string $str): bool
 {
@@ -2962,7 +3042,7 @@ function timezone_list()
  *
  * @return string
  */
-function format_GMT_offset($offset)
+function format_GMT_offset($offset): string
 {
     $hours = intval($offset / 3600);
     $minutes = abs(intval($offset % 3600 / 60));
@@ -2976,7 +3056,7 @@ function format_GMT_offset($offset)
  *
  * @return string
  */
-function format_timezone_name($name)
+function format_timezone_name($name): string
 {
     $name = str_replace('/', ', ', $name);
     $name = str_replace('_', ' ', $name);

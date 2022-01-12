@@ -160,7 +160,6 @@ switch ($post_type) {
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
         $connection = new Connection($config);
-        //set_error_handler(E_ERROR);
 
         try {
             $connection->connect();
@@ -183,13 +182,13 @@ switch ($post_type) {
                 ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
                 ->firstOrFail();
 
-        } catch (\LdapRecord\Query\LdapRecordException $e) {
+        } catch (\LdapRecord\LdapRecordException $e) {
             $error = $e->getDetailedError();
             
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    'message' => "Error : ".(null !== $error->getErrorCode() ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : ""),
                 ),
                 'encode'
             );
