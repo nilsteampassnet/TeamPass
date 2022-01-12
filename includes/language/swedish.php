@@ -14,6 +14,15 @@
  */
 global $LANG;
 $LANG = array(
+    'user_specific_right' => 'User specific right',
+    'email_debug_level' => 'Select a debug level',
+    'email_debug_client' => 'Client commands',
+    'email_debug_server' => 'Client commands and server responses',
+    'email_debug_connection' => 'Client commands, server responses and connection status',
+    'email_debug_low_level' => 'Low-level data output, all messages',
+    'email_debug_level_usage' => 'This setting should be set to None. Only to be used for email debuging during testing purpose. When enabled, it will permit to show an output of the email commands.',
+    'email_body_temporary_login_password' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has changed your login password for Teampass. Next time you will connect to Teampass, please use the next one:<br><br><b>#enc_code#</b><br><br><br>Cheers',
+    'your_new_password' => 'Your new password',
     'filter' => 'Filter',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',

@@ -183,12 +183,12 @@ switch ($post_type) {
                 ->firstOrFail();
 
         } catch (\LdapRecord\LdapRecordException $e) {
-            $error = $e->getDetailedError();
+            $error = $e->setDetailedError();
             
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => "Error : ".(null !== $error->getErrorCode() ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : ""),
+                    'message' => "Error : ".$e->withDetailedError($e),//->detailedError(),
                 ),
                 'encode'
             );

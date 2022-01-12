@@ -1482,7 +1482,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
  * @param string  $dest          Destination
  * @param int $desired_width Size of width
  * 
- * @return void|string
+ * @return void|string|bool
  */
 function makeThumbnail(string $src, string $dest, int $desired_width)
 {
@@ -2359,9 +2359,9 @@ function recursiveChmod(
  * @param int   $item_id ID of item
  * @param array $SETTINGS
  *
- * @return bool
+ * @return bool|string
  */
-function accessToItemIsGranted(int $item_id, array $SETTINGS): bool
+function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();

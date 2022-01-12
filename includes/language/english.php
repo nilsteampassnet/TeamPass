@@ -22,6 +22,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'user_specific_right' => 'User specific right',
     'email_debug_level' => 'Select a debug level',
     'email_debug_client' => 'Client commands',
     'email_debug_server' => 'Client commands and server responses',
@@ -995,3 +996,4 @@ return array(
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
 );
+

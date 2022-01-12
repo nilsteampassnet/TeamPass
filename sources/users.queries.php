@@ -1732,9 +1732,14 @@ if (null !== $post_type) {
                         }
                         ++$x;
                     }
-                    if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
-                        array_push($arrFolders, array('id' => $record['folder_id'], 'type' => $record['type']));
+                    if ($bFound === false && in_array($record['folder_id'], $arrData['denied_folders']) === false) {
+                        array_push($arrFolders, array('id' => $record['folder_id'], 'type' => $record['type'], 'special' => false));
                     }
+                }
+
+                // add allowed folders
+                foreach($arrData['allowed_folders'] as $Fld) {
+                    array_push($arrFolders, array('id' => $Fld, 'type' => 'W', 'special' => true));
                 }
 
                 $tree_desc = $tree->getDescendants();
@@ -1777,7 +1782,9 @@ if (null !== $post_type) {
                             }
 
                             $html .= '<tr><td>' . $ident . $row['title'] .
-                                ' <small>[' . $row['id'] . ']</small></td><td>' . $label . '</td></tr>';
+                                ' <small class="text-info">[' . $row['id'] . ']</small>'.
+                                ($fld['special'] === true ? '<i class="fas fa-user-tag infotip text-primary ml-5" title="' . langHdl('user_specific_right') . '"></i>' : '').
+                                '</td><td>' . $label . '</td></tr>';
                             break;
                         }
                     }
