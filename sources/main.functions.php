@@ -2526,9 +2526,9 @@ function generateUserKeys(string $userPwd): array
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
  *
- * @return string
+ * @return string|bool
  */
-function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
+function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
     if (empty($userPwd) === false) {
         include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
@@ -2538,7 +2538,7 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
         $cipher->setPassword($userPwd);
         return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
     }
-    return '';
+    return false;
 }
 
 /**

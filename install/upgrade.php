@@ -883,7 +883,8 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
 
                 console.log(usersList);
                 // Now send passwords
-                sendPwdToUsers(usersList);
+                console.log("Send emails to users from now");
+                sendPwdToUsers(usersList, true, 0, usersList.length);
 
                 return;
             }
@@ -964,30 +965,44 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
     );
 }
 
-function sendPwdToUsers(usersList)
+/**
+* 
+ */
+function sendPwdToUsers(usersList, init, cpt, total)
 {
     var d = new Date();
 
     // Inform
-    rand_number = createRandomId();
-    $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>Now sending new users password by email ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
+    if (init === true) {
+        rand_number = createRandomId();
+        $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>Now sending new users password by email ... " +
+            "<i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i><span id='sending_emails_pct' class='ml-3'>0%</span></div>"+ $("#step4_progress").html());
+    }
+    
+    // Prepare user data to be sent
+    userInfo = {
+        'id' : usersList[0].id,
+        'otp' : usersList[0].otp,
+    };
+    //console.log('Envoi email pour : ');
+    //console.log(userInfo);
 
-    // Query
+    // Remove user from list
+    usersList.shift();
+
+    // Send email for each user
     $.post(
         "upgrade_run_3.0.0_users.php",
         {
             step : 'send_pwd_by_email',
-            userInfo : window.btoa(JSON.stringify(usersList))
+            userInfo : window.btoa(JSON.stringify(userInfo))
         },
         function(data) {
-            console.log(data);
-            previousStep = step;
-
-            if (data[0].finish !== "1") {
-                // loop
-                console.log("ERROR?");
-            } else {
-                // Done
+            //console.log(data);
+            //console.log('----');
+            // Done with sending the user email
+            if (usersList.length === 0) {
+                // all users have received their email
                 $("#user_"+rand_number)
                     .html("Emails were sent <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
 
@@ -997,6 +1012,13 @@ function sendPwdToUsers(usersList)
                 
                 $("#user_"+rand_number).parent()
                 .prepend('<div>' + getTime() +' - All steps have been successfully performed <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
+                
+            } else {
+                // current user received his email
+                // Send to the next one
+                $("#sending_emails_pct").text(Math.round((cpt / total) * 100) + "%");
+
+                sendPwdToUsers(usersList, false, cpt++, total);
             }
         },
         "json"

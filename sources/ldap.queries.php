@@ -155,6 +155,7 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
+        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
 
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');

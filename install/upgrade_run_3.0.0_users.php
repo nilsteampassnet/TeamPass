@@ -247,7 +247,7 @@ if (null !== $post_step) {
                 )
             );
             $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
-            if ($adminPrivateKey === null) {
+            if ($adminPrivateKey === false) {
                 echo '[{"finish":"1" , "next":"step3", "error":"Admin PWD is null; provided key is '.$post_admin_info[1].'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
                 exit();
                 break;
@@ -677,41 +677,35 @@ if (null !== $post_step) {
             // Get language
             $_SESSION['teampass']['lang'] = include_once '../includes/language/english.php';
 
-            // Loop on users list
-            foreach ($userInfo as $user) {
-                // Find user's email
-                $userEmail = mysqli_fetch_array(
-                    mysqli_query(
-                        $db_link,
-                        'SELECT email
-                        FROM ' . $pre . 'users
-                        WHERE id = ' . (int) $user['id']
-                    )
-                );
-                if (empty($userEmail['email']) === false) {
-                    // Send email
-                    try {
-                        sendEmail(
-                            '[Teampass] Your One Time Code',
-                            str_replace(
-                                array('#tp_password#'),
-                                array($user['otp']),
-                                'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has performed an update which includes a change of encryption protocol. During your next login in Teampass, a One Time Code will be asked in order to re-encrypt your data.<br><br>Please use on demand (it is unique for your account):<br><br><b>#tp_password#</b><br><br>This process might take a couple of minutes depending of the number of items existing in the database.<br><br>Cheers'
-                            ),
-                            $userEmail['email'],
-                            $SETTINGS,
-                            '',
-                            true
-                        );
-                    } catch (Exception $e) {
-                        console . log(e);
-                    }
+            // Find user's email
+            $userEmail = mysqli_fetch_array(
+                mysqli_query(
+                    $db_link,
+                    'SELECT email, name as userName
+                    FROM ' . $pre . 'users
+                    WHERE id = ' . (int) $userInfo['id']
+                )
+            );
+            if (empty($userEmail['email']) === false) {
+                // Send email
+                try {
+                    sendEmail(
+                        '[Teampass] Your One Time Code',
+                        str_replace(
+                            array('#tp_password#'),
+                            array($userInfo['otp']),
+                            'Hello '.$userEmail['userName'].',<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has performed an update which includes a change of encryption protocol. During your next login in Teampass, a One Time Code will be asked in order to re-encrypt your data.<br><br>Please use on demand (it is unique for your account):<br><br><b>#tp_password#</b><br><br>This process might take a couple of minutes depending of the number of items existing in the database.<br><br>Cheers'
+                        ),
+                        $userEmail['email'],
+                        $SETTINGS,
+                        '',
+                        true
+                    );
+                } catch (Exception $e) {
+                    console . log(e);
                 }
             }
 
-            echo '[{"finish":"1" , "next":"", "error":"" , "data" : "" , "number":"" , "loop_finished" : "true"}]';
-
-            exit();
             break;
     }
 }

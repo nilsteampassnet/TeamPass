@@ -651,7 +651,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $arrayUserKeys = [];
         } else {
             // Uncrypt private key
-            $superGlobal->put('private_key', decryptPrivateKey($passwordClear, $userInfo['private_key']), 'SESSION', 'user');
+            // Don't perform this in case of special login action
+            if ($userInfo['special'] === 'otc_is_required_on_next_login') {
+                $superGlobal->put('private_key', '', 'SESSION', 'user');
+            } else {
+                $superGlobal->put('private_key', decryptPrivateKey($passwordClear, $userInfo['private_key']), 'SESSION', 'user');
+            }
+            
             $arrayUserKeys = [];
         }
 
