@@ -22,6 +22,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_no_user_password_exists' => 'No user password found. Please reconnect!',
+    'error_no_user_encryption_keys' => 'User has no encryption keys. Please reconnect!',
     'user_specific_right' => 'User specific right',
     'email_debug_level' => 'Select a debug level',
     'email_debug_client' => 'Client commands',
@@ -996,3 +998,4 @@ return array(
     'duration_login_attempt' => 'Секунд до автоматического входа:',
     'newly_created_user_role' => 'Созданный пользователь имеет роль',
 );
+

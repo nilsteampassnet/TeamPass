@@ -22,6 +22,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_no_user_password_exists' => 'Aucun mot de passe utilisateur identifi�. Merci de vous reconnecter !',
+    'error_no_user_encryption_keys' => '',
     'user_specific_right' => 'Droit sépcifique de l\'utilisateur',
     'test_test' => 'nouveau test',
     'email_debug_level' => 'Select a debug level',
@@ -997,5 +999,6 @@ return array(
     'duration_login_attempt' => 'Nombre de secondes avant authentification automatique',
     'newly_created_user_role' => 'Rôle de l\'utilisateur créé',
 );
+
 
 

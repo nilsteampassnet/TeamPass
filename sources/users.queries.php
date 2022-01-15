@@ -2752,6 +2752,18 @@ if (null !== $post_type) {
                 break;
             }
 
+            if (empty($userInfo['private_key']) === true) {
+                // Error - user has private key
+                echo prepareExchangedData(
+                    array(
+                        'message' => langHdl('error_no_user_encryption_keys'),
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Encrypte private key with user password
             // and not the OTC
 

@@ -647,7 +647,7 @@ function changePassword(
         $_SESSION['validite_pw'] = true;
 
         // BEfore updating, check that the pwd is correct
-        if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true) {
+        if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true && empty($dataUser['private_key']) === false) {
             $special_action = 'none';
             if ($post_change_request === 'reset_user_password_expected') {
                 $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
@@ -1252,7 +1252,7 @@ function isUserPasswordCorrect(
             WHERE id = %i',
             $post_user_id
         );
-        if (DB::count() > 0) {
+        if (DB::count() > 0 && empty($userInfo['private_key']) === false) {
             // Get one item
             $record = DB::queryFirstRow(
                 'SELECT object_id
@@ -1328,7 +1328,19 @@ function changePrivateKeyEncryptionPassword(
 ): string
 {
     if (empty($post_new_code) === true) {
-        $post_new_code = $_SESSION['user_pwd'];
+        if (empty($_SESSION['user_pwd']) === false) {
+            $post_new_code = $_SESSION['user_pwd'];
+        } else {
+            // no user password???
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => langHdl('error_no_user_password_exists'),
+                    'debug' => '',
+                ),
+                'encode'
+            );
+        }
     }
 
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
@@ -1339,7 +1351,7 @@ function changePrivateKeyEncryptionPassword(
             WHERE id = %i',
             $post_user_id
         );
-        if (DB::count() > 0) {
+        if (DB::count() > 0 && empty($userData['private_key']) === false) {
             if ($post_action_type === 'encrypt_privkey_with_user_password') {
                 // Here the user has his private key encrypted with an OTC.
                 // We need to encrypt it with his real password
@@ -2548,7 +2560,7 @@ function changeUserAuthenticationPassword(
             WHERE id = %i',
             $post_user_id
         );
-        if (DB::count() > 0) {
+        if (DB::count() > 0 && empty($userData['private_key']) === false) {
             // Now check if current password is correct
             // For this, just check if it is possible to decrypt the privatekey
             // And compare it to the one in session
@@ -2631,7 +2643,7 @@ function changeUserLDAPAuthenticationPassword(
             $post_user_id
         );
         
-        if (DB::count() > 0) {
+        if (DB::count() > 0 && empty($userData['private_key']) === false) {
             // Now check if current password is correct (only if not ldap)
             if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
                 // As it is a change for an LDAP user
