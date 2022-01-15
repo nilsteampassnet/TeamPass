@@ -2417,23 +2417,25 @@ function uniqidReal(int $lenght = 13): string
  */
 function obfuscateEmail(string $email): string
 {
-    $prop = 2;
-    $start = '';
-    $end = '';
-    $domain = substr(strrchr($email, '@'), 1);
-    $mailname = str_replace($domain, '', $email);
-    $name_l = strlen($mailname);
-    $domain_l = strlen($domain);
-    for ($i = 0; $i <= $name_l / $prop - 1; ++$i) {
-        $start .= 'x';
+    $email = explode("@", $email);
+    $name = $email[0];
+    if (strlen($name) > 3) {
+        $name = substr($name, 0, 2);
+        for ($i = 0; $i < strlen($email[0]) - 3; $i++) {
+            $name .= "*";
+        }
+        $name .= substr($email[0], -1, 1);
     }
-
-    for ($i = 0; $i <= $domain_l / $prop - 1; ++$i) {
-        $end .= 'x';
+    $host = explode(".", $email[1])[0];
+    if (strlen($host) > 3) {
+        $host = substr($host, 0, 1);
+        for ($i = 0; $i < strlen(explode(".", $email[1])[0]) - 2; $i++) {
+            $host .= "*";
+        }
+        $host .= substr(explode(".", $email[1])[0], -1, 1);
     }
-
-    return (string) substr_replace($mailname, $start, 2, $name_l / $prop)
-        . (string) substr_replace($domain, $end, 2, $domain_l / $prop);
+    $email = $name . "@" . $host . "." . explode(".", $email[1])[1];
+    return $email;
 }
 
 /**
@@ -3083,7 +3085,7 @@ function format_timezone_name($name): string
 function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
 {
     if (empty($mfaRoles) === true) {
-        return false;
+        return true;
     }
 
     $mfaRoles = array_values(json_decode($mfaRoles, true));

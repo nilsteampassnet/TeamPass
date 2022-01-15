@@ -129,9 +129,11 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo langHdl('duo_security'); ?></a>
                             </li>
-                            <li class="nav-item">
+                            <!--
+                                <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo langHdl('yubico'); ?></a>
                             </li>
+                                -->
                         </ul>
                         <div class="tab-content">
 
@@ -181,6 +183,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <small id="passwordHelpBlock" class="form-text text-muted">
                                             <?php echo langHdl('settings_duo_tip'); ?>
                                         </small>
+                                        <div>
+                                            <small><a href="https://duo.com/docs/duoweb#overview" target="_blank"><?php echo langHdl('more_information'); ?></a></small>
+                                        </div>
                                     </div>
                                     <div class="col-3">
                                         <div class="toggle toggle-modern" id="duo" data-toggle-on="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="duo_input" value="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? '1' : '0'; ?>">
@@ -196,6 +201,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     </div>
                                 </div>
 
+                                <!--
                                 <div class="row mb-2">
                                     <div class="col-5">
                                         <?php echo langHdl('admin_duo_akey'); ?>
@@ -207,6 +213,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </div>
                                     </div>
                                 </div>
+                                -->
                                 <div class="row mb-2">
                                     <div class="col-5">
                                         <?php echo langHdl('admin_duo_ikey'); ?>
@@ -239,6 +246,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </div>
                             </div>
 
+                            <!--
                             <div class="tab-pane" id="yubico" role="tabpanel" aria-labelledby="yubico-tab">
                                 <div class="row mb-2">
                                     <div class="col-9">
@@ -252,6 +260,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     </div>
                                 </div>
                             </div>
+                                -->
 
                         </div>
                     </div>

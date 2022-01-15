@@ -810,18 +810,15 @@ function generateQRCode(
 
     // send mail?
     if ((int) $post_send_mail === 1) {
-        json_decode(
-            sendEmail(
-                langHdl('email_ga_subject'),
-                str_replace(
-                    '#2FACode#',
-                    $gaTemporaryCode,
-                    langHdl('email_ga_text')
-                ),
-                $data['email'],
-                $SETTINGS
+        sendEmail(
+            langHdl('email_ga_subject'),
+            str_replace(
+                '#2FACode#',
+                $gaTemporaryCode,
+                langHdl('email_ga_text')
             ),
-            true
+            $data['email'],
+            $SETTINGS
         );
 
         // send back

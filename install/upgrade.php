@@ -607,7 +607,6 @@ $(function(){
             }
 
         } else if (currentStep === "step4") {
-            console.log('Step4 qui commence');
             upgrade_file = "";
             timeTaken = getTime();
             manageUpgradeScripts("0");

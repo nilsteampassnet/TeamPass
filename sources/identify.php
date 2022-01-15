@@ -392,13 +392,33 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
-            $userLdap['array'],
+            $userLdap['mfaData'],
             'encode'
         );
         return false;
     }
 
-    $firstTime = $userLdap['firstTime'];
+    // Manage case where user has initiated Google Auth
+    if (array_key_exists('firstTime', $userLdap['mfaData']) === true
+        && count($userLdap['mfaData']['firstTime']) > 0
+        && $userInitialData['user_mfa_mode'] === 'google'
+    ) {
+        echo prepareExchangedData(
+            [
+                'value' => $userLdap['mfaData']['firstTime']['value'],
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => false,
+                'message' => $userLdap['mfaData']['firstTime']['message'],
+                'mfaStatus' => $userLdap['mfaData']['firstTime']['mfaStatus'],
+            ],
+            'encode'
+        );
+        echo "coucou";
+        return false;
+    }
+
     $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
 
     // Check user and password
@@ -1263,13 +1283,13 @@ function ldapCreateUser(string $username, string $passwordClear, string $retLDAP
  * Undocumented function.
  *
  * @param string                $username     Username
- * @param string                $userInfo     Result of query
+ * @param array                 $userInfo     Result of query
  * @param string|array|resource $dataReceived DataReceived
  * @param array                 $SETTINGS     Teampass settings
  *
  * @return array
  */
-function googleMFACheck(string $username, string $userInfo, $dataReceived, array $SETTINGS): array
+function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
     if (
         isset($dataReceived['GACode']) === true
@@ -1321,7 +1341,6 @@ function googleMFACheck(string $username, string $userInfo, $dataReceived, array
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => false,
                 'message' => $mfaMessage,
                 'mfaStatus' => $mfaStatus,
             ];
@@ -1684,11 +1703,11 @@ function identifyDoMFAChecks(
         if ($ret['error'] !== '') {
             return [
                 'error' => true,
-                'array' => $ret,
+                'mfaData' => $ret,
             ];
         }
     }
-
+    //print_r($userInfo);
     // check GA code
     if ((int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
@@ -1706,23 +1725,18 @@ function identifyDoMFAChecks(
             
             return [
                 'error' => true,
-                'array' => $ret,
+                'mfaData' => $ret,
             ];
             // ---
         }
-        $user_initial_creation_through_ldap = $ret['user_initial_creation_through_ldap'];
-        // Manage 1st usage of Google MFA
-        if (count($ret['firstTime']) > 0) {
-            return [
-                'error' => false,
-                'firstTime' => $ret['firstTime'],
-            ];
-        }
+        return [
+            'error' => false,
+            'mfaData' => $ret,
+        ];
     }
 
     return [
         'error' => false,
-        'firstTime' => '',
         'user_initial_creation_through_ldap' => $ret['user_initial_creation_through_ldap'],
     ];
 }
