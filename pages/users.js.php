@@ -2088,7 +2088,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 'start': start,
                                 'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                                 userId: userId,
+                                'self_change': false,
                             }
+                            console.log("start encryption")
+                            console.log(data)
                             // Do query
                             $.post(
                                 "sources/main.queries.php", {
@@ -2099,6 +2102,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 function(data) {
                                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                                     console.log(data);
+                                    console.log("---")
                                     
                                     if (data.error === true) {
                                         // error

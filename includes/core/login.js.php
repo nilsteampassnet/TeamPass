@@ -722,6 +722,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 mfaData['client'] = client_info;
                 mfaData['user_2fa_selection'] = mfaMethod;
 
+                console.log(mfaData);
+
                 // Handle if DUOSecurity is enabled
                 if (mfaMethod !== 'duo' || $('#login').val() === 'admin') {
                     identifyUser(redirect, psk, mfaData, randomstring);

@@ -45,12 +45,49 @@ if (file_exists('../../includes/config/tp.config.php') === true) {
 
 require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/ExpiredException.php';
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/SignatureInvalidException.php';
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/JWT.php';
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/DuoException.php';
+require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/Client.php';
+
+// Load superGlobals
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+
+
+try {
+    $duo_client = new Authentication\DuoUniversal\Client(
+        $SETTINGS['duo_ikey'],
+        $SETTINGS['duo_skey'],
+        $SETTINGS['duo_host'],
+        $SETTINGS['cpassman_url'].'/duo-callback'
+    );
+} catch (DuoException $e) {
+    throw new ErrorException("*** Duo config error. Verify the values in duo.conf are correct ***\n" . $e->getMessage());
+}
+
+$state = $duo_client->generateState();
+$superGlobal->put('state', $state, 'SESSION');
+$superGlobal->put('username', 'nils', 'SESSION');
+unset($superGlobal);
+
+# Redirect to prompt URI which will redirect to the client's redirect URI after 2FA
+$prompt_uri = $duo_client->createAuthUrl('nils', $state);
+return $response
+    ->withHeader('Location', $prompt_uri)
+    ->withStatus(302);
+
+
 /*
 ** This page contains the javascript call for DUOSecurity api
 ** It loads the expected iFrame where user gives his DUO credentials
 ** It sends the request to the DUO server
 */
 ?>
+<!--
 <script type="text/javascript">
 //<![CDATA[
 $(function() {
@@ -92,3 +129,4 @@ $(function() {
 });
 //]]>
 </script>
+-->

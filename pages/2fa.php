@@ -126,10 +126,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>
                             </li>
+                            <!--
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo langHdl('duo_security'); ?></a>
                             </li>
-                            <!--
                                 <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo langHdl('yubico'); ?></a>
                             </li>

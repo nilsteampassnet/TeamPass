@@ -2357,6 +2357,17 @@ if (null !== $post_type) {
                 break;
             }
 
+            /*
+            $groups = $connection->query()->where([
+                ['objectclass', '=', 'top'],
+                ['objectclass', '=', 'groupofuniquenames'],
+                ['objectclass', '=', 'groupofnames'],
+                ['objectclass', '=', 'organizationalunit'],
+                ['objectclass', '=', 'posixGroup'],
+            ])->get();
+            print_r($groups);
+            */
+
             $adRoles = array();
             $adUsersToSync = array();
             $teampassRoles = array();
@@ -2367,16 +2378,20 @@ if (null !== $post_type) {
                 ['objectclass', '=', 'person'],
                 ['objectclass', '=', 'organizationalperson'],
                 ['objectclass', '=', 'inetorgperson'],
+                ['objectclass', '=', 'posixaccount'],
             ], null, null, 'or')->get();
             
             foreach($users as $i => $adUser) {
-
+                if (isset($adUser[$SETTINGS['ldap_user_attribute']]) === false) continue;
+                
                 // Build the list of all groups in AD
-                foreach($adUser['memberof'] as $j => $adUserGroup) {
-                    if (empty($adUserGroup) === false && $j !== "count") {
-                        $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
-                        if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
-                            array_push($adRoles, $adGroup);
+                if (isset($adUser['memberof']) === true) {
+                    foreach($adUser['memberof'] as $j => $adUserGroup) {
+                        if (empty($adUserGroup) === false && $j !== "count") {
+                            $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
+                            if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
+                                array_push($adRoles, $adGroup);
+                            }
                         }
                     }
                 }
@@ -2615,7 +2630,9 @@ if (null !== $post_type) {
                     'error' => false,
                     'message' => '',
                     'user_id' => $newUserId,
-                    'user_password' => $password,
+                    //'user_password' => $password,
+                    //'extra' => decryptPrivateKey($password, $userKeys['private_key']),
+                    //'extra2' => $userKeys['private_key'],
                 ),
                 'encode'
             );

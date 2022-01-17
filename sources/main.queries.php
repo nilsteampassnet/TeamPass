@@ -1669,7 +1669,7 @@ function continueReEncryptingUserSharekeys(
             WHERE id = %i',
             $post_user_id
         );
-        if (DB::count() > 0) {
+        if (isset($userInfo['public_key']) === true) {
             // Include libraries
             include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
@@ -1680,9 +1680,9 @@ function continueReEncryptingUserSharekeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                $post_action = 'step1';
+                $next_action = 'step1';
             }
-
+            
             // STEP 1 - ITEMS
             if ($post_action === 'step1') {
                 $return = continueReEncryptingUserSharekeysStep1(
@@ -1696,7 +1696,7 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
 
             // STEP 2 - LOGS
@@ -1712,7 +1712,7 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
 
             // STEP 3 - FIELDS
@@ -1728,7 +1728,7 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 4 - SUGGESTIONS
@@ -1744,7 +1744,7 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 5 - FILES
@@ -1760,7 +1760,7 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 6 - PERSONAL ITEMS
@@ -1776,15 +1776,15 @@ function continueReEncryptingUserSharekeys(
                 );
 
                 $next_start = $return['next_start'];
-                $post_action = $return['post_action'];
+                $next_action = $return['post_action'];
             }
-
+            
             // Continu with next step
             return prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
-                    'step' => $post_action,
+                    'step' => $next_action,
                     'start' => isset($next_start) === true ? $next_start : 0,
                     'userId' => $post_user_id,
                     'self_change' => $post_self_change,

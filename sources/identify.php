@@ -92,24 +92,12 @@ if ($post_type === 'identify_duo_user') {
     //--------
     // This step creates the DUO request encrypted key
 
-    // Get DUO keys
-    $duoData = DB::query(
-        'SELECT intitule, valeur
-        FROM ' . prefixTable('misc') . '
-        WHERE type = %s',
-        'duoSecurity'
-    );
-    $_GLOBALS = [];
-    foreach ($duoData as $value) {
-        $_GLOBALS[strtoupper($value['intitule'])] = $value['valeur'];
-    }
-
     // load library
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(
-        $_GLOBALS['IKEY'],
-        $_GLOBALS['SKEY'],
-        $_GLOBALS['AKEY'],
+        $SETTINGS['IKEY'],
+        $SETTINGS['SKEY'],
+        $SETTINGS['AKEY'],
         $post_login
     );
     if (DEBUGDUO === true) {
@@ -142,15 +130,6 @@ if ($post_type === 'identify_duo_user') {
         $SETTINGS['duo_akey'],
         $post_sig_response
     );
-    if (DEBUGDUO === true) {
-        debugIdentify(
-            DEBUGDUO,
-            DEBUGDUOFILE,
-            "\n\n-----\n\n" .
-                'sig response : ' . $post_sig_response . "\n" .
-                'resp : ' . $authenticated_username . "\n"
-        );
-    }
 
     // return the response (which should be the user name)
     if ($authenticated_username === $post_login) {
@@ -383,42 +362,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $ldapConnection = $userLdap['ldapConnection'];
     //$retLDAP = $userLdap['retLDAP'];
 
-    $userLdap = identifyDoMFAChecks(
-        $SETTINGS,
-        $userInfo,
-        $dataReceived,
-        $userInitialData,
-        (string) $username
-    );
-    if ($userLdap['error'] === true) {
-        echo prepareExchangedData(
-            $userLdap['mfaData'],
-            'encode'
-        );
-        return false;
-    }
-
-    // Manage case where user has initiated Google Auth
-    if (array_key_exists('firstTime', $userLdap['mfaData']) === true
-        && count($userLdap['mfaData']['firstTime']) > 0
-        && $userInitialData['user_mfa_mode'] === 'google'
-    ) {
-        echo prepareExchangedData(
-            [
-                'value' => $userLdap['mfaData']['firstTime']['value'],
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => false,
-                'message' => $userLdap['mfaData']['firstTime']['message'],
-                'mfaStatus' => $userLdap['mfaData']['firstTime']['mfaStatus'],
-            ],
-            'encode'
-        );
-        echo "coucou";
-        return false;
-    }
-
     $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
 
     // Check user and password
@@ -436,6 +379,46 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
+
+
+    // Check user against MFA method if selected
+    $userLdap = identifyDoMFAChecks(
+        $SETTINGS,
+        $userInfo,
+        $dataReceived,
+        $userInitialData,
+        (string) $username
+    );
+    if ($userLdap['error'] === true) {
+        echo prepareExchangedData(
+            $userLdap['mfaData'],
+            'encode'
+        );
+        return false;
+    }
+
+    // Manage case where user has initiated Google Auth
+    if (is_array($userLdap['mfaData']) === true
+        && array_key_exists('firstTime', $userLdap['mfaData']) === true
+        && count($userLdap['mfaData']['firstTime']) > 0
+        && $userInitialData['user_mfa_mode'] === 'google'
+    ) {
+        echo prepareExchangedData(
+            [
+                'value' => $userLdap['mfaData']['firstTime']['value'],
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => false,
+                'message' => $userLdap['mfaData']['firstTime']['message'],
+                'mfaStatus' => $userLdap['mfaData']['firstTime']['mfaStatus'],
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // Manage DUO auth
 
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
@@ -672,7 +655,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         } else {
             // Uncrypt private key
             // Don't perform this in case of special login action
-            if ($userInfo['special'] === 'otc_is_required_on_next_login') {
+            if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ldap') {
                 $superGlobal->put('private_key', '', 'SESSION', 'user');
             } else {
                 $superGlobal->put('private_key', decryptPrivateKey($passwordClear, $userInfo['private_key']), 'SESSION', 'user');
@@ -1044,6 +1027,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
     $ad->register();
@@ -1101,16 +1085,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         );
     } elseif ($userInfo['special'] === 'user_added_from_ldap') {
         // Case where user has been added from LDAP and never being connected to TP
-        // We need to create his keys
-        $userKeys = generateUserKeys($passwordClear);
-
-        // Now update
         DB::update(
             prefixTable('users'),
             array(
                 'pw' => $hashedPassword,
-                'public_key' => $userKeys['public_key'],
-                'private_key' => $userKeys['private_key'],
             ),
             'id = %i',
             $userInfo['id']
@@ -1686,30 +1664,12 @@ function identifyDoMFAChecks(
     $userInitialData,
     string $username
 ): array
-{
-    // Check Yubico
+{    
     if (
-        isset($SETTINGS['yubico_authentication']) === true
-        && (int) $SETTINGS['yubico_authentication'] === 1
-        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInitialData['user_mfa_mode'] === 'yubico'
-        && $userInfo['mfa_auth_requested'] === true
-    ) {
-        $ret = yubicoMFACheck(
-            $dataReceived,
-            $userInfo,
-            $SETTINGS
-        );
-        if ($ret['error'] !== '') {
-            return [
-                'error' => true,
-                'mfaData' => $ret,
-            ];
-        }
-    }
-    //print_r($userInfo);
-    // check GA code
-    if ((int) $SETTINGS['google_authentication'] === 1
+        // ---------
+        // check GA code
+        // ---------
+        (int) $SETTINGS['google_authentication'] === 1
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
         && $userInitialData['user_mfa_mode'] === 'google'
         && $userInfo['mfa_auth_requested'] === true
@@ -1733,6 +1693,33 @@ function identifyDoMFAChecks(
             'error' => false,
             'mfaData' => $ret,
         ];
+
+        // ---
+        // ---
+    } else if (
+        // ---------
+        // Check Yubico
+        // ---------
+        isset($SETTINGS['yubico_authentication']) === true
+        && (int) $SETTINGS['yubico_authentication'] === 1
+        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+        && $userInitialData['user_mfa_mode'] === 'yubico'
+        && $userInfo['mfa_auth_requested'] === true
+    ) {
+        $ret = yubicoMFACheck(
+            $dataReceived,
+            $userInfo,
+            $SETTINGS
+        );
+        if ($ret['error'] !== '') {
+            return [
+                'error' => true,
+                'mfaData' => $ret,
+            ];
+        }
+        
+        // ---
+        // ---
     }
 
     return [
