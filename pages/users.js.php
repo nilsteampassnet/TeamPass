@@ -473,8 +473,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 length: <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                 user_id: userId,
             }
-            //console.info("Envoi des données :")
-            //console.log(data);
+            console.info("Envoi des données :")
+            console.log(data);
 
             // Do query
             $.post(
@@ -485,8 +485,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    //console.info("Réception des données :")
-                    //console.log(data);
+                    console.info("Réception des données :")
+                    console.log(data);
                     
                     if (data.error === true) {
                         // error
@@ -2087,7 +2087,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 'action': step,
                                 'start': start,
                                 'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
-                                userId: userId,
+                                'user_id': userId,
                                 'self_change': false,
                             }
                             console.log("start encryption")
