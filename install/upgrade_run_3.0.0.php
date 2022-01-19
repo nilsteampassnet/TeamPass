@@ -139,7 +139,7 @@ foreach ($val as $elem) {
 $res = addColumnIfNotExist(
     $pre . 'users',
     'public_key',
-    "TEXT NOT NULL DEFAULT 'none'"
+    "TEXT DEFAULT NULL"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field public_key to table USERS! ' . mysqli_error($db_link) . '!"}]';
@@ -151,7 +151,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre . 'users',
     'private_key',
-    "TEXT NOT NULL DEFAULT 'none'"
+    "TEXT DEFAULT NULL"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field private_key to table USERS! ' . mysqli_error($db_link) . '!"}]';

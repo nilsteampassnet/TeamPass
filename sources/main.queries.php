@@ -1684,7 +1684,7 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 1 - ITEMS
-            if ($post_action === 'step1') {
+            elseif ($post_action === 'step1') {
                 $return = continueReEncryptingUserSharekeysStep1(
                     $post_user_id,
                     $post_self_change,
@@ -1700,7 +1700,7 @@ function continueReEncryptingUserSharekeys(
             }
 
             // STEP 2 - LOGS
-            if ($post_action === 'step2') {
+            elseif ($post_action === 'step2') {
                 $return = continueReEncryptingUserSharekeysStep2(
                     $post_user_id,
                     $post_self_change,
@@ -1716,7 +1716,7 @@ function continueReEncryptingUserSharekeys(
             }
 
             // STEP 3 - FIELDS
-            if ($post_action === 'step3') {
+            elseif ($post_action === 'step3') {
                 $return = continueReEncryptingUserSharekeysStep3(
                     $post_user_id,
                     $post_self_change,
@@ -1732,7 +1732,7 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 4 - SUGGESTIONS
-            if ($post_action === 'step4') {
+            elseif ($post_action === 'step4') {
                 $return = continueReEncryptingUserSharekeysStep4(
                     $post_user_id,
                     $post_self_change,
@@ -1748,7 +1748,7 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 5 - FILES
-            if ($post_action === 'step5') {
+            elseif ($post_action === 'step5') {
                 $return = continueReEncryptingUserSharekeysStep5(
                     $post_user_id,
                     $post_self_change,
@@ -1764,7 +1764,7 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 6 - PERSONAL ITEMS
-            if ($post_action === 'step6') {
+            elseif ($post_action === 'step6') {
                 $return = continueReEncryptingUserSharekeysStep6(
                     $post_user_id,
                     $post_self_change,
