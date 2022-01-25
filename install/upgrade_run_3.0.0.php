@@ -375,6 +375,42 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'settings_offline_mode'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'settings_offline_mode'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'settings_offline_mode', '0')"
+    );
+}
+
+// Add new setting 'settings_tree_counters'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'settings_tree_counters'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'settings_tree_counters', '0')"
+    );
+}
+
+// Add new setting 'copy_to_clipboard_small_icons'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'copy_to_clipboard_small_icons'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'copy_to_clipboard_small_icons', '0')"
+    );
+}
+
+// Add new setting 'enable_massive_move_delete'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'enable_massive_move_delete'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_massive_move_delete', '0')"
+    );
+}
+
 // Convert the roles_allowed_to_print value to an array
 $roles_allowed_to_print = mysqli_fetch_row(mysqli_query(
     $db_link,

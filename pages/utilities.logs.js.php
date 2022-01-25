@@ -64,15 +64,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     var oTableAdmin;
     var oTableErrors;
 
-
-    // Prepare tooltips
-    $('.infotip').tooltip();
-
     // What type of form? Edit or new user
     browserSession(
         'init',
         'teampassApplication', {
-            logData: '',
+            logData: 'connections',
         }
     );
     store.update(
@@ -82,8 +78,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         }
     );
 
+    // Prepare tooltips
+    $('.infotip').tooltip();
 
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        $('#selector-purge-action option[value="all"]').prop('selected', true);
         if (e.target.hash === '#connections') {
             store.update(
                 'teampassApplication',
@@ -91,6 +90,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'connections';
                 }
             );
+            $('#selector-purge-action').addClass('hidden');
         } else if (e.target.hash === '#failed') {
             store.update(
                 'teampassApplication',
@@ -98,6 +98,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'failed';
                 }
             );
+            $('#selector-purge-action').addClass('hidden');
             showFailed();
         } else if (e.target.hash === '#errors') {
             store.update(
@@ -106,6 +107,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'errors';
                 }
             );
+            $('#selector-purge-action').addClass('hidden');
             showErrors();
         } else if (e.target.hash === '#copy') {
             store.update(
@@ -114,6 +116,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'copy';
                 }
             );
+            $('#selector-purge-action').addClass('hidden');
             showCopy();
         } else if (e.target.hash === '#admin') {
             store.update(
@@ -122,6 +125,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'admin';
                 }
             );
+            $('#selector-purge-action').addClass('hidden');
             showAdmin();
         } else if (e.target.hash === '#items') {
             store.update(
@@ -130,6 +134,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     teampassApplication.logData = 'items';
                 }
             );
+            $('#selector-purge-action').removeClass('hidden');
             showItems();
         }
     });
@@ -471,10 +476,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         $('#myTabContent').on('change', '#items-search-column', function() {
             oTableItems.ajax.reload();
         });
-
     }
 
-    //iCheck for checkbox and radio inputs
+    // iCheck for checkbox and radio inputs
     $('.card-footer input[type="checkbox"]').iCheck({
         checkboxClass: 'icheckbox_flat-blue'
     });
@@ -548,6 +552,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                             }
                         );
                     } else {
+                        console.log(store.get('teampassApplication').logData);
                         // Reload table
                         if (store.get('teampassApplication').logData === 'errors') {
                             oTableErrors.api().ajax.reload();

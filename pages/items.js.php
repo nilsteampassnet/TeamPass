@@ -658,7 +658,7 @@ console.log(store.get('teampassUser'))
                 }
                 
                 // Add track-change class
-                $('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change');
+                //$('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change');
 
                 // Update variable
                 userDidAChange = false;
@@ -925,6 +925,7 @@ console.log(store.get('teampassUser'))
             $(store.get('teampassUser').previousView).removeClass('hidden');
             $(store.get('teampassUser').currentView).addClass('hidden');
         }
+        $('.but-prev-item, .but-next-item').addClass('hidden').text('');
     });
 
 
@@ -936,19 +937,19 @@ console.log(store.get('teampassUser'))
 
 
     // Manage if change is performed by user
-    $('#form-item .track-change')
+    $('#form-item .form-item-control')
         .on('change', function() {
             if (requestRunning === false) {
                 userDidAChange = true;
-                if (debugJavascript === true) console.log('User did a change on #form-item > ' + userDidAChange + " - Element" + $(this).attr('id'));
-                $(this).data('change-ongoing', true);
+                if (debugJavascript === true) console.log('User did a change on #form-item > ' + userDidAChange + " - Element " + $(this).attr('id'));
+                //$(this).attr('data-change-ongoing', true);
             }
         })
         .on('ifToggled', function() {
             if (requestRunning === false) {
                 userDidAChange = true;
                 if (debugJavascript === true) console.log('User did a change on ifToggled > ' + userDidAChange);
-                $(this).data('change-ongoing', true);
+                //$(this).attr('data-change-ongoing', true);
             }
         });
 
@@ -1873,7 +1874,7 @@ console.log(store.get('teampassUser'))
      * @return void
      */
     function closeItemDetailsCard() {
-        if (debugJavascript === true) console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView)
+        if (debugJavascript === true) console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView);
         if (userDidAChange === true) {
             toastr
                 .warning(
@@ -1886,6 +1887,7 @@ console.log(store.get('teampassUser'))
                 );
             $(document).on('click', '#discard-changes', function() {
                 userDidAChange = false;
+                //$('.form-item-control').attr('data-change-ongoing', "");
                 closeItemDetailsCard();
             });
         } else {
@@ -1973,7 +1975,8 @@ console.log(store.get('teampassUser'))
                 // Restore scroll position
                 $(window).scrollTop(userScrollPosition);
 
-                userDidAChange = false;
+                userDidAChange = false;                
+                //$('.form-item-control').attr('data-change-ongoing', "");
 
                 // Enable the parent in select
                 if (selectedFolder.id !== undefined) {
@@ -1991,6 +1994,23 @@ console.log(store.get('teampassUser'))
         scrollBackToPosition();
     }
 
+
+    /**
+     * Click on button with class but-navigate-item
+     */
+    $(document)
+        .on('click', '.but-navigate-item', function() {
+            toastr.remove();
+            toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            // Load item info
+            Details(
+                $(this).hasClass('but-prev-item') === true ? $('#list-item-row_' + $(this).attr('data-prev-item-id')) : $('#list-item-row_' + $(this).attr('data-next-item-id')),
+                'show'
+            );
+
+            $('.but-navigate-item').addClass('hidden');
+        });
 
 
     /**
@@ -2038,7 +2058,7 @@ console.log(store.get('teampassUser'))
         $('.form-check-input-template').not(this).iCheck('uncheck');
         userDidAChange = true;
         if (debugJavascript === true) console.log('User did a change on .form-check-input-template > ' + userDidAChange);
-        $('.form-check-input-template').data('change-ongoing', true);
+        //$('.form-check-input-template').attr('data-change-ongoing', true);;
     });
 
     /**
@@ -3502,7 +3522,7 @@ console.log(store.get('teampassUser'))
                                 e.trigger.dataset.itemId,
                                 e.trigger.dataset.itemLabel
                             );
-                           
+                            
                             // Warn user about clipboard clear
                             if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
@@ -3665,15 +3685,16 @@ console.log(store.get('teampassUser'))
         }
     }
 
-    function sList(data) {
-        if (debugJavascript === true) console.log(data);
-        var counter = 0;
+    function sList(listOfItems) {
+        if (debugJavascript === true) console.log(listOfItems);
+        var counter = 0,
+            prevIdForNextItem = -1;
 
         // Manage store
         if (store.get('teampassApplication').itemsList === '' || store.get('teampassApplication').itemsList === undefined) {
-            var stored_datas = data;
+            var stored_datas = listOfItems;
         } else {
-            var stored_datas = JSON.parse(store.get('teampassApplication').itemsList).concat(data);
+            var stored_datas = JSON.parse(store.get('teampassApplication').itemsList).concat(listOfItems);
         }
         store.update(
             'teampassApplication',
@@ -3682,7 +3703,7 @@ console.log(store.get('teampassUser'))
             }
         );
         
-        $.each(data, function(i, value) {
+        $.each(listOfItems, function(i, value) {
             var new_line = '',
                 pwd_error = '',
                 icon_all_can_modify = '',
@@ -3699,6 +3720,14 @@ console.log(store.get('teampassUser'))
 
             // Check access restriction
             if (value.rights > 0) {
+                // Should I populate previous item with this new id
+                console.log('current id: '+value.item_id);
+                console.log(prevIdForNextItem)
+                if (prevIdForNextItem !== -1) {
+                    $('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
+                    $('#list-item-row_' + value.item_id).attr('data-next-item-label', value.label);
+                }
+                
                 // Prepare anyone can modify icon
                 if (value.anyone_can_modify === 1 || value.open_edit === 1) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('edit'); ?>"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-pen fa-stack-1x fa-inverse"></i></span>';
@@ -3745,7 +3774,7 @@ console.log(store.get('teampassUser'))
                 }
 
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '">' +
+                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1 && value.is_result_of_search === 0 ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') +
@@ -3769,7 +3798,11 @@ console.log(store.get('teampassUser'))
                     '</tr>'
                 );
 
-
+                // Save id for usage
+                prevIdForNextItem = {
+                    'item_id' : value.item_id,
+                    'label': value.label,
+                };
 
                 //---------------------
             }
@@ -4055,17 +4088,8 @@ console.log(store.get('teampassUser'))
 
         // Store current view
         savePreviousView();
-
-        /*store.each(function(value, key) {
-            if (debugJavascript === true) console.log(key, '==', value)
-        })*/
+        
         if (debugJavascript === true) console.log("Request is running: " + requestRunning)
-        // If a request is already launched, then kill new.
-        /*if (requestRunning === true) {
-            if (debugJavascript === true) console.log('ABORT')
-            //request.abort();
-            return false;
-        }*/
 
         // Store status query running
         requestRunning = true;
@@ -4159,7 +4183,7 @@ console.log(store.get('teampassUser'))
                 if (debugJavascript === true) console.log(data);
 
                 // remove any track-change class on item form
-                $('.form-item-control').removeClass('track-change');
+                //$('.form-item-control').removeClass('track-change');
 
                 if (data.error === true) {
                     toastr.remove();
@@ -4318,7 +4342,7 @@ console.log(store.get('teampassUser'))
                                     if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
                                     if (debugJavascript === true) console.log('User did a change on #form-item-description > ' + userDidAChange);
-                                    $('#form-item-description').data('change-ongoing', true);
+                                    //$('#form-item-description').attr('data-change-ongoing', true);;
                                 }
                             }
                         }
@@ -4346,7 +4370,7 @@ console.log(store.get('teampassUser'))
                                     if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                     userDidAChange = true;
                                     if (debugJavascript === true) console.log('User did a change on #form-item-suggestion-description > ' + userDidAChange);
-                                    $('#form-item-suggestion-description').data('change-ongoing', true);
+                                    //$('#form-item-suggestion-description').attr('data-change-ongoing', true);;
                                 }
                             }
                         }
@@ -4637,6 +4661,21 @@ console.log(store.get('teampassUser'))
                     $('#div_loading').addClass('hidden');
                 }
 
+                // Prepare bottom buttons
+                if ($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') !== undefined) {
+                    $('.but-prev-item')
+                        .html('<i class="fas fa-arrow-left mr-2"></i>' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label')))
+                        .attr('data-prev-item-id', $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id'))
+                        .removeClass('hidden');
+                }
+                if ($('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id') !== undefined) {
+                    $('.but-next-item')
+                        .html('<i class="fas fa-arrow-right mr-2"></i>' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label')))
+                        .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
+                        .removeClass('hidden');
+                }
+                console.log("PREV: " + $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+
                 // Inform user
                 toastr.remove();
                 toastr.info(
@@ -4868,11 +4907,11 @@ console.log(store.get('teampassUser'))
                         key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function (data) {
-                        // add track-change class on item form
+                        /*// add track-change class on item form
                         setTimeout(
                             $('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change'),
                             2000
-                        );
+                        );*/
 
                         requestRunning = false;
                     }
@@ -5290,7 +5329,7 @@ console.log(store.get('teampassUser'))
                     // Form has changed
                     userDidAChange = true;
                     if (debugJavascript === true) console.log('User did a change during generate_password > ' + userDidAChange);
-                    $('#' + elementId).data('change-ongoing', true);
+                    //$('#' + elementId).attr('data-change-ongoing', true);;
 
                     $("#form-item-password").pwstrength("forceUpdate");
 

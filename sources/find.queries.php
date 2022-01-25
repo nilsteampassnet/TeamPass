@@ -251,26 +251,29 @@ if (isset($_GET['type']) === false) {
         $right = 0;
         $checkbox = '';
         // massive move/delete enabled?
-        if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === '1') {
+        if (isset($SETTINGS['enable_massive_move_delete']) && (int) $SETTINGS['enable_massive_move_delete'] === 1) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                     $role,
                     $record['id_tree']
                 );
-                if ($access['type'] === 'R') {
-                    array_push($arrTmp, 1);
-                } elseif ($access['type'] === 'W') {
-                    array_push($arrTmp, 0);
-                } elseif ($access['type'] === 'ND') {
-                    array_push($arrTmp, 2);
-                } elseif ($access['type'] === 'NE') {
-                    array_push($arrTmp, 1);
-                } elseif ($access['type'] === 'NDNE') {
-                    array_push($arrTmp, 1);
+                if ($access !== null) {
+                    if ($access['type'] === 'R') {
+                        array_push($arrTmp, 1);
+                    } elseif ($access['type'] === 'W') {
+                        array_push($arrTmp, 0);
+                    } elseif ($access['type'] === 'ND') {
+                        array_push($arrTmp, 2);
+                    } elseif ($access['type'] === 'NE') {
+                        array_push($arrTmp, 1);
+                    } elseif ($access['type'] === 'NDNE') {
+                        array_push($arrTmp, 1);
+                    }
                 }
             }
             $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;

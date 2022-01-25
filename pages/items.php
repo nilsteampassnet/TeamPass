@@ -515,7 +515,7 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                     </span>
                     <h3 class="d-inline align-middle" id="card-item-label"></h3>
                     <div class="card-tools">
-                        <button type="button" class="btn btn-tool btn-sm but-back">
+                        <button type="button" class="btn btn-tool btn-sm but-back mt-2">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -929,6 +929,19 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
     <?php
                             }
     ?>
+
+    <!-- Bottom bar -->
+    <div class="row hidden item-details-card">
+        <div class="col-12">
+            <div class="card">
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-secondary but-navigate-item but-prev-item hidden" data-prev-item-id=""></button>
+                        <button type="button" class="btn btn-secondary but-navigate-item but-next-item hidden" data-next-item-id=""></button>
+                        <button type="button" class="btn btn-info float-right but-back"><?php echo langHdl('close'); ?></button>
+                    </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- COPY ITEM FORM -->

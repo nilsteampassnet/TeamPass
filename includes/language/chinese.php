@@ -22,6 +22,14 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'at_creation' => 'Creation',
+    'at_add_file' => 'File added',
+    'at_del_file' => 'File deleted',
+    'at_manual' => 'Manuel modification',
+    'at_tag' => 'Tag',
+    'at_field' => 'Field',
+    'at_automatic_del' => 'Automatic deletion',
+    'at_import' => 'Import',
     'error_no_user_password_exists' => 'No user password found. Please reconnect!',
     'error_no_user_encryption_keys' => 'User has no encryption keys. Please reconnect!',
     'user_specific_right' => 'User specific right',
@@ -998,4 +1006,5 @@ return array(
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
 );
+
 

@@ -77,7 +77,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <div class="card-body">
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" id="connections-tab" data-toggle="tab" href="#connections" aria-controls="connections" aria-selected="true"><?php echo langHdl('connections'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#connections" aria-controls="connections" aria-selected="true"><?php echo langHdl('connections'); ?></a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#failed" role="tab" aria-controls="failed" aria-selected="false"><?php echo langHdl('failed_logins'); ?></a>
@@ -209,11 +209,11 @@ foreach ($rows as $record) {
                                 </div>
                             </div>
                             <div class="col-sm-6">
-                                <div class="form-group">
+                                <div class="form-group hidden" id="selector-purge-action">
                                     <label><i class="fas fa-cog mr-2"></i><?php echo langHdl('action'); ?>:</label>
                                     <select class="form-control" id="purge-filter-action">
                                         <option value="all"><?php echo langHdl('all'); ?></option>
-                                        <option value="at_show"><?php echo langHdl('at_shown'); ?></option>
+                                        <option value="at_shown"><?php echo langHdl('at_shown'); ?></option>
                                         <option value="at_export"><?php echo langHdl('at_export'); ?></option>
                                         <option value="at_restored"><?php echo langHdl('at_restored'); ?></option>
                                         <option value="at_delete"><?php echo langHdl('at_delete'); ?></option>

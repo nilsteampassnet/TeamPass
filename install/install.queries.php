@@ -665,6 +665,9 @@ $SETTINGS = array (';
                             array('admin', 'clipboard_life_duration', '30'),
                             array('admin', 'mfa_for_roles', ''),
                             array('admin', 'tree_counters', '0'),
+                            array('admin', 'settings_offline_mode', '0'),
+                            array('admin', 'settings_tree_counters', '0'),
+                            array('admin', 'enable_massive_move_delete', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

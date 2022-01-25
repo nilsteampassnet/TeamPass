@@ -466,8 +466,8 @@ if (null !== $post_type) {
                     'Y-m-d'
                 )
             );
-            $post_filter_user = filter_var($dataReceived['filter_user'], FILTER_SANITIZE_STRING);
-            $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_NUMBER_INT);
+            $post_filter_user = filter_var($dataReceived['filter_user'], FILTER_SANITIZE_NUMBER_INT);
+            $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_STRING);
 
             // Check conditions
             if (
@@ -479,29 +479,30 @@ if (null !== $post_type) {
                 if ($post_log_type === 'items') {
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_items') . '
-                        WHERE action=%s ' .  'AND date BETWEEN %i AND %i'
-                        . ($post_filter_action === 'all' ? '' : ' AND action = %s')
-                        . ($post_filter_user === -1 ? '' : ' AND id_user = %i'),
-                        'at_shown',
+                        WHERE (date BETWEEN %i AND %i)'
+                        . ($post_filter_action === 'all' ? '' : ' AND action = "'.$post_filter_action.'"')
+                        . ((int) $post_filter_user === -1 ? '' : ' AND id_user = '.(int) $post_filter_user),
                         $post_date_from,
-                        $post_date_to,
-                        $post_filter_action,
-                        $post_filter_user
+                        $post_date_to
                     );
                     $counter = DB::count();
                     // Delete
                     DB::delete(
                         prefixTable('log_items'),
-                        'action=%s AND date BETWEEN %i AND %i',
-                        'at_shown',
+                        '(date BETWEEN %i AND %i)'
+                        . ($post_filter_action === 'all' ? '' : ' AND action = "'.$post_filter_action.'"')
+                        . ((int) $post_filter_user === -1 ? '' : ' AND id_user = '.(int) $post_filter_user),
                         $post_date_from,
                         $post_date_to
                     );
                 } elseif ($post_log_type === 'connections') {
-                    db::debugmode(true);
+                    //db::debugmode(true);
                     DB::query(
-                        'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                        'SELECT * FROM ' . prefixTable('log_system') . '
+                        WHERE type=%s '
+                        . 'AND (date BETWEEN %i AND %i)'
+                        . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
+                        . ((int) $post_filter_user === -1 ? '' : ' AND field_1 = '.(int) $post_filter_user),
                         'user_connection',
                         $post_date_from,
                         $post_date_to
@@ -510,15 +511,23 @@ if (null !== $post_type) {
                     // Delete
                     DB::delete(
                         prefixTable('log_system'),
-                        'type=%s AND date BETWEEN %i AND %i',
+                        'type=%s '
+                        . 'AND (date BETWEEN %i AND %i)'
+                        . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
+                        . ((int) $post_filter_user === -1 ? '' : ' AND field_1 = '.(int) $post_filter_user),
                         'user_connection',
                         $post_date_from,
                         $post_date_to
                     );
                 } elseif ($post_log_type === 'errors') {
+                    //db::debugmode(true);
+                    echo 'SELECT * FROM ' . prefixTable('log_items') . '
+                    WHERE (date BETWEEN '.$post_date_from.' AND '.$post_date_to.')'
+                    . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
+                    . ((int) $post_filter_user === -1 ? '' : ' AND id_user = '.(int) $post_filter_user);
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                            'AND (date BETWEEN %i AND %i)',
                         'error',
                         $post_date_from,
                         $post_date_to
@@ -527,7 +536,7 @@ if (null !== $post_type) {
                     // Delete
                     DB::delete(
                         prefixTable('log_system'),
-                        'type=%s AND date BETWEEN %i AND %i',
+                        'type=%s AND (date BETWEEN %i AND %i)',
                         'error',
                         $post_date_from,
                         $post_date_to
@@ -535,7 +544,7 @@ if (null !== $post_type) {
                 } elseif ($post_log_type === 'copy') {
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_items') . ' WHERE action=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                            'AND (date BETWEEN %i AND %i)',
                         'at_copy',
                         $post_date_from,
                         $post_date_to
@@ -544,7 +553,7 @@ if (null !== $post_type) {
                     // Delete
                     DB::delete(
                         prefixTable('log_items'),
-                        'action=%s AND date BETWEEN %i AND %i',
+                        'action=%s AND (date BETWEEN %i AND %i)',
                         'at_copy',
                         $post_date_from,
                         $post_date_to
@@ -552,7 +561,7 @@ if (null !== $post_type) {
                 } elseif ($post_log_type === 'admin') {
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                            'AND (date BETWEEN %i AND %i)',
                         'admin_action',
                         $post_date_from,
                         $post_date_to
@@ -561,7 +570,7 @@ if (null !== $post_type) {
                     // Delete
                     DB::delete(
                         prefixTable('log_system'),
-                        'type=%s AND date BETWEEN %i AND %i',
+                        'type=%s AND (date BETWEEN %i AND %i)',
                         'admin_action',
                         $post_date_from,
                         $post_date_to
@@ -569,7 +578,7 @@ if (null !== $post_type) {
                 } elseif ($post_log_type === 'failed') {
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
-                            'AND date BETWEEN %i AND %i',
+                            'AND (date BETWEEN %i AND %i)',
                         'failed_auth',
                         $post_date_from,
                         $post_date_to
@@ -578,7 +587,7 @@ if (null !== $post_type) {
                     // Delete
                     DB::delete(
                         prefixTable('log_system'),
-                        'type=%s AND date BETWEEN %i AND %i',
+                        'type=%s AND (date BETWEEN %i AND %i)',
                         'failed_auth',
                         $post_date_from,
                         $post_date_to

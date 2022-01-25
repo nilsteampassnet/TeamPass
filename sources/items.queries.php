@@ -6020,7 +6020,7 @@ if (is_null($post_type) === false) {
             // get item history
             $history = array();
             $rows = DB::query(
-                'SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
+                'SELECT l.date as date, l.action as action, l.raison as raison,
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
                 FROM ' . prefixTable('log_items') . ' as l
                 LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)

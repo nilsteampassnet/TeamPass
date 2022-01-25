@@ -708,6 +708,7 @@ $zones = timezone_list();
                                 <select class='form-control form-control-sm select2 disabled' id='roles_allowed_to_print_select' onchange='' multiple="multiple" style="width:100%;">
                                     <?php
                                     // Get selected groups
+                                    if (isset($SETTINGS['allow_print']) === true) {
                                     $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
 if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
     $arrRolesToPrint = [];
@@ -722,6 +723,7 @@ foreach ($roles as $role) {
     echo '
                                 <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
 }
+                                    }
                                     ?>
                                 </select>
                             </div>
