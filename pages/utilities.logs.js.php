@@ -145,6 +145,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'orderCellsTop': true,
         'fixedHeader': true,
         'paging': true,
+        'retrieve': true,
         'sPaginationType': 'listbox',
         'searching': true,
         'order': [
@@ -194,6 +195,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
+            'retrieve': true,
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
@@ -242,6 +244,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
+            'retrieve': true,
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
@@ -290,6 +293,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
+            'retrieve': true,
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
@@ -338,6 +342,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
+            'retrieve': true,
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
@@ -435,6 +440,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'orderCellsTop': true,
             'fixedHeader': true,
             'paging': true,
+            'retrieve': true,
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
@@ -543,7 +549,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
 
                     if (data.error !== false) {
                         // Show error
-                        toastr.remove();
                         toastr.error(
                             data.message,
                             '<?php echo langHdl('caution'); ?>', {
@@ -552,7 +557,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                             }
                         );
                     } else {
-                        console.log(store.get('teampassApplication').logData);
+                        //console.log(store.get('teampassApplication').logData);
+                        $('#checkbox-purge-confirm').iCheck('uncheck');
                         // Reload table
                         if (store.get('teampassApplication').logData === 'errors') {
                             oTableErrors.api().ajax.reload();
@@ -563,11 +569,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                         } else if (store.get('teampassApplication').logData === 'failed') {
                             oTableFailed.api().ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'items') {
-                            oTableItems.api().ajax.reload();
+                            oTableItems.ajax.reload();
                         } else if (store.get('teampassApplication').logData === 'copy') {
                             oTableCopy.api().ajax.reload();
                         }
-                        $('#checkbox-purge-confirm').iCheck('uncheck')
                     }
                 }
             );

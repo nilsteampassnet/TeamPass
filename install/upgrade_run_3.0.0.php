@@ -87,12 +87,30 @@ $userLogin = $post_user_info[0];
 $userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
 
+// Get current version
+$queryRes = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT valeur FROM `".$pre."misc` WHERE `type` = 'admin' AND `intitule` = 'cpassman_version';"
+));
+if (mysqli_error($db_link)) {
+    echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes(mysqli_error($db_link)).'"}]';
+    exit();
+}
+$CurrentTPversion = $queryRes['valeur'];
+if ($CurrentTPversion[0] === '3') {
+    $TPIsBranch3 = true;
+} else {
+    $TPIsBranch3 = false;
+}
+
 
 // Populate table MISC
 $val = array(
     array('admin', 'cpassman_version', $SETTINGS_EXT['version'], 1),
+    $TPIsBranch3 === true ? '' : array('admin', 'ldap_mode', 0, 1), // only disable if migrating from branch 2
 );
 foreach ($val as $elem) {
+    if ($elem === '') continue;
     //Check if exists before inserting
     $queryRes = mysqli_query(
         $db_link,
