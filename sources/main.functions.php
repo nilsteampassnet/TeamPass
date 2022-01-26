@@ -410,7 +410,7 @@ function identifyUserRights(
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-    
+
     // Check if user is ADMINISTRATOR    
     (int) $isAdmin === 1 ?
         identAdmin(
@@ -652,7 +652,9 @@ function identUser(
         $allowedFoldersByRoles,
         $restrictedFoldersForItems,
         $readOnlyFolders,
-        $noAccessFolders
+        $noAccessFolders,
+        isset($SETTINGS['enable_pf_feature']) === true ? $SETTINGS['enable_pf_feature'] : 0,
+        $tree
     );
     $allowedFolders = $arrays['allowedFolders'];
     $personalFolders = $arrays['personalFolders'];
@@ -757,6 +759,8 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
  * @param array $restrictedFoldersForItems
  * @param array $readOnlyFolders
  * @param array $noAccessFolders
+ * @param int $enablePfFeature
+ * @param object $tree
  * 
  * @return array
  */
@@ -770,13 +774,14 @@ function identUserGetPFList(
     $allowedFoldersByRoles,
     $restrictedFoldersForItems,
     $readOnlyFolders,
-    $noAccessFolders
+    $noAccessFolders,
+    $enablePfFeature,
+    $tree
 )
 {
-    // 
     if (
-        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
-        && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
+        (int) $enablePfFeature === 1
+        && (int) $globalsPersonalFolders === 1
     ) {
         $persoFld = DB::queryfirstrow(
             'SELECT id
@@ -806,8 +811,8 @@ function identUserGetPFList(
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
     if (
-        isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
-        && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
+        (int) $enablePfFeature === 1
+        && (int) $globalsPersonalFolders === 1
     ) {
         $where->add('title=%s', $globalsUserId);
         $where->negateLast();

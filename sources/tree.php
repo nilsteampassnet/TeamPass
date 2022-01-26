@@ -243,7 +243,6 @@ function buildNodeTree(
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
         foreach ($nodeDescendants as $node) {
-            $displayThisNode = false;
             if ((in_array($node->id, $session_forbiden_pfs) === false
                     || in_array($node->id, $session_groupes_visibles) === true
                     || in_array($node->id, $listFoldersLimitedKeys) === true
@@ -353,7 +352,7 @@ function buildNodeTree(
                             'children' => ($childrenNb === 0 ? false : true),
                             'li_attr' => array(
                                 'class' => ($show_but_block === true ? '' : 'jstreeopen'),
-                                'title' => 'ID [' . $node->id . '] ' . ($show_but_block === true ? angHdl('no_access') : $title),
+                                'title' => 'ID [' . $node->id . '] ' . ($show_but_block === true ? langHdl('no_access') : $title),
                             ),
                             'a_attr' => $show_but_block === true ? (array(
                                 'id' => 'fld_' . $node->id,
