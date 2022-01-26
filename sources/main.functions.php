@@ -410,14 +410,15 @@ function identifyUserRights(
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-    // Check if user is ADMINISTRATOR
-    if ((int) $isAdmin === 1) {
+    
+    // Check if user is ADMINISTRATOR    
+    (int) $isAdmin === 1 ?
         identAdmin(
             $idFonctions,
             $SETTINGS, /** @scrutinizer ignore-type */
             $tree
-        );
-    } else {
+        )
+        :
         identUser(
             $groupesVisiblesUser,
             $groupesInterditsUser,
@@ -425,7 +426,6 @@ function identifyUserRights(
             $SETTINGS, /** @scrutinizer ignore-type */
             $tree
         );
-    }
 
     // update user's timestamp
     DB::update(
@@ -595,30 +595,16 @@ function identUser(
     $noAccessFolders = convertToArray($noAccessFolders);
     $userRoles = convertToArray($userRoles);
     $allowedFolders = convertToArray($allowedFolders);
+
     // Get list of folders depending on Roles
-    $rows = DB::query(
-        'SELECT *
-        FROM ' . prefixTable('roles_values') . '
-        WHERE role_id IN %li AND type IN %ls',
+    $arrays = identUserGetFoldersFromRoles(
         $userRoles,
-        ['W', 'ND', 'NE', 'NDNE', 'R']
+        $allowedFoldersByRoles,
+        $readOnlyFolders,
+        $allowedFolders
     );
-    foreach ($rows as $record) {
-        if ($record['type'] === 'R') {
-            array_push($readOnlyFolders, $record['folder_id']);
-        } elseif (in_array($record['folder_id'], $allowedFolders) === false) {
-            array_push($allowedFoldersByRoles, $record['folder_id']);
-        }
-    }
-    $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
-    $readOnlyFolders = array_unique($readOnlyFolders);
-    // Clean arrays
-    foreach ($allowedFoldersByRoles as $value) {
-        $key = array_search($value, $readOnlyFolders);
-        if ($key !== false) {
-            unset($readOnlyFolders[$key]);
-        }
-    }
+    $allowedFoldersByRoles = $arrays['allowedFoldersByRoles'];
+    $readOnlyFolders = $arrays['readOnlyFolders'];
 
     // Does this user is allowed to see other items
     $inc = 0;
@@ -656,6 +642,138 @@ function identUser(
     }
 
     // Get list of Personal Folders
+    $arrays = identUserGetPFList(
+        $globalsPersonalFolders,
+        $allowedFolders,
+        $globalsUserId,
+        $personalFolders,
+        $noAccessPersonalFolders,
+        $foldersLimitedFull,
+        $allowedFoldersByRoles,
+        $restrictedFoldersForItems,
+        $readOnlyFolders,
+        $noAccessFolders
+    );
+    $allowedFolders = $arrays['allowedFolders'];
+    $personalFolders = $arrays['personalFolders'];
+    $noAccessPersonalFolders = $arrays['noAccessPersonalFolders'];
+
+    // Return data
+    $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
+    $superGlobal->put('groupes_visibles', array_merge($allowedFolders, $personalFolders), 'SESSION');
+    $superGlobal->put('read_only_folders', $readOnlyFolders, 'SESSION');
+    $superGlobal->put('no_access_folders', $noAccessFolders, 'SESSION');
+    $superGlobal->put('personal_folders', $personalFolders, 'SESSION');
+    $superGlobal->put('list_folders_limited', $foldersLimited, 'SESSION');
+    $superGlobal->put('list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
+    $superGlobal->put('list_restricted_folders_for_items', $restrictedFoldersForItems, 'SESSION');
+    $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
+    $superGlobal->put(
+        'all_folders_including_no_access',
+        array_merge(
+            $allowedFolders,
+            $personalFolders,
+            $noAccessFolders,
+            $readOnlyFolders
+        ),
+        'SESSION'
+    );
+    // Folders and Roles numbers
+    DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
+    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
+    DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
+    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
+    // check if change proposals on User's items
+    if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
+        $countNewItems = DB::query(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('items_change') . ' AS c
+            LEFT JOIN ' . prefixTable('log_items') . ' AS i ON (c.item_id = i.id_item)
+            WHERE i.action = %s AND i.id_user = %i',
+            'at_creation',
+            $globalsUserId
+        );
+        $superGlobal->put('nb_item_change_proposals', $countNewItems, 'SESSION');
+    } else {
+        $superGlobal->put('nb_item_change_proposals', 0, 'SESSION');
+    }
+
+    return true;
+}
+
+/**
+ * Get list of folders depending on Roles
+ * 
+ * @param array $userRoles
+ * @param array $allowedFoldersByRoles
+ * @param array $readOnlyFolders
+ * @param array $allowedFolders
+ * 
+ * @return array
+ */
+function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readOnlyFolders, $allowedFolders) : array
+{
+    
+    $rows = DB::query(
+        'SELECT *
+        FROM ' . prefixTable('roles_values') . '
+        WHERE role_id IN %li AND type IN %ls',
+        $userRoles,
+        ['W', 'ND', 'NE', 'NDNE', 'R']
+    );
+    foreach ($rows as $record) {
+        if ($record['type'] === 'R') {
+            array_push($readOnlyFolders, $record['folder_id']);
+        } elseif (in_array($record['folder_id'], $allowedFolders) === false) {
+            array_push($allowedFoldersByRoles, $record['folder_id']);
+        }
+    }
+    $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
+    $readOnlyFolders = array_unique($readOnlyFolders);
+    // Clean arrays
+    foreach ($allowedFoldersByRoles as $value) {
+        $key = array_search($value, $readOnlyFolders);
+        if ($key !== false) {
+            unset($readOnlyFolders[$key]);
+        }
+    }
+
+    return [
+        'readOnlyFolders' => $readOnlyFolders,
+        'allowedFoldersByRoles' => $allowedFoldersByRoles
+    ];
+}
+
+/**
+ * Get list of Personal Folders
+ * 
+ * @param int $globalsPersonalFolders
+ * @param array $allowedFolders
+ * @param int $globalsUserId
+ * @param array $personalFolders
+ * @param array $noAccessPersonalFolders
+ * @param array $foldersLimitedFull
+ * @param array $allowedFoldersByRoles
+ * @param array $restrictedFoldersForItems
+ * @param array $readOnlyFolders
+ * @param array $noAccessFolders
+ * 
+ * @return array
+ */
+function identUserGetPFList(
+    $globalsPersonalFolders,
+    $allowedFolders,
+    $globalsUserId,
+    $personalFolders,
+    $noAccessPersonalFolders,
+    $foldersLimitedFull,
+    $allowedFoldersByRoles,
+    $restrictedFoldersForItems,
+    $readOnlyFolders,
+    $noAccessFolders
+)
+{
+    // 
     if (
         isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
         && isset($globalsPersonalFolders) === true && (int) $globalsPersonalFolders === 1
@@ -716,48 +834,14 @@ function identUser(
     if (count($noAccessFolders) > 0) {
         $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
     }
-    // Return data
-    $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
-    $superGlobal->put('groupes_visibles', array_merge($allowedFolders, $personalFolders), 'SESSION');
-    $superGlobal->put('read_only_folders', $readOnlyFolders, 'SESSION');
-    $superGlobal->put('no_access_folders', $noAccessFolders, 'SESSION');
-    $superGlobal->put('personal_folders', $personalFolders, 'SESSION');
-    $superGlobal->put('list_folders_limited', $foldersLimited, 'SESSION');
-    $superGlobal->put('list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
-    $superGlobal->put('list_restricted_folders_for_items', $restrictedFoldersForItems, 'SESSION');
-    $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
-    $superGlobal->put(
-        'all_folders_including_no_access',
-        array_merge(
-            $allowedFolders,
-            $personalFolders,
-            $noAccessFolders,
-            $readOnlyFolders
-        ),
-        'SESSION'
-    );
-    // Folders and Roles numbers
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
-    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
-    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
-    // check if change proposals on User's items
-    if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
-        DB::query(
-            'SELECT *
-            FROM ' . prefixTable('items_change') . ' AS c
-            LEFT JOIN ' . prefixTable('log_items') . ' AS i ON (c.item_id = i.id_item)
-            WHERE i.action = %s AND i.id_user = %i',
-            'at_creation',
-            $globalsUserId
-        );
-        $superGlobal->put('nb_item_change_proposals', DB::count(), 'SESSION');
-    } else {
-        $superGlobal->put('nb_item_change_proposals', 0, 'SESSION');
-    }
 
-    return true;
+    return [
+        'allowedFolders' => $allowedFolders,
+        'personalFolders' => $personalFolders,
+        'noAccessPersonalFolders' => $noAccessPersonalFolders
+    ];
 }
+
 
 /**
  * Update the CACHE table.

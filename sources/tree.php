@@ -256,10 +256,6 @@ function buildNodeTree(
                     || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node->id, $listRestrictedFoldersForItemsKeys) === true)
                     || in_array($node->id, $session_no_access_folders) === true)
             ) {
-                $displayThisNode = true;
-            }
-
-            if ($displayThisNode === true) {
                 $hide_node = $show_but_block = false;
                 $text = '';
                 $title = '';
@@ -331,8 +327,8 @@ function buildNodeTree(
                     $folderClass = 'folder_not_droppable';
                     if (isset($SETTINGS['show_only_accessible_folders']) && (int) $SETTINGS['show_only_accessible_folders'] === 1) {
                         // folder is not visible
-                        $nodeDirectDescendants = $tree->getDescendants($nodeId, false, true, true);
-                        if (count($nodeDirectDescendants) > 0) {
+                        $numDescendants = $tree->numDescendants($nodeId);
+                        if ($numDescendants > 0) {
                             // show it but block it
                             $hide_node = false;
                             $show_but_block = true;
@@ -347,41 +343,26 @@ function buildNodeTree(
                 }
 
                 // json
-                if ($hide_node === false && $show_but_block === false) {
+                $hide_node === true ? '' :
                     array_push(
                         $ret_json,
                         array(
                             'id' => 'li_' . $node->id,
                             'parent' => $parent,
-                            'text' => $text,
-                            'children' => $childrenNb === 0 ? false : true,
+                            'text' => ($show_but_block === true ? '<i class="fas fa-times fa-xs text-danger mr-1"></i>' : '') . $text,
+                            'children' => ($childrenNb === 0 ? false : true),
                             'li_attr' => array(
-                                'class' => 'jstreeopen',
-                                'title' => 'ID [' . $node->id . '] ' . $title,
+                                'class' => ($show_but_block === true ? '' : 'jstreeopen'),
+                                'title' => 'ID [' . $node->id . '] ' . ($show_but_block === true ? angHdl('no_access') : $title),
                             ),
-                            'a_attr' => array(
+                            'a_attr' => $show_but_block === true ? (array(
                                 'id' => 'fld_' . $node->id,
                                 'class' => $folderClass,
                                 'onclick' => 'ListerItems(' . $node->id . ', ' . $restricted . ', 0, 1)',
                                 'data-title' => $node->title,
-                            ),
+                            )) : '',
                         )
                     );
-                } elseif ($show_but_block === true) {
-                    array_push(
-                        $ret_json,
-                        array(
-                            'id' => 'li_' . $node->id,
-                            'parent' =>  $parent,
-                            'children' => $childrenNb === 0 ? false : true,
-                            'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>' . $text,
-                            'li_attr' => array(
-                                'class' => '',
-                                'title' => 'ID [' . $node->id . '] ' . langHdl('no_access'),
-                            ),
-                        )
-                    );
-                }
             }
         }
     }
