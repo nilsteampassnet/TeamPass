@@ -115,6 +115,7 @@ function mainQuery(array $SETTINGS)
     // Check KEY
     if (isset($post_key) === false || empty($post_key) === true) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('key_is_not_correct'),
@@ -126,6 +127,7 @@ function mainQuery(array $SETTINGS)
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         $post_data,
         'decode'
     );
@@ -316,7 +318,8 @@ function mainQuery(array $SETTINGS)
         */
         case 'get_teampass_settings':
             // Encrypt data to return
-            echo prepareExchangedData($SETTINGS, 'encode');
+            echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],$SETTINGS, 'encode');
 
             break;
 
@@ -508,6 +511,7 @@ function getNumberOfItemsToTreat(
 
     // Send back
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => false,
             'nbItems' => DB::count(),
@@ -544,6 +548,7 @@ function changePassword(
         // Check that current user is correct
         if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -588,6 +593,7 @@ function changePassword(
 
         if ((int) $post_password_complexity < (int) $data['complexity']) {
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
@@ -600,6 +606,7 @@ function changePassword(
         // Check that the 2 passwords are differents
         if ($post_current_password === $post_new_password) {
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('password_already_used'),
@@ -637,6 +644,7 @@ function changePassword(
 
             // Send back
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -646,6 +654,7 @@ function changePassword(
         }
         // Send back
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('pwd_hash_not_correct'),
@@ -654,6 +663,7 @@ function changePassword(
         );
     }
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_not_allowed_to'),
@@ -679,6 +689,7 @@ function generateQRCode(
     ) {
         // User cannot ask for a new code
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_not_allowed_to'),
@@ -718,6 +729,7 @@ function generateQRCode(
         // Not a registered user !
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_user'),
@@ -736,6 +748,7 @@ function generateQRCode(
         // checked the given password
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_user'),
@@ -747,6 +760,7 @@ function generateQRCode(
     
     if (empty($data['email']) === true) {
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email'),
@@ -789,6 +803,7 @@ function generateQRCode(
 
         // send back
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => $post_send_mail,
@@ -805,6 +820,7 @@ function generateQRCode(
     
     // send back
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => false,
             'message' => '',
@@ -888,6 +904,7 @@ function generateGenericPassword(
 {
     if ((int) $size > (int) $SETTINGS['pwd_maximum_length']) {
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error_msg' => 'Password length is too long! ',
                 'error' => 'true',
@@ -923,6 +940,7 @@ function generateGenericPassword(
     }
 
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'key' => $generator->generatePasswords(),
             'error' => '',
@@ -1193,6 +1211,7 @@ Insert the log here and especially the answer of the query that failed.
 ';
 
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'html' => $txt,
             'error' => '',
@@ -1242,6 +1261,7 @@ function isUserPasswordCorrect(
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
                     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                         array(
                             'error' => false,
                             'message' => '',
@@ -1261,6 +1281,7 @@ function isUserPasswordCorrect(
             if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
                 // GOOD password
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -1273,6 +1294,7 @@ function isUserPasswordCorrect(
     }
 
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('password_is_not_correct'),
@@ -1296,6 +1318,7 @@ function changePrivateKeyEncryptionPassword(
         } else {
             // no user password???
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_no_user_password_exists'),
@@ -1345,6 +1368,7 @@ function changePrivateKeyEncryptionPassword(
 
         // Return
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1354,6 +1378,7 @@ function changePrivateKeyEncryptionPassword(
     }
     
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -1423,6 +1448,7 @@ function initializeUserPassword(
 
                 // Return
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -1434,6 +1460,7 @@ function initializeUserPassword(
             }
             // Return error
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('no_email_set'),
@@ -1446,6 +1473,7 @@ function initializeUserPassword(
 
         // Error
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email_set'),
@@ -1456,6 +1484,7 @@ function initializeUserPassword(
     }
     
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -1493,6 +1522,7 @@ function sendMailToUser(
     $ret = json_decode($ret, true);
 
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => empty($ret['error']) === true ? false : true,
             'message' => $ret['message'],
@@ -1534,6 +1564,7 @@ function generateOneTimeCode(
             );
 
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1544,6 +1575,7 @@ function generateOneTimeCode(
         }
         
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email_set'),
@@ -1553,6 +1585,7 @@ function generateOneTimeCode(
     }
         
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -1588,6 +1621,7 @@ function startReEncryptingUserSharekeys(
 
             // Continu with next step
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1601,6 +1635,7 @@ function startReEncryptingUserSharekeys(
         }
         // Nothing to do
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_no_user'),
@@ -1610,6 +1645,7 @@ function startReEncryptingUserSharekeys(
     }
 
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -1636,6 +1672,10 @@ function continueReEncryptingUserSharekeys(
             $post_user_id
         );
         if (isset($userInfo['public_key']) === true) {
+            // Init
+            $next_start = '';
+            $next_action = '';
+
             // Include libraries
             include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
@@ -1646,23 +1686,11 @@ function continueReEncryptingUserSharekeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => 'step1',
-                        'start' => isset($next_start) === true ? $next_start : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+                $next_action = 'step1';
             }
             
-            // Do other steps
             // STEP 1 - ITEMS
-            if ($post_action === 'step1') {
+            elseif ($post_action === 'step1') {
                 $return = continueReEncryptingUserSharekeysStep1(
                     $post_user_id,
                     $post_self_change,
@@ -1672,22 +1700,13 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
 
             // STEP 2 - LOGS
-            if ($post_action === 'step2') {
+            elseif ($post_action === 'step2') {
                 $return = continueReEncryptingUserSharekeysStep2(
                     $post_user_id,
                     $post_self_change,
@@ -1697,22 +1716,13 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
 
             // STEP 3 - FIELDS
-            if ($post_action === 'step3') {
+            elseif ($post_action === 'step3') {
                 $return = continueReEncryptingUserSharekeysStep3(
                     $post_user_id,
                     $post_self_change,
@@ -1722,22 +1732,13 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 4 - SUGGESTIONS
-            if ($post_action === 'step4') {
+            elseif ($post_action === 'step4') {
                 $return = continueReEncryptingUserSharekeysStep4(
                     $post_user_id,
                     $post_self_change,
@@ -1747,22 +1748,13 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 5 - FILES
-            if ($post_action === 'step5') {
+            elseif ($post_action === 'step5') {
                 $return = continueReEncryptingUserSharekeysStep5(
                     $post_user_id,
                     $post_self_change,
@@ -1772,22 +1764,13 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
             
             // STEP 6 - PERSONAL ITEMS
-            if ($post_action === 'step6') {
+            elseif ($post_action === 'step6') {
                 $return = continueReEncryptingUserSharekeysStep6(
                     $post_user_id,
                     $post_self_change,
@@ -1797,23 +1780,29 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-                // Continu with next step
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'step' => $return['post_action'],
-                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                        'userId' => $post_user_id,
-                        'self_change' => $post_self_change,
-                    ),
-                    'encode'
-                );
+
+                $next_start = $return['next_start'];
+                $next_action = $return['post_action'];
             }
+            
+            // Continu with next step
+            return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'step' => isset($next_action) === true ? $next_action : '',
+                    'start' => isset($next_start) === true ? $next_start : 0,
+                    'userId' => $post_user_id,
+                    'self_change' => $post_self_change,
+                ),
+                'encode'
+            );
         }
         
         // Nothing to do
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1828,6 +1817,7 @@ function continueReEncryptingUserSharekeys(
     
     // Nothing to do
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2371,6 +2361,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 
                 if (strpos($user_key_encoded, "Error ") !== false) {
                     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('bad_psk'),
@@ -2494,6 +2485,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 
                 // Continu with next step
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -2508,6 +2500,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         
         // Nothing to do
         return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_no_user'),
@@ -2518,6 +2511,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     
     // Nothing to do
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2543,6 +2537,7 @@ function getUserInfo(
         );
         if (DB::count() > 0) {
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -2553,6 +2548,7 @@ function getUserInfo(
         }
     }
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2614,6 +2610,7 @@ function changeUserAuthenticationPassword(
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => langHdl('done'),'',
@@ -2624,6 +2621,7 @@ function changeUserAuthenticationPassword(
             
             // ERROR
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('bad_password'),
@@ -2634,6 +2632,7 @@ function changeUserAuthenticationPassword(
     }
         
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2689,6 +2688,7 @@ function changeUserLDAPAuthenticationPassword(
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => langHdl('done'),'',
@@ -2703,6 +2703,7 @@ function changeUserLDAPAuthenticationPassword(
 
             if (empty($privateKey) === true) {
                 return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('password_is_not_correct'),
@@ -2755,6 +2756,7 @@ function changeUserLDAPAuthenticationPassword(
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                         array(
                             'error' => false,
                             'message' => langHdl('done'),
@@ -2766,6 +2768,7 @@ function changeUserLDAPAuthenticationPassword(
             
             // ERROR
             return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('bad_password'),
@@ -2777,6 +2780,7 @@ function changeUserLDAPAuthenticationPassword(
 
     // ERROR
     return prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),

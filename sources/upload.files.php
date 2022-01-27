@@ -371,6 +371,7 @@ if (
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -399,6 +400,7 @@ if (
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
         array(
             'operation_id' => DB::insertId(),
         ),
@@ -451,6 +453,7 @@ if (
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
         array(
             'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
             'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
@@ -480,6 +483,7 @@ if (
 
     // return info
     echo prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
         array(
             'operation_id' => DB::insertId(),
         ),

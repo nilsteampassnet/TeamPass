@@ -208,6 +208,7 @@ if ($post_type === 'identify_duo_user') {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
         // Encrypt data to return
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             [
                 'value' => 'bruteforce_wait',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -231,6 +232,7 @@ if ($post_type === 'identify_duo_user') {
 
     // Encrypt data to return
     echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         [
             'agses' => isset($SETTINGS['agses_authentication_enabled']) === true
                 && (int) $SETTINGS['agses_authentication_enabled'] === 1 ? true : false,
@@ -304,7 +306,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if (empty($sessionKey) === true) {
         $dataReceived = $sentData;
     } else {
-        $dataReceived = prepareExchangedData($sentData, 'decode', $sessionKey);
+        $dataReceived = prepareExchangedData(
+    $SETTINGS['cpassman_dir'],$sentData, 'decode', $sessionKey);
         $superGlobal->put('key', $sessionKey, 'SESSION');
     }
 
@@ -330,6 +333,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userInitialData['error'] === true) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             $userInitialData['array'],
             'encode'
         );
@@ -351,6 +355,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             $userLdap['array'],
             'encode'
         );
@@ -366,6 +371,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check user and password
     if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             [
                 'value' => '',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -390,6 +396,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             $userLdap['mfaData'],
             'encode'
         );
@@ -403,6 +410,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         && $userInitialData['user_mfa_mode'] === 'google'
     ) {
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             [
                 'value' => $userLdap['mfaData']['firstTime']['value'],
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -763,6 +771,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     } elseif ((int) $userInfo['disabled'] === 1) {
         // User and password is okay but account is locked
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -817,6 +826,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // What return shoulb we do
         if ($userIsLocked === true) {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 [
                     'value' => $return,
                     'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -842,6 +852,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -877,6 +888,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     */
     echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
         [
             'value' => $return,
             'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',

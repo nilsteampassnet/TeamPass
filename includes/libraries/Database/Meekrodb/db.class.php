@@ -975,8 +975,13 @@ class DBHelper {
   }
 }
 
-function meekrodb_error_handler($params) {
-  echo prepareExchangedData('[{"error" : "'.$params['error'].'"}]', "encode");
+function meekrodb_error_handler($params) {  
+  include '../../../config/tp.config.php';
+  echo prepareExchangedData(
+    @$SETTINGS['cpassman_dir'],
+    '[{"error" : "'.$params['error'].'"}]',
+    "encode"
+  );
   
   die;
 }

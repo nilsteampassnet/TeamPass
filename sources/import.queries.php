@@ -110,6 +110,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -242,6 +243,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($fp);
         } else {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('cannot_open_file'),
@@ -270,6 +272,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Show results to user.
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -290,6 +293,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -303,7 +307,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $list = [];
 
         // Decrypt and retreive data in JSON format
-        $post_items = prepareExchangedData($post_data, 'decode');
+        $post_items = prepareExchangedData(
+    $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
         // Init post variable
         $post_folder = filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT);
@@ -427,6 +432,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -441,6 +447,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -451,7 +458,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         // Decrypt and retreive data in JSON format
-        $receivedParameters = prepareExchangedData($post_data, 'decode');
+        $receivedParameters = prepareExchangedData(
+    $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
         $post_folder_id = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_STRING);
@@ -479,6 +487,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             || ($cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, "w")) === false
         ) {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('cannot_open_file'),
@@ -807,6 +816,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fputs($cacheLogFile, date('H:i').langHdl('import_error_no_read_possible_kp')."\n");
 
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('import_error_no_read_possible_kp'),
@@ -1155,6 +1165,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             //Display all messages to user
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1164,6 +1175,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             );
         } else {
             echo prepareExchangedData(
+    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('no_item_found'),

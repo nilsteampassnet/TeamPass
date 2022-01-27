@@ -1500,26 +1500,17 @@ function utf8Converter(array $array): array
 /**
  * Permits to prepare data to be exchanged.
  *
+ * @param string       $teampassDir
  * @param array|string $data Text
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
  * @return resource|string|array
  */
-function prepareExchangedData($data, string $type, ?string $key = null)
+function prepareExchangedData($teampassDir, $data, string $type, ?string $key = null)
 {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
-
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $teampassDir . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get superglobals
     if ($key !== null) {
@@ -1530,9 +1521,9 @@ function prepareExchangedData($data, string $type, ?string $key = null)
     }
 
     //load ClassLoader
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    include_once $teampassDir . '/sources/SplClassLoader.php';
     //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    $aes = new SplClassLoader('Encryption\Crypt', $teampassDir . '/includes/libraries');
     $aes->register();
     if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format

@@ -77,7 +77,11 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLA
 if (null === $post_key
     || $post_key != $_SESSION['key']
 ) {
-    echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+    echo prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
+        array('error' => 'ERR_KEY_NOT_CORRECT'),
+        'encode'
+    );
     exit();
 }
 
@@ -87,12 +91,17 @@ if (null !== $post_type) {
         case 'log_action_on_item':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array('error' => 'ERR_KEY_NOT_CORRECT'),
+                    'encode'
+                );
                 break;
             }
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );

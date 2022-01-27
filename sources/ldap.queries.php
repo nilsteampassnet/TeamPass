@@ -84,6 +84,7 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -94,7 +95,11 @@ switch ($post_type) {
         }
 
         // decrypt and retrieve data in JSON format
-        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $dataReceived = prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            $post_data,
+            'decode'
+        );
 
         // prepare variables
         $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_STRING);
@@ -169,6 +174,7 @@ switch ($post_type) {
             $error = $e->getDetailedError();
 
             echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
@@ -187,6 +193,7 @@ switch ($post_type) {
             $error = $e->setDetailedError();
             
             echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : ".$e->withDetailedError($e),//->detailedError(),
@@ -206,6 +213,7 @@ switch ($post_type) {
             $error = $e->getDetailedError();
             
             echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
@@ -216,6 +224,7 @@ switch ($post_type) {
         }
         
         echo prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => "User is successfully authenticated",
