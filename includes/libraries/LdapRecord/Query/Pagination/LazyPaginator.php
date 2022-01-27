@@ -11,7 +11,7 @@ class LazyPaginator extends Paginator
      *
      * @param LdapInterface $ldap
      *
-     * @return Generator
+     * @return \Generator
      */
     public function execute(LdapInterface $ldap)
     {

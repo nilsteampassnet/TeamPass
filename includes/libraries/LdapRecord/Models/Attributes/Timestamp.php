@@ -155,7 +155,7 @@ class Timestamp
      *
      * @param string $value
      *
-     * @return DateTime|bool
+     * @return DateTime|false
      */
     protected function convertLdapTimeToDateTime($value)
     {
@@ -184,7 +184,7 @@ class Timestamp
      *
      * @param string $value
      *
-     * @return DateTime|bool
+     * @return DateTime|false
      */
     protected function convertWindowsTimeToDateTime($value)
     {
@@ -213,7 +213,7 @@ class Timestamp
      *
      * @param int $value
      *
-     * @return DateTime|bool
+     * @return DateTime|false
      *
      * @throws \Exception
      */

@@ -3012,7 +3012,6 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapBase.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
     $ad->register();

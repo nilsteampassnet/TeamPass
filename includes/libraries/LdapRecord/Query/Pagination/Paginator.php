@@ -37,7 +37,8 @@ class Paginator extends AbstractPaginator
      */
     protected function updateServerControls(LdapInterface $ldap, $resource)
     {
-        $errorCode = $dn = $errorMessage = $refs = null;
+        $errorCode = 0;
+        $dn = $errorMessage = $refs = null;
 
         $ldap->parseResult(
             $resource,

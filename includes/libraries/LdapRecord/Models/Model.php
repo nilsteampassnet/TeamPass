@@ -611,7 +611,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     /**
      * Convert the model to its JSON encodeable array form.
      *
-     * @return void
+     * @return array
      */
     public function toArray()
     {
@@ -884,7 +884,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     /**
      * Get the model's object GUID key.
      *
-     * @return void
+     * @return string
      */
     public function getObjectGuidKey()
     {

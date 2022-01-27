@@ -93,7 +93,7 @@ class DistinguishedName
      */
     public static function explode($dn)
     {
-        $components = ldap_explode_dn($dn, $withoutAttributes = false);
+        $components = ldap_explode_dn($dn, (int) $withoutAttributes = false);
 
         if (! is_array($components)) {
             return [];

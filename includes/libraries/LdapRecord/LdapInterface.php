@@ -156,7 +156,7 @@ interface LdapInterface
     /**
      * Return detailed information about an error.
      *
-     * Returns false when there was a successful last request.
+     * Returns null when there was a successful last request.
      *
      * Returns DetailedError when there was an error.
      *
@@ -292,10 +292,10 @@ interface LdapInterface
      *
      * @param resource $result
      * @param int      $errorCode
-     * @param string   $dn
-     * @param string   $errorMessage
-     * @param array    $referrals
-     * @param array    $serverControls
+     * @param ?string  $dn
+     * @param ?string  $errorMessage
+     * @param ?array   $referrals
+     * @param ?array   $serverControls
      *
      * @return bool
      */

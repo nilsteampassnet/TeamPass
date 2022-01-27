@@ -115,7 +115,7 @@ function mainQuery(array $SETTINGS)
     // Check KEY
     if (isset($post_key) === false || empty($post_key) === true) {
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('key_is_not_correct'),
@@ -127,7 +127,7 @@ function mainQuery(array $SETTINGS)
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         $post_data,
         'decode'
     );
@@ -729,7 +729,7 @@ function generateQRCode(
         // Not a registered user !
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_user'),
@@ -748,7 +748,7 @@ function generateQRCode(
         // checked the given password
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_user'),
@@ -760,7 +760,7 @@ function generateQRCode(
     
     if (empty($data['email']) === true) {
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email'),
@@ -803,7 +803,7 @@ function generateQRCode(
 
         // send back
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => $post_send_mail,
@@ -820,7 +820,7 @@ function generateQRCode(
     
     // send back
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => false,
             'message' => '',
@@ -904,7 +904,7 @@ function generateGenericPassword(
 {
     if ((int) $size > (int) $SETTINGS['pwd_maximum_length']) {
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error_msg' => 'Password length is too long! ',
                 'error' => 'true',
@@ -940,7 +940,7 @@ function generateGenericPassword(
     }
 
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'key' => $generator->generatePasswords(),
             'error' => '',

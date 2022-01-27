@@ -52,11 +52,11 @@ class NullDispatcher implements DispatcherInterface
      * @param string|object $event
      * @param mixed         $payload
      *
-     * @return array|null
+     * @return null
      */
     public function until($event, $payload = [])
     {
-        //
+        return null;
     }
 
     /**
@@ -66,11 +66,11 @@ class NullDispatcher implements DispatcherInterface
      * @param mixed         $payload
      * @param bool          $halt
      *
-     * @return mixed
+     * @return null
      */
     public function fire($event, $payload = [], $halt = false)
     {
-        //
+        return null;
     }
 
     /**
@@ -80,11 +80,11 @@ class NullDispatcher implements DispatcherInterface
      * @param mixed         $payload
      * @param bool          $halt
      *
-     * @return array|null
+     * @return null
      */
     public function dispatch($event, $payload = [], $halt = false)
     {
-        //
+        return null;
     }
 
     /**

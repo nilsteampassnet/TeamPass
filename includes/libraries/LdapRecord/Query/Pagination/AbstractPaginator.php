@@ -106,7 +106,7 @@ abstract class AbstractPaginator
      *
      * @param LdapInterface $ldap
      *
-     * @return mixed
+     * @return void
      */
     abstract protected function resetServerControls(LdapInterface $ldap);
 

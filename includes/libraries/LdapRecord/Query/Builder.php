@@ -6,6 +6,7 @@ use BadMethodCallException;
 use Closure;
 use DateTimeInterface;
 use InvalidArgumentException;
+use LDAP\Result;
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\EscapesValues;
@@ -19,6 +20,7 @@ use LdapRecord\Query\Pagination\Paginator;
 use LdapRecord\Support\Arr;
 use LdapRecord\Utilities;
 
+/** @psalm-suppress UndefinedClass */
 class Builder
 {
     use EscapesValues;
@@ -673,7 +675,7 @@ class Builder
             $entries = $ldap->getEntries($resource);
 
             // Free up memory.
-            if (is_resource($resource)) {
+            if (is_resource($resource) || $resource instanceof Result) {
                 $ldap->freeResult($resource);
             }
 
