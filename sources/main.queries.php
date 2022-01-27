@@ -133,7 +133,7 @@ function mainQuery(array $SETTINGS)
     // Manage type of action asked
     switch ($post_type) {
         case 'change_pw':
-            $return = changePassword(
+            echo changePassword(
                 (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING),
                 isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '',
                 (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
@@ -141,8 +141,6 @@ function mainQuery(array $SETTINGS)
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-
-            echo $return;
             
             break;
 
@@ -150,7 +148,7 @@ function mainQuery(array $SETTINGS)
          * This will generate the QR Google Authenticator
          */
         case 'ga_generate_qr':
-            $return = generateQRCode(
+            echo generateQRCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
@@ -159,19 +157,15 @@ function mainQuery(array $SETTINGS)
                 $SETTINGS
             );
 
-            echo $return;
-
             break;
         
             /*
          * Increase the session time of User
          */
         case 'increase_session_time':
-            $return = increaseSessionDuration(
+            echo increaseSessionDuration(
                 (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
             );
-
-            echo $return;
 
             break;
         
@@ -197,7 +191,7 @@ function mainQuery(array $SETTINGS)
          * Generate a password generic
          */
         case 'generate_password':
-            $return = generateGenericPassword(
+            echo generateGenericPassword(
                 (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING),
                 (bool) filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING),
@@ -206,8 +200,6 @@ function mainQuery(array $SETTINGS)
                 (bool) filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-
-            echo $return;
             
             break;
 
@@ -215,11 +207,9 @@ function mainQuery(array $SETTINGS)
          * Refresh list of last items seen
          */
         case 'refresh_list_items_seen':
-            $return = refreshUserItemsSeenList(
+            echo refreshUserItemsSeenList(
                 $SETTINGS
             );
-
-            echo $return;
 
             break;
 
@@ -314,12 +304,10 @@ function mainQuery(array $SETTINGS)
          * Generate BUG report
          */
         case 'generate_bug_report':
-            $return = generateBugReport(
+            echo generateBugReport(
                 (string) $post_data,
                 $SETTINGS
             );
-
-            echo $return;
         
             break;
 
@@ -337,13 +325,11 @@ function mainQuery(array $SETTINGS)
         * test_current_user_password_is_correct
         */
         case 'test_current_user_password_is_correct':
-            $return = isUserPasswordCorrect(
+            echo isUserPasswordCorrect(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
-            echo $return;
 
             break;
 
@@ -351,15 +337,13 @@ function mainQuery(array $SETTINGS)
          * User's public/private keys change
          */
         case 'change_private_key_encryption_password':
-            $return = changePrivateKeyEncryptionPassword(
+            echo changePrivateKeyEncryptionPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
-            echo $return;
         
             break;
 
@@ -367,15 +351,13 @@ function mainQuery(array $SETTINGS)
          * User's password has to be initialized
          */
         case 'initialize_user_password':
-            $return = initializeUserPassword(
+            echo initializeUserPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['special'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
-            echo $return;
 
             break;
 
@@ -384,7 +366,7 @@ function mainQuery(array $SETTINGS)
         * Send email
         */
         case 'mail_me':
-            $return = sendMailToUser(
+            echo sendMailToUser(
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING),
                 $dataReceived['body'],
                 (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
@@ -395,20 +377,16 @@ function mainQuery(array $SETTINGS)
                 $SETTINGS
             );
 
-            echo $return;
-
             break;
 
         /*
         * Generate a temporary encryption key for user
         */
         case 'generate_temporary_encryption_key':
-            $return = generateOneTimeCode(
+            echo generateOneTimeCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -416,13 +394,11 @@ function mainQuery(array $SETTINGS)
         * user_sharekeys_reencryption_start
         */
         case 'user_sharekeys_reencryption_start':
-            $return = startReEncryptingUserSharekeys(
+            echo startReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -430,7 +406,7 @@ function mainQuery(array $SETTINGS)
         * user_sharekeys_reencryption_next
         */
         case 'user_sharekeys_reencryption_next':
-            $return = continueReEncryptingUserSharekeys(
+            echo continueReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
@@ -438,8 +414,6 @@ function mainQuery(array $SETTINGS)
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -447,15 +421,13 @@ function mainQuery(array $SETTINGS)
         * user_psk_reencryption
         */
         case 'user_psk_reencryption':
-            $return = migrateTo3_DoUserPersonalItemsEncryption(
+            echo migrateTo3_DoUserPersonalItemsEncryption(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            
-            echo $return;
         
             break;
 
@@ -463,13 +435,11 @@ function mainQuery(array $SETTINGS)
         * Get info 
         */
         case 'get_user_info':
-            $return = getUserInfo(
+            echo getUserInfo(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -477,14 +447,12 @@ function mainQuery(array $SETTINGS)
         * Change user's authenticataion password
         */
         case 'change_user_auth_password':
-            $return = changeUserAuthenticationPassword(
+            echo changeUserAuthenticationPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -493,14 +461,12 @@ function mainQuery(array $SETTINGS)
         * User's authenticataion password in LDAP has changed
         */
         case 'change_user_ldap_auth_password':
-            $return = /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
+            echo /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            
-            echo $return;
 
             break;
 
@@ -1680,11 +1646,23 @@ function continueReEncryptingUserSharekeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                $next_action = 'step1';
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => 'step1',
+                        'start' => isset($next_start) === true ? $next_start : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
             
+            // Do other steps
             // STEP 1 - ITEMS
-            elseif ($post_action === 'step1') {
+            if ($post_action === 'step1') {
                 $return = continueReEncryptingUserSharekeysStep1(
                     $post_user_id,
                     $post_self_change,
@@ -1694,13 +1672,22 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
 
             // STEP 2 - LOGS
-            elseif ($post_action === 'step2') {
+            if ($post_action === 'step2') {
                 $return = continueReEncryptingUserSharekeysStep2(
                     $post_user_id,
                     $post_self_change,
@@ -1710,13 +1697,22 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
 
             // STEP 3 - FIELDS
-            elseif ($post_action === 'step3') {
+            if ($post_action === 'step3') {
                 $return = continueReEncryptingUserSharekeysStep3(
                     $post_user_id,
                     $post_self_change,
@@ -1726,13 +1722,22 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
             
             // STEP 4 - SUGGESTIONS
-            elseif ($post_action === 'step4') {
+            if ($post_action === 'step4') {
                 $return = continueReEncryptingUserSharekeysStep4(
                     $post_user_id,
                     $post_self_change,
@@ -1742,13 +1747,22 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
             
             // STEP 5 - FILES
-            elseif ($post_action === 'step5') {
+            if ($post_action === 'step5') {
                 $return = continueReEncryptingUserSharekeysStep5(
                     $post_user_id,
                     $post_self_change,
@@ -1758,13 +1772,22 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
             
             // STEP 6 - PERSONAL ITEMS
-            elseif ($post_action === 'step6') {
+            if ($post_action === 'step6') {
                 $return = continueReEncryptingUserSharekeysStep6(
                     $post_user_id,
                     $post_self_change,
@@ -1774,23 +1797,19 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
+                // Continu with next step
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'step' => $return['post_action'],
+                        'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
+                        'userId' => $post_user_id,
+                        'self_change' => $post_self_change,
+                    ),
+                    'encode'
+                );
             }
-            
-            // Continu with next step
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'step' => $next_action,
-                    'start' => isset($next_start) === true ? $next_start : 0,
-                    'userId' => $post_user_id,
-                    'self_change' => $post_self_change,
-                ),
-                'encode'
-            );
         }
         
         // Nothing to do

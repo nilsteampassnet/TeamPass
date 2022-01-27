@@ -337,7 +337,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     $userInfo = $userInitialData['userInfo'];
-    $user_initial_creation_through_ldap = false;
     $return = '';
 
 
@@ -1677,9 +1676,6 @@ function identifyDoLDAPChecks(
 ): array
 {
     // Prepare LDAP connection if set up
-    $ldapConnection = false;
-    $userPasswordVerified = false;
-
     if ((int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
         && (string) $userInfo['auth_type'] === 'ldap'
@@ -1703,14 +1699,20 @@ function identifyDoLDAPChecks(
                 ]
             ];
         }
-        $userPasswordVerified = true;
-        $ldapConnection = true;
+        return [
+            'error' => false,
+            'retLDAP' => $retLDAP,
+            'ldapConnection' => true,
+            'userPasswordVerified' => true,
+        ];
     }
+
+    // return if no addmin
     return [
         'error' => false,
-        'retLDAP' => $retLDAP,
-        'ldapConnection' => $ldapConnection,
-        'userPasswordVerified' => $userPasswordVerified,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
     ];
 }
 

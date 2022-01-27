@@ -2396,7 +2396,6 @@ if (is_null($post_type) === false) {
             if (
                 (int) $_SESSION['user_admin'] === 1
                 && (int) $dataItem['perso'] !== 1
-                && TP_ADMIN_FULL_RIGHT === true
             ) {
                 $arrData['show_details'] = 0;
                 // ---
@@ -5793,8 +5792,6 @@ if (is_null($post_type) === false) {
             // Build list of visible folders
             if (
                 (int) $_SESSION['user_admin'] === 1
-                && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
-                || null === TP_ADMIN_FULL_RIGHT
             ) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
             }

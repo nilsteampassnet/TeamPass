@@ -1518,10 +1518,6 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
 
-    if (isset($SETTINGS) === false) {
-        return 'ERROR';
-    }
-
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();

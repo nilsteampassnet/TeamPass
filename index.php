@@ -457,9 +457,8 @@ if (($session_validite_pw === null
 
     // Favourites menu
     if (
-                                    isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1'
-                                    && ($session_user_admin === 0 || ($session_user_admin === 1
-                                        && TP_ADMIN_FULL_RIGHT === false))
+                                    isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1
+                                    && (int) $session_user_admin === 0
                                 ) {
         echo '
                     <li class="nav-item">

@@ -60,10 +60,7 @@ $superGlobal = new protect\SuperGlobal\SuperGlobal();
 // Prepare SESSION variables
 $session_user_admin = $superGlobal->get('user_admin', 'SESSION');
 
-if (
-    (int) $session_user_admin === 1
-    && TP_ADMIN_FULL_RIGHT === true
-) {
+if ((int) $session_user_admin === 1) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
 }
 
