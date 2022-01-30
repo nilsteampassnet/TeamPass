@@ -4743,9 +4743,10 @@ console.log(store.get('teampassUser'))
                             }
 
                             // Show DOWNLOAD icon
-                            html +=
+                            downloadIcon =
                                 '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' +
                                 '<i class="fas fa-file-download"></i></a>';
+                            html += downloadIcon;
 
                             // Show other info
                             html +=
@@ -4759,9 +4760,9 @@ console.log(store.get('teampassUser'))
                                 '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
                                 '<div class="info-box-content"><span class="info-box-text">' +
                                 (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '.' + value.extension + '</span>' +
+                                '<span class="info-box-text">' + downloadIcon +'</span>' +
                                 '<span class="info-box-text"><i class="fas fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
                                 '</div></div>';
-
 
                             if (counter === 2) {
                                 htmlFull += '</div>';
