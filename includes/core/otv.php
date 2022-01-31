@@ -144,7 +144,7 @@ if (empty($superGlobal->get('code', 'GET')) === true
                         // log
                         logItems(
                             $SETTIGNS,
-                            $data['item_id'],
+                            (int) $data['item_id'],
                             $dataItem['label'],
                             (int) OTV_USER_ID,
                             'at_delete',
@@ -187,7 +187,7 @@ if (empty($superGlobal->get('code', 'GET')) === true
             // log
             logItems(
                 $SETTINGS,
-                $data['item_id'],
+                (int) $data['item_id'],
                 $dataItem['label'],
                 (int) OTV_USER_ID,
                 'at_shown',
