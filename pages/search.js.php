@@ -457,7 +457,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             // Autohide
             setTimeout(() => {
-                $(this).removeClass('pwd-shown_' + itemId);
+                $(this).removeClass('pwd-shown');
                 $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
                 $('.pwd-show-spinner')
                     .removeClass('fas fa-circle-notch fa-spin text-warning')
