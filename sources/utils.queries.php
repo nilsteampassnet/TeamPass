@@ -318,7 +318,7 @@ if (null !== $post_type) {
                 // update log
                 logItems(
                     $SETTINGS,
-                    $dataReceived['currentId'],
+                    (int) $dataReceived['currentId'],
                     $dataItem['label'],
                     $_SESSION['user_id'],
                     'at_modification',
