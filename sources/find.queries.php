@@ -326,9 +326,9 @@ if (isset($_GET['type']) === false) {
         $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
             '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . langHdl('see_item_title') . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '", ';
         //col2
-        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . stripslashes($record['label']) . '</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . stripslashes((string) $record['label']) . '</span>", ';
         //col3
-        $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';
+        $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)) . '", ';
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
@@ -358,7 +358,7 @@ if (isset($_GET['type']) === false) {
         }
 
         //col5 - TAGS
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"' . htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES) . '", ';
         // col6 - URL
         if ($record['url'] !== '0') {
             $sOutputItem .= '"'.filter_var($record['url'], FILTER_SANITIZE_URL).'", ';
@@ -367,7 +367,7 @@ if (isset($_GET['type']) === false) {
         }
 
         //col7 - Prepare the Treegrid
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
+        $sOutputItem .= '"' . htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES) . '"';
         //Finish the line
         $sOutputItem .= '], ';
         if ($getItemInList === true) {
