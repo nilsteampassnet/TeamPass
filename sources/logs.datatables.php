@@ -98,7 +98,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     // Filtering
@@ -145,9 +145,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -170,7 +170,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     // Filtering
@@ -228,9 +228,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -253,7 +253,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     // Filtering
@@ -299,9 +299,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -326,7 +326,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     // Filtering
@@ -369,9 +369,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'" ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'" ';
         //Finish the line
         $sOutput_item .= '], ';
         if ($get_item_in_list === true) {
@@ -394,7 +394,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     // Filtering
@@ -448,13 +448,13 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['id']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['id']), ENT_QUOTES).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col4
         $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl($record['action'])), ENT_QUOTES).'", ';
         //col5
@@ -485,7 +485,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     /*
@@ -541,7 +541,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         }
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['who']), ENT_QUOTES).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -562,7 +562,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     /*
@@ -614,7 +614,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -635,7 +635,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     /*
@@ -690,9 +690,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m'.'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col5 - TAGS
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -713,7 +713,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_NUMBER_INT).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
     $sWhere = ' WHERE ((timestamp != "" AND session_end >= "'.time().'")';
@@ -753,7 +753,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col1
         $sOutput .= '"<span data-id=\"'.$record['id'].'\">", ';
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col3
         if ($record['admin'] === '1') {
             $user_role = langHdl('god');
