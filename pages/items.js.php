@@ -2385,7 +2385,7 @@ console.log(store.get('teampassUser'))
     // Uploader options
     uploader_attachments.bind('UploadProgress', function(up, file) {
         console.log('uploader_attachments.bind')
-        $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' - ' + file.percent + '%');
+        $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' - ' + file.percent + '%');
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
@@ -2402,7 +2402,7 @@ console.log(store.get('teampassUser'))
     uploader_attachments.bind('FilesAdded', function(up, file) {
         userUploadedFile = true;
         $('#upload-file_' + file.id + '')
-            .html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
+            .html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' <?php echo langHdl('uploaded'); ?>');
         toastr
             .info(
                 '<?php echo langHdl('success'); ?>',
@@ -2461,7 +2461,7 @@ console.log(store.get('teampassUser'))
                 '<div id="upload-file_' + file.id + '">' +
                 '<span id="upload-file-remove_' + file.id +
                 '><a href="#" onclick="$(this).closest(\'div\').remove();"><i class=" fa fa-trash mr-2 pointer"></i></a></span> ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ')' +
+                htmlEncode(file.name) + ' (' + plupload.formatSize(file.size) + ')' +
                 '</div>');
             $("#form-item-hidden-pickFilesNumber").val(
                 parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1

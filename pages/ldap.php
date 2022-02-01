@@ -168,6 +168,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_user_dn_attribute'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_user_dn_attribute_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='settings_ldap_user_dn_attribute' value='<?php echo $SETTINGS['settings_ldap_user_dn_attribute'] ?? ''; ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
                                         <?php echo langHdl('settings_ldap_user_attribute'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
                                             <?php echo langHdl('settings_ldap_user_attribute_tip'); ?>

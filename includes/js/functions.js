@@ -403,3 +403,14 @@ function showModalDialogBox(
     });
     $(modalId).modal('handleUpdate');
 }
+
+/**
+ * Sanitize a string
+ * 
+ * @param {string} str  
+ */
+function htmlEncode(str){
+    return String(str).replace(/[^\w. ]/gi, function(c){
+        return '&#'+c.charCodeAt(0)+';';
+    });
+}

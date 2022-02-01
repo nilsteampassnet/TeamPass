@@ -22,6 +22,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
+    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD. Example: dn, distinguishedname, or any other label used in the AD.',
     'at_creation' => 'Creation',
     'at_add_file' => 'File added',
     'at_del_file' => 'File deleted',
