@@ -1026,7 +1026,7 @@ return array(
     'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
     'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',
     'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
-    'settings_disable_forgot_password_link_tip' => 'Cacher le lien de récupération de mot de passe, car ce n'est pas géré par Teampass',
+    'settings_disable_forgot_password_link_tip' => 'Cacher le lien de récupération de mot de passe, car ce n\'est pas géré par Teampass',
     'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
     'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
     'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\'dentification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',
@@ -1034,8 +1034,3 @@ return array(
     'duration_login_attempt' => 'Nombre de secondes avant authentification automatique',
     'newly_created_user_role' => 'Rôle de l\'utilisateur créé',
 );
-
-
-
-
->>>>>>> ea385d6dd3e6d00f358e96c37ff539392e0cd240
