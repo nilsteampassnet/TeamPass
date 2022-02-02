@@ -326,7 +326,7 @@ if (isset($_GET['type']) === false) {
         $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
             '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . langHdl('see_item_title') . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '", ';
         //col2
-        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . stripslashes((string) $record['label']) . '</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . str_replace("\\", "&#92;", (string) $record['label']) . '</span>", ';   // replace backslash #3015
         //col3
         $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)) . '", ';
         //col4
