@@ -657,7 +657,7 @@ function changePassword(
     $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
-                'message' => langHdl('pwd_hash_not_correct'),
+                'message' => langHdl('pw_hash_not_correct'),
             ),
             'encode'
         );
@@ -763,7 +763,7 @@ function generateQRCode(
             $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
-                'message' => langHdl('no_email'),
+                'message' => langHdl('no_email_set'),
             ),
             'encode'
         );

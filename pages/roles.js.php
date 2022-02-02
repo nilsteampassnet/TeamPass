@@ -182,7 +182,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         } else if (value.access === 'NDNE') {
                             access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
                                 '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_anot_llowed'); ?>"></i>';
+                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
                         } else if (value.access === 'R') {
                             access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
                         } else {
@@ -856,7 +856,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 } else if (value.access === 'NDNE') {
                     access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
                         '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_anot_llowed'); ?>"></i>';
+                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
                 } else if (value.access === 'R') {
                     access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
                 } else {

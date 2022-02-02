@@ -119,7 +119,7 @@ declare(strict_types=1);
 
     // <- PREPARE SELECT2
     $('.select2').select2({
-        language: '<?php echo langHdl('user_language_code'); ?>'
+        language: '<?php echo $_SESSION['user_language_code']; ?>'
     });
 
     /**
