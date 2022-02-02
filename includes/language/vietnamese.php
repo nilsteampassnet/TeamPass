@@ -79,7 +79,7 @@ return array(
     'inititialization' => 'Initialization',
     'bad_password' => 'Bad password',
     'perform_checks' => 'Perform checks',
-    'email_body_temporary_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Some changes were performed on your account that require a new encryption of items for data security. Next time you will connect to Teampass, please use the next code:<br><br><b>#enc_code#</b><br><br><br>Cheers',
+    'email_body_temporary_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Some changes were performed on your account that require a new encryption of items for data security. Next time you will connect to Teampass, use your current credentials and use this temporary encryption code when requested:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'temporary_encryption_code' => 'Your temporary encryption code',
     'renecyption_expected' => 'We need to renecrypt your keys to fit the privileges corresponding to your account and rights.',
     'error_no_user_in_ad' => 'User not found in AD!',
