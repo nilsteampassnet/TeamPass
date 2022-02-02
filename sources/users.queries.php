@@ -200,7 +200,7 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
-                            'message' => langHdl('pwd_hash_not_correct'),
+                            'message' => langHdl('pw_hash_not_correct'),
                         ),
                         'encode'
                     );
@@ -828,7 +828,7 @@ if (null !== $post_type) {
             $post_nb_items_by_page = filter_input(INPUT_POST, 'nb_items_by_page', FILTER_SANITIZE_NUMBER_INT);
             $post_scope = filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING);
 
-            if (filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === 'user_activity') {
+            if ($post_scope === 'user_activity') {
                 if (
                     null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)
                     && !empty(filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING))

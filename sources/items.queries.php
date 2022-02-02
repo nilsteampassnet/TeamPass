@@ -3106,7 +3106,7 @@ if (is_null($post_type) === false) {
     $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to1'),
+                        'message' => langHdl('error_not_allowed_to'),
                     ),
                     'encode'
                 );
