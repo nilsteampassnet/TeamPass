@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-=======
-﻿<?php
+<?php
 /**
  * Teampass - a collaborative passwords manager.
  * ---
