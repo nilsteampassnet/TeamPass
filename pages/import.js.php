@@ -81,9 +81,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multiple_queues: false,
         multi_selection: false,
         max_file_count: 1,
-        url: "sources/upload.files.php",
-        flash_swf_url: "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url: "includes/libraries/Plupload/plupload.silverlight.xap",
+        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
         filters: [{
             title: "CSV files",
             extensions: "csv"
@@ -99,7 +99,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         numeric: true,
                         ambiguous: true,
                         reason: "import_items_from_csv",
-                        duration: 10
+                        duration: 10,
+                        key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
                         store.update(
@@ -447,7 +448,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     // Plupload for CSV
     var uploader_keepass = new plupload.Uploader({
-        runtimes: "gears,html5,flash,silverlight,browserplus",
+        runtimes: "html5,flash,silverlight,html4",
         browse_button: "import-keepass-attach-pickfile-keepass",
         container: "import-keepass-upload-zone",
         max_file_size: "10mb",
@@ -457,9 +458,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multiple_queues: false,
         multi_selection: false,
         max_file_count: 1,
-        url: "sources/upload.files.php",
-        flash_swf_url: "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url: "includes/libraries/Plupload/plupload.silverlight.xap",
+        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
         filters: [{
             title: "KEEPASS files",
             extensions: "xml"
@@ -475,7 +476,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         numeric: true,
                         ambiguous: true,
                         reason: "import_items_from_keepass",
-                        duration: 10
+                        duration: 10,
+                    key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
                         store.update(
@@ -492,8 +494,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             BeforeUpload: function(up, file) {
                 // Show spinner
-             toastr.remove();
-               toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+                toastr.remove();
+                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params = {
                     "PHPSESSID": "<?php echo session_id(); ?>",
@@ -506,15 +508,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                  toastr.remove();
-                   toastr.error(
-                      '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
                         '', {
-                          timeOut: 10000,
+                            timeOut: 10000,
                             closeButton: true,
-                         progressBar: true
-                      }
-                  );
+                            progressBar: true
+                        }
+                    );
                 } else {
                     toastr.remove();
                     toastr.success(
@@ -565,10 +567,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
 
         data = {
-            'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
-            'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
-            'folder-id': parseInt($('#import-keepass-target-folder').val()),
             'file': store.get('teampassApplication').uploadedFileId,
+            'folder-id': parseInt($('#import-keepass-target-folder').val()),
         }
         console.log(data);
         // Lauchn ajax query that will insert items into DB
@@ -580,47 +580,123 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data)
+                console.log(data);
 
                 if (data.error === true) {
-                  toastr.remove();
-                   toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                      '', {
-                          timeOut: 10000,
-                            closeButton: true,
-                         progressBar: true
-                      }
-                  );
-
-                    $('#import-feedback').addClass('hidden');
-                    $('#import-feedback div').html('');
-                } else {
-                    // Show results
-                    $('#import-feedback div').html(data.info)
-                    $('#import-feedback').removeClass('hidden');
-
-                    // Show
                     toastr.remove();
-                    toastr.success(
-                        '<?php echo langHdl('done'); ?>',
-                        data.message, {
-                            timeOut: 2000,
+                    toastr.error(
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                        '', {
+                            timeOut: 10000,
+                            closeButton: true,
                             progressBar: true
                         }
                     );
 
-                    // Clear form
-                    $('.keepass-setup').addClass('hidden');
-                    $('#keepass-items-number, #keepass-items-list').html('');
-                    $('#import-keepass-attach-pickfile-keepass-text').text('');
-                    $('.import-keepass-cb').iCheck('uncheck');
+                    $('#import-feedback').addClass('hidden');
+                    $('#import-feedback div').html('');
+                } else {
+                    foldersToAdd = data.data.folders;
+                    itemsToAdd = data.data.items;
+                    // STEP 1 - create Folders
+                    data = {
+                        'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
+                        'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
+                        'folder-id': parseInt($('#import-keepass-target-folder').val()),
+                        'folders': foldersToAdd,
+                    }
+                    console.info("Now creating folders")
+                    console.log(data);
+                    $.post(
+                        "sources/import.queries.php", {
+                            type: "keepass_create_folders",
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key: '<?php echo $_SESSION['key']; ?>'
+                        },
+                        function(data) {
+                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            console.log(data)
 
-                    store.update(
-                        'teampassApplication',
-                        function(teampassApplication) {
-                            teampassApplication.uploadType = '';
-                            teampassApplication.uploadedFileId = '';
+                            if (data.error === true) {
+                                toastr.remove();
+                                toastr.error(
+                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                                    '', {
+                                        timeOut: 10000,
+                                        closeButton: true,
+                                        progressBar: true
+                                    }
+                                );
+
+                                $('#import-feedback').addClass('hidden');
+                                $('#import-feedback div').html('');
+                            } else {
+                                // STEP 2 - create Items
+                                data = {
+                                    'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
+                                    'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
+                                    'folders': data.folders,
+                                    'items': itemsToAdd,
+                                }
+                                console.info("Now creating items")
+                                console.log(data);
+                                $.post(
+                                    "sources/import.queries.php", {
+                                        type: "keepass_create_items",
+                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key: '<?php echo $_SESSION['key']; ?>'
+                                    },
+                                    function(data) {
+                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                        console.info("Done")
+                                        console.log(data)
+
+                                        if (data.error === true) {
+                                            toastr.remove();
+                                            toastr.error(
+                                                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                                                '', {
+                                                    timeOut: 10000,
+                                                    closeButton: true,
+                                                    progressBar: true
+                                                }
+                                            );
+
+                                            $('#import-feedback').addClass('hidden');
+                                            $('#import-feedback div').html('');
+                                        } else {
+                                            // Finished
+                                            // Show results
+                                            $('#import-feedback div').html(data.info)
+                                            $('#import-feedback').removeClass('hidden');
+                                            
+                                            // Show
+                                            toastr.remove();
+                                            toastr.success(
+                                                '<?php echo langHdl('done'); ?>',
+                                                data.message, {
+                                                    timeOut: 2000,
+                                                    progressBar: true
+                                                }
+                                            );
+
+                                            // Clear form
+                                            $('.keepass-setup').addClass('hidden');
+                                            $('#keepass-items-number, #keepass-items-list').html('');
+                                            $('#import-keepass-attach-pickfile-keepass-text').text('');
+                                            $('.import-keepass-cb').iCheck('uncheck');
+
+                                            store.update(
+                                                'teampassApplication',
+                                                function(teampassApplication) {
+                                                    teampassApplication.uploadType = '';
+                                                    teampassApplication.uploadedFileId = '';
+                                                }
+                                            );
+                                        }
+                                    }
+                                );
+                            }
                         }
                     );
                 }

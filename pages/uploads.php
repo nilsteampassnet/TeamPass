@@ -106,7 +106,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </small>
                             </div>
                             <div class="col-4">
-                                <div class="toggle toggle-modern" id="upload_all_extensions_file" data-toggle-on="<?php echo isset($SETTINGS['upload_all_extensions_file']) === true && $SETTINGS['upload_all_extensions_file'] === '1' ? 'true' : 'false'; ?>"></div><input type="hidden" id="upload_all_extensions_file" value="<?php echo isset($SETTINGS['upload_all_extensions_file']) && $SETTINGS['upload_all_extensions_file'] === '1' ? '1' : '0'; ?>">
+                                <div class="toggle toggle-modern" id="upload_all_extensions_file" data-toggle-on="<?php echo isset($SETTINGS['upload_all_extensions_file']) === true && $SETTINGS['upload_all_extensions_file'] === '1' ? 'true' : 'false'; ?>"></div><input type="hidden" id="upload_all_extensions_file_input" value="<?php echo isset($SETTINGS['upload_all_extensions_file']) && $SETTINGS['upload_all_extensions_file'] === '1' ? '1' : '0'; ?>">
                             </div>
                         </div>
 

@@ -1638,7 +1638,7 @@ function GenerateCryptKey(
         $php7generator->register();
         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
     }
-
+    
     // Manage size
     $generator->setLength((int) $size);
     if ($secure === true) {

@@ -151,15 +151,18 @@ $unit = strtoupper(substr($POST_MAX_SIZE, -1));
 $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
 if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
     handleUploadError('POST exceeded maximum allowed size.');
+    return false;
 }
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if ($file_size === false || $file_size > $max_file_size_in_bytes) {
     handleUploadError('File exceeds the maximum allowed size');
+    return false;
 }
 if ($file_size <= 0) {
     handleUploadError('File size outside allowed lower bound');
+    return false;
 }
 
 // 5 minutes execution time
@@ -168,18 +171,22 @@ set_time_limit(5 * 60);
 // Validate the upload
 if (isset($_FILES['file']) === false) {
     handleUploadError('No upload found in $_FILES for Filedata');
+    return false;
 } elseif (
     isset($_FILES['file']['error']) === true
     && $_FILES['file']['error'] != 0
 ) {
     handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
+    return false;
 } elseif (
     isset($_FILES['file']['tmp_name']) === false
     || @is_uploaded_file($_FILES['file']['tmp_name']) === false
 ) {
     handleUploadError('Upload failed is_uploaded_file test.');
+    return false;
 } elseif (isset($_FILES['file']['name']) === false) {
     handleUploadError('File has no name.');
+    return false;
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
@@ -193,6 +200,7 @@ $file_name = preg_replace(
 );
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
     handleUploadError('Invalid file name: ' . $file_name . '.');
+    return false;
 }
 
 // Validate file extension
@@ -210,13 +218,16 @@ if (
                 ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
         )
     ) === false
+    && $post_type_upload !== 'import_items_from_keepass'
 ) {
     handleUploadError('Invalid file extension.');
+    die();
 }
 
 // is destination folder writable
 if (is_writable($SETTINGS['path_to_files_folder']) === false) {
     handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
+    return false;
 }
 
 // Clean the fileName for security reasons

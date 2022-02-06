@@ -131,7 +131,7 @@ if (is_null($post_type) === false) {
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -142,7 +142,7 @@ if (is_null($post_type) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -156,7 +156,7 @@ if (is_null($post_type) === false) {
             $returnValues = array();
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -209,7 +209,7 @@ if (is_null($post_type) === false) {
                     || $post_folder_is_personal !== 1)
                 ) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -226,7 +226,7 @@ if (is_null($post_type) === false) {
                         && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                     ) {
                         echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                            $SETTINGS['cpassman_dir'],
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -238,7 +238,7 @@ if (is_null($post_type) === false) {
                 } else {
                     if (in_array($post_folder_id, $_SESSION['groupes_visibles']) === false) {
                         echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                            $SETTINGS['cpassman_dir'],
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -255,7 +255,7 @@ if (is_null($post_type) === false) {
                     && in_array($post_folder_id, $_SESSION['personal_folders']) === false
                 ) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -272,7 +272,7 @@ if (is_null($post_type) === false) {
                     && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('password_cannot_be_empty'),
@@ -285,7 +285,7 @@ if (is_null($post_type) === false) {
                 // Check length
                 if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('password_too_long'),
@@ -343,7 +343,7 @@ if (is_null($post_type) === false) {
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_security_level_not_reached'),
@@ -828,7 +828,7 @@ if (is_null($post_type) === false) {
             $returnValues = array();
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -988,7 +988,7 @@ if (is_null($post_type) === false) {
                 );
                 if (DB::count() === 0) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -3042,13 +3042,13 @@ if (is_null($post_type) === false) {
                 $_SESSION['user']['show_step2'] = false;
                 
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     $returnArray,
                     'encode'
                 );
             } else {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     $returnArray,
                     'encode'
                 );
@@ -3074,7 +3074,7 @@ if (is_null($post_type) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3086,7 +3086,7 @@ if (is_null($post_type) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -3103,7 +3103,7 @@ if (is_null($post_type) === false) {
                 || (int) $post_access_level <= 20
             ) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3426,14 +3426,14 @@ if (is_null($post_type) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
 
             if (is_array($dataReceived) === true && array_key_exists('id', $dataReceived) === false) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_unknown'),
