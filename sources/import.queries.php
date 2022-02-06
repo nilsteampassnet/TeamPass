@@ -526,7 +526,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             $newItemsToAdd['items'],
                             $itemDefinition
                         );
-                    } else if ($key === "String") {
+                        continue;
+                    }
+                    
+                    if ($key === "String") {
                         array_push(
                             $newItemsToAdd['items'],
                             [
@@ -543,40 +546,38 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             // Manage GROUPS
-            if (isset($array['Group']) === true) {
+            if (isset($array['Group']) === true && is_array($array['Group'])=== true) {
                 $currentFolderId = $previousFolder;
-                if (is_array($array['Group'])=== true) {
-                    if (isset($array['Group']['UUID']) === true) {
-                        // build expect array format
-                        $array['Group'] = [$array['Group']];
-                    }
-                    foreach($array['Group'] as $key => $value){
-                        // Add this new folder
-                        array_push(
-                            $newItemsToAdd['folders'],
-                            [
-                                'folderName' => $value['Name'],
-                                'uuid' => $value['UUID'],
-                                'parentFolderId' => $previousFolder,
-                                'level' => $level,
-                            ]
+                if (isset($array['Group']['UUID']) === true) {
+                    // build expect array format
+                    $array['Group'] = [$array['Group']];
+                }
+                foreach($array['Group'] as $key => $value){
+                    // Add this new folder
+                    array_push(
+                        $newItemsToAdd['folders'],
+                        [
+                            'folderName' => $value['Name'],
+                            'uuid' => $value['UUID'],
+                            'parentFolderId' => $previousFolder,
+                            'level' => $level,
+                        ]
+                    );
+                    $previousFolder = $value['UUID'];
+                    
+                    if (isset($value['Entry']) === true) {
+                        // recursive inside this entry
+                        $newItemsToAdd = recursive(
+                            array_merge(
+                                ['Entry' => $value['Entry']],
+                                ['Group' => isset($value['Group']) === true ? $value['Group'] : ''],
+                            ),
+                            $previousFolder,
+                            $newItemsToAdd,
+                            $level + 1
                         );
-                        $previousFolder = $value['UUID'];
-                        
-                        if (isset($value['Entry']) === true) {
-                            // recursive inside this entry
-                            $newItemsToAdd = recursive(
-                                array_merge(
-                                    ['Entry' => $value['Entry']],
-                                    ['Group' => isset($value['Group']) === true ? $value['Group'] : ''],
-                                ),
-                                $previousFolder,
-                                $newItemsToAdd,
-                                $level + 1
-                            );
-                        }
-                        $previousFolder = $currentFolderId;
                     }
+                    $previousFolder = $currentFolderId;
                 }
             }
             
@@ -913,7 +914,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
 function getFolderComplexity($folderId, $isFolderPF)
 {
     // If destination is not ROOT then get the complexity level
-    if (in_array($folderId, $isFolderPF) === true) {
+    if ($isFolderPF === true) {
         return [
             'levelPwComplexity' => 50,
             'startPathLevel' => 1,
