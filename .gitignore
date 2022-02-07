@@ -22,3 +22,9 @@ gpush.sh
 /_tools/*
 phpinsights.php
 EncryptedFile_*
+/files/*
+!/files/.htaccess
+!/files/empty_file.txt
+/upload/*
+!/upload/.htaccess
+!/upload/empty_file.txt
