@@ -363,3 +363,14 @@ function blink(elem, times, speed, klass)
         times-= .5;
     }
 }
+
+/**
+ * Sanitize a string
+ * 
+ * @param {string} str  
+ */
+function htmlEncode(str){
+    return String(str).replace(/[^\w. ]/gi, function(c){
+        return '&#'+c.charCodeAt(0)+';';
+    });
+}
