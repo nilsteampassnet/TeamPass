@@ -4111,7 +4111,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         $.each(files, function(i, file) {
             $('#item_upload_list').append(
                 '<div id= file.id><span id="remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ')' +
+                htmlEncode(file.name) + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#files_number").val(parseInt($("#files_number").val())+1);
         });
@@ -4226,7 +4226,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         $.each(files, function(i, file) {
             $('#item_edit_upload_list').append(
                 '<div id= file.id><span id="edit_remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ')' +
+                htmlEncode(file.name) + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
         });
