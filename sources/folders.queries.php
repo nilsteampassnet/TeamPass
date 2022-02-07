@@ -102,7 +102,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -112,7 +112,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -215,7 +215,7 @@ if (null !== $post_type) {
             );
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -234,7 +234,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -244,7 +244,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -267,7 +267,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'subfolders' => json_encode($subfolders),
@@ -282,7 +282,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -292,7 +292,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -304,7 +304,7 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
             // prepare variables
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
@@ -314,6 +314,8 @@ if (null !== $post_type) {
             $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_STRING) : '';
             $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
             $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
+            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
+            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
 
             // Init
             $error = false;
@@ -322,7 +324,7 @@ if (null !== $post_type) {
             // check if title is numeric
             if (is_numeric($post_title) === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_only_numbers_in_folder_name'),
@@ -351,7 +353,7 @@ if (null !== $post_type) {
                     && $post_title !== $dataFolder['title']
                 ) {
                     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_group_exist'),
@@ -409,7 +411,7 @@ if (null !== $post_type) {
 
                     if ((int) $post_complexicity < (int) $data['valeur']) {
                         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                            $SETTINGS['cpassman_dir'],
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_folder_complexity_lower_than_top_folder')
@@ -427,6 +429,8 @@ if (null !== $post_type) {
                 'parent_id' => $post_parent_id,
                 'title' => $post_title,
                 'personal_folder' => $isPersonal,
+                'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
+                'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
             );
             if (
                 $dataFolder['renewal_period'] !== $post_renewal_period
@@ -470,7 +474,7 @@ if (null !== $post_type) {
             $tree->rebuild();
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => $error,
                     'message' => $errorMessage,
@@ -486,7 +490,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -496,7 +500,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -508,7 +512,7 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
             // prepare variables
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
@@ -517,6 +521,8 @@ if (null !== $post_type) {
             $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
+            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
+            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
 
             // Init
             $error = false;
@@ -540,7 +546,7 @@ if (null !== $post_type) {
             // check if title is numeric
             if (is_numeric($post_title) === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_only_numbers_in_folder_name'),
@@ -555,7 +561,7 @@ if (null !== $post_type) {
                 && (int) $_SESSION['is_admin'] !== 1
             ) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -579,7 +585,7 @@ if (null !== $post_type) {
                 $counter = DB::count();
                 if ($counter !== 0) {
                     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_group_exist'),
@@ -629,7 +635,7 @@ if (null !== $post_type) {
                     );
                     if (intval($post_complexicity) < intval($data['valeur'])) {
                         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                            $SETTINGS['cpassman_dir'],
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_folder_complexity_lower_than_top_folder')
@@ -660,6 +666,8 @@ if (null !== $post_type) {
                         'renewal_period' => $post_duration,
                         'bloquer_creation' => isset($post_create_auth_without) === true && (int) $post_create_auth_without === 1 ? '1' : $parentBloquerCreation,
                         'bloquer_modification' => isset($post_edit_auth_without) === true && (int) $post_edit_auth_without === 1 ? '1' : $parentBloquerModification,
+                        'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
+                        'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
                     )
                 );
                 $newId = DB::insertId();

@@ -51,8 +51,11 @@ class NestedTree
      */
     public function getFields()
     {
-        return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                        'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation', );
+        return array(
+            $this->fields['id'],
+            $this->fields['parent'],
+            $this->fields['sort'],
+            'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation', 'fa_icon', 'fa_icon_selected');
     }
 
     /**
@@ -108,11 +111,15 @@ class NestedTree
             $nright = 0;
             $parent_id = 0;
             $personal_folder = 0;
+            $fa_icon = '';
+            $fa_icon_selected = '';
         } else {
             $nleft = $node->nleft;
             $nright = $node->nright;
             $parent_id = $node->$idField;
             $personal_folder = $node->personal_folder;
+            $fa_icon = $node->fa_icon;
+            $fa_icon_selected = $node->fa_icon_selected;
         }
 
         if ($childrenOnly) {

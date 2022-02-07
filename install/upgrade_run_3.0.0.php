@@ -598,5 +598,41 @@ if (
 // no action on DB
 //---<
 
+
+//---> 3.0.0.11
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'fa_icon',
+    "VARCHAR(100) NOT NULL DEFAULT 'fa-folder'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon to table NESTED_TREE! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'fa_icon_selected',
+    "VARCHAR(100) NOT NULL DEFAULT 'fa-folder-open'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon_selected to table NESTED_TREE! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'fa_icon',
+    "VARCHAR(100) NOT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon to table ITEMS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+//---<
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

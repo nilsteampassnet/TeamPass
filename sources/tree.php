@@ -256,7 +256,6 @@ function buildNodeTree(
                     || in_array($node->id, $session_no_access_folders) === true)
             ) {
                 $hide_node = $show_but_block = false;
-                $text = '';
                 $title = '';
 
                 // get count of Items in this folder
@@ -294,12 +293,12 @@ function buildNodeTree(
 
                 if (in_array($node->id, $session_groupes_visibles)) {
                     if (in_array($node->id, $session_read_only_folders)) {
-                        $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
+                        $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
                         $title = langHdl('read_only_account');
                         $restricted = 1;
                         $folderClass = 'folder_not_droppable';
                     } elseif ($session_user_read_only === true && !in_array($node->id, $session_personal_visible_groups)) {
-                        $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
+                        $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
                     }
                     $text .=
                         ' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
@@ -311,15 +310,15 @@ function buildNodeTree(
                     $restricted = 1;
                     $text .= 
                         $session_user_read_only === true ?
-                            "<i class='far fa-eye fa-xs mr-1'></i>" :
+                            "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" :
                             '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_folders_limited[$node->id]) . '</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = 1;
                     if ($session_user_read_only === true) {
-                        $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
+                        $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
                     }
                     $text .= $session_user_read_only === true ? 
-                        "<i class='far fa-eye fa-xs mr-1'></i>" :
+                        "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" :
                         '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
                 } else {
                     $restricted = 1;
@@ -348,8 +347,9 @@ function buildNodeTree(
                         array(
                             'id' => 'li_' . $node->id,
                             'parent' => $parent,
-                            'text' => ($show_but_block === true ? '<i class="fas fa-times fa-xs text-danger mr-1"></i>' : '') . $text,
+                            'text' => '<i class="fas fa-folder mr-2"></i>'.($show_but_block === true ? '<i class="fas fa-times fa-xs text-danger mr-1"></i>' : '') . $text,
                             'children' => ($childrenNb === 0 ? false : true),
+                            'fa_icon' => 'folder',
                             'li_attr' => array(
                                 'class' => ($show_but_block === true ? '' : 'jstreeopen'),
                                 'title' => 'ID [' . $node->id . '] ' . ($show_but_block === true ? langHdl('no_access') : $title),
@@ -570,72 +570,6 @@ function handleNode(
         $listRestrictedFoldersForItemsKeys,
         $session_list_restricted_folders_for_items
     );
-    /*
-    if (in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true) {
-        if (in_array($completTree[$nodeId]->id, $session_read_only_folders) === true) {
-            $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
-            $title = langHdl('read_only_account');
-            $restricted = 1;
-            $folderClass = 'folder_not_droppable';
-        } elseif (
-            $session_user_read_only === true
-            && in_array($completTree[$nodeId]->id, $session_personal_visible_groups) === false
-        ) {
-            $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
-        }
-        $text .= 
-            '<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . $itemsNb .
-            ((isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1) ?
-                '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
-                '')
-            . '</span>';
-    } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true) {
-        $restricted = 1;
-        if ($session_user_read_only === true) {
-            $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
-        }
-        $text .= '<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_folders_limited[$completTree[$nodeId]->id]);
-    } elseif (in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true) {
-        $restricted = 1;
-        if ($session_user_read_only === true) {
-            $text = "<i class='far fa-eye fa-xs mr-1'></i>" . $text;
-        }
-        $text .= '<span class=\'badge badge-pill badge-light ml-2 items_count\' id=\'itcount_' . $completTree[$nodeId]->id . '\'>' . count($session_list_restricted_folders_for_items[$completTree[$nodeId]->id]) . '</span>';
-    } else {
-        $restricted = 1;
-        $folderClass = 'folder_not_droppable';
-        if (
-            isset($SETTINGS['show_only_accessible_folders']) === true
-            && (int) $SETTINGS['show_only_accessible_folders'] === 1
-            && $nbChildrenItems === 0
-        ) {
-            // folder should not be visible
-            // only if it has no descendants
-            $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
-            if (
-                count(
-                    array_diff(
-                        $nodeDirectDescendants,
-                        array_merge(
-                            $session_groupes_visibles,
-                            array_keys($session_list_restricted_folders_for_items)
-                        )
-                    )
-                ) !== count($nodeDirectDescendants)
-            ) {
-                // show it but block it
-                $show_but_block = true;
-                $hide_node = false;
-            } else {
-                // hide it
-                $hide_node = true;
-            }
-        } else {
-            // folder is visible but not accessible by user
-            $show_but_block = true;
-        }
-    }
-    */
 
     // prepare json return for current node
     $parent = $completTree[$nodeId]->parent_id === '0' ? '#' : 'li_' . $completTree[$nodeId]->parent_id;
@@ -660,7 +594,7 @@ function handleNode(
             array(
                 'id' => 'li_' . $completTree[$nodeId]->id,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => $text.$completTree[$nodeId]->title.$nodeData['html'],
+                'text' => '<i class="fas '.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => 'jstreeopen',
                     'title' => 'ID [' . $completTree[$nodeId]->id . '] ' . $nodeData['title'],
@@ -679,7 +613,7 @@ function handleNode(
             array(
                 'id' => 'li_' . $completTree[$nodeId]->id,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => '<i class="fas fa-times fa-xs text-danger mr-1"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
+                'text' => '<i class="fas '.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => '',
                     'title' => 'ID [' . $completTree[$nodeId]->id . '] ' . langHdl('no_access'),
@@ -745,7 +679,7 @@ function prepareNodeData(
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
-                'html' => '<i class="far fa-eye fa-xs mr-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
+                'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
                     ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
                 'title' => langHdl('read_only_account'),
                 'restricted' => 1,

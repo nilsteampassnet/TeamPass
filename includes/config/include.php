@@ -41,6 +41,8 @@ define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
 define('TP_ENCRYPTION_NAME', 'teampass_aes');
+define('TP_DEFAULT_ICON', 'fa-folder');
+define('TP_DEFAULT_ICON_SELECTED', 'fa-folder-open');
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');

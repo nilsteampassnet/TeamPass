@@ -161,7 +161,7 @@ foreach ($rows as $reccord) {
                         <?php
                         echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fas fa-cubes mr-2"></i>' . langHdl('fields') . '</a></li>' : '';
-echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? '
+                        echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_5" data-toggle="tab"><i class="fas fa-history mr-2"></i>' . langHdl('history') . '</a></li>' : '';
                         ?>
                     </ul>
@@ -252,6 +252,17 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                     </div>
                                     <input id="form-item-url" type="url" class="form-control form-item-control" data-field-name="url" data-change-ongoing="">
                                 </div>
+                                <!-- ICON -->
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo langHdl('icon'); ?></span>
+                                    </div>
+                                    <input id="form-item-icon" type="text" class="form-control form-item-control" data-field-name="icon" data-change-ongoing="">
+                                    <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
+                                </div>
+                                <small class='form-text text-muted'>
+                                    <?php echo langHdl('icon_tip'); ?>
+                                </small>
                             </div>
 
                             <div class="tab-pane" id="tab_2">
@@ -1138,6 +1149,20 @@ echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SET
                                 }
                                 ?>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('icon'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">
+                            <small class='form-text text-muted'>
+                                <?php echo langHdl('icon_tip'); ?>
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('icon_on_selection'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-add-icon-selected">
+                            <small class='form-text text-muted'>
+                                <?php echo langHdl('icon_tip'); ?>
+                            </small>
                         </div>
                     </div>
                     <div class="card-footer">

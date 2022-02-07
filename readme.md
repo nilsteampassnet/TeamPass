@@ -1,16 +1,10 @@
 # Teampass 3
 
-**Teampass 3.x is a totally different version compared to Teampass 2.x. As a consequence :**
-- For new users, you should start using this version to take benefit of the new UI (several features compared to Teampass 2.x are not yet implemented)
-- For "older users" that currently are relying on Teampass 2.x, you should remain on the 2.x branch as currently no update process has been finalized.
-
-**Only English language is available. Don't change the language!**
-
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/quality-score.png?b=teampass_3.0)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/?branch=teampass_3.0)
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2021, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2022, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -29,7 +23,8 @@ Teampass is a Collaborative Passwords Manager
 
 ## Requirements
 
-* MySQL 5.1 or higher,
+* MySQL 5.7 or higher,
+* Mariadb 10.7 or higher
 * PHP 7.4 or higher,
 * PHP extensions:
   * mcrypt

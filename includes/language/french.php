@@ -22,6 +22,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'icon' => 'Icone',
+    'icon_on_selection' => 'Icone sur sélection',
+    'icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
     'at_creation' => 'Création',
     'at_add_file' => 'Fichier ajouté',
     'at_del_file' => 'Fichier supprimé',

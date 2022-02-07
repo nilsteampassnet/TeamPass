@@ -781,7 +781,7 @@ if (is_null($post_type) === false) {
             } else {
                 // an error appears on JSON format
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('json_error_format'),
@@ -792,7 +792,9 @@ if (is_null($post_type) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$arrData, 'encode');
+                $SETTINGS['cpassman_dir'],$arrData,
+                'encode'
+            );
             break;
 
             /*
@@ -803,7 +805,7 @@ if (is_null($post_type) === false) {
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -814,7 +816,7 @@ if (is_null($post_type) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -873,6 +875,7 @@ if (is_null($post_type) === false) {
                     FILTER_SANITIZE_STRING
                 ));
                 $post_description = ($dataReceived['description']);
+                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_STRING);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -882,7 +885,7 @@ if (is_null($post_type) === false) {
                         || $post_folder_is_personal !== 1)
                 ) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_access_this_folder'),
@@ -899,7 +902,7 @@ if (is_null($post_type) === false) {
                     && (int) $_SESSION['user']['create_item_without_password'] !== 1
                 ) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_pw'),
@@ -939,7 +942,7 @@ if (is_null($post_type) === false) {
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_security_level_not_reached'),
@@ -952,7 +955,7 @@ if (is_null($post_type) === false) {
                 // Check length
                 if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_pw_too_long'),
@@ -1162,6 +1165,7 @@ if (is_null($post_type) === false) {
                             'complexity_level' => (int) $post_complexity_level,
                             'encryption_type' => TP_ENCRYPTION_NAME,
                             'perso' => in_array($post_folder_id, $_SESSION['personal_folders']) === true ? 1 : 0,
+                            'fa_icon' => $post_fa_icon,
                         ),
                         'id=%i',
                         $post_item_id
@@ -2205,7 +2209,7 @@ if (is_null($post_type) === false) {
             } else {
                 // no item
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_missing_id'),
@@ -2223,7 +2227,7 @@ if (is_null($post_type) === false) {
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -2238,7 +2242,9 @@ if (is_null($post_type) === false) {
 
             // Decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],$post_data,
+                'decode'
+            );
 
             // Init post variables
             $post_id = filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
@@ -2284,7 +2290,7 @@ if (is_null($post_type) === false) {
             if ($dataDeleted !== 0 && intval($item_deleted['date']) > intval($item_restored['date'])) {
                 // This item is deleted => exit
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('not_allowed_to_see_pw'),
@@ -2548,6 +2554,7 @@ if (is_null($post_type) === false) {
                 $arrData['id_restricted_to_roles'] = $listRestrictionRoles;
                 $arrData['tags'] = $tags;
                 $arrData['folder'] = (int) $dataItem['id_tree'];
+                $arrData['fa_icon'] = $dataItem['fa_icon'];
 
                 if (
                     isset($SETTINGS['enable_server_password_change'])
@@ -3402,7 +3409,7 @@ if (is_null($post_type) === false) {
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3414,7 +3421,7 @@ if (is_null($post_type) === false) {
 
             if (count($_SESSION['user_roles']) === 0) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3577,7 +3584,7 @@ if (is_null($post_type) === false) {
                     )
                 )) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => 'not_authorized',
                             'arborescence' => $arr_arbo,
@@ -3736,7 +3743,7 @@ if (is_null($post_type) === false) {
                     $rows = DB::query(
                         'SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action,
                         l.id_user AS log_user,
@@ -3757,7 +3764,7 @@ if (is_null($post_type) === false) {
                     $rows = DB::query(
                         'SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action,
                         l.id_user AS log_user,
@@ -3854,6 +3861,7 @@ if (is_null($post_type) === false) {
                         $html_json[$record['id']]['is_result_of_search'] = 0;
                         $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $_SESSION['favourites']) === true ? 1 : 0;
                         $html_json[$record['id']]['link'] = $record['link'];
+                        $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
 
                         // Possible values:
                         // 0 -> no access to item

@@ -74,9 +74,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         startedItemsListQuery = false,
         itemStorageInformation = '',
         applicationVars,
-        initialPageLoad = true;
-
-    var debugJavascript = true;
+        initialPageLoad = true,
+        previousSelectedFolder=-1,
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -107,8 +107,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
     );
 
-console.log('User infor')
-console.log(store.get('teampassUser'))
+    if (debugJavascript === true) {
+        console.log('User infor')
+        console.log(store.get('teampassUser'))
+    }
 
     // Build tree
     $('#jstree').jstree({
@@ -118,6 +120,7 @@ console.log(store.get('teampassUser'))
                 'data': {
                     'url': './sources/tree.php',
                     'dataType': 'json',
+                    'icons': false,
                     'data': function(node) {
                         if (debugJavascript === true) {
                             console.info('Les répertoires sont chargés');
@@ -133,6 +136,9 @@ console.log(store.get('teampassUser'))
                 'strings': {
                     'Loading ...': '<?php echo langHdl('loading'); ?>...'
                 },
+                'themes': {
+                    'icons': false,
+                },
             },
             'plugins': [
                 'state', 'search'
@@ -143,6 +149,20 @@ console.log(store.get('teampassUser'))
             if (debugJavascript === true) console.log('JSTREE BIND');
             selectedFolder = $('#jstree').jstree('get_selected', true)[0];
             selectedFolderId = selectedFolder.id.split('_')[1];
+
+            // manage icon open/closed
+            var selectedFolderIcon = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder'),
+                selectedFolderIconSelected = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder-selected');
+
+            // remove selected on previous folder
+            $($('#fld_'+previousSelectedFolder).children('.tree-folder'))
+                .addClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder'))
+                .removeClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder-selected'));
+            // show selected icon
+            $('#fld_'+selectedFolderId).children('.tree-folder')
+                .addClass(selectedFolderIconSelected)
+                .removeClass(selectedFolderIcon);
+
             if (debugJavascript === true) console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
             if (debugJavascript === true) console.log(selectedFolder);
 
@@ -150,9 +170,11 @@ console.log(store.get('teampassUser'))
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.selectedFolder = selectedFolderId,
-                        teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
-                        teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
-                        teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title']
+                    teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
+                    teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
+                    teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
+                    teampassApplication.selectedFolderIcon = selectedFolderIcon,
+                    teampassApplication.selectedFolderIconSelected = selectedFolderIconSelected
                 }
             )
 
@@ -162,6 +184,7 @@ console.log(store.get('teampassUser'))
                 ListerItems(selectedFolderId, '', 0);
             }
 
+            previousSelectedFolder = selectedFolderId;
             initialPageLoad = false;
         })
         // Search in tree
@@ -221,6 +244,7 @@ console.log(store.get('teampassUser'))
         // refresh selection in jstree
         $('#jstree').jstree('deselect_all');
         $('#jstree').jstree('select_node', '#li_' + itemIdToShow);
+        $('#jstree').jstree(true).hide_icons()
 
         // Get list of items in this folder
         startedItemsListQuery = true;
@@ -327,6 +351,11 @@ console.log(store.get('teampassUser'))
 
     // Prepare some UI elements
     $('#limited-search').prop('checked', false);
+
+    $(document).on('blur', '#form-item-icon', function() {
+        $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
+        console.log('oucouc')
+    });
 
     // Manage the password show button
     // including autohide after a couple of seconds
@@ -454,6 +483,7 @@ console.log(store.get('teampassUser'))
             $('#form-folder-add-label')
                 .val('')
                 .focus();
+            $('#form-folder-add-icon-selected, #form-folder-add-icon').val('');
             // Set type of action for the form
             $('#form-folder-add').data('action', 'add');
 
@@ -491,6 +521,10 @@ console.log(store.get('teampassUser'))
                 .val(store.get('teampassApplication').selectedFolderParentTitle)
                 .focus();
             $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
+            $('#form-folder-add-icon')
+                .val(store.get('teampassApplication').selectedFolderIcon);
+            $('#form-folder-add-icon-selected')
+                .val(store.get('teampassApplication').selectedFolderIconSelected);
             // Set type of action for the form
             $('#form-folder-add').data('action', 'update');
 
@@ -1623,6 +1657,8 @@ console.log(store.get('teampassUser'))
             'title': $('#form-folder-add-label').val(),
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
+            'icon': $('#form-folder-add-icon').val(),
+            'iconSelected': $('#form-folder-add-icon-selected').val(),
             'id': selectedFolderId,
         }
         if (debugJavascript === true) console.log(data);
@@ -2694,6 +2730,7 @@ console.log(store.get('teampassUser'))
                     'url': $('#form-item-url').val(),
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
+                    'fa_icon': $('#form-item-icon').val(),
                 };
                 if (debugJavascript === true) console.log('SAVING DATA');
                 if (debugJavascript === true) console.log(data);
@@ -3674,8 +3711,10 @@ console.log(store.get('teampassUser'))
                             );
                             $('.card-item-category').addClass('hidden');
 
-                            console.log('Liste complete des items')
-                            console.log(JSON.parse(store.get('teampassApplication').itemsList));
+                            if (debugJavascript === true) {
+                                console.log('Liste complete des items')
+                                console.log(JSON.parse(store.get('teampassApplication').itemsList));
+                            }
                         }
 
                         proceed_list_update(stop_listing_current_folder);
@@ -3721,8 +3760,10 @@ console.log(store.get('teampassUser'))
             // Check access restriction
             if (value.rights > 0) {
                 // Should I populate previous item with this new id
-                console.log('current id: '+value.item_id);
-                console.log(prevIdForNextItem)
+                if (debugJavascript === true) {
+                    console.log('current id: '+value.item_id);
+                    console.log(prevIdForNextItem)
+                }
                 if (prevIdForNextItem !== -1) {
                     $('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
                     $('#list-item-row_' + value.item_id).attr('data-next-item-label', value.label);
@@ -3783,7 +3824,10 @@ console.log(store.get('teampassUser'))
                     // Show user that Item is not accessible
                     (value.rights === 10 ? '<i class="far fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo langHdl('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
-                    (value.pw_status === 'encryption_error' ? '<i class="fas fa-exclamation-triangle  fa-xs text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>' : '') +
+                    (value.pw_status === 'encryption_error' ? '<i class="fas fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>' : '') +
+                    // Show item fa_icon if set
+                    (value.fa_icon !== '' ? '<i class="fas '+value.fa_icon+' mr-1"></i>' : '') +
+                    // Prepare item info
                     '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '">' +
                     '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -4292,7 +4336,8 @@ console.log(store.get('teampassUser'))
                 $('#pwd-definition-size').val(data.pw.length);
 
                 // Prepare card
-                $('#card-item-label, #form-item-title').html(data.label);
+                const itemIcon = (data.fa_icon !== "") ? '<i class="fas '+data.fa_icon+' mr-1"></i>' : '';
+                $('#card-item-label, #form-item-title').html(itemIcon + data.label);
                 $('#form-item-label, #form-item-suggestion-label').val(data.label);
                 $('#card-item-description, #form-item-suggestion-description').html(data.description);
                 if (data.description === '') {
@@ -4314,6 +4359,8 @@ console.log(store.get('teampassUser'))
                 $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                 $('#form-item-folder').val(data.folder);
                 $('#form-item-tags').val(data.tags.join(' '));
+                $('#form-item-icon').val(data.fa_icon);
+                $('#form-item-icon-show').html(itemIcon);
 
                 $('#form-item-password').pwstrength("forceUpdate");
                 $('#form-item-label').focus();

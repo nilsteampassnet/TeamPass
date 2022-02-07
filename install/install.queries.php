@@ -472,6 +472,7 @@ if (null !== $post_type) {
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
                             `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
+                            `fa_icon` varchar(100) DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
@@ -716,6 +717,9 @@ $SETTINGS = array (';
                             `bloquer_modification` tinyint(1) NOT null DEFAULT '0',
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
                             `renewal_period` int(5) NOT null DEFAULT '0',
+                            `renewal_period` int(5) NOT null DEFAULT '0',
+                            `fa_icon` VARCHAR(100) NOT NULL DEFAULT 'fa-folder',
+                            `fa_icon_selected` VARCHAR(100) NOT NULL DEFAULT 'fa-fa_icon_selected',
                             PRIMARY KEY (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
