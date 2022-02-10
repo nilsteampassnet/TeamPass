@@ -4098,7 +4098,7 @@ if (is_null($post_type) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],*
+                $SETTINGS['cpassman_dir'],
                 $returnValues,
                 'encode'
             );
