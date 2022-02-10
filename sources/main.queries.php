@@ -295,14 +295,6 @@ function mainQuery(array $SETTINGS)
             break;
 
         /*
-         * delete a file
-         */
-        case 'file_deletion':
-            fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING), $SETTINGS);
-
-            break;
-
-        /*
          * Generate BUG report
          */
         case 'generate_bug_report':
@@ -319,7 +311,10 @@ function mainQuery(array $SETTINGS)
         case 'get_teampass_settings':
             // Encrypt data to return
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$SETTINGS, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $SETTINGS,
+                'encode'
+            );
 
             break;
 

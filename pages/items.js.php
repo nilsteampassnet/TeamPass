@@ -354,7 +354,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     $(document).on('blur', '#form-item-icon', function() {
         $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
-        console.log('oucouc')
     });
 
     // Manage the password show button

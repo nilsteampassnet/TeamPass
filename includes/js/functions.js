@@ -124,6 +124,7 @@ function sanitizeString(string) {
 /**
 *   Send email
 **/
+/*
 function SendMail(category, contentEmail, keySent, message) {
     $.post(
         'sources/items.queries.php',
@@ -143,6 +144,7 @@ function SendMail(category, contentEmail, keySent, message) {
         'json'
     );
 }
+*/
 
 
 /**

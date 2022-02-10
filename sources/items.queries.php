@@ -295,23 +295,6 @@ if (is_null($post_type) === false) {
                     break;
                 }
 
-                /*// Check PSK is set
-                if (
-                    (int) $post_folder_is_personal === 1
-                    && (isset($_SESSION['user']['session_psk']) === false
-                        || empty($post_password) === true)
-                ) {
-                    echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
-                        array(
-                            'error' => true,
-                            'message' => langHdl('provide_your_personal_saltkey'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }*/
-
                 // Need info in DB
                 // About special settings
                 $dataFolderSettings = DB::queryFirstRow(
@@ -4062,7 +4045,7 @@ if (is_null($post_type) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
             break;
 
@@ -4070,7 +4053,7 @@ if (is_null($post_type) === false) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4115,7 +4098,10 @@ if (is_null($post_type) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],*
+                $returnValues,
+                'encode'
+            );
             break;
 
             /*
@@ -4214,7 +4200,10 @@ if (is_null($post_type) === false) {
                         'message' => langHdl('error_no_edition_possible_locked'),
                     );
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                        $SETTINGS['cpassman_dir'],
+                        $returnValues,
+                        'encode'
+                    );
                     break;
                 }
             }
@@ -4250,7 +4239,10 @@ if (is_null($post_type) === false) {
                             'message' => langHdl('error_not_allowed_to'),
                         );
                         echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                            $SETTINGS['cpassman_dir'],
+                            $returnValues,
+                            'encode'
+                        );
                         break;
                     }
                 }
@@ -4404,7 +4396,7 @@ if (is_null($post_type) === false) {
                 'itemAccessRight' => isset($accessLevel) === true ? $accessLevel : '',
             );
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             break;
 
             /*
@@ -4415,7 +4407,7 @@ if (is_null($post_type) === false) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4427,7 +4419,7 @@ if (is_null($post_type) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -4452,7 +4444,10 @@ if (is_null($post_type) === false) {
             // Check that user can access this folder
             if (in_array($data_item['id_tree'], $_SESSION['groupes_visibles']) === false) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],array('error' => 'ERR_FOLDER_NOT_ALLOWED'), 'encode');
+                    $SETTINGS['cpassman_dir'],
+                    array('error' => 'ERR_FOLDER_NOT_ALLOWED'),
+                    'encode'
+                );
                 break;
             }
 
@@ -4487,7 +4482,7 @@ if (is_null($post_type) === false) {
             }
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -5310,7 +5305,7 @@ if (is_null($post_type) === false) {
             }
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -5329,7 +5324,7 @@ if (is_null($post_type) === false) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5340,7 +5335,7 @@ if (is_null($post_type) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5352,25 +5347,25 @@ if (is_null($post_type) === false) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_receipt = filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING);
             $post_cat = filter_var($dataReceived['cat'], FILTER_SANITIZE_STRING);
+            $post_content = isset($_POST['name']) === true ? explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING)) : '';
 
             // get links url
             if (empty($SETTINGS['email_server_url']) === true) {
                 $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
             }
             if ($post_cat === 'request_access_to_author') {
-                // Content
-                if (empty(filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING)) === false) {
-                    $content = explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING));
-                }
                 // Variables
-                $dataAuthor = DB::queryfirstrow('SELECT email,login FROM ' . prefixTable('users') . ' WHERE id= ' . $content[1]);
-                $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM ' . prefixTable('items') . ' WHERE id= ' . $content[0]);
+                $dataAuthor = DB::queryfirstrow('SELECT email,login FROM ' . prefixTable('users') . ' WHERE id = ' . $post_content[1]);
+                $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM ' . prefixTable('items') . ' WHERE id = ' . $post_content[0]);
 
                 // Get path
                 $path = geItemReadablePath(
@@ -5433,7 +5428,7 @@ if (is_null($post_type) === false) {
             }
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => empty($ret['error']) === true ? false : true,
                     'message' => $ret['message'],

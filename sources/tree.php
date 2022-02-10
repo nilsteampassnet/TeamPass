@@ -287,7 +287,7 @@ function buildNodeTree(
 
                 // special case for READ-ONLY folder
                 $title = $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : $title;
-                $text .= str_replace('&', '&amp;', $node->title);
+                $text = str_replace('&', '&amp;', $node->title);
                 $restricted = '0';
                 $folderClass = 'folder';
 

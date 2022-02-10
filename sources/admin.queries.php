@@ -2646,7 +2646,7 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2657,18 +2657,21 @@ switch ($post_type) {
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
-        $type = 'admin';
+
+        // prepare data
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
+        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
 
         require_once 'main.functions.php';
 
         // In case of key, then encrypt it
-        if ($dataReceived['field'] === 'bck_script_passkey') {
-            $dataReceived['value'] = cryption(
-                $dataReceived['value'],
+        if ($post_field === 'bck_script_passkey') {
+            $post_value = cryption(
+                $post_value,
                 '',
                 'encrypt',
                 $SETTINGS
@@ -2679,27 +2682,27 @@ switch ($post_type) {
         $data = DB::query(
             'SELECT * FROM ' . prefixTable('misc') . '
             WHERE type = %s AND intitule = %s',
-            $type,
-            $dataReceived['field']
+            'admin',
+            $post_field
         );
         $counter = DB::count();
         if ($counter === 0) {
             DB::insert(
                 prefixTable('misc'),
                 array(
-                    'valeur' => $dataReceived['value'],
-                    'type' => $type,
-                    'intitule' => $dataReceived['field'],
+                    'valeur' => $post_value,
+                    'type' => 'admin',
+                    'intitule' => $post_field,
                 )
             );
             // in case of stats enabled, add the actual time
-            if ($dataReceived['field'] === 'send_stats') {
+            if ($post_field === 'send_stats') {
                 DB::insert(
                     prefixTable('misc'),
                     array(
                         'valeur' => time(),
-                        'type' => $type,
-                        'intitule' => $dataReceived['field'] . '_time',
+                        'type' => 'admin',
+                        'intitule' => $post_field . '_time',
                     )
                 );
             }
@@ -2707,20 +2710,20 @@ switch ($post_type) {
             DB::update(
                 prefixTable('misc'),
                 array(
-                    'valeur' => $dataReceived['value'],
+                    'valeur' => $post_value,
                 ),
                 'type = %s AND intitule = %s',
-                $type,
-                $dataReceived['field']
+                'admin',
+                $post_field
             );
             // in case of stats enabled, update the actual time
-            if ($dataReceived['field'] === 'send_stats') {
+            if ($post_field === 'send_stats') {
                 // Check if previous time exists, if not them insert this value in DB
                 DB::query(
                     'SELECT * FROM ' . prefixTable('misc') . '
                     WHERE type = %s AND intitule = %s',
-                    $type,
-                    $dataReceived['field'] . '_time'
+                    'admin',
+                    $post_field . '_time'
                 );
                 $counter = DB::count();
                 if ($counter === 0) {
@@ -2728,8 +2731,8 @@ switch ($post_type) {
                         prefixTable('misc'),
                         array(
                             'valeur' => 0,
-                            'type' => $type,
-                            'intitule' => $dataReceived['field'] . '_time',
+                            'type' => 'admin',
+                            'intitule' => $post_field . '_time',
                         )
                     );
                 } else {
@@ -2739,17 +2742,17 @@ switch ($post_type) {
                             'valeur' => 0,
                         ),
                         'type = %s AND intitule = %s',
-                        $type,
-                        $dataReceived['field']
+                        'admin',
+                        $post_field
                     );
                 }
             }
         }
 
         // special Cases
-        if ($dataReceived['field'] === 'cpassman_url') {
+        if ($post_field === 'cpassman_url') {
             // update also jsUrl for CSFP protection
-            $jsUrl = $dataReceived['value'] . '/includes/libraries/csrfp/js/csrfprotector.js';
+            $jsUrl = $post_value . '/includes/libraries/csrfp/js/csrfprotector.js';
             $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
             $data = file_get_contents($csrfp_file);
             $posJsUrl = strpos($data, '"jsUrl" => "');
@@ -2757,30 +2760,35 @@ switch ($post_type) {
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_STRING) . '",', $data);
             file_put_contents($csrfp_file, $newdata);
-        } elseif ($dataReceived['field'] === 'restricted_to_input' && $dataReceived['value'] === '0') {
+        } elseif ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
             DB::update(
                 prefixTable('misc'),
                 array(
                     'valeur' => 0,
                 ),
                 'type = %s AND intitule = %s',
-                $type,
+                'admin',
                 'restricted_to_roles'
             );
         }
 
         // store in SESSION
-        $SETTINGS[$dataReceived['field']] = $dataReceived['value'];
+        $SETTINGS[$post_field] = $post_value;
 
         // save change in config file
-        handleConfigFile('rebuild', $SETTINGS, $dataReceived['field'], $dataReceived['value']);
+        handleConfigFile(
+            'rebuild',
+            $SETTINGS,
+            $post_field,
+            $post_value
+        );
 
         // Encrypt data to return
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
-                'misc' => $counter . ' ; ' . $SETTINGS[$dataReceived['field']],
+                'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
             ),
             'encode'
         );
@@ -2790,7 +2798,7 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2802,7 +2810,7 @@ switch ($post_type) {
 
         // Encrypt data to return
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             getStatisticsData($SETTINGS),
             'encode'
         );
@@ -2813,7 +2821,7 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
