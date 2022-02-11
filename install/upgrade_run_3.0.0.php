@@ -299,7 +299,7 @@ mysqli_query(
 // Alter table FILES
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'files` CHANGE `name` `name` TEXT CHARACTER SET utf8 COLLATE NOT NULL;'
+    'ALTER TABLE `' . $pre . 'files` CHANGE `name` `name` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL;'
 );
 
 // Alter table CACHE
@@ -331,7 +331,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre . 'otv',
     'encrypted',
-    "text NOT NULL default 'not_set'"
+    "text NOT NULL"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Encrypted to table OTV! ' . mysqli_error($db_link) . '!"}]';
@@ -625,7 +625,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre . 'items',
     'fa_icon',
-    "VARCHAR(100) NOT NULL"
+    "VARCHAR(100) DEFAULT NULL"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon to table ITEMS! ' . mysqli_error($db_link) . '!"}]';

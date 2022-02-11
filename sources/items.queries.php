@@ -1661,7 +1661,7 @@ if (is_null($post_type) === false) {
                         );
                     }
                     // EMAIL
-                    if ($post_email !== null && strcmp($data['email'], $post_email) !== 0) {
+                    if ($post_email !== null && $data['email'] !== null && strcmp($data['email'], $post_email) !== 0) {
                         // Store updates performed
                         array_push(
                             $arrayOfChanges,

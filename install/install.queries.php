@@ -862,7 +862,7 @@ $SETTINGS = array (';
                             `content` longblob DEFAULT NULL,
 							`confirmed` INT(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
-                           ) CHARSET=utf8;"
+                            ) CHARSET=utf8;"
                         );
                     } elseif ($task === 'cache') {
                         $mysqli_result = mysqli_query(
@@ -948,7 +948,7 @@ $SETTINGS = array (';
                             `kb_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
                             PRIMARY KEY (`increment_id`)
-                           ) CHARSET=utf8;'
+                            ) CHARSET=utf8;'
                         );
                     } elseif ($task == 'restriction_to_roles') {
                         $mysqli_result = mysqli_query(
@@ -1104,7 +1104,7 @@ $SETTINGS = array (';
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
                             `originator` int(12) NOT NULL,
-                            `encrypted` text NOT NULL default 'not_set',
+                            `encrypted` text NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
