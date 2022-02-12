@@ -771,7 +771,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     } elseif ((int) $userInfo['disabled'] === 1) {
         // User and password is okay but account is locked
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -826,7 +826,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // What return shoulb we do
         if ($userIsLocked === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 [
                     'value' => $return,
                     'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -852,7 +852,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -888,7 +888,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     */
     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         [
             'value' => $return,
             'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',

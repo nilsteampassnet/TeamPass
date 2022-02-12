@@ -86,11 +86,10 @@ $session['list_restricted_folders_for_items'] = $superGlobal->get('list_restrict
 $session['user_id'] = $superGlobal->get('user_id', 'SESSION');
 $session['login'] = $superGlobal->get('login', 'SESSION');
 $session['user_read_only'] = $superGlobal->get('user_read_only', 'SESSION');
-$session['personal_folder'] = $superGlobal->get('personal_folder', 'SESSION');
+//$session['personal_folder'] = explode(';', $superGlobal->get('personal_folder', 'SESSION'));
 $session['list_folders_limited'] = $superGlobal->get('list_folders_limited', 'SESSION');
 $session['read_only_folders'] = $superGlobal->get('read_only_folders', 'SESSION');
 $session['personal_visible_groups'] = $superGlobal->get('personal_visible_groups', 'SESSION');
-
 $lastFolderChange = DB::query(
     'SELECT * FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
@@ -174,10 +173,11 @@ if (
                 $session['user_id'],
                 $session['login'],
                 $session['user_read_only'],
-                $session['personal_folder'],
+                $superGlobal->get('personal_folders', 'SESSION'),
                 $session['list_folders_limited'],
                 $session['read_only_folders'],
                 $session['personal_visible_groups'],
+                $superGlobal->get('can_create_root_folder', 'SESSION'),
                 $ret_json
             );
         }
@@ -228,7 +228,6 @@ function buildNodeTree(
     $session_personal_folders = $superGlobal->get('personal_folders', 'SESSION');
     $session_personal_visible_groups = $superGlobal->get('personal_visible_groups', 'SESSION');
     $session_user_read_only = $superGlobal->get('user_read_only', 'SESSION');
-
     $ret_json = array();
 
     // Be sure that user can only see folders he/she is allowed to
@@ -360,6 +359,7 @@ function buildNodeTree(
                                 'onclick' => 'ListerItems(' . $node->id . ', ' . $restricted . ', 0, 1)',
                                 'data-title' => $node->title,
                             )) : '',
+                            'is_pf' => in_array($node->id, explode(',',$session_personal_folder)) === true ? 1 : 0,
                         )
                     );
             }
@@ -386,10 +386,11 @@ function buildNodeTree(
  * @param int     $session_user_id,
  * @param string  $session_login,
  * @param string  $session_user_read_only,
- * @param int     $session_personal_folder,
+ * @param array   $session_personal_folder,
  * @param string  $session_list_folders_limited,
  * @param string  $session_read_only_folders,
  * @param string  $session_personal_visible_groups
+ * @param int     $can_create_root_folder
  * @param array   $ret_json                          Array
  *
  * @return array
@@ -413,6 +414,7 @@ function recursiveTree(
     $session_list_folders_limited,
     $session_read_only_folders,
     $session_personal_visible_groups,
+    $can_create_root_folder,
     &$ret_json = array()
 ) {
     $text = '';
@@ -466,7 +468,7 @@ function recursiveTree(
                 if (
                     (int) $nodeDetails->personal_folder === 1
                     && (int) $SETTINGS['enable_pf_feature'] === 1
-                    && (int) $session_personal_folder === 0
+                    && in_array($node, $session_personal_folder) === false
                 ) {
                     $displayThisNode = false;
                 } else {
@@ -501,6 +503,7 @@ function recursiveTree(
                 $nbChildrenItems,
                 $nodeDescendants,
                 $nodeDirectDescendants,
+                $can_create_root_folder,
                 $ret_json
             );
         }
@@ -532,6 +535,7 @@ function handleNode(
     $nbChildrenItems,
     $nodeDescendants,
     $nodeDirectDescendants,
+    $can_create_root_folder, 
     &$ret_json = array()
 )
 {
@@ -568,7 +572,8 @@ function handleNode(
         (int) $session_user_read_only,
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,
-        $session_list_restricted_folders_for_items
+        $session_list_restricted_folders_for_items,
+        $session_personal_folder
     );
 
     // prepare json return for current node
@@ -605,6 +610,8 @@ function handleNode(
                     'onclick' => 'ListerItems(' . $completTree[$nodeId]->id . ', ' . $nodeData['restricted'] . ', 0, 1)',
                     'data-title' => $completTree[$nodeId]->title,
                 ),
+                'is_pf' => in_array($completTree[$nodeId]->id, $session_personal_folder) === true ? 1 : 0,
+                'can_edit' => (int) $can_create_root_folder,
             )
         );
     } elseif ($nodeData['show_but_block'] === true) {
@@ -664,7 +671,8 @@ function prepareNodeData(
     $session_user_read_only,
     $listFoldersLimitedKeys,
     $listRestrictedFoldersForItemsKeys,
-    $session_list_restricted_folders_for_items
+    $session_list_restricted_folders_for_items,
+    $session_personal_folder
 ): array
 {
     // special case for READ-ONLY folder
@@ -686,6 +694,7 @@ function prepareNodeData(
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => false,
                 'hide_node' => false,
+                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
             ];
         }
 
@@ -701,6 +710,7 @@ function prepareNodeData(
                 'folderClass' => 'folder',
                 'show_but_block' => false,
                 'hide_node' => false,
+                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
             ];
         }
         
@@ -712,6 +722,7 @@ function prepareNodeData(
             'folderClass' => 'folder',
             'show_but_block' => false,
             'hide_node' => false,
+            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
     }
     
@@ -724,6 +735,7 @@ function prepareNodeData(
             'folderClass' => 'folder',
             'show_but_block' => false,
             'hide_node' => false,
+            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
     }
     
@@ -736,6 +748,7 @@ function prepareNodeData(
             'folderClass' => 'folder',
             'show_but_block' => false,
             'hide_node' => false,
+            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
     }
     
@@ -763,6 +776,7 @@ function prepareNodeData(
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => true,
                 'hide_node' => false,
+                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
             ];
         }
         
@@ -774,6 +788,7 @@ function prepareNodeData(
             'folderClass' => 'folder_not_droppable',
             'show_but_block' => false,
             'hide_node' => true,
+            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
     }
 
@@ -784,5 +799,6 @@ function prepareNodeData(
         'folderClass' => 'folder_not_droppable',
         'show_but_block' => true,
         'hide_node' => false,
+        'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
     ];
 }

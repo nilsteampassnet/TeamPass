@@ -163,18 +163,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 .addClass(selectedFolderIconSelected)
                 .removeClass(selectedFolderIcon);
 
-            if (debugJavascript === true) console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
-            if (debugJavascript === true) console.log(selectedFolder);
+            if (debugJavascript === true) {
+                console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
+                console.log(selectedFolder);
+                console.log(selectedFolder.original.is_pf)
+            }
 
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.selectedFolder = selectedFolderId,
                     teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
-                    teampassApplication.selectedFolderParentId = selectedFolder.parent.split('_')[1],
+                    teampassApplication.selectedFolderParentId = selectedFolder.parent !== "#" ? selectedFolder.parent.split('_')[1] : 0,
                     teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
                     teampassApplication.selectedFolderIcon = selectedFolderIcon,
-                    teampassApplication.selectedFolderIconSelected = selectedFolderIconSelected
+                    teampassApplication.selectedFolderIconSelected = selectedFolderIconSelected,
+                    teampassApplication.selectedFolderIsPF = selectedFolder.original.is_pf,
+                    teampassApplication.userCanEdit = selectedFolder.original.can_edit
                 }
             )
 
@@ -503,6 +508,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 );
                 return false;
             }
+            if (debugJavascript === true) console.log(store.get('teampassApplication'));
 
             // Store current view
             savePreviousView('.form-folder-add');
@@ -519,6 +525,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('#form-folder-add-label')
                 .val(store.get('teampassApplication').selectedFolderParentTitle)
                 .focus();
+            // is PF 1st level
+            if (store.get('teampassApplication').selectedFolderIsPF === 1 || store.get('teampassApplication').userCanEdit === 0) {
+                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', true);
+            } else {
+                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
+            }
+
             $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
             $('#form-folder-add-icon')
                 .val(store.get('teampassApplication').selectedFolderIcon);
@@ -3124,6 +3137,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         html_visible = '<option value="0"><?php echo langHdl('root'); ?></option>';
                         html_full_visible = '<option value="0"><?php echo langHdl('root'); ?></option>';
                         html_active_visible = '<option value="0"><?php echo langHdl('root'); ?></option>';
+                    } else {
+                        html_visible = '<option value="0" disabled="disabled"><?php echo langHdl('root'); ?></option>';
                     }
 
                     //
@@ -3132,6 +3147,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         html_visible += '<option value="' + value.id + '"' +
                             ((value.disabled === 1) ? ' disabled="disabled"' : '') +
                             ' data-parent-id="' + value.parent_id + '">' +
+                            '&nbsp;'.repeat(value.level) +
                             value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
                     });
 
@@ -3144,6 +3160,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .append(html_visible);
                     $(".no-root option[value='0']").remove();
                     if (debugJavascript === true) console.log(html_visible);
+
                     // Store in teampassUser
                     store.update(
                         'teampassUser',
@@ -4759,8 +4776,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
-                if (debugJavascript === true) console.log('RECEIVED STEP2')
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.log('RECEIVED STEP2');
+                    console.log(data);
+                }
 
                 // Attachments
                 if (data !== false) {
