@@ -201,7 +201,7 @@ function checkPage()
                 return false;
             } else {
                 alertify
-                    .success('<i class="fas fa-check text-success mr-2"></i><b>Done</b>.<br>Page is now refreshing ...', 1)
+                    .success('<i class="fas fa-check text-success mr-2"></i><b>Done</b>.<br>Click next to continue', 1)
                     .dismissOthers();
 
                     $("#but_launch")
@@ -258,7 +258,7 @@ function checkPage()
                 } else {
                     if (data[0].result !== undefined && data[0].result !== "" ) {
                         alertify
-							.success('<i class="fas fa-check text-success mr-2"></i>'+data[0].result+'.<br>Page is now refreshing ...', 0)
+							.success('<i class="fas fa-check text-success mr-2"></i>'+data[0].result+'.<br>Click next to continue', 0)
 							.dismissOthers();
                     }
                     $("#but_launch")
@@ -271,12 +271,12 @@ function checkPage()
 				
 				// Go to next step
 				if (step <= 6) {
-					setTimeout(
+					/*setTimeout(
 						function(){
 							$('#but_next').trigger('click');
 						},
 						1000
-					);
+					);*/
 				}
             }
         });

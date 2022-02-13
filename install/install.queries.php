@@ -132,6 +132,11 @@ function encryptFollowingDefuse($message, $ascii_key)
 {
     // load PhpEncryption library
     $path = '../includes/libraries/Encryption/Encryption/';
+    include_once $path . 'Exception/CryptoException.php';
+    include_once $path . 'Exception/BadFormatException.php';
+    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $path . 'Exception/IOException.php';
+    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
     require_once $path . 'Crypto.php';
     require_once $path . 'Encoding.php';
     require_once $path . 'DerivedKeys.php';
@@ -141,7 +146,7 @@ function encryptFollowingDefuse($message, $ascii_key)
     require_once $path . 'RuntimeTests.php';
     require_once $path . 'KeyProtectedByPassword.php';
     require_once $path . 'Core.php';
-
+    //echo $message . " -- ".$ascii_key."<br>";
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -272,6 +277,7 @@ if (null !== $post_type) {
                     PRIMARY KEY (`key`)
                     ) CHARSET=utf8;'
                 );
+                //print_r($data);
                 // store values
                 foreach ($data as $key => $value) {
                     $superGlobal->put($key, $value, 'SESSION');
@@ -285,15 +291,15 @@ if (null !== $post_type) {
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($session_url_path) ? $db['url_path'] : $session_url_path . "');");
-                } else {
+                }/* else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
-                }
-                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
+                }*/
+                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'absolute_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "');");
-                } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "' WHERE `key` = 'abspath';");
-                }
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "');");
+                }/* else {
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "' WHERE `key` = 'absolute_path';");
+                }*/
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
             } else {
@@ -716,7 +722,6 @@ $SETTINGS = array (';
                             `bloquer_creation` tinyint(1) NOT null DEFAULT '0',
                             `bloquer_modification` tinyint(1) NOT null DEFAULT '0',
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
-                            `renewal_period` int(5) NOT null DEFAULT '0',
                             `renewal_period` int(5) NOT null DEFAULT '0',
                             `fa_icon` VARCHAR(100) NOT NULL DEFAULT 'fa-folder',
                             `fa_icon_selected` VARCHAR(100) NOT NULL DEFAULT 'fa-folder-open',
@@ -1284,7 +1289,7 @@ $SETTINGS = array (';
                             unlink($filename);
                         }
                     }
-
+                    //echo ">". $db['db_pw']." -- ".$new_salt." ;; ";
                     // Encrypt the DB password
                     $encrypted_text = encryptFollowingDefuse(
                         $db['db_pw'],
