@@ -359,7 +359,7 @@ function buildNodeTree(
                                 'onclick' => 'ListerItems(' . $node->id . ', ' . $restricted . ', 0, 1)',
                                 'data-title' => $node->title,
                             )) : '',
-                            'is_pf' => in_array($node->id, explode(',',$session_personal_folder)) === true ? 1 : 0,
+                            'is_pf' => in_array($node->id, explode(',',$session_personal_folders)) === true ? 1 : 0,
                         )
                     );
             }
