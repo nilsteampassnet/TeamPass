@@ -198,7 +198,7 @@ while ($file_info = mysqli_fetch_array($rows)) {
             $db_link,
             'UPDATE '.$pre."files
             SET file = '".$encryptedFile['fileHash']."', status = '".TP_ENCRYPTION_NAME."'
-            WHERE id = ".$file_info['id']
+            WHERE id = ".$file_info['id'].';'
         );
 
         // Insert in DB the new object key for this item by user
@@ -211,8 +211,8 @@ while ($file_info = mysqli_fetch_array($rows)) {
         // remove it
         mysqli_query(
             $db_link,
-            'DELETE '.$pre.'files
-            WHERE id = '.$file_info['id']
+            'DELETE FROM '.$pre.'files
+            WHERE id = '.$file_info['id'].';'
         );
     }
 }

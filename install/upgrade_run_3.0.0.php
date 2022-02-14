@@ -288,7 +288,7 @@ mysqli_query(
 // Add new table Notifications
 mysqli_query(
     $db_link,
-    'CREATE TABLE `' . $pre . 'notification` (
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'notification` (
         `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
         `item_id` INT(12) NOT NULL,
         `user_id` INT(12) NOT NULL,
@@ -583,11 +583,11 @@ if (
         );
 
         // Store fact that admin has migrated
-        mysqli_query(
+        /*mysqli_query(
             $db_link,
             "INSERT INTO `" . $pre . "defuse_to_aes_migration` (`increment_id`, `user_id`, `rebuild_performed`, `timestamp`) 
             VALUES (NULL, '" . $user['id'] . "', 'done', '" . date_timestamp_get(date_create()) . "');"
-        );
+        );*/
     } elseif (isset($user['id']) === false) {
         echo '[{"finish":"1", "msg":"", "error":"Error - User not found in DB! Please restart upgrade."}]';
         exit();

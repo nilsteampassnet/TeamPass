@@ -641,7 +641,7 @@ $(function(){
                     $('#but_next').attr('disabled');
 
                     if (data.info !== "") {
-                        $('#res'+currentStep).html(data.info).removeClass("hidden");
+                        $('#res_'+currentStep).html(data.info).removeClass("hidden");
                     }
                     alertify
                         .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error+'</i>', 5)
