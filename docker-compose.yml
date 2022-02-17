@@ -2,40 +2,44 @@ version: "3"
 services:
   nginx:
     image: jwilder/nginx-proxy:alpine
-    restart: always
+    restart: unless-stopped
     networks:
       - frontend
+      - backend
     ports:
       - "443:443"
-      - "5000"
     volumes:
-      - ./volumes/ssl:/etc/nginx/certs
+      - ./ssl:/etc/nginx/certs
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
-  teampass:
-    image: teampass/teampass
-    restart: always
+  teampass-web:
+    build: .
+    #image: teampass/teampass
+    restart: unless-stopped
     environment:
-      VIRTUAL_HOST: teampass.example.com
-    networks:
-      - frontend
-      - backend
+      VIRTUAL_HOST: YOUR_HOSTNAME
+      VIRTUAL_PORT: 80
+      CERT_NAME: YOUR_CERTIFICATE
     volumes:
-      - ./volumes/teampass:/var/www/html
-
+      - ./teampass-html:/var/www/html
+    networks:
+      - teampass-internal
+      - backend
   db:
-    restart: always
-    image: mysql/mysql-server:5.7
+    restart: unless-stopped
+    image: mariadb:10.5
     environment:
-      MYSQL_ROOT_PASSWORD: mypass
+      MYSQL_ROOT_PASSWORD: YOUR_SUPERSECRET_PASSWORD
       MYSQL_DATABASE: teampass
-      MYSQL_PASSWORD: teampass
+      MYSQL_PASSWORD: YOUR_SECRET_PASSWORD
       MYSQL_USER: teampass
     volumes:
-      - ./volumes/db:/var/lib/mysql
+      - ./teampass-db:/var/lib/mysql
     networks:
-      - backend
+      - teampass-internal
 
 networks:
   frontend:
   backend:
+    external: true
+  teampass-internal:
