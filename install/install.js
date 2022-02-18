@@ -28,11 +28,13 @@ $(function() {
         e.preventDefault();
     });
     
+    /*
+    * Removing automatic action
     // Auto start
     if ($("#step").val() == 5) {
         $('#but_launch').trigger('click');
     }
-
+    */
 });
 
 function aesEncrypt(text)
@@ -164,6 +166,8 @@ function checkPage()
                         .addClass("hidden");
                 }
                 
+                /*
+                * Removing automatic action
                 // Go to next step
                 if (step <= 6) {
                     setTimeout(
@@ -173,6 +177,7 @@ function checkPage()
                         1000
                     );
                 }
+                */
             }
         });
     } else if (error === "" && multiple === "") {
@@ -199,13 +204,13 @@ function checkPage()
                 
                 if (data[0].error !== "" ) {
                     alertify
-                        .error('<i class="fas fa-ban mr-2"></i>Next ERROR occurred: <i>'+data[0].error+'</i><br />Please correct and relaunch.', 0)
+                        .error('<i class="fas fa-ban mr-2"></i>Next ERROR occurred: <i>' + data[0].error + '</i><br />Please correct and relaunch.', 0)
                         .dismissOthers();
                     return false;
                 } else {
                     if (data[0].result !== undefined && data[0].result !== "" ) {
                         alertify
-                            .success('<i class="fas fa-check text-success mr-2"></i>'+data[0].result+'.<br>Click next to continue', 0)
+                            .success('<i class="fas fa-check text-success mr-2"></i>' + data[0].result + '.<br>Click next to continue', 0)
                             .dismissOthers();
                     }
                     $("#but_launch")
@@ -216,15 +221,18 @@ function checkPage()
                         .removeClass("hidden");
                 }
                 
+                /*
+                * Removing automatic action
                 // Go to next step
                 if (step <= 6) {
-                    /*setTimeout(
+                    setTimeout(
                         function(){
                             $('#but_next').trigger('click');
                         },
                         1000
-                    );*/
+                    );
                 }
+                */
             }
         });
     } else {
@@ -281,7 +289,7 @@ function doGetJson(task)
                         .dismissOthers();
                 }
             } else {
-                $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>'+data[0].error+"</i></span>");
+                $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>' + data[0].error + "</i></span>");
                                             
                 global_error_on_query = true;
             }
@@ -294,7 +302,7 @@ function doGetJson(task)
 function GotoNextStep()
 {
     var step = $("#page_id").val(),
-    nextStep = parseInt(step)+1;
+    nextStep = parseInt(step) + 1;
 
     if (nextStep === 7) {
         $("#but_restart, #but_next, #but_launch").addClass("hidden");

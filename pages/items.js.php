@@ -481,7 +481,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-add').removeClass('hidden');
             // Prepare some data in the form
-            if (selectedFolder !== undefined && selectedFolder !== '') {
+            if (selectedFolder.parent !== undefined && selectedFolder.parent !== '') {
                 $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
             }
             $('#form-folder-add-label')
@@ -3204,7 +3204,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             sending = JSON.stringify([folders]);
             if (debugJavascript === true) console.log(sending)
         }
-        // 
+        
         $.post(
             'sources/items.queries.php', {
                 type: 'refresh_folders_other_info',
@@ -3312,6 +3312,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var me = $(this);
         stop_listing_current_folder = stop_listing_current_folder || '0';
         if (debugJavascript === true) console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id)
+        // Exit if no folder is selected
+        if (groupe_id === undefined) return false;
 
         // case where we should stop listing the items
         if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').itemsListStop === 1) {
@@ -3422,14 +3424,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     key: '<?php echo $_SESSION['key']; ?>',
                 },
                 function(retData) {
-
-                    if (retData == 'Hacking attempt...') {
-                        toastr.remove();
-                        toastr.error(
-                            'Hacking attempt...'
-                        );
-                        return false;
-                    }
                     //get data
                     data = decodeQueryReturn(retData, '<?php echo $_SESSION['key']; ?>');
 

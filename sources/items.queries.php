@@ -6014,7 +6014,7 @@ if (is_null($post_type) === false) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -6100,7 +6100,10 @@ if (is_null($post_type) === false) {
             );
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
 
