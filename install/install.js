@@ -16,8 +16,8 @@
  */
 
 
-$(function() {	
-	$("#but_next").click(function(event) {
+$(function() {    
+    $("#but_next").click(function(event) {
         $("#step").val($(this).attr("target_id"));
         document.upgrade.submit();
     });
@@ -27,11 +27,11 @@ $(function() {
         alert("Paste option is disabled !!");
         e.preventDefault();
     });
-	
-	// Auto start
-	if ($("#step").val() == 5) {
-		$('#but_launch').trigger('click');
-	}
+    
+    // Auto start
+    if ($("#step").val() == 5) {
+        $('#but_launch').trigger('click');
+    }
 
 });
 
@@ -42,17 +42,17 @@ function aesEncrypt(text)
 
 function checkPage()
 {
-    var step = $("#step").val();
-    var data = "";
-    var error = "";
-    var index = "";
-    var tasks = [];
-    var multiple = "";
-    var tsk = "";
+    var step = $("#step").val(),
+    data = "",
+    error = "",
+    index = "",
+    tasks = [],
+    multiple = "",
+    tsk = "";
     $("#step_error").addClass("hidden").html("");
     $("#res_"+step).html("");
-	
-	alertify
+    
+    alertify
         .message('Working on it... <i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
@@ -88,20 +88,20 @@ function checkPage()
     } else if (step === "4") {
     // STEP 4
         if ($("#admin_pwd").val() === "") {
-			alertify
-				.error('<i class="fas fa-ban mr-2"></i>You must define a password for Administrator account.', 10)
-				.dismissOthers();
-			return false;
-		} else if ($("#admin_pwd_confirm").val() === "") {
             alertify
-				.error('<i class="fas fa-ban mr-2"></i>You must confirm the password for Administrator account.', 10)
-				.dismissOthers();
-			return false;
-		} else if ($("#admin_pwd_confirm").val() !== $("#admin_pwd").val()) {
+                .error('<i class="fas fa-ban mr-2"></i>You must define a password for Administrator account.', 10)
+                .dismissOthers();
+            return false;
+        } else if ($("#admin_pwd_confirm").val() === "") {
             alertify
-				.error('<i class="fas fa-ban mr-2"></i>Administrator passwords are not similar.', 10)
-				.dismissOthers();
-			return false;
+                .error('<i class="fas fa-ban mr-2"></i>You must confirm the password for Administrator account.', 10)
+                .dismissOthers();
+            return false;
+        } else if ($("#admin_pwd_confirm").val() !== $("#admin_pwd").val()) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i>Administrator passwords are not similar.', 10)
+                .dismissOthers();
+            return false;
         } else{
             $("#hid_db_pre").val($("#tbl_prefix").val());
             const jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
@@ -131,59 +131,6 @@ function checkPage()
 
         $("#step_res").val("true");
         $("#pop_db").html("");
-
-        function doGetJson(task) {
-            tsk = task.split("*");
-
-            return $.ajax({
-                url: "install.queries.php",
-                type : "POST",
-                dataType : "json",
-                async: false,
-                data : {
-                    type:       "step_"+step,
-                    data:       aesEncrypt(data), //
-                    activity:   aesEncrypt(tsk[0]),
-                    task:       aesEncrypt(tsk[1]),
-                    db:         aesEncrypt(JSON.stringify(dbInfo)),
-                    index:      index,
-                    multiple:   multiple,
-                    info:       tsk[0]+"-"+tsk[1]
-                }
-            })
-            .complete(function(data) {console.log(data)
-                if (data.responseText === "") {
-                    alertify
-                        .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
-                        .dismissOthers();
-                } else {
-                    data = $.parseJSON(data.responseText);
-                    //console.log(data)
-                    if (data[0].error === "") {
-                        if (step === "5") {
-                            if (data[0].activity === "table") {
-                                $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
-                            } else if (data[0].activity === "entry") {
-                                $("#pop_db").append("<li>Entries <b>"+data[0].task+"</b> were added</li>");
-                            }
-                        } else {
-                            $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
-                        }
-
-                        if (data[0].result !== undefined && data[0].result !== "" ) {
-                            alertify
-                                .message(data[0].result, 10)
-                                .dismissOthers();
-                        }
-                    } else {
-                        $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>'+data[0].error+"</i></span>");
-                                                    
-                        global_error_on_query = true;
-                    }
-                }
-                index++;
-            });
-        };
 
         var promise = tasks.slice(1)
             .reduce(
@@ -249,35 +196,35 @@ function checkPage()
             },
             complete : function(data){
                 data = $.parseJSON(data.responseText);
-				
+                
                 if (data[0].error !== "" ) {
-					alertify
-						.error('<i class="fas fa-ban mr-2"></i>Next ERROR occurred: <i>'+data[0].error+'</i><br />Please correct and relaunch.', 0)
-						.dismissOthers();
-					return false;
+                    alertify
+                        .error('<i class="fas fa-ban mr-2"></i>Next ERROR occurred: <i>'+data[0].error+'</i><br />Please correct and relaunch.', 0)
+                        .dismissOthers();
+                    return false;
                 } else {
                     if (data[0].result !== undefined && data[0].result !== "" ) {
                         alertify
-							.success('<i class="fas fa-check text-success mr-2"></i>'+data[0].result+'.<br>Click next to continue', 0)
-							.dismissOthers();
+                            .success('<i class="fas fa-check text-success mr-2"></i>'+data[0].result+'.<br>Click next to continue', 0)
+                            .dismissOthers();
                     }
                     $("#but_launch")
-						.prop("disabled", true)
-						.addClass("hidden");
+                        .prop("disabled", true)
+                        .addClass("hidden");
                     $("#but_next")
-						.prop("disabled", false)
-						.removeClass("hidden");
+                        .prop("disabled", false)
+                        .removeClass("hidden");
                 }
-				
-				// Go to next step
-				if (step <= 6) {
-					/*setTimeout(
-						function(){
-							$('#but_next').trigger('click');
-						},
-						1000
-					);*/
-				}
+                
+                // Go to next step
+                if (step <= 6) {
+                    /*setTimeout(
+                        function(){
+                            $('#but_next').trigger('click');
+                        },
+                        1000
+                    );*/
+                }
             }
         });
     } else {
@@ -285,11 +232,69 @@ function checkPage()
     }
 }
 
+/**
+ * 
+ * @param {string} task Task in string format
+ */
+function doGetJson(task)
+{
+    tsk = task.split("*");
+
+    return $.ajax({
+        url: "install.queries.php",
+        type : "POST",
+        dataType : "json",
+        async: false,
+        data : {
+            type:       "step_"+step,
+            data:       aesEncrypt(data), //
+            activity:   aesEncrypt(tsk[0]),
+            task:       aesEncrypt(tsk[1]),
+            db:         aesEncrypt(JSON.stringify(dbInfo)),
+            index:      index,
+            multiple:   multiple,
+            info:       tsk[0]+"-"+tsk[1]
+        }
+    })
+    .complete(function(data) {console.log(data)
+        if (data.responseText === "") {
+            alertify
+                .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
+                .dismissOthers();
+        } else {
+            data = $.parseJSON(data.responseText);
+            //console.log(data)
+            if (data[0].error === "") {
+                if (step === "5") {
+                    if (data[0].activity === "table") {
+                        $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
+                    } else if (data[0].activity === "entry") {
+                        $("#pop_db").append("<li>Entries <b>"+data[0].task+"</b> were added</li>");
+                    }
+                } else {
+                    $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
+                }
+
+                if (data[0].result !== undefined && data[0].result !== "" ) {
+                    alertify
+                        .message(data[0].result, 10)
+                        .dismissOthers();
+                }
+            } else {
+                $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>'+data[0].error+"</i></span>");
+                                            
+                global_error_on_query = true;
+            }
+        }
+        index++;
+    });
+}
+
 
 function GotoNextStep()
 {
-    var step = $("#page_id").val();
-    var nextStep = parseInt(step)+1;
+    var step = $("#page_id").val(),
+    nextStep = parseInt(step)+1;
 
     if (nextStep === 7) {
         $("#but_restart, #but_next, #but_launch").addClass("hidden");

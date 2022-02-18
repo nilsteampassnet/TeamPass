@@ -25,28 +25,28 @@ function countdown()
     let limitTen = 10;
     let oneSecondsMs = 1000;
     let theDay =  $('#temps_restant').val();
-    let today = new Date(); // Create an Date Object that contains today's date.
+    let today = new Date();
     let second = Math.floor(theDay - today.getTime() / oneSecondsMs);
-    let minute = Math.floor(second / hourInMinutes); // Devide 'second' into 60 to get the minute
-    let hour = Math.floor(minute / hourInMinutes); // Devide 'minute' into 60 to get the hour
-    let CHour= hour % hoursInDay; // Correct hour, after devide into 24, the remainder deposits here.
+    let minute = Math.floor(second / hourInMinutes);
+    let hour = Math.floor(minute / hourInMinutes);
+    let CHour= hour % hoursInDay;
     if (CHour < limitTen) {
         CHour = '0' + CHour;
     }
-    let CMinute= minute % hourInMinutes; // Correct minute, after devide into 60, the remainder deposits here.
+    let CMinute= minute % hourInMinutes;
     if (CMinute < limitTen) {
         CMinute = '0' + CMinute;
     }
-    let CSecond= second % hourInMinutes; // Correct second, after devide into 60, the remainder deposits here.
+    let CSecond= second % hourInMinutes;
     if (CSecond < limitTen) {
         CSecond = '0' + CSecond;
     }
-    DayTill = CHour+':'+CMinute+':'+CSecond;
+    DayTill = CHour + ':' + CMinute + ':' + CSecond;
 
     // Session will soon be closed
     if (DayTill === '00:00:50') {
         showExtendSession();
-        $('#countdown').css('color','red');
+        $('#countdown').css('color', 'red');
     }
 
     // Manage end of session
@@ -57,7 +57,7 @@ function countdown()
 
     //Rewrite the string to the correct information.
     if ($('#countdown')) {
-        $('#countdown').html(DayTill); // Make the particular form chart become 'Daytill'
+        $('#countdown').html(DayTill);
     }
 
     //Create the timer 'counter' that will automatic restart function countdown() again every second.
@@ -120,32 +120,6 @@ function sanitizeString(string) {
     }
     return string;
 }
-
-/**
-*   Send email
-**/
-/*
-function SendMail(category, contentEmail, keySent, message) {
-    $.post(
-        'sources/items.queries.php',
-        {
-            type    : 'send_email',
-            cat     : category,
-            content : contentEmail,
-            key     : keySent
-        },
-        function(data) {
-            if (typeof data[0].error !== 'undefined' && data[0].error !== '') {
-                message = data[0].message;
-            }
-            $('#div_dialog_message_text').html(message);
-            $('#div_dialog_message').dialog('open');
-        },
-        'json'
-    );
-}
-*/
-
 
 /**
 *   Checks if URL has expected format
@@ -232,7 +206,7 @@ function prepareExchangedData(data, type, key)
                 return $.parseJSON(data);
             }
             catch (e) {
-                return jsonErrorHdl((data));
+                return jsonErrorHdl(data);
             }
         } else {
             try {
@@ -244,7 +218,7 @@ function prepareExchangedData(data, type, key)
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServer').val()) === 0) {
-            return stripHtml(data);//data;
+            return stripHtml(data);
         } else {
             return aesEncrypt(data, key);
         }
@@ -256,7 +230,7 @@ function prepareExchangedData(data, type, key)
 /**
  * Returns the text from a HTML string
  * 
- * @param {html} String The html string
+ * @param {string} String The html string
  */
 function stripHtml(html) {
     // Create a new div element
@@ -270,8 +244,8 @@ function stripHtml(html) {
 
 /**
  * 
- * @param string data Crypted string
- * @param string key  Session key
+ * @param {string} data Crypted string
+ * @param {string} key  Session key
  */
 function unCryptData(data, key)
 {
@@ -292,8 +266,8 @@ function unCryptData(data, key)
 
 /**
  * 
- * @param string data Crypted string
- * @param string key  Session key
+ * @param {string}data Crypted string
+ * @param {string}key  Session key
  */
 function decodeQueryReturn(data, key)
 {
@@ -317,9 +291,9 @@ function decodeQueryReturn(data, key)
 
 /**
  * 
- * @param {string} action 
- * @param {string} name 
- * @param {array} data 
+ * @param {string} action Action
+ * @param {string} name   Name
+ * @param {array} data    Data
  */
 function browserSession(action, name, data)
 {
@@ -349,14 +323,14 @@ function browserSession(action, name, data)
 
 /**
  * 
- * @param {string} modalId 
- * @param {string} title 
- * @param {string} body 
- * @param {string} actionButton 
- * @param {string} closeButton 
- * @param {string} xlSize 
- * @param {string} warningModal 
- * @param {string} closeCross 
+ * @param {string} modalId      Modal id
+ * @param {string} title        Title
+ * @param {string} body         Body
+ * @param {string} actionButton Action Button
+ * @param {string} closeButton  Close Button
+ * @param {string} xlSize       Size
+ * @param {string} warningModal Warning Modal
+ * @param {string} closeCross   Close on cross
  */
 function showModalDialogBox(
     modalId,
@@ -409,7 +383,7 @@ function showModalDialogBox(
 /**
  * Sanitize a string
  * 
- * @param {string} str  
+ * @param {string} str  The string
  */
 function htmlEncode(str){
     return String(str).replace(/[^\w. ]/gi, function(c){

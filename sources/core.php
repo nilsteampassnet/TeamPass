@@ -52,7 +52,6 @@ function redirect($url)
     $antiXss = new voku\helper\AntiXSS();
     if (! headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: ' . $antiXss->xss_clean($url));
-        exit;
     }
 
     //If headers are sent... do java redirect... if java disabled, do html redirect.
@@ -147,9 +146,10 @@ if (
                 }
 
                 return @rmdir($dir);
-            } else {
-                return false;
             }
+
+            // else return false
+            return false;
         }
 
         if (is_dir($SETTINGS['cpassman_dir'] . '/install')) {

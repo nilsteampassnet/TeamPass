@@ -205,6 +205,7 @@ if (null !== $post_type) {
             // Loop on selection
             foreach ($post_selectedFolders as $folderId) {
                 // delete
+                //db::debugmode(true);
                 DB::delete(
                     prefixTable('roles_values'),
                     'folder_id = %i AND role_id = %i',
@@ -349,7 +350,7 @@ if (null !== $post_type) {
                             'creator_id' => $_SESSION['user_id'],
                         )
                     );
-                    $role_id = DB::insertId();
+                    $return['new_role_id'] = DB::insertId();
                 } else {
                     // Adding new folder not possible as it exists
                     $return['error'] = true;

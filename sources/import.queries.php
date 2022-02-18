@@ -110,7 +110,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -307,14 +307,20 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $list = [];
 
         // Decrypt and retreive data in JSON format
-        $post_items = prepareExchangedData(
+        $dataReceived = prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
-
+        
         // Init post variable
-        $post_folder = filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT);
+        $post_folder = filter_var($dataReceived['folder-id'], FILTER_SANITIZE_NUMBER_INT);
+        $post_items = filter_var_array(
+            $dataReceived['items'],
+            FILTER_SANITIZE_STRING
+        );
+        $post_edit_role = filter_var($dataReceived['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        $post_edit_all = filter_var($dataReceived['edit-all'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get title for this folder
         $data_fld = DB::queryFirstRow(
@@ -338,7 +344,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         if (is_array($post_items) === true) {
             array_walk_recursive($post_items, 'cleanOutput');
         }
-
+        //print_r($post_items);
         // Loop on array
         foreach ($post_items as $item) {
             //For each item, insert into DB
@@ -366,9 +372,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     'pw' => $post_password,
                     'pw_iv' => '',
                     'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
-                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                    'id_tree' => $post_folder,
                     'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
-                    'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === 'true' ? 1 : 0,
+                    'anyone_can_modify' => $post_edit_all,
                     'encryption_type' => 'teampass_aes',
                 )
             );
@@ -378,16 +384,14 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
                 (int) $personalFolder,
-                (int) filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                (int) $post_folder,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
                 $SETTINGS
             );
 
             //if asked, anyone in role can modify
-            if (null !== filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) === 'true'
-            ) {
+            if ((int) $post_edit_role === 1) {
                 foreach ($_SESSION['arr_roles'] as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
@@ -419,7 +423,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     'id' => $newId,
                     'label' => substr($item['label'], 0, 500),
                     'description' => empty($item['description']) ? '' : $item['description'],
-                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                    'id_tree' => $post_folder,
                     'url' => '0',
                     'perso' => $personalFolder === 0 ? 0 : 1,
                     'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
@@ -462,7 +466,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],$post_data,
+            $SETTINGS['cpassman_dir'],
+            $post_data,
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_STRING);

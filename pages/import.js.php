@@ -261,7 +261,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         // Show spinner
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
-       
 
         // Perform query
         $.post(
@@ -284,15 +283,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 );
 
                 if (data.error == "bad_structure") {
-                 toastr.remove();
-                   toastr.error(
+                    toastr.remove();
+                    toastr.error(
                         '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                      '', {
-                          timeOut: 10000,
+                        '', {
+                            timeOut: 10000,
                             closeButton: true,
-                         progressBar: true
-                      }
-                  );
+                            progressBar: true
+                        }
+                    );
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -378,29 +377,29 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
         if (arrItems.length === 0) {
             toastr.remove();
-           toastr.error(
+            toastr.error(
                 '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
-               '', {
-                  timeOut: 10000,
+                '', {
+                    timeOut: 10000,
                     closeButton: true,
-                 progressBar: true
-              }
-          );
+                    progressBar: true
+                }
+            );
             return false;
         }
 
         data = {
             'items': arrItems,
-            'edit-all': $('#import-csv-edit-all-checkbox').prop('checked'),
-            'edit-role': $('#import-csv-edit-role-checkbox').prop('checked'),
+            'edit-all': $('#import-csv-edit-all-checkbox').prop('checked') === true ? 1 : 0,
+            'edit-role': $('#import-csv-edit-role-checkbox').prop('checked') === true ? 1 : 0,
+            'folder-id' : parseInt($("#import-csv-target-folder").val()),
         }
         console.log(data);
         // Lauchn ajax query that will insert items into DB
         $.post(
             "sources/import.queries.php", {
                 type: "import_items",
-                folder: $("#import-csv-target-folder").val(),
-                data: prepareExchangedData(JSON.stringify(arrItems), "encode", "<?php echo $_SESSION['key']; ?>"),
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -408,15 +407,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 console.log(data)
 
                 if (data.error === true) {
-                 toastr.remove();
-                   toastr.error(
+                    toastr.remove();
+                    toastr.error(
                         '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                      '', {
-                          timeOut: 10000,
+                        '', {
+                            timeOut: 10000,
                             closeButton: true,
-                         progressBar: true
-                      }
-                  );
+                            progressBar: true
+                        }
+                    );
 
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
@@ -446,7 +445,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     // **************  K E E P A S S  *************** //
 
 
-    // Plupload for CSV
+    // Plupload for KEEPASS
     var uploader_keepass = new plupload.Uploader({
         runtimes: "html5,flash,silverlight,html4",
         browse_button: "import-keepass-attach-pickfile-keepass",

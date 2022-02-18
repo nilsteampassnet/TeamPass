@@ -190,7 +190,6 @@ if (
     // Send back
     echo json_encode($ret_json);
 } else {
-    //echo '['.$get['user_tree_structure'].']';
     echo $get['user_tree_structure'];
 }
 
@@ -429,7 +428,7 @@ function recursiveTree(
     } else {
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
-
+//echo "Lecture de ".$nodeId."\n";
     // Be sure that user can only see folders he/she is allowed to
     if (
         in_array($completTree[$nodeId]->id, $session_forbiden_pfs) === false
@@ -478,7 +477,7 @@ function recursiveTree(
                 $text = '';
             }
         }
-
+//echo "    ".$node.",".$displayThisNode." ;\n";
         if ($displayThisNode === true) {
             handleNode(
                 $nodeId,
@@ -628,6 +627,7 @@ function handleNode(
             )
         );
     }
+    
     foreach ($completTree[$nodeId]->children as $child) {
         recursiveTree(
             $child,
@@ -648,6 +648,7 @@ function handleNode(
             $session_list_folders_limited,
             $session_read_only_folders,
             $session_personal_visible_groups,
+            $can_create_root_folder,
             $ret_json
         );
     }

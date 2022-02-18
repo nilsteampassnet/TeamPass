@@ -478,8 +478,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');                    
+                    /*console.log('DID CHANGES')
+                    console.log(data);*/
 
                     if (data.error === true) {
                         // ERROR
