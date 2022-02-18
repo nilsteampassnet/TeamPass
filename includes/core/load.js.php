@@ -612,6 +612,18 @@ if (
      */
     $(document).on('click', '#dialog-user-change-password-do', function() {
         // Start by changing the user password and send it by email
+        if ($('#profile-password-confirm').val() !== $('#profile-password').val()) {
+            // Show error
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('index_pw_error_identical'); ?>',
+                '<?php echo langHdl('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
         if ($('#profile-current-password').val() !== "" && $('#profile-password').val() !== "" && $('#profile-password-confirm').val() !== "") {
             // Case where a user is changing his authentication password
             console.log('Reencryption based upon user decision to change his auth password');
@@ -673,6 +685,8 @@ if (
                             }
                         );
                         $("#dialog-user-change-password-progress").html('');
+                        $('.content-header, .content').addClass('hidden');
+                        $('#dialog-user-change-password').addClass('hidden');
                     }
                 }
             );
@@ -723,7 +737,7 @@ if (
                 'password': '',
                 'self_change': false,
             }
-            console.log(data);
+            //console.log(data);
             
             $.post(
                 'sources/main.queries.php', {

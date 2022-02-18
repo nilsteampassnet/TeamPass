@@ -2552,6 +2552,15 @@ function getUserInfo(
     );
 }
 
+/**
+ * Change user auth password
+ *
+ * @param integer $post_user_id
+ * @param string $post_current_pwd
+ * @param string $post_new_pwd
+ * @param array $SETTINGS
+ * @return string
+ */
 function changeUserAuthenticationPassword(
     int $post_user_id,
     string $post_current_pwd,
@@ -2571,7 +2580,18 @@ function changeUserAuthenticationPassword(
             // Now check if current password is correct
             // For this, just check if it is possible to decrypt the privatekey
             // And compare it to the one in session
-            $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
+            try {
+                $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
+            } catch (Exception $e) {
+                return prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('bad_password'),
+                    ),
+                    'encode'
+                );
+            }
 
             // Load superGlobals
             include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -2605,7 +2625,7 @@ function changeUserAuthenticationPassword(
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => langHdl('done'),'',
@@ -2616,7 +2636,7 @@ function changeUserAuthenticationPassword(
             
             // ERROR
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('bad_password'),
@@ -2627,7 +2647,7 @@ function changeUserAuthenticationPassword(
     }
         
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2683,7 +2703,7 @@ function changeUserLDAPAuthenticationPassword(
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => langHdl('done'),'',
@@ -2698,7 +2718,7 @@ function changeUserLDAPAuthenticationPassword(
 
             if (empty($privateKey) === true) {
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('password_is_not_correct'),

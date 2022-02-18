@@ -2615,7 +2615,7 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
         // Encrypt the privatekey
         $cipher->setPassword($userPwd);
         try {
-            return base64_encode($cipher->decrypt(base64_decode($userPrivateKey)));
+            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
         } catch (Exception $e) {
             return $e;
         }
