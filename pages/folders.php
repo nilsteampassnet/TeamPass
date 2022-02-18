@@ -250,7 +250,7 @@ foreach ($tst as $t) {
                             </div>
                         </div>
                     </div>
-                    <table id="table-folders" class="table table-hover table-striped" style="width:100%">
+                    <table id="table-folders" class="table table-hover table-striped table-responsive" style="width:100%">
                         <thead>
                             <tr>
                                 <th scope="col" width="80px"></th>

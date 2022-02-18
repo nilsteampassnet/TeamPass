@@ -98,7 +98,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         </div>
 
                         <div class='row mb-5' id='statistics-options'>
-                            <table class="table table-bordered">
+                            <table class="table table-bordered table-responsive">
                                 <tr>
                                     <th style="width:60%;"><?php echo langHdl('characteristic'); ?></th>
                                     <th style="width:40%;"><?php echo langHdl('current_value'); ?></th>

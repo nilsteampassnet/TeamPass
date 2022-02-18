@@ -77,7 +77,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 </div>-->
                 <!-- /.card-header -->
                 <div class="card-body p-0<?php echo empty($_SESSION['favourites']) === false ? '' : ' hidden'; ?>" id="favorites">
-                    <table class="table table-condensed">
+                    <table class="table table-condensed table-responsive">
                         <tr>
                             <th style="width: 100px"></th>
                             <th style="min-width:15%;"><?php echo langHdl('label'); ?></th>

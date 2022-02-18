@@ -152,19 +152,19 @@ foreach ($treeDesc as $t) {
                 </div>
 
                 <!-- /.card-header -->
-                <div class="card-body form table-responsive" id="users-list">
-                    <table id="table-users" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
+                <div class="card-body form" id="users-list">
+                    <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
                             <tr>
-                                <th></th>
-                                <th><?php echo langHdl('user_login'); ?></th>
-                                <th><?php echo langHdl('name'); ?></th>
-                                <th><?php echo langHdl('lastname'); ?></th>
-                                <th><?php echo langHdl('managed_by'); ?></th>
-                                <th><?php echo langHdl('functions'); ?></th>
-                                <th width="50px"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
-                                <th width="50px"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
-                                <th width="50px"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
+                                <th scope="col"></th>
+                                <th scope="col"><?php echo langHdl('user_login'); ?></th>
+                                <th scope="col"><?php echo langHdl('name'); ?></th>
+                                <th scope="col"><?php echo langHdl('lastname'); ?></th>
+                                <th scope="col"><?php echo langHdl('managed_by'); ?></th>
+                                <th scope="col"><?php echo langHdl('functions'); ?></th>
+                                <th scope="col"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
+                                <th scope="col"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
+                                <th scope="col"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -229,7 +229,7 @@ foreach ($treeDesc as $t) {
                                 </div>
                             </div>
                             <div class="card-body table-responsive p-0" id="ldap-users-table">
-                                <table class="table table-hover">
+                                <table class="table table-hover table-responsive">
                                     <thead>
                                         <tr>
                                             <th style="width: 25%;"><i class="fas fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
@@ -389,7 +389,7 @@ foreach ($treeDesc as $t) {
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body form" id="user-logs">
-                    <table id="table-logs" class="table table-striped" style="width:100%">
+                    <table id="table-logs" class="table table-striped table-responsive" style="width:100%">
                         <thead>
                             <tr>
                                 <th><?php echo langHdl('date'); ?></th>

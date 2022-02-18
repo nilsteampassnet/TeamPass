@@ -100,7 +100,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
-                    <table id="search-results-items" class="table table-bordered table-striped" style="width:100%">
+                    <table id="search-results-items" class="table table-bordered table-striped table-responsive" style="width:100%">
                         <thead>
                             <tr>
                                 <th></th>

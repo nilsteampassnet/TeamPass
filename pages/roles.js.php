@@ -216,7 +216,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     // Show result
                     $('#role-details').html(
-                        '<table id="table-role-details" class="table table-hover table-striped" style="width:100%"><tbody>' +
+                        '<table id="table-role-details" class="table table-hover table-striped table-responsive" style="width:100%"><tbody>' +
                         newHtml +
                         '</tbody></table>'
                     );

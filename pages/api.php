@@ -116,7 +116,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     'key'
 );
                                     ?>
-                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?>" style="width:100%" id="table-api-keys">
+                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
                                         <thead>
                                             <tr>
                                                 <th width="50px"></th>
@@ -172,7 +172,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                                 'ip'
                                             );
                                     ?>
-                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?>" style="width:100%" id="table-api-ips">
+                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-ips">
                                         <thead>
                                             <tr>
                                                 <th width="50px"></th>

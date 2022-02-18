@@ -130,7 +130,7 @@ $tree->rebuild();
 
 
                     <div class="card-body" id="fields-list">
-                        <table id="table-fields" class="table table-hover hidden" style="width:100%">
+                        <table id="table-fields" class="table table-hover table-responsive hidden" style="width:100%">
                             <tbody>
 
                             </tbody>

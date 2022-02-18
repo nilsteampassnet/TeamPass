@@ -94,7 +94,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
                         <div>
-                            <table class="table table-striped" id="table-renewal" style="width:100%;">
+                            <table class="table table-striped table-responsive" id="table-renewal" style="width:100%;">
                                 <thead>
                                     <tr>
                                         <th style=""></th>

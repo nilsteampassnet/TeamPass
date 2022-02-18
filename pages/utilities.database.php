@@ -86,7 +86,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                         <div class="tab-content mt-1" id="myTabContent">
                             <div class="tab-pane fade show active" id="in_edition" role="tabpanel" aria-labelledby="in_edition-tab">
-                                <table class="table table-striped" id="table-in_edition" style="width:100%;">
+                                <table class="table table-striped table-responsive" id="table-in_edition" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""></th>
@@ -98,7 +98,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="logged_in" role="tabpanel" aria-labelledby="logged_in-tab">
-                                <table class="table table-striped" id="table-logged_in" style="width:100%;">
+                                <table class="table table-striped table-responsive" id="table-logged_in" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""></th>
