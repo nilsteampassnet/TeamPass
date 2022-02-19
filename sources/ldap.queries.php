@@ -183,6 +183,7 @@ switch ($post_type) {
             break;
         }
 
+        /*
         try {
             $usr = $connection->query()
                 ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
@@ -201,10 +202,11 @@ switch ($post_type) {
             );
             break;
         }
+        */
         //TODO
         try {
             if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-                $connection->auth()->bind($usr[$SETTINGS['settings_ldap_user_dn_attribute']][0], $post_password);
+                $connection->auth()->bind($post_username, $post_password);
             } else {
                 $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
             }
