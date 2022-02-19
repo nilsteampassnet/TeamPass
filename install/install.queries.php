@@ -675,6 +675,7 @@ $SETTINGS = array (';
                             array('admin', 'settings_offline_mode', '0'),
                             array('admin', 'settings_tree_counters', '0'),
                             array('admin', 'enable_massive_move_delete', '0'),
+                            array('admin', 'email_debug_level', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

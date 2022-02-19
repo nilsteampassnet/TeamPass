@@ -632,6 +632,15 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
+
+// Add new setting 'email_debug_level'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'email_debug_level'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'email_debug_level', '0')"
+    );
+}
 //---<
 
 // Finished

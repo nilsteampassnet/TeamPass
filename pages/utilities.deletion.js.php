@@ -299,7 +299,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'folders': folders,
             'items': items,
         }
-
+        console.log("Selection action: "+ action)
+        console.log(data);
         // Launch action
         $.post(
             'sources/utilities.queries.php', {
@@ -340,7 +341,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.success(
                         '<?php echo langHdl('done'); ?>',
                         '', {
-                            timeOut: 1000
+                            timeOut: 5000
                         }
                     );
                 }

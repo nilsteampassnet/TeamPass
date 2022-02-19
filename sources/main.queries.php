@@ -1313,7 +1313,7 @@ function changePrivateKeyEncryptionPassword(
         } else {
             // no user password???
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_no_user_password_exists'),
@@ -1363,7 +1363,7 @@ function changePrivateKeyEncryptionPassword(
 
         // Return
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1373,7 +1373,7 @@ function changePrivateKeyEncryptionPassword(
     }
     
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),

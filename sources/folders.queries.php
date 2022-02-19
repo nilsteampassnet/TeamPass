@@ -763,7 +763,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -773,7 +773,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -785,7 +785,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // prepare variables
             $post_folders = filter_var_array(
@@ -801,28 +804,28 @@ if (null !== $post_type) {
                 // Exclude a folder with id alreay in the list
                 if (in_array($folderId, $folderForDel) === false) {
                     // Get through each subfolder
-                    $folders = $tree->getDescendants($folderId, true);
-                    foreach ($folders as $folder) {
-                        if (($folder->parent_id > 0 || $folder->parent_id == 0)
-                            && $folder->title != $_SESSION['user_id']
+                    $subFolders = $tree->getDescendants($folderId, true);
+                    foreach ($subFolders as $thisSubFolders) {
+                        if (($thisSubFolders->parent_id > 0 || $thisSubFolders->parent_id == 0)
+                            && $thisSubFolders->title != $_SESSION['user_id']
                         ) {
                             //Store the deleted folder (recycled bin)
                             DB::insert(
                                 prefixTable('misc'),
                                 array(
                                     'type' => 'folder_deleted',
-                                    'intitule' => 'f' . $folder->id,
-                                    'valeur' => $folder->id . ', ' . $folder->parent_id . ', ' .
-                                        $folder->title . ', ' . $folder->nleft . ', ' . $folder->nright . ', ' .
-                                        $folder->nlevel . ', 0, 0, 0, 0',
+                                    'intitule' => 'f' . $thisSubFolders->id,
+                                    'valeur' => $thisSubFolders->id . ', ' . $thisSubFolders->parent_id . ', ' .
+                                        $thisSubFolders->title . ', ' . $thisSubFolders->nleft . ', ' . $thisSubFolders->nright . ', ' .
+                                        $thisSubFolders->nlevel . ', 0, 0, 0, 0',
                                 )
                             );
                             //array for delete folder
-                            $folderForDel[] = $folder->id;
+                            $folderForDel[] = $thisSubFolders->id;
 
                             //delete items & logs
-                            $items = DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE id_tree=%i', $folder->id);
-                            foreach ($items as $item) {
+                            $itemsInSubFolder = DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE id_tree=%i', $thisSubFolders->id);
+                            foreach ($itemsInSubFolder as $item) {
                                 DB::update(
                                     prefixTable('items'),
                                     array(
@@ -831,16 +834,7 @@ if (null !== $post_type) {
                                     'id = %i',
                                     $item['id']
                                 );
-                                //log
-                                DB::insert(
-                                    prefixTable('log_items'),
-                                    array(
-                                        'id_item' => $item['id'],
-                                        'date' => time(),
-                                        'id_user' => $_SESSION['user_id'],
-                                        'action' => 'at_delete',
-                                    )
-                                );
+                                
                                 // log
                                 logItems(
                                     $SETTINGS,
@@ -857,7 +851,11 @@ if (null !== $post_type) {
                                 }
 
                                 //Update CACHE table
-                                updateCacheTable('delete_value', $SETTINGS, $item['id']);
+                                updateCacheTable(
+                                    'delete_value',
+                                    $SETTINGS,
+                                    (int) $item['id']
+                                );
                             }
 
                             //Actualize the variable
@@ -1271,7 +1269,7 @@ if (null !== $post_type) {
                                 $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
                                 if ($outstream === false) {
                                     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                                        $SETTINGS['cpassman_dir'],
                                         array(
                                             'error' => true,
                                             'message' => langHdl('error_cannot_open_file'),
@@ -1353,7 +1351,10 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
 
@@ -1362,7 +1363,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -1372,7 +1373,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
