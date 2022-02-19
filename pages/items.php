@@ -1154,14 +1154,14 @@ foreach ($rows as $reccord) {
                             <label><?php echo langHdl('icon'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('icon_tip'); ?>
+                                <?php echo langHdl('folder_icon_tip'); ?>
                             </small>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('icon_on_selection'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon-selected">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('icon_tip'); ?>
+                                <?php echo langHdl('folder_icon_tip'); ?>
                             </small>
                         </div>
                     </div>
