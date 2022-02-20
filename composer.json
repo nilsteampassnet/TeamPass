@@ -7,7 +7,7 @@
         "apcu-autoloader": true,
         "discard-changes": true
     },
-    "version": "3.0.0.10",
+    "version": "3.0.0.11",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": "GPL-3.0-only",

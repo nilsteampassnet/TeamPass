@@ -221,22 +221,22 @@ if (
 /**
  * Get through asked folders
  *
- * @param [int] $nodeId
- * @param [array] $listFoldersLimitedKeys
- * @param [array] $listRestrictedFoldersForItemsKeys
- * @param [array] $tree
- * @param [array] $SETTINGS
- * @param [array] $session_forbiden_pfs
- * @param [array] $session_groupes_visibles
- * @param [array] $session_list_restricted_folders_for_items
- * @param [int] $session_user_id
- * @param [string] $session_login
- * @param [array] $session_no_access_folders
- * @param [array] $session_list_folders_limited
- * @param [array] $session_read_only_folders
- * @param [array] $session_personal_folders
- * @param [array] $session_personal_visible_groups
- * @param [int] $session_user_read_only
+ * @param int $nodeId
+ * @param array $listFoldersLimitedKeys
+ * @param array $listRestrictedFoldersForItemsKeys
+ * @param array $tree
+ * @param array $SETTINGS
+ * @param array $session_forbiden_pfs
+ * @param array $session_groupes_visibles
+ * @param array $session_list_restricted_folders_for_items
+ * @param int $session_user_id
+ * @param string $session_login
+ * @param array $session_no_access_folders
+ * @param array $session_list_folders_limited
+ * @param array $session_read_only_folders
+ * @param array $session_personal_folders
+ * @param array $session_personal_visible_groups
+ * @param int $session_user_read_only
  * @return array
  */
 function buildNodeTree(
@@ -285,7 +285,6 @@ function buildNodeTree(
                     || in_array($node->id, $session_no_access_folders) === true)
             ) {
                 $nodeElements= buildNodeTreeElements(
-                    $ret_json,
                     $node,
                     $session_user_id,
                     $session_login,
@@ -314,7 +313,7 @@ function buildNodeTree(
                         'children' => ($nodeElements['childrenNb'] === 0 ? false : true),
                         'fa_icon' => 'folder',
                         'li_attr' => array(
-                            'class' => ($snodeElements['how_but_block'] === true ? '' : 'jstreeopen'),
+                            'class' => ($nodeElements['show_but_block'] === true ? '' : 'jstreeopen'),
                             'title' => 'ID [' . $node->id . '] ' . ($nodeElements['show_but_block'] === true ? langHdl('no_access') : $nodeElements['title']),
                         ),
                         'a_attr' => $nodeElements['show_but_block'] === true ? (array(
@@ -334,7 +333,6 @@ function buildNodeTree(
 
 
 function buildNodeTreeElements(
-    $ret_json,
     $node,
     $session_user_id,
     $session_login,
