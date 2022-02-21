@@ -42,14 +42,22 @@ function aesEncrypt(text)
     return Aes.Ctr.encrypt(text, "cpm", 128);
 }
 
+var global_error_on_query = false,
+    step = "",
+    dataToUse = "",
+    dbInfo = "",
+    index = "",
+    multiple = "",
+    jsonValues = "";
+
 function checkPage()
 {
-    var step = $("#step").val(),
-    data = "",
-    error = "",
-    index = "",
-    tasks = [],
-    multiple = "",
+    step = $("#step").val();
+    dataToUse = "";
+    error = "";
+    index = "";
+    tasks = [];
+    multiple = "";
     tsk = "";
     $("#step_error").addClass("hidden").html("");
     $("#res_"+step).html("");
@@ -63,8 +71,8 @@ function checkPage()
         if ($("#url_path").val() === "" || $("#absolute_path").val() === "") {
             error = "Fields need to be filled in!";
         } else {
-            const jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
-            data = JSON.stringify(jsonValues);
+            jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
+            dataToUse = JSON.stringify(jsonValues);
             tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time"];
             multiple = true;
             $("#hid_absolute_path").val($("#absolute_path").val());
@@ -77,8 +85,8 @@ function checkPage()
         } else if ($("#db_pw").val().indexOf('"') > -1) {
             error = "Double quotes in password not allowed!";
         } else {
-            const jsonValues = {"db_host":$("#db_host").val(), "db_bdd":$("#db_bdd").val(), "db_login":$("#db_login").val(), "db_pw":$("#db_pw").val(), "db_port":$("#db_port").val(), "absolute_path":$("#hid_absolute_path").val(), "url_path":$("#hid_url_path").val()};
-            data = JSON.stringify(jsonValues);
+            jsonValues = {"db_host":$("#db_host").val(), "db_bdd":$("#db_bdd").val(), "db_login":$("#db_login").val(), "db_pw":$("#db_pw").val(), "db_port":$("#db_port").val(), "absolute_path":$("#hid_absolute_path").val(), "url_path":$("#hid_url_path").val()};
+            dataToUse = JSON.stringify(jsonValues);
             tasks = ["connection*test"];
             multiple = "";
             $("#hid_db_host").val($("#db_host").val());
@@ -106,30 +114,29 @@ function checkPage()
             return false;
         } else{
             $("#hid_db_pre").val($("#tbl_prefix").val());
-            const jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
-            data = JSON.stringify(jsonValues);
+            jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
+            dataToUse = JSON.stringify(jsonValues);
             tasks = ["misc*preparation"];
             multiple = "";
         }
     } else if (step === "5") {
     // STEP 5
-        data = "";
+        dataToUse = "";
         tasks = ["table*utf8", "table*api", "table*automatic_del", "table*cache", "table*categories", "table*categories_folders", "table*categories_items", "table*defuse_passwords", "table*emails", "table*export", "table*files", "table*items", "table*items_change", "table*items_edition", "table*kb", "table*kb_categories", "table*kb_items", "table*languages", "table*log_items", "table*log_system", "table*misc", "table*nested_tree", "table*notification", "table*otv", "table*sharekeys_fields", "table*sharekeys_files", "table*sharekeys_items", "table*sharekeys_logs", "table*sharekeys_suggestions", "table*restriction_to_roles", "table*rights", "table*roles_title", "table*roles_values", "table*suggestion", "table*tags", "table*templates", "table*tokens", "table*users"];
         multiple = true;
     } else if (step === "6") {
     // STEP 6
-        const jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
-        data = JSON.stringify(jsonValues);
+        jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
+        dataToUse = JSON.stringify(jsonValues);
         tasks = ["file*security", "file*settings.php", "file*csrfp-token", "install*cleanup"];
         multiple = true;
     }
 
     // launch query
     if (error === "" && multiple === true) {
-        var global_error_on_query = false,
-            index = 0;
-
-        const dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
+        global_error_on_query = false;
+        index = 0;
+        dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
 
         $("#step_res").val("true");
         $("#pop_db").html("");
@@ -137,7 +144,9 @@ function checkPage()
         var promise = tasks.slice(1)
             .reduce(
                 (a,b) => a.then(doGetJson.bind(null, b)),
-                doGetJson(tasks[0])
+                doGetJson(
+                    tasks[0]
+                )
             );
 
         promise.then(function(){
@@ -183,22 +192,24 @@ function checkPage()
     } else if (error === "" && multiple === "") {
         tsk = tasks[0].split("*");
 
-        const dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
+        dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
+
+        dataToUse = {
+            type:       "step_"+step,
+            data:       aesEncrypt(dataToUse),
+            activity:   aesEncrypt(tsk[0]),
+            task:       aesEncrypt(tsk[1]),
+            db:         aesEncrypt(JSON.stringify(dbInfo)),
+            index:      index,
+            multiple:   multiple,
+            info:       tsk[0]+"-"+tsk[1],
+        }
 
         $.ajax({
             url: "install.queries.php",
             type : 'POST',
             dataType : "json",
-            data : {
-                type:       "step_"+step,
-                data:       aesEncrypt(data),
-                activity:   aesEncrypt(tsk[0]),
-                task:       aesEncrypt(tsk[1]),
-                db:         aesEncrypt(JSON.stringify(dbInfo)),
-                index:      index,
-                multiple:   multiple,
-                info:       tsk[0]+"-"+tsk[1]
-            },
+            data : dataToUse,
             complete : function(data){
                 data = $.parseJSON(data.responseText);
                 
@@ -246,6 +257,7 @@ function checkPage()
  */
 function doGetJson(task)
 {
+    console.log("\n------\n"+step+"\n"+dataToUse+"\n"+dbInfo+"\n"+index+"\n"+multiple+"\n"+task+"\n")
     tsk = task.split("*");
 
     return $.ajax({
@@ -255,7 +267,7 @@ function doGetJson(task)
         async: false,
         data : {
             type:       "step_"+step,
-            data:       aesEncrypt(data), //
+            dataToUse:  aesEncrypt(dataToUse), //
             activity:   aesEncrypt(tsk[0]),
             task:       aesEncrypt(tsk[1]),
             db:         aesEncrypt(JSON.stringify(dbInfo)),
@@ -264,14 +276,16 @@ function doGetJson(task)
             info:       tsk[0]+"-"+tsk[1]
         }
     })
-    .complete(function(data) {console.log(data)
+    .complete(function(data) {
+        console.log(data)
         if (data.responseText === "") {
             alertify
                 .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
                 .dismissOthers();
         } else {
             data = $.parseJSON(data.responseText);
-            //console.log(data)
+            console.log("RETOUR:");
+            console.log(data)
             if (data[0].error === "") {
                 if (step === "5") {
                     if (data[0].activity === "table") {

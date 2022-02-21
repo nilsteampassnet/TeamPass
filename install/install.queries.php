@@ -266,6 +266,12 @@ if (null !== $post_type) {
             $json = Encryption\Crypt\aesctr::decrypt($post_db, 'cpm', 128);
             $db = json_decode($json, true);
 
+            $post_abspath = str_replace('\\', '/', $data['absolute_path']);
+            if (substr($abspath, strlen($post_abspath) - 1) == '/') {
+                $post_abspath = substr($post_abspath, 0, strlen($post_abspath) - 1);
+            }
+            $post_urlpath = $data['url_path'];
+
             // launch
             if ($dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port'])) {
                 // create temporary INSTALL mysqli table
@@ -290,13 +296,13 @@ if (null !== $post_type) {
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($session_url_path) ? $db['url_path'] : $session_url_path . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($post_urlpath) ? $db['url_path'] : $post_urlpath . "');");
                 }/* else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
                 }*/
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'absolute_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . empty($post_abspath) ? $data['absolute_path'] : $post_abspath . "');");
                 }/* else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . empty($session_abspath) ? $data['absolute_path'] : $session_abspath . "' WHERE `key` = 'absolute_path';");
                 }*/
