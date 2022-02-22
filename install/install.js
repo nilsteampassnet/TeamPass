@@ -57,6 +57,7 @@ function checkPage()
     error = "";
     index = "";
     tasks = [];
+    dbInfo = [];
     multiple = "";
     tsk = "";
     $("#step_error").addClass("hidden").html("");
@@ -257,7 +258,7 @@ function checkPage()
  */
 function doGetJson(task)
 {
-    console.log("\n------\n"+step+"\n"+dataToUse+"\n"+dbInfo+"\n"+index+"\n"+multiple+"\n"+task+"\n")
+    console.log("\n\n--- PREPARATION---\n"+step+"\n"+dataToUse+"\n"+dbInfo+"\n"+index+"\n"+multiple+"\n"+task+"\n-------\n")
     tsk = task.split("*");
 
     return $.ajax({
@@ -267,7 +268,7 @@ function doGetJson(task)
         async: false,
         data : {
             type:       "step_"+step,
-            dataToUse:  aesEncrypt(dataToUse), //
+            data:  aesEncrypt(dataToUse), //
             activity:   aesEncrypt(tsk[0]),
             task:       aesEncrypt(tsk[1]),
             db:         aesEncrypt(JSON.stringify(dbInfo)),
@@ -277,7 +278,7 @@ function doGetJson(task)
         }
     })
     .complete(function(data) {
-        console.log(data)
+        console.log("\n\n--- RECEPTION---\n"+data+"\n-------\n")
         if (data.responseText === "") {
             alertify
                 .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
