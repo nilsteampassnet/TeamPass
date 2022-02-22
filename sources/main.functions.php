@@ -1366,6 +1366,12 @@ function sendEmail(
                 ]
             );
         }
+        return json_encode(
+            [
+                'error' => false,
+                'message' => langHdl('share_sent_ok'),
+            ]
+        );
     } catch (Exception $e) {
         if ($silent === false || (int) $SETTINGS['email_debug_level'] !== 0) {
             return json_encode(
