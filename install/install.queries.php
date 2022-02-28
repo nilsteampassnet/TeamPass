@@ -398,7 +398,7 @@ if (null !== $post_type) {
                     } elseif ($task === 'notification') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE `' . $var['tbl_prefix'] . 'notification` (
+                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'notification` (
 								`increment_id` INT(12) NOT NULL AUTO_INCREMENT,
 								`item_id` INT(12) NOT NULL,
 								`user_id` INT(12) NOT NULL,
