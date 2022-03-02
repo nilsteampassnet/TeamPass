@@ -289,7 +289,7 @@ if (null !== $post_type) {
                 $post_data,
                 'decode'
             );
-
+            
             // Prepare variables
             $post_folderId = filter_var($dataReceived['folderId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
@@ -461,7 +461,7 @@ if (null !== $post_type) {
                     90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
                 ]
             );
-
+            
             $return = array_merge(
                 $return,
                 [
@@ -471,7 +471,7 @@ if (null !== $post_type) {
                     'allow_pw_change' => $post_allowEdit,
                 ]
             );
-
+            
             // send data
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],

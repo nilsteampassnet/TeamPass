@@ -449,9 +449,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $('#card-role-definition').addClass('hidden');
             $('#card-role-details, #card-role-selection').removeClass('hidden');
             $('#form-role-label').val('');
+            $('#form-role-delete').iCheck('uncheck');
         } else if ($(this).data('action') === 'cancel-deletion') {
             $('#card-role-details, #card-role-selection').removeClass('hidden');
             $('#card-role-deletion').addClass('hidden');
+            $('#form-role-delete').iCheck('uncheck');
             $('#form-role-delete').iCheck('uncheck');
         } else if ($(this).data('action') === 'submit-edition') {
             // STORE ROLE CHANGES
@@ -463,12 +465,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             // Prepare data
             var data = {
                 'label': $('#form-role-label').val(),
-                'complexity': $('#form-complexity-list').val(),
+                'complexity': $('#form-complexity-list').val() === null ? 0 : $('#form-complexity-list').val(),
                 'folderId': $('#roles-list').find(':selected').val(),
                 'allowEdit': $('#form-role-privilege').is(":checked") === true ? 1 : 0,
                 'action': store.get('teampassApplication').formUserAction
             }
             var oldLabel = selectedFolderText;
+            console.log(data);
 
             // Launch action
             $.post(
@@ -479,8 +482,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 },
                 function(data) { //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');                    
-                    /*console.log('DID CHANGES')
-                    console.log(data);*/
+                    console.log('DID CHANGES')
+                    console.log(data);
 
                     if (data.error === true) {
                         // ERROR
@@ -565,8 +568,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 );
 
                 // Show form
-                $('#card-role-definition').removeClass('hidden');
+                $('#card-role-definition').removeClass('hidden');                
                 $('#card-role-deletion, #card-role-details, #card-role-selection').addClass('hidden');
+                $('#form-role-label').focus();
             }
             //---
         } else if ($(this).data('action') === 'delete' && $('#button-delete').hasClass('disabled') === false) {
@@ -593,6 +597,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             $('#card-role-definition').removeClass('hidden');
             $('#card-role-deletion, #card-role-details, #card-role-selection').addClass('hidden');
+            $('#form-role-label').focus();
             //---
         } else if ($(this).data('action') === 'cancel') {
             $('.temp-row').remove();
@@ -720,8 +725,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         });
 
                         // Misc
-                        $('#card-role-deletion').addClass('hidden');
-                        $('#card-role-selection, #card-role-details').removeClass('hidden');
+                        $('#card-role-deletion, #card-role-details').addClass('hidden');
+                        $('#card-role-selection').removeClass('hidden');
                         $('#form-role-delete').iCheck('uncheck');
 
                         // OK

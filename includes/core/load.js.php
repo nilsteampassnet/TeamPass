@@ -1240,11 +1240,25 @@ if (
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage
+                    // except sensitive data
+                    var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn', 'duo', 'email','bck_script_passkey'];
+
+                    store.remove("teampassSettings");
+
                     store.update(
                         'teampassSettings', {},
                         function(teampassSettings) {
                             $.each(data, function(key, value) {
-                                teampassSettings[key] = value;
+                                const containsKey = sensitiveData.some(element => {
+                                    if (key.includes(element)) {
+                                        return true;
+                                    }
+                                    return false;
+                                });
+
+                                if (containsKey === false) {
+                                    teampassSettings[key] = value;
+                                }
                             });
                         }
                     );
