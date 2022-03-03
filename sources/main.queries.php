@@ -1238,6 +1238,20 @@ function isUserPasswordCorrect(
                 $post_user_id
             );
 
+            if (DB::count() === 0) {
+                // This user has no items
+                // let's consider no items in DB
+                return prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => false,
+                        'message' => '',
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+            }
+
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
@@ -1256,7 +1270,7 @@ function isUserPasswordCorrect(
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
                     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => false,
                             'message' => '',
@@ -1276,7 +1290,7 @@ function isUserPasswordCorrect(
             if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
                 // GOOD password
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -1293,7 +1307,7 @@ function isUserPasswordCorrect(
         array(
             'error' => true,
             'message' => langHdl('password_is_not_correct'),
-            'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
+            //'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
         ),
         'encode'
     );

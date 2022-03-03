@@ -686,7 +686,7 @@ if (
                         );
                         $("#dialog-user-change-password-progress").html('');
                         $('#dialog-user-change-password').addClass('hidden');
-                        $('.content-header, .content').removelass('hidden');
+                        $('.content-header, .content').removeClass('hidden');
                     }
                 }
             );

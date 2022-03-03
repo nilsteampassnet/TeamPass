@@ -261,7 +261,7 @@ foreach ($rows as $reccord) {
                                     <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
                                 </div>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('icon_tip'); ?>
+                                    <?php echo langHdl('folder_icon_tip'); ?>
                                 </small>
                             </div>
 
