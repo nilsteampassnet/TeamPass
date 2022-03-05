@@ -211,7 +211,7 @@ if (null !== $post_type) {
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
                                     'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'description' => htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
+                                    'description' => empty($record['description']) === false ? htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(utf8_decode($record['description']))))) : '',
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
                                     'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
                                     'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',

@@ -241,7 +241,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <link rel="stylesheet" href="includes/css/ionicons.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css">
-    <link rel="stylesheet" href="plugins/pace-progress/themes/blue/pace-theme-corner-indicator.css" type="text/css" />
+    <link rel="stylesheet" href="plugins/pace-progress/themes/corner-indicator.css" type="text/css" />
     <link rel="stylesheet" href="plugins/select2/css/select2.min.css" type="text/css" />
     <link rel="stylesheet" href="plugins/select2/css/select2-bootstrap.min.css" type="text/css" />
     <!-- Theme style -->

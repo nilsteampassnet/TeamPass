@@ -126,7 +126,7 @@ declare(strict_types=1);
      */
     $(document).on('change', '.form-control-sm, .setting-ldap', function() {
         var field = $(this).attr('id'),
-            value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val());
+            value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val().map(Number));
 
         if (field === '') return false;
         

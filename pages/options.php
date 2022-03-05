@@ -709,20 +709,20 @@ $zones = timezone_list();
                                     <?php
                                     // Get selected groups
                                     if (isset($SETTINGS['allow_print']) === true) {
-                                    $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
-if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
-    $arrRolesToPrint = [];
-}
-                                    // Get full list
-                                    $roles = performDBQuery(
-                                        $SETTINGS,
-                                        'id, title',
-                                        'roles_title'
-                                    );
-foreach ($roles as $role) {
-    echo '
+                                        $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
+                                        if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
+                                            $arrRolesToPrint = [];
+                                        }
+                                        // Get full list
+                                        $roles = performDBQuery(
+                                            $SETTINGS,
+                                            'id, title',
+                                            'roles_title'
+                                        );
+                                        foreach ($roles as $role) {
+                                            echo '
                                 <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
-}
+                                        }
                                     }
                                     ?>
                                 </select>
