@@ -1,6 +1,6 @@
 /*!
 * jQuery Password Strength plugin for Twitter Bootstrap
-* Version: 3.0.9
+* Version: 3.1.1
 *
 * Copyright (c) 2008-2013 Tane Piper
 * Copyright (c) 2013 Alejandro Blanco
@@ -154,7 +154,7 @@ try {
         ) {
             return score;
         }
-        return 0;
+        return;
     };
 
     validation.wordRepetitions = function(options, word, score) {
@@ -273,11 +273,11 @@ try {
                 score = options.rules.scores[rule];
                 funct = rulesEngine.validation[rule];
 
-                if (!$.isFunction(funct)) {
+                if (typeof funct !== 'function') {
                     funct = options.rules.extra[rule];
                 }
 
-                if ($.isFunction(funct)) {
+                if (typeof funct === 'function') {
                     result = funct(options, word, score);
                     if (result) {
                         totalScore += result;
@@ -938,7 +938,9 @@ var ui = {};
     ui.updatePopover = function(options, $el, verdictText, remove) {
         var popover = $el.data('bs.popover'),
             html = '',
-            hide = true;
+            hide = true,
+            bootstrap5 = false,
+            itsVisible = false;
 
         if (
             options.ui.showVerdicts &&
@@ -965,14 +967,30 @@ var ui = {};
 
         if (options.ui.bootstrap2) {
             popover = $el.data('popover');
+        } else if (!popover) {
+            // Bootstrap 5
+            popover = bootstrap.Popover.getInstance($el[0]);
+            bootstrap5 = true;
         }
 
-        if (popover.$arrow && popover.$arrow.parents('body').length > 0) {
-            $el.find('+ .popover .popover-content').html(html);
+        if (bootstrap5) {
+            itsVisible = $(popover.tip).is(':visible');
+        } else {
+            itsVisible = popover.$arrow && popover.$arrow.parents('body').length > 0;
+        }
+
+        if (itsVisible) {
+            if (bootstrap5) {
+                $(popover.tip).find('.popover-body').html(html);
+            } else {
+                $el.find('+ .popover .popover-content').html(html);
+            }
         } else {
             // It's hidden
             if (options.ui.bootstrap2 || options.ui.bootstrap3) {
                 popover.options.content = html;
+            } else if (bootstrap5) {
+                popover._config.content = html;
             } else {
                 popover.config.content = html;
             }
@@ -1028,7 +1046,7 @@ var methods = {};
             } else {
                 score = rulesEngine.executeRules(options, word);
             }
-            if ($.isFunction(options.common.onScore)) {
+            if (typeof options.common.onScore === 'function') {
                 score = options.common.onScore(options, word, score);
             }
         }
@@ -1041,7 +1059,7 @@ var methods = {};
             console.log(score + ' - ' + verdictText);
         }
 
-        if ($.isFunction(options.common.onKeyUp)) {
+        if (typeof options.common.onKeyUp === 'function') {
             options.common.onKeyUp(event, {
                 score: score,
                 verdictText: verdictText,
@@ -1092,7 +1110,7 @@ var methods = {};
             ui.initUI(localOptions, $el);
             $el.trigger('keyup');
 
-            if ($.isFunction(localOptions.common.onLoad)) {
+            if (typeof localOptions.common.onLoad === 'function') {
                 localOptions.common.onLoad();
             }
         });
@@ -1110,6 +1128,8 @@ var methods = {};
             elements.$errors.remove();
             $el.removeData('pwstrength-bootstrap');
         });
+
+        return this;
     };
 
     methods.forceUpdate = function() {
@@ -1117,6 +1137,8 @@ var methods = {};
             var event = { target: el };
             onKeyUp(event);
         });
+
+        return this;
     };
 
     methods.addRule = function(name, method, score, active) {
@@ -1127,6 +1149,8 @@ var methods = {};
             options.rules.scores[name] = score;
             options.rules.extra[name] = method;
         });
+
+        return this;
     };
 
     applyToAll = function(rule, prop, value) {
@@ -1137,10 +1161,14 @@ var methods = {};
 
     methods.changeScore = function(rule, score) {
         applyToAll.call(this, rule, 'scores', score);
+
+        return this;
     };
 
     methods.ruleActive = function(rule, active) {
         applyToAll.call(this, rule, 'activated', active);
+
+        return this;
     };
 
     methods.ruleIsMet = function(rule) {
@@ -1157,10 +1185,10 @@ var methods = {};
                 ruleFunction = rulesEngine.validation[rule],
                 result;
 
-            if (!$.isFunction(ruleFunction)) {
+            if (typeof ruleFunction !== 'function') {
                 ruleFunction = options.rules.extra[rule];
             }
-            if ($.isFunction(ruleFunction)) {
+            if (typeof ruleFunction === 'function') {
                 result = ruleFunction(options, $(el).val(), 1);
                 if ($.isNumeric(result)) {
                     rulesMetCnt += result;
