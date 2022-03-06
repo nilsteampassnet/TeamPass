@@ -261,7 +261,7 @@ foreach ($rows as $reccord) {
                                     <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
                                 </div>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('folder_icon_tip'); ?>
+                                    <?php echo langHdl('fontawesome_icon_tip'); ?>
                                 </small>
                             </div>
 
@@ -1154,14 +1154,14 @@ foreach ($rows as $reccord) {
                             <label><?php echo langHdl('icon'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('folder_icon_tip'); ?>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?>
                             </small>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('icon_on_selection'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon-selected">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('folder_icon_tip'); ?>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?>
                             </small>
                         </div>
                     </div>
@@ -1294,11 +1294,11 @@ foreach ($rows as $reccord) {
             </div><!-- /.card -->
         </div>
         <!-- /.col-md-6 -->
-        <div class="col-md-7 column-right">
+        <div class="col-md-7">
             <div class="card card-primary card-outline" id="items-list-card">
                 <div class="card-header">
-                    <div class="card-title">
-                        <div class="row justify-content-start">
+                    <div class="card-title w-100">
+                        <div class="row">
                             <div class="col">
                                 <div class="btn-group" id="btn-new-item">
                                     <button type="button" class="btn btn-primary btn-sm tp-action" data-item-action="new">
@@ -1306,7 +1306,7 @@ foreach ($rows as $reccord) {
                                     </button>
                                 </div>
                             </div>
-                            <div class="col">
+                            <div class="col text-right">
                                 <div class="input-group input-group-sm">
                                     <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find_items">
                                     <div class="input-group-append">

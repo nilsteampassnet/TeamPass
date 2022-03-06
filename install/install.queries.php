@@ -987,7 +987,7 @@ $SETTINGS = array (';
 
                         // add lanaguages
                         $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "languages` WHERE name = 'french'"));
-                        if ($tmp[0] == 0) {
+                        if ($tmp[0] === 0) {
                             $mysql_result = mysqli_query(
                                 $dbTmp,
                                 "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`name`, `label`, `code`, `flag`) VALUES

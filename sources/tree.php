@@ -718,7 +718,7 @@ function handleNode(
             array(
                 'id' => 'li_' . $completTree[$nodeId]->id,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => '<i class="fas '.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
+                'text' => '<i class="'.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => 'jstreeopen',
                     'title' => 'ID [' . $completTree[$nodeId]->id . '] ' . $nodeData['title'],
@@ -739,7 +739,7 @@ function handleNode(
             array(
                 'id' => 'li_' . $completTree[$nodeId]->id,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => '<i class="fas '.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
+                'text' => '<i class="'.$completTree[$nodeId]->fa_icon.' tree-folder mr-2" data-folder="'.$completTree[$nodeId]->fa_icon.'"  data-folder-selected="'.$completTree[$nodeId]->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$completTree[$nodeId]->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => '',
                     'title' => 'ID [' . $completTree[$nodeId]->id . '] ' . langHdl('no_access'),

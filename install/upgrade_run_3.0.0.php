@@ -643,5 +643,12 @@ if (intval($tmp) === 0) {
 }
 //---<
 
+
+//---> 3.0.0.13
+mysqli_num_rows(mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon` = 'fas fa-folder'  WHERE fa_icon = 'fa-folder'"));
+mysqli_num_rows(mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon_selected` = 'fas fa-folder-open'  WHERE fa_icon_selected = 'fa-folder-open'"));
+//---<
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

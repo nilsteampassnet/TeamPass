@@ -24,7 +24,7 @@
 return array(
     'icon' => 'Icon',
     'icon_on_selection' => 'Icon on selection',
-    'folder_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
+    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
     'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
     'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD. Example: dn, distinguishedname, or any other label used in the AD.',
     'at_creation' => 'Creation',

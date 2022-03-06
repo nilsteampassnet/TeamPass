@@ -201,6 +201,7 @@ if (is_null($post_type) === false) {
                 $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_to_be_deleted_after_date = filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_STRING);
                 $post_to_be_deleted_after_x_views = filter_var($dataReceived['to_be_deleted_after_x_views'], FILTER_SANITIZE_NUMBER_INT);
+                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_STRING);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -409,6 +410,7 @@ if (is_null($post_type) === false) {
                                 && $post_anyone_can_modify === 'on') ? 1 : 0,
                             'complexity_level' => $post_complexity_level,
                             'encryption_type' => 'teampass_aes',
+                            'fa_icon' => $post_fa_icon,
                         )
                     );
                     $newID = DB::insertId();

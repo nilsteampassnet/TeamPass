@@ -156,12 +156,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             // remove selected on previous folder
             $($('#fld_'+previousSelectedFolder).children('.tree-folder'))
-                .addClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder'))
-                .removeClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder-selected'));
+                .removeClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder-selected'))
+                .addClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder'));
             // show selected icon
             $('#fld_'+selectedFolderId).children('.tree-folder')
-                .addClass(selectedFolderIconSelected)
-                .removeClass(selectedFolderIcon);
+                .removeClass(selectedFolderIcon)
+                .addClass(selectedFolderIconSelected);
 
             if (debugJavascript === true) {
                 console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
@@ -3843,7 +3843,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fas fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>' : '') +
                     // Show item fa_icon if set
-                    (value.fa_icon !== '' ? '<i class="fas '+value.fa_icon+' mr-1"></i>' : '') +
+                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
                     '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '">' +
                     '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
@@ -4353,7 +4353,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#pwd-definition-size').val(data.pw.length);
 
                 // Prepare card
-                const itemIcon = (data.fa_icon !== "") ? '<i class="fas '+data.fa_icon+' mr-1"></i>' : '';
+                const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                 $('#card-item-label, #form-item-title').html(itemIcon + data.label);
                 $('#form-item-label, #form-item-suggestion-label').val(data.label);
                 $('#card-item-description, #form-item-suggestion-description').html(data.description);

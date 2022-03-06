@@ -16,7 +16,7 @@ global $LANG;
 $LANG = array(
     'icon' => 'Icon',
     'icon_on_selection' => 'Icon on selection',
-    'folder_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
+    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
     'user_specific_right' => 'User specific right',
     'email_debug_level' => 'Select a debug level',
     'email_debug_client' => 'Client commands',
