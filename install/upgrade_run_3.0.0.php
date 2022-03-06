@@ -603,7 +603,7 @@ if (
 $res = addColumnIfNotExist(
     $pre . 'nested_tree',
     'fa_icon',
-    "VARCHAR(100) NOT NULL DEFAULT 'fa-folder'"
+    "VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon to table NESTED_TREE! ' . mysqli_error($db_link) . '!"}]';
@@ -614,7 +614,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre . 'nested_tree',
     'fa_icon_selected',
-    "VARCHAR(100) NOT NULL DEFAULT 'fa-folder-open'"
+    "VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder-open'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field fa_icon_selected to table NESTED_TREE! ' . mysqli_error($db_link) . '!"}]';
@@ -645,8 +645,18 @@ if (intval($tmp) === 0) {
 
 
 //---> 3.0.0.13
-mysqli_num_rows(mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon` = 'fas fa-folder'  WHERE fa_icon = 'fa-folder'"));
-mysqli_num_rows(mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon_selected` = 'fas fa-folder-open'  WHERE fa_icon_selected = 'fa-folder-open'"));
+mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon` = 'fas fa-folder'  WHERE fa_icon = 'fa-folder'");
+mysqli_query($db_link, "UPDATE `" . $pre . "nested_tree` SET `fa_icon_selected` = 'fas fa-folder-open'  WHERE fa_icon_selected = 'fa-folder-open'");
+
+// Alter table nested_tree
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "nested_tree` CHANGE `fa_icon` `fa_icon` VARCHAR(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'fas fa-folder';"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "nested_tree` CHANGE `fa_icon_selected` `fa_icon_selected` VARCHAR(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'fas fa-folder-open';"
+);
 //---<
 
 

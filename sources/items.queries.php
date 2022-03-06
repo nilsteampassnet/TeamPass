@@ -5975,7 +5975,7 @@ if (is_null($post_type) === false) {
                         // Build array
                         $arr_data['folders'][$inc]['id'] = intval($folder->id);
                         $arr_data['folders'][$inc]['level'] = intval($folder->nlevel);
-                        $arr_data['folders'][$inc]['title'] = ($folder->title === $_SESSION['user_id'] && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($_SESSION['login']) : htmlspecialchars_decode($folder->title, ENT_QUOTES);
+                        $arr_data['folders'][$inc]['title'] = ((int) $folder->title === (int) $_SESSION['user_id'] && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($_SESSION['login']) : htmlspecialchars_decode($folder->title, ENT_QUOTES);
                         $arr_data['folders'][$inc]['disabled'] = $disabled;
                         $arr_data['folders'][$inc]['parent_id'] = intval($folder->parent_id);
                         $arr_data['folders'][$inc]['perso'] = intval($folder->personal_folder);

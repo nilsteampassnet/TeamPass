@@ -2686,6 +2686,8 @@ if (null !== $post_type) {
                         'bloquer_creation' => '0',
                         'bloquer_modification' => '0',
                         'personal_folder' => '1',
+                        'fa_icon' => 'fas fa-folder',
+                        'fa_icon_selected' => 'fas fa-folder-open',
                     )
                 );
 

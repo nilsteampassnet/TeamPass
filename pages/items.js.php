@@ -484,6 +484,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             if (selectedFolder.parent !== undefined && selectedFolder.parent !== '') {
                 $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
             }
+
+            $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
+
             $('#form-folder-add-label')
                 .val('')
                 .focus();
@@ -526,7 +529,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 .val(store.get('teampassApplication').selectedFolderParentTitle)
                 .focus();
             // is PF 1st level
-            if (store.get('teampassApplication').selectedFolderIsPF === 1 || store.get('teampassApplication').userCanEdit === 0) {
+            if (store.get('teampassApplication').selectedFolderIsPF === 1 && store.get('teampassApplication').selectedFolderParentId !== 0) {
+                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
+            } else if (store.get('teampassApplication').userCanEdit === 0) {
                 $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', true);
             } else {
                 $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
