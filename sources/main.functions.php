@@ -3180,3 +3180,23 @@ function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
     }
     return false;
 }
+
+/**
+ * Permits to clean a string for export purpose
+ *
+ * @param string $text
+ * 
+ * @return string
+ */
+function cleanStringForExport(string $text): string
+{
+    if (is_null($text) === true || empty($text) === true) {
+        return '';
+    }
+
+    return strip_tags(
+        cleanString(
+            html_entity_decode($text, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+            true)
+        );
+}

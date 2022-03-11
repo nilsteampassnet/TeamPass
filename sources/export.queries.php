@@ -83,7 +83,7 @@ DB::$encoding = DB_ENCODING;
 // Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
 $tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre . 'nested_tree', 'id', 'parent_id', 'title');
+$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // User's language loading
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
@@ -151,7 +151,7 @@ if (null !== $post_type) {
                         'at_pw :%'
                     );
                     foreach ($rows as $record) {
-                        $restricted_users_array = explode(';', $record['restricted_to']);
+                        $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
                             if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
@@ -210,14 +210,14 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'description' => empty($record['description']) === false ? htmlspecialchars_decode(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(utf8_decode($record['description']))))) : '',
+                                    'label' => cleanStringForExport($record['label']),
+                                    'description' => cleanStringForExport(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(utf8_decode($record['description']))))),
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
+                                    'login' => cleanStringForExport($record['login']),
+                                    'restricted_to' => isset($record['restricted_to']) === true ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
                                     'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
-                                    'email' => $record['email'] !== 'none' ? htmlspecialchars_decode($record['email']) : '',
+                                    'email' => $record['email'] !== 'none' ? (is_null($record['email']) === false ? cleanStringForExport($record['email']) : '') : '',
                                     'kbs' => implode(' | ', $arr_kbs),
                                     'tags' => implode(' ', $arr_tags),
                                 );
@@ -320,7 +320,7 @@ if (null !== $post_type) {
                 $id_managed = '';
                 $items_id_list = array();
                 foreach ($rows as $record) {
-                    $restricted_users_array = explode(';', $record['restricted_to']);
+                    $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
                         if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
@@ -390,13 +390,13 @@ if (null !== $post_type) {
                                 prefixTable('export'),
                                 array(
                                     'id' => $record['id'],
-                                    'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
+                                    'description' => cleanStringForExport((string) $record['description']),
+                                    'label' => cleanStringForExport((string) $record['label']),
                                     'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                                    'login' => cleanStringForExport((string) $record['login']),
                                     'path' => $path,
-                                    'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
-                                    'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, 'UTF-8'), true)),
+                                    'url' => cleanStringForExport((string) $record['url']),
+                                    'email' => cleanStringForExport((string) $record['email']),
                                     'kbs' => $arr_kbs,
                                     'tags' => $arr_tags,
                                 )

@@ -2,6 +2,7 @@
 *.log
 *.zip
 .idea
+*.sh
 nbproject
 nbproject/private
 node_modules

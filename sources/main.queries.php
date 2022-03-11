@@ -1101,9 +1101,13 @@ function generateBugReport(
             // Identify url to anonymize it
             if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
                 $url_found = substr($line, 19, strlen($line) - 22);
-                $tmp = parse_url($url_found);
-                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
-                $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                if (empty($url_found) === false) {
+                    $tmp = parse_url($url_found);
+                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                    $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                } else {
+                    $line = "'cpassman_url' => \n";
+                }
             }
 
             // Anonymize all urls
