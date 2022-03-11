@@ -707,7 +707,7 @@ if (is_null($post_type) === false) {
 
                         // Get path
                         $path = geItemReadablePath(
-                            $post_folder_id,
+                            (int) $post_folder_id,
                             $label,
                             $SETTINGS
                         );
@@ -5371,7 +5371,7 @@ if (is_null($post_type) === false) {
 
                 // Get path
                 $path = geItemReadablePath(
-                    $dataItem['id_tree'],
+                    (int) $dataItem['id_tree'],
                     $dataItem['label'],
                     $SETTINGS
                 );
@@ -5399,7 +5399,7 @@ if (is_null($post_type) === false) {
 
                 // Get path
                 $path = geItemReadablePath(
-                    $dataItem['id_tree'],
+                    (int) $dataItem['id_tree'],
                     $dataItem['label'],
                     $SETTINGS
                 );
