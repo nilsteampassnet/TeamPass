@@ -473,7 +473,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                                 <?php echo langHdl('ldap_test_username'); ?>
                                             </div>
                                             <div class='col-4'>
-                                                <input type='text' class='form-control form-control-sm' id='ldap-test-config-username' value=''>
+                                                <input type='text' class='form-control' id='ldap-test-config-username' value=''>
                                             </div>
                                         </div>
                                         <div class='row mb-2'>
@@ -481,7 +481,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                                 <?php echo langHdl('ldap_test_username_pwd'); ?>
                                             </div>
                                             <div class='col-4'>
-                                                <input type='text' class='form-control form-control-sm' id='ldap-test-config-pwd' value=''>
+                                                <input type='text' class='form-control' id='ldap-test-config-pwd' value=''>
                                             </div>
                                         </div>
                                         <div class='card mb-2 hidden info' id='ldap-test-config-results'>
