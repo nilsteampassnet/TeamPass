@@ -3,6 +3,7 @@
 *.zip
 .idea
 *.sh
+*.sh.save
 nbproject
 nbproject/private
 node_modules
