@@ -1676,7 +1676,7 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
     $syslog_message = '<123>' . date('M d H:i:s ') . $component . ': ' . $message;
-    socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
+    socket_sendto($sock, (string) $syslog_message, strlen($syslog_message), 0, (string) $host, (int) $port);
     socket_close($sock);
 }
 
