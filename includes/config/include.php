@@ -41,8 +41,13 @@ define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
 define('TP_ENCRYPTION_NAME', 'teampass_aes');
-define('TP_DEFAULT_ICON', 'fa-folder');
-define('TP_DEFAULT_ICON_SELECTED', 'fa-folder-open');
+define('TP_DEFAULT_ICON', 'fas fa-folder');
+define('TP_DEFAULT_ICON_SELECTED', 'fas fa-folder-open');
+define('TP_PW_STRENGTH_1', 0);
+define('TP_PW_STRENGTH_2', 20);
+define('TP_PW_STRENGTH_3', 38);
+define('TP_PW_STRENGTH_4', 48);
+define('TP_PW_STRENGTH_5', 60);
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');

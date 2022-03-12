@@ -66,13 +66,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
         )
     );
 }
@@ -923,7 +921,7 @@ if (is_null($post_type) === false) {
                     $post_folder_id
                 );
                 $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
-
+//echo $post_complexity_level." -- ".$itemInfos['requested_folder_complexity']." ;; ";
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
                     echo (string) prepareExchangedData(

@@ -1228,6 +1228,7 @@ if (($session_validite_pw === null
     ?>
     <!-- functions -->
     <script type="text/javascript" src="includes/js/functions.js"></script>
+    <script type="text/javascript" src="includes/js/CreateRandomString.js"></script>
 
     </body>
 

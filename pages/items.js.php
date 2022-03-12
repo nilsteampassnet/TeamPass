@@ -2314,11 +2314,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 progress: "#form-item-password-strength",
                 score: "#form-item-password-strength"
             },
+            scores: [<?php echo TP_PW_STRENGTH_1;?>, <?php echo TP_PW_STRENGTH_2;?>, <?php echo TP_PW_STRENGTH_3;?>, <?php echo TP_PW_STRENGTH_4;?>, <?php echo TP_PW_STRENGTH_5;?>],
         },
         i18n : {
             t: function (key) {
                 var phrases = {
-                    veryWeak: '<?php echo langHdl('complex_level0'); ?>',
                     weak: '<?php echo langHdl('complex_level1'); ?>',
                     normal: '<?php echo langHdl('complex_level2'); ?>',
                     medium: '<?php echo langHdl('complex_level3'); ?>',
@@ -5368,7 +5368,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (anyBoxesChecked === false || $('#pwd-definition-secure').prop('checked') === true) {
             secure_pwd = true;
         }
-
+        
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",

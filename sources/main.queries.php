@@ -195,11 +195,11 @@ function mainQuery(array $SETTINGS)
         case 'generate_password':
             echo generateGenericPassword(
                 (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING),
-                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING),
-                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING),
-                (bool) filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING),
-                (bool) filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_NUMBER_INT),
+                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'numerals', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
                 $SETTINGS
             );
             
@@ -907,7 +907,7 @@ function generateGenericPassword(
             'encode'
         );
     }
-
+    
     $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
     $generator->register();
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
@@ -2789,7 +2789,7 @@ function changeUserLDAPAuthenticationPassword(
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => false,
                             'message' => langHdl('done'),
@@ -2801,7 +2801,7 @@ function changeUserLDAPAuthenticationPassword(
             
             // ERROR
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('bad_password'),

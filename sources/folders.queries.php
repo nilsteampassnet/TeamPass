@@ -82,13 +82,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
         )
     );
 }
@@ -205,13 +203,11 @@ if (null !== $post_type) {
 
             // Send the complexity levels
             $complexity = array(
-                array('value' => 0, 'text' => langHdl('complex_level0')),
-                array('value' => 25, 'text' => langHdl('complex_level1')),
-                array('value' => 50, 'text' => langHdl('complex_level2')),
-                array('value' => 60, 'text' => langHdl('complex_level3')),
-                array('value' => 70, 'text' => langHdl('complex_level4')),
-                array('value' => 80, 'text' => langHdl('complex_level5')),
-                array('value' => 90, 'text' => langHdl('complex_level6')),
+                array('value' => TP_PW_STRENGTH_1, 'text' => langHdl('complex_level1')),
+                array('value' => TP_PW_STRENGTH_2, 'text' => langHdl('complex_level2')),
+                array('value' => TP_PW_STRENGTH_3, 'text' => langHdl('complex_level3')),
+                array('value' => TP_PW_STRENGTH_4, 'text' => langHdl('complex_level4')),
+                array('value' => TP_PW_STRENGTH_5, 'text' => langHdl('complex_level5')),
             );
 
             echo prepareExchangedData(

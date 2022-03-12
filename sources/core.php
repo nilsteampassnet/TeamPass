@@ -97,13 +97,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
         define(
             'TP_PW_COMPLEXITY',
             [
-                0 => [0, langHdl('complex_level0'), 'fas fa-bolt text-danger'],
-                25 => [25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-                50 => [50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-                60 => [60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
-                70 => [70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-                80 => [80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
-                90 => [90, langHdl('complex_level6'), 'far fa-gem text-success'],
+                TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+                TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+                TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
+                TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+                TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
             ]
         );
     }

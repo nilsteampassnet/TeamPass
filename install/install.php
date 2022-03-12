@@ -425,6 +425,7 @@ define('MIN_PHP_VERSION', 7.4);
 
 
 <script type="text/javascript" src="../includes/js/functions.js"></script>
+<script type="text/javascript" src="../includes/js/CreateRandomString.js"></script>
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script type="text/javascript" src="js/jquery-ui.min.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>

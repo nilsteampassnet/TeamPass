@@ -307,40 +307,31 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         "requirements": {},
         "container": "#profile-password-strength",
         "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
-        "ratings": [{
-                "minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo langHdl('complex_level0'); ?>"
-            },
+        "ratings": [
             {
-                "minScore": 25,
+                "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
                 "text": "<?php echo langHdl('complex_level1'); ?>"
             },
             {
-                "minScore": 50,
+                "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
                 "text": "<?php echo langHdl('complex_level2'); ?>"
             },
             {
-                "minScore": 60,
+                "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
                 "text": "<?php echo langHdl('complex_level3'); ?>"
             },
             {
-                "minScore": 70,
+                "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
                 "text": "<?php echo langHdl('complex_level4'); ?>"
             },
             {
-                "minScore": 80,
+                "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
                 "text": "<?php echo langHdl('complex_level5'); ?>"
-            },
-            {
-                "minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level6'); ?>"
             }
         ]
     });
@@ -429,39 +420,30 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         "container": "#profile-saltkey-strength",
         "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
         "ratings": [{
-                "minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo langHdl('complex_level0'); ?>"
-            },
             {
-                "minScore": 25,
+                "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
                 "text": "<?php echo langHdl('complex_level1'); ?>"
             },
             {
-                "minScore": 50,
+                "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
                 "text": "<?php echo langHdl('complex_level2'); ?>"
             },
             {
-                "minScore": 60,
+                "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
                 "text": "<?php echo langHdl('complex_level3'); ?>"
             },
             {
-                "minScore": 70,
+                "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
                 "text": "<?php echo langHdl('complex_level4'); ?>"
             },
             {
-                "minScore": 80,
+                "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
                 "text": "<?php echo langHdl('complex_level5'); ?>"
-            },
-            {
-                "minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level6'); ?>"
             }
         ]
     });
