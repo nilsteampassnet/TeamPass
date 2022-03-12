@@ -660,5 +660,11 @@ mysqli_query(
 //---<
 
 
+//---> 3.0.0.14
+mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET `intitule` = 'ldap_user_dn_attribute'  WHERE intitule = 'settings_ldap_user_dn_attribute'");
+
+//---<
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

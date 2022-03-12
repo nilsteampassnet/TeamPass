@@ -174,7 +174,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </small>
                                     </div>
                                     <div class='col-7'>
-                                        <input type='text' class='form-control form-control-sm setting-ldap' id='settings_ldap_user_dn_attribute' value='<?php echo $SETTINGS['settings_ldap_user_dn_attribute'] ?? ''; ?>'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_user_dn_attribute' value='<?php echo $SETTINGS['settings_ldap_user_dn_attribute'] ?? ''; ?>'>
                                     </div>
                                 </div>
 
