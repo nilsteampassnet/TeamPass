@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mv -T ./install1/ ./install/
+
+git commit -a
+
+read -p "Tu veux pusher ton commit ? (O/N) " yn
+
+case $yn in 
+	O ) git push;;
+	N ) echo Pas de push...;;
+	* ) echo ;;
+esac
+
+mv -T ./install/ ./install1/
+
+

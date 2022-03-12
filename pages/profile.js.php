@@ -419,7 +419,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         "requirements": {},
         "container": "#profile-saltkey-strength",
         "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
-        "ratings": [{
+        "ratings": [
             {
                 "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",

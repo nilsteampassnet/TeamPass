@@ -351,9 +351,6 @@ function buildNodeTreeElements(
     $numDescendants
 )
 {
-    $show_but_block = false;
-    $title = '';
-
     // get count of Items in this folder
     DB::query(
         'SELECT *
@@ -382,107 +379,101 @@ function buildNodeTreeElements(
     $parent = $node->parent_id === 0 ? '#' : 'li_' . $node->parent_id;
 
     // special case for READ-ONLY folder
-    $title = $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : $title;
+    $title = (bool) $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : '';
     $text = str_replace('&', '&amp;', $node->title);
-    $restricted = '0';
+    $restricted = 0;
     $folderClass = 'folder';
+    $show_but_block = false;
 
     if (in_array($node->id, $session_groupes_visibles) === true) {
         if (in_array($node->id, $session_read_only_folders) === true) {
-            $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
-            $title = langHdl('read_only_account');
-            $restricted = 1;
-            $folderClass = 'folder_not_droppable';
-        } elseif ($session_user_read_only === true && !in_array($node->id, $session_personal_visible_groups)) {
-            $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
+            return array(
+                'text' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' . $text
+                    .' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
+                    .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                        '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)
+                        : '')
+                    .'</span>',
+                'title' => langHdl('read_only_account'),
+                'restricted' => 1,
+                'folderClass' => 'folder_not_droppable',
+                'show_but_block' => $show_but_block,
+                'parent' => $parent,
+                'childrenNb' => $childrenNb,
+                'itemsNb' => $itemsNb,
+            );
         }
-        $text .=
-            ' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-            .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
-                '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
-                '')
-            .'</span>';
-
-        return array(
-            'text' => $text,
-            'title' => $title,
-            'restricted' => $restricted,
-            'folderClass' => $folderClass,
-            'show_but_block' => $show_but_block,
-            'parent' => $parent,
-            'restricted' => $restricted,
-            'childrenNb' => $childrenNb,
-            'itemsNb' => $itemsNb,
-        );
-    }
-    
-    if (in_array($node->id, $listFoldersLimitedKeys)) {
-        $restricted = 1;
-        $text .= 
-            $session_user_read_only === true ?
-                "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" :
-                '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_folders_limited[$node->id]) . '</span>';
-
-        return array(
-            'text' => $text,
-            'title' => $title,
-            'restricted' => $restricted,
-            'folderClass' => $folderClass,
-            'show_but_block' => $show_but_block,
-            'parent' => $parent,
-            'restricted' => $restricted,
-            'childrenNb' => $childrenNb,
-            'itemsNb' => $itemsNb,
-        );
-    }
-    
-    if (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
-        $restricted = 1;
-        if ($session_user_read_only === true) {
-            $text = "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" . $text;
-        }
-        $text .= $session_user_read_only === true ? 
-            "<i class='far fa-eye fa-xs mr-1 ml-1'></i>" :
-            '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>';
         
         return array(
-            'text' => $text,
+            'text' => ($session_user_read_only === true && in_array($node->id, $session_personal_visible_groups) === false) ?
+                ('<i class="far fa-eye fa-xs mr-1 ml-1"></i>' . $text
+                .' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
+                .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                    '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
+                    '')
+                .'</span>') :
+                (' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
+                .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                    '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
+                    '')
+                .'</span>'),
+            'title' => langHdl('read_only_account'),
+                'restricted' => 1,
+                'folderClass' => 'folder_not_droppable',
+            'show_but_block' => $show_but_block,
+            'parent' => $parent,
+            'childrenNb' => $childrenNb,
+            'itemsNb' => $itemsNb,
+        );
+    }
+    
+    if (in_array($node->id, $listFoldersLimitedKeys) === true) {
+        return array(
+            'text' => $text . ($session_user_read_only === true ?
+                '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
+                '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_folders_limited[$node->id]) . '</span>'
+            ),
             'title' => $title,
-            'restricted' => $restricted,
+            'restricted' => 1,
             'folderClass' => $folderClass,
             'show_but_block' => $show_but_block,
             'parent' => $parent,
-            'restricted' => $restricted,
+            'childrenNb' => $childrenNb,
+            'itemsNb' => $itemsNb,
+        );
+    }
+    
+    if (in_array($node->id, $listRestrictedFoldersForItemsKeys) === true) {        
+        return array(
+            'text' => $text . ($session_user_read_only === true ? 
+                '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
+                '<span class="badge badge-danger ml-2 items_count" id="itcount_' . $node->id . '">' . count($session_list_restricted_folders_for_items[$node->id]) . '</span>'
+            ),
+            'title' => $title,
+            'restricted' => 1,
+            'folderClass' => $folderClass,
+            'show_but_block' => $show_but_block,
+            'parent' => $parent,
             'childrenNb' => $childrenNb,
             'itemsNb' => $itemsNb,
         );
     }
 
     // default case
-    $restricted = 1;
-    $folderClass = 'folder_not_droppable';
-    if (isset($SETTINGS['show_only_accessible_folders']) && (int) $SETTINGS['show_only_accessible_folders'] === 1) {
-        // folder is not visible
-        if ($numDescendants > 0) {
-            // show it but block it
-            $show_but_block = true;
-        } else {
-            // hide it
-            return array();
-        }
-    } else {
-        // folder is visible but not accessible by user
-        $show_but_block = true;
+    if (isset($SETTINGS['show_only_accessible_folders']) === true
+        && (int) $SETTINGS['show_only_accessible_folders'] === 1
+        && (int) $numDescendants === 0)
+    {
+        return array();
     }
 
     return array(
         'text' => $text,
         'title' => $title,
-        'restricted' => $restricted,
-        'folderClass' => $folderClass,
-        'show_but_block' => $show_but_block,
+        'restricted' => 1,
+        'folderClass' => 'folder_not_droppable',
+        'show_but_block' => true,   // folder is visible but not accessible by user
         'parent' => $parent,
-        'restricted' => $restricted,
         'childrenNb' => $childrenNb,
         'itemsNb' => $itemsNb,
     );
