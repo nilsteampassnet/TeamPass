@@ -141,7 +141,7 @@ if (null !== $post_type) {
                         while ($row = $result->fetch_row()) {
                             $return .= 'INSERT INTO ' . $table . ' VALUES(';
                             for ($j = 0; $j < $numFields; ++$j) {
-                                $row[$j] = addslashes($row[$j]);
+                                $row[$j] = is_null($row[$j]) === false ? addslashes($row[$j]) : '';
                                 $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
                                 if (isset($row[$j])) {
                                     $return .= '"' . $row[$j] . '"';

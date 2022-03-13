@@ -65,7 +65,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 numerals: "true",
                 capitalize: "true",
                 symbols: "false",
-                secure: "true"
+                secure: "true",
+                key: "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
