@@ -3185,13 +3185,18 @@ function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
  * Permits to clean a string for export purpose
  *
  * @param string $text
+ * @param bool $emptyCheckOnly
  * 
  * @return string
  */
-function cleanStringForExport(string $text): string
+function cleanStringForExport(string $text, bool $emptyCheckOnly = false): string
 {
     if (is_null($text) === true || empty($text) === true) {
         return '';
+    }
+    // only expected to check if $text was empty
+    elseif ($emptyCheckOnly === true) {
+        return $text;
     }
 
     return strip_tags(

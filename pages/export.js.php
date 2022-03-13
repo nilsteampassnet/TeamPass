@@ -56,9 +56,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 <script type='text/javascript'>
     // Prepare list of folders
     $('.select2').val('');
-    $.each(store.get('teampassApplication').foldersList, function(index, item) {
+    /*$.each(store.get('teampassApplication').foldersList, function(index, item) {
         $('#export-folders').append('<option value="' + item.id + '">' + item.title + '</option>');
-    });
+    });*/
+    $('#export-folders').append(store.get('teampassUser').folders);
 
     // Prepare Select2 inputs
     $('.select2').select2({

@@ -1667,13 +1667,24 @@ function startReEncryptingUserSharekeys(
     );
 }
 
+/**
+ * Permits to encrypt user's keys
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param string $post_action
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param array $SETTINGS
+ * @return string
+ */
 function continueReEncryptingUserSharekeys(
-    int $post_user_id,
-    bool $post_self_change,
-    string $post_action,
-    int $post_start,
-    int $post_length,
-    array $SETTINGS
+    int     $post_user_id,
+    bool    $post_self_change,
+    string  $post_action,
+    int     $post_start,
+    int     $post_length,
+    array   $SETTINGS
 ): string
 {
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
@@ -1685,10 +1696,6 @@ function continueReEncryptingUserSharekeys(
             $post_user_id
         );
         if (isset($userInfo['public_key']) === true) {
-            // Init
-            $next_start = '';
-            $next_action = '';
-
             // Include libraries
             include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
 
@@ -1699,7 +1706,7 @@ function continueReEncryptingUserSharekeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                $next_action = 'step1';
+                $return['post_action'] = 'step1';
             }
             
             // STEP 1 - ITEMS
@@ -1713,9 +1720,6 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
 
             // STEP 2 - LOGS
@@ -1729,9 +1733,6 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
 
             // STEP 3 - FIELDS
@@ -1745,9 +1746,6 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
             
             // STEP 4 - SUGGESTIONS
@@ -1761,9 +1759,6 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
             
             // STEP 5 - FILES
@@ -1777,9 +1772,6 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
             
             // STEP 6 - PERSONAL ITEMS
@@ -1793,19 +1785,16 @@ function continueReEncryptingUserSharekeys(
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                $next_start = $return['next_start'];
-                $next_action = $return['post_action'];
             }
             
             // Continu with next step
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
-                    'step' => isset($next_action) === true ? $next_action : '',
-                    'start' => isset($next_start) === true ? $next_start : 0,
+                    'step' => isset($return['post_action']) === true ? $return['post_action'] : '',
+                    'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
                     'userId' => $post_user_id,
                     'self_change' => $post_self_change,
                 ),
@@ -1815,7 +1804,7 @@ function continueReEncryptingUserSharekeys(
         
         // Nothing to do
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',

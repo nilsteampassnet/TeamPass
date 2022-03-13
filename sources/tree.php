@@ -381,9 +381,9 @@ function buildNodeTreeElements(
     // special case for READ-ONLY folder
     $title = (bool) $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : '';
     $text = str_replace('&', '&amp;', $node->title);
-    $restricted = 0;
-    $folderClass = 'folder';
-    $show_but_block = false;
+    //$restricted = 0;
+    //$folderClass = 'folder';
+    //$show_but_block = false;
 
     if (in_array($node->id, $session_groupes_visibles) === true) {
         if (in_array($node->id, $session_read_only_folders) === true) {
@@ -397,7 +397,7 @@ function buildNodeTreeElements(
                 'title' => langHdl('read_only_account'),
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
-                'show_but_block' => $show_but_block,
+                'show_but_block' => false,
                 'parent' => $parent,
                 'childrenNb' => $childrenNb,
                 'itemsNb' => $itemsNb,
@@ -418,16 +418,16 @@ function buildNodeTreeElements(
                     '')
                 .'</span>'),
             'title' => langHdl('read_only_account'),
-                'restricted' => 1,
-                'folderClass' => 'folder_not_droppable',
-            'show_but_block' => $show_but_block,
+            'restricted' => 1,
+            'folderClass' => 'folder_not_droppable',
+            'show_but_block' => false,
             'parent' => $parent,
             'childrenNb' => $childrenNb,
             'itemsNb' => $itemsNb,
         );
     }
     
-    if (in_array($node->id, $listFoldersLimitedKeys) === true) {
+    elseif (in_array($node->id, $listFoldersLimitedKeys) === true) {
         return array(
             'text' => $text . ($session_user_read_only === true ?
                 '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
@@ -435,15 +435,15 @@ function buildNodeTreeElements(
             ),
             'title' => $title,
             'restricted' => 1,
-            'folderClass' => $folderClass,
-            'show_but_block' => $show_but_block,
+            'folderClass' => 'folder',
+            'show_but_block' => false,
             'parent' => $parent,
             'childrenNb' => $childrenNb,
             'itemsNb' => $itemsNb,
         );
     }
     
-    if (in_array($node->id, $listRestrictedFoldersForItemsKeys) === true) {        
+    elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys) === true) {        
         return array(
             'text' => $text . ($session_user_read_only === true ? 
                 '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
@@ -451,8 +451,8 @@ function buildNodeTreeElements(
             ),
             'title' => $title,
             'restricted' => 1,
-            'folderClass' => $folderClass,
-            'show_but_block' => $show_but_block,
+            'folderClass' => 'folder',
+            'show_but_block' => false,
             'parent' => $parent,
             'childrenNb' => $childrenNb,
             'itemsNb' => $itemsNb,
@@ -460,7 +460,7 @@ function buildNodeTreeElements(
     }
 
     // default case
-    if (isset($SETTINGS['show_only_accessible_folders']) === true
+    elseif (isset($SETTINGS['show_only_accessible_folders']) === true
         && (int) $SETTINGS['show_only_accessible_folders'] === 1
         && (int) $numDescendants === 0)
     {
@@ -810,7 +810,7 @@ function prepareNodeData(
             ];
         }
 
-        if (
+        elseif (
             $session_user_read_only === true
             && in_array($nodeId, $session_personal_visible_groups) === false
         ) {
@@ -838,7 +838,7 @@ function prepareNodeData(
         ];
     }
     
-    if (in_array($nodeId, $listFoldersLimitedKeys) === true) {
+    elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
         return [
             'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>',
@@ -851,7 +851,7 @@ function prepareNodeData(
         ];
     }
     
-    if (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
+    elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
         return [
             'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
@@ -864,8 +864,8 @@ function prepareNodeData(
         ];
     }
     
-    if ((int) $show_only_accessible_folders === 1
-        && $nbChildrenItems === 0
+    elseif ((int) $show_only_accessible_folders === 1
+        && (int) $nbChildrenItems === 0
     ) {
         // folder should not be visible
         // only if it has no descendants

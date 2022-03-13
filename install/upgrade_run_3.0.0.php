@@ -664,6 +664,48 @@ mysqli_query(
 mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET `intitule` = 'ldap_user_dn_attribute'  WHERE intitule = 'settings_ldap_user_dn_attribute'");
 mysqli_query($db_link, "DELETE FROM `" . $pre . "misc` WHERE `intitule` = 'ldap-test-config-username' AND type = 'admin'");
 mysqli_query($db_link, "DELETE FROM `" . $pre . "misc` WHERE `intitule` = 'ldap-test-config-pwd' AND type = 'admin'");
+
+// Manage folder complexity values
+$rows = mysqli_query(
+    $db_link,
+    "SELECT valeur, increment_id
+    FROM ".$pre."misc
+    WHERE type = 'complex'"
+);
+while ($data = mysqli_fetch_array($rows)) {
+    if ((int) $data['valeur'] > 0 && (int) $data['valeur'] <= TP_PW_STRENGTH_2) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."misc
+            SET valeur = '".TP_PW_STRENGTH_2."'
+            WHERE increment_id = ".$data['increment_id']
+        );
+    }
+    elseif ((int) $data['valeur'] > TP_PW_STRENGTH_2 && (int) $data['valeur'] <= TP_PW_STRENGTH_3) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."misc
+            SET valeur = '".TP_PW_STRENGTH_3."'
+            WHERE increment_id = ".$data['increment_id']
+        );
+    }
+    elseif ((int) $data['valeur'] > TP_PW_STRENGTH_3 && (int) $data['valeur'] <= TP_PW_STRENGTH_4) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."misc
+            SET valeur = '".TP_PW_STRENGTH_4."'
+            WHERE increment_id = ".$data['increment_id']
+        );
+    }
+    elseif ((int) $data['valeur'] > TP_PW_STRENGTH_4) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."misc
+            SET valeur = '".TP_PW_STRENGTH_5."'
+            WHERE increment_id = ".$data['increment_id']
+        );
+    }
+}
 //---<
 
 
