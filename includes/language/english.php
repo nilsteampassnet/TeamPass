@@ -454,7 +454,7 @@ return array(
     'notify' => 'Notify',
     'error_no_selected_folder' => 'At least one folder needs to be selected',
     'email_subject_item_updated' => '[Teampass] One item you are following has been updated',
-    'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You have asked to be notified on changes performed on item `#item_label#` in folder `#folder_name#`.<br><br>User <b>#name# #lastname#</b> did next changes:<br>#changes#<br><br>You can open it by clicking next <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>LINK</a>.<br><br>Cheers',
+    'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You have asked to be notified on changes performed on item `#item_label#` in folder `#folder_name#`.<br><br>User <b>#name# #lastname#</b> did next changes:<br>#changes#<br><br>You can open it by clicking next <a href="#url#/index.php?page=items&group=#item_category#&id=#item_id#">LINK</a>.<br><br>Cheers',
     'import_kp_finished' => 'Import using KeePass file is now finished! The required password strength for new folders has been set to Medium.',
     'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',

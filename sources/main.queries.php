@@ -1698,6 +1698,7 @@ function continueReEncryptingUserSharekeys(
         if (isset($userInfo['public_key']) === true) {
             // Include libraries
             include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
+            $return = [];
 
             // WHAT STEP TO PERFORM?
             if ($post_action === 'step0') {

@@ -898,7 +898,7 @@ if (is_null($post_type) === false) {
                 // Need info in DB
                 // About special settings
                 $dataFolderSettings = DB::queryFirstRow(
-                    'SELECT bloquer_creation, bloquer_modification, personal_folder
+                    'SELECT bloquer_creation, bloquer_modification, personal_folder, title
                     FROM ' . prefixTable('nested_tree') . ' 
                     WHERE id = %i',
                     $post_folder_id
@@ -921,7 +921,6 @@ if (is_null($post_type) === false) {
                     $post_folder_id
                 );
                 $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
-//echo $post_complexity_level." -- ".$itemInfos['requested_folder_complexity']." ;; ";
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
                     echo (string) prepareExchangedData(
@@ -1799,13 +1798,13 @@ if (is_null($post_type) === false) {
 
                     // Send email
                     if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
-                        foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
+                        foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
                                 sendEmail(
                                     langHdl('email_subject_item_updated'),
                                     str_replace(
-                                        array('#item_label#', '#item_category#', '#item_id#', '#url#'),
-                                        array($post_label, $dataReceived['categorie'], $post_item_id, $SETTINGS['cpassman_url']),
+                                        array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                        array($post_label, $post_folder_id, $post_item_id, $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
                                         langHdl('email_body_item_updated')
                                     ),
                                     $emailAddress,
@@ -1826,7 +1825,7 @@ if (is_null($post_type) === false) {
                     );
                 } else {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_edit_item'),
@@ -1844,7 +1843,10 @@ if (is_null($post_type) === false) {
             }
             // return data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$arrData, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $arrData,
+                'encode'
+            );
             break;
 
             /*

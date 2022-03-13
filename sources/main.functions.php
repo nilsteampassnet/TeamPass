@@ -917,8 +917,8 @@ function cacheTableRefresh(array $SETTINGS): void
             $tags = '';
             $itemTags = DB::query(
                 'SELECT tag
-                            FROM ' . prefixTable('tags') . '
-                            WHERE item_id = %i AND tag != ""',
+                FROM ' . prefixTable('tags') . '
+                WHERE item_id = %i AND tag != ""',
                 $record['id']
             );
             foreach ($itemTags as $itemTag) {
