@@ -97,7 +97,7 @@ if (null !== $post_step) {
                     $db_link,
                     'SELECT id
                     FROM ' . $pre . 'users
-                    WHERE (public_key = "none" OR public_key = "")
+                    WHERE (public_key = "none" OR public_key = "" OR public_key IS NULL)
                     AND id NOT IN (' . OTV_USER_ID . ',' . SSH_USER_ID . ',' . API_USER_ID . ')'
                 );
                 while ($user = mysqli_fetch_array($users)) {
