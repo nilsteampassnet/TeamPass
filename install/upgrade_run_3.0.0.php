@@ -97,7 +97,7 @@ if (mysqli_error($db_link)) {
     exit();
 }
 $CurrentTPversion = $queryRes['valeur'];
-if ($CurrentTPversion[0] === '3') {
+if ((int) $CurrentTPversion[0] === 3) {
     $TPIsBranch3 = true;
 } else {
     $TPIsBranch3 = false;
@@ -106,7 +106,7 @@ if ($CurrentTPversion[0] === '3') {
 
 // Populate table MISC
 $val = array(
-    array('admin', 'cpassman_version', $SETTINGS_EXT['version'], 1),
+    array('admin', 'cpassman_version', TP_VERSION_FULL, 1),
     $TPIsBranch3 === true ? '' : array('admin', 'ldap_mode', 0, 1), // only disable if migrating from branch 2
 );
 foreach ($val as $elem) {
