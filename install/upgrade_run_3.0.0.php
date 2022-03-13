@@ -706,6 +706,47 @@ while ($data = mysqli_fetch_array($rows)) {
         );
     }
 }
+
+// Manage folder complexity values
+$rows = mysqli_query(
+    $db_link,
+    "SELECT id, complexity
+    FROM ".$pre."roles_title"
+);
+while ($data = mysqli_fetch_array($rows)) {
+    if ((int) $data['complexity'] > 0 && (int) $data['complexity'] <= TP_PW_STRENGTH_2) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."roles_title
+            SET complexity = '".TP_PW_STRENGTH_2."'
+            WHERE id = ".$data['id']
+        );
+    }
+    elseif ((int) $data['complexity'] > TP_PW_STRENGTH_2 && (int) $data['complexity'] <= TP_PW_STRENGTH_3) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."roles_title
+            SET complexity = '".TP_PW_STRENGTH_3."'
+            WHERE id = ".$data['id']
+        );
+    }
+    elseif ((int) $data['complexity'] > TP_PW_STRENGTH_3 && (int) $data['complexity'] <= TP_PW_STRENGTH_4) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."roles_title
+            SET complexity = '".TP_PW_STRENGTH_4."'
+            WHERE id = ".$data['id']
+        );
+    }
+    elseif ((int) $data['complexity'] > TP_PW_STRENGTH_4) {
+        mysqli_query(
+            $db_link,
+            "UPDATE ".$pre."roles_title
+            SET complexity = '".TP_PW_STRENGTH_5."'
+            WHERE id = ".$data['id']
+        );
+    }
+}
 //---<
 
 
