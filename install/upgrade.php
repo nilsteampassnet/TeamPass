@@ -921,7 +921,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         {
             step : step,
             number : number === 'init' ? '' : number,
-            userInfo : window.btoa(JSON.stringify(userInfo)),
+            userInfo : window.btoa(unescape(encodeURIComponent(JSON.stringify(userInfo)))),
             start : loop_start,
             count_in_loop : count_in_loop,
             info : $('#infotmp').val(),
