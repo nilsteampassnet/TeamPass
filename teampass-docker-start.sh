@@ -2,7 +2,11 @@
 if [ ! -d ${VOL}/.git ];
 then
 	echo "Initial setup..."
-	git clone $REPO_URL ${VOL}
+	if [ -z ${GIT_TAG+x} ]; then 
+	  git clone $REPO_URL ${VOL}
+	else
+	  git clone -b $GIT_TAG $REPO_URL ${VOL}
+	fi
 	mkdir ${VOL}/sk
 	chown -Rf nginx:nginx ${VOL}
 fi
