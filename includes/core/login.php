@@ -45,16 +45,14 @@ $post_duo_data = filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
-    <div class="login-logo">',
-    isset($SETTINGS['custom_logo']) === true
-        && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center;" />' : '',
-    '
-        <div style="margin-top:20px;">
-            <img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">
+    <div class="login-logo"><div style="margin-top:20px;">',
+    isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
+        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; height:100px;" />' :
+        '<img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">',
+        '
         </div>
         <div style="font-weight:bold;">
-            ' . TP_TOOL_NAME . '
+            '.TP_TOOL_NAME.'
         </div>
     </div>
 
