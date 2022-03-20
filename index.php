@@ -75,7 +75,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 // Quick major version check -> upgrade needed?
-if (isset($SETTINGS['cpassman_version']) === true && version_compare(TP_VERSION_FULL, $SETTINGS['cpassman_version']) > 0) {
+if (isset($SETTINGS['cpassman_version']) === true && version_compare(TP_VERSION, $SETTINGS['cpassman_version']) > 0) {
     // Perform redirection
     if (headers_sent()) {
         echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
@@ -918,9 +918,8 @@ if (($session_validite_pw === null
                     </div>
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
-              
-               
-               <!-- ENCRYPTION PERSONAL ITEMS GENERATION -->
+
+                <!-- ENCRYPTION PERSONAL ITEMS GENERATION -->
                 <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
                     <div class="card-header">
                         <h3 class="card-title">

@@ -4261,6 +4261,19 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         }
                     );
                     requestRunning = false;
+
+                    // Manage personal items key error
+                    if (data.error_type !== 'undefined' && data.error_type === 'private_items_to_encrypt') {
+                        store.update(
+                            'teampassUser', {},
+                            function(teampassUser) {
+                                teampassUser.special = 'private_items_to_encrypt';
+                            }
+                        );
+                        document.location.href = "index.php?page=items";
+                    }
+
+
                     return false;
                 } else if ((data.user_can_modify === 0 && actionType === 'edit') ||
                     data.show_details === 0

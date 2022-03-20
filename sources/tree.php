@@ -678,7 +678,7 @@ function handleNode(
         $session_list_folders_limited,
         (int) $SETTINGS['show_only_accessible_folders'],
         $nodeDirectDescendants,
-        (int) $SETTINGS['tree_counters'],
+        isset($SETTINGS['tree_counters']) === true ? (int) $SETTINGS['tree_counters'] : '',
         (int) $session_user_read_only,
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,

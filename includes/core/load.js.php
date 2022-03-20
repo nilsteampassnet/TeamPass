@@ -299,16 +299,18 @@ if (
                     $("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
                         '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
-                    var data = {'userPsk' : $('#user-current-defuse-psk').val()};
+                    var data = {
+                        'userPsk' : $('#user-current-defuse-psk').val(),
+                            'start': start,
+                            'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
+                            'user_id': userId,
+                    };
                     // Do query
                     $.post(
                         "sources/main.queries.php", {
-                            type: "user_psk_reencryption",
-                            'start': start,
-                            'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
-                            userId: userId,
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            'type': "user_psk_reencryption",
+                            'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            'key': '<?php echo $_SESSION['key']; ?>'
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");

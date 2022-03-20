@@ -2345,7 +2345,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     array $SETTINGS
 ) {
     $next_step = '';
-
+    
     if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -2356,7 +2356,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         );
         if (DB::count() > 0) {
             // check if psk is correct.
-            if (empty($userInfo['encrypted_psk']) === false) {
+            if (empty($userInfo['encrypted_psk']) === false) {//echo $post_user_psk." ;; ".$userInfo['encrypted_psk']." ;; ";
                 $user_key_encoded = defuse_validate_personal_key(
                     $post_user_psk,
                     $userInfo['encrypted_psk']
@@ -2364,7 +2364,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 
                 if (strpos($user_key_encoded, "Error ") !== false) {
                     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('bad_psk'),
@@ -2488,7 +2488,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 
                 // Continu with next step
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -2503,7 +2503,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         
         // Nothing to do
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_no_user'),
@@ -2514,7 +2514,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     
     // Nothing to do
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),

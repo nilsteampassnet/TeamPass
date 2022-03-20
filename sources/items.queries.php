@@ -2408,7 +2408,23 @@ if (is_null($post_type) === false) {
             );
             if (DB::count() === 0 || empty($dataItem['pw']) === true) {
                 // No share key found
-                $pw = '';
+                // Is this a personal and defuse password?
+                if ((int) $dataItem['perso'] === 1 && substr($dataItem['pw'], 0, 3) === 'def') {
+                    // Yes, then ask for decryption with old personal salt key
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error'),
+                            'show_detail_option' => 2,
+                            'error_type' => 'private_items_to_encrypt',
+                        ),
+                        'encode'
+                    );
+                    break;
+                } else {
+                    $pw = '';
+                }
             } else {
                 $pw = doDataDecryption(
                     $dataItem['pw'],
