@@ -61,9 +61,9 @@ $superGlobal = new protect\SuperGlobal\SuperGlobal();
         </div>
             <div class="card-body login-card-body">
 <?php
-if (empty($superGlobal->get('code', 'GET')) === true
-    && empty($superGlobal->get('stamp', 'GET')) === true
-    && empty($superGlobal->get('key', 'GET')) === true
+if (!empty($superGlobal->get('code', 'GET')) === true
+    && !empty($superGlobal->get('stamp', 'GET')) === true
+    && !empty($superGlobal->get('key', 'GET')) === true
 ) {
     //Include files
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';

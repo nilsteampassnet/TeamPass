@@ -269,7 +269,7 @@ if (($session_validite_pw === null
     && empty($get['otv']) === false
 ) {
     // case where one-shot viewer
-    if (empty($get['code']) === false && empty($get['stamp']) === false
+    if (empty($superGlobal->get('code', 'GET')) === false && empty($superGlobal->get('stamp', 'GET')) === false
     ) {
         include './includes/core/otv.php';
     } else {

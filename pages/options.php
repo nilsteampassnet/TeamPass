@@ -179,7 +179,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_maintenance_mode'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='maintenance_mode' data-toggle-on='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='maintenance_mode_input' value='<?php echo isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] === 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='maintenance_mode' data-toggle-on='<?php echo isset($SETTINGS['maintenance_mode']) && (int) $SETTINGS['maintenance_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='maintenance_mode_input' value='<?php echo isset($SETTINGS['maintenance_mode']) && (int) $SETTINGS['maintenance_mode'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 
@@ -209,7 +209,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 
