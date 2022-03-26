@@ -916,7 +916,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "roles_title` (`id`, `title`, `allow_pw_change`, `complexity`, `creator_id`) VALUES (NULL, 'Default', '0', '50', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "roles_title` (`id`, `title`, `allow_pw_change`, `complexity`, `creator_id`) VALUES (NULL, 'Default', '0', '48', '0')"
                             );
                         }
                     } elseif ($task === 'roles_values') {
