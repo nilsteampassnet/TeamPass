@@ -38,10 +38,9 @@ Teampass is a Collaborative Passwords Manager
   * openssl
   * curl
 
-## Usage
+## Documentation
 
-* Read [installation related pages](https://teampass.readthedocs.io)
-* Once uploaded, launch Teampass in a browser and follow instructions.
+* Read [V3 documentation](./docs)
 
 ### With Docker
 The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
@@ -58,17 +57,10 @@ The included [docker-compose.yml](docker-compose.yml) file is an example setup, 
 
 **Note:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
 
-## Update
-
-* Read [upgrade related pages](https://teampass.readthedocs.io)
-* Once uploaded, launch install/upgrade.php and follow instructions.
-
 ## Languages
 
 Teampass is currently available in the following languages:
 * ENGLISH
-
-Future available translations:
 * CATALAN
 * CHINESE
 * CZECH
@@ -101,12 +93,9 @@ This library is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 ## Website
 
-Visit [Teampass.net]( * @package       /)
+Visit [Teampass.net](https://teampass.net/)
 
 ## Bugs
 
 If you discover bugs, please report them in [Github Issues](https://github.com/nilsteampassnet/TeamPass/issues).
 
-## Requests
-
-Please report feature requests in [UserEcho](https://teamPass.userecho.com).

@@ -33,3 +33,4 @@ EncryptedFile_*
 !/upload/.htaccess
 !/upload/empty_file.txt
 /~/*
+gitdo.sh
