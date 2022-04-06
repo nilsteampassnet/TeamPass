@@ -76,8 +76,8 @@ function langHdl(string $string): string
         return 'ERROR in language strings!';
     }
     return str_replace(
-        ['"', "'"],
-        ['&quot;', '&apos;'],
+        ["'"],
+        ['&apos;'],
         $session_language
     );
 }
