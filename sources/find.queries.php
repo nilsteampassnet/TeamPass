@@ -646,7 +646,7 @@ if (isset($_GET['type']) === false) {
     $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_STRING),
         'message' => filter_var(
-            str_replace('%X%', $iTotal, langHdl('find_message')),
+            str_replace('%X%', (string) $iTotal, langHdl('find_message')),
             FILTER_SANITIZE_STRING
         ),
         'total' => (int) $iTotal,

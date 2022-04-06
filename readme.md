@@ -40,7 +40,7 @@ Teampass is a Collaborative Passwords Manager
 
 ## Documentation
 
-* Read [V3 documentation](./docs)
+* Read [V3 documentation](https://documentation.teampass.net)
 
 ### With Docker
 The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.

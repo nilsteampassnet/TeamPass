@@ -3,6 +3,7 @@
 - [Home](README.md)
 - **Get Started**
 - [First steps](start.md)
+- [Information](encryption.md)
 - **Features**
 - 
 - **Manage**

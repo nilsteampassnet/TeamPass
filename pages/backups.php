@@ -144,9 +144,9 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                 <div class="col-3">
                                                     <span class="text-bold"><?php echo langHdl('backup_select'); ?></span>
                                                 </div>
-                                                <div class="col-9 input-group">
+                                                <div class="col-9 input-group" id="onthefly-restore-file">
                                                     <button class="btn btn-default" id="onthefly-restore-file-select"><?php echo langHdl('choose_file'); ?></button>
-                                                    <span class="ml-2" id="onthefly-restore-file"></span>
+                                                    <span class="ml-2" id="onthefly-restore-file-text"></span>
                                                 </div>
                                             </div>
                                             <div class="row mt-3 hidden" id="onthefly-restore-progress">

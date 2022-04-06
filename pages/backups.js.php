@@ -275,6 +275,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                             duration: 10
                         },
                         function(data) {
+                            console.log(data);
                             store.update(
                                 'teampassUser',
                                 function(teampassUser) {
@@ -298,14 +299,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         "user_token": store.get('teampassUser').uploadToken
                     };
                 },
-                UploadComplete: function(up, files) {
+                UploadComplete: function(up, files) {console.log(files)
                     store.update(
                         'teampassUser',
                         function(teampassUser) {
                             teampassUser.uploadFileObject = restoreOperationId;
                         }
                     );
-                    $('#onthefly-restore-file').text(files[0].name);
+                    $('#onthefly-restore-file-text').text(files[0].name);
 
                     // Inform user
                     toastr.remove();
@@ -339,7 +340,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 '<h5><i class="icon fas fa-ban mr-2"></i><?php echo langHdl('done'); ?></h5>' +
                 '' + err.message +
                 '</div>');
-        uploader_restoreDB.refresh(); // Reposition Flash/Silverlight
+                up.refresh(); // Reposition Flash/Silverlight
     });
 
     uploader_restoreDB.init();
