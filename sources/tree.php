@@ -275,75 +275,70 @@ function buildNodeTree(
 ) {
     // Prepare superGlobal variables
     $ret_json = array();
+    $nbChildrenItems = 0;
 
-    // Be sure that user can only see folders he/she is allowed to
-    if (
-        in_array($nodeId, $session_forbiden_pfs) === false
-        || in_array($nodeId, $session_groupes_visibles) === true
-        || in_array($nodeId, $listFoldersLimitedKeys) === true
-        || in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true
-    ) {
-        $nbChildrenItems = 0;
+    // Check if any allowed folder is part of the descendants of this node
+    $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
+    foreach ($nodeDescendants as $node) {
+        if (showFolderToUser(
+                $node->id,
+                $session_forbiden_pfs,
+                $session_groupes_visibles,
+                $listFoldersLimitedKeys,
+                $listRestrictedFoldersForItemsKeys
+            ) == true
+            && (in_array(
+                $node->id,
+                array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
+            ) === true
+                || (is_array($listFoldersLimitedKeys) === true && in_array($node->id, $listFoldersLimitedKeys) === true)
+                || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node->id, $listRestrictedFoldersForItemsKeys) === true)
+                || in_array($node->id, $session_no_access_folders) === true)
+        ) {
+            $nodeElements= buildNodeTreeElements(
+                $node,
+                $session_user_id,
+                $session_login,
+                $session_user_read_only,
+                $session_personal_folders,
+                $session_groupes_visibles,
+                $session_read_only_folders,
+                $session_personal_visible_groups,
+                $nbChildrenItems,
+                $nodeDescendants,
+                $listFoldersLimitedKeys,
+                $session_list_folders_limited,
+                $listRestrictedFoldersForItemsKeys,
+                $session_list_restricted_folders_for_items,
+                $SETTINGS,
+                $tree->numDescendants($node->id)
+            );
 
-        // Check if any allowed folder is part of the descendants of this node
-        $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
-        foreach ($nodeDescendants as $node) {
-            if ((in_array($node->id, $session_forbiden_pfs) === false
-                    || in_array($node->id, $session_groupes_visibles) === true
-                    || in_array($node->id, $listFoldersLimitedKeys) === true
-                    || in_array($node->id, $listRestrictedFoldersForItemsKeys)) === true
-                && (in_array(
-                    $node->id,
-                    array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
-                ) === true
-                    || (is_array($listFoldersLimitedKeys) === true && in_array($node->id, $listFoldersLimitedKeys) === true)
-                    || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node->id, $listRestrictedFoldersForItemsKeys) === true)
-                    || in_array($node->id, $session_no_access_folders) === true)
-            ) {
-                $nodeElements= buildNodeTreeElements(
-                    $node,
-                    $session_user_id,
-                    $session_login,
-                    $session_user_read_only,
-                    $session_personal_folders,
-                    $session_groupes_visibles,
-                    $session_read_only_folders,
-                    $session_personal_visible_groups,
-                    $nbChildrenItems,
-                    $nodeDescendants,
-                    $listFoldersLimitedKeys,
-                    $session_list_folders_limited,
-                    $listRestrictedFoldersForItemsKeys,
-                    $session_list_restricted_folders_for_items,
-                    $SETTINGS,
-                    $tree->numDescendants($node->id)
-                );
-
-                // json    
-                array_push(
-                    $ret_json,
-                    array(
-                        'id' => 'li_' . $node->id,
-                        'parent' => $nodeElements['parent'],
-                        'text' => '<i class="fas fa-folder mr-2"></i>'.($nodeElements['show_but_block'] === true ? '<i class="fas fa-times fa-xs text-danger mr-1"></i>' : '') . $nodeElements['text'],
-                        'children' => ($nodeElements['childrenNb'] === 0 ? false : true),
-                        'fa_icon' => 'folder',
-                        'li_attr' => array(
-                            'class' => ($nodeElements['show_but_block'] === true ? '' : 'jstreeopen'),
-                            'title' => 'ID [' . $node->id . '] ' . ($nodeElements['show_but_block'] === true ? langHdl('no_access') : $nodeElements['title']),
-                        ),
-                        'a_attr' => $nodeElements['show_but_block'] === true ? (array(
-                            'id' => 'fld_' . $node->id,
-                            'class' => $nodeElements['folderClass'],
-                            'onclick' => 'ListerItems(' . $node->id . ', ' . $nodeElements['restricted'] . ', 0, 1)',
-                            'data-title' => $node->title,
-                        )) : '',
-                        'is_pf' => in_array($node->id, $session_personal_folders) === true ? 1 : 0,
-                    )
-                );
-            }
+            // json    
+            array_push(
+                $ret_json,
+                array(
+                    'id' => 'li_' . $node->id,
+                    'parent' => $nodeElements['parent'],
+                    'text' => '<i class="fas fa-folder mr-2"></i>'.($nodeElements['show_but_block'] === true ? '<i class="fas fa-times fa-xs text-danger mr-1"></i>' : '') . $nodeElements['text'],
+                    'children' => ($nodeElements['childrenNb'] === 0 ? false : true),
+                    'fa_icon' => 'folder',
+                    'li_attr' => array(
+                        'class' => ($nodeElements['show_but_block'] === true ? '' : 'jstreeopen'),
+                        'title' => 'ID [' . $node->id . '] ' . ($nodeElements['show_but_block'] === true ? langHdl('no_access') : $nodeElements['title']),
+                    ),
+                    'a_attr' => $nodeElements['show_but_block'] === true ? (array(
+                        'id' => 'fld_' . $node->id,
+                        'class' => $nodeElements['folderClass'],
+                        'onclick' => 'ListerItems(' . $node->id . ', ' . $nodeElements['restricted'] . ', 0, 1)',
+                        'data-title' => $node->title,
+                    )) : '',
+                    'is_pf' => in_array($node->id, $session_personal_folders) === true ? 1 : 0,
+                )
+            );
         }
     }
+
     return $ret_json;
 }
 
