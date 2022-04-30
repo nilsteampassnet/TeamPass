@@ -1094,34 +1094,30 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     ];
     //prepare connection
     $connection = new Connection($config);
-    // Connect to LDAP
+    
     try {
+        // Connect to LDAP
         $connection->connect();
-    } catch (\LdapRecord\Auth\BindException $e) {
-        $error = $e->getDetailedError();
-        return [
-            'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
 
-        ];
-    }
-
-    // Get user info from AD
-    // We want to isolate attribute ldap_user_attribute
-    try {
+        // Get user info from AD
+        // We want to isolate attribute ldap_user_attribute
         $userADInfos = $connection->query()
             ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $username)
             ->firstOrFail();
-    } catch (\LdapRecord\LdapRecordException $e) {
-        $error = $e->getDetailedError();
 
-        return [
-            'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
-        ];
-    }
-    
-    try {
+        // Check shadowexpire attribute - if === 1 then user disabled
+        if (
+            (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
+            ||
+            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time())
+        ) {
+            return [
+                'error' => true,
+                'message' => langHdl('error_ad_user_expired'),
+            ];
+        }
+
+        // User auth attempt
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
             $userAuthAttempt = $connection->auth()->attempt(
                 $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0],
@@ -1133,31 +1129,21 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 $passwordClear
             );
         }
-    } catch (\LdapRecord\LdapRecordException $e) {
-        $error = $e->getDetailedError();
 
+    } catch (\LdapRecord\Auth\BindException $e) {
+        $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+
         ];
     }
 
+    // User is not auth then return error
     if ($userAuthAttempt === false) {
         return [
             'error' => true,
             'message' => "Error : User could not be authentificated",
-        ];
-    }
-    
-    // Check shadowexpire attribute - if === 1 then user disabled
-    if (
-        (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
-        ||
-        (isset($entry['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time())
-    ) {
-        return [
-            'error' => true,
-            'message' => langHdl('error_ad_user_expired'),
         ];
     }
 
