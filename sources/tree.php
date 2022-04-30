@@ -139,7 +139,7 @@ if (
         $session['groupes_visibles'],
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys
-    ) == true)
+    ) === true)
     {
         if (isset($_SESSION['user_treeloadstrategy']) === true
             && $_SESSION['user_treeloadstrategy'] === 'sequential'
@@ -286,7 +286,7 @@ function buildNodeTree(
                 $session_groupes_visibles,
                 $listFoldersLimitedKeys,
                 $listRestrictedFoldersForItemsKeys
-            ) == true
+            ) === true
             && (in_array(
                 $node->id,
                 array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
