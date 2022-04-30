@@ -155,7 +155,8 @@ if (null !== $post_type) {
                     // Get some elements from DB concerning this node
                     $node_data = DB::queryFirstRow(
                         'SELECT m.valeur AS valeur, n.renewal_period AS renewal_period,
-                        n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification
+                        n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification,
+                        n.fa_icon, n.fa_icon_selected
                         FROM ' . prefixTable('misc') . ' AS m,
                         ' . prefixTable('nested_tree') . ' AS n
                         WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i',
@@ -166,12 +167,12 @@ if (null !== $post_type) {
                     // Preapre array of columns
                     $arrayColumns = array();
 
-                    $arrayColumns['id'] = $t->id;
-                    $arrayColumns['numOfChildren'] = $tree->numDescendants($t->id);
-                    $arrayColumns['level'] = $t->nlevel;
-                    $arrayColumns['parentId'] = $t->parent_id;
+                    $arrayColumns['id'] = (int) $t->id;
+                    $arrayColumns['numOfChildren'] = (int) $tree->numDescendants($t->id);
+                    $arrayColumns['level'] = (int) $t->nlevel;
+                    $arrayColumns['parentId'] = (int) $t->parent_id;
                     $arrayColumns['title'] = $t->title;
-                    $arrayColumns['nbItems'] = DB::count();
+                    $arrayColumns['nbItems'] = (int) DB::count();
                     $arrayColumns['path'] = $arrayPath;
                     $arrayColumns['parents'] = $arrayParents;
 
@@ -185,7 +186,7 @@ if (null !== $post_type) {
                         $arrayColumns['folderComplexity'] = '';
                     }
 
-                    $arrayColumns['renewalPeriod'] = $node_data['renewal_period'];
+                    $arrayColumns['renewalPeriod'] = (int) $node_data['renewal_period'];
 
                     //col7
                     $data7 = DB::queryFirstRow(
@@ -196,6 +197,8 @@ if (null !== $post_type) {
                     );
                     $arrayColumns['add_is_blocked'] = (int) $data7['bloquer_creation'];
                     $arrayColumns['edit_is_blocked'] = (int) $data7['bloquer_modification'];
+                    $arrayColumns['icon'] = (string) $node_data['fa_icon'];
+                    $arrayColumns['iconSelected'] = (string) $node_data['fa_icon_selected'];
 
                     array_push($arrData, $arrayColumns);
                 }
@@ -384,7 +387,7 @@ if (null !== $post_type) {
                 $parentBloquerModification = 0;
             }
 
-            if ((int) $dataParent['personal_folder'] === 1) {
+            if (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) {
                 $isPersonal = 1;
             } else {
                 $isPersonal = 0;
@@ -405,7 +408,7 @@ if (null !== $post_type) {
                         'complex'
                     );
 
-                    if ((int) $post_complexicity < (int) $data['valeur']) {
+                    if (isset($data['valeur']) === true && (int) $post_complexicity < (int) $data['valeur']) {
                         echo prepareExchangedData(
                             $SETTINGS['cpassman_dir'],
                             array(
@@ -434,19 +437,13 @@ if (null !== $post_type) {
             ) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if (
-                $dataFolder['bloquer_creation'] !== $post_add_restriction
-                && empty($post_add_restriction) === false
-            ) {
+            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if (
-                $dataFolder['bloquer_modification'] !== $post_edit_restriction
-                && empty($post_edit_restriction) === false
-            ) {
+            if ($dataFolder['bloquer_modification'] !== $post_edit_restriction) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
             }
-
+            
             // Now update
             DB::update(
                 prefixTable('nested_tree'),

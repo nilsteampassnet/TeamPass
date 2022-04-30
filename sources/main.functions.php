@@ -281,7 +281,6 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
     include_once $path . 'Core.php';
 
     try {
-        $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {

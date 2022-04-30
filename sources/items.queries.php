@@ -323,7 +323,7 @@ if (is_null($post_type) === false) {
                 $itemInfos['requested_folder_complexity'] = $folderComplexity !== null ? (int) $folderComplexity['valeur'] : 0;
 
                 // Check COMPLEXITY
-                if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
+                if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_creation'] === 0) {
                     echo (string) prepareExchangedData(
                         $SETTINGS['cpassman_dir'],
                         array(
@@ -739,7 +739,7 @@ if (is_null($post_type) === false) {
                 ) {
                     // Encrypt data to return
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_item_exists'),
@@ -922,7 +922,7 @@ if (is_null($post_type) === false) {
                 );
                 $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
                 // Check COMPLEXITY
-                if ($post_complexity_level < $itemInfos['requested_folder_complexity']) {
+                if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_modification'] === 0) {
                     echo (string) prepareExchangedData(
                         $SETTINGS['cpassman_dir'],
                         array(

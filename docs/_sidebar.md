@@ -5,7 +5,7 @@
 - [First steps](start.md)
 - [Information](encryption.md)
 - **Features**
-- 
+- [Authentication](authentication.md)
 - **Manage**
 - 
 - **Help**

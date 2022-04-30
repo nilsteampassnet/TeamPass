@@ -106,6 +106,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
                 'addRestriction': $('#new-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
+                'icon': $('#new-folder-add-icon').val(),
+                'iconSelected': $('#new-folder-add-icon-selected').val(),
             }
             console.log(data)
             // Launch action
@@ -390,13 +392,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                         columns += '</td>';
 
-
                         // Column 7
                         columns += '<td class="modify pointer text-center" data-value="' + value.edit_is_blocked + '">';
                         if (value.edit_is_blocked === 1) {
                             columns += '<i class="fa fa-toggle-on text-info"></i>';
                         } else {
                             columns += '<i class="fa fa-toggle-off"></i>';
+                        }
+                        columns += '</td>';
+
+                        // Column 
+                        columns += '<td class="modify pointer text-center" data-value="' + value.icon + '"><i class="' + value.icon + '"></td>';
+
+                        // Column 9
+                        columns += '<td class="modify pointer text-center" data-value="' + value.iconSelected + '">';
+                        if (value.iconSelected !== "") {
+                            columns += '<i class="' + value.iconSelected + '">';
                         }
                         columns += '</td></tr>';
 
@@ -624,7 +635,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             folderComplexity = $(currentRow).find("td:eq(3) > i").data('value'),
             folderRenewal = $(currentRow).find("td:eq(4)").text(),
             folderAddRestriction = $(currentRow).find("td:eq(5)").data('value'),
-            folderEditRestriction = $(currentRow).find("td:eq(6)").data('value');
+            folderEditRestriction = $(currentRow).find("td:eq(6)").data('value'),
+            folderIcon = $(currentRow).find("td:eq(7)").data('value'),
+            folderIconSelection = $(currentRow).find("td:eq(8)").data('value');
         currentFolderEdited = currentRow.data('id');
 
 
@@ -649,7 +662,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '<label for="folder-edit-renewal"><?php echo langHdl('renewal_delay'); ?></label>' +
             '<input type="text" class="form-control clear-me" id="folder-edit-renewal" value="' + folderRenewal + '">' +
             '</div>' +
+            '<div class="form-group ml-2">' +
+            '<label><?php echo langHdl('icon'); ?></label>' +
+            '<input type="text" class="form-control form-folder-control" id="folder-edit-icon" value="'+folderIcon+'">' +
+            '<small class="form-text text-muted">' +
+            '<?php echo langHdl('fontawesome_icon_tip'); ?>' +
+            '</small>' +
+            '</div>' +
+            '<div class="form-group ml-2">' +
+            '<label><?php echo langHdl('icon_on_selection'); ?></label>' +
+            '<input type="text" class="form-control form-folder-control" id="folder-edit-icon-selected" value="'+folderIconSelection+'">' +
+            '<small class="form-text text-muted">' +
+            '<?php echo langHdl('fontawesome_icon_tip'); ?>' +
+            '</small>' +
+            '</div>' +
             '<div class="form-group ml-2" id="folder-rights-tuned">' +
+            '<label><?php echo langHdl('special'); ?></label>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control" id="folder-edit-add-restriction">' +
             '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>' +
@@ -714,6 +742,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'renewalPeriod': $('#folder-edit-renewal').val(),
                 'addRestriction': $('#folder-edit-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#folder-edit-edit-restriction').prop("checked") === true ? 1 : 0,
+                'icon': $('#folder-edit-icon').val(),
+                'iconSelected': $('#folder-edit-icon-selected').val(),
             }
             console.log(data)
             // Launch action

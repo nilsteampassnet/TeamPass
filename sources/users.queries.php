@@ -2354,29 +2354,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Build ldap configuration array
-            $config = [
-                // Mandatory Configuration Options
-                'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
-                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
-                'username'         => $SETTINGS['ldap_username'],
-                'password'         => $SETTINGS['ldap_password'],
-            
-                // Optional Configuration Options
-                'port'             => $SETTINGS['ldap_port'],
-                'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-                'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-                'version'          => 3,
-                'timeout'          => 5,
-                'follow_referrals' => false,
-            
-                // Custom LDAP Options
-                'options' => [
-                    // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
-                ]
-            ];
-
             // Load expected libraries
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
@@ -2411,6 +2388,29 @@ if (null !== $post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
 
+            // Build ldap configuration array
+            $config = [
+                // Mandatory Configuration Options
+                'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
+                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+                'username'         => $SETTINGS['ldap_username'],
+                'password'         => $SETTINGS['ldap_password'],
+            
+                // Optional Configuration Options
+                'port'             => $SETTINGS['ldap_port'],
+                'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+                'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+                'version'          => 3,
+                'timeout'          => 5,
+                'follow_referrals' => false,
+            
+                // Custom LDAP Options
+                'options' => [
+                    // See: http://php.net/ldap_set_option
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+                ]
+            ];
+
             $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
             $ad->register();
             $connection = new Connection($config);
@@ -2433,29 +2433,19 @@ if (null !== $post_type) {
                 break;
             }
 
-            /*
-            $groups = $connection->query()->where([
-                ['objectclass', '=', 'top'],
-                ['objectclass', '=', 'groupofuniquenames'],
-                ['objectclass', '=', 'groupofnames'],
-                ['objectclass', '=', 'organizationalunit'],
-                ['objectclass', '=', 'posixGroup'],
-            ])->get();
-            print_r($groups);
-            */
-
             $adRoles = array();
             $adUsersToSync = array();
             $teampassRoles = array();
-            $adUsedAttributes = array('dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'], 'memberof', 'name', 'displayname', 'cn', 'shadowexpire');
+            $usersAlreadyInTeampass = array();
+            $adUsedAttributes = array(
+                'dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'],
+                'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
+            );
 
-            $users = $connection->query()->where([
-                ['objectclass', '=', 'top'],
-                ['objectclass', '=', 'person'],
-                ['objectclass', '=', 'organizationalperson'],
-                ['objectclass', '=', 'inetorgperson'],
-                ['objectclass', '=', 'posixaccount'],
-            ], null, null, 'or')->get();
+            $users = $connection->query()
+                ->in((isset($SETTINGS['ldap_dn_additional_user_dn']) === true ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                ->whereHas($SETTINGS['ldap_user_attribute'])
+                ->get();
             
             foreach($users as $i => $adUser) {
                 if (isset($adUser[$SETTINGS['ldap_user_attribute']]) === false) continue;
@@ -2476,39 +2466,39 @@ if (null !== $post_type) {
                 $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
                 if (null !== $userLogin) {
                     // Get his ID
-                    DB::queryfirstrow(
-                        'SELECT id, fonction_id, auth_type
+                    $userInfo = DB::queryfirstrow(
+                        'SELECT id, login, fonction_id, auth_type
                         FROM ' . prefixTable('users') . '
                         WHERE login = %s',
                         $userLogin
                     );
-                    if (DB::count() === 0) {
-                        // Loop on all user attributes
-                        $tmp = array();
-                        foreach ($adUsedAttributes as $userAttribute) {
-                            if (isset($adUser[$userAttribute]) === true) {
-                                if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
-                                    // Loop on all entries
-                                    $tmpAttrValue = '';
-                                    foreach ($adUser[$userAttribute] as $userAttributeEntry) {
-                                        if ($userAttribute === 'memberof') {
-                                            $userAttributeEntry = substr($userAttributeEntry, 3, strpos($userAttributeEntry, ',') - 3);
-                                        }
-                                        if (empty($tmpAttrValue) === true) {
-                                            $tmpAttrValue = $userAttributeEntry;
-                                        } else {
-                                            $tmpAttrValue .= ','.$userAttributeEntry;
-                                        }
+                    // Loop on all user attributes
+                    $tmp = [
+                        'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
+                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
+                    ];
+                    foreach ($adUsedAttributes as $userAttribute) {
+                        if (isset($adUser[$userAttribute]) === true) {
+                            if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
+                                // Loop on all entries
+                                $tmpAttrValue = '';
+                                foreach ($adUser[$userAttribute] as $userAttributeEntry) {
+                                    if ($userAttribute === 'memberof') {
+                                        $userAttributeEntry = substr($userAttributeEntry, 3, strpos($userAttributeEntry, ',') - 3);
                                     }
-                                    $tmp[$userAttribute] = $tmpAttrValue;
-                                } else {
-                                    $tmp[$userAttribute] = $adUser[$userAttribute];
+                                    if (empty($tmpAttrValue) === true) {
+                                        $tmpAttrValue = $userAttributeEntry;
+                                    } else {
+                                        $tmpAttrValue .= ','.$userAttributeEntry;
+                                    }
                                 }
+                                $tmp[$userAttribute] = $tmpAttrValue;
+                            } else {
+                                $tmp[$userAttribute] = $adUser[$userAttribute];
                             }
                         }
-
-                        array_push($adUsersToSync, $tmp);
                     }
+                    array_push($adUsersToSync, $tmp);
                 }
             }
 
@@ -2525,12 +2515,13 @@ if (null !== $post_type) {
             }
 
             echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'entries' => $adUsersToSync,
                     'ldap_groups' => $adRoles,
                     'teampass_groups' => $teampassRoles,
+                    'usersAlreadyInTeampass' => $usersAlreadyInTeampass,
                 ), 
                 'encode'
             );

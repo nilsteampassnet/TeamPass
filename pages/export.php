@@ -105,6 +105,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <span></span>
                         </div>
                     </div>
+
+                    <div class="row mt-3 hidden" id="export-get-link">
                 </div>
 
                 <div class="card-footer">

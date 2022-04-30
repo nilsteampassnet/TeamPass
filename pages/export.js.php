@@ -290,7 +290,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                         // Prepare
                         var dataLocal = {
-                            pdf_password: $("#export-password").val()
+                            pdf_password: $("#export-password").val(),
+                            pdf_filename : $('#export-filename').val() + '.pdf',
                         };
 
                         // Build XMLHttpRequest parameters
@@ -306,11 +307,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                         xhr.onload = function() {
                             if (this.status === 200) {
-                                var blob = new Blob([xhr.response], {
+                                var blob = new Blob(
+                                    [xhr.response],
+                                    {
                                         type: "application/pdf"
-                                    }),
-                                    objectUrl = URL.createObjectURL(blob),
-                                    a = document.createElement("a");
+                                    }
+                                ),
+                                objectUrl = URL.createObjectURL(blob),
+                                a = document.createElement("a");
+
                                 a.href = objectUrl;
                                 a.download = $('#export-filename').val() + '.pdf';
                                 document.body.appendChild(a);

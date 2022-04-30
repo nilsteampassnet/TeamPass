@@ -172,7 +172,7 @@ if (DB::count() > 0) {
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
     if ((int) $_SESSION['is_admin'] === 1
-        || ($record['isAdministratedByRole'] === 1 && in_array($record['isAdministratedByRole'], $_SESSION['user_roles']))
+        || in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])
         || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $_SESSION['user_id'])
     ) {
         $showUserFolders = true;

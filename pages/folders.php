@@ -170,14 +170,31 @@ foreach ($tst as $t) {
                                     <label for="new-renewal"><?php echo langHdl('renewal_delay'); ?></label>
                                     <input type="number" class="form-control clear-me" id="new-renewal" value="0" min="0" data-bind="value:replyNumber">
                                 </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input form-control" id="new-add-restriction">
-                                    <label for="new-add-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
+                                <div class="form-group">
+                                    <label><?php echo langHdl('icon'); ?></label>
+                                    <input type="text" class="form-control form-folder-control" id="new-folder-add-icon">
+                                    <small class='form-text text-muted'>
+                                        <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                    </small>
                                 </div>
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input form-control" id="new-edit-restriction">
-                                    <label for="new-edit-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
+                                <div class="form-group">
+                                    <label><?php echo langHdl('icon_on_selection'); ?></label>
+                                    <input type="text" class="form-control form-folder-control" id="new-folder-add-icon-selected">
+                                    <small class='form-text text-muted'>
+                                        <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                    </small>
                                 </div>
+                                <div class="form-group">
+                                    <label><?php echo langHdl('special'); ?></label>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input form-control" id="new-add-restriction">
+                                        <label for="new-add-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input form-control" id="new-edit-restriction">
+                                        <label for="new-edit-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
+                                    </div>
+</div>
                             </div>
                             <!-- /.card-body -->
 
@@ -258,6 +275,8 @@ foreach ($tst as $t) {
                                 <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration') . ' ' . langHdl('group_pw_duration_tip'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-folder fa-lg infotip" title="<?php echo langHdl('icon'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-folder-open fa-lg infotip" title="<?php echo langHdl('icon_on_selection'); ?>"></i></th>
                             </tr>
                         </thead>
                         <tbody>

@@ -452,12 +452,13 @@ if (null !== $post_type) {
             );
 
             // Adapt header to pdf
-            header('Content-type: application/pdf');
+            //header('Content-type: application/pdf');
 
             // query
             $rows = DB::query('SELECT * FROM ' . prefixTable('export'));
             $counter = DB::count();
             if ($counter > 0) {
+                define('K_TCPDF_THROW_EXCEPTION_ERROR', true);
                 // print
                 //Some variables
                 $prev_path = '';
@@ -582,8 +583,11 @@ if (null !== $post_type) {
                 //clean table
                 DB::query('TRUNCATE TABLE ' . prefixTable('export'));
 
-                // Send back the file in Blob
-                echo $pdf->Output(null, 'I');
+                // Clean any content of the output buffer
+                ob_end_clean();
+
+                // prepare output
+                echo $pdf->Output($dataReceived['pdf_filename'], 'I');
             }
             break;
 

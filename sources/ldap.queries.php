@@ -101,33 +101,6 @@ switch ($post_type) {
             'decode'
         );
 
-        // prepare variables
-        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_STRING);
-        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-
-        // Build ldap configuration array
-        $config = [
-            // Mandatory Configuration Options
-            'hosts'            => [explode(",", $SETTINGS['ldap_hosts'])],
-            'base_dn'          => $SETTINGS['ldap_bdn'],
-            'username'         => $SETTINGS['ldap_username'],
-            'password'         => $SETTINGS['ldap_password'],
-        
-            // Optional Configuration Options
-            'port'             => $SETTINGS['ldap_port'],
-            'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-            'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-            'version'          => 3,
-            'timeout'          => 5,
-            'follow_referrals' => false,
-        
-            // Custom LDAP Options
-            'options' => [
-                // See: http://php.net/ldap_set_option
-                LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
-            ]
-        ];
-
         // Load expected libraries
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
@@ -162,13 +135,37 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
 
+        // prepare variables
+        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_STRING);
+        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+
+        // Build ldap configuration array
+        $config = [
+            // Mandatory Configuration Options
+            'hosts'            => [explode(",", $SETTINGS['ldap_hosts'])],
+            'base_dn'          => $SETTINGS['ldap_bdn'],
+            'username'         => $SETTINGS['ldap_username'],
+            'password'         => $SETTINGS['ldap_password'],
+            // Optional Configuration Options
+            'port'             => $SETTINGS['ldap_port'],
+            'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+            'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+            'version'          => 3,
+            'timeout'          => 5,
+            'follow_referrals' => false,
+            // Custom LDAP Options
+            'options' => [
+                // See: http://php.net/ldap_set_option
+                LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+            ]
+        ];
+
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
         $connection = new Connection($config);
 
         try {
-            $connection->connect();
-        
+            $connection->connect();        
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
 
@@ -183,12 +180,25 @@ switch ($post_type) {
             break;
         }
 
-        /*
+        if (empty($post_username) === true && empty($post_password) === true) {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                    'message' => "Error : ".langHdl('error_empty_data'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        // Get user info from AD
+        // We want to isolate attribute ldap_user_attribute
         try {
-            $usr = $connection->query()
-                ->where($SETTINGS['ldap_user_attribute'], '=', $post_username)
-                ->firstOrFail();
-
+            $user = $connection->query()
+            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $post_username)
+            ->firstOrFail();
+            //print_r($user);
         } catch (\LdapRecord\LdapRecordException $e) {
             $error = $e->setDetailedError();
             
@@ -202,37 +212,53 @@ switch ($post_type) {
             );
             break;
         }
-        */
-        //TODO
+        
         try {
             if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-                $connection->auth()->bind($post_username, $post_password);
+                $userAuthAttempt = $connection->auth()->attempt(
+                    $user[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0],
+                    $post_password
+                );
             } else {
-                $connection->auth()->bind($SETTINGS['ldap_user_attribute'].'='.$post_username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $post_password);
+                $userAuthAttempt = $connection->auth()->attempt(
+                    $user['dn'],
+                    $post_password
+                );
             }
-        } catch (\LdapRecord\Auth\BindException $e) {
-            $error = $e->getDetailedError();
+        } catch (\LdapRecord\LdapRecordException $e) {
+            $error = $e->setDetailedError();
             
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    'message' => "Error : ".$e->withDetailedError($e)->detailedError(),
                 ),
                 'encode'
             );
             break;
         }
         
-        echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
-            array(
-                'error' => false,
-                'message' => "User is successfully authenticated",
-                'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
-            ),
-            'encode'
-        );
+        if ($userAuthAttempt === true) {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => "User is successfully authenticated",
+                    'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
+                ),
+                'encode'
+            );
+        } else {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                    'message' => "Error : User could not be authentificated",
+                ),
+                'encode'
+            );
+        }
 
     break;
 }

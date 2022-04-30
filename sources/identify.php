@@ -331,7 +331,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userInitialData['error'] === true) {
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             $userInitialData['array'],
             'encode'
         );
@@ -353,7 +353,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             $userLdap['array'],
             'encode'
         );
@@ -369,7 +369,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check user and password
     if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             [
                 'value' => '',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -1028,32 +1028,6 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
  */
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
-    // Build ldap configuration array
-    $config = [
-        // Mandatory Configuration Options
-        'hosts' => [explode(',', $SETTINGS['ldap_hosts'])],
-        'base_dn' => $SETTINGS['ldap_bdn'],
-        'username' => $SETTINGS['ldap_user_attribute'].'='.$username.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
-        'password' => $passwordClear,
-
-        // Optional Configuration Options
-        'port' => $SETTINGS['ldap_port'],
-        'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls' => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-        'version' => 3,
-        'timeout' => 5,
-        'follow_referrals' => false,
-
-        // Custom LDAP Options
-        'options' => [
-            // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD,
-        ],
-    ];
-    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-        $config['username'] = $username;
-    }
-
     // Load expected libraries
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Auth/Authenticatable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
@@ -1095,36 +1069,98 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
     $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
     $ad->register();
+
+    // Build ldap configuration array
+    $config = [
+        // Mandatory Configuration Options
+        'hosts' => [explode(',', $SETTINGS['ldap_hosts'])],
+        'base_dn' => $SETTINGS['ldap_bdn'],
+        'username' => $SETTINGS['ldap_username'],
+        'password' => $SETTINGS['ldap_password'],
+
+        // Optional Configuration Options
+        'port' => $SETTINGS['ldap_port'],
+        'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls' => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'version' => 3,
+        'timeout' => 5,
+        'follow_referrals' => false,
+
+        // Custom LDAP Options
+        'options' => [
+            // See: http://php.net/ldap_set_option
+            LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD,
+        ],
+    ];
+    //prepare connection
     $connection = new Connection($config);
     // Connect to LDAP
     try {
         $connection->connect();
-        Container::addConnection($connection);
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage().' '.$config['username'],
+            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
 
         ];
     }
 
-    $query = $connection->query();
+    // Get user info from AD
+    // We want to isolate attribute ldap_user_attribute
     try {
-        $entry = $query->findBy(
-            $SETTINGS['ldap_user_attribute'],
-            $username
-        );
-    } catch (\LdapRecord\Models\ModelNotFoundException $ex) {
-        // Not found.
+        $userADInfos = $connection->query()
+            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $username)
+            ->firstOrFail();
+        //print_r($userADInfos);
+    } catch (\LdapRecord\LdapRecordException $e) {
+        $error = $e->getDetailedError();
+
         return [
             'error' => true,
-            'message' => langHdl('error_no_user_in_ad'),
+            'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+        ];
+    }
+    //echo "ici ";
+    try {
+        if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+            $userAuthAttempt = $connection->auth()->attempt(
+                $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0],
+                $passwordClear
+            );
+        } else {
+            $userAuthAttempt = $connection->auth()->attempt(
+                $userADInfos['dn'],
+                $passwordClear
+            );
+        }
+    } catch (\LdapRecord\LdapRecordException $e) {
+        $error = $e->getDetailedError();
+
+        return [
+            'error' => true,
+            'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
         ];
     }
 
+    if ($userAuthAttempt === true) {
+        return [
+            'error' => false,
+            'message' => "User is successfully authenticated",
+        ];
+    } else {
+        return [
+            'error' => true,
+            'message' => "Error : User could not be authentificated",
+        ];
+    }
+    
     // Check shadowexpire attribute - if === 1 then user disabled
-    if (isset($entry['shadowexpire'][0]) === true && (int) $entry['shadowexpire'][0] === 1) {
+    if (
+        (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
+        ||
+        (isset($entry['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time())
+    ) {
         return [
             'error' => true,
             'message' => langHdl('error_ad_user_expired'),
@@ -1165,7 +1201,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             prefixTable('users'),
             [
                 'pw' => $hashedPassword,
-                'special' => 'auth-pwd-change',
+                //'special' => 'auth-pwd-change',
             ],
             'id = %i',
             $userInfo['id']
@@ -1702,7 +1738,7 @@ function identifyDoLDAPChecks(
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
-                    'message' => $retLDAP['message'],
+                    'message' => "LDAP error: ".$retLDAP['message'],
                 ]
             ];
         }

@@ -1835,9 +1835,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
                                 '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
                                 '"></i>' +
-                                '</td>' +
-                                '<td>' + (entry.teampass !== undefined && entry.teampass.id !== undefined ? '<i class="fas fa-toggle-on text-info mr-1 text-center"></i>' : '<i class="fas fa-toggle-off mr-1 text-center"></i>') + '</td>' +
-                                '<td>';
+                                '</td><td>' +
+                                (entry.userInTeampass === 0 ? '' :
+                                '<i class="fas ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +
+                                '</td><td>';
                             groupsNumber = 0;
                             $.each(entry.memberof, function(j, group) {
                                 var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
@@ -1849,8 +1850,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     } else {
                                         // Check if this group exists in Teampass and propose to add it
                                         tmp = data.teampass_groups.filter(p => p.title === group);
-                                        if (tmp.length > 0 && entry.teampass !== undefined) {
-                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo langHdl('add_user_to_role'); ?>" data-user-id="' + entry.teampass.id + '" data-role-id="' + tmp[0].id + '"></i><br>';
+                                        if (tmp.length > 0 && entry.userInTeampass === 0) {
+                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo langHdl('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
                                         } else {
                                             html += group + '<br>';
                                         }
@@ -1860,7 +1861,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.teampass === undefined ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
 
                             // Only of not admin
                             /*if (userLogin !== 'admin') {
@@ -1971,6 +1972,69 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '<?php echo langHdl('info'); ?>', {
                 positionClass: 'toast-top-center',
                 closeButton: true
+            }
+        );
+    });
+
+    // Enable/disable ldap sync on user
+    $(document).on('click', '.action-change-ldap-synchronization', function() {
+        toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $(this).data('user-id'),
+            'field': 'auth_type',
+            'value': $(this).hasClass('fa-toggle-off') === true ? 'ldap' : 'local',
+            'context': ''
+        },
+        selectedIcon = $(this);
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon format
+                    if (selectedIcon.hasClass('fa-toggle-off') === true) {
+                        selectedIcon
+                            .removeClass('fa-toggle-off')
+                            .addClass('fa-toggle-on text-info')
+                            .prop('data-user-auth-type', 'ldap');
+                    } else {
+                        selectedIcon
+                            .removeClass('fa-toggle-on text-info')
+                            .addClass('fa-toggle-off')
+                            .prop('data-user-auth-type', 'local');
+                    }
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
             }
         );
     });
@@ -2155,12 +2219,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                         return dfd.promise();
                     }
-                            
-
-
-
-
-                    /**/
                 }
             }
         );
@@ -2218,7 +2276,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo langHdl('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
                 '<div class="form-group">'+
                     '<label for="ldap-user-name"><?php echo langHdl('name'); ?></label>'+
-                    '<input type="text" class="form-control required" id="ldap-user-name" value="'+ $('.selected-user').data('user-name')+'">'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $('.selected-user').data('user-name')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="ldap-user-name"><?php echo langHdl('lastname'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $('.selected-user').data('user-lastname')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="ldap-user-name"><?php echo langHdl('email'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $('.selected-user').data('user-email')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="ldap-user-roles"><?php echo langHdl('roles'); ?></label>'+
