@@ -3204,3 +3204,17 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
             true)
         );
 }
+
+/**
+ * Permits to check if user ID is valid
+ *
+ * @param integer $post_user_id
+ * @return bool
+ */
+function isUserIdValid($userId): bool
+{
+    if (is_null($userId) === false && isset($userId) === true && empty($userId) === false) {
+        return true;
+    }
+    return false;
+}

@@ -1225,7 +1225,7 @@ function isUserPasswordCorrect(
     array $SETTINGS
 ): string
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
             'SELECT public_key, private_key, pw, auth_type
@@ -1342,7 +1342,7 @@ function changePrivateKeyEncryptionPassword(
         }
     }
 
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT private_key
@@ -1409,7 +1409,7 @@ function initializeUserPassword(
     array $SETTINGS
 ): string
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT email, auth_type, login
@@ -1549,7 +1549,7 @@ function generateOneTimeCode(
     array $SETTINGS
 ): string
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT email, auth_type, login
@@ -1613,9 +1613,7 @@ function startReEncryptingUserSharekeys(
     array $SETTINGS
 ): string
 {
-    //$post_user_id = is_null($post_user_id) === true ? $_SESSION['user_id'] : $post_user_id;
-
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         DB::queryFirstRow(
             'SELECT *
@@ -1634,7 +1632,7 @@ function startReEncryptingUserSharekeys(
 
             // Continu with next step
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1648,7 +1646,7 @@ function startReEncryptingUserSharekeys(
         }
         // Nothing to do
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_no_user'),
@@ -1658,7 +1656,7 @@ function startReEncryptingUserSharekeys(
     }
 
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -1687,7 +1685,7 @@ function continueReEncryptingUserSharekeys(
     array   $SETTINGS
 ): string
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
             'SELECT public_key
@@ -1820,7 +1818,7 @@ function continueReEncryptingUserSharekeys(
     
     // Nothing to do
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2346,7 +2344,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 ) {
     $next_step = '';
     
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
             'SELECT public_key, encrypted_psk
@@ -2530,7 +2528,7 @@ function getUserInfo(
     array $SETTINGS
 )
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT '.$post_fields.'
@@ -2540,7 +2538,7 @@ function getUserInfo(
         );
         if (DB::count() > 0) {
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -2551,7 +2549,7 @@ function getUserInfo(
         }
     }
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
@@ -2576,7 +2574,7 @@ function changeUserAuthenticationPassword(
     array $SETTINGS
 )
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT auth_type, login, private_key
@@ -2672,7 +2670,7 @@ function changeUserLDAPAuthenticationPassword(
     array $SETTINGS
 )
 {
-    if (is_null($post_user_id) === false && isset($post_user_id) === true && empty($post_user_id) === false) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT auth_type, login, private_key, special
