@@ -1,6 +1,14 @@
 # Teampass 3
 
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/quality-score.png?b=teampass_3.0)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/?branch=teampass_3.0)
+![](https://img.shields.io/github/stars/nilsteampassnet/TeamPass?style=social)
+![](https://img.shields.io/github/license/nilsteampassnet/teampass)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
+
+![](https://img.shields.io/github/v/release/nilsteampassnet/Teampass)
+![](https://img.shields.io/github/commits-since/nilsteampassnet/teampass/latest)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/?branch=master)
+[![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
+[![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
 Teampass is a Collaborative Passwords Manager
 

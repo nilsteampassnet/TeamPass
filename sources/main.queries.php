@@ -1001,7 +1001,7 @@ function sendingStatistics(
 ): void
 {
     if (
-        isSetArrayOfValues([$SETTINGS['send_statistics_items'], $dSETTINGS['send_stats_time']]) === true
+        isSetArrayOfValues([$SETTINGS['send_statistics_items'], $SETTINGS['send_stats_time']]) === true
         && isKeyExistingAndEqual('send_stats', 1, $SETTINGS) === true
         && (int) ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
     ) {
