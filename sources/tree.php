@@ -130,81 +130,68 @@ if (
     $ret_json = array();
     $last_visible_parent = -1;
     $last_visible_parent_level = 1;
+    $nodeId = isset($get['id']) === true && is_int($get['id']) === true ? $get['id'] : 0;
 
     // build the tree to be displayed
-    if (
-        isset($get['id']) === true
-        && is_numeric(intval($get['id'])) === true
-        && isset($_SESSION['user_treeloadstrategy']) === true
-        && $_SESSION['user_treeloadstrategy'] === 'sequential'
-    ) {
-        $ret_json = buildNodeTree(
-            $get['id'],
-            $listFoldersLimitedKeys,
-            $listRestrictedFoldersForItemsKeys,
-            /** @scrutinizer ignore-type */ $tree,
-            $SETTINGS,
-            $session['forbiden_pfs'],
-            $session['groupes_visibles'],
-            $session['list_restricted_folders_for_items'],
-            $session['user_id'],
-            $session['login'],
-            $superGlobal->get('no_access_folders', 'SESSION'),
-            $superGlobal->get('personal_folders', 'SESSION'),
-            $session['list_folders_limited'],
-            $session['read_only_folders'],
-            $superGlobal->get('personal_folders', 'SESSION'),
-            $session['personal_visible_groups'],
-            $session['user_read_only']
-        );
-    } elseif (
-        isset($_SESSION['user_treeloadstrategy']) === true
-        && $_SESSION['user_treeloadstrategy'] === 'sequential'
-    ) {
-        $ret_json = buildNodeTree(
-            0,
-            $listFoldersLimitedKeys,
-            $listRestrictedFoldersForItemsKeys,
-            /** @scrutinizer ignore-type */ $tree,
-            $SETTINGS,
-            $session['forbiden_pfs'],
-            $session['groupes_visibles'],
-            $session['list_restricted_folders_for_items'],
-            $session['user_id'],
-            $session['login'],
-            $superGlobal->get('no_access_folders', 'SESSION'),
-            $superGlobal->get('personal_folders', 'SESSION'),
-            $session['list_folders_limited'],
-            $session['read_only_folders'],
-            $superGlobal->get('personal_folders', 'SESSION'),
-            $session['personal_visible_groups'],
-            $session['user_read_only']
-        );
-    } else {
-        $completTree = $tree->getTreeWithChildren();
-        foreach ($completTree[0]->children as $child) {
-            recursiveTree(
-                $child,
-                $completTree,
-                /** @scrutinizer ignore-type */ $tree,
+    if (showFolderToUser(
+        $nodeId,
+        $session['forbiden_pfs'],
+        $session['groupes_visibles'],
+        $listFoldersLimitedKeys,
+        $listRestrictedFoldersForItemsKeys
+    ) == true)
+    {
+        if (isset($_SESSION['user_treeloadstrategy']) === true
+            && $_SESSION['user_treeloadstrategy'] === 'sequential'
+        ) {
+            // SEQUENTIAL MODE
+            // Is this folder visible by user
+            $ret_json = buildNodeTree(
+                $nodeId,
                 $listFoldersLimitedKeys,
                 $listRestrictedFoldersForItemsKeys,
-                $last_visible_parent,
-                $last_visible_parent_level,
+                /** @scrutinizer ignore-type */ $tree,
                 $SETTINGS,
                 $session['forbiden_pfs'],
                 $session['groupes_visibles'],
                 $session['list_restricted_folders_for_items'],
                 $session['user_id'],
                 $session['login'],
-                $session['user_read_only'],
+                $superGlobal->get('no_access_folders', 'SESSION'),
                 $superGlobal->get('personal_folders', 'SESSION'),
                 $session['list_folders_limited'],
                 $session['read_only_folders'],
+                $superGlobal->get('personal_folders', 'SESSION'),
                 $session['personal_visible_groups'],
-                $superGlobal->get('can_create_root_folder', 'SESSION'),
-                $ret_json
+                $session['user_read_only']
             );
+        } else {
+            // FULL MODE
+            $completTree = $tree->getTreeWithChildren();
+            foreach ($completTree[0]->children as $child) {
+                recursiveTree(
+                    $child,
+                    $completTree,
+                    /** @scrutinizer ignore-type */ $tree,
+                    $listFoldersLimitedKeys,
+                    $listRestrictedFoldersForItemsKeys,
+                    $last_visible_parent,
+                    $last_visible_parent_level,
+                    $SETTINGS,
+                    $session['forbiden_pfs'],
+                    $session['groupes_visibles'],
+                    $session['list_restricted_folders_for_items'],
+                    $session['user_id'],
+                    $session['login'],
+                    $session['user_read_only'],
+                    $superGlobal->get('personal_folders', 'SESSION'),
+                    $session['list_folders_limited'],
+                    $session['read_only_folders'],
+                    $session['personal_visible_groups'],
+                    $superGlobal->get('can_create_root_folder', 'SESSION'),
+                    $ret_json
+                );
+            }
         }
     }
 
@@ -216,6 +203,35 @@ if (
     echo json_encode($ret_json);
 } else {
     echo $get['user_tree_structure'];
+}
+
+/**
+ * Check if user can see this folder based upon rights
+ *
+ * @param integer $nodeId
+ * @param array $session_forbiden_pfs
+ * @param array $session_groupes_visibles
+ * @param array $listFoldersLimitedKeys
+ * @param array $listRestrictedFoldersForItemsKeys
+ * @return boolean
+ */
+function showFolderToUser(
+    int $nodeId,
+    array $session_forbiden_pfs,
+    array $session_groupes_visibles,
+    array $listFoldersLimitedKeys,
+    array $listRestrictedFoldersForItemsKeys,
+): bool
+{
+    if (
+        in_array($nodeId, $session_forbiden_pfs) === false
+        || in_array($nodeId, $session_groupes_visibles) === true
+        || in_array($nodeId, $listFoldersLimitedKeys) === true
+        || in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true
+    ) {
+        return true;
+    }
+    return false;
 }
 
 /**

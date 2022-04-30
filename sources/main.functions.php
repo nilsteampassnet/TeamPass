@@ -3223,27 +3223,6 @@ function isUserIdValid($userId): bool
 }
 
 /**
- * Check if a setting key exists and if its value is the one expected
- *
- * @param string            $key
- * @param string|integer    $value
- * @param array             $SETTINGS Teampass settings
- * 
- * @return bool
- */
-function isKeyExistingAndEqual1($key, $value, array $SETTINGS): bool
-{
-    if (isset($SETTINGS[$key]) === true
-        && (is_int($value) === true ?
-            (int) $SETTINGS[$key] === $value :
-            (string) $SETTINGS[$key] === $value)
-    ) {
-        return true;
-    }
-    return false;
-}
-
-/**
  * Check if a key exists and if its value equal the one expected
  *
  * @param string $key
