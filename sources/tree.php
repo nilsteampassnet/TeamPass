@@ -390,7 +390,7 @@ function buildNodeTreeElements(
             return array(
                 'text' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' . $text
                     .' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-                    .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                    .(isSettingKeyChecked('tree_counters', 1, $SETTINGS) === true ?
                         '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)
                         : '')
                     .'</span>',
@@ -408,12 +408,12 @@ function buildNodeTreeElements(
             'text' => ($session_user_read_only === true && in_array($node->id, $session_personal_visible_groups) === false) ?
                 ('<i class="far fa-eye fa-xs mr-1 ml-1"></i>' . $text
                 .' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-                .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                .(isSettingKeyChecked('tree_counters', 1, $SETTINGS) === true ?
                     '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
                     '')
                 .'</span>') :
                 (' <span class=\'badge badge-danger ml-2 items_count\' id=\'itcount_' . $node->id . '\'>' . $itemsNb . '</span>'
-                .(isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ?
+                .(isSettingKeyChecked('tree_counters', 1, $SETTINGS) === true ?
                     '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  :
                     '')
                 .'</span>'),
@@ -460,8 +460,7 @@ function buildNodeTreeElements(
     }
 
     // default case
-    elseif (isset($SETTINGS['show_only_accessible_folders']) === true
-        && (int) $SETTINGS['show_only_accessible_folders'] === 1
+    elseif (isSettingKeyChecked('show_only_accessible_folders', 1, $SETTINGS) === true
         && (int) $numDescendants === 0)
     {
         return array();
@@ -554,8 +553,7 @@ function recursiveTree(
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (
-                isset($SETTINGS['tree_counters']) === true
-                && (int) $SETTINGS['tree_counters'] === 1
+                isSettingKeyChecked('tree_counters', 1, $SETTINGS) === true
                 && in_array(
                     $node,
                     array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
@@ -690,10 +688,7 @@ function handleNode(
     $parent = $completTree[$nodeId]->parent_id === '0' ? '#' : 'li_' . $completTree[$nodeId]->parent_id;
 
     // handle displaying
-    if (
-        isset($SETTINGS['show_only_accessible_folders']) === true
-        && (int) $SETTINGS['show_only_accessible_folders'] === 1
-    ) {
+    if (isSettingKeyChecked('show_only_accessible_folders', 1, $SETTINGS) === true) {
         if ($nodeData['hide_node'] === true) {
             $last_visible_parent = (int) $parent;
             $last_visible_parent_level = $completTree[$nodeId]->nlevel--;

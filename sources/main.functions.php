@@ -3213,7 +3213,31 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
  */
 function isUserIdValid($userId): bool
 {
-    if (is_null($userId) === false && isset($userId) === true && empty($userId) === false) {
+    if (is_null($userId) === false
+        && isset($userId) === true
+        && empty($userId) === false
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Undocumented function
+ *
+ * @param string            $key
+ * @param string|integer    $value
+ * @param array             $SETTINGS Teampass settings
+ * 
+ * @return bool
+ */
+function isSettingKeyChecked($key, $value, array $SETTINGS): bool
+{
+    if (isset($SETTINGS[$key]) === true
+        && (is_int($value) === true ?
+            (int) $SETTINGS[$key] === $value :
+            (string) $SETTINGS[$key] === $value)
+    ) {
         return true;
     }
     return false;

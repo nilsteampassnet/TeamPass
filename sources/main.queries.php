@@ -679,7 +679,7 @@ function generateQRCode(
 ): string
 {
     // is this allowed by setting
-    if ((isset($SETTINGS['ga_reset_by_user']) === false || (int) $SETTINGS['ga_reset_by_user'] !== 1)
+    if (isSettingKeyChecked('ga_reset_by_user', 1, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
     ) {
         // User cannot ask for a new code
@@ -834,9 +834,7 @@ function sendEmailsNotSent(
     array $SETTINGS
 )
 {
-    if (isset($SETTINGS['enable_send_email_on_user_login'])
-        && (int) $SETTINGS['enable_send_email_on_user_login'] === 1
-    ) {
+    if (isSettingKeyChecked('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
         $row = DB::queryFirstRow(
             'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
             'cron',
@@ -982,8 +980,7 @@ function refreshUserItemsSeenList(
 
     // get wainting suggestions
     $nb_suggestions_waiting = 0;
-    if (
-        isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1
+    if (isSettingKeyChecked('enable_suggestion', 1, $SETTINGS) === true
         && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1)
     ) {
         DB::query('SELECT * FROM ' . prefixTable('suggestion'));
@@ -1006,9 +1003,8 @@ function sendingStatistics(
 {
     if (
         isset($SETTINGS['send_statistics_items']) === true
-        && isset($SETTINGS['send_stats']) === true
+        && isSettingKeyChecked('send_stats', 1, $SETTINGS) === true
         && isset($SETTINGS['send_stats_time']) === true
-        && (int) $SETTINGS['send_stats'] === 1
         && (int) ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
     ) {
         // get statistics data
