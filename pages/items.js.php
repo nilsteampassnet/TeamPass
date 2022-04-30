@@ -3564,7 +3564,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                             if (data.password_error !== '') {
                                                 error = true;
                                             } else {
-                                                result = atob(data.password);
+                                                result = atob(data.password).utf8Decode();
                                             }
                                         }
 
@@ -4328,7 +4328,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Uncrypt the pwd
                 if (data.pw !== undefined) {
-                    data.pw = atob(data.pw);
+                    data.pw = atob(data.pw).utf8Decode();
                 }
 
                 // Update hidden variables
