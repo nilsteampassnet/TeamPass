@@ -200,13 +200,13 @@ switch ($post_type) {
             ->firstOrFail();
             //print_r($user);
         } catch (\LdapRecord\LdapRecordException $e) {
-            $error = $e->setDetailedError();
+            $error = $e->getDetailedError();
             
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => "Error : ".$e->withDetailedError($e),//->detailedError(),
+                    'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
                 ),
                 'encode'
             );
@@ -226,13 +226,13 @@ switch ($post_type) {
                 );
             }
         } catch (\LdapRecord\LdapRecordException $e) {
-            $error = $e->setDetailedError();
+            $error = $e->getDetailedError();
             
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => "Error : ".$e->withDetailedError($e)->detailedError(),
+                    'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
                 ),
                 'encode'
             );

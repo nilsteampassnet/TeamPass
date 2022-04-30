@@ -1112,7 +1112,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $userADInfos = $connection->query()
             ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $username)
             ->firstOrFail();
-        //print_r($userADInfos);
     } catch (\LdapRecord\LdapRecordException $e) {
         $error = $e->getDetailedError();
 
@@ -1121,7 +1120,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
         ];
     }
-    //echo "ici ";
+    
     try {
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
             $userAuthAttempt = $connection->auth()->attempt(
@@ -1143,12 +1142,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         ];
     }
 
-    if ($userAuthAttempt === true) {
-        return [
-            'error' => false,
-            'message' => "User is successfully authenticated",
-        ];
-    } else {
+    if ($userAuthAttempt === false) {
         return [
             'error' => true,
             'message' => "Error : User could not be authentificated",

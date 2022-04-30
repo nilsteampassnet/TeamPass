@@ -281,7 +281,7 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
     include_once $path . 'Core.php';
 
     try {
-        $user_key = $protected_key->unlockKey($psk);
+        $user_key = $protected_key_encoded->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
         return 'Error - Major issue as the encryption is broken.';
