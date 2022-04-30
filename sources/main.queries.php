@@ -679,12 +679,12 @@ function generateQRCode(
 ): string
 {
     // is this allowed by setting
-    if (isSettingKeyChecked('ga_reset_by_user', 1, $SETTINGS) === true
+    if (isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
     ) {
         // User cannot ask for a new code
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_not_allowed_to'),
@@ -694,7 +694,7 @@ function generateQRCode(
     }
 
     // Check if user exists
-    if (null === $post_id || empty($post_id) === true) {
+    if (isValueSetNullEmpty($post_id) === true) {
         // Get data about user
         $data = DB::queryfirstrow(
             'SELECT id, email, pw
@@ -735,8 +735,7 @@ function generateQRCode(
     }
 
     if (
-        isset($post_pwd) === true
-        && isset($data['pw']) === true
+        isSetArrayOfValues([$post_pwd, $data['pw']]) === true
         && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
         && $post_demand_origin !== 'users_management_list'
     ) {
@@ -834,7 +833,7 @@ function sendEmailsNotSent(
     array $SETTINGS
 )
 {
-    if (isSettingKeyChecked('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
+    if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
         $row = DB::queryFirstRow(
             'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
             'cron',
@@ -980,7 +979,7 @@ function refreshUserItemsSeenList(
 
     // get wainting suggestions
     $nb_suggestions_waiting = 0;
-    if (isSettingKeyChecked('enable_suggestion', 1, $SETTINGS) === true
+    if (isKeyExistingAndEqual('enable_suggestion', 1, $SETTINGS) === true
         && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1)
     ) {
         DB::query('SELECT * FROM ' . prefixTable('suggestion'));
@@ -1002,9 +1001,8 @@ function sendingStatistics(
 ): void
 {
     if (
-        isset($SETTINGS['send_statistics_items']) === true
-        && isSettingKeyChecked('send_stats', 1, $SETTINGS) === true
-        && isset($SETTINGS['send_stats_time']) === true
+        isSetArrayOfValues([$SETTINGS['send_statistics_items'], $dSETTINGS['send_stats_time']]) === true
+        && isKeyExistingAndEqual('send_stats', 1, $SETTINGS) === true
         && (int) ($SETTINGS['send_stats_time'] + TP_ONE_DAY_SECONDS) > time()
     ) {
         // get statistics data

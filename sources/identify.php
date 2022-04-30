@@ -134,7 +134,7 @@ if ($post_type === 'identify_duo_user') {
     // return the response (which should be the user name)
     if ($authenticated_username === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
-        if (isSettingKeyChecked('ldap_mode', 1, $SETTINGS) === true) {
+        if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true) {
             // is user in Teampass?
             DB::queryfirstrow(
                 'SELECT id
@@ -232,10 +232,10 @@ if ($post_type === 'identify_duo_user') {
     echo prepareExchangedData(
     $SETTINGS['cpassman_dir'],
         [
-            'agses' => isSettingKeyChecked('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
-            'google' => isSettingKeyChecked('google_authentication', 1, $SETTINGS) === true ? true : false,
-            'yubico' => isSettingKeyChecked('yubico_authentication', 1, $SETTINGS) === true ? true : false,
-            'duo' => isSettingKeyChecked('duo', 1, $SETTINGS) === true ? true : false,
+            'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
+            'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
+            'yubico' => isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true ? true : false,
+            'duo' => isKeyExistingAndEqual('duo', 1, $SETTINGS) === true ? true : false,
         ],
         'encode'
     );
@@ -428,15 +428,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
     // 3- LDAP mode + user enabled + pw ok + usre is admin
     // This in order to allow admin by default to connect even if LDAP is activated
-    if ((isSettingKeyChecked('ldap_mode', 0, $SETTINGS) === true
+    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
             && (int) $userInfo['disabled'] === 0)
-        || (isSettingKeyChecked('ldap_mode', 1, $SETTINGS) === true
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
             && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
-        || (isSettingKeyChecked('ldap_mode', 2, $SETTINGS) === true
+        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
             && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
-        || (isSettingKeyChecked('ldap_mode', 1, $SETTINGS) === true
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
             && $username === 'admin' && (int) $userInfo['disabled'] === 0)
-        || (isSettingKeyChecked('ldap_and_local_authentication', 1, $SETTINGS) === true
+        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
             && (int) $userInfo['disabled'] === 0)
     ) {
@@ -474,7 +474,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('unsuccessfull_login_attempts_shown', DB::count() === 0 ? true : false, 'SESSION', 'user');
         $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
         // Log into DB the user's connection
-        isSettingKeyChecked('log_connections', 1, $SETTINGS) === true ?
+        isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true ?
         logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfo['id'], stripslashes($username)) 
         : '';
             
@@ -702,7 +702,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $return = $dataReceived['randomstring'];
         // Send email
         if (
-            isSettingKeyChecked('enable_send_email_on_user_login', 1, $SETTINGS) === true
+            isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
@@ -798,7 +798,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ) {
             $userIsLocked = true;
             // log it
-            if (isSettingKeyChecked('log_connections', 1, $SETTINGS) === true) {
+            if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
                 logEvents($SETTINGS, 'user_locked', 'connection', (string) $userInfo['id'], stripslashes($username));
             }
         }
@@ -972,7 +972,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
  */
 function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastPwChange, $SETTINGS)
 {
-    if (isSettingKeyChecked('ldap_mode', 1, $SETTINGS) === true) {
+    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true) {
         return [
             'validite_pw' => true,
             'last_pw_change' => true,
@@ -1304,7 +1304,7 @@ function ldapCreateUser(string $username, string $passwordClear, string $retLDAP
     );
     $newUserId = DB::insertId();
     // Create personnal folder
-    if (isSettingKeyChecked('enable_pf_feature', 1, $SETTINGS) === true) {
+    if (isKeyExistingAndEqual('enable_pf_feature', 1, $SETTINGS) === true) {
         DB::insert(
             prefixTable('nested_tree'),
             [
@@ -1592,9 +1592,15 @@ function identifyDoInitialChecks(
     }
 
     // Check 2FA
-    if ((((int) $SETTINGS['yubico_authentication'] === 1 && empty($user_2fa_selection) === true)
-        || ((int) $SETTINGS['google_authentication'] === 1 && empty($user_2fa_selection) === true)
-        || ((int) $SETTINGS['duo'] === 1 && empty($user_2fa_selection) === true))
+    if ((empty($user_2fa_selection) === true &&
+            isOneVarOfArrayEqualToValue(
+                [
+                    (int) $SETTINGS['yubico_authentication'],
+                    (int) $SETTINGS['google_authentication'],
+                    (int) $SETTINGS['duo']
+                ],
+                1
+            ) === true)
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
         return [
@@ -1776,7 +1782,7 @@ function identifyDoMFAChecks(
         // ---------
         // Check Yubico
         // ---------
-        isSettingKeyChecked('yubico_authentication', 1, $SETTINGS) === true
+        isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true
         && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
         && $userInitialData['user_mfa_mode'] === 'yubico'
         && $userInfo['mfa_auth_requested'] === true

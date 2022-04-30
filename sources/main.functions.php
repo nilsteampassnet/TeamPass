@@ -3223,7 +3223,7 @@ function isUserIdValid($userId): bool
 }
 
 /**
- * Undocumented function
+ * Check if a setting key exists and if its value is the one expected
  *
  * @param string            $key
  * @param string|integer    $value
@@ -3231,13 +3231,154 @@ function isUserIdValid($userId): bool
  * 
  * @return bool
  */
-function isSettingKeyChecked($key, $value, array $SETTINGS): bool
+function isKeyExistingAndEqual1($key, $value, array $SETTINGS): bool
 {
     if (isset($SETTINGS[$key]) === true
         && (is_int($value) === true ?
             (int) $SETTINGS[$key] === $value :
             (string) $SETTINGS[$key] === $value)
     ) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if a key exists and if its value equal the one expected
+ *
+ * @param string $key
+ * @param integer|string $value
+ * @param array $array
+ * 
+ * @return boolean
+ */
+function isKeyExistingAndEqual(string $key, int|string $value, array $array): bool
+{
+    if (isset($array[$key]) === true
+        && (is_int($value) === true ?
+            (int) $array[$key] === $value :
+            (string) $array[$key] === $value)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if a variable is not set or equal to a value
+ *
+ * @param string $var
+ * @param integer|string $value
+ * 
+ * @return boolean
+ */
+function isKeyNotSetOrEqual(string $var, int|string $value): bool
+{
+    if (isset($var) === false
+        || (is_int($value) === true ?
+            (int) $var === $value :
+            (string) $var === $value)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if a key exists and if its value < to the one expected
+ *
+ * @param string $key
+ * @param integer $value
+ * @param array $array
+ * 
+ * @return boolean
+ */
+function isKeyExistingAndInferior(string $key, int $value, array $array): bool
+{
+    if (isset($array[$key]) === true && (int) $array[$key] < $value) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if a key exists and if its value > to the one expected
+ *
+ * @param string $key
+ * @param integer $value
+ * @param array $array
+ * 
+ * @return boolean
+ */
+function isKeyExistingAndSuperior(string $key, int $value, array $array): bool
+{
+    if (isset($array[$key]) === true && (int) $array[$key] > $value) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Check if values in array are set
+ * Return true if all set
+ * Return false if one of them is not set
+ *
+ * @param array $arrayOfValues
+ * @return boolean
+ */
+function isSetArrayOfValues(array $arrayOfValues)
+{
+    foreach($arrayOfValues as $value) {
+        if (isset($value) === false) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Check if values in array are set
+ * Return true if all set
+ * Return false if one of them is not set
+ *
+ * @param array $arrayOfValues
+ * @return boolean
+ */
+function isArrayOfVarsEqualToValue(array $arrayOfVars, int|string $value)
+{
+    foreach($arrayOfVars as $variable) {
+        if ($variable !== $value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Checks if at least one variable in array is equal to value
+ *
+ * @param array $arrayOfValues
+ * @return boolean
+ */
+function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value)
+{
+    foreach($arrayOfVars as $variable) {
+        if ($variable === $value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Checks is value is null, not set OR empty
+ *
+ * @param string $value
+ * @return boolean
+ */
+function isValueSetNullEmpty(string $value)
+{
+    if (is_null($value) || isset($value) === false || empty($post_id) === true) {
         return true;
     }
     return false;
