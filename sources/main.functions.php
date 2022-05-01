@@ -3352,13 +3352,34 @@ function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value)
 /**
  * Checks is value is null, not set OR empty
  *
- * @param string $value
+ * @param string|int $value
  * @return boolean
  */
-function isValueSetNullEmpty(string $value)
+function isValueSetNullEmpty(string|int $value)
 {
-    if (is_null($value) || isset($value) === false || empty($post_id) === true) {
+    if (is_null($value) || isset($value) === false || empty($value) === true) {
         return true;
     }
     return false;
+}
+
+/**
+ * Ensure Complexity is translated
+ *
+ * @return void
+ */
+function defineComplexity() : void
+{
+    if (defined('TP_PW_COMPLEXITY') === false) {
+        define(
+            'TP_PW_COMPLEXITY',
+            [
+                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            ]
+        );
+    }
 }

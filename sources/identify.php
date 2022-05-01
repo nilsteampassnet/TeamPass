@@ -160,18 +160,7 @@ if ($post_type === 'identify_duo_user') {
     //--------
 
     // Ensure Complexity levels are translated
-    if (defined('TP_PW_COMPLEXITY') === false) {
-        define(
-            'TP_PW_COMPLEXITY',
-            array(
-                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-            )
-        );
-    }
+    defineComplexity();
 
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -243,6 +232,60 @@ if ($post_type === 'identify_duo_user') {
 }
 
 /**
+ * Permits to load config file
+ *
+ * @return boolean
+ */
+function findTpConfigFile() : bool
+{
+    if (file_exists('../includes/config/tp.config.php')) {
+        include_once '../includes/config/tp.config.php';
+        return true;
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include_once './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include_once '../../includes/config/tp.config.php';
+    } elseif (file_exists('../../../includes/config/tp.config.php')) {
+        include_once '../../../includes/config/tp.config.php';
+    }
+    return false;
+}
+
+/**
+ * Undocumented function
+ *
+ * @param array     $SETTINGS Teampass settings
+ * @param int       $userInfoDisabled
+ * @param string    $username
+ *
+ * @return boolean
+ */
+function canUserGetLog(
+    $SETTINGS,
+    $userInfoDisabled,
+    $username
+) : bool
+{
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+
+    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
+            && (int) $userInfoDisabled === 0)
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
+            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
+            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
+            && $username === 'admin' && (int) $userInfoDisabled === 0)
+        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
+            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
+            && (int) $userInfoDisabled === 0)
+    ) {
+        return true;
+    }
+    return false;
+}
+
+/**
  * Complete authentication of user through Teampass
  *
  * @param string $sentData Credentials
@@ -253,11 +296,7 @@ if ($post_type === 'identify_duo_user') {
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
     // Load config
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } else {
+    if (findTpConfigFile() === false) {
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
@@ -340,8 +379,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
     $userInfo = $userInitialData['userInfo'];
     $return = '';
-
-
     $userLdap = identifyDoLDAPChecks(
         $SETTINGS,
         $userInfo,
@@ -362,8 +399,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
     $userPasswordVerified = $userLdap['ldapConnection'];
     $ldapConnection = $userLdap['ldapConnection'];
-    //$retLDAP = $userLdap['retLDAP'];
-
     $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
 
     // Check user and password
@@ -428,17 +463,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
     // 3- LDAP mode + user enabled + pw ok + usre is admin
     // This in order to allow admin by default to connect even if LDAP is activated
-    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
-            && (int) $userInfo['disabled'] === 0)
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfo['disabled'] === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $username === 'admin' && (int) $userInfo['disabled'] === 0)
-        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
-            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
-            && (int) $userInfo['disabled'] === 0)
+    if (canUserGetLog(
+            $SETTINGS,
+            (int) $userInfo['disabled'],
+            $username
+        ) === true
     ) {
         $superGlobal->put('autoriser', true, 'SESSION');
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
@@ -639,13 +668,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'id=%i',
             $userInfo['id']
         );
-        // Debug
-        /*debugIdentify(
-            DEBUGDUO,
-            DEBUGDUOFILE,
-            "Preparing to identify the user rights\n"
-        );
-        */
+        
         // Get user's rights
         if ($user_initial_creation_through_ldap !== false) {
             // is new LDAP user. Show only his personal folder
@@ -741,25 +764,36 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
 
         // Ensure Complexity levels are translated
-        if (defined('TP_PW_COMPLEXITY') === false) {
-            define(
-                'TP_PW_COMPLEXITY',
-                [
-                    TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                    TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                    TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                    TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                    TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                ]
-            );
-        }
+        defineComplexity();
 
-        /*
-        $sessionUrl = '';
-        if ($SETTINGS['cpassman_dir'] === '..') {
-            $SETTINGS['cpassman_dir'] = '.';
-        }
-        */
+        echo prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            [
+                'value' => $return,
+                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+                'initial_url' => $antiXss->xss_clean($sessionUrl),
+                'pwd_attempts' => 0,
+                'error' => false,
+                'message' => $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') !== null && (int) $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') === 1 ? 'ask_for_otc' : '',
+                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
+                'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
+                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
+                'session_key' => $superGlobal->get('key', 'SESSION'),
+                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
+                'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
+            ],
+            'encode'
+        );
+    
+        return true;
+
     } elseif ((int) $userInfo['disabled'] === 1) {
         // User and password is okay but account is locked
         echo prepareExchangedData(
@@ -779,85 +813,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
                     && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
                 'session_key' => $superGlobal->get('key', 'SESSION'),
-                //'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
-                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
-            ],
-            'encode'
-        );
-        return false;
-    } else {
-        // User exists in the DB but Password is false
-        // check if user is locked
-        $userIsLocked = false;
-        $nbAttempts = intval($userInfo['no_bad_attempts'] + 1);
-        if (
-            $SETTINGS['nb_bad_authentication'] > 0
-            && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
-        ) {
-            $userIsLocked = true;
-            // log it
-            if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
-                logEvents($SETTINGS, 'user_locked', 'connection', (string) $userInfo['id'], stripslashes($username));
-            }
-        }
-        DB::update(
-            prefixTable('users'),
-            [
-                'key_tempo' => $superGlobal->get('key', 'SESSION'),
-                'disabled' => $userIsLocked,
-                'no_bad_attempts' => $nbAttempts,
-            ],
-            'id=%i',
-            $userInfo['id']
-        );
-        // What return shoulb we do
-        if ($userIsLocked === true) {
-            echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                [
-                    'value' => $return,
-                    'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                    'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                    'pwd_attempts' => 0,
-                    'error' => 'user_is_locked',
-                    'message' => langHdl('account_is_locked'),
-                    'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
-                    'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
-                    'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                    'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                        && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                        && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-                    'session_key' => $superGlobal->get('key', 'SESSION'),
-                    //'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
-                    'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-                    'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                    'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
-                ],
-                'encode'
-            );
-            return false;
-        }
-        echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
-            [
-                'value' => $return,
-                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => 'user_not_exists3',
-                'message' => langHdl('error_bad_credentials'),
-                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                        && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                        && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-                'session_key' => $superGlobal->get('key', 'SESSION'),
-                    //'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
                 'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
                 'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
                 'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
@@ -867,43 +822,115 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    // Debug
-    /*
-    debugIdentify(
-        DEBUGDUO,
-        DEBUGDUOFILE,
-        "\n\n----\n" .
-            'Identified : ' . filter_var($return, FILTER_SANITIZE_STRING) . "\n\n"
-    );
-    */
+    // DEFAULT CASE
+    // User exists in the DB but Password is false
+    // check if user is locked
+    if (isUserLocked(
+            (int) $userInfo['no_bad_attempts'],
+            $userInfo['id'],
+            $username,
+            $superGlobal->get('key', 'SESSION'),
+            $SETTINGS
+        ) === true
+    ) {
+        echo prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            [
+                'value' => $return,
+                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
+                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => 0,
+                'error' => 'user_is_locked',
+                'message' => langHdl('account_is_locked'),
+                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
+                'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
+                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
+                'session_key' => $superGlobal->get('key', 'SESSION'),
+                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
+                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+            ],
+            'encode'
+        );
+        return false;
+    }
+    
     echo prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         [
             'value' => $return,
             'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
             'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
-            'initial_url' => $antiXss->xss_clean($sessionUrl),
-            'pwd_attempts' => 0,
-            'error' => false,
-            'message' => $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') !== null && (int) $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') === 1 ? 'ask_for_otc' : '',
+            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'error' => 'user_not_exists3',
+            'message' => langHdl('error_bad_credentials'),
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
             'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
+                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
+                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
             'session_key' => $superGlobal->get('key', 'SESSION'),
-            //'has_psk' => empty($superGlobal->get('encrypted_psk', 'SESSION', 'user')) === false ? true : false,
             'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
             'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
             'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
-            'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
-            'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
         ],
         'encode'
     );
+    return false;
+}
 
-    return true;
+/**
+ * Manages if user is locked or not
+ *
+ * @param int       $nbAttempts
+ * @param int       $userId
+ * @param string    $username
+ * @param string    $key
+ * @param array     $SETTINGS
+ *
+ * @return boolean
+ */
+function isUserLocked(
+    $nbAttempts,
+    $userId,
+    $username,
+    $key,
+    $SETTINGS
+) : bool 
+{
+    $userIsLocked = false;
+    $nbAttempts++;
+    if (
+        (int) $SETTINGS['nb_bad_authentication'] > 0
+        && (int) $SETTINGS['nb_bad_authentication'] < $nbAttempts
+    ) {
+        // User is now locked as too many attempts
+        $userIsLocked = true;
+
+        // log it
+        if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
+            logEvents($SETTINGS, 'user_locked', 'connection', (string) $userId, stripslashes($username));
+        }
+    }
+    
+    DB::update(
+        prefixTable('users'),
+        [
+            'key_tempo' => $superGlobal->get('key', 'SESSION'),
+            'disabled' => $userIsLocked,
+            'no_bad_attempts' => $nbAttempts,
+        ],
+        'id=%i',
+        $userId
+    );
+
+    return $userIsLocked;
 }
 
 
