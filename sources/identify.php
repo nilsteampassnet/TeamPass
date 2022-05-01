@@ -252,18 +252,20 @@ function findTpConfigFile() : bool
 }
 
 /**
- * Undocumented function
+ * Can you user get logged into main page
  *
- * @param array     $SETTINGS Teampass settings
+ * @param array     $SETTINGS
  * @param int       $userInfoDisabled
  * @param string    $username
+ * @param bool      $ldapConnection
  *
  * @return boolean
  */
 function canUserGetLog(
     $SETTINGS,
     $userInfoDisabled,
-    $username
+    $username,
+    $ldapConnection
 ) : bool
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -397,12 +399,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    $userPasswordVerified = $userLdap['ldapConnection'];
-    $ldapConnection = $userLdap['ldapConnection'];
     $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
 
     // Check user and password
-    if ($userPasswordVerified === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
+    if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             [
@@ -466,7 +466,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if (canUserGetLog(
             $SETTINGS,
             (int) $userInfo['disabled'],
-            $username
+            $username,
+            $userLdap['ldapConnection']
         ) === true
     ) {
         $superGlobal->put('autoriser', true, 'SESSION');
@@ -922,7 +923,7 @@ function isUserLocked(
     DB::update(
         prefixTable('users'),
         [
-            'key_tempo' => $superGlobal->get('key', 'SESSION'),
+            'key_tempo' => $key,
             'disabled' => $userIsLocked,
             'no_bad_attempts' => $nbAttempts,
         ],
