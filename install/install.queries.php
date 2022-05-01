@@ -213,10 +213,11 @@ if (null !== $post_type) {
             $session_url_path = $data['url_path'];
 
             if (isset($data['activity']) && $data['activity'] === 'folder') {
-                if (is_writable($abspath . '/' . $data['task'] . '/') === true) {
+                $targetPath = $abspath . '/' . $data['task'] . '/';
+                if (is_writable($targetPath) === true) {
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } else {
-                    echo '[{"error" : " Path ' . $data['task'] . ' is not writable!", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                    echo '[{"error" : " Path ' . $targetPath . ' is not writable!", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
                 break;
             }
