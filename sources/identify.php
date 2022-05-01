@@ -232,62 +232,6 @@ if ($post_type === 'identify_duo_user') {
 }
 
 /**
- * Permits to load config file
- *
- * @return boolean
- */
-function findTpConfigFile() : bool
-{
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-        return true;
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } elseif (file_exists('../../../includes/config/tp.config.php')) {
-        include_once '../../../includes/config/tp.config.php';
-    }
-    return false;
-}
-
-/**
- * Can you user get logged into main page
- *
- * @param array     $SETTINGS
- * @param int       $userInfoDisabled
- * @param string    $username
- * @param bool      $ldapConnection
- *
- * @return boolean
- */
-function canUserGetLog(
-    $SETTINGS,
-    $userInfoDisabled,
-    $username,
-    $ldapConnection
-) : bool
-{
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
-    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
-            && (int) $userInfoDisabled === 0)
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $username === 'admin' && (int) $userInfoDisabled === 0)
-        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
-            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
-            && (int) $userInfoDisabled === 0)
-    ) {
-        return true;
-    }
-    return false;
-}
-
-/**
  * Complete authentication of user through Teampass
  *
  * @param string $sentData Credentials
@@ -399,8 +343,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    $user_initial_creation_through_ldap = $userLdap['user_initial_creation_through_ldap'];
-
     // Check user and password
     if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
@@ -420,38 +362,33 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
 
     // Check user against MFA method if selected
-    $userLdap = identifyDoMFAChecks(
+    $userMfa = identifyDoMFAChecks(
         $SETTINGS,
         $userInfo,
         $dataReceived,
         $userInitialData,
         (string) $username
     );
-    if ($userLdap['error'] === true) {
+    if ($userMfa['error'] === true) {
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
-            $userLdap['mfaData'],
+            $userMfa['mfaData'],
             'encode'
         );
         return false;
-    }
-
-    // Manage case where user has initiated Google Auth
-    if (is_array($userLdap['mfaData']) === true
-        && array_key_exists('firstTime', $userLdap['mfaData']) === true
-        && count($userLdap['mfaData']['firstTime']) > 0
-        && $userInitialData['user_mfa_mode'] === 'google'
-    ) {
+    } elseif ($userMfa['mfaQRCodeInfos'] === true) {
+        // Case where user has initiated Google Auth
+        // Return QR code
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             [
-                'value' => $userLdap['mfaData']['firstTime']['value'],
+                'value' => $userMfa['mfaData']['firstTime']['value'],
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => false,
-                'message' => $userLdap['mfaData']['firstTime']['message'],
-                'mfaStatus' => $userLdap['mfaData']['firstTime']['mfaStatus'],
+                'message' => $userMfa['mfaData']['firstTime']['message'],
+                'mfaStatus' => $userMfa['mfaData']['firstTime']['mfaStatus'],
             ],
             'encode'
         );
@@ -480,35 +417,18 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 );*/
 
         // Check if any unsuccessfull login tries exist
-        $rows = DB::query(
-            'SELECT date
-            FROM ' . prefixTable('log_system') . "
-            WHERE field_1 = %s
-            AND type = 'failed_auth'
-            AND label = 'password_is_not_correct'
-            AND date >= %s AND date < %s",
+        $attemptsInfos = handleLoginAttempts(
+            $userInfo['id'],
             $userInfo['login'],
             $userInfo['last_connexion'],
-            time()
+            $username,
+            $SETTINGS,
         );
-        $arrAttempts = [];
-        if (DB::count() > 0) {
-            foreach ($rows as $record) {
-                array_push(
-                    $arrAttempts,
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date'])
-                );
-            }
-        }
-        $superGlobal->put('unsuccessfull_login_attempts_list', $arrAttempts, 'SESSION', 'user');
-        $superGlobal->put('unsuccessfull_login_attempts_shown', DB::count() === 0 ? true : false, 'SESSION', 'user');
-        $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
-        // Log into DB the user's connection
-        isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true ?
-        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfo['id'], stripslashes($username)) 
-        : '';
             
         // Save account in SESSION
+        $superGlobal->put('unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'], 'SESSION', 'user');
+        $superGlobal->put('unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false, 'SESSION', 'user');
+        $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
         $superGlobal->put('login', stripslashes($username), 'SESSION');
         $superGlobal->put('name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '', 'SESSION');
         $superGlobal->put('lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '', 'SESSION');
@@ -607,25 +527,25 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // build array of roles
         $superGlobal->put('user_pw_complexity', 0, 'SESSION');
         $superGlobal->put('arr_roles', [], 'SESSION');
-        foreach ($superGlobal->get('user_roles', 'SESSION') as $role) {
-            $resRoles = DB::queryFirstRow(
-                'SELECT title, complexity
-                FROM ' . prefixTable('roles_title') . '
-                WHERE id=%i',
-                $role
-            );
+        $rolesList = DB::query(
+            'SELECT id, title, complexity
+            FROM ' . prefixTable('roles_title') . '
+            WHERE id IN %li',
+            $superGlobal->get('user_roles', 'SESSION')
+        );
+        foreach ($rolesList as $role) {
             $superGlobal->put(
-                $role,
+                $role['id'],
                 [
-                    'id' => $role,
-                    'title' => $resRoles['title'],
+                    'id' => $role['id'],
+                    'title' => $role['title'],
                 ],
                 'SESSION',
                 'arr_roles'
             );
             // get highest complexity
-            if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($resRoles['complexity'])) {
-                $superGlobal->put('user_pw_complexity', $resRoles['complexity'], 'SESSION');
+            if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($role['complexity'])) {
+                $superGlobal->put('user_pw_complexity', $role['complexity'], 'SESSION');
             }
         }
 
@@ -671,7 +591,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         
         // Get user's rights
-        if ($user_initial_creation_through_ldap !== false) {
+        if ($userLdap['user_initial_creation_through_ldap'] !== false) {
             // is new LDAP user. Show only his personal folder
             if ($SETTINGS['enable_pf_feature'] === '1') {
                 $superGlobal->put('personal_visible_groups', [$userInfo['id']], 'SESSION');
@@ -883,6 +803,113 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ],
         'encode'
     );
+    return false;
+}
+
+/**
+ * Check if any unsuccessfull login tries exist
+ *
+ * @param int       $userInfoId
+ * @param string    $userInfoLogin
+ * @param string    $userInfoLastConnection
+ * @param string    $username
+ * @param array     $SETTINGS
+ * @return array
+ */
+function handleLoginAttempts(
+    $userInfoId,
+    $userInfoLogin,
+    $userInfoLastConnection,
+    $username,
+    $SETTINGS,
+) : array
+{
+    $rows = DB::query(
+        'SELECT date
+        FROM ' . prefixTable('log_system') . "
+        WHERE field_1 = %s
+        AND type = 'failed_auth'
+        AND label = 'password_is_not_correct'
+        AND date >= %s AND date < %s",
+        $userInfoLogin,
+        $userInfoLastConnection,
+        time()
+    );
+    $arrAttempts = [];
+    if (DB::count() > 0) {
+        foreach ($rows as $record) {
+            array_push(
+                $arrAttempts,
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date'])
+            );
+        }
+    }
+    
+
+    // Log into DB the user's connection
+    if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
+        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfo['id'], stripslashes($username));
+    }
+
+    return [
+        'attemptsList' => $arrAttempts,
+        'attemptsCount' => DB::count(),
+    ];
+}
+
+/**
+ * Permits to load config file
+ *
+ * @return boolean
+ */
+function findTpConfigFile() : bool
+{
+    if (file_exists('../includes/config/tp.config.php')) {
+        include_once '../includes/config/tp.config.php';
+        return true;
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include_once './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include_once '../../includes/config/tp.config.php';
+    } elseif (file_exists('../../../includes/config/tp.config.php')) {
+        include_once '../../../includes/config/tp.config.php';
+    }
+    return false;
+}
+
+/**
+ * Can you user get logged into main page
+ *
+ * @param array     $SETTINGS
+ * @param int       $userInfoDisabled
+ * @param string    $username
+ * @param bool      $ldapConnection
+ *
+ * @return boolean
+ */
+function canUserGetLog(
+    $SETTINGS,
+    $userInfoDisabled,
+    $username,
+    $ldapConnection
+) : bool
+{
+    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+
+    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
+            && (int) $userInfoDisabled === 0)
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
+            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
+            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
+            && $username === 'admin' && (int) $userInfoDisabled === 0)
+        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
+            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
+            && (int) $userInfoDisabled === 0)
+    ) {
+        return true;
+    }
     return false;
 }
 
@@ -1796,12 +1823,16 @@ function identifyDoMFAChecks(
             return [
                 'error' => true,
                 'mfaData' => $ret,
+                'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
+                    && count($ret['firstTime']) > 0 ? true : false,
             ];
             // ---
         }
+
         return [
             'error' => false,
             'mfaData' => $ret,
+            'mfaQRCodeInfos' => false,
         ];
 
         // ---
@@ -1824,6 +1855,7 @@ function identifyDoMFAChecks(
             return [
                 'error' => true,
                 'mfaData' => $ret,
+                'mfaQRCodeInfos' => false,
             ];
         }
         
@@ -1833,6 +1865,7 @@ function identifyDoMFAChecks(
 
     return [
         'error' => false,
-        'user_initial_creation_through_ldap' => $ret['user_initial_creation_through_ldap'],
+        'mfaData' => '',
+        'mfaQRCodeInfos' => false,
     ];
 }
