@@ -527,25 +527,27 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // build array of roles
         $superGlobal->put('user_pw_complexity', 0, 'SESSION');
         $superGlobal->put('arr_roles', [], 'SESSION');
-        $rolesList = DB::query(
-            'SELECT id, title, complexity
-            FROM ' . prefixTable('roles_title') . '
-            WHERE id IN %li',
-            $superGlobal->get('user_roles', 'SESSION')
-        );
-        foreach ($rolesList as $role) {
-            $superGlobal->put(
-                $role['id'],
-                [
-                    'id' => $role['id'],
-                    'title' => $role['title'],
-                ],
-                'SESSION',
-                'arr_roles'
+        if (count($superGlobal->get('user_roles', 'SESSION')) > 0) {
+            $rolesList = DB::query(
+                'SELECT id, title, complexity
+                FROM ' . prefixTable('roles_title') . '
+                WHERE id IN %li',
+                $superGlobal->get('user_roles', 'SESSION')
             );
-            // get highest complexity
-            if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($role['complexity'])) {
-                $superGlobal->put('user_pw_complexity', $role['complexity'], 'SESSION');
+            foreach ($rolesList as $role) {
+                $superGlobal->put(
+                    $role['id'],
+                    [
+                        'id' => $role['id'],
+                        'title' => $role['title'],
+                    ],
+                    'SESSION',
+                    'arr_roles'
+                );
+                // get highest complexity
+                if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($role['complexity'])) {
+                    $superGlobal->put('user_pw_complexity', $role['complexity'], 'SESSION');
+                }
             }
         }
 
@@ -896,20 +898,40 @@ function canUserGetLog(
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
-    if ((isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true
-            && (int) $userInfoDisabled === 0)
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true
-            && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true
-            && $username === 'admin' && (int) $userInfoDisabled === 0)
+    if ((int) $userInfoDisabled === 1) {
+        return false;
+    }
+
+    if (isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true) {
+        return true;
+    }
+    
+    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true 
+        && (
+            ($ldapConnection === true && $username !== 'admin')
+            || $username === 'admin')
+    ) {
+        return true;
+    }
+
+    if (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
+        && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
+    ) {
+        return true;
+    }
+    /*
+    if (
+        (isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true && (int) $userInfoDisabled === 0)
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
+        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $username === 'admin' && (int) $userInfoDisabled === 0)
         || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
             && (int) $userInfoDisabled === 0)
     ) {
         return true;
     }
+    */
     return false;
 }
 
@@ -1658,6 +1680,7 @@ function identifyDoInitialChecks(
             ) === true)
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
+        //echo $SETTINGS['admin_2fa_required']." ;; ";
         return [
             'error' => true,
             'array' => [
