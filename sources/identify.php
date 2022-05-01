@@ -1491,7 +1491,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             'error' => true,
             'message' => langHdl('ga_bad_code'),
             'proceedIdentification' => false,
-            'firstTime' => $firstTime,
+            'firstTime' => [],
         ];
     }
 

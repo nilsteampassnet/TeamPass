@@ -185,7 +185,15 @@ function mainQuery(array $SETTINGS)
     //}
 }
 
-function passwordHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+/**
+ * Handler for all password tasks
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return void
+ */
+function passwordHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         case 'change_pw'://action_password
@@ -196,8 +204,7 @@ function passwordHandler(string $post_type, array|null $dataReceived, array $SET
                 (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING),
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
-            );            
-            break;
+            );
 
         /*
         * Change user's authenticataion password
@@ -209,7 +216,6 @@ function passwordHandler(string $post_type, array|null $dataReceived, array $SET
                 (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
         * User's authenticataion password in LDAP has changed
@@ -221,7 +227,6 @@ function passwordHandler(string $post_type, array|null $dataReceived, array $SET
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
         * test_current_user_password_is_correct
@@ -232,7 +237,6 @@ function passwordHandler(string $post_type, array|null $dataReceived, array $SET
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
         * User's password has to be initialized
@@ -245,12 +249,18 @@ function passwordHandler(string $post_type, array|null $dataReceived, array $SET
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
     }
 }
 
-
-function userHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+/**
+ * Handler for all user tasks
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return void
+ */
+function userHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -262,7 +272,6 @@ function userHandler(string $post_type, array|null $dataReceived, array $SETTING
                 (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
         * Increase the session time of User
@@ -271,7 +280,6 @@ function userHandler(string $post_type, array|null $dataReceived, array $SETTING
             return increaseSessionDuration(
                 (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
             );
-            break;
 
         /*
         * Generate a password generic
@@ -286,7 +294,6 @@ function userHandler(string $post_type, array|null $dataReceived, array $SETTING
                 (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
                 $SETTINGS
             );
-            break;
 
         /*
         * Refresh list of last items seen
@@ -295,7 +302,6 @@ function userHandler(string $post_type, array|null $dataReceived, array $SETTING
             return refreshUserItemsSeenList(
                 $SETTINGS
             );
-            break;
 
         /*
             * This will generate the QR Google Authenticator
@@ -309,12 +315,18 @@ function userHandler(string $post_type, array|null $dataReceived, array $SETTING
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
     }
 }
 
-
-function mailHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+/**
+ * Handler for all mail tasks
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return void
+ */
+function mailHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -332,7 +344,6 @@ function mailHandler(string $post_type, array|null $dataReceived, array $SETTING
                 ),
                 $SETTINGS
             );
-            break;
         
         /*
         * Send emails not sent
@@ -346,8 +357,15 @@ function mailHandler(string $post_type, array|null $dataReceived, array $SETTING
     }
 }
 
-
-function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+/**
+ * Handler for all key related tasks
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return void
+ */
+function keyHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -358,7 +376,6 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-            break;
 
         /*
         * user_sharekeys_reencryption_start
@@ -369,7 +386,6 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
         * user_sharekeys_reencryption_next
@@ -383,7 +399,6 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-            break;
 
         /*
         * user_psk_reencryption
@@ -396,7 +411,6 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
                 (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
             * User's public/private keys change
@@ -409,7 +423,6 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-            break;
 
         /*
             * Generates a KEY with CRYPT
@@ -422,12 +435,18 @@ function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS
             // generate key
             $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
             return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
-            break;
     }
 }
 
-
-function systemHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+/**
+ * Handler for all system tasks
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return void
+ */
+function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
