@@ -342,6 +342,67 @@ function buildNodeTree(
     return $ret_json;
 }
 
+/**
+ * Get some infos for this node
+ *
+ * @param integer   $nodeId
+ * @param integer   $nodeLevel
+ * @param string    $nodeTitle
+ * @param integer   $userId
+ * @param string    $userLogin
+ * @param bool      $userIsRO
+ * @param array     $userPF
+ * @return array
+ */
+function getNodeInfos(
+    int $nodeId,
+    int $nodeLevel,
+    string $nodeTitle,
+    int $userId,
+    string $userLogin,
+    bool $userIsRO,
+    array $userPF
+) : array
+{
+    $ret = [];
+    // get count of Items in this folder
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('items') . '
+        WHERE inactif=%i AND id_tree = %i',
+        0,
+        $nodeId
+    );
+    $ret['itemsNb'] = DB::count();
+
+    // get info about current folder
+    DB::query(
+        'SELECT *
+        FROM ' . prefixTable('nested_tree') . '
+        WHERE parent_id = %i',
+        $nodeId
+    );
+    $ret['childrenNb'] = DB::count();
+
+    // Manage node title
+    if ($userIsRO === true && in_array($node->id, $userPF) === false) {
+        // special case for READ-ONLY folder
+        $ret['title'] = langHdl('read_only_account');
+    } else {
+        // If personal Folder, convert id into user name
+        $ret['title'] = $nodeTitle === $userId && (int) $nodeLevel === 1 ?
+        $userLogin :
+        ($nodeTitle === null ? '' : htmlspecialchars_decode($nodeTitle, ENT_QUOTES));
+    }
+
+    $ret['text'] = str_replace(
+        '&',
+        '&amp;',
+        $ret['nodeTitle']
+    );
+
+    return $ret;
+}
 
 function buildNodeTreeElements(
     $node,
@@ -362,39 +423,23 @@ function buildNodeTreeElements(
     $numDescendants
 )
 {
-    // get count of Items in this folder
-    DB::query(
-        'SELECT *
-        FROM ' . prefixTable('items') . '
-        WHERE inactif=%i AND id_tree = %i',
-        0,
-        $node->id
+    // Get info for this node
+    $nodeInfos = getNodeInfos(
+        $node->id,
+        $node->nlevel,
+        $node->title,
+        $session_user_id,
+        $session_login,
+        $session_user_read_only,
+        $session_personal_folders
     );
-    $itemsNb = DB::count();
-
-    // get info about current folder
-    DB::query(
-        'SELECT *
-        FROM ' . prefixTable('nested_tree') . '
-        WHERE parent_id = %i',
-        $node->id
-    );
-    $childrenNb = DB::count();
-
-    // If personal Folder, convert id into user name
-    $node->title = $node->title === $session_user_id && (int) $node->nlevel === 1 ?
-        $session_login :
-        ($node->title === null ? '' : htmlspecialchars_decode($node->title, ENT_QUOTES));
+    $itemsNb = $nodeInfos['itemsNb'];
+    $childrenNb = $nodeInfos['childrenNb'];
+    $title = $nodeInfos['title'];
+    $text = $nodeInfos['text'];
 
     // prepare json return for current node
     $parent = $node->parent_id === 0 ? '#' : 'li_' . $node->parent_id;
-
-    // special case for READ-ONLY folder
-    $title = (bool) $session_user_read_only === true && in_array($node->id, $session_personal_folders) === false ? langHdl('read_only_account') : '';
-    $text = str_replace('&', '&amp;', $node->title);
-    //$restricted = 0;
-    //$folderClass = 'folder';
-    //$show_but_block = false;
 
     if (in_array($node->id, $session_groupes_visibles) === true) {
         if (in_array($node->id, $session_read_only_folders) === true) {
@@ -438,7 +483,7 @@ function buildNodeTreeElements(
         );
     }
     
-    elseif (in_array($node->id, $listFoldersLimitedKeys) === true) {
+    if (in_array($node->id, $listFoldersLimitedKeys) === true) {
         return array(
             'text' => $text . ($session_user_read_only === true ?
                 '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
@@ -454,7 +499,7 @@ function buildNodeTreeElements(
         );
     }
     
-    elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys) === true) {        
+    if (in_array($node->id, $listRestrictedFoldersForItemsKeys) === true) {        
         return array(
             'text' => $text . ($session_user_read_only === true ? 
                 '<i class="far fa-eye fa-xs mr-1 ml-1"></i>' :
@@ -471,7 +516,7 @@ function buildNodeTreeElements(
     }
 
     // default case
-    elseif (isKeyExistingAndEqual('show_only_accessible_folders', 1, $SETTINGS) === true
+    if (isKeyExistingAndEqual('show_only_accessible_folders', 1, $SETTINGS) === true
         && (int) $numDescendants === 0)
     {
         return array();

@@ -1634,8 +1634,17 @@ function identifyGetUserCredentials(
 }
 
 
-    
-
+/**
+ * Permit to get info about user before auth step
+ *
+ * @param array $SETTINGS
+ * @param integer $sessionPwdAttempts
+ * @param string $username
+ * @param integer $sessionAdmin
+ * @param string $sessionUrl
+ * @param string $user_2fa_selection
+ * @return array
+ */
 function identifyDoInitialChecks(
     $SETTINGS,
     int $sessionPwdAttempts,
@@ -1668,7 +1677,7 @@ function identifyDoInitialChecks(
         ];
     }
 
-    // Check 2FA
+    // Check if 2FA code is requested
     if ((empty($user_2fa_selection) === true &&
             isOneVarOfArrayEqualToValue(
                 [
@@ -1680,7 +1689,6 @@ function identifyDoInitialChecks(
             ) === true)
         && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
-        //echo $SETTINGS['admin_2fa_required']." ;; ";
         return [
             'error' => true,
             'array' => [
@@ -1717,15 +1725,6 @@ function identifyDoInitialChecks(
         ];
     }
 
-    // has user to be auth with mfa?
-    $userInfo['fonction_id'] = is_null($userInfo['fonction_id']) === true ? false : $userInfo['fonction_id'];
-    
-    // user should use MFA?
-    $userInfo['mfa_auth_requested'] = mfa_auth_requested(
-        (string) $userInfo['fonction_id'],
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
-
     // Manage Maintenance mode
     if ((int) $SETTINGS['maintenance_mode'] === 1 && (int) $userInfo['admin'] === 0) {
         return [
@@ -1756,6 +1755,19 @@ function identifyDoInitialChecks(
             ]
         ];
     }
+
+    // ensure user fonction_id is set to false if not existing
+    if (is_null($userInfo['fonction_id']) === true) {
+        $userInfo['fonction_id'] = $userInfo['fonction_id'];
+    }
+    
+    // user should use MFA?
+    $userInfo['mfa_auth_requested'] = mfa_auth_requested(
+        (string) $userInfo['fonction_id'],
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+
+    
 
     // Return some usefull information about user
     return [
