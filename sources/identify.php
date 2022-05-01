@@ -848,7 +848,7 @@ function handleLoginAttempts(
 
     // Log into DB the user's connection
     if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
-        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfo['id'], stripslashes($username));
+        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfoId, stripslashes($username));
     }
 
     return [
