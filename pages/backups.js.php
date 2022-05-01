@@ -60,6 +60,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
+                type_category: 'action_user',
                 size: "<?php echo $SETTINGS['pwd_maximum_length']; ?>",
                 lowercase: "true",
                 numerals: "true",
@@ -266,6 +267,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     $.post(
                         "sources/main.queries.php", {
                             type: "save_token",
+                            type_category: 'action_system',
                             size: 50,
                             capital: true,
                             numeric: true,

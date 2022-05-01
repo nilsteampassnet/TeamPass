@@ -64,6 +64,7 @@ if (
             'sources/main.queries.php',
             {
                 type     : 'increase_session_time',
+                type_category: 'action_user',
                 duration : parseInt(duration, 10) * hourInMinutes,
                 key: "<?php echo $_SESSION['key']; ?>"
             },
@@ -104,6 +105,7 @@ if (
                         $.post(
                             "sources/main.queries.php", {
                                 type: "get_user_info",
+                                type_category: 'action_user',
                                 data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                                 key: "<?php echo $_SESSION['key']; ?>"
                             },
@@ -174,6 +176,7 @@ if (
                             $.post(
                                 "sources/main.queries.php", {
                                     type: "send_waiting_emails",
+                                    type_category: 'action_mail',
                                     key: "<?php echo $_SESSION['key']; ?>"
                                 }
                             )
@@ -182,6 +185,7 @@ if (
                             $.post(
                                 "sources/main.queries.php", {
                                     type: "sending_statistics",
+                                    type_category: 'action_system',
                                     key: "<?php echo $_SESSION['key']; ?>"
                                 }
                             );
@@ -309,6 +313,7 @@ if (
                     $.post(
                         "sources/main.queries.php", {
                             'type': "user_psk_reencryption",
+                            'type_category': 'action_key',
                             'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             'key': '<?php echo $_SESSION['key']; ?>'
                         },
@@ -653,6 +658,7 @@ if (
             $.post(
                 'sources/main.queries.php', {
                     type: 'change_user_auth_password',
+                    type_category: 'action_password',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: "<?php echo $_SESSION['key']; ?>"
                 },
@@ -744,6 +750,7 @@ if (
             $.post(
                 'sources/main.queries.php', {
                     type: 'initialize_user_password',
+                    type_category: 'action_password',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: "<?php echo $_SESSION['key']; ?>"
                 },
@@ -828,6 +835,7 @@ if (
             $.post(
                 'sources/main.queries.php', {
                     type: 'mail_me',
+                    type_category: 'action_mail',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
@@ -904,6 +912,7 @@ if (
         $.post(
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
+                type_category: 'action_password',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: "<?php echo $_SESSION['key']; ?>"
             },
@@ -939,6 +948,7 @@ if (
                     $.post(
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
+                            type_category: 'action_key',
                             data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key: "<?php echo $_SESSION['key']; ?>"
                         },
@@ -1022,6 +1032,7 @@ if (
         $.post(
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
+                type_category: 'action_password',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: "<?php echo $_SESSION['key']; ?>"
             },
@@ -1057,6 +1068,7 @@ if (
                     $.post(
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
+                            type_category: 'action_key',
                             data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key: "<?php echo $_SESSION['key']; ?>"
                         },
@@ -1158,6 +1170,7 @@ if (
             $.post(
                 'sources/main.queries.php', {
                     type: 'change_user_ldap_auth_password',
+                    type_category: 'action_password',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: "<?php echo $_SESSION['key']; ?>"
                 },
@@ -1221,6 +1234,7 @@ if (
         return $.post(
             "sources/main.queries.php", {
                 type: "get_teampass_settings",
+                type_category: 'action_system',
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -1238,7 +1252,7 @@ if (
                     );
                     return false;
                 };
-
+console.log(data)
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage
@@ -1358,6 +1372,7 @@ if (
         $.post(
             "sources/main.queries.php", {
                 type: 'refresh_list_items_seen',
+                type_category: 'action_user',
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -1448,6 +1463,7 @@ if (
         $.post(
             "sources/main.queries.php", {
                 type: 'generate_bug_report',
+                type_category: 'action_system',
                 data: JSON.stringify(data),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
@@ -1491,6 +1507,7 @@ if (
         $.post(
             "sources/main.queries.php", {
                 type: "user_sharekeys_reencryption_start",
+                type_category: 'action_key',
                 data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
@@ -1565,6 +1582,7 @@ if (
             $.post(
                 "sources/main.queries.php", {
                     type: "user_sharekeys_reencryption_next",
+                    type_category: 'action_key',
                     data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                     key: '<?php echo $_SESSION['key']; ?>'
                 },

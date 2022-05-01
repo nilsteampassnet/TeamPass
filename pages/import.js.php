@@ -94,6 +94,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 $.post(
                     "sources/main.queries.php", {
                         type: "save_token",
+                        type_category: 'action_system',
                         size: 25,
                         capital: true,
                         numeric: true,
@@ -470,6 +471,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 $.post(
                     "sources/main.queries.php", {
                         type: "save_token",
+                        type_category: 'action_system',
                         size: 25,
                         capital: true,
                         numeric: true,

@@ -299,6 +299,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/main.queries.php', {
                 type: 'mail_me',
+                type_category: 'action_mail',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
@@ -480,6 +481,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 "sources/main.queries.php", {
                     type: "user_sharekeys_reencryption_next",
+                    type_category: 'action_key',
                     data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
@@ -805,6 +807,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $.post(
                     'sources/main.queries.php', {
                         type: 'get_number_of_items_to_treat',
+                        type_category: 'action_system',
                         data: prepareExchangedData(JSON.stringify(data_tmp), "encode", "<?php echo $_SESSION['key']; ?>"),
                         key: "<?php echo $_SESSION['key']; ?>"
                     },
@@ -911,6 +914,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 $.post(
                                     'sources/main.queries.php', {
                                         type: 'generate_temporary_encryption_key',
+                                        type_category: 'action_key',
                                         data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                                         key: "<?php echo $_SESSION['key']; ?>"
                                     },
@@ -1009,6 +1013,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
+                    type_category: 'action_user',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: "<?php echo $_SESSION['key']; ?>"
                 },
@@ -2160,6 +2165,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             $.post(
                                 "sources/main.queries.php", {
                                     type: "user_sharekeys_reencryption_next",
+                                    type_category: 'action_key',
                                     data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                                     key: '<?php echo $_SESSION['key']; ?>'
                                 },

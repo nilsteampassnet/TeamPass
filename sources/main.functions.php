@@ -1300,77 +1300,55 @@ function sendEmail(
     $mail = new SplClassLoader('PHPMailer\PHPMailer', '../includes/libraries');
     $mail->register();
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-    
-    try {
-        // send to user
-        $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
-        $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true ? $SETTINGS['email_debug_level'] : 0;
-        $mail->Port = $SETTINGS['email_port'];
-        //COULD BE USED
-        $mail->CharSet = 'utf-8';
-        $mail->SMTPSecure = $SETTINGS['email_security'] === 'tls'
-            || $SETTINGS['email_security'] === 'ssl' ? $SETTINGS['email_security'] : '';
-        $mail->SMTPAutoTLS = $SETTINGS['email_security'] === 'tls'
-            || $SETTINGS['email_security'] === 'ssl' ? true : false;
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true,
-            ],
-        ];
-        $mail->isSmtp();
-        // send via SMTP
-        $mail->Host = $SETTINGS['email_smtp_server'];
-        // SMTP servers
-        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false;
-        // turn on SMTP authentication
-        $mail->Username = $SETTINGS['email_auth_username'];
-        // SMTP username
-        $mail->Password = $SETTINGS['email_auth_pwd'];
-        // SMTP password
-        $mail->From = $SETTINGS['email_from'];
-        $mail->FromName = $SETTINGS['email_from_name'];
-        // Prepare for each person
-        foreach (array_filter(explode(',', $email)) as $dest) {
-            $mail->addAddress($dest);
-        }
 
-        // Prepare HTML
-        $text_html = emailBody($textMail);
-        $mail->WordWrap = 80;
-        // set word wrap
-        $mail->isHtml(true);
-        // send as HTML
-        $mail->Subject = $subject;
-        $mail->Body = $text_html;
-        $mail->AltBody = is_null($textMailAlt) === false ? $textMailAlt : '';
+    // send to user
+    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
+    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true ? $SETTINGS['email_debug_level'] : 0;
+    $mail->Port = $SETTINGS['email_port'];
+    //COULD BE USED
+    $mail->CharSet = 'utf-8';
+    $mail->SMTPSecure = $SETTINGS['email_security'] === 'tls'
+        || $SETTINGS['email_security'] === 'ssl' ? $SETTINGS['email_security'] : '';
+    $mail->SMTPAutoTLS = $SETTINGS['email_security'] === 'tls'
+        || $SETTINGS['email_security'] === 'ssl' ? true : false;
+    $mail->SMTPOptions = [
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true,
+        ],
+    ];
+    $mail->isSmtp();
+    // send via SMTP
+    $mail->Host = $SETTINGS['email_smtp_server'];
+    // SMTP servers
+    $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false;
+    // turn on SMTP authentication
+    $mail->Username = $SETTINGS['email_auth_username'];
+    // SMTP username
+    $mail->Password = $SETTINGS['email_auth_pwd'];
+    // SMTP password
+    $mail->From = $SETTINGS['email_from'];
+    $mail->FromName = $SETTINGS['email_from_name'];
+    // Prepare for each person
+    foreach (array_filter(explode(',', $email)) as $dest) {
+        $mail->addAddress($dest);
+    }
+
+    // Prepare HTML
+    $text_html = emailBody($textMail);
+    $mail->WordWrap = 80;
+    // set word wrap
+    $mail->isHtml(true);
+    // send as HTML
+    $mail->Subject = $subject;
+    $mail->Body = $text_html;
+    $mail->AltBody = is_null($textMailAlt) === false ? $textMailAlt : '';
+
+    try {
         // send email
         $mail->send();
         $mail->smtpClose();
-        if ($silent === false) {
-            return json_encode(
-                [
-                    'error' => false,
-                    'message' => langHdl('forgot_my_pw_email_sent'),
-                ]
-            );
-        }
-        // Debug purpose
-        if ((int) $SETTINGS['email_debug_level'] !== 0) {
-            return json_encode(
-                [
-                    'error' => true,
-                    'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
-                ]
-            );
-        }
-        return json_encode(
-            [
-                'error' => false,
-                'message' => langHdl('share_sent_ok'),
-            ]
-        );
     } catch (Exception $e) {
         if ($silent === false || (int) $SETTINGS['email_debug_level'] !== 0) {
             return json_encode(
@@ -1382,6 +1360,30 @@ function sendEmail(
         }
         return '';
     }
+
+    if ($silent === false) {
+        return json_encode(
+            [
+                'error' => false,
+                'message' => langHdl('forgot_my_pw_email_sent'),
+            ]
+        );
+    }
+    // Debug purpose
+    if ((int) $SETTINGS['email_debug_level'] !== 0) {
+        return json_encode(
+            [
+                'error' => true,
+                'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+            ]
+        );
+    }
+    return json_encode(
+        [
+            'error' => false,
+            'message' => langHdl('share_sent_ok'),
+        ]
+    );
 }
 
 /**
@@ -3352,12 +3354,12 @@ function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value)
 /**
  * Checks is value is null, not set OR empty
  *
- * @param string|int $value
+ * @param string|int|null $value
  * @return boolean
  */
-function isValueSetNullEmpty(string|int $value)
+function isValueSetNullEmpty(string|int|null $value)
 {
-    if (is_null($value) || isset($value) === false || empty($value) === true) {
+    if (is_null($value) === true || isset($value) === false || empty($value) === true) {
         return true;
     }
     return false;

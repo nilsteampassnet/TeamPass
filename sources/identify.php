@@ -195,7 +195,7 @@ if ($post_type === 'identify_duo_user') {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
         // Encrypt data to return
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             [
                 'value' => 'bruteforce_wait',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -1443,6 +1443,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                     'message' => langHdl('ga_bad_code'),
                     'proceedIdentification' => false,
                     'mfaStatus' => '',
+                    'firstTime' => $firstTime,
                 ];
             }
 
@@ -1481,6 +1482,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                     'error' => true,
                     'message' => langHdl('ga_bad_code'),
                     'proceedIdentification' => false,
+                    'firstTime' => $firstTime,
                 ];
             }
         }
@@ -1489,6 +1491,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             'error' => true,
             'message' => langHdl('ga_bad_code'),
             'proceedIdentification' => false,
+            'firstTime' => $firstTime,
         ];
     }
 

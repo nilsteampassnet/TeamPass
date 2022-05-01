@@ -328,6 +328,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             $.post(
                 'sources/main.queries.php', {
                     type: 'change_pw',
+                    type_category: 'action_password',
                     key: store.get('teampassUser').sessionKey,
                     data: prepareExchangedData(JSON.stringify(data), 'encode', store.get('teampassUser').sessionKey)
                 },
@@ -896,6 +897,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             $.post(
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
+                    type_category: 'action_user',
                     data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key: "<?php echo $_SESSION['key']; ?>"
                 },
@@ -952,6 +954,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         $.post(
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
+                type_category: 'action_user',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: "<?php echo $_SESSION['key']; ?>"
             },

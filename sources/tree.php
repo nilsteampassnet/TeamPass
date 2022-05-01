@@ -385,14 +385,14 @@ function getNodeInfos(
     $ret['childrenNb'] = DB::count();
 
     // Manage node title
-    if ($userIsRO === true && in_array($node->id, $userPF) === false) {
+    if ($userIsRO === true && in_array($nodeId, $userPF) === false) {
         // special case for READ-ONLY folder
         $ret['title'] = langHdl('read_only_account');
     } else {
         // If personal Folder, convert id into user name
-        $ret['title'] = $nodeTitle === $userId && (int) $nodeLevel === 1 ?
+        $ret['title'] = (string) $nodeTitle === (string) $userId && (int) $nodeLevel === 1 ?
         $userLogin :
-        ($nodeTitle === null ? '' : htmlspecialchars_decode($nodeTitle, ENT_QUOTES));
+        htmlspecialchars_decode($nodeTitle, ENT_QUOTES);
     }
 
     $ret['text'] = str_replace(

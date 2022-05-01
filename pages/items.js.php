@@ -2472,6 +2472,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $.post(
                 "sources/main.queries.php", {
                     type: "save_token",
+                    type_category: 'action_system',
                     size: 25,
                     capital: true,
                     numeric: true,
@@ -5385,6 +5386,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
+                type_category: 'action_user',
                 size: $('#pwd-definition-size').val(),
                 lowercase: $('#pwd-definition-lcl').prop("checked"),
                 numerals: $('#pwd-definition-numeric').prop("checked"),

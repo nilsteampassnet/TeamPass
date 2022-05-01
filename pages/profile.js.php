@@ -101,6 +101,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 $.post(
                     'sources/main.queries.php', {
                         type: 'save_token',
+                        type_category: 'action_system',
                         size: 25,
                         capital: true,
                         secure: true,
@@ -259,6 +260,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
+                type_category: 'action_user',
                 size: "39",
                 lowercase: "true",
                 numerals: "true",
@@ -377,6 +379,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/main.queries.php", {
                 type: "change_pw",
+                type_category: 'action_password',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: "<?php echo $_SESSION['key']; ?>"
             },

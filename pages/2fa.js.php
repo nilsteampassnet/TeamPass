@@ -65,6 +65,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         $.post(
             'sources/main.queries.php', {
                 type: 'generate_new_key',
+                type_category: 'action_key',
                 size: size
             },
             function(data) {

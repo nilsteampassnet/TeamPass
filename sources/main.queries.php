@@ -110,10 +110,11 @@ function mainQuery(array $SETTINGS)
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
     $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+    $post_type_category = filter_input(INPUT_POST, 'type_category', FILTER_SANITIZE_STRING);
     $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
     // Check KEY
-    if (isset($post_key) === false || empty($post_key) === true) {
+    if (isValueSetNullEmpty($post_key) === true) {
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             array(
@@ -131,133 +132,31 @@ function mainQuery(array $SETTINGS)
         $post_data,
         'decode'
     );
+
+    switch ($post_type_category) {
+        case 'action_password':
+            echo passwordHandler($post_type, $dataReceived, $SETTINGS);
+            break;
+
+        case 'action_user':
+            echo userHandler($post_type, $dataReceived, $SETTINGS);
+            break;
+
+        case 'action_mail':
+            echo mailHandler($post_type, $dataReceived, $SETTINGS);
+            break;
+
+        case 'action_key':
+            echo keyHandler($post_type, $dataReceived, $SETTINGS);
+            break;
+
+        case 'action_system':
+            echo systemHandler($post_type, $dataReceived, $SETTINGS);
+            break;
+    }
     
     // Manage type of action asked
-    switch ($post_type) {
-        case 'change_pw':
-            echo changePassword(
-                (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING),
-                isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '',
-                (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING),
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                $SETTINGS
-            );
-            
-            break;
-
-        /*
-         * This will generate the QR Google Authenticator
-         */
-        case 'ga_generate_qr':
-            echo generateQRCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
-                $SETTINGS
-            );
-
-            break;
-        
-            /*
-         * Increase the session time of User
-         */
-        case 'increase_session_time':
-            echo increaseSessionDuration(
-                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
-            );
-
-            break;
-        
-            /*
-         * Hide maintenance message
-         */
-        case 'hide_maintenance':
-            $_SESSION['hide_maintenance'] = 1;
-
-            break;
-        
-        /*
-         * Send emails not sent
-         */
-        case 'send_waiting_emails':
-            sendEmailsNotSent(
-                $SETTINGS
-            );
-            
-            break;
-
-        /*
-         * Generate a password generic
-         */
-        case 'generate_password':
-            echo generateGenericPassword(
-                (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'numerals', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
-                $SETTINGS
-            );
-            
-            break;
-
-        /*
-         * Refresh list of last items seen
-         */
-        case 'refresh_list_items_seen':
-            echo refreshUserItemsSeenList(
-                $SETTINGS
-            );
-
-            break;
-
-        /*
-         * Generates a KEY with CRYPT
-         */
-        case 'generate_new_key':
-            // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
-            // generate key
-            $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
-            echo '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
-            break;
-
-        /*
-         * Generates a TOKEN with CRYPT
-         */
-        case 'save_token':
-            $token = GenerateCryptKey(
-                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
-                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                $SETTINGS
-            );
-            
-            // store in DB
-            DB::insert(
-                prefixTable('tokens'),
-                array(
-                    'user_id' => (int) $_SESSION['user_id'],
-                    'token' => $token,
-                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
-                    'creation_timestamp' => time(),
-                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT), // in secs
-                )
-            );
-
-            echo '[{"token" : "' . $token . '"}]';
-            break;
-
-
+    //switch ($post_type) {
         /*
          * TODO Check if suggestions are existing
          */
@@ -283,88 +182,147 @@ function mainQuery(array $SETTINGS)
 
             break;
         */
+    //}
+}
 
-        /*
-         * Sending statistics
-         */
-        case 'sending_statistics':
-            sendingStatistics(
+function passwordHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+{
+    switch ($post_type) {
+        case 'change_pw'://action_password
+            return changePassword(
+                (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING),
+                isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '',
+                (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING),
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
-            );
-
+            );            
             break;
 
         /*
-         * Generate BUG report
-         */
-        case 'generate_bug_report':
-            echo generateBugReport(
-                (string) $post_data,
-                $SETTINGS
-            );
-        
-            break;
-
-        /*
-        * get_teampass_settings
+        * Change user's authenticataion password
         */
-        case 'get_teampass_settings':
-            // Encrypt data to return
-            echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                $SETTINGS,
-                'encode'
+        case 'change_user_auth_password'://action_password
+            return changeUserAuthenticationPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
+                $SETTINGS
             );
-
             break;
 
+        /*
+        * User's authenticataion password in LDAP has changed
+        */
+        case 'change_user_ldap_auth_password'://action_password
+            return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
+                filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            break;
 
         /*
         * test_current_user_password_is_correct
         */
-        case 'test_current_user_password_is_correct':
-            echo isUserPasswordCorrect(
+        case 'test_current_user_password_is_correct'://action_password
+            return isUserPasswordCorrect(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
             break;
 
         /*
-         * User's public/private keys change
-         */
-        case 'change_private_key_encryption_password':
-            echo changePrivateKeyEncryptionPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
-                $SETTINGS
-            );
-        
-            break;
-
-        /*
-         * User's password has to be initialized
-         */
-        case 'initialize_user_password':
-            echo initializeUserPassword(
+        * User's password has to be initialized
+        */
+        case 'initialize_user_password'://action_password
+            return initializeUserPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['special'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
+    }
+}
 
+
+function userHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+{
+    switch ($post_type) {
+        /*
+        * Get info 
+        */
+        case 'get_user_info'://action_user
+            return getUserInfo(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
             break;
 
+        /*
+        * Increase the session time of User
+        */
+        case 'increase_session_time'://action_user
+            return increaseSessionDuration(
+                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
+            );
+            break;
+
+        /*
+        * Generate a password generic
+        */
+        case 'generate_password'://action_user
+            return generateGenericPassword(
+                (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
+                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'numerals', FILTER_VALIDATE_BOOLEAN),
+                (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
+                $SETTINGS
+            );
+            break;
+
+        /*
+        * Refresh list of last items seen
+        */
+        case 'refresh_list_items_seen'://action_user
+            return refreshUserItemsSeenList(
+                $SETTINGS
+            );
+            break;
+
+        /*
+            * This will generate the QR Google Authenticator
+            */
+        case 'ga_generate_qr'://action_user
+            return generateQRCode(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+            break;
+    }
+}
+
+
+function mailHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+{
+    switch ($post_type) {
         /*
         * CASE
         * Send email
         */
-        case 'mail_me':
-            echo sendMailToUser(
+        case 'mail_me'://action_mail
+            return sendMailToUser(
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING),
                 $dataReceived['body'],
                 (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
@@ -374,37 +332,50 @@ function mainQuery(array $SETTINGS)
                 ),
                 $SETTINGS
             );
-
             break;
+        
+        /*
+        * Send emails not sent
+        */
+        case 'send_waiting_emails'://mail
+            sendEmailsNotSent(
+                $SETTINGS
+            );
+            echo '';
+            break;
+    }
+}
 
+
+function keyHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+{
+    switch ($post_type) {
         /*
         * Generate a temporary encryption key for user
         */
-        case 'generate_temporary_encryption_key':
-            echo generateOneTimeCode(
+        case 'generate_temporary_encryption_key'://action_key
+            return generateOneTimeCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-
             break;
 
         /*
         * user_sharekeys_reencryption_start
         */
-        case 'user_sharekeys_reencryption_start':
-            echo startReEncryptingUserSharekeys(
+        case 'user_sharekeys_reencryption_start'://action_key
+            return startReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
             break;
 
         /*
         * user_sharekeys_reencryption_next
         */
-        case 'user_sharekeys_reencryption_next':
-            echo continueReEncryptingUserSharekeys(
+        case 'user_sharekeys_reencryption_next'://action_key
+            return continueReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
@@ -412,72 +383,121 @@ function mainQuery(array $SETTINGS)
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-
             break;
 
         /*
         * user_psk_reencryption
         */
-        case 'user_psk_reencryption':
-            echo migrateTo3_DoUserPersonalItemsEncryption(
+        case 'user_psk_reencryption'://action_key
+            return migrateTo3_DoUserPersonalItemsEncryption(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-        
             break;
 
         /*
-        * Get info 
-        */
-        case 'get_user_info':
-            echo getUserInfo(
+            * User's public/private keys change
+            */
+        case 'change_private_key_encryption_password'://action_key
+            return changePrivateKeyEncryptionPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
-
             break;
 
         /*
-        * Change user's authenticataion password
-        */
-        case 'change_user_auth_password':
-            echo changeUserAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
-                $SETTINGS
-            );
-
+            * Generates a KEY with CRYPT
+            */
+        case 'generate_new_key'://action_key
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            // generate key
+            $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
             break;
+    }
+}
 
 
-        /*
-        * User's authenticataion password in LDAP has changed
-        */
-        case 'change_user_ldap_auth_password':
-            echo /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
-                filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
-                $SETTINGS
-            );
-
-            break;
-
-
+function systemHandler(string $post_type, array|null $dataReceived, array $SETTINGS)
+{
+    switch ($post_type) {
         /*
         * How many items for this user
         */
-        case 'get_number_of_items_to_treat':
-            echo getNumberOfItemsToTreat(
+        case 'get_number_of_items_to_treat'://action_system
+            return getNumberOfItemsToTreat(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
+            break;
 
+        /*
+            * Sending statistics
+            */
+        case 'sending_statistics'://action_system
+            sendingStatistics(
+                $SETTINGS
+            );
+            break;
+
+        /*
+            * Generate BUG report
+            */
+        case 'generate_bug_report'://action_system
+            return generateBugReport(
+                (string) $post_data,
+                $SETTINGS
+            );
+            break;
+
+        /*
+        * get_teampass_settings
+        */
+        case 'get_teampass_settings'://action_system
+            // Encrypt data to return
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $SETTINGS,
+                'encode'
+            );
+            break;
+
+        /*
+            * Generates a TOKEN with CRYPT
+            */
+        case 'save_token'://action_system
+            $token = GenerateCryptKey(
+                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
+                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                $SETTINGS
+            );
+            
+            // store in DB
+            DB::insert(
+                prefixTable('tokens'),
+                array(
+                    'user_id' => (int) $_SESSION['user_id'],
+                    'token' => $token,
+                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
+                    'creation_timestamp' => time(),
+                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT), // in secs
+                )
+            );
+
+            return '[{"token" : "' . $token . '"}]';
             break;
     }
 }
@@ -588,7 +608,7 @@ function changePassword(
 
         if ((int) $post_password_complexity < (int) $data['complexity']) {
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
@@ -601,7 +621,7 @@ function changePassword(
         // Check that the 2 passwords are differents
         if ($post_current_password === $post_new_password) {
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('password_already_used'),
@@ -639,7 +659,7 @@ function changePassword(
 
             // Send back
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -649,7 +669,7 @@ function changePassword(
         }
         // Send back
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('pw_hash_not_correct'),
@@ -658,7 +678,7 @@ function changePassword(
         );
     }
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_not_allowed_to'),
