@@ -162,6 +162,14 @@ if (
 
                                     // Show form
                                     $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
+                                } else if (data.queryResults.special === 'recrypt-private-key') {
+                                    // USer's password has been reseted, he shall change it
+                                    console.log('NEW LDAP - we need to encrypt private key')
+                                    // HIde
+                                    $('.content-header, .content').addClass('hidden');
+
+                                    // Show form
+                                    $('#dialog-ldap-user-change-password').removeClass('hidden');
                                 }
                             }
                         );

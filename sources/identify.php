@@ -382,13 +382,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             [
-                'value' => $userMfa['mfaData']['firstTime']['value'],
+                'value' => $userMfa['mfaData']['value'],
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => false,
-                'message' => $userMfa['mfaData']['firstTime']['message'],
-                'mfaStatus' => $userMfa['mfaData']['firstTime']['mfaStatus'],
+                'message' => $userMfa['mfaData']['message'],
+                'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
             ],
             'encode'
         );
@@ -855,7 +855,7 @@ function handleLoginAttempts(
 
     return [
         'attemptsList' => $arrAttempts,
-        'attemptsCount' => DB::count(),
+        'attemptsCount' => count($rows),
     ];
 }
 
@@ -1860,17 +1860,17 @@ function identifyDoMFAChecks(
             
             return [
                 'error' => true,
-                'mfaData' => $ret,
-                'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
-                    && count($ret['firstTime']) > 0 ? true : false,
+                'mfaData' => $ret['firstTime'],
+                'mfaQRCodeInfos' => false,
             ];
             // ---
         }
 
         return [
             'error' => false,
-            'mfaData' => $ret,
-            'mfaQRCodeInfos' => false,
+            'mfaData' => $ret['firstTime'],
+            'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
+            && count($ret['firstTime']) > 0 ? true : false,
         ];
 
         // ---

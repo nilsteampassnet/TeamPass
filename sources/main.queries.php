@@ -718,7 +718,7 @@ function generateQRCode(
 ): string
 {
     // is this allowed by setting
-    if (isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS) === true
+    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
     ) {
         // User cannot ask for a new code
@@ -726,7 +726,7 @@ function generateQRCode(
             $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
-                'message' => langHdl('error_not_allowed_to'),
+                'message' => "113 ".langHdl('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
             ),
             'encode'
         );

@@ -2249,6 +2249,18 @@ if (null !== $post_type) {
                 $post_user_id
             );
 
+            // special case
+            if ($post_field === 'auth_type' && $post_new_value === 'ldap') {
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'special' => 'recrypt-private-key',
+                    ),
+                    'id = %i',
+                    $post_user_id
+                );
+            }
+
             // send data
             echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],

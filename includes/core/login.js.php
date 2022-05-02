@@ -762,8 +762,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             },
             function(check_data) {
                 if (parseInt(check_data) === 1) {
-                    console.info('Session existance check:')
-                    console.log(data);
+                    //console.info('Session existance check:')
+                    //console.log(data);
                     //send query
                     $.post(
                         "sources/identify.php", {
@@ -776,8 +776,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 "decode",
                                 "<?php echo $_SESSION['key']; ?>"
                             );
-                            console.info('Identification answer:')
-                            console.log(data);
+                            //console.info('Identification answer:')
+                            //console.log(data);
                             toastr.remove();
                             
                             // Maintenance mode is enabled?
@@ -950,7 +950,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             'pwd': $("#pw").val(),
             'send_email': 1
         }
-        console.log(data);
+        //console.log(data);
         $.post(
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',

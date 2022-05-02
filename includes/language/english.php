@@ -22,6 +22,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'previous_password' => 'Previous password used to connect to Teampass',
     'icon' => 'Icon',
     'icon_on_selection' => 'Icon on selection',
     'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
