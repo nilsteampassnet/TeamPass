@@ -33,7 +33,7 @@ Teampass is a Collaborative Passwords Manager
 
 * MySQL 5.7 or higher,
 * Mariadb 10.7 or higher
-* PHP 7.4 or higher,
+* PHP 8.0 or higher,
 * PHP extensions:
   * mcrypt
   * openssl
