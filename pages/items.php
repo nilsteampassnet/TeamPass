@@ -89,6 +89,7 @@ foreach ($rows as $reccord) {
         $listRoles .= ';' . $reccord['id'] . '#' . $reccord['title'];
     }
 }
+
 ?>
 
 <!-- Content Header (Page header) -->

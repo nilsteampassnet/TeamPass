@@ -1770,8 +1770,6 @@ function identifyDoInitialChecks(
         is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
 
-    
-
     // Return some usefull information about user
     return [
         'error' => false,

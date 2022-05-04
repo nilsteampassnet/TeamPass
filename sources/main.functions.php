@@ -791,18 +791,14 @@ function identUserGetPFList(
             1
         );
         if (empty($persoFld['id']) === false) {
-            //if (in_array($persoFld['id'], $allowedFolders) === false) {
-                array_push($personalFolders, $persoFld['id']);
-                array_push($allowedFolders, $persoFld['id']);
-                // get all descendants
-                $ids = $tree->getChildren($persoFld['id'], false);
-                foreach ($ids as $ident) {
-                    if ((int) $ident->personal_folder === 1) {
-                        array_push($allowedFolders, $ident->id);
-                        array_push($personalFolders, $ident->id);
-                    }
-                }
-            //}
+            array_push($personalFolders, $persoFld['id']);
+            array_push($allowedFolders, $persoFld['id']);
+            // get all descendants
+            $ids = $tree->getDescendants($persoFld['id'], false, false, true);
+            foreach ($ids as $id) {
+                    array_push($allowedFolders, $id);
+                    array_push($personalFolders, $id);
+            }
         }
     }
     
@@ -3231,7 +3227,11 @@ function isUserIdValid($userId): bool
  * 
  * @return boolean
  */
-function isKeyExistingAndEqual(string $key, $value, array $array): bool
+function isKeyExistingAndEqual(
+    string $key,
+    /*PHP8 - integer|string*/$value,
+    array $array
+): bool
 {
     if (isset($array[$key]) === true
         && (is_int($value) === true ?
@@ -3251,7 +3251,10 @@ function isKeyExistingAndEqual(string $key, $value, array $array): bool
  * 
  * @return boolean
  */
-function isKeyNotSetOrEqual($var, $value): bool
+function isKeyNotSetOrEqual(
+    /*PHP8 - string|null*/$var,
+    /*PHP8 - integer|string*/$value
+): bool
 {
     if (isset($var) === false
         || (is_int($value) === true ?
@@ -3305,7 +3308,7 @@ function isKeyExistingAndSuperior(string $key, int $value, array $array): bool
  * @param array $arrayOfValues
  * @return boolean
  */
-function isSetArrayOfValues(array $arrayOfValues)
+function isSetArrayOfValues(array $arrayOfValues): bool
 {
     foreach($arrayOfValues as $value) {
         if (isset($value) === false) {
@@ -3321,9 +3324,13 @@ function isSetArrayOfValues(array $arrayOfValues)
  * Return false if one of them is not set
  *
  * @param array $arrayOfValues
+ * @param integer|string $value
  * @return boolean
  */
-function isArrayOfVarsEqualToValue(array $arrayOfVars, $value)
+function isArrayOfVarsEqualToValue(
+    array $arrayOfVars,
+    /*PHP8 - integer|string*/$value
+) : bool
 {
     foreach($arrayOfVars as $variable) {
         if ($variable !== $value) {
@@ -3337,9 +3344,13 @@ function isArrayOfVarsEqualToValue(array $arrayOfVars, $value)
  * Checks if at least one variable in array is equal to value
  *
  * @param array $arrayOfValues
+ * @param integer|string $value
  * @return boolean
  */
-function isOneVarOfArrayEqualToValue(array $arrayOfVars, $value) : bool
+function isOneVarOfArrayEqualToValue(
+    array $arrayOfVars,
+    /*PHP8 - integer|string*/$value
+) : bool
 {
     foreach($arrayOfVars as $variable) {
         if ($variable === $value) {
@@ -3355,7 +3366,7 @@ function isOneVarOfArrayEqualToValue(array $arrayOfVars, $value) : bool
  * @param string|int|null $value
  * @return boolean
  */
-function isValueSetNullEmpty( $value) : bool
+function isValueSetNullEmpty(/*PHP8 - string|int|null*/ $value) : bool
 {
     if (is_null($value) === true || isset($value) === false || empty($value) === true) {
         return true;
