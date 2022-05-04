@@ -1304,13 +1304,11 @@ function sendEmail(
     // send to user
     $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
     $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true ? $SETTINGS['email_debug_level'] : 0;
-    $mail->Port = $SETTINGS['email_port'];
+    $mail->Port = (int) $SETTINGS['email_port'];
     //COULD BE USED
     $mail->CharSet = 'utf-8';
-    $mail->SMTPSecure = $SETTINGS['email_security'] === 'tls'
-        || $SETTINGS['email_security'] === 'ssl' ? $SETTINGS['email_security'] : '';
-    $mail->SMTPAutoTLS = $SETTINGS['email_security'] === 'tls'
-        || $SETTINGS['email_security'] === 'ssl' ? true : false;
+    $mail->SMTPSecure = $SETTINGS['email_security'] !== 'none' ? $SETTINGS['email_security'] : '';
+    $mail->SMTPAutoTLS = $SETTINGS['email_security'] !== 'none' ? true : false;
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer' => false,
@@ -1348,7 +1346,6 @@ function sendEmail(
     try {
         // send email
         $mail->send();
-        $mail->smtpClose();
     } catch (Exception $e) {
         if ($silent === false || (int) $SETTINGS['email_debug_level'] !== 0) {
             return json_encode(
@@ -1360,6 +1357,7 @@ function sendEmail(
         }
         return '';
     }
+    $mail->smtpClose();
 
     if ($silent === false) {
         return json_encode(
@@ -3233,7 +3231,7 @@ function isUserIdValid($userId): bool
  * 
  * @return boolean
  */
-function isKeyExistingAndEqual(string $key, int|string $value, array $array): bool
+function isKeyExistingAndEqual(string $key, $value, array $array): bool
 {
     if (isset($array[$key]) === true
         && (is_int($value) === true ?
@@ -3248,12 +3246,12 @@ function isKeyExistingAndEqual(string $key, int|string $value, array $array): bo
 /**
  * Check if a variable is not set or equal to a value
  *
- * @param string $var
+ * @param string|null $var
  * @param integer|string $value
  * 
  * @return boolean
  */
-function isKeyNotSetOrEqual(string $var, int|string $value): bool
+function isKeyNotSetOrEqual($var, $value): bool
 {
     if (isset($var) === false
         || (is_int($value) === true ?
@@ -3325,7 +3323,7 @@ function isSetArrayOfValues(array $arrayOfValues)
  * @param array $arrayOfValues
  * @return boolean
  */
-function isArrayOfVarsEqualToValue(array $arrayOfVars, int|string $value)
+function isArrayOfVarsEqualToValue(array $arrayOfVars, $value)
 {
     foreach($arrayOfVars as $variable) {
         if ($variable !== $value) {
@@ -3341,7 +3339,7 @@ function isArrayOfVarsEqualToValue(array $arrayOfVars, int|string $value)
  * @param array $arrayOfValues
  * @return boolean
  */
-function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value)
+function isOneVarOfArrayEqualToValue(array $arrayOfVars, $value) : bool
 {
     foreach($arrayOfVars as $variable) {
         if ($variable === $value) {
@@ -3357,9 +3355,24 @@ function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value)
  * @param string|int|null $value
  * @return boolean
  */
-function isValueSetNullEmpty(string|int|null $value)
+function isValueSetNullEmpty( $value) : bool
 {
     if (is_null($value) === true || isset($value) === false || empty($value) === true) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Checks if value is set and if empty is equal to passed boolean
+ *
+ * @param string|int $value
+ * @param boolean $boolean
+ * @return boolean
+ */
+function isValueSetEmpty($value, $boolean = true) : bool
+{
+    if (isset($value) === true && empty($value) === $boolean) {
         return true;
     }
     return false;

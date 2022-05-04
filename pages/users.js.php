@@ -2051,8 +2051,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      * @return void
      */
     function addUserInTeampass() {
-        toastr.remove();
         $('#warningModal').modal('hide');
+        toastr.remove();
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // what roles
@@ -2093,7 +2093,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     );
                 } else {
                     // manage keys encryption for new user
-                    toastr.remove();
                     showModalDialogBox(
                         '#warningModal',
                         '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('generating_keys'); ?>',

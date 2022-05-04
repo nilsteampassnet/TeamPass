@@ -936,7 +936,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_server_password_change' data-toggle-on='<?php echo isset($SETTINGS['enable_server_password_change']) === true && $SETTINGS['enable_server_password_change'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_server_password_change_input' value='<?php echo isset($SETTINGS['enable_server_password_change']) && $SETTINGS['enable_server_password_change'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern disabled' id='enable_server_password_change' data-toggle-on='<?php echo isset($SETTINGS['enable_server_password_change']) === true && $SETTINGS['enable_server_password_change'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_server_password_change_input' value='<?php echo isset($SETTINGS['enable_server_password_change']) && $SETTINGS['enable_server_password_change'] === '1' ? '1' : '0'; ?>' />
                             </div>
                         </div>
 

@@ -749,6 +749,10 @@ while ($data = mysqli_fetch_array($rows)) {
 }
 //---<
 
+//---> 3.0.0.17
+mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET `valeur` = '0'  WHERE intitule = 'enable_server_password_change'");
+
+//---<
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

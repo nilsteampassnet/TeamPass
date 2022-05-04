@@ -2626,7 +2626,7 @@ if (null !== $post_type) {
                 }
             } else {
                 echo prepareExchangedData(
-                                    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_user_exists'),
