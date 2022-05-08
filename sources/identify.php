@@ -823,7 +823,7 @@ function handleLoginAttempts(
     $userInfoLogin,
     $userInfoLastConnection,
     $username,
-    $SETTINGS,
+    $SETTINGS
 ) : array
 {
     $rows = DB::query(

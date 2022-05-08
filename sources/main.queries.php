@@ -193,7 +193,7 @@ function mainQuery(array $SETTINGS)
  * @param array $SETTINGS
  * @return void
  */
-function passwordHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
+function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         case 'change_pw'://action_password
@@ -260,7 +260,7 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
  * @param array $SETTINGS
  * @return void
  */
-function userHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
+function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -326,7 +326,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
  * @param array $SETTINGS
  * @return void
  */
-function mailHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
+function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -365,7 +365,7 @@ function mailHandler(string $post_type, array|null|string $dataReceived, array $
  * @param array $SETTINGS
  * @return void
  */
-function keyHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
+function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
@@ -446,7 +446,7 @@ function keyHandler(string $post_type, array|null|string $dataReceived, array $S
  * @param array $SETTINGS
  * @return void
  */
-function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS)
+function systemHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
 {
     switch ($post_type) {
         /*
