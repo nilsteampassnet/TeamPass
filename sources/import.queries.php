@@ -716,13 +716,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $receivedParameters['folders'],
             FILTER_SANITIZE_STRING
         );
-        $post_items = filter_var_array(
+        $item = filter_var_array(
             $receivedParameters['items'],
             FILTER_SANITIZE_STRING
         );
         $ret = '';
 
-        foreach($post_items as $item) {
+        //foreach($post_items as $item) {
             // get info about this folder
             $destinationFolderMore = DB::queryFirstRow(
                 'SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i',
@@ -740,6 +740,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $cryptedStuff = doDataEncryption($item['Password']);
             } else {
                 $cryptedStuff['encrypted'] = '';
+                $cryptedStuff['objectKey'] = '';
             }
             $post_password = $cryptedStuff['encrypted'];
 
@@ -820,7 +821,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // prepare return
             $ret .= "<li>".substr(stripslashes($item['Title']), 0, 500)." [".$destinationFolderMore['title']."]</li>";
-        }
+        //}
 
 
         echo prepareExchangedData(

@@ -4244,7 +4244,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
                 requestRunning = true;
                 if (debugJavascript === true) console.log("RECEIVED");
                 if (debugJavascript === true) console.log(data);

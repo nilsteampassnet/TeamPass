@@ -564,8 +564,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     function launchKeepassItemsImport() {
         // Show spinner
-        toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
+        $('#import-feedback-progress-text')
+            .html('<?php echo langHdl('reading_file'); ?>');
+            $('#import-feedback').removeClass('hidden');
 
         data = {
             'file': store.get('teampassApplication').uploadedFileId,
@@ -594,8 +595,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         }
                     );
 
-                    $('#import-feedback').addClass('hidden');
-                    $('#import-feedback div').html('');
+                    $('#import-feedback, #import-feedback-progress').addClass('hidden');
+                    //$('#import-feedback div').html('');
                 } else {
                     foldersToAdd = data.data.folders;
                     itemsToAdd = data.data.items;
@@ -606,8 +607,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         'folder-id': parseInt($('#import-keepass-target-folder').val()),
                         'folders': foldersToAdd,
                     }
+                    // Show spinner
+                    $('#import-feedback-progress-text')
+                        .html('<?php echo langHdl('folder'); ?> <?php echo langHdl('at_creation'); ?>');
+
                     console.info("Now creating folders")
-                    console.log(data);
+                    //console.log(data);
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
@@ -616,7 +621,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            console.log(data)
+                            //console.log(data)
 
                             if (data.error === true) {
                                 toastr.remove();
@@ -629,8 +634,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                     }
                                 );
 
-                                $('#import-feedback').addClass('hidden');
-                                $('#import-feedback div').html('');
+                                $('#import-feedback, #import-feedback-progress').addClass('hidden');
+                                $('#import-feedback-result').html('');
                             } else {
                                 // STEP 2 - create Items
                                 data = {
@@ -639,64 +644,117 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                     'folders': data.folders,
                                     'items': itemsToAdd,
                                 }
+                                itemsNumber = itemsToAdd.length;
+                                counter = 1;
                                 console.info("Now creating items")
-                                console.log(data);
-                                $.post(
-                                    "sources/import.queries.php", {
-                                        type: "keepass_create_items",
-                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                        key: '<?php echo $_SESSION['key']; ?>'
-                                    },
-                                    function(data) {
-                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                                        console.info("Done")
-                                        console.log(data)
+                                //console.log(data);
 
-                                        if (data.error === true) {
-                                            toastr.remove();
-                                            toastr.error(
-                                                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
-                                                '', {
-                                                    timeOut: 10000,
-                                                    closeButton: true,
-                                                    progressBar: true
-                                                }
-                                            );
+                                // Recursive loop on each item to add
+                                callRecurive(itemsToAdd, data.folders, counter, itemsNumber); 
 
-                                            $('#import-feedback').addClass('hidden');
-                                            $('#import-feedback div').html('');
-                                        } else {
-                                            // Finished
-                                            // Show results
-                                            $('#import-feedback div').html(data.info)
-                                            $('#import-feedback').removeClass('hidden');
-                                            
-                                            // Show
-                                            toastr.remove();
-                                            toastr.success(
-                                                '<?php echo langHdl('done'); ?>',
-                                                data.message, {
-                                                    timeOut: 2000,
-                                                    progressBar: true
-                                                }
-                                            );
+                                // recursive action
+                                function callRecurive(itemsList, foldersList, counter, itemsNumber) {
+                                    var dfd = $.Deferred();
+                                    //console.log(counter)
 
-                                            // Clear form
-                                            $('.keepass-setup').addClass('hidden');
-                                            $('#keepass-items-number, #keepass-items-list').html('');
-                                            $('#import-keepass-attach-pickfile-keepass-text').text('');
-                                            $('.import-keepass-cb').iCheck('uncheck');
+                                    // Isolate first item
+                                    if (itemsList.length > 0) {
+                                        $('#import-feedback-progress-text')
+                                            .html('<?php echo langHdl('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
 
-                                            store.update(
-                                                'teampassApplication',
-                                                function(teampassApplication) {
-                                                    teampassApplication.uploadType = '';
-                                                    teampassApplication.uploadedFileId = '';
-                                                }
-                                            );
+                                        data = {
+                                            'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
+                                            'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
+                                            'items': itemsToAdd[0],
+                                            'folders': foldersList,
                                         }
+                                        //console.log(data);
+
+                                        // Do query
+                                        $.post(
+                                            "sources/import.queries.php", {
+                                                type: "keepass_create_items",
+                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                                key: '<?php echo $_SESSION['key']; ?>'
+                                            },
+                                            function(data) {
+                                                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                                //console.info("Done")
+                                                //console.log(data)
+
+                                                if (data.error === true) {
+                                                    // ERROR
+                                                    toastr.remove();
+                                                    toastr.error(
+                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                                                        '', {
+                                                            timeOut: 10000,
+                                                            closeButton: true,
+                                                            progressBar: true
+                                                        }
+                                                    );
+
+                                                    $('#import-feedback, #import-feedback-progress').addClass('hidden');
+                                                    $('#import-feedback-result').html('');
+                                                } else {
+                                                    // Done for this item
+                                                    // Add results
+                                                    $('#import-feedback-result').append(data.info+"<br>");
+
+                                                    // Remove item from list
+                                                    itemsToAdd.shift();
+
+                                                    // Do recursive call until step = finished
+                                                    counter++
+                                                    callRecurive(
+                                                        itemsList,
+                                                        foldersList,
+                                                        counter,
+                                                        itemsNumber
+                                                    ).done(function(response) {
+                                                        dfd.resolve(response);
+                                                    });
+                                                }
+                                            }
+                                        );
+                                    } else {
+                                        // THis is the end.
+                                        // Table of items to import is empty
+
+                                        console.log('Importing is now finished');
+
+                                        // Show results
+                                        $('#import-feedback-result').append(data.info)
+                                        $('#import-feedback-progress').addClass('hidden');
+                                        $('#import-feedback div').removeClass('hidden');
+                                        
+                                        // Show
+                                        toastr.remove();
+                                        toastr.success(
+                                            '<?php echo langHdl('done'); ?>',
+                                            data.message, {
+                                                timeOut: 2000,
+                                                progressBar: true
+                                            }
+                                        );
+
+                                        // Clear form
+                                        $('.keepass-setup').addClass('hidden');
+                                        $('#keepass-items-number, #keepass-items-list').html('');
+                                        $('#import-keepass-attach-pickfile-keepass-text').text('');
+                                        $('.import-keepass-cb').iCheck('uncheck');
+
+                                        store.update(
+                                            'teampassApplication',
+                                            function(teampassApplication) {
+                                                teampassApplication.uploadType = '';
+                                                teampassApplication.uploadedFileId = '';
+                                            }
+                                        );
                                     }
-                                );
+                                    
+                                    return dfd.promise();
+                                }
                             }
                         }
                     );

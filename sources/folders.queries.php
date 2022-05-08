@@ -432,15 +432,19 @@ if (null !== $post_type) {
                 'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
             );
             if (
-                $dataFolder['renewal_period'] !== $post_renewal_period
+                $dataFolder['renewal_period'] !== (int) $post_renewal_period
                 && empty($post_renewal_period) === false
             ) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction) {
+            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction
+                && empty($post_add_restriction) === false
+            ) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if ($dataFolder['bloquer_modification'] !== $post_edit_restriction) {
+            if ($dataFolder['bloquer_modification'] !== (int) $post_edit_restriction
+                && empty($post_edit_restriction) === false
+            ) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
             }
             

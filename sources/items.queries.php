@@ -2804,7 +2804,10 @@ if (is_null($post_type) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$arrData, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $arrData, 
+                'encode'
+            );
             break;
 
             /*
@@ -2817,7 +2820,7 @@ if (is_null($post_type) === false) {
                 // Check KEY and rights
                 if ($post_key !== $_SESSION['key']) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('key_is_not_correct'),
@@ -2828,7 +2831,7 @@ if (is_null($post_type) === false) {
                 }
                 if ($_SESSION['user_read_only'] === true) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
