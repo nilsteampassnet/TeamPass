@@ -57,7 +57,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "autoWidth": true,
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
-            type: 'GET'
+            type: 'GET',
+            "dataSrc": function ( json ) {
+                for ( var i=0, ien=json.data.length ; i<ien ; i++ ) {
+                    json.data[i][1]=atob(json.data[i][1]).utf8Decode();
+                    json.data[i][2]=atob(json.data[i][2]).utf8Decode();
+                    json.data[i][3]=atob(json.data[i][3]).utf8Decode();
+                    json.data[i][4]=atob(json.data[i][4]).utf8Decode();
+                    json.data[i][6]=atob(json.data[i][6]).utf8Decode();
+                }
+                return (json.data);
+            }
         },
         "language": {
             "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -192,7 +202,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '</label>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
-                        '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw) + '">' +
+                        '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode(); + '">' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
                         '</div>' +
                         (data.login === '' ? '' :

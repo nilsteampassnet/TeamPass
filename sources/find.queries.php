@@ -247,7 +247,7 @@ if (isset($_GET['type']) === false) {
     $sOutputConst = '';
     foreach ($rows as $record) {
         $getItemInList = true;
-        $sOutputItem = '[';
+        $sOutputItem = '';
         $right = 0;
         $checkbox = '';
         // massive move/delete enabled?
@@ -326,9 +326,9 @@ if (isset($_GET['type']) === false) {
         $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
             '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . langHdl('see_item_title') . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '", ';
         //col2
-        $sOutputItem .= '"<span id=\"item_label-' . $record['id'] . '\">' . str_replace("\\", "&#92;", (string) $record['label']) . '</span>", ';   // replace backslash #3015
+        $sOutputItem .= '"'.base64_encode('<span id=\"item_label-' . $record['id'] . '\">' . (str_replace("\\", "&#92;", (string) $record['label'])) . '</span>').'", ';   // replace backslash #3015
         //col3
-        $sOutputItem .= '"' . str_replace('&amp;', '&', htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)) . '", ';
+        $sOutputItem .= '"' . base64_encode(str_replace('&amp;', '&', htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES))) . '", ';
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
@@ -351,14 +351,14 @@ if (isset($_GET['type']) === false) {
         } else {
             $txt = str_replace(['\n', '<br />', '\\'], [' ', ' ', '', ' '], strip_tags($record['description']));
             if (strlen($txt) > 50) {
-                $sOutputItem .= '"' . substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50) . '", ';
+                $sOutputItem .= '"' . base64_encode(substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50)) . '", ';
             } else {
-                $sOutputItem .= '"' . stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)) . '", ';
+                $sOutputItem .= '"' . base64_encode(stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt))) . '", ';
             }
         }
 
         //col5 - TAGS
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"' . base64_encode(htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES)) . '", ';
         // col6 - URL
         if ($record['url'] !== '0') {
             $sOutputItem .= '"'.filter_var($record['url'], FILTER_SANITIZE_URL).'", ';
@@ -367,11 +367,11 @@ if (isset($_GET['type']) === false) {
         }
 
         //col7 - Prepare the Treegrid
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES) . '"';
+        $sOutputItem .= '"' . base64_encode(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)) . '"';
         //Finish the line
-        $sOutputItem .= '], ';
+        //$sOutputItem .= '], ';
         if ($getItemInList === true) {
-            $sOutputConst .= $sOutputItem;
+            $sOutputConst .= '['.($sOutputItem).'], ';
         } else {
             --$iTotal;
         }
@@ -382,7 +382,7 @@ if (isset($_GET['type']) === false) {
     $sOutput .= '], ';
     $sOutput .= '"recordsTotal": ' . $iTotal . ', ';
     $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
-    echo $sOutput;
+    echo ($sOutput);
 } elseif (isset($_GET['type']) && ($_GET['type'] === 'search_for_items' || $_GET['type'] === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
