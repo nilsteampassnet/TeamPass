@@ -31,6 +31,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
 ?>
 <script type="text/javascript">
+    var debugJavascript = false;
+
     // On page load
     $(function() {
         // Set focus on login input
@@ -56,7 +58,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 },
                 function(data) {
                     console.log("After identify_duo_user_check:");
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     var ret = data[0].authenticated_username.split("|");
                     if (ret[0] === "ERR") {
                         $("#div-2fa-duo-progress")
@@ -76,7 +78,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             },
                             function(receivedData) {
                                 var data = prepareExchangedData(receivedData, 'decode', "<?php echo $_SESSION['key']; ?>");
-                                console.log(data);
+                                if (debugJavascript === true) console.log(data);
 
                                 if (data.error !== false) {
                                     // Show error
@@ -334,7 +336,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', store.get('teampassUser').sessionKey);
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -404,7 +406,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', store.get('teampassUser').sessionKey);
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     // Is there an error?
                     if (data.error === true) {
@@ -435,8 +437,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                          *
                          */
                         function encryptPersonalItems(items, files, psk) {
-                            console.log('----\n' + psk);
-                            console.log(items);
+                            if (debugJavascript === true) {
+                                console.log('----\n' + psk);
+                                console.log(items);
+                            }
                             if (items.length > 0 || files.length > 0) {
                                 // Manage files & items
                                 // Prepare data
@@ -646,7 +650,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     );
                     return false;
                 }
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 var mfaData = {},
                     mfaMethod = '',
@@ -723,7 +727,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 mfaData['client'] = client_info;
                 mfaData['user_2fa_selection'] = mfaMethod;
 
-                console.log(mfaData);
+                if (debugJavascript === true) console.log(mfaData);
 
                 // Handle if DUOSecurity is enabled
                 if (mfaMethod !== 'duo' || $('#login').val() === 'admin') {
@@ -903,7 +907,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -960,7 +964,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -1028,7 +1032,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     $('.div-2fa-method').addClass('hidden');
 
                     var twofaMethod = $(this).text().toLowerCase();
-                    console.log(twofaMethod)
+                    if (debugJavascript === true) console.log(twofaMethod)
 
                     // Save user choice
                     $('#2fa_user_selection').val(twofaMethod);

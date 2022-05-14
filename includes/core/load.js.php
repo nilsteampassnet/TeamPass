@@ -51,7 +51,8 @@ if (
 ?>
 
 <script type="text/javascript">
-    var userScrollPosition = 0;
+    var userScrollPosition = 0,
+        debugJavascript = false;
     let hourInMinutes = 60;
 
     /**
@@ -112,11 +113,11 @@ if (
                             function(data) {
                                 //decrypt data
                                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                                console.log(data)
+                                if (debugJavascript === true) console.log(data);
 
                                 if (data.error === false && data.queryResults.special === 'generate-keys') {
                                     // Now we need to perform re-encryption due to LDAP password change
-                                    console.log('User has to regenerate keys')
+                                    if (debugJavascript === true) console.log('User has to regenerate keys')
                                     // HIde
                                     $('.content-header, .content').addClass('hidden');
                                     $('#dialog-user-temporary-code-info').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
@@ -127,7 +128,7 @@ if (
                                     // ----
                                 } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'local') {
                                     // USer's password has been reseted, he shall change it
-                                    console.log('User has to change his auth password')
+                                    if (debugJavascript === true) console.log('User has to change his auth password')
                                     // HIde
                                     $('.content-header, .content').addClass('hidden');
 
@@ -140,7 +141,7 @@ if (
                                 // ----
                                 } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'ldap') {
                                     // USer's password has been reseted, he shall change it
-                                    console.log('LDAP user password has to change his auth password')
+                                    if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
                                     // HIde
                                     $('.content-header, .content').addClass('hidden');
 
@@ -156,7 +157,7 @@ if (
                                     || data.queryResults.special === 'otc_is_required_on_next_login'
                                 ) {
                                     // USer's password has been reseted, he shall change it
-                                    console.log('NEW LDAP user password - we need to encrypt items')
+                                    if (debugJavascript === true) console.log('NEW LDAP user password - we need to encrypt items')
                                     // HIde
                                     $('.content-header, .content').addClass('hidden');
 
@@ -164,7 +165,7 @@ if (
                                     $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
                                 } else if (data.queryResults.special === 'recrypt-private-key') {
                                     // USer's password has been reseted, he shall change it
-                                    console.log('NEW LDAP - we need to encrypt private key')
+                                    if (debugJavascript === true) console.log('NEW LDAP - we need to encrypt private key')
                                     // HIde
                                     $('.content-header, .content').addClass('hidden');
 
@@ -327,7 +328,7 @@ if (
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            console.log(data)
+                            if (debugJavascript === true) console.log(data)
                             if (data.error === true) {
                                 // error
                                 toastr.remove();
@@ -598,7 +599,7 @@ if (
     var clipboardCopy = new ClipboardJS(".clipboard-copy", {
         text: function(trigger) {
             var elementId = $(trigger).data('clipboard-text');
-            console.log($('#' + elementId).val())
+            if (debugJavascript === true) console.log($('#' + elementId).val())
             return String($('#' + elementId).val());
         }
     });
@@ -658,7 +659,7 @@ if (
                 'old_password': $('#profile-current-password').val(),
                 'new_password': $('#profile-password').val(),
             }
-            console.log(data);
+            if (debugJavascript === true) console.log(data);
 
             // Check user current password
             // and change the password
@@ -672,7 +673,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -764,7 +765,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data)
+                    if (debugJavascript === true) console.log(data)
                     store.set(
                         'teampassUser', {
                             admin_user_password: data.user_pwd,
@@ -831,7 +832,7 @@ if (
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }
             }
-            console.log(data);
+            if (debugJavascript === true) console.log(data);
             // Prepare form
             $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
             toastr.remove();
@@ -849,7 +850,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     if (data.error !== false) {
                         // Show error
                         toastr.remove();
@@ -916,7 +917,7 @@ if (
             'user_id': store.get('teampassUser').user_id,
             'password': $('#dialog-user-temporary-code-value').val(),
         }
-        console.log(data);
+        if (debugJavascript === true) console.log(data);
         $.post(
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
@@ -926,7 +927,7 @@ if (
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -951,7 +952,7 @@ if (
                         'new_code': $('#dialog-user-temporary-code-value').val(),
                         'action_type' : 'encrypt_privkey_with_user_password',
                     }
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     
                     $.post(
                         'sources/main.queries.php', {
@@ -962,7 +963,7 @@ if (
                         },
                         function(data) {
                             data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                            console.log(data);
+                            if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
                                 // Show error
@@ -1035,7 +1036,7 @@ if (
             'user_id': store.get('teampassUser').user_id,
             'password' : $('#dialog-ldap-user-build-keys-database-code').val(),
         }
-        console.log(data);
+        if (debugJavascript === true) console.log(data);
 
         $.post(
             'sources/main.queries.php', {
@@ -1046,7 +1047,7 @@ if (
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -1071,7 +1072,7 @@ if (
                         'new_code': '',
                         'action_type' : '',
                     }
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     
                     $.post(
                         'sources/main.queries.php', {
@@ -1082,7 +1083,7 @@ if (
                         },
                         function(data) {
                             data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                            console.log(data);
+                            if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
                                 // Show error
@@ -1170,7 +1171,7 @@ if (
                 'previous_password': $('#dialog-ldap-user-change-password-old').val(),
                 'current_password': $('#dialog-ldap-user-change-password-current').val(),
             }
-            console.log(data);
+            if (debugJavascript === true) console.log(data);
 
             // Check user current password
             // and change the password
@@ -1184,7 +1185,7 @@ if (
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -1260,7 +1261,7 @@ if (
                     );
                     return false;
                 };
-console.log(data)
+                if (debugJavascript === true) console.log(data)
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage
@@ -1511,7 +1512,7 @@ console.log(data)
             'user_id': userId,
             'self_change': erase_existing_keys,
         }
-        console.log(data)
+        if (debugJavascript === true) console.log(data)
         $.post(
             "sources/main.queries.php", {
                 type: "user_sharekeys_reencryption_start",
@@ -1521,7 +1522,7 @@ console.log(data)
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data)
+                if (debugJavascript === true) console.log(data)
                 if (data.error === true) {
                     // error
                     toastr.remove();
@@ -1596,7 +1597,7 @@ console.log(data)
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
                     
                     if (data.error === true) {
                         // error

@@ -1136,7 +1136,7 @@ function generateBugReport(
                 $url_found = substr($line, 19, strlen($line) - 22);
                 if (empty($url_found) === false) {
                     $tmp = parse_url($url_found);
-                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
                     $line = "'cpassman_url' => '" . $anonym_url . "\n";
                 } else {
                     $line = "'cpassman_url' => \n";

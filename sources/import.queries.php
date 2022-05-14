@@ -211,8 +211,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                     'pwd' => $pwd,
                                     'url' => $url,
                                     'comment' => $comment,
-                                    'label' => $account,
-                                    'label' => $account,
                                 )
                             );
 
@@ -265,8 +263,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     'pwd' => $pwd,
                     'url' => $url,
                     'comment' => $comment,
-                    'label' => $account,
-                    'label' => $account,
                 )
             );
 
@@ -368,7 +364,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefixTable('items'),
                 array(
                     'label' => substr($item['label'], 0, 500),
-                    'description' => empty($item['description']) === true ? '' : $item['description'],
+                    'description' => empty($item['comment']) === true ? '' : $item['comment'],
                     'pw' => $post_password,
                     'pw_iv' => '',
                     'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
@@ -422,7 +418,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 array(
                     'id' => $newId,
                     'label' => substr($item['label'], 0, 500),
-                    'description' => empty($item['description']) ? '' : $item['description'],
+                    'description' => empty($item['comment']) ? '' : $item['comment'],
                     'id_tree' => $post_folder,
                     'url' => '0',
                     'perso' => $personalFolder === 0 ? 0 : 1,
