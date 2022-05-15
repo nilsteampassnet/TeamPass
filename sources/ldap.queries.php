@@ -206,7 +206,7 @@ switch ($post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+                    'message' => langHdl('error'),
                 ),
                 'encode'
             );
