@@ -220,7 +220,7 @@ function showFolderToUser(
     array $session_forbiden_pfs,
     array $session_groupes_visibles,
     array $listFoldersLimitedKeys,
-    array $listRestrictedFoldersForItemsKeys,
+    array $listRestrictedFoldersForItemsKeys
 ): bool
 {
     if (
