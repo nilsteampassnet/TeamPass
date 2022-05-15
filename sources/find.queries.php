@@ -561,7 +561,9 @@ if (isset($_GET['type']) === false) {
                     $role,
                     $record['id_tree']
                 );
-                if ($access['type'] === 'R') {
+                if (count($access) === 0) {
+                    array_push($arrTmp, 4);
+                } elseif ($access['type'] === 'R') {
                     array_push($arrTmp, 1);
                 } elseif ($access['type'] === 'W') {
                     array_push($arrTmp, 0);

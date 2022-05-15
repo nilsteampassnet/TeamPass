@@ -43,7 +43,6 @@ if (file_exists('../includes/config/tp.config.php')) {
 
 // includes
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
@@ -74,22 +73,65 @@ DB::$encoding = DB_ENCODING;
 // Superglobal load
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
+/*
 $get = [];
-$get['user_tree_structure'] = $superGlobal->get('user_tree_structure', 'GET');
-$get['user_tree_last_refresh_timestamp'] = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
-$get['force_refresh'] = $superGlobal->get('force_refresh', 'GET');
-$get['id'] = $superGlobal->get('id', 'GET');
-$session = [];
-$session['forbiden_pfs'] = $superGlobal->get('forbiden_pfs', 'SESSION');
-$session['groupes_visibles'] = $superGlobal->get('groupes_visibles', 'SESSION');
-$session['list_restricted_folders_for_items'] = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
-$session['user_id'] = $superGlobal->get('user_id', 'SESSION');
-$session['login'] = $superGlobal->get('login', 'SESSION');
-$session['user_read_only'] = $superGlobal->get('user_read_only', 'SESSION');
-//$session['personal_folder'] = explode(';', $superGlobal->get('personal_folder', 'SESSION'));
-$session['list_folders_limited'] = $superGlobal->get('list_folders_limited', 'SESSION');
-$session['read_only_folders'] = $superGlobal->get('read_only_folders', 'SESSION');
-$session['personal_visible_groups'] = $superGlobal->get('personal_visible_groups', 'SESSION');
+$inputData['userTreeStructure'] = $superGlobal->get('user_tree_structure', 'GET');
+$inputData['userTreeLastRefresh'] = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
+$inputData['forceRefresh'] = $superGlobal->get('force_refresh', 'GET');
+$inputData['nodeId'] = $superGlobal->get('id', 'GET');
+$_SESSION = [];
+$inputData['forbidenPfs'] = $superGlobal->get('forbiden_pfs', 'SESSION');
+$inputData['visibleFolders'] = $superGlobal->get('groupes_visibles', 'SESSION');
+$inputData['restrictedFoldersForItems'] = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
+$inputData['userId'] = $superGlobal->get('user_id', 'SESSION');
+$inputData['userLogin'] = $superGlobal->get('login', 'SESSION');
+$inputData['userReadOnly'] = $superGlobal->get('user_read_only', 'SESSION');
+//$_SESSION['personal_folder'] = explode(';', $superGlobal->get('personal_folder', 'SESSION'));
+$inputData['limitedFolders'] = $superGlobal->get('list_folders_limited', 'SESSION');
+$inputData['readOnlyFolders'] = $superGlobal->get('read_only_folders', 'SESSION');
+$inputData['personalVisibleFolders'] = $superGlobal->get('personal_visible_groups', 'SESSION');
+*/
+$data = [
+    'forbidenPfs' => isset($_SESSION['forbiden_pfs']) === true ? json_encode($_SESSION['forbiden_pfs']) : '',
+    'visibleFolders' => isset($_SESSION['groupes_visibles']) === true ? json_encode($_SESSION['groupes_visibles']) : '',
+    'userId' => isset($_SESSION['id']) === true ? $_SESSION['id'] : '',
+    'userLogin' => isset($_SESSION['login']) === true ? $_SESSION['login'] : '',
+    'userReadOnly' => isset($_SESSION['user_read_only']) === true ? $_SESSION['user_read_only'] : '',
+    'limitedFolders' => isset($_SESSION['list_folders_limited']) === true ? json_encode($_SESSION['list_folders_limited']) : '',
+    'readOnlyFolders' => isset($_SESSION['read_only_folders']) === true ? json_encode($_SESSION['read_only_folders']) : '',
+    'personalVisibleFolders' => isset($_SESSION['personal_visible_groups']) === true ? json_encode($_SESSION['personal_visible_groups']) : '',
+    'userTreeLastRefresh' => isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : '',
+    'userTreeStructure' => isset($_GET['user_tree_structure']) === true ? $_GET['user_tree_structure'] : '',
+    'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
+    'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
+    'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '',
+];
+
+$filters = [
+    'forbidenPfs' => 'cast:array',
+    'visibleFolders' => 'cast:array',
+    'userId' => 'cast:integer',
+    'userLogin' => 'trim|escape',
+    'userReadOnly' => 'cast:array',
+    'limitedFolders' => 'cast:array',
+    'readOnlyFolders' => 'cast:array',
+    'personalVisibleFolders' => 'cast:array',
+    'userTreeLastRefresh' => 'cast:integer',
+    'userTreeStructure' => 'cast:integer',
+    'forceRefresh' => 'cast:integer',
+    'nodeId' => 'cast:integer',
+    'restrictedFoldersForItems' => 'cast:array',
+];
+//print_r($data);
+$inputData = dataSanitizer(
+    $data,
+    $filters,
+    $SETTINGS['cpassman_dir']
+);
+
+
+
+
 $lastFolderChange = DB::query(
     'SELECT * FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
@@ -97,31 +139,30 @@ $lastFolderChange = DB::query(
     'last_folder_change'
 );
 if (
-    empty($get['user_tree_structure']) === true
-    || ($get['user_tree_last_refresh_timestamp'] !== null && strtotime($lastFolderChange) > strtotime($get['user_tree_last_refresh_timestamp']))
-    || (isset($get['force_refresh']) === true && (int) $get['force_refresh'] === 1)
+    empty($inputData['userTreeStructure']) === true
+    || ($inputData['userTreeLastRefresh'] !== null && strtotime($lastFolderChange) > strtotime($inputData['userTreeLastRefresh']))
+    || (isset($inputData['forceRefresh']) === true && (int) $inputData['forceRefresh'] === 1)
 ) {
     // Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $tree->register();
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     if (
-        isset($session['list_folders_limited']) === true
-        && is_array($session['list_folders_limited']) === true
-        && count($session['list_folders_limited']) > 0
+        isset($inputData['limitedFolders']) === true
+        && is_array($inputData['limitedFolders']) === true
+        && count($inputData['limitedFolders']) > 0
     ) {
-        $listFoldersLimitedKeys = array_keys($session['list_folders_limited']);
+        $listFoldersLimitedKeys = array_keys($inputData['limitedFolders']);
     } else {
         $listFoldersLimitedKeys = array();
     }
     
     // list of items accessible but not in an allowed folder
     if (
-        isset($session['list_restricted_folders_for_items']) === true
-        && count($session['list_restricted_folders_for_items']) > 0
+        isset($inputData['restrictedFoldersForItems']) === true
+        && count($inputData['restrictedFoldersForItems']) > 0
     ) {
-        $listRestrictedFoldersForItemsKeys = @array_keys($session['list_restricted_folders_for_items']);
+        $listRestrictedFoldersForItemsKeys = @array_keys($inputData['restrictedFoldersForItems']);
     } else {
         $listRestrictedFoldersForItemsKeys = array();
     }
@@ -130,13 +171,13 @@ if (
     $ret_json = array();
     $last_visible_parent = -1;
     $last_visible_parent_level = 1;
-    $nodeId = isset($get['id']) === true && is_int($get['id']) === true ? $get['id'] : 0;
+    $nodeId = isset($inputData['nodeId']) === true && is_int($inputData['nodeId']) === true ? $inputData['nodeId'] : 0;
 
     // build the tree to be displayed
     if (showFolderToUser(
         $nodeId,
-        $session['forbiden_pfs'],
-        $session['groupes_visibles'],
+        $inputData['forbidenPfs'],
+        $inputData['visibleFolders'],
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys
     ) === true)
@@ -152,18 +193,18 @@ if (
                 $listRestrictedFoldersForItemsKeys,
                 /** @scrutinizer ignore-type */ $tree,
                 $SETTINGS,
-                $session['forbiden_pfs'],
-                $session['groupes_visibles'],
-                $session['list_restricted_folders_for_items'],
-                $session['user_id'],
-                $session['login'],
+                $inputData['forbidenPfs'],
+                $inputData['visibleFolders'],
+                $inputData['restrictedFoldersForItems'],
+                $inputData['userId'],
+                $inputData['userLogin'],
                 $superGlobal->get('no_access_folders', 'SESSION'),
                 $superGlobal->get('personal_folders', 'SESSION'),
-                $session['list_folders_limited'],
-                $session['read_only_folders'],
+                $inputData['limitedFolders'],
+                $inputData['readOnlyFolders'],
                 $superGlobal->get('personal_folders', 'SESSION'),
-                $session['personal_visible_groups'],
-                $session['user_read_only']
+                $inputData['personalVisibleFolders'],
+                $inputData['userReadOnly']
             );
         } else {
             // FULL MODE
@@ -178,16 +219,16 @@ if (
                     $last_visible_parent,
                     $last_visible_parent_level,
                     $SETTINGS,
-                    $session['forbiden_pfs'],
-                    $session['groupes_visibles'],
-                    $session['list_restricted_folders_for_items'],
-                    $session['user_id'],
-                    $session['login'],
-                    $session['user_read_only'],
+                    $inputData['forbidenPfs'],
+                    $inputData['visibleFolders'],
+                    $inputData['restrictedFoldersForItems'],
+                    $inputData['userId'],
+                    $inputData['userLogin'],
+                    $inputData['userReadOnly'],
                     $superGlobal->get('personal_folders', 'SESSION'),
-                    $session['list_folders_limited'],
-                    $session['read_only_folders'],
-                    $session['personal_visible_groups'],
+                    $inputData['limitedFolders'],
+                    $inputData['readOnlyFolders'],
+                    $inputData['personalVisibleFolders'],
                     $superGlobal->get('can_create_root_folder', 'SESSION'),
                     $ret_json
                 );
@@ -202,7 +243,7 @@ if (
     // Send back
     echo json_encode($ret_json);
 } else {
-    echo $get['user_tree_structure'];
+    echo $inputData['userTreeStructure'];
 }
 
 /**

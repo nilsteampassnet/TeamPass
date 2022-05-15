@@ -147,8 +147,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // On node select
         .bind('select_node.jstree', function(e, data) {
             if (debugJavascript === true) console.log('JSTREE BIND');
-            selectedFolder = $('#jstree').jstree('get_selected', true)[0];
-            selectedFolderId = selectedFolder.id.split('_')[1];
+            selectedFolder = $('#jstree').jstree('get_selected', true)[0]
+            selectedFolderId = parseInt(selectedFolder.id.split('_')[1]);
 
             // manage icon open/closed
             var selectedFolderIcon = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder'),
@@ -235,7 +235,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // Store the folder to open
         store.set(
             'teampassApplication', {
-                selectedFolder: queryDict['group'],
+                selectedFolder: parseInt(queryDict['group']),
             }
         );
 

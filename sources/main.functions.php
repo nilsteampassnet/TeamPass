@@ -3409,3 +3409,34 @@ function defineComplexity() : void
         );
     }
 }
+
+/**
+ * Uses Sanitizer to perform data sanitization
+ *
+ * @param array     $data
+ * @param array     $filters
+ * @param string    $path
+ * @return array
+ */
+function dataSanitizer(
+    array $data,
+    array $filters,
+    string $path
+): array
+{
+    // Load Sanitizer library
+    require_once $path . '/includes/libraries/Illuminate/Support/Traits/Macroable.php';
+    require_once $path . '/includes/libraries/Illuminate/Support/Str.php';
+    require_once $path . '/includes/libraries/Illuminate/Validation/ValidationRuleParser.php';
+    require_once $path . '/includes/libraries/Illuminate/Support/Arr.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Contracts/Filter.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/Trim.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/Cast.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EscapeHTML.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EmptyStringToNull.php';
+    require_once $path . '/includes/libraries/Elegant/sanitizer/Sanitizer.php';
+
+    // Sanitize post and get variables
+    $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
+    return $sanitizer->sanitize();
+}
