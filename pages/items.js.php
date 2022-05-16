@@ -1411,9 +1411,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         }
                     );
                     // Refresh tree
-                    refreshTree($('#form-item-copy-destination').val(), true);
+                    refreshTree(parseInt($('#form-item-copy-destination').val()), true);
                     // Load list of items
-                    ListerItems($('#form-item-copy-destination').val(), '', 0);
+                    ListerItems(parseInt($('#form-item-copy-destination').val()), '', 0);
                     // Close
                     $('.item-details-card').removeClass('hidden');
                     $('.form-item-copy').addClass('hidden');
@@ -3204,7 +3204,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             sending = '';
 
         if (action === 'clear') {
-            sending = JSON.stringify(folders.map(a => a.id));
+            sending = JSON.stringify(folders.map(a => parseInt(a.id)));
             if (debugJavascript === true) console.log(sending)
         } else if (action === 'update') {
             sending = JSON.stringify([folders]);
@@ -3347,7 +3347,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
-                    teampassApplication.itemsListFolderId = groupe_id,
+                    teampassApplication.itemsListFolderId = parseInt(groupe_id),
                         teampassApplication.itemsListRestricted = restricted,
                         teampassApplication.itemsListStart = start,
                         teampassApplication.itemsListStop = 0
@@ -3386,7 +3386,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
-                    teampassApplication.selectedFolder = groupe_id,
+                    teampassApplication.selectedFolder = parseInt(groupe_id),
                     teampassApplication.itemsList = ''
                 }
             );
@@ -4592,7 +4592,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Manage clipboard button
                 if (itemClipboard) itemClipboard.destroy();
-                itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
+                    itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
                         text: function(e) {
                             return ($($(e).data('clipboard-target')).val());
                         }
@@ -4756,7 +4756,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
                         .removeClass('hidden');
                 }
-                console.log("PREV: " + $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+                if (debugJavascript === true) {
+                    console.log("PREV: " + $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+                }
 
                 // Inform user
                 toastr.remove();
@@ -5286,7 +5288,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         return $.post(
             "sources/items.queries.php", {
                 type: "get_complixity_level",
-                groupe: val,
+                folder_id: val,
                 context: context,
                 item_id: store.get('teampassItem').id,
                 key: '<?php echo $_SESSION['key']; ?>'

@@ -437,7 +437,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
         $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
         $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
-        $superGlobal->put('user_read_only', $userInfo['read_only'], 'SESSION');
+        $superGlobal->put('user_read_only', (bool) $userInfo['read_only'], 'SESSION');
         $superGlobal->put('last_pw_change', (int) $userInfo['last_pw_change'], 'SESSION');
         $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
         $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');

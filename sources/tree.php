@@ -73,24 +73,8 @@ DB::$encoding = DB_ENCODING;
 // Superglobal load
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-/*
-$get = [];
-$inputData['userTreeStructure'] = $superGlobal->get('user_tree_structure', 'GET');
-$inputData['userTreeLastRefresh'] = $superGlobal->get('user_tree_last_refresh_timestamp', 'GET');
-$inputData['forceRefresh'] = $superGlobal->get('force_refresh', 'GET');
-$inputData['nodeId'] = $superGlobal->get('id', 'GET');
-$_SESSION = [];
-$inputData['forbidenPfs'] = $superGlobal->get('forbiden_pfs', 'SESSION');
-$inputData['visibleFolders'] = $superGlobal->get('groupes_visibles', 'SESSION');
-$inputData['restrictedFoldersForItems'] = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
-$inputData['userId'] = $superGlobal->get('user_id', 'SESSION');
-$inputData['userLogin'] = $superGlobal->get('login', 'SESSION');
-$inputData['userReadOnly'] = $superGlobal->get('user_read_only', 'SESSION');
-//$_SESSION['personal_folder'] = explode(';', $superGlobal->get('personal_folder', 'SESSION'));
-$inputData['limitedFolders'] = $superGlobal->get('list_folders_limited', 'SESSION');
-$inputData['readOnlyFolders'] = $superGlobal->get('read_only_folders', 'SESSION');
-$inputData['personalVisibleFolders'] = $superGlobal->get('personal_visible_groups', 'SESSION');
-*/
+
+// Prepare sanitization
 $data = [
     'forbidenPfs' => isset($_SESSION['forbiden_pfs']) === true ? json_encode($_SESSION['forbiden_pfs']) : '',
     'visibleFolders' => isset($_SESSION['groupes_visibles']) === true ? json_encode($_SESSION['groupes_visibles']) : '',
@@ -105,6 +89,10 @@ $data = [
     'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
     'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
     'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '',
+    'noAccessFolders' => isset($_SESSION['no_access_folders']) === true ? json_encode($_SESSION['no_access_folders']) : '',
+    'personalFolders' => isset($_SESSION['personal_folders']) === true ? json_encode($_SESSION['personal_folders']) : '',
+    'userCanCreateRootFolder' => isset($_SESSION['can_create_root_folder']) === true ? json_encode($_SESSION['can_create_root_folder']) : '',
+    'userTreeLoadStrategy' => isset($_SESSION['user_treeloadstrategy']) === true ? $_SESSION['user_treeloadstrategy'] : '',
 ];
 
 $filters = [
@@ -112,7 +100,7 @@ $filters = [
     'visibleFolders' => 'cast:array',
     'userId' => 'cast:integer',
     'userLogin' => 'trim|escape',
-    'userReadOnly' => 'cast:array',
+    'userReadOnly' => 'cast:boolean',
     'limitedFolders' => 'cast:array',
     'readOnlyFolders' => 'cast:array',
     'personalVisibleFolders' => 'cast:array',
@@ -121,8 +109,12 @@ $filters = [
     'forceRefresh' => 'cast:integer',
     'nodeId' => 'cast:integer',
     'restrictedFoldersForItems' => 'cast:array',
+    'noAccessFolders' => 'cast:array',
+    'personalFolders' => 'cast:array',
+    'userCanCreateRootFolder' => 'cast:array',
+    'userTreeLoadStrategy' => 'trim|escape',
 ];
-//print_r($data);
+
 $inputData = dataSanitizer(
     $data,
     $filters,
@@ -182,9 +174,7 @@ if (
         $listRestrictedFoldersForItemsKeys
     ) === true)
     {
-        if (isset($_SESSION['user_treeloadstrategy']) === true
-            && $_SESSION['user_treeloadstrategy'] === 'sequential'
-        ) {
+        if ($inputData['userTreeLoadStrategy'] === 'sequential') {
             // SEQUENTIAL MODE
             // Is this folder visible by user
             $ret_json = buildNodeTree(
@@ -198,11 +188,10 @@ if (
                 $inputData['restrictedFoldersForItems'],
                 $inputData['userId'],
                 $inputData['userLogin'],
-                $superGlobal->get('no_access_folders', 'SESSION'),
-                $superGlobal->get('personal_folders', 'SESSION'),
+                $inputData['noAccessFolders'],
                 $inputData['limitedFolders'],
                 $inputData['readOnlyFolders'],
-                $superGlobal->get('personal_folders', 'SESSION'),
+                $inputData['personalFolders'],
                 $inputData['personalVisibleFolders'],
                 $inputData['userReadOnly']
             );
@@ -225,11 +214,11 @@ if (
                     $inputData['userId'],
                     $inputData['userLogin'],
                     $inputData['userReadOnly'],
-                    $superGlobal->get('personal_folders', 'SESSION'),
+                    $inputData['personalFolders'],
                     $inputData['limitedFolders'],
                     $inputData['readOnlyFolders'],
                     $inputData['personalVisibleFolders'],
-                    $superGlobal->get('can_create_root_folder', 'SESSION'),
+                    $inputData['userCanCreateRootFolder'],
                     $ret_json
                 );
             }
@@ -314,7 +303,7 @@ function buildNodeTree(
     $session_personal_visible_groups,
     $session_user_read_only
 ) {
-    // Prepare superGlobal variables
+    // Prepare variables
     $ret_json = array();
     $nbChildrenItems = 0;
 
@@ -900,9 +889,8 @@ function prepareNodeData(
                 'hide_node' => false,
                 'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
             ];
-        }
 
-        elseif (
+        } elseif (
             $session_user_read_only === true
             && in_array($nodeId, $session_personal_visible_groups) === false
         ) {
@@ -928,9 +916,8 @@ function prepareNodeData(
             'hide_node' => false,
             'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
-    }
-    
-    elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
+
+    } elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
         return [
             'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>',
@@ -941,9 +928,8 @@ function prepareNodeData(
             'hide_node' => false,
             'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
-    }
-    
-    elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
+
+    } elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
         return [
             'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
@@ -954,9 +940,8 @@ function prepareNodeData(
             'hide_node' => false,
             'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
-    }
-    
-    elseif ((int) $show_only_accessible_folders === 1
+
+    } elseif ((int) $show_only_accessible_folders === 1
         && (int) $nbChildrenItems === 0
     ) {
         // folder should not be visible
