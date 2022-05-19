@@ -2204,7 +2204,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 }
                             );
                         } else {
-                            console.log('Generation des clés terminée')
+                            console.log('Generation des clés terminée');
                             // Finalizing
                             $('#warningModal').modal('hide');
                             
