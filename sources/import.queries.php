@@ -744,13 +744,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::insert(
                 prefixTable('items'),
                 array(
-                    'label' => substr(stripslashes($item['Title']), 0, 500),
-                    'description' => stripslashes($item['Notes']),
+                    'label' => substr($item['Title'], 0, 500),
+                    'description' => $item['Notes'],
                     'pw' => $cryptedStuff['encrypted'],
                     'pw_iv' => '',
-                    'url' => substr(stripslashes($item['URL']), 0, 500),
+                    'url' => substr($item['URL'], 0, 500),
                     'id_tree' => $post_folders[$item['parentFolderId']]['id'],
-                    'login' => substr(stripslashes($item['UserName']), 0, 500),
+                    'login' => substr($item['UserName'], 0, 500),
                     'anyone_can_modify' => $post_edit_all,
                     'encryption_type' => 'teampass_aes',
                     'inactif' => 0,
