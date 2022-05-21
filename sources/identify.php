@@ -86,6 +86,8 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
+DB::$ssl = DB_SSL;
+DB::$connect_options = DB_CONNECT_OPTIONS;
 if ($post_type === 'identify_duo_user') {
     //--------
     // DUO AUTHENTICATION
@@ -278,6 +280,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // User's language loading
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $sessionUserLanguage . '.php';
     

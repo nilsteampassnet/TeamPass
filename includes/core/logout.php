@@ -55,6 +55,8 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // clear in db
     DB::update(
         DB_PREFIX.'users',

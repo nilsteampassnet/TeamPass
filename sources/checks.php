@@ -157,6 +157,8 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     // load user's data
     $data = DB::queryfirstrow(

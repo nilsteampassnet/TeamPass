@@ -67,6 +67,8 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
+DB::$ssl = DB_SSL;
+DB::$connect_options = DB_CONNECT_OPTIONS;
 // Class loader
 require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 //Build tree

@@ -75,6 +75,8 @@ DB::$password = DB_PASSWD_CLEAR;
 DB::$dbName = DB_NAME;
 DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
+DB::$ssl = DB_SSL;
+DB::$connect_options = DB_CONNECT_OPTIONS;
 //Columns name
 $aColumns = ['id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url'];
 $aSortTypes = ['ASC', 'DESC'];
@@ -561,7 +563,7 @@ if (isset($_GET['type']) === false) {
                     $role,
                     $record['id_tree']
                 );
-                if (count($access) === 0) {
+                if (DB::count() === 0 || array_key_exists('type', $access) === false) {
                     array_push($arrTmp, 4);
                 } elseif ($access['type'] === 'R') {
                     array_push($arrTmp, 1);

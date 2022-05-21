@@ -95,6 +95,8 @@ if (null === $post_user_token) {
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());

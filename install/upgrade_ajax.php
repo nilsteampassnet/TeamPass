@@ -188,6 +188,16 @@ define("DB_NAME", "' . $database . '");
 define("DB_PREFIX", "' . $pre . '");
 define("DB_PORT", "' . $port . '");
 define("DB_ENCODING", "' . $encoding . '");
+define("DB_SSL", array(
+    "key" => "",
+    "cert" => "",
+    "ca_cert" => "",
+    "ca_path" => "",
+    "cipher" => ""
+));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
 define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");';
 
 		if (defined('IKEY') === true) $settingsTxt .= '

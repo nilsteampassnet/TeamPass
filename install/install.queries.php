@@ -683,6 +683,16 @@ $SETTINGS = array (';
                             array('admin', 'settings_tree_counters', '0'),
                             array('admin', 'enable_massive_move_delete', '0'),
                             array('admin', 'email_debug_level', '0'),
+                            array('admin', 'ga_reset_by_user', ''),
+                            array('admin', 'onthefly-backup-key', ''),
+                            array('admin', 'onthefly-restore-key', ''),
+                            array('admin', 'ldap_user_dn_attribute', ''),
+                            array('admin', 'ldap_dn_additional_user_dn', ''),
+                            array('admin', 'ldap_user_object_filter', ''),
+                            array('admin', 'ldap_bdn', ''),
+                            array('admin', 'ldap_hosts', ''),
+                            array('admin', 'ldap_password', ''),
+                            array('admin', 'ldap_username', ''),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -1318,6 +1328,16 @@ define("DB_NAME", "' . $db['db_bdd'] . '");
 define("DB_PREFIX", "' . $var['tbl_prefix'] . '");
 define("DB_PORT", "' . $db['db_port'] . '");
 define("DB_ENCODING", "' . $session_db_encoding . '");
+define("DB_SSL", array(
+    "key" => "",
+    "cert" => "",
+    "ca_cert" => "",
+    "ca_path" => "",
+    "cipher" => ""
+));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
 define("SECUREPATH", "' . $securePath . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {

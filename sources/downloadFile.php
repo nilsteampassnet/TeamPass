@@ -79,6 +79,8 @@ if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // get file key
     $file_info = DB::queryfirstrow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,

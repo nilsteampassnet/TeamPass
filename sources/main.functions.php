@@ -405,6 +405,8 @@ function identifyUserRights(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
@@ -890,6 +892,8 @@ function cacheTableRefresh(array $SETTINGS): void
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+DB::$ssl = DB_SSL;
+DB::$connect_options = DB_CONNECT_OPTIONS;
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -995,6 +999,8 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -1084,6 +1090,8 @@ function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -1704,6 +1712,8 @@ function logEvents(array $SETTINGS, string $type, string $label, string $who, ?s
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     DB::insert(
         prefixTable('log_system'),
         [
@@ -1769,6 +1779,8 @@ function logItems(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // Insert log in DB
     DB::insert(
         prefixTable('log_items'),
@@ -2033,6 +2045,8 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
         if (file_exists($tp_config_file)) {
@@ -2538,6 +2552,8 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2877,6 +2893,8 @@ function storeUsersShareKey(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // Delete existing entries for this object
     DB::delete(
         $object_name,
@@ -3064,6 +3082,8 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS): bool
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     // Remove all item sharekeys items
     DB::delete(
         prefixTable('sharekeys_items'),
