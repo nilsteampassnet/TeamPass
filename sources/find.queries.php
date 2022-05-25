@@ -264,18 +264,18 @@ if (isset($_GET['type']) === false) {
                     $role,
                     $record['id_tree']
                 );
-                if ($access !== null) {
-                    if ($access['type'] === 'R') {
-                        array_push($arrTmp, 1);
-                    } elseif ($access['type'] === 'W') {
-                        array_push($arrTmp, 0);
-                    } elseif ($access['type'] === 'ND') {
-                        array_push($arrTmp, 2);
-                    } elseif ($access['type'] === 'NE') {
-                        array_push($arrTmp, 1);
-                    } elseif ($access['type'] === 'NDNE') {
-                        array_push($arrTmp, 1);
-                    }
+                if (DB::count() === 0 || array_key_exists('type', $access) === false) {
+                    array_push($arrTmp, 4);
+                } elseif ($access['type'] === 'R') {
+                    array_push($arrTmp, 1);
+                } elseif ($access['type'] === 'W') {
+                    array_push($arrTmp, 0);
+                } elseif ($access['type'] === 'ND') {
+                    array_push($arrTmp, 2);
+                } elseif ($access['type'] === 'NE') {
+                    array_push($arrTmp, 1);
+                } elseif ($access['type'] === 'NDNE') {
+                    array_push($arrTmp, 1);
                 }
             }
             $accessLevel = count($arrTmp) > 0 ? min($arrTmp) : $accessLevel;

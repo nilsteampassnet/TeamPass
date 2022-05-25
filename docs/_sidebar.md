@@ -9,5 +9,7 @@
 - [Authentication](authentication.md)
 - **Manage**
 - 
+- **API**
+- [Basic usage](api-basic.md)
 - **Help**
 - 

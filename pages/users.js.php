@@ -845,7 +845,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'form-create-root-folder': $('#form-create-root-folder').prop('checked'),
                     'form-user-disabled': $('#form-user-disabled').prop('checked'),
                 };
-                console.log(data);
+                //console.log(data);
                 var formUserId = store.get('teampassApplication').formUserId;
 
                 $.post(
@@ -856,7 +856,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        //console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -898,7 +898,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 }
                             );
 
-                            console.log(store.get('teampassUser'))
+                            //console.log(store.get('teampassUser'))
 
                             if (formUserId === undefined || formUserId === '') {
                                 formUserId = data.user_id;
@@ -2079,7 +2079,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                //console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -2099,7 +2099,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         '<div class="form-group">'+
                             '<?php echo langHdl('this_may_take_time'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>' +
                         '</div>' +
-                        '<div class="form-group" id="warningModal-progress"></form>',
+                        '<div class="form-group" id="warningModal-progress"></div>' +
+                        '<div class="alert alert-info hidden" id="warningModal-user-otp"><div>',
                         '',
                         '',
                         false,
@@ -2107,6 +2108,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         false,
                     );
 
+                    // If expected, show the OPT to the admin
+                    if (data.visible_otp === true) {
+                        $('#warningModal-user-otp')
+                            .html('<?php echo langHdl('show_encryption_code_to_admin');?> ' + data.user_code)
+                            .removeClass('hidden');
+                    }
 
                     // Case where we need to encrypt new keys for the user
                     // Process is: 

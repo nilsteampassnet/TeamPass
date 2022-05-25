@@ -93,6 +93,18 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
 
+                        <div class='row mb-5'>
+                            <div class='col-10'>
+                                <?php echo langHdl('settings_api_token_duration'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo langHdl('settings_api_token_duration_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                            <input type='text' class='form-control form-control-sm' id='api_token_duration' value='<?php echo isset($SETTINGS['api_token_duration']) === true ? (int) $SETTINGS['api_token_duration'] : 60; ?>'>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo langHdl('settings_api_keys_list'); ?></a>

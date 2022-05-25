@@ -832,6 +832,14 @@ if (intval($tmp) === 0) {
         "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_username', '')"
     );
 }
+// Add new setting 'api_token_duration'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'api_token_duration'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_token_duration', '60')"
+    );
+}
 
 //---<
 

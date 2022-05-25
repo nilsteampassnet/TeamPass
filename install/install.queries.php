@@ -693,6 +693,7 @@ $SETTINGS = array (';
                             array('admin', 'ldap_hosts', ''),
                             array('admin', 'ldap_password', ''),
                             array('admin', 'ldap_username', ''),
+                            array('admin', 'api_token_duration', '60'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

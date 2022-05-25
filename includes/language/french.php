@@ -22,6 +22,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
+    'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
+    'show_encryption_code_to_admin' => 'This is the encrypted code the user will need on this logon. You have asked to see it, please copy it and share in a secure way. Code is',
+    'previous_password' => 'Previous password used to connect to Teampass',
     'icon' => 'Icone',
     'icon_on_selection' => 'Icone sur sélection',
     'icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
