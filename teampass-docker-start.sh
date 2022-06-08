@@ -2,10 +2,18 @@
 if [ ! -d ${VOL}/.git ];
 then
 	echo "Initial setup..."
-	if [ -z ${GIT_TAG+x} ]; then 
-	  git clone $REPO_URL ${VOL}
+	if [ -z ${GIT_TAG} ]; then
+	  #git clone $REPO_URL ${VOL} # Errors out due to directory not being empty
+		git init
+		git remote add origin $REPO_URL
+		git pull
+		git checkout master -f
 	else
-	  git clone -b $GIT_TAG $REPO_URL ${VOL}
+	  #git clone -b $GIT_TAG $REPO_URL ${VOL}
+		git init
+		git remote add origin $REPO_URL
+		git pull
+		git checkout $GIT_TAG -f
 	fi
 	mkdir ${VOL}/sk
 	chown -Rf nginx:nginx ${VOL}
@@ -23,3 +31,4 @@ fi
 
 # Pass off to the image's script
 exec /start.sh
+
