@@ -29,6 +29,7 @@ class AuthController extends BaseController
     public function authorizeAction()
     {
         $strErrorDesc = '';
+        $responseData = '';
         $requestMethod = $_SERVER["REQUEST_METHOD"];
         $arrQueryStringParams = $this->getQueryStringParams();
 
@@ -65,13 +66,5 @@ class AuthController extends BaseController
                 array('Content-Type: application/json', $strErrorHeader)
             );
         }
-    }
-
-    public function verifyToken()
-    {
-        $strErrorDesc = '';
-        $requestMethod = $_SERVER["REQUEST_METHOD"];
-        $arrQueryStringParams = $this->getQueryStringParams();
-
     }
 }

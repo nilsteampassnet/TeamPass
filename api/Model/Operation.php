@@ -30,12 +30,12 @@ class Operation
         $JWT = new Firebase\JWT\JWT();
 
         try {
-            $decoded = $JWT->decode($jwt, DB_PASSWD, array('HS256'));
+            $JWT->decode($jwt, DB_PASSWD, array('HS256'));
     
             // Access is granted.    
             return array(
                 "message" => "Access granted:",
-                "error" => $e->getMessage()
+                "error" => '',
             );
     
         }catch (Exception $e) {    

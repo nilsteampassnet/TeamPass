@@ -1,4 +1,26 @@
 <?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ *
+ * @project   Teampass API
+ *
+ * @file      jwt_utils.php
+ * ---
+ *
+ * @author    Nils Laumaillé (nils@teampass.net)
+ *
+ * @copyright 2009-2022 Teampass.net
+ *
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ *
+ * @see       https://www.teampass.net
+ */
 
 function generate_jwt($headers, $payload) {
 	$headers_encoded = base64url_encode(json_encode($headers));
@@ -52,7 +74,7 @@ function get_authorization_header(){
 	} else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { //Nginx or fast CGI
 		$headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
 	} else if (function_exists('apache_request_headers')) {
-		$requestHeaders = apache_request_headers();
+		$requestHeaders = (array) apache_request_headers();
 		// Server-side fix for bug in old Android versions (a nice side-effect of this fix means we don't care about capitalization for Authorization)
 		$requestHeaders = array_combine(array_map('ucwords', array_keys($requestHeaders)), array_values($requestHeaders));
 		//print_r($requestHeaders);

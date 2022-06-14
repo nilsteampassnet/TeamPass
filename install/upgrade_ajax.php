@@ -175,11 +175,10 @@ if (defined("DB_PASSWD") === false) {
 			define('DB_ENCODING', "utf8");
 		}
 
-		// Now create new file if needed
-		if (defined('DB_HOST') === false) {
-			$file_handled = fopen($settingsFile, 'w');
-			
-			$settingsTxt = '<?php
+		// Now create new file
+        $file_handled = fopen($settingsFile, 'w');
+        
+        $settingsTxt = '<?php
 // DATABASE connexion parameters
 define("DB_HOST", "' . $server . '");
 define("DB_USER", "' . $user . '");
@@ -218,35 +217,34 @@ define("HOST", "' . HOST . '");';
 define("HOST", "");';
 
 
-			$settingsTxt .= '
+        $settingsTxt .= '
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
 }
 ';
 
-			$fileCreation = fwrite(
-				$file_handled,
-				utf8_encode($settingsTxt)
-			);
+        $fileCreation = fwrite(
+            $file_handled,
+            utf8_encode($settingsTxt)
+        );
 
-			fclose($file_handled);
-			if ($fileCreation === false) {
-                echo '[{
-                    "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
-                    "index" : ""
-                }]';
-				exit;
-			}
-			
-            define("DB_HOST", "' . $server . '");
-            define("DB_USER", "' . $user . '");
-            define("DB_PASSWD", "' . $pass . '");
-            define("DB_NAME", "' . $database . '");
-            define("DB_PREFIX", "' . $pre . '");
-            define("DB_PORT", "' . $port . '");
-            define("DB_ENCODING", "' . $encoding . '");
-		}
+        fclose($file_handled);
+        if ($fileCreation === false) {
+            echo '[{
+                "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
+                "index" : ""
+            }]';
+            exit;
+        }
+        
+        define("DB_HOST", "' . $server . '");
+        define("DB_USER", "' . $user . '");
+        define("DB_PASSWD", "' . $pass . '");
+        define("DB_NAME", "' . $database . '");
+        define("DB_PREFIX", "' . $pre . '");
+        define("DB_PORT", "' . $port . '");
+        define("DB_ENCODING", "' . $encoding . '");
 	}
 }
 

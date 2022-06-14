@@ -877,7 +877,7 @@ if (null !== $post_type) {
             updateCacheTable('reload', $SETTINGS, null);
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -891,7 +891,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -901,7 +901,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -913,7 +913,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Init post variables
             $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -929,7 +932,7 @@ if (null !== $post_type) {
             // If it is then stop
             if (in_array($post_target_folder_id, $_SESSION['read_only_folders']) === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -1116,7 +1119,7 @@ if (null !== $post_type) {
 
                     if (
                         (int) $dataDeleted !== 1
-                        || (int) $item_deleted['date'] < (int) $item_restored['date']
+                        || (isset($item_restored['date']) === true && (int) $item_deleted['date'] < (int) $item_restored['date'])
                     ) {
                         // Get the ITEM object key for the user
                         $userKey = DB::queryFirstRow(
@@ -1129,7 +1132,7 @@ if (null !== $post_type) {
                         if (DB::count() === 0) {
                             // ERROR - No sharekey found for this item and user
                             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                                $SETTINGS['cpassman_dir'],
                                 array(
                                     'error' => true,
                                     'message' => langHdl('error_not_allowed_to'),
@@ -1176,13 +1179,13 @@ if (null !== $post_type) {
                         );
 
                         // Generate the query to update the new record with the previous values
-                        $aSet = array();
+                        $aSet = [];
                         foreach ($record as $key => $value) {
                             if (
                                 $key !== 'id' && $key !== 'key' && $key !== 'id_tree'
                                 && $key !== 'viewed_no' && $key !== 'pw' && $key !== 'pw_iv'
                             ) {
-                                array_push($aSet, array($key => $value));
+                                $aSet[$key] = $value;
                             }
                         }
                         DB::update(
@@ -1205,7 +1208,7 @@ if (null !== $post_type) {
 
                             // Is the data encrypted
                             if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
-                                $cryptedStuff = doDataEncryption($field['value']);
+                                $cryptedStuff = doDataEncryption($field['data']);
                             }
 
                             // store field text
@@ -1215,7 +1218,7 @@ if (null !== $post_type) {
                                     'item_id' => $newItemId,
                                     'field_id' => $field['field_id'],
                                     'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                        $cryptedStuff['encrypted'] : $field['value'],
+                                        $cryptedStuff['encrypted'] : $field['data'],
                                     'data_iv' => '',
                                     'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
                                         TP_ENCRYPTION_NAME : 'not_set',

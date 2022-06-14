@@ -26,23 +26,26 @@ class ItemController extends BaseController
     /**
      * "/user/list" Endpoint - Get list of users
      */
-    public function listAction()
+    public function listInFoldersAction()
     {
         $strErrorDesc = '';
         $requestMethod = $_SERVER["REQUEST_METHOD"];
+
+        // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
+        print_r($arrQueryStringParams);
 
         if (strtoupper($requestMethod) == 'GET') {
             try {
                 $itemModel = new ItemModel();
  
-                $intLimit = 10;
+                $intLimit = 0;
                 if (isset($arrQueryStringParams['limit']) && $arrQueryStringParams['limit']) {
                     $intLimit = $arrQueryStringParams['limit'];
                 }
  
-                $arrUsers = $itemModel->getUsers($intLimit);
-                $responseData = json_encode($arrUsers);
+                $arrItems = $itemModel->getItems($intLimit);
+                $responseData = json_encode($arrItems);
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';

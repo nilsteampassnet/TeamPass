@@ -28,20 +28,12 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
+    //die('Hacking attempt...');
 }
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+    include_once __DIR__ . '/../includes/config/tp.config.php';
 }
 
 header('Content-type: text/html; charset=utf-8');

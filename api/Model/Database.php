@@ -48,8 +48,8 @@ class Database
             return $result;
         } catch(Exception $e) {
             throw New Exception( $e->getMessage() );
+            return false;
         }
-        return false;
     }
  
     private function executeStatement($query = "" , $params = [])

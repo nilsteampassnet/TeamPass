@@ -27,6 +27,10 @@ class ItemModel extends Database
 {
     public function getItems($limit)
     {
-        return $this->select("SELECT * FROM ".prefixTable('items')." ORDER BY id ASC LIMIT ?", ["i", $limit]);
+        if ($limit > 0) {
+            return $this->select("SELECT * FROM ".prefixTable('items')." ORDER BY id ASC LIMIT ?", ["i", $limit]);
+        } else {
+            return $this->select("SELECT * FROM ".prefixTable('items')." WHERE id_tree=590 ORDER BY id ASC");
+        }
     }
 }

@@ -29,19 +29,35 @@ class AuthModel extends Database
     public function getUserAuth($login, $password, $apikey)
     {
         // Check if user exists
-        $userInfo = $this->select("SELECT id, pw FROM " . prefixTable('users') . " WHERE login='".$login."'");
+        $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits FROM " . prefixTable('users') . " WHERE login='".$login."'");
+        $userInfoRes[0]['special'] = '';
+        $userInfo = $userInfoRes[0];
         
         // Check password
         include_once PROJECT_ROOT_PATH . '/../sources/SplClassLoader.php';
         $pwdlib = new SplClassLoader('PasswordLib', PROJECT_ROOT_PATH . '/../includes/libraries');
         $pwdlib->register();
         $pwdlib = new PasswordLib\PasswordLib();
-        if ($pwdlib->verifyPasswordHash($password, $userInfo[0]['pw']) === true) {
+        if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
             // Correct credentials
             // Now check apikey
             $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$apikey."'");
             if ((int) $apiInfo[0]['count(*)'] === 1) {
-                return $this->getUserJWT($userInfo[0]['id'], $login);
+                // get user keys
+                $privateKeyClear = decryptPrivateKey($password, (string) $userInfo['private_key']); //prepareUserEncryptionKeys($userInfo, $password);
+
+                // get user folders list
+                $folders = $this->buildUserFoldersList($userInfo);
+
+                // create JWT
+                return $this->createUserJWT(
+                    $userInfo[0]['id'],
+                    $login,
+                    $userInfo['personal_folder'],
+                    $userInfo['public_key'],
+                    $privateKeyClear,
+                    implode(",", $folders)
+                );
             } else {
                 return array("error" => "Login failed.", "apikey" => "Not valid");
             }
@@ -50,13 +66,137 @@ class AuthModel extends Database
         }
     }
 
-    private function getUserJWT($id, $login): array
+    private function createUserJWT($id, $login, $pf_enabled, $pubkey, $privkey, $folders): array
     {
         require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
         $headers = array('alg'=>'HS256','typ'=>'JWT');
-		$payload = array('username'=>$login, 'id'=>$id, 'exp'=>(time() + $SETTINGS['api_token_duration']));
+		$payload = array(
+            'username' => $login,
+            'id' => $id, 
+            'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
+            'public_key' => $pubkey,
+            'private_key' => $privkey,
+            'pf_enabled' => $pf_enabled,
+            'folders_list' => $folders,
+        );
 
         include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
 		return array('token' => generate_jwt($headers, $payload));
+    }
+
+    private function buildUserFoldersList($userInfo)
+    {
+        // Start by adding the manually added folders
+        $allowedFolders = $userInfo['groupes_visibles'];
+        $readOnlyFolders = [];
+        $allowedFoldersByRoles = [];
+        $restrictedFoldersForItems = [];
+        $foldersLimited = [];
+        $foldersLimitedFull = [];
+
+        $userFunctionId = str_replace(";", ",", $userInfo['fonction_id']);
+
+        // Get folders from the roles
+        if (empty($userFunctionId) === false) {
+            $rows = $this->select("SELECT * FROM " . prefixTable('roles_values') . " WHERE role_id IN (".$userFunctionId.") AND type IN ('W', 'ND', 'NE', 'NDNE', 'R')");
+            foreach ($rows as $record) {
+                if ($record['type'] === 'R') {
+                    array_push($readOnlyFolders, $record['folder_id']);
+                } elseif (in_array($record['folder_id'], $allowedFolders) === false) {
+                    array_push($allowedFoldersByRoles, $record['folder_id']);
+                }
+            }
+            $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
+            $readOnlyFolders = array_unique($readOnlyFolders);
+            // Clean arrays
+            foreach ($allowedFoldersByRoles as $value) {
+                $key = array_search($value, $readOnlyFolders);
+                if ($key !== false) {
+                    unset($readOnlyFolders[$key]);
+                }
+            }
+        }
+
+        // Does this user is allowed to see other items
+        $rows = $this->select("SELECT id, id_tree FROM " . prefixTable('items') . " WHERE WHERE restricted_to LIKE '".$userInfo['id']."'".
+            (empty($userFunctionId) === false ? ' AND id_tree NOT IN ('.$userFunctionId.')' : ''));
+        foreach ($rows as $record) {
+            // Exclude restriction on item if folder is fully accessible
+            //if (in_array($record['id_tree'], $allowedFolders) === false) {
+                $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
+            //}
+        }
+
+        // Check for the users roles if some specific rights exist on items
+        $rows = $this->select("SELECT i.id_tree, r.item_id
+            FROM " . prefixTable('items') . " as i
+            INNER JOIN " . prefixTable('restriction_to_roles') . " as r ON (r.item_id=i.id)
+            WHERE ".(empty($userFunctionId) === false ? ' id_tree NOT IN ('.$userFunctionId.') AND ' : '')." i.id_tree != ''
+            ORDER BY i.id_tree ASC");
+        foreach ($rows as $record) {
+            $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
+            array_push($foldersLimitedFull, $record['item_id']);
+        }
+
+        // TODO ajouter perso folders
+        $rows = $this->select(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE title = '.$userInfo['id'].' AND personal_folder = 1'.
+            (empty($userFunctionId) === false ? ' AND id NOT IN ('.$userFunctionId.')' : '').
+            ' LIMIT 0,1'
+        );
+        if (empty($rows['id']) === false) {
+            array_push($personalFolders, $rows['id']);
+            array_push($allowedFolders, $rows['id']);
+            // get all descendants
+            $ids = $tree->getDescendants($rows['id'], false, false, true);
+            foreach ($ids as $id) {
+                array_push($allowedFolders, $id);
+                array_push($personalFolders, $id);
+            }
+        }
+
+        // Exclude all other PF
+        $where = new WhereClause('and');
+        $where->add('personal_folder=%i', 1);
+        if (
+            (int) $enablePfFeature === 1
+            && (int) $globalsPersonalFolders === 1
+        ) {
+            $where->add('title=%s', $globalsUserId);
+            $where->negateLast();
+        }
+        $persoFlds = DB::query(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE %l',
+            $wheres
+        );
+
+        $rows = $this->select(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE title != '.$userInfo['id'].' AND personal_folder = 1'
+        );
+
+        foreach ($rows as $persoFldId) {
+            array_push($noAccessPersonalFolders, $persoFldId['id']);
+        }
+
+        // All folders visibles
+        $allowedFolders = array_merge(
+            $allowedFolders,
+            $foldersLimitedFull,
+            $allowedFoldersByRoles,
+            $restrictedFoldersForItems,
+            $readOnlyFolders
+        );
+        // Exclude from allowed folders all the specific user forbidden folders
+        if (count($noAccessFolders) > 0) {
+            $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
+        }
+
+        return $allowedFolders;
     }
 }

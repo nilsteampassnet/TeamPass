@@ -36,12 +36,11 @@ class BaseController
      * 
      * @return array
      */
-    protected function getUriSegments()
+    public function getUriSegments()
     {
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $uri = explode( '/', $uri );
- 
-        return $uri;
+        return $this->sanitizeUrl($uri);
     }
  
     /**
@@ -49,11 +48,34 @@ class BaseController
      * 
      * @return array
      */
-    protected function getQueryStringParams()
+    public function getQueryStringParams()
     {
-        return parse_str($_SERVER['QUERY_STRING'], $query);
+        parse_str($_SERVER['QUERY_STRING'], $query);
+        return $this->sanitizeUrl($query);
     }
- 
+
+
+    /**
+     * Undocumented function
+     *
+     * @param array $array
+     * @return array
+     */
+    public function sanitizeUrl(array $array) : array
+    {
+        $filters = [];
+        for ($i=0; $i < count($array); $i++) {
+            array_push($filters, 'trim|escape');
+        }
+        
+        return dataSanitizer(
+            $array,
+            $filters,
+            __DIR__.'/../../..'
+        );
+    }
+
+
     /**
      * Send API output.
      *
