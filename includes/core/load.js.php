@@ -154,7 +154,7 @@ if (
                                     // ----
                                 } else if (
                                     (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap')
-                                    || data.queryResults.special === 'otc_is_required_on_next_login'
+                                    || (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'otc_is_required_on_next_login')
                                 ) {
                                     // USer's password has been reseted, he shall change it
                                     if (debugJavascript === true) console.log('NEW LDAP user password - we need to encrypt items')
@@ -163,7 +163,7 @@ if (
 
                                     // Show form
                                     $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
-                                } else if (data.queryResults.special === 'recrypt-private-key') {
+                                } else if (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'recrypt-private-key') {
                                     // USer's password has been reseted, he shall change it
                                     if (debugJavascript === true) console.log('NEW LDAP - we need to encrypt private key')
                                     // HIde
@@ -369,11 +369,6 @@ if (
     // Show tooltips
     $('.infotip').tooltip();
 
-    // Load user profiles
-    $('.user-panel').click(function() {
-        document.location.href = "index.php?page=profile";
-    });
-
     // Sidebar redirection
     $('.nav-link').click(function() {
         if ($(this).data('name') !== undefined) {
@@ -436,28 +431,10 @@ if (
                 });
                 // ----
             } else if ($(this).data('name') === 'profile') {
-                //NProgress.start();
+                // Show profile page
                 document.location.href = "index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
-                /*// Prepare modal
-                showModalDialogBox(
-                    '#warningModal',
-                    '<i class="fas fa-sign-out-alt fa-lg mr-2"></i><?php echo TP_TOOL_NAME; ?>',
-                    '<?php echo langHdl('logout_confirm'); ?>',
-                    '<?php echo langHdl('confirm'); ?>',
-                    '<?php echo langHdl('cancel'); ?>'
-                );
-
-                // Actions on modal buttons
-                $(document).on('click', '#warningModalButtonAction', function() {
-                    // SHow user
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
-                    );
-
-                    window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
-                });*/
+                // Logout directly to login form
                 window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
             }
         }
@@ -1683,6 +1660,22 @@ if (
             $("#but_identify_user").click();
         }
     });
+
+    // Prevent usage of browser back button
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        const queryString = window.location.search
+        const urlParams = new URLSearchParams(queryString);
+        if (urlParams.get('page') === 'items') {
+            // go back to list
+            // Play with show and hide classes
+            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, .columns-position, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
+                .addClass('hidden');
+            $('#folders-tree-card').removeClass('hidden');
+
+            history.go(1);
+        }
+    };
 
 
 

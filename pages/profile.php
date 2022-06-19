@@ -73,7 +73,7 @@ if ($_SESSION['user_admin'] === '1') {
 // prepare list of timezones
 $zones = timezone_list();
 // prepare list of languages
-$languages = DB::query('SELECT label FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
+$languages = DB::query('SELECT label, name FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
 // Do some stats
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userItemsNumber = DB::count();
@@ -389,13 +389,13 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
-                                                foreach ($languages as $language) {
-                                                    echo '<option value="' . $language['label'] . '"',
-                                                    $_SESSION['user_language'] === strtolower($language['label']) ?
-                                                    ' selected="selected"' :
-                                                    ($SETTINGS['default_language'] === strtolower($language['label']) ? ' selected="selected"' : ''),
-                                                '>' . $language['label'] . '</option>';
-                                                }
+                                                    foreach ($languages as $language) {
+                                                        echo '<option value="' . $language['name'] . '"',
+                                                        $_SESSION['user_language'] === strtolower($language['name']) ?
+                                                        ' selected="selected"' :
+                                                        ($SETTINGS['default_language'] === strtolower($language['name']) ? ' selected="selected"' : ''),
+                                                    '>' . $language['label'] . '</option>';
+                                                    }
                                                 ?>
                                             </select>
                                         </div>
