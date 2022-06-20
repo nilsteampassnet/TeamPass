@@ -694,6 +694,7 @@ $SETTINGS = array (';
                             array('admin', 'ldap_password', ''),
                             array('admin', 'ldap_username', ''),
                             array('admin', 'api_token_duration', '60'),
+                            array('timestamp', 'last_folder_change', ''),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -1208,6 +1209,16 @@ $SETTINGS = array (';
                             `category_id` int(12) NOT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;'
+                        );
+                    } elseif ($task === 'cache_tree') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "cache_tree` (
+                            `increment_id` int(12) NOT NULL,
+                            `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
+                            `timestamp` varchar(50) NOT NULL,
+                            `user_id` int(12) NOT NULL
+                            ) CHARSET=utf8;"
                         );
                     }
                 }

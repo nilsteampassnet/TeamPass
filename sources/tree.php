@@ -87,7 +87,6 @@ $data = [
     'readOnlyFolders' => isset($_SESSION['read_only_folders']) === true ? json_encode($_SESSION['read_only_folders']) : '',
     'personalVisibleFolders' => isset($_SESSION['personal_visible_groups']) === true ? json_encode($_SESSION['personal_visible_groups']) : '',
     'userTreeLastRefresh' => isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : '',
-    'userTreeStructure' => isset($_GET['user_tree_structure']) === true ? $_GET['user_tree_structure'] : '',
     'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
     'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
     'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '',
@@ -107,7 +106,6 @@ $filters = [
     'readOnlyFolders' => 'cast:array',
     'personalVisibleFolders' => 'cast:array',
     'userTreeLastRefresh' => 'cast:integer',
-    'userTreeStructure' => 'cast:integer',
     'forceRefresh' => 'cast:integer',
     'nodeId' => 'cast:integer',
     'restrictedFoldersForItems' => 'cast:array',
@@ -123,20 +121,24 @@ $inputData = dataSanitizer(
     $SETTINGS['cpassman_dir']
 );
 
-
-
-
-$lastFolderChange = DB::query(
-    'SELECT * FROM ' . prefixTable('misc') . '
+$lastFolderChange = DB::queryfirstrow(
+    'SELECT valeur FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
     'timestamp',
     'last_folder_change'
 );
-if (
-    empty($inputData['userTreeStructure']) === true
-    || ($inputData['userTreeLastRefresh'] !== null && strtotime($lastFolderChange) > strtotime($inputData['userTreeLastRefresh']))
-    || (isset($inputData['forceRefresh']) === true && (int) $inputData['forceRefresh'] === 1)
-) {
+
+// Should we use a cache or refresh the tree
+$goTreeRefresh = loadTreeStrategy(
+    (int) $lastFolderChange['valeur'],
+    (int) $inputData['userTreeLastRefresh'],
+    $superGlobal->get('user_tree_structure', 'SESSION'),
+    (int) $inputData['userId'],
+    (int) $inputData['forceRefresh'],
+    $SETTINGS
+);
+
+if ($goTreeRefresh['state'] === true) {
     // Build tree
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -231,10 +233,19 @@ if (
     $superGlobal->put('user_tree_structure', $ret_json, 'SESSION');
     $superGlobal->put('user_tree_last_refresh_timestamp', time(), 'SESSION');
 
+    $ret_json = json_encode($ret_json);
+
+    // Save user folders tree
+    cacheTreeUserHandler(
+        (int) $_SESSION['id'],
+        $ret_json,
+        $SETTINGS
+    );
+
     // Send back
-    echo json_encode($ret_json);
+    echo $ret_json;
 } else {
-    echo $inputData['userTreeStructure'];
+    echo $goTreeRefresh['data'];
 }
 
 /**
@@ -644,7 +655,10 @@ function recursiveTree(
                 isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true
                 && in_array(
                     $node,
-                    array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
+                    array_merge(
+                        $session_groupes_visibles,
+                        is_null($session_list_restricted_folders_for_items) === true ? [] : $session_list_restricted_folders_for_items
+                    )
                 ) === true
             ) {
                 DB::query(
@@ -991,5 +1005,72 @@ function prepareNodeData(
         'show_but_block' => true,
         'hide_node' => false,
         'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
+    ];
+}
+
+
+/**
+ * Permits to check if we can user a cache instead of loading from DB
+ *
+ * @param integer $lastTreeChange
+ * @param integer $userTreeLastRefresh
+ * @param array $userSessionTreeStructure
+ * @param integer $userId
+ * @param integer $forceRefresh
+ * @param array $SETTINGS
+ * @return array
+ */
+function loadTreeStrategy(
+    int $lastTreeChange,
+    int $userTreeLastRefresh,
+    array $userSessionTreeStructure,
+    int $userId,
+    int $forceRefresh,
+    array $SETTINGS
+): array
+{
+    // Case when refresh is EXPECTED / MANDATORY
+    if ((int) $forceRefresh === 1) {
+        return [
+            'state' => true,
+            'data' => [],
+        ];
+    }
+
+    // Case when an update in the tree has been done
+    // Refresh is then mandatory
+    if ((int) $lastTreeChange > (int) $userTreeLastRefresh) {
+        return [
+            'state' => true,
+            'data' => [],
+        ];
+    }
+
+    // Does this user has the tree structure in session?
+    // If yes then use it
+    if (is_null($userSessionTreeStructure) === false) {
+        return [
+            'state' => false,
+            'data' => json_encode($userSessionTreeStructure),
+        ];
+    }
+
+    // Does this user has a tree cache
+    $userCacheTree = DB::queryfirstrow(
+        'SELECT data
+        FROM ' . prefixTable('cache_tree') . '
+        WHERE user_id = %i',
+        $userId
+    );
+    if (empty($userCacheTree['data']) === false) {
+        return [
+            'state' => false,
+            'data' => $userCacheTree['data'],
+        ];
+    }
+
+    return [
+        'state' => true,
+        'data' => [],
     ];
 }

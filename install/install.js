@@ -123,7 +123,7 @@ function checkPage()
     } else if (step === "5") {
     // STEP 5
         dataToUse = "";
-        tasks = ["table*utf8", "table*api", "table*automatic_del", "table*cache", "table*categories", "table*categories_folders", "table*categories_items", "table*defuse_passwords", "table*emails", "table*export", "table*files", "table*items", "table*items_change", "table*items_edition", "table*kb", "table*kb_categories", "table*kb_items", "table*languages", "table*log_items", "table*log_system", "table*misc", "table*nested_tree", "table*notification", "table*otv", "table*sharekeys_fields", "table*sharekeys_files", "table*sharekeys_items", "table*sharekeys_logs", "table*sharekeys_suggestions", "table*restriction_to_roles", "table*rights", "table*roles_title", "table*roles_values", "table*suggestion", "table*tags", "table*templates", "table*tokens", "table*users"];
+        tasks = ["table*utf8", "table*api", "table*automatic_del", "table*cache", "table*cache_tree", "table*categories", "table*categories_folders", "table*categories_items", "table*defuse_passwords", "table*emails", "table*export", "table*files", "table*items", "table*items_change", "table*items_edition", "table*kb", "table*kb_categories", "table*kb_items", "table*languages", "table*log_items", "table*log_system", "table*misc", "table*nested_tree", "table*notification", "table*otv", "table*sharekeys_fields", "table*sharekeys_files", "table*sharekeys_items", "table*sharekeys_logs", "table*sharekeys_suggestions", "table*restriction_to_roles", "table*rights", "table*roles_title", "table*roles_values", "table*suggestion", "table*tags", "table*templates", "table*tokens", "table*users"];
         multiple = true;
     } else if (step === "6") {
     // STEP 6

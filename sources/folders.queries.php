@@ -228,7 +228,7 @@ if (null !== $post_type) {
 
             break;
 
-            // CASE where selecting/deselecting sub-folders
+        // CASE where selecting/deselecting sub-folders
         case 'select_sub_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -456,6 +456,17 @@ if (null !== $post_type) {
                 $dataFolder['id']
             );
 
+            // Update timestamp
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => time(),
+                ),
+                'type = %s AND intitule = %s',
+                'timestamp',
+                'last_folder_change'
+            );
+
             //Add complexity
             DB::update(
                 prefixTable('misc'),
@@ -482,7 +493,7 @@ if (null !== $post_type) {
 
             break;
 
-            //CASE where ADDING a new group
+        //CASE where ADDING a new group
         case 'add_folder':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -679,6 +690,17 @@ if (null !== $post_type) {
                     )
                 );
 
+                // Update timestamp
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'timestamp',
+                    'last_folder_change'
+                );
+
                 // add new folder id in SESSION
                 array_push($_SESSION['groupes_visibles'], $newId);
                 if ((int) $isPersonal === 1) {
@@ -744,7 +766,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => $error,
                     'message' => $errorMessage,
@@ -755,7 +777,7 @@ if (null !== $post_type) {
 
             break;
 
-            // CASE where DELETING multiple groups
+        // CASE where DELETING multiple groups
         case 'delete_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -875,6 +897,17 @@ if (null !== $post_type) {
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, null);
+
+            // Update timestamp
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => time(),
+                ),
+                'type = %s AND intitule = %s',
+                'timestamp',
+                'last_folder_change'
+            );
 
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
@@ -1345,6 +1378,17 @@ if (null !== $post_type) {
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             updateCacheTable('reload', $SETTINGS, NULL);
 
+            // Update timestamp
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => time(),
+                ),
+                'type = %s AND intitule = %s',
+                'timestamp',
+                'last_folder_change'
+            );
+
             $data = array(
                 'error' => '',
             );
@@ -1358,7 +1402,7 @@ if (null !== $post_type) {
 
             break;
 
-            // CASE where selecting/deselecting sub-folders
+        // CASE where selecting/deselecting sub-folders
         case 'refresh_folders_list':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {

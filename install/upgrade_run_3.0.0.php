@@ -841,7 +841,31 @@ if (intval($tmp) === 0) {
     );
 }
 
-//---<
+//---< END 3.0.0.17
+
+
+//---> 3.0.0.18
+// Add new value 'last_folder_change' in table misc
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'timestamp' AND intitule = 'last_folder_change'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('timestamp', 'last_folder_change', '')"
+    );
+}
+
+// Add new table CACHE_TREE
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'cache_tree` (
+        `increment_id` int(12) NOT NULL,
+        `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
+        `timestamp` varchar(50) NOT NULL,
+        `user_id` int(12) NOT NULL
+    ) CHARSET=utf8;'
+);
+
+//---<END 3.0.0.18
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

@@ -884,8 +884,8 @@ function cacheTableRefresh(array $SETTINGS): void
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -3451,4 +3451,59 @@ function dataSanitizer(
     // Sanitize post and get variables
     $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
     return $sanitizer->sanitize();
+}
+
+/**
+ * Permits to manage the cache tree for a user
+ *
+ * @param integer $user_id
+ * @param string $data
+ * @param array $SETTINGS
+ * @return void
+ */
+function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
+{
+    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    //Connect to DB
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
+
+    // Exists ?
+    $userCacheId = DB::queryfirstrow(
+        'SELECT id
+        FROM ' . prefixTable('cache_tree') . '
+        WHERE user_id = %i',
+        $user_id
+    );
+
+    if (count($userCacheId) === 0) {
+        DB::insert(
+            prefixTable('cache_tree'),
+            array(
+                'data' => $data,
+                'timestamp' => time(),
+                'user_id' => $user_id
+            )
+        );
+    } else {
+        DB::update(
+            prefixTable('cache_tree'),
+            [
+                'timestamp' => time(),
+                'data' => $data,
+            ],
+            'user_id = %i',
+            $userCacheId['id']
+        );
+    }
 }
