@@ -1176,7 +1176,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         // Get user info from AD
         // We want to isolate attribute ldap_user_attribute
         $userADInfos = $connection->query()
-            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $username)
+            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? strtolower($SETTINGS['ldap_user_attribute']) : 'distinguishedname', '=', $username)
             ->firstOrFail();
 
         // Check shadowexpire attribute - if === 1 then user disabled

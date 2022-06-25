@@ -874,7 +874,7 @@ return array(
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'settings_ldap_user_attribute' => 'User name attribute',
-    'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username. Examples: cn ; uid ; sAMAccountName',
+    'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username. Examples: cn ; uid ; samaccountname',
     'log_user_initial_pwd_changed' => 'Initial password defined',
     'log_user_email_changed' => 'User email changed to ',
     'log_user_created' => 'User account created',
