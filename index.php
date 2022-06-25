@@ -127,7 +127,7 @@ $session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
 $session_auth_type = $superGlobal->get('auth_type', 'SESSION', 'user');
 
 $server = [];
-$server['request_uri'] = $superGlobal->get('REQUEST_URI', 'SERVER');
+$server['request_uri'] = (string) $superGlobal->get('REQUEST_URI', 'SERVER');
 $server['request_time'] = (int) $superGlobal->get('REQUEST_TIME', 'SERVER');
 
 $get = [];

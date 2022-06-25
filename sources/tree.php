@@ -132,7 +132,7 @@ $lastFolderChange = DB::queryfirstrow(
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChange['valeur'],
     (int) $inputData['userTreeLastRefresh'],
-    $superGlobal->get('user_tree_structure', 'SESSION'),
+    (array) is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh'],
     $SETTINGS
@@ -237,7 +237,7 @@ if ($goTreeRefresh['state'] === true) {
 
     // Save user folders tree
     cacheTreeUserHandler(
-        (int) $_SESSION['id'],
+        (int) $inputData['userId'],
         $ret_json,
         $SETTINGS
     );
@@ -1048,7 +1048,7 @@ function loadTreeStrategy(
 
     // Does this user has the tree structure in session?
     // If yes then use it
-    if (is_null($userSessionTreeStructure) === false) {
+    if (count($userSessionTreeStructure) > 0) {
         return [
             'state' => false,
             'data' => json_encode($userSessionTreeStructure),

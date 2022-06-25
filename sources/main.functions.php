@@ -3480,7 +3480,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
 
     // Exists ?
     $userCacheId = DB::queryfirstrow(
-        'SELECT id
+        'SELECT increment_id
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
         $user_id
@@ -3503,7 +3503,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
                 'data' => $data,
             ],
             'user_id = %i',
-            $userCacheId['id']
+            $userCacheId['increment_id']
         );
     }
 }

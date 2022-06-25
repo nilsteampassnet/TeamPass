@@ -865,6 +865,32 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
+// Add field status to FILES table
+$res = addColumnIfNotExist(
+    $pre . 'files',
+    'status',
+    "varchar(50) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field status to table FILES! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field content to FILES table
+$res = addColumnIfNotExist(
+    $pre . 'files',
+    'content',
+    "longblob DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field content to table FILES! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+
 //---<END 3.0.0.18
 
 // Finished
