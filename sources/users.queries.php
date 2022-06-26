@@ -2720,7 +2720,7 @@ if (null !== $post_type) {
                     'message' => '',
                     'user_id' => $newUserId,
                     'user_code' => $password,
-                    'visible_otp' => ADMIN_VISIBLE_OTP,
+                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                     //'extra' => decryptPrivateKey($password, $userKeys['private_key']),
                     //'extra2' => $userKeys['private_key'],
                 ),

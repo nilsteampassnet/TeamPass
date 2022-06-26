@@ -1254,6 +1254,14 @@ Insert the log here and especially the answer of the query that failed.
     );
 }
 
+/**
+ * Check that the user password is valid
+ *
+ * @param integer $post_user_id
+ * @param string $post_user_password
+ * @param array $SETTINGS
+ * @return string
+ */
 function isUserPasswordCorrect(
     int $post_user_id,
     string $post_user_password,

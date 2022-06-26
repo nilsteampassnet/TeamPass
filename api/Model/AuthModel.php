@@ -51,7 +51,7 @@ class AuthModel extends Database
 
                 // create JWT
                 return $this->createUserJWT(
-                    $userInfo[0]['id'],
+                    $userInfo['id'],
                     $login,
                     $userInfo['personal_folder'],
                     $userInfo['public_key'],
@@ -86,13 +86,19 @@ class AuthModel extends Database
 
     private function buildUserFoldersList($userInfo)
     {
+        //Build tree
+        $tree = new SplClassLoader('Tree\NestedTree', PROJECT_ROOT_PATH . '/../includes/libraries');
+        $tree->register();
+        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        
         // Start by adding the manually added folders
-        $allowedFolders = $userInfo['groupes_visibles'];
+        $allowedFolders = explode(";", $userInfo['groupes_visibles']);
         $readOnlyFolders = [];
         $allowedFoldersByRoles = [];
         $restrictedFoldersForItems = [];
         $foldersLimited = [];
         $foldersLimitedFull = [];
+        $personalFolders = [];
 
         $userFunctionId = str_replace(";", ",", $userInfo['fonction_id']);
 
@@ -116,15 +122,15 @@ class AuthModel extends Database
                 }
             }
         }
-
+        
         // Does this user is allowed to see other items
-        $rows = $this->select("SELECT id, id_tree FROM " . prefixTable('items') . " WHERE WHERE restricted_to LIKE '".$userInfo['id']."'".
+        $inc = 0;
+        $rows = $this->select("SELECT id, id_tree FROM " . prefixTable('items') . " WHERE restricted_to LIKE '".$userInfo['id']."'".
             (empty($userFunctionId) === false ? ' AND id_tree NOT IN ('.$userFunctionId.')' : ''));
         foreach ($rows as $record) {
             // Exclude restriction on item if folder is fully accessible
-            //if (in_array($record['id_tree'], $allowedFolders) === false) {
-                $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
-            //}
+            $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
+            ++$inc;
         }
 
         // Check for the users roles if some specific rights exist on items
@@ -136,9 +142,10 @@ class AuthModel extends Database
         foreach ($rows as $record) {
             $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
             array_push($foldersLimitedFull, $record['item_id']);
+            ++$inc;
         }
 
-        // TODO ajouter perso folders
+        // Add all personal folders
         $rows = $this->select(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
@@ -148,54 +155,22 @@ class AuthModel extends Database
         );
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
-            array_push($allowedFolders, $rows['id']);
             // get all descendants
             $ids = $tree->getDescendants($rows['id'], false, false, true);
             foreach ($ids as $id) {
-                array_push($allowedFolders, $id);
                 array_push($personalFolders, $id);
             }
         }
 
-        // Exclude all other PF
-        $where = new WhereClause('and');
-        $where->add('personal_folder=%i', 1);
-        if (
-            (int) $enablePfFeature === 1
-            && (int) $globalsPersonalFolders === 1
-        ) {
-            $where->add('title=%s', $globalsUserId);
-            $where->negateLast();
-        }
-        $persoFlds = DB::query(
-            'SELECT id
-            FROM ' . prefixTable('nested_tree') . '
-            WHERE %l',
-            $wheres
-        );
-
-        $rows = $this->select(
-            'SELECT id
-            FROM ' . prefixTable('nested_tree') . '
-            WHERE title != '.$userInfo['id'].' AND personal_folder = 1'
-        );
-
-        foreach ($rows as $persoFldId) {
-            array_push($noAccessPersonalFolders, $persoFldId['id']);
-        }
-
         // All folders visibles
-        $allowedFolders = array_merge(
+        $allowedFolders = array_unique(array_filter(array_merge(
             $allowedFolders,
             $foldersLimitedFull,
             $allowedFoldersByRoles,
             $restrictedFoldersForItems,
-            $readOnlyFolders
-        );
-        // Exclude from allowed folders all the specific user forbidden folders
-        if (count($noAccessFolders) > 0) {
-            $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
-        }
+            $readOnlyFolders,
+            $personalFolders
+        )));
 
         return $allowedFolders;
     }

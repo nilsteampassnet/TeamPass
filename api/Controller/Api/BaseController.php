@@ -30,7 +30,7 @@ class BaseController
     {
         $this->sendOutput('', array('HTTP/1.1 404 Not Found'));
     }
- 
+
     /**
      * Get URI elements.
      * 
@@ -42,7 +42,7 @@ class BaseController
         $uri = explode( '/', $uri );
         return $this->sanitizeUrl($uri);
     }
- 
+
     /**
      * Get querystring params.
      * 
@@ -54,7 +54,6 @@ class BaseController
         return $this->sanitizeUrl($query);
     }
 
-
     /**
      * Undocumented function
      *
@@ -64,7 +63,8 @@ class BaseController
     public function sanitizeUrl(array $array) : array
     {
         $filters = [];
-        for ($i=0; $i < count($array); $i++) {
+        $array_size = count($array);
+        for ($i=0; $i < $array_size; $i++) {
             array_push($filters, 'trim|escape');
         }
         

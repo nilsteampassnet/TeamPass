@@ -97,3 +97,15 @@ function get_bearer_token() {
     }
     return null;
 }
+
+function get_bearer_data($jwt) {
+    // split the jwt
+	$tokenParts = explode('.', $jwt);
+	$payload = base64_decode($tokenParts[1]);
+	
+    // HEADER: Get the access token from the header
+    if (!empty($payload)) {
+        return json_decode($payload, true);
+    }
+    return null;
+}

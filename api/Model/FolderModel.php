@@ -9,7 +9,7 @@
  *
  * @project   Teampass API
  *
- * @file      ItemModel.php
+ * @file      folderModel.php
  * ---
  *
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -23,14 +23,14 @@
  */
 require_once PROJECT_ROOT_PATH . "/Model/Database.php";
  
-class ItemModel extends Database
+class FolderModel extends Database
 {
-    public function getItems($sqlExtra, $limit)
+    public function getItems($limit)
     {
         if ($limit > 0) {
-            return $this->select("SELECT * FROM ".prefixTable('items') . $sqlExtra . " ORDER BY id ASC LIMIT ?", ["i", $limit]);
+            return $this->select("SELECT * FROM ".prefixTable('items')." ORDER BY id ASC LIMIT ?", ["i", $limit]);
         } else {
-            return $this->select("SELECT * FROM ".prefixTable('items'). $sqlExtra . " ORDER BY id ASC");
+            return $this->select("SELECT * FROM ".prefixTable('items')." WHERE id_tree=590 ORDER BY id ASC");
         }
     }
 }

@@ -57,7 +57,7 @@ define('DEBUG', false);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
 define('DEBUGDUO', false); //Can be used in order to debug DUO authentication
 
-define("ADMIN_VISIBLE_OTP", false);
+define("ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT", false);
 
 // Management Pages
 $mngPages = array(

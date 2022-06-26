@@ -35,30 +35,14 @@ require PROJECT_ROOT_PATH . "/Model/UserModel.php";
 require PROJECT_ROOT_PATH . "/Model/ItemModel.php";
 
 
-function itemAction($actions)
+function itemAction($actions, $userData)
 {
     require PROJECT_ROOT_PATH . "/Controller/Api/ItemController.php";
     
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
-    $objFeedController->{$strMethodName}();
+    $objFeedController->{$strMethodName}($userData);
 }
-
-/*
-function sanitizeUrl(array $array, string $path) : array
-{
-    $filters = [];
-    for ($i=0; $i < count($array); $i++) {
-        array_push($filters, 'trim|escape');
-    }
-    
-    return dataSanitizer(
-        $array,
-        $filters,
-        $path
-    );
-}
-*/
 
 function apiIsEnabled()
 {
@@ -80,6 +64,20 @@ function verifyAuth()
 
     if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
         return true;
+    } else {
+        header("HTTP/1.1 404 Not Found");
+        echo json_encode(array('error' => 'Access denied'));
+        exit();
+    }
+}
+
+function getDataFromToken()
+{
+    include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
+    $bearer_token = get_bearer_token();
+
+    if (empty($bearer_token) === false) {
+        return get_bearer_data($bearer_token);
     } else {
         header("HTTP/1.1 404 Not Found");
         echo json_encode(array('error' => 'Access denied'));

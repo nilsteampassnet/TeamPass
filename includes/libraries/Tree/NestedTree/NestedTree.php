@@ -15,9 +15,11 @@ namespace Tree\NestedTree;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+ /*
 if (isset($_SESSION['CPM']) === false || (int)$_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
+*/
 
 class NestedTree
 {

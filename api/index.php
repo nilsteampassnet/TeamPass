@@ -52,11 +52,18 @@ if ($uri[4] === 'authorize') {
     $strMethodName = $uri[5] . 'Action';
     $objFeedController->{$strMethodName}();
 } elseif ($uri[4] === 'item' && verifyAuth() === true) {
+    // Is JWT valid and get user infos
+    $userData = getDataFromToken();
     // Manage requested action
     itemAction(
+        array_slice($uri, 5),
+        $userData
+    );    
+} elseif ($uri[4] === 'folder' && verifyAuth() === true) {
+    // Manage requested action
+    folderAction(
         array_slice($uri, 5)
-    );
-    
+    );  
 } else {
     header("HTTP/1.1 404 Not Found");
     exit();
