@@ -43,8 +43,10 @@ class ItemController extends BaseController
         if (strtoupper($requestMethod) === 'GET') {
             // define WHERE clause
             $sqlExtra = '';
-            if (is_null($userData['folders_list']) === false) {
+            if (empty($userData['folders_list']) === false) {
                 $userData['folders_list'] = explode(',', $userData['folders_list']);
+            } else {
+                $userData['folders_list'] = [];
             }
 
             $foldersList = '';
@@ -56,7 +58,7 @@ class ItemController extends BaseController
                 // build sql where clause
                 $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
             }
-            if (empty($foldersList) === '') {
+            if (empty($foldersList) === true) {
                 $strErrorDesc = 'Folders are mandatory';
                 $strErrorHeader = 'HTTP/1.1 401 Expected parameters not provided';
             }

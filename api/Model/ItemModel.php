@@ -34,9 +34,9 @@ class ItemModel extends Database
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
-     * @return string
+     * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): string
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
     {
         $rows = $this->select(
             "SELECT id, label, description, pw, url, id_tree, login, email, viewed_no, fa_icon, inactif, perso 

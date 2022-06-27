@@ -38,20 +38,24 @@ if (defined('DB_PASSWD_CLEAR') === false) {
     define('DB_PASSWD_CLEAR', cryption(DB_PASSWD, '', 'decrypt', $SETTINGS)['string']);
 }
 
+// Do initial checks
+$apiStatus = json_decode(apiIsEnabled(), true);
+$jwtStatus = json_decode(verifyAuth(), true);
+
 // Authorization handler
 if ($uri[4] === 'authorize') {
-    if (apiIsEnabled() === true) {
+    if ($apiStatus['enabled'] === true) {
         require PROJECT_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
         $strMethodName = $uri[4] . 'Action';
         $objFeedController->{$strMethodName}();
     }
-} elseif ($uri[4] === 'user' && verifyAuth() === true) {
+} elseif ($uri[4] === 'user' && $jwtStatus['valid'] === true) {
     require PROJECT_ROOT_PATH . "/Controller/Api/UserController.php";
     $objFeedController = new UserController();
     $strMethodName = $uri[5] . 'Action';
     $objFeedController->{$strMethodName}();
-} elseif ($uri[4] === 'item' && verifyAuth() === true) {
+} elseif ($uri[4] === 'item' && $jwtStatus['valid'] === true) {
     // Is JWT valid and get user infos
     $userData = getDataFromToken();
     // Manage requested action
@@ -59,7 +63,7 @@ if ($uri[4] === 'authorize') {
         array_slice($uri, 5),
         $userData
     );    
-} elseif ($uri[4] === 'folder' && verifyAuth() === true) {
+} elseif ($uri[4] === 'folder' && $jwtStatus['valid'] === true) {
     // Manage requested action
     folderAction(
         array_slice($uri, 5)

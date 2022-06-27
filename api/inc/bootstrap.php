@@ -59,18 +59,20 @@ function itemAction(array $actions, array $userData)
 /**
  * Check if API usage is allowed in Teampass settings
  *
- * @return void
+ * @return string
  */
-function apiIsEnabled()
+function apiIsEnabled(): string
 {
     require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
 
     if ((int) $SETTINGS['api'] === 1) {
-        return true;
+        return json_encode(
+            ['error' => false, 'enabled' => true]
+        );
     } else {
         header("HTTP/1.1 404 Not Found");
         echo json_encode(
-            ['error' => 'API usage is not allowed']
+            ['error' => 'API usage is not allowed', 'enabled' => false]
         );
         exit();
     }
@@ -80,21 +82,23 @@ function apiIsEnabled()
 /**
  * Check if connection is authorized
  *
- * @return void
+ * @return string
  */
-function verifyAuth()
+function verifyAuth(): string
 {
     include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
     if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
-        return true;
-    } else {
-        header("HTTP/1.1 404 Not Found");
-        echo json_encode(
-            ['error' => 'Access denied']
+        return json_encode(
+            ['error' => false, 'valid' => true]
         );
-        exit();
+    } else {
+        //header("HTTP/1.1 404 Not Found");
+        return json_encode(
+            ['error' => 'Access denied', 'valid' => false]
+        );
+        //exit();
     }
 }
 
