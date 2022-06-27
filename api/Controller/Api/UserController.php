@@ -21,6 +21,9 @@
  *
  * @see       https://www.teampass.net
  */
+
+
+
 class UserController extends BaseController
 {
     /**
@@ -28,19 +31,20 @@ class UserController extends BaseController
      */
     public function listAction()
     {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
-        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 
-        if (strtoupper($requestMethod) == 'GET') {
+        if (strtoupper($requestMethod) === 'GET') {
             try {
                 $userModel = new UserModel();
- 
+
                 $intLimit = 10;
-                if (isset($arrQueryStringParams['limit']) && $arrQueryStringParams['limit']) {
+                if (isset($arrQueryStringParams['limit']) === true && empty($arrQueryStringParams['limit']) === false) {
                     $intLimit = $arrQueryStringParams['limit'];
                 }
- 
+
                 $arrUsers = $userModel->getUsers($intLimit);
                 $responseData = json_encode($arrUsers);
             } catch (Error $e) {
@@ -51,16 +55,17 @@ class UserController extends BaseController
             $strErrorDesc = 'Method not supported';
             $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
         }
- 
+
         // send output
-        if (!$strErrorDesc) {
+        if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(json_encode(array('error' => $strErrorDesc)), 
-                array('Content-Type: application/json', $strErrorHeader)
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]), 
+                ['Content-Type: application/json', $strErrorHeader]
             );
         }
     }

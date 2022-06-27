@@ -27,6 +27,10 @@ require __DIR__ . '/../../includes/config/settings.php';
 require __DIR__ . '/../../includes/config/tp.config.php';
 require __DIR__ . '/../../sources/main.functions.php';
 
+// Load superglobal
+require PROJECT_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
 // include the base controller file
 require PROJECT_ROOT_PATH . "/Controller/Api/BaseController.php";
 
@@ -35,7 +39,14 @@ require PROJECT_ROOT_PATH . "/Model/UserModel.php";
 require PROJECT_ROOT_PATH . "/Model/ItemModel.php";
 
 
-function itemAction($actions, $userData)
+/**
+ * Launch expected action for ITEM
+ *
+ * @param array $actions
+ * @param array $userData
+ * @return void
+ */
+function itemAction(array $actions, array $userData)
 {
     require PROJECT_ROOT_PATH . "/Controller/Api/ItemController.php";
     
@@ -44,19 +55,33 @@ function itemAction($actions, $userData)
     $objFeedController->{$strMethodName}($userData);
 }
 
+
+/**
+ * Check if API usage is allowed in Teampass settings
+ *
+ * @return void
+ */
 function apiIsEnabled()
 {
-    require '../includes/config/tp.config.php';
+    require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
 
     if ((int) $SETTINGS['api'] === 1) {
         return true;
     } else {
         header("HTTP/1.1 404 Not Found");
-        echo json_encode(array('error' => 'API usage is not allowed'));
+        echo json_encode(
+            ['error' => 'API usage is not allowed']
+        );
         exit();
     }
 }
 
+
+/**
+ * Check if connection is authorized
+ *
+ * @return void
+ */
 function verifyAuth()
 {
     include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
@@ -66,11 +91,19 @@ function verifyAuth()
         return true;
     } else {
         header("HTTP/1.1 404 Not Found");
-        echo json_encode(array('error' => 'Access denied'));
+        echo json_encode(
+            ['error' => 'Access denied']
+        );
         exit();
     }
 }
 
+
+/**
+ * Get the payload from bearer
+ *
+ * @return void
+ */
 function getDataFromToken()
 {
     include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
@@ -80,7 +113,9 @@ function getDataFromToken()
         return get_bearer_data($bearer_token);
     } else {
         header("HTTP/1.1 404 Not Found");
-        echo json_encode(array('error' => 'Access denied'));
+        echo json_encode(
+            ['error' => 'Access denied']
+        );
         exit();
     }
 }

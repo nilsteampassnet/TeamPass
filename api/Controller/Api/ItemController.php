@@ -23,19 +23,24 @@
  */
 class ItemController extends BaseController
 {
+
+
     /**
-     * "/item/inFolders" Endpoint - Get list of users
+     * Manage case inFolder
+     *
+     * @param array $userData
+     * @return string
      */
-    public function inFoldersAction($userData)
+    public function inFoldersAction(array $userData): string
     {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
-        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
-        //print_r($arrQueryStringParams);
 
-        if (strtoupper($requestMethod) == 'GET') {
+        if (strtoupper($requestMethod) === 'GET') {
             // define WHERE clause
             $sqlExtra = '';
             if (is_null($userData['folders_list']) === false) {
@@ -44,12 +49,14 @@ class ItemController extends BaseController
 
             $foldersList = '';
             if (isset($arrQueryStringParams['folders']) && $arrQueryStringParams['folders']) {
-                echo $arrQueryStringParams['folders'].";;";
-                print_r(json_decode($arrQueryStringParams['folders']));
+                // convert the folders to an array
+                $arrQueryStringParams['folders'] = explode(',', str_replace( array('[',']') , ''  , $arrQueryStringParams['folders']));
+                // ensure to only use the intersection
                 $foldersList = implode(',', array_intersect($arrQueryStringParams['folders'], $userData['folders_list']));
+                // build sql where clause
                 $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
             }
-            if (count($foldersList) === 0) {
+            if (empty($foldersList) === '') {
                 $strErrorDesc = 'Folders are mandatory';
                 $strErrorHeader = 'HTTP/1.1 401 Expected parameters not provided';
             }
@@ -58,15 +65,13 @@ class ItemController extends BaseController
             try {
                 $itemModel = new ItemModel();
 
-                // SQL FOLDERS
-
                 // SQL LIMIT
                 $intLimit = 0;
                 if (isset($arrQueryStringParams['limit']) && $arrQueryStringParams['limit']) {
                     $intLimit = $arrQueryStringParams['limit'];
                 }
- 
-                $arrItems = $itemModel->getItems($sqlExtra, $intLimit);
+
+                $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userData['private_key'], $userData['id']);
                 $responseData = json_encode($arrItems);
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
@@ -76,17 +81,19 @@ class ItemController extends BaseController
             $strErrorDesc = 'Method not supported';
             $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
         }
- 
+
         // send output
-        if (!$strErrorDesc) {
+        if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(json_encode(array('error' => $strErrorDesc)), 
-                array('Content-Type: application/json', $strErrorHeader)
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]), 
+                ['Content-Type: application/json', $strErrorHeader]
             );
         }
     }
+    //end InFoldersAction() 
 }

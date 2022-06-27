@@ -21,29 +21,34 @@
  *
  * @see       https://www.teampass.net
  */
+
+
 class FolderController extends BaseController
 {
+
     /**
-     * "/user/list" Endpoint - Get list of users
+     * Get list of users
+     *
+     * @return void
      */
     public function listInFoldersAction()
     {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
-        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
-        print_r($arrQueryStringParams);
 
-        if (strtoupper($requestMethod) == 'GET') {
+        if (strtoupper($requestMethod) === 'GET') {
             try {
                 $itemModel = new ItemModel();
- 
+
                 $intLimit = 0;
-                if (isset($arrQueryStringParams['limit']) && $arrQueryStringParams['limit']) {
+                if (isset($arrQueryStringParams['limit']) === true && empty($arrQueryStringParams['limit']) === false ) {
                     $intLimit = $arrQueryStringParams['limit'];
                 }
- 
+
                 $arrItems = $itemModel->getItems($intLimit);
                 $responseData = json_encode($arrItems);
             } catch (Error $e) {
@@ -54,17 +59,19 @@ class FolderController extends BaseController
             $strErrorDesc = 'Method not supported';
             $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
         }
- 
+
         // send output
-        if (!$strErrorDesc) {
+        if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(json_encode(array('error' => $strErrorDesc)), 
-                array('Content-Type: application/json', $strErrorHeader)
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]), 
+                ['Content-Type: application/json', $strErrorHeader]
             );
         }
     }
+    //end listInFoldersAction() 
 }

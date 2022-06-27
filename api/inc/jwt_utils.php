@@ -67,18 +67,19 @@ function base64url_encode($data) {
 }
 
 function get_authorization_header(){
+	$superGlobal = new protect\SuperGlobal\SuperGlobal();
 	$headers = null;
 	
-	if (isset($_SERVER['Authorization'])) {
-		$headers = trim($_SERVER["Authorization"]);
-	} else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { //Nginx or fast CGI
-		$headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
-	} else if (function_exists('apache_request_headers')) {
+	if (null !== $superGlobal->get('Authorization', 'SERVER')) {
+		$headers = trim($superGlobal->get('Authorization', 'SERVER'));
+	} else if (null !== $superGlobal->get('HTTP_AUTHORIZATION', 'SERVER')) { //Nginx or fast CGI
+		$headers = trim($superGlobal->get('HTTP_AUTHORIZATION', 'SERVER'));
+	} else if (function_exists('apache_request_headers') === true) {
 		$requestHeaders = (array) apache_request_headers();
 		// Server-side fix for bug in old Android versions (a nice side-effect of this fix means we don't care about capitalization for Authorization)
 		$requestHeaders = array_combine(array_map('ucwords', array_keys($requestHeaders)), array_values($requestHeaders));
 		//print_r($requestHeaders);
-		if (isset($requestHeaders['Authorization'])) {
+		if (isset($requestHeaders['Authorization']) === true) {
 			$headers = trim($requestHeaders['Authorization']);
 		}
 	}
@@ -90,7 +91,7 @@ function get_bearer_token() {
     $headers = get_authorization_header();
 	
     // HEADER: Get the access token from the header
-    if (!empty($headers)) {
+    if (empty($headers) === false) {
         if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             return $matches[1];
         }
@@ -104,7 +105,7 @@ function get_bearer_data($jwt) {
 	$payload = base64_decode($tokenParts[1]);
 	
     // HEADER: Get the access token from the header
-    if (!empty($payload)) {
+    if (empty($payload) === false) {
         return json_decode($payload, true);
     }
     return null;

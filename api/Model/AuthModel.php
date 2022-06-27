@@ -21,12 +21,24 @@
  *
  * @see       https://www.teampass.net
  */
+
+
 require_once PROJECT_ROOT_PATH . "/Model/Database.php";
 
- 
+
 class AuthModel extends Database
 {
-    public function getUserAuth($login, $password, $apikey)
+
+
+    /**
+     * Is the user allowed
+     *
+     * @param string $login
+     * @param string $password
+     * @param string $apikey
+     * @return array
+     */
+    public function getUserAuth(string $login, string $password, string $apikey): array
     {
         // Check if user exists
         $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits FROM " . prefixTable('users') . " WHERE login='".$login."'");
@@ -59,18 +71,30 @@ class AuthModel extends Database
                     implode(",", $folders)
                 );
             } else {
-                return array("error" => "Login failed.", "apikey" => "Not valid");
+                return ["error" => "Login failed.", "apikey" => "Not valid"];
             }
         } else {
-            return array("error" => "Login failed.", "password" => $password);
+            return ["error" => "Login failed.", "password" => $password];
         }
     }
+    //end getUserAuth
 
-    private function createUserJWT($id, $login, $pf_enabled, $pubkey, $privkey, $folders): array
+    /**
+     * Create a JWT
+     *
+     * @param integer $id
+     * @param string $login
+     * @param integer $pf_enabled
+     * @param string $pubkey
+     * @param string $privkey
+     * @param string $folders
+     * @return array
+     */
+    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders): array
     {
         require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
-        $headers = array('alg'=>'HS256','typ'=>'JWT');
-		$payload = array(
+        $headers = ['alg'=>'HS256','typ'=>'JWT'];
+		$payload = [
             'username' => $login,
             'id' => $id, 
             'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
@@ -78,13 +102,22 @@ class AuthModel extends Database
             'private_key' => $privkey,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
-        );
+        ];
 
         include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
-		return array('token' => generate_jwt($headers, $payload));
+		return ['token' => generate_jwt($headers, $payload)];
     }
 
-    private function buildUserFoldersList($userInfo)
+    //end createUserJWT
+
+
+    /**
+     * Permit to build the list of folders the user can access
+     *
+     * @param array $userInfo
+     * @return array
+     */
+    private function buildUserFoldersList(array $userInfo): array
     {
         //Build tree
         $tree = new SplClassLoader('Tree\NestedTree', PROJECT_ROOT_PATH . '/../includes/libraries');
@@ -163,15 +196,18 @@ class AuthModel extends Database
         }
 
         // All folders visibles
-        $allowedFolders = array_unique(array_filter(array_merge(
-            $allowedFolders,
-            $foldersLimitedFull,
-            $allowedFoldersByRoles,
-            $restrictedFoldersForItems,
-            $readOnlyFolders,
-            $personalFolders
-        )));
-
-        return $allowedFolders;
+        return array_unique(
+            array_filter(
+                array_merge(
+                    $allowedFolders,
+                    $foldersLimitedFull,
+                    $allowedFoldersByRoles,
+                    $restrictedFoldersForItems,
+                    $readOnlyFolders,
+                    $personalFolders
+                )
+            )
+        );
     }
+    //end buildUserFoldersList
 }

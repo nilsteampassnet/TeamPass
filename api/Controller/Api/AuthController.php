@@ -21,6 +21,8 @@
  *
  * @see       https://www.teampass.net
  */
+
+
 class AuthController extends BaseController
 {
     /**
@@ -28,9 +30,10 @@ class AuthController extends BaseController
      */
     public function authorizeAction()
     {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
         $responseData = '';
-        $requestMethod = $_SERVER["REQUEST_METHOD"];
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'POST') {
@@ -56,14 +59,15 @@ class AuthController extends BaseController
         }
 
         // send output
-        if (!$strErrorDesc) {
+        if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(json_encode(array('error' => $strErrorDesc)), 
-                array('Content-Type: application/json', $strErrorHeader)
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]), 
+                ['Content-Type: application/json', $strErrorHeader]
             );
         }
     }

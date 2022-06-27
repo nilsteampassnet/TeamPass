@@ -38,7 +38,8 @@ class BaseController
      */
     public function getUriSegments()
     {
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $uri = parse_url($superGlobal->get('REQUEST_URI', 'SERVER'), PHP_URL_PATH);
         $uri = explode( '/', $uri );
         return $this->sanitizeUrl($uri);
     }
@@ -50,7 +51,8 @@ class BaseController
      */
     public function getQueryStringParams()
     {
-        parse_str($_SERVER['QUERY_STRING'], $query);
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        parse_str($superGlobal->get('QUERY_STRING', 'SERVER'), $query);
         return $this->sanitizeUrl($query);
     }
 
