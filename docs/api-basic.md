@@ -36,6 +36,8 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 
 ### Authorize
 
+> :memo: **Note:** Returns the JWT token requested for next API queries
+
 | Info | Description |
 | ---- | ----------- |
 | Criteria | authorize |
@@ -46,6 +48,8 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 
 ### List items in folders
 
+> :memo: **Note:** Returns a list of items belonging to the provided folders (taking into account the user access rights)
+
 | Info | Description |
 | ---- | ----------- |
 | Criteria | item/inFolders |
@@ -53,31 +57,9 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 | URL | `<Teampass url>/api/index.php/item/inFolders?folders={590,12}` |
 | PARAMETERS | folders={<folder_id>,<folder_id>} |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of items in json format.<br>Example:<br>[
-    {
-        "id": 1025,
-        "label": "MONIT-01 - centreon",
-        "description": "",
-        "pw": "UbXyeypTdojiDMxvZtq7hw==",
-        "pw_iv": "",
-        "pw_len": 0,
-        "url": "192.168.10.50",
-        "id_tree": "590",
-        "perso": 0,
-        "login": "admin",
-        "inactif": 0,
-        "restricted_to": "",
-        "anyone_can_modify": 0,
-        "email": null,
-        "notification": null,
-        "viewed_no": 1,
-        "complexity_level": "-1",
-        "auto_update_pwd_frequency": 0,
-        "auto_update_pwd_next_date": "0",
-        "encryption_type": "teampass_aes",
-        "fa_icon": null
-    }
-    ] |
+| Return | An array of items in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 1027,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Teampass production",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "Use for administration",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Ajdh-652Syw-625sWW-Ca18",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "tpAdmin",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "nils@teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 54,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": null,<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0<br>&nbsp;&nbsp;}<br>] |
+
+
 
 
 
