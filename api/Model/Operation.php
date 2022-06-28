@@ -42,9 +42,4 @@ class Operation
             return false;
         }
     }
-
-    public function getUserInfoFromJwt($jwt)
-    {
-
-    }
 }

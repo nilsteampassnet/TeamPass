@@ -67,14 +67,20 @@ function apiIsEnabled(): string
 
     if ((int) $SETTINGS['api'] === 1) {
         return json_encode(
-            ['error' => false, 'enabled' => true]
+            [
+                'error' => false,
+                'error_message' => '',
+                'error_header' => '',
+            ]
         );
     } else {
-        header("HTTP/1.1 404 Not Found");
-        echo json_encode(
-            ['error' => 'API usage is not allowed', 'enabled' => false]
+        return json_encode(
+            [
+                'error' => true,
+                'error_message' => 'API usage is not allowed',
+                'error_header' => 'HTTP/1.1 404 Not Found',
+            ]
         );
-        exit();
     }
 }
 
@@ -91,14 +97,20 @@ function verifyAuth(): string
 
     if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
         return json_encode(
-            ['error' => false, 'valid' => true]
+            [
+                'error' => false,
+                'error_message' => '',
+                'error_header' => '',
+            ]
         );
     } else {
-        //header("HTTP/1.1 404 Not Found");
         return json_encode(
-            ['error' => 'Access denied', 'valid' => false]
+            [
+                'error' => true,
+                'error_message' => 'Access denied',
+                'error_header' => 'HTTP/1.1 404 Not Found',
+            ]
         );
-        //exit();
     }
 }
 
@@ -108,18 +120,49 @@ function verifyAuth(): string
  *
  * @return void
  */
-function getDataFromToken()
+function getDataFromToken(): string
 {
     include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
     if (empty($bearer_token) === false) {
-        return get_bearer_data($bearer_token);
-    } else {
-        header("HTTP/1.1 404 Not Found");
-        echo json_encode(
-            ['error' => 'Access denied']
+        return json_encode(
+            [
+                'data' => get_bearer_data($bearer_token),
+                'error' => false,
+                'error_message' => '',
+                'error_header' => '',
+            ]
         );
-        exit();
+    } else {
+        return json_encode(
+            [
+                'error' => true,
+                'error_message' => 'Access denied',
+                'error_header' => 'HTTP/1.1 404 Not Found',
+            ]
+        );
     }
+}
+
+
+/**
+ * Send error output
+ *
+ * @param string $errorHeader
+ * @param string $errorValues
+ * @return void
+ */
+function errorHdl(string $errorHeader, string $errorValues)
+{
+    header_remove('Set-Cookie');
+
+    if (is_array($errorHeader) && count($errorHeader)) {
+        foreach ($errorHeader as $httpHeader) {
+            header($httpHeader);
+        }
+    }
+
+    echo $errorValues;
+    exit;
 }

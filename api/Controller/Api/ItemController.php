@@ -49,34 +49,38 @@ class ItemController extends BaseController
                 $userData['folders_list'] = [];
             }
 
-            $foldersList = '';
-            if (isset($arrQueryStringParams['folders']) && $arrQueryStringParams['folders']) {
+            // SQL where clause with folders list
+            if (isset($arrQueryStringParams['folders']) ===true) {
                 // convert the folders to an array
                 $arrQueryStringParams['folders'] = explode(',', str_replace( array('[',']') , ''  , $arrQueryStringParams['folders']));
+
                 // ensure to only use the intersection
                 $foldersList = implode(',', array_intersect($arrQueryStringParams['folders'], $userData['folders_list']));
+
                 // build sql where clause
                 $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
+            } else {
+                // Send error
+                $this->sendOutput(
+                    json_encode(['error' => 'Folders are mandatory']), 
+                    ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
+                );
             }
-            if (empty($foldersList) === true) {
-                $strErrorDesc = 'Folders are mandatory';
-                $strErrorHeader = 'HTTP/1.1 401 Expected parameters not provided';
+
+            // SQL LIMIT
+            $intLimit = 0;
+            if (isset($arrQueryStringParams['limit']) === true) {
+                $intLimit = $arrQueryStringParams['limit'];
             }
 
             // send query
             try {
                 $itemModel = new ItemModel();
 
-                // SQL LIMIT
-                $intLimit = 0;
-                if (isset($arrQueryStringParams['limit']) && $arrQueryStringParams['limit']) {
-                    $intLimit = $arrQueryStringParams['limit'];
-                }
-
                 $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userData['private_key'], $userData['id']);
                 $responseData = json_encode($arrItems);
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
+                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {

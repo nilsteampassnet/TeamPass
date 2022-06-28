@@ -44,31 +44,67 @@ $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
 if ($uri[4] === 'authorize') {
-    if ($apiStatus['enabled'] === true) {
+    // Is API enabled in Teampass settings
+    if ($apiStatus['error'] === false) {
         require PROJECT_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
         $strMethodName = $uri[4] . 'Action';
         $objFeedController->{$strMethodName}();
+    } else {
+        // Error management
+        errorHdl(
+            $apiStatus['error_header'],
+            json_encode(['error' => $apiStatus['error_message']])
+        );
     }
-} elseif ($uri[4] === 'user' && $jwtStatus['valid'] === true) {
-    require PROJECT_ROOT_PATH . "/Controller/Api/UserController.php";
-    $objFeedController = new UserController();
-    $strMethodName = $uri[5] . 'Action';
-    $objFeedController->{$strMethodName}();
-} elseif ($uri[4] === 'item' && $jwtStatus['valid'] === true) {
-    // Is JWT valid and get user infos
-    $userData = getDataFromToken();
-    // Manage requested action
-    itemAction(
-        array_slice($uri, 5),
-        $userData
-    );    
-} elseif ($uri[4] === 'folder' && $jwtStatus['valid'] === true) {
-    // Manage requested action
-    folderAction(
-        array_slice($uri, 5)
-    );  
+} elseif ($jwtStatus['error'] === false) {
+    // get infos from JWT parameters
+    $userData = json_decode(getDataFromToken(), true);
+
+    if ($userData['error'] === true) {
+        // Error management
+        errorHdl(
+            $userData['error_header'],
+            json_encode(['error' => $userData['error_message']])
+        );
+
+    // action related to USER
+    } elseif ($uri[4] === 'user') {
+        require PROJECT_ROOT_PATH . "/Controller/Api/UserController.php";
+        $objFeedController = new UserController();
+        $strMethodName = $uri[5] . 'Action';
+        $objFeedController->{$strMethodName}();
+
+    // action related to ITEM
+    } elseif ($uri[4] === 'item') {        
+        // Manage requested action
+        itemAction(
+            array_slice($uri, 5),
+            $userData['data']
+        ); 
+
+    // action related to FOLDER
+    } elseif ($uri[4] === 'folder') {
+
+
+    // no action where find
+    } else {
+        errorHdl(
+            "HTTP/1.1 404 Not Found",
+            json_encode(['error' => 'No action provided'])
+        );
+    }
+// manage error case
 } else {
-    header("HTTP/1.1 404 Not Found");
-    exit();
+    if ($jwtStatus['error'] === true) {
+        errorHdl(
+            $jwtStatus['error_header'],
+            json_encode(['error' => $jwtStatus['error_message']])
+        );
+    } else {
+        errorHdl(
+            "HTTP/1.1 404 Not Found",
+            json_encode(['error' => 'Access denied'])
+        );
+    }
 }
