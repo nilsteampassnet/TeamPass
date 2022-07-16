@@ -434,7 +434,7 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -450,7 +450,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -460,7 +460,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -472,7 +472,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_log_type = filter_var($dataReceived['dataType'], FILTER_SANITIZE_STRING);
@@ -642,6 +645,129 @@ if (null !== $post_type) {
                 'encode'
             );
 
+            break;
+
+        //CASE show process detail
+        case 'show_process_detail':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+            $tasks = DB::query(
+                'SELECT *
+                FROM ' . prefixTable('processes_tasks') . '
+                WHERE process_id = %i',
+                $post_id
+            );
+
+            // Get some values
+            DB::query(
+                'SELECT id
+                FROM ' . prefixTable('items') . '
+                WHERE perso = 0'
+            );
+            $items_number = DB::count();
+
+            DB::query(
+                'SELECT increment_id
+                FROM ' . prefixTable('log_items') . '
+                WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"'
+            );
+            $logs_number = DB::count();
+
+            DB::query(
+                'SELECT id
+                FROM ' . prefixTable('categories_items') . '
+                WHERE encryption_type = "teampass_aes"'
+            );
+            $items_categories= DB::count();
+
+            DB::query(
+                'SELECT id
+                FROM ' . prefixTable('suggestion')
+            );
+            $items_suggestions= DB::count();
+
+            DB::query(
+                'SELECT id
+                FROM ' . prefixTable('files') . '
+                WHERE status = "' . TP_ENCRYPTION_NAME . '"'
+            );
+            $items_files= DB::count();
+
+
+            // get list
+            $ret = [];
+            $i = 0;
+            foreach ($tasks as $task) {
+                // get task detail
+                $detail = json_decode($task['task'], true);
+
+                // prepare progress information
+                if (isset($detail['step']) === true) {
+                    if ($detail['step'] === 'step0' || (int) $detail['index'] === 0) {
+                        $task_progress = '0%';
+                    } elseif ($detail['step'] === 'step1') {
+                        $task_progress = pourcentage($detail['index'], $items_number, 100) .'%';
+                    } elseif ($detail['step'] === 'step2') {
+                        $task_progress = pourcentage($detail['index'], $logs_number, 100) .'%';
+                    } elseif ($detail['step'] === 'step3') {
+                        $task_progress = pourcentage($detail['index'], $items_categories, 100) .'%';
+                    } elseif ($detail['step'] === 'step4') {
+                        $task_progress = pourcentage($detail['index'], $items_suggestions, 100) .'%';
+                    } elseif ($detail['step'] === 'step5') {
+                        $task_progress = pourcentage($detail['index'], $items_files, 100) .'%';
+                    } elseif ($detail['step'] === 'step6') {
+                        $task_progress = pourcentage($detail['index'], $items_number, 100) .'%';
+                    }
+                }
+
+                array_push(
+                    $ret,
+                    [
+                        'created_at' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['created_at']),
+                        'updated_at' => is_null($task['updated_at']) === false ? date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['updated_at']) : '',
+                        'finished_at' => is_null($task['finished_at']) === false ? date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['finished_at']) : '',
+                        'progress' => $task['finished_at'] !== null ? '100%' : $task_progress,
+                        'is_in_progress' => (int) $task['is_in_progress'],
+                        'step' => 'step'.$i,
+                    ]
+                );
+
+                $i++;
+            }
+
+            // send data
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'tasks' => $ret,
+                ),
+                'encode'
+            );
             break;
     }
 }

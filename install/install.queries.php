@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 
+set_time_limit(600);
 
 require_once '../sources/SecureHandler.php';
 session_name('teampass_session');
@@ -695,6 +696,10 @@ $SETTINGS = array (';
                             array('admin', 'ldap_username', ''),
                             array('admin', 'api_token_duration', '60'),
                             array('timestamp', 'last_folder_change', ''),
+                            array('admin', 'enable_tasks_manager', '0'),
+                            array('admin', 'task_maximum_run_time', '300'),
+                            array('admin', 'tasks_manager_refreshing_period', '20'),
+                            array('admin', 'maximum_number_of_items_to_treat', '100'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -814,7 +819,8 @@ $SETTINGS = array (';
                             `public_key` TEXT DEFAULT NULL,
                             `private_key` TEXT DEFAULT NULL,
                             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
-                            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
+                            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local', 
+                            `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE ,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -1218,6 +1224,36 @@ $SETTINGS = array (';
                             `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(12) NOT NULL
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($task === 'processes_tasks') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_tasks` (
+                            `increment_id` int(12) NOT NULL,
+                            `process_id` int(12) NOT NULL,
+                            `created_at` varchar(50) NOT NULL,
+                            `updated_at` varchar(50) DEFAULT NULL,
+                            `finished_at` varchar(50) DEFAULT NULL,
+                            `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
+                            `system_process_id` int(12) DEFAULT NULL,
+                            `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+                            `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($task === 'processes') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes` (
+                            `increment_id` int(12) NOT NULL,
+                            `created_at` varchar(50) NOT NULL,
+                            `updated_at` varchar(50) DEFAULT NULL,
+                            `finished_at` varchar(50) DEFAULT NULL,
+                            `process_id` int(12) DEFAULT NULL,
+                            `process_type` varchar(20) NOT NULL,
+                            `output` text DEFAULT NULL,
+                            `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
+                            `is_in_progress` tinyint(1) NOT NULL DEFAULT 0
                             ) CHARSET=utf8;"
                         );
                     }

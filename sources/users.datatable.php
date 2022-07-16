@@ -244,7 +244,8 @@ foreach ($rows as $record) {
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
-            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').'" , ';
+            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').
+            ((int) $record['is_ready_for_usage'] === 0 ? '<i class=\"fas fa-hourglass-half infotip text-info ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').'" , ';
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name'] === NULL ? '' : $record['name']).'</span>", ';
         //col4

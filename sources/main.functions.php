@@ -51,12 +51,12 @@ function langHdl(string $string): string
     }
 
     // Load superglobal
-    if (file_exists('../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    } elseif (file_exists('./includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    } elseif (file_exists('../../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once '../../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    if (file_exists(__DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    } elseif (file_exists(__DIR__.'/includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once __DIR__.'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    } elseif (file_exists(__DIR__.'/../../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
+        include_once __DIR__.'/../../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     } else {
         throw new Exception("Error file '/includes/libraries/protect/SuperGlobal/SuperGlobal.php' not exists", 1);
     }
@@ -64,8 +64,10 @@ function langHdl(string $string): string
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
     if (isset($session_language) === false) {
-        // Manage error
-        return 'ERROR in language strings!';
+        // Manage error and get English version
+        $language_array = include __DIR__. '/../includes/language/english.php';
+        print_r($session_language);
+        $session_language = $language_array[trim($string)];
     }
     return str_replace(
         ["'"],
@@ -1289,11 +1291,11 @@ function sendEmail(
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get user language
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION') . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION') ? $superGlobal->get('user_language', 'SESSION') : 'english') . '.php';
     // Load library
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // load PHPMailer
-    $mail = new SplClassLoader('PHPMailer\PHPMailer', '../includes/libraries');
+    $mail = new SplClassLoader('PHPMailer\PHPMailer', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $mail->register();
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
 
@@ -1510,6 +1512,7 @@ function utf8Converter(array $array): array
  */
 function prepareExchangedData($teampassDir, $data, string $type, ?string $key = null)
 {
+    $teampassDir = __DIR__ . '/..';
     // Load superglobal
     include_once $teampassDir . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -2589,9 +2592,9 @@ function formatSizeUnits(int $bytes): string
 function generateUserKeys(string $userPwd): array
 {
     // include library
-    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $cipher = new Crypt_AES();
@@ -2618,7 +2621,7 @@ function generateUserKeys(string $userPwd): array
 function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+        include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
         // Load classes
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
@@ -2643,7 +2646,7 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+        include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
         // Load classes
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
@@ -2667,7 +2670,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 function doDataEncryption(string $data): array
 {
     // Includes
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
     // Generate an object key
@@ -2691,7 +2694,7 @@ function doDataEncryption(string $data): array
 function doDataDecryption(string $data, string $key): string
 {
     // Includes
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES();
     // Set the object key
@@ -2710,8 +2713,8 @@ function doDataDecryption(string $data, string $key): string
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
     // Includes
-    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($publicKey));
@@ -2730,8 +2733,8 @@ function encryptUserObjectKey(string $key, string $publicKey): string
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
     // Includes
-    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($privateKey));
@@ -2760,10 +2763,10 @@ function encryptFile(string $fileInName, string $fileInPath): array
     }
 
     // Includes
-    include_once '../includes/config/include.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+    include_once __DIR__.'/../includes/config/include.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES();
     // Generate an object key
@@ -2806,10 +2809,10 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     }
 
     // Includes
-    include_once '../includes/config/include.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once '../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
+    include_once __DIR__.'/../includes/config/include.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
+    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Get file name
     $fileName = base64_decode($fileName);
     // Load classes
@@ -2975,7 +2978,7 @@ function filterString(string $field)
     $field = filter_var(trim($field), FILTER_SANITIZE_STRING);
     if (empty($field) === false) {
         // Load AntiXSS
-        include_once '../includes/libraries/voku/helper/AntiXSS.php';
+        include_once __DIR__.'/../includes/libraries/voku/helper/AntiXSS.php';
         $antiXss = new voku\helper\AntiXSS();
         // Return
         return $antiXss->xss_clean($field);
@@ -3507,3 +3510,17 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
         );
     }
 }
+
+/**
+ * Permits to calculate a %
+ *
+ * @param float $nombre
+ * @param float $total
+ * @param float $pourcentage
+ * @return float
+ */
+function pourcentage(float $nombre, float $total, float $pourcentage): float
+    { 
+        $resultat = ($nombre/$total) * $pourcentage;
+        return round($resultat);
+    } 

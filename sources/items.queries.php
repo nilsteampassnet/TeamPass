@@ -5582,11 +5582,17 @@ if (is_null($inputData['type']) === false) {
                     'new_line' => '<br>' . addslashes($historic),
                 );
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                    $SETTINGS['cpassman_dir'],
+                    $data,
+                    'encode'
+                );
             } else {
                 $data = array('error' => 'something_wrong');
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                    $SETTINGS['cpassman_dir'],
+                    $data,
+                    'encode'
+                );
                 break;
             }
             break;
@@ -5738,7 +5744,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5763,7 +5769,7 @@ if (is_null($inputData['type']) === false) {
             // Check if user has this sharekey
             if (empty($file_info['share_key']) === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('no_sharekey_found'),
@@ -6668,7 +6674,10 @@ if (is_null($inputData['type']) === false) {
             }
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
 
             // prepare variables
             $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);

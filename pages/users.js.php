@@ -256,9 +256,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         if ($('#warningModal-button-user-pwd').length === 0) {
             return false;
         } 
-        console.log('send email for '+store.get('teampassUser').admin_new_user_temporary_encryption_code)
-        console.log(store.get('teampassUser'))
-        console.log(store.get('teampassApplication'))
+        //console.log('send email for '+store.get('teampassUser').admin_new_user_temporary_encryption_code)
+        //console.log(store.get('teampassUser'))
+        //console.log(store.get('teampassApplication'))
 
         showModalDialogBox(
             '#warningModal',
@@ -293,7 +293,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             }
         }
-        //console.log(data);
 
         // Launch action
         $.post(
@@ -328,9 +327,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         .iCheck('disable')
                         .iCheck('uncheck');
 
-                    // refresh table content
-                    oTable.ajax.reload();
-
                     // Show list of users
                     $('#row-form').addClass('hidden');
                     $('#row-list').removeClass('hidden');
@@ -347,21 +343,41 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                     );
 
-                    // Remove action from store
-                    console.log('Clear Store variables')
-                    store.update(
-                        'teampassApplication',
-                        function(teampassApplication) {
-                            teampassApplication.formUserAction = '',
-                            teampassApplication.formUserId = '';
-                        }
-                    );
-                    store.update(
-                        'teampassUser',
-                        function(teampassUser) {
-                            teampassUser.admin_new_user_password = '',
-                            teampassUser.admin_new_user_temporary_encryption_code = '',
-                            teampassUser.admin_new_user_login = '';
+                    // change the user status to ready to use
+                    data = {
+                        'user_id': store.get('teampassUser').admin_new_user_id,
+                    }
+
+                    $.post(
+                        'sources/main.queries.php', {
+                            type: 'user_is_ready',
+                            type_category: 'action_user',
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key: '<?php echo $_SESSION['key']; ?>'
+                        },
+                        function(data) {
+                            console.log('User has been created');
+
+                            // refresh table content
+                            oTable.ajax.reload();
+
+                            // Remove action from store
+                            console.log('Clear Store variables')
+                            store.update(
+                                'teampassApplication',
+                                function(teampassApplication) {
+                                    teampassApplication.formUserAction = '',
+                                    teampassApplication.formUserId = '';
+                                }
+                            );
+                            store.update(
+                                'teampassUser',
+                                function(teampassUser) {
+                                    teampassUser.admin_new_user_password = '',
+                                    teampassUser.admin_new_user_temporary_encryption_code = '',
+                                    teampassUser.admin_new_user_login = '';
+                                }
+                            );
                         }
                     );
                 }
@@ -425,6 +441,63 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             }
         );
     });
+
+
+    function userTasksCreation(userId, userPassword, userTemporaryCode)
+    {
+        var data = {
+            user_id: userId,
+            user_pwd: userPassword,
+            user_code: userTemporaryCode,
+        }
+
+        // Do query
+        $.post(
+            "sources/users.queries.php", {
+                type: "create_new_user_tasks",
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key: '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                console.info("Réception des données :")
+                console.log(data);
+                
+                if (data.error === true) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+
+                    dfd.reject();
+                } else {
+                    // show message to user
+                    $('#warningModal').modal('hide');
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 2000
+                        }
+                    );
+
+                    // Reload list of users
+                    oTable.ajax.reload();
+
+                    // Prepare UI
+                    $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                    $('#row-form').addClass('hidden');
+                }
+            }
+        );
+    }
 
     /**
      * 
@@ -893,6 +966,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             store.update(
                                 'teampassUser',
                                 function(teampassUser) {
+                                    teampassUser.admin_new_user_id = data.user_id,
                                     teampassUser.admin_new_user_password = data.user_pwd,
                                     teampassUser.admin_new_user_login = $('#form-login').val();
                                 }
@@ -904,8 +978,44 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 formUserId = data.user_id;
                             }
 
-                            // If expected to create new encryption key
-                            if (data.post_action === 'encrypt_keys') {
+
+                            if (data.post_action === 'prepare_tasks') {
+                                // If expected to create new encryption key
+                                var parameters = {
+                                    'user_id': formUserId,
+                                };
+
+                                console.info('Prepare TASK for new user encryption keys')
+                                $.post(
+                                    'sources/main.queries.php', {
+                                        type: 'generate_temporary_encryption_key',
+                                        type_category: 'action_key',
+                                        data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    },
+                                    function(data_tasks) {
+                                        data_tasks = prepareExchangedData(data_tasks, 'decode', '<?php echo $_SESSION['key']; ?>');
+
+                                        if (data_tasks.error !== false) {
+                                            // Show error
+                                            toastr.remove();
+                                            toastr.error(
+                                                data_tasks.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
+                                                }
+                                            );
+                                        } else {
+                                            // update the process
+                                            // add all tasks
+                                            userTasksCreation(formUserId, data.user_pwd, data_tasks.userTemporaryCode);
+                                        }
+                                    }
+                                );
+                                
+                            } else if (data.post_action === 'encrypt_keys') {
+                                // If expected to create new encryption key
                                 var data = {
                                     'user_id': formUserId,
                                 };
@@ -941,8 +1051,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                             );
                                         } else {
                                             // call the recursive function
-                                            console.log('Starting encryption for '+formUserId+' at step0')
-                                            callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
+                                            //console.log('Starting encryption for '+formUserId+' at step0')
+                                            callRecursiveUserDataEncryption(formUserId, 'step0', 0);
                                         }
                                     }
                                 );

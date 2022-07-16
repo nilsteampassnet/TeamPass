@@ -671,7 +671,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere.
         $sOrder.
         $sLimit
-);
+    );
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
@@ -770,6 +770,162 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
+        //Finish the line
+        $sOutput .= '],';
+    }
+
+    if (count($rows) > 0) {
+        $sOutput = substr_replace($sOutput, '', -1);
+        $sOutput .= '] }';
+    } else {
+        $sOutput .= '[] }';
+    }
+} elseif (isset($_GET['action']) && $_GET['action'] === 'tasks_in_progress') {
+    //Columns name
+    $aColumns = ['increment_id', 'created_at', 'updated_at', 'process_type', 'is_in_progress'];
+    //Ordering
+    if (isset($_GET['order'][0]['dir']) === true
+        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
+        && isset($_GET['order'][0]['column']) === true
+    ) {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    }
+
+    $sWhere = ' WHERE ((finished_at IS NULL)';
+    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+        $sWhere .= ' AND (';
+        for ($i = 0; $i < count($aColumns); ++$i) {
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+        }
+        $sWhere = substr_replace($sWhere, '', -3).') ';
+    }
+    $sWhere .= ') ';
+    //DB::debugmode(true);
+    DB::query(
+    'SELECT COUNT(increment_id)
+        FROM '.prefixTable('processes').' AS p 
+        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+        $sWhere
+    );
+    $iTotal = DB::count();
+    $rows = DB::query(
+    'SELECT *
+        FROM '.prefixTable('processes').' AS p 
+        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+        $sWhere.
+        $sOrder.
+        $sLimit
+    );
+    $iFilteredTotal = DB::count();
+    // Output
+    $sOutput = '{';
+    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
+    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
+    $sOutput .= '"aaData": ';
+    if ($iFilteredTotal > 0) {
+        $sOutput .= '[';
+    }
+    foreach ($rows as $record) {
+        $sOutput .= '[';
+        //col1
+        $sOutput .= '"<span data-id=\"'.$record['is_in_progress'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
+        //col2
+        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
+        //col3
+        $sOutput .= '"'.($record['updated_at'] === null ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
+        //col4
+        $sOutput .= '"'.$record['process_type'].'", ';
+        // col5
+        $data_user = DB::queryfirstrow(
+            'SELECT name, lastname FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            json_decode($record['arguments'], true)['new_user_id']
+        );
+        $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        // col6
+        $sOutput .= '""';
+        //Finish the line
+        $sOutput .= '],';
+    }
+
+    if (count($rows) > 0) {
+        $sOutput = substr_replace($sOutput, '', -1);
+        $sOutput .= '] }';
+    } else {
+        $sOutput .= '[] }';
+    }
+} elseif (isset($_GET['action']) && $_GET['action'] === 'tasks_finished') {
+    //Columns name
+    $aColumns = ['p.created_at', 'p.finished_at', 'p.process_type', 'u.name'];
+    //Ordering
+    if (isset($_GET['order'][0]['dir']) === true
+        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
+        && isset($_GET['order'][0]['column']) === true
+    ) {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    }
+
+    $sWhere = ' WHERE ((finished_at IS NOT NULL)';
+    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+        $sWhere .= ' AND (';
+        for ($i = 0; $i < count($aColumns); ++$i) {
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+        }
+        $sWhere = substr_replace($sWhere, '', -3).') ';
+    }
+    $sWhere .= ') ';
+    
+    //DB::debugmode(true);
+    DB::query(
+    'SELECT COUNT(increment_id)
+        FROM '.prefixTable('processes').' AS p 
+        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+        $sWhere
+    );
+    $iTotal = DB::count();
+
+    $rows = DB::query(
+    'SELECT *
+        FROM '.prefixTable('processes').' AS p 
+        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+        $sWhere.
+        $sOrder.
+        $sLimit
+    );
+    $iFilteredTotal = DB::count();
+    // Output
+    $sOutput = '{';
+    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
+    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
+    $sOutput .= '"aaData": ';
+    if ($iFilteredTotal > 0) {
+        $sOutput .= '[';
+    }
+    foreach ($rows as $record) {
+        $sOutput .= '[';
+        //col1
+        $sOutput .= '"<span data-id=\"'.$record['is_in_progress'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
+        //col2
+        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
+        //col3
+        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['finished_at']).'", ';
+        //col4
+        $sOutput .= '"'.$record['process_type'].'", ';
+        // col5
+        $data_user = DB::queryfirstrow(
+            'SELECT name, lastname FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            json_decode($record['arguments'], true)['new_user_id']
+        );
+        $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        // col6
+        $sOutput .= '""';
         //Finish the line
         $sOutput .= '],';
     }

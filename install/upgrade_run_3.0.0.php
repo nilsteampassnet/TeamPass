@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 
+set_time_limit(600);
+
 
 require_once '../sources/SecureHandler.php';
 session_name('teampass_session');
@@ -889,6 +891,85 @@ if ($res === false) {
     exit();
 }
 
+// Add new setting 'enable_tasks_manager'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'enable_tasks_manager'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_tasks_manager', '0')"
+    );
+}
+
+// Add new setting 'task_maximum_run_time'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'task_maximum_run_time'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'task_maximum_run_time', '300')"
+    );
+}
+
+// Add new setting 'maximum_number_of_items_to_treat'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maximum_number_of_items_to_treat'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maximum_number_of_items_to_treat', '300')"
+    );
+}
+
+// Add new setting 'tasks_manager_refreshing_period'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'tasks_manager_refreshing_period'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_manager_refreshing_period', '".NUMBER_ITEMS_IN_BATCH."')"
+    );
+}
+
+// Add field is_ready_for_usage to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'is_ready_for_usage',
+    "BOOLEAN NOT NULL DEFAULT FALSE;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_ready_for_usage to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add new table PROCESSES_TASKS
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'processes_tasks` (
+        `increment_id` int(12) NOT NULL,
+        `process_id` int(12) NOT NULL,
+        `created_at` varchar(50) NOT NULL,
+        `updated_at` varchar(50) DEFAULT NULL,
+        `finished_at` varchar(50) DEFAULT NULL,
+        `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
+        `system_process_id` int(12) DEFAULT NULL,
+        `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+        `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0
+        ) CHARSET=utf8;'
+);
+
+// Add new table PROCESSES
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'processes` (
+        `increment_id` int(12) NOT NULL,
+        `created_at` varchar(50) NOT NULL,
+        `updated_at` varchar(50) DEFAULT NULL,
+        `finished_at` varchar(50) DEFAULT NULL,
+        `process_id` int(12) DEFAULT NULL,
+        `process_type` varchar(20) NOT NULL,
+        `output` text DEFAULT NULL,
+        `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
+        `is_in_progress` tinyint(1) NOT NULL DEFAULT 0
+        ) CHARSET=utf8;'
+);
 
 
 //---<END 3.0.0.18

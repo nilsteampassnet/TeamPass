@@ -625,30 +625,41 @@ if (($session_validite_pw === null
                         <p>' . langHdl('admin_views') . '<i class="fas fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
-                          <li class="nav-item">
-                            <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
-                              <i class="far fa-calendar-alt nav-icon"></i>
-                              <p>' . langHdl('renewal') . '</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
-                              <i class="fas fa-trash-alt nav-icon"></i>
-                              <p>' . langHdl('deletion') . '</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
-                              <i class="fas fa-history nav-icon"></i>
-                              <p>' . langHdl('logs') . '</p>
-                            </a>
-                          </li>
-                          <li class="nav-item">
-                            <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
-                              <i class="fas fa-database nav-icon"></i>
-                              <p>' . langHdl('database') . '</p>
-                            </a>
-                          </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
+                                <i class="far fa-calendar-alt nav-icon"></i>
+                                <p>' . langHdl('renewal') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
+                                <i class="fas fa-trash-alt nav-icon"></i>
+                                <p>' . langHdl('deletion') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
+                                <i class="fas fa-history nav-icon"></i>
+                                <p>' . langHdl('logs') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
+                                <i class="fas fa-database nav-icon"></i>
+                                <p>' . langHdl('database') . '</p>
+                                </a>
+                            </li>';
+
+                            if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
+                                echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.tasks" class="nav-link', $get['page'] === 'utilities.tasks' ? ' active' : '', '">
+                                <i class="fas fa-tasks nav-icon"></i>
+                                <p>' . langHdl('tasks') . '</p>
+                                </a>
+                            </li>';
+                            }
+                            echo '
                         </ul>
                     </li>';
     } ?>
@@ -1189,7 +1200,7 @@ if (($session_validite_pw === null
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'utilities.tasks']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -1324,6 +1335,8 @@ if (
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
+        } elseif ($get['page'] === 'utilities.tasks') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.tasks.js.php';
         }
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';

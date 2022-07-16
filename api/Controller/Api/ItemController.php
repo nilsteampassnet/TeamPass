@@ -50,7 +50,7 @@ class ItemController extends BaseController
             }
 
             // SQL where clause with folders list
-            if (isset($arrQueryStringParams['folders']) ===true) {
+            if (isset($arrQueryStringParams['folders']) === true) {
                 // convert the folders to an array
                 $arrQueryStringParams['folders'] = explode(',', str_replace( array('[',']') , ''  , $arrQueryStringParams['folders']));
 
@@ -62,7 +62,7 @@ class ItemController extends BaseController
             } else {
                 // Send error
                 $this->sendOutput(
-                    json_encode(['error' => 'Folders are mandatory']), 
+                    json_encode(['error' => 'Folders are mandatory']),
                     ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
                 );
             }

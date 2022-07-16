@@ -19,6 +19,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+set_time_limit(600);
+
 if (isset($_SESSION) === false) {
     include_once 'SecureHandler.php';
     session_name('teampass_session');
@@ -306,8 +308,8 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
             );
 
         /*
-            * This will generate the QR Google Authenticator
-            */
+        * This will generate the QR Google Authenticator
+        */
         case 'ga_generate_qr'://action_user
             return generateQRCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
@@ -315,6 +317,15 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING),
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
+                $SETTINGS
+            );
+
+        /*
+        * This will set the user ready
+        */
+        case 'user_is_ready'://action_user
+            return userIsReady(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
     }
@@ -525,6 +536,35 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
 
 
 /**
+ * Permits to set the user ready
+ *
+ * @param integer $userid
+ * @return string
+ */
+function userIsReady(int $userid): string
+{
+    DB::debugmode(true);
+    DB::update(
+        prefixTable('users'),
+        array(
+            'is_ready_for_usage' => 1,
+        ),
+        'id = %i',
+        $userid
+    );
+    DB::debugmode(false);
+
+    // Send back
+    return prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
+            array(
+                'error' => false,
+            ),
+            'encode'
+        );
+}
+
+/**
  * Provides the number of items
  *
  * @param int   $userId     User ID
@@ -584,7 +624,7 @@ function changePassword(
         // Check that current user is correct
         if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -2370,6 +2410,18 @@ function continueReEncryptingUserSharekeysStep6(
         FROM ' . prefixTable('items') . '
         WHERE perso = 0'
     );
+
+    // Is it done?
+    if ($next_start > DB::count()) {
+        DB::update(
+            prefixTable('users'),
+            array(
+                'is_ready_for_usage' => 1,
+            ),
+            'id = %i',
+            $post_user_id
+        );
+    }
 
     $next_start = (int) $post_start + (int) $post_length;
     return [

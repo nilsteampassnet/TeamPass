@@ -106,21 +106,21 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         ),
         'manager' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
-            'import', 'export', 'offline',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
+            'import', 'export', 'offline', 'process',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
         ),
         'human_resources' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
-            'import', 'export', 'offline',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
+            'import', 'export', 'offline', 'process',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
         ),
         'admin' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-            'import', 'export', 'offline',
+            'import', 'export', 'offline', 'process',
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
             'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
             'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
         ),
     );
     // Convert to array

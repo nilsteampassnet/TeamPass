@@ -43,7 +43,7 @@ class AuthController extends BaseController
             $password = $data->password;
             $apikey = $data->apikey;
 
-            require PROJECT_ROOT_PATH . "/Model/AuthModel.php";
+            require API_ROOT_PATH . "/Model/AuthModel.php";
             try {
                 $authModel = new AuthModel();
                 $arrUser = $authModel->getUserAuth($login, $password, $apikey);

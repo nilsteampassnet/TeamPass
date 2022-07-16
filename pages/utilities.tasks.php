@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ *
+ * @project   Teampass
+ *
+ * @file      utilities.tasks.php
+ * ---
+ *
+ * @author    Nils Laumaillé (nils@teampass.net)
+ *
+ * @copyright 2009-2022 Teampass.net
+ *
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ *
+ * @see       https://www.teampass.net
+ */
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
+    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+) {
+    die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php') === true) {
+    include_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php') === true) {
+    include_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+/* do checks */
+require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.tasks', $SETTINGS) === false) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
+
+// Load template
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+
+?>
+
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">
+                    <i class="fas fa-tasks mr-2"></i><?php echo langHdl('tasks_manager'); ?>
+                </h1>
+            </div><!-- /.col -->
+        </div><!-- /.row -->
+    </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
+
+<!-- Main content -->
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo langHdl('done'); ?></a>
+                            </li>
+                        </ul>
+
+
+                        <div class="tab-content mt-1" id="myTabContent">
+                            <div class="tab-pane fade show active" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
+                                <div class="" id="in_edition-tab-refresh"></div>
+                                <table class="table table-striped" id="table-tasks_in_progress" style="">
+                                    <thead>
+                                        <tr>
+                                            <th style=""></th>
+                                            <th style=""><?php echo langHdl('created_at'); ?></th>
+                                            <th style=""><?php echo langHdl('updated_at'); ?></th>
+                                            <th style=""><?php echo langHdl('type'); ?></th>
+                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""></th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="finished" role="tabpanel" aria-labelledby="finished-tab">
+                                <table class="table table-striped" id="table-tasks_finished" style="">
+                                    <thead>
+                                        <tr>
+                                            <th style=""></th>
+                                            <th style=""><?php echo langHdl('created_at'); ?></th>
+                                            <th style=""><?php echo langHdl('finished_at'); ?></th>
+                                            <th style=""><?php echo langHdl('type'); ?></th>
+                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""></th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.col-md-6 -->
+        </div>
+        <!-- /.row -->
+    </div><!-- /.container-fluid -->
+
+    <!-- USER LOGS -->
+    <div class="row hidden extra-form" id="tasks-detail">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
+                </div>
+
+                <!-- /.card-header -->
+                <!-- table start -->
+                <div class="card-body form" id="user-logs">
+                    <table id="table-logs" class="table table-striped table-responsive" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th><?php echo langHdl('date'); ?></th>
+                                <th><?php echo langHdl('activity'); ?></th>
+                                <th><?php echo langHdl('label'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer">
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+<!-- /.content -->

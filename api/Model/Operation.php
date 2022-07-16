@@ -26,7 +26,7 @@ class Operation
 {
     public function verifyJwt($jwt)
     {
-        include_once PROJECT_ROOT_PATH . '/../includes/libraries/Firebase/JWT/JWT.php';
+        include_once API_ROOT_PATH . '/../includes/libraries/Firebase/JWT/JWT.php';
         $JWT = new Firebase\JWT\JWT();
 
         try {

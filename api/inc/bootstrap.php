@@ -21,22 +21,22 @@
  *
  * @see       https://www.teampass.net
  */
-define("PROJECT_ROOT_PATH", __DIR__ . "/..");
+define("API_ROOT_PATH", __DIR__ . "/..");
 // include main configuration file
 require __DIR__ . '/../../includes/config/settings.php';
 require __DIR__ . '/../../includes/config/tp.config.php';
 require __DIR__ . '/../../sources/main.functions.php';
 
 // Load superglobal
-require PROJECT_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // include the base controller file
-require PROJECT_ROOT_PATH . "/Controller/Api/BaseController.php";
+require API_ROOT_PATH . "/Controller/Api/BaseController.php";
 
 // include the use model file
-require PROJECT_ROOT_PATH . "/Model/UserModel.php";
-require PROJECT_ROOT_PATH . "/Model/ItemModel.php";
+require API_ROOT_PATH . "/Model/UserModel.php";
+require API_ROOT_PATH . "/Model/ItemModel.php";
 
 
 /**
@@ -48,7 +48,7 @@ require PROJECT_ROOT_PATH . "/Model/ItemModel.php";
  */
 function itemAction(array $actions, array $userData)
 {
-    require PROJECT_ROOT_PATH . "/Controller/Api/ItemController.php";
+    require API_ROOT_PATH . "/Controller/Api/ItemController.php";
     
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
@@ -63,7 +63,7 @@ function itemAction(array $actions, array $userData)
  */
 function apiIsEnabled(): string
 {
-    require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
+    require API_ROOT_PATH . '/../includes/config/tp.config.php';
 
     if ((int) $SETTINGS['api'] === 1) {
         return json_encode(
@@ -92,7 +92,7 @@ function apiIsEnabled(): string
  */
 function verifyAuth(): string
 {
-    include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
+    include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
     if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
@@ -118,11 +118,11 @@ function verifyAuth(): string
 /**
  * Get the payload from bearer
  *
- * @return void
+ * @return string
  */
 function getDataFromToken(): string
 {
-    include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
+    include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
     if (empty($bearer_token) === false) {
@@ -157,11 +157,7 @@ function errorHdl(string $errorHeader, string $errorValues)
 {
     header_remove('Set-Cookie');
 
-    if (is_array($errorHeader) && count($errorHeader)) {
-        foreach ($errorHeader as $httpHeader) {
-            header($httpHeader);
-        }
-    }
+    header($errorHeader);
 
     echo $errorValues;
     exit;

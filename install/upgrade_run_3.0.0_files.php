@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 
+set_time_limit(600);
+
 
 require_once '../sources/SecureHandler.php';
 session_name('teampass_session');

@@ -46,7 +46,7 @@ $jwtStatus = json_decode(verifyAuth(), true);
 if ($uri[4] === 'authorize') {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
-        require PROJECT_ROOT_PATH . "/Controller/Api/AuthController.php";
+        require API_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
         $strMethodName = $uri[4] . 'Action';
         $objFeedController->{$strMethodName}();
@@ -70,7 +70,7 @@ if ($uri[4] === 'authorize') {
 
     // action related to USER
     } elseif ($uri[4] === 'user') {
-        require PROJECT_ROOT_PATH . "/Controller/Api/UserController.php";
+        require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
         $strMethodName = $uri[5] . 'Action';
         $objFeedController->{$strMethodName}();

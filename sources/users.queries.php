@@ -128,7 +128,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
@@ -231,6 +234,8 @@ if (null !== $post_type) {
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
                         'special' => 'auth-pwd-change',
+                        'special' => 'auth-pwd-change',
+                        'is_ready_for_usage' => 0,
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -331,7 +336,7 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
-                        'post_action' => 'encrypt_keys',
+                        'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                         'user_id' => $new_user_id,
                         'user_pwd' => $password,
                         'message' => '',
@@ -438,6 +443,34 @@ if (null !== $post_type) {
                 // Delete objects keys
                 deleteUserObjetsKeys((int) $post_id, $SETTINGS);
 
+
+                // Delete any process related to user
+                $processes = DB::query(
+                    'SELECT increment_id
+                    FROM ' . prefixTable('processes') . '
+                    WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
+                    $post_id
+                );
+                $process_id = -1;
+                foreach ($processes as $process) {
+                    // Delete task
+                    DB::delete(
+                        prefixTable('processes_tasks'),
+                        'process_id = %i',
+                        $process['increment_id']
+                    );
+                    $process_id = $process['increment_id'];
+                }
+                // Delete main process
+                if ($process_id > -1) {
+                    DB::delete(
+                        prefixTable('processes'),
+                        'increment_id = %i',
+                        $process_id
+                    );
+                }
+
+                
                 // update LOG
                 logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
 
@@ -2963,7 +2996,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -3052,7 +3088,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -3073,6 +3112,143 @@ if (null !== $post_type) {
             if ($post_field === 'user_api_key') {
                 $_SESSION['user']['api-key'] = noHTML(htmlspecialchars_decode($post_new_value));
             }
+            break;
+
+        case "create_new_user_tasks":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_STRING);
+            $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_STRING);
+
+            // Create process
+            DB::insert(
+                prefixTable('processes'),
+                array(
+                    'created_at' => time(),
+                    'process_type' => 'create_user_keys',
+                    'arguments' => json_encode([
+                        'new_user_id' => (int) $post_user_id,
+                        'new_user_pwd' => cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
+                        'new_user_code' => $post_user_code,
+                        'owner_id' => (int) $_SESSION['user_id'],
+                        'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
+                    ]),
+                )
+            );
+            $processId = DB::insertId();
+
+            // Create tasks
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step0',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step1',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step2',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step3',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step4',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step5',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'step6',
+                        'index' => 0,
+                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    ]),
+                )
+            );
+
             break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##

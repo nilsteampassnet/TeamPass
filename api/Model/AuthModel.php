@@ -23,7 +23,7 @@
  */
 
 
-require_once PROJECT_ROOT_PATH . "/Model/Database.php";
+require_once API_ROOT_PATH . "/Model/Database.php";
 
 
 class AuthModel extends Database
@@ -46,8 +46,8 @@ class AuthModel extends Database
         $userInfo = $userInfoRes[0];
         
         // Check password
-        include_once PROJECT_ROOT_PATH . '/../sources/SplClassLoader.php';
-        $pwdlib = new SplClassLoader('PasswordLib', PROJECT_ROOT_PATH . '/../includes/libraries');
+        include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
+        $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
         $pwdlib->register();
         $pwdlib = new PasswordLib\PasswordLib();
         if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
@@ -92,7 +92,7 @@ class AuthModel extends Database
      */
     private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders): array
     {
-        require PROJECT_ROOT_PATH . '/../includes/config/tp.config.php';
+        require API_ROOT_PATH . '/../includes/config/tp.config.php';
         $headers = ['alg'=>'HS256','typ'=>'JWT'];
 		$payload = [
             'username' => $login,
@@ -104,7 +104,7 @@ class AuthModel extends Database
             'folders_list' => $folders,
         ];
 
-        include_once PROJECT_ROOT_PATH . '/inc/jwt_utils.php';
+        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
 		return ['token' => generate_jwt($headers, $payload)];
     }
 
@@ -120,7 +120,7 @@ class AuthModel extends Database
     private function buildUserFoldersList(array $userInfo): array
     {
         //Build tree
-        $tree = new SplClassLoader('Tree\NestedTree', PROJECT_ROOT_PATH . '/../includes/libraries');
+        $tree = new SplClassLoader('Tree\NestedTree', API_ROOT_PATH . '/../includes/libraries');
         $tree->register();
         $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         

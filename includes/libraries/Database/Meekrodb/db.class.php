@@ -976,7 +976,7 @@ class DBHelper {
 }
 
 function meekrodb_error_handler($params) {  
-  include '../../../config/tp.config.php';
+  include __DIR__ . '/../../../config/tp.config.php';
   echo prepareExchangedData(
     @$SETTINGS['cpassman_dir'],
     '[{"error" : "'.$params['error'].'"}]',

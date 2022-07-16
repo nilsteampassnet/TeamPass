@@ -127,6 +127,9 @@ $lastFolderChange = DB::queryfirstrow(
     'timestamp',
     'last_folder_change'
 );
+if (DB::count() === 0) {
+    $lastFolderChange['valeur'] = 0;
+}
 
 // Should we use a cache or refresh the tree
 $goTreeRefresh = loadTreeStrategy(

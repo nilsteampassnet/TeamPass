@@ -52,6 +52,7 @@ define('TP_PW_STRENGTH_5', 60);
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
+define("TEAMPASS_ROOT_PATH", __DIR__);
 
 define('DEBUG', false);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
@@ -82,4 +83,5 @@ $utilitiesPages = array(
     'utilities.deletion' => 'utilities.deletion.php',
     'utilities.logs' => 'utilities.logs.php',
     'utilities.database' => 'utilities.database.php',
+    'utilities.tasks' => 'utilities.tasks.php',
 );
