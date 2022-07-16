@@ -326,7 +326,6 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         case 'user_is_ready'://action_user
             return userIsReady(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                $SETTINGS
             );
     }
 }
@@ -539,11 +538,10 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
  * Permits to set the user ready
  *
  * @param integer $userid
- * @return string
+ * @return void
  */
-function userIsReady(int $userid): string
+function userIsReady(int $userid): void
 {
-    DB::debugmode(true);
     DB::update(
         prefixTable('users'),
         array(
@@ -552,16 +550,6 @@ function userIsReady(int $userid): string
         'id = %i',
         $userid
     );
-    DB::debugmode(false);
-
-    // Send back
-    return prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
-            array(
-                'error' => false,
-            ),
-            'encode'
-        );
 }
 
 /**
@@ -2410,18 +2398,6 @@ function continueReEncryptingUserSharekeysStep6(
         FROM ' . prefixTable('items') . '
         WHERE perso = 0'
     );
-
-    // Is it done?
-    if ($next_start > DB::count()) {
-        DB::update(
-            prefixTable('users'),
-            array(
-                'is_ready_for_usage' => 1,
-            ),
-            'id = %i',
-            $post_user_id
-        );
-    }
 
     $next_start = (int) $post_start + (int) $post_length;
     return [

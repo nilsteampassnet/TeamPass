@@ -264,7 +264,7 @@ function performUserCreationKeys(
             // STEP 1 - ITEMS
             elseif ($post_action === 'step1') {
                 provideLog('[STEP][1][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep1(
+                $return = cronContinueReEncryptingUserSharekeysStep1(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -280,7 +280,7 @@ function performUserCreationKeys(
             // STEP 2 - LOGS
             elseif ($post_action === 'step2') {
                 provideLog('[STEP][2][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep2(
+                $return = cronContinueReEncryptingUserSharekeysStep2(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -296,7 +296,7 @@ function performUserCreationKeys(
             // STEP 3 - FIELDS
             elseif ($post_action === 'step3') {
                 provideLog('[STEP][3][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep3(
+                $return = cronContinueReEncryptingUserSharekeysStep3(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -312,7 +312,7 @@ function performUserCreationKeys(
             // STEP 4 - SUGGESTIONS
             elseif ($post_action === 'step4') {
                 provideLog('[STEP][4][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep4(
+                $return = cronContinueReEncryptingUserSharekeysStep4(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -328,7 +328,7 @@ function performUserCreationKeys(
             // STEP 5 - FILES
             elseif ($post_action === 'step5') {
                 provideLog('[STEP][5][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep5(
+                $return = cronContinueReEncryptingUserSharekeysStep5(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -344,7 +344,7 @@ function performUserCreationKeys(
             // STEP 6 - PERSONAL ITEMS
             elseif ($post_action === 'step6') {
                 provideLog('[STEP][16][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = continueReEncryptingUserSharekeysStep6(
+                $return = cronContinueReEncryptingUserSharekeysStep6(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -388,7 +388,7 @@ echo "> ".$owner_pwd. " ;; ";
 }
 
 
-function continueReEncryptingUserSharekeysStep1(
+function cronContinueReEncryptingUserSharekeysStep1(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -485,7 +485,7 @@ function continueReEncryptingUserSharekeysStep1(
     ];
 }
 
-function continueReEncryptingUserSharekeysStep2(
+function cronContinueReEncryptingUserSharekeysStep2(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -570,7 +570,7 @@ function continueReEncryptingUserSharekeysStep2(
     ];
 }
 
-function continueReEncryptingUserSharekeysStep3(
+function cronContinueReEncryptingUserSharekeysStep3(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -655,7 +655,7 @@ function continueReEncryptingUserSharekeysStep3(
     ];
 }
 
-function continueReEncryptingUserSharekeysStep4(
+function cronContinueReEncryptingUserSharekeysStep4(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -738,7 +738,7 @@ function continueReEncryptingUserSharekeysStep4(
     ];
 }
 
-function continueReEncryptingUserSharekeysStep5(
+function cronContinueReEncryptingUserSharekeysStep5(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -823,7 +823,7 @@ function continueReEncryptingUserSharekeysStep5(
     ];
 }
 
-function continueReEncryptingUserSharekeysStep6(
+function cronContinueReEncryptingUserSharekeysStep6(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
