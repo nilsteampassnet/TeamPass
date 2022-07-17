@@ -516,7 +516,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 foreach($array['Entry'] as $key => $value) {
                     if (isset($value['String']) === true) {
                         $itemDefinition = [];
-                        for($i = 0; $i < count($value['String']); ++$i) {
+                        $c = count($value['String']);
+                        for ($i = 0; $i < $c; $i++) {
                             $itemDefinition[$value['String'][$i]['Key']] = is_array($value['String'][$i]['Value']) === false ? $value['String'][$i]['Value'] : '';
                         }
                         $itemDefinition['parentFolderId'] = $previousFolder;

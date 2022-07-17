@@ -224,7 +224,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
  * @param integer $post_length
  * @param array $SETTINGS
  * @param array $extra_arguments
- * @return string
+ * @return array
  */
 function performUserCreationKeys(
     int     $post_user_id,
@@ -363,10 +363,16 @@ function performUserCreationKeys(
         
         // Nothing to do
         provideLog('[USER][ERROR] No user public key', $SETTINGS);
-        return false;
+        return [
+            'error' => true,
+            'new_action' => 'finished',
+        ];
     }
     provideLog('[USER][ERROR] No user found', $SETTINGS);
-    return false;
+    return [
+        'error' => true,
+        'new_action' => 'finished',
+    ];
 }
 
 function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
@@ -377,7 +383,7 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
         WHERE id = %i',
         $owner_id
     );
-echo "> ".$owner_pwd. " ;; ";
+    
     // decrypt owner password
     $owner_pwd = cryption($owner_pwd, '','decrypt', $SETTINGS)['string'];
     provideLog('[USER][INFO]', $SETTINGS);
@@ -834,9 +840,6 @@ function cronContinueReEncryptingUserSharekeysStep6(
     array $extra_arguments
 ): array
 {
-    // get user private key
-    $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
-
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $extra_arguments['owner_id']) {
         return [

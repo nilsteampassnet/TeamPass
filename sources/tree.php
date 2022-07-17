@@ -135,10 +135,9 @@ if (DB::count() === 0) {
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChange['valeur'],
     (int) $inputData['userTreeLastRefresh'],
-    (array) is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
+    (array) (is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true) ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
     (int) $inputData['userId'],
-    (int) $inputData['forceRefresh'],
-    $SETTINGS
+    (int) $inputData['forceRefresh']
 );
 
 if ($goTreeRefresh['state'] === true) {
@@ -1028,8 +1027,7 @@ function loadTreeStrategy(
     int $userTreeLastRefresh,
     array $userSessionTreeStructure,
     int $userId,
-    int $forceRefresh,
-    array $SETTINGS
+    int $forceRefresh
 ): array
 {
     // Case when refresh is EXPECTED / MANDATORY

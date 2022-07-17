@@ -195,9 +195,9 @@ function mainQuery(array $SETTINGS)
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return void
+ * @return string
  */
-function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS)
+function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         case 'change_pw'://action_password
@@ -262,9 +262,9 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return void
+ * @return string
  */
-function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS)
+function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -336,9 +336,9 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return void
+ * @return string
  */
-function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
+function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -375,9 +375,9 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return void
+ * @return string
  */
-function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
+function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -456,9 +456,9 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return void
+ * @return string
  */
-function systemHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS)
+function systemHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -538,9 +538,9 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
  * Permits to set the user ready
  *
  * @param integer $userid
- * @return void
+ * @return string
  */
-function userIsReady(int $userid): void
+function userIsReady(int $userid): string
 {
     DB::update(
         prefixTable('users'),
@@ -550,6 +550,15 @@ function userIsReady(int $userid): void
         'id = %i',
         $userid
     );
+
+    // Send back
+    return prepareExchangedData(
+        $SETTINGS['cpassman_dir'],
+            array(
+                'error' => false,
+            ),
+            'encode'
+        ); 
 }
 
 /**
