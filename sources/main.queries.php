@@ -209,6 +209,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
+            break;
 
         /*
         * Change user's authenticataion password
@@ -220,6 +221,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * User's authenticataion password in LDAP has changed
@@ -231,6 +233,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * test_current_user_password_is_correct
@@ -241,6 +244,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * User's password has to be initialized
@@ -253,6 +257,20 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
+            break;
     }
 }
 
@@ -276,6 +294,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * Increase the session time of User
@@ -284,6 +303,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
             return increaseSessionDuration(
                 (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
             );
+            break;
 
         /*
         * Generate a password generic
@@ -298,6 +318,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
                 $SETTINGS
             );
+            break;
 
         /*
         * Refresh list of last items seen
@@ -306,6 +327,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
             return refreshUserItemsSeenList(
                 $SETTINGS
             );
+            break;
 
         /*
         * This will generate the QR Google Authenticator
@@ -319,6 +341,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * This will set the user ready
@@ -327,6 +350,20 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
             return userIsReady(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
             );
+            break;
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
+            break;
     }
 }
 
@@ -356,6 +393,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                 ),
                 $SETTINGS
             );
+            break;
         
         /*
         * Send emails not sent
@@ -365,6 +403,19 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                 $SETTINGS
             );
             echo '';
+            break;
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
             break;
     }
 }
@@ -388,6 +439,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
+            break;
 
         /*
         * user_sharekeys_reencryption_start
@@ -398,6 +450,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
         * user_sharekeys_reencryption_next
@@ -411,6 +464,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
+            break;
 
         /*
         * user_psk_reencryption
@@ -423,6 +477,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
             * User's public/private keys change
@@ -435,6 +490,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
+            break;
 
         /*
             * Generates a KEY with CRYPT
@@ -447,6 +503,20 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             // generate key
             $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
             return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
+            break;
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
+            break;
     }
 }
 
@@ -529,6 +599,19 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
             );
 
             return '[{"token" : "' . $token . '"}]';
+            break;
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
             break;
     }
 }
@@ -1541,7 +1624,7 @@ function initializeUserPassword(
 
                 // Return
                 return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -1553,7 +1636,7 @@ function initializeUserPassword(
             }
             // Return error
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('no_email_set'),
@@ -1566,7 +1649,7 @@ function initializeUserPassword(
 
         // Error
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email_set'),
@@ -1577,7 +1660,7 @@ function initializeUserPassword(
     }
     
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),
