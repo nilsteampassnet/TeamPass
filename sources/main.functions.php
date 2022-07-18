@@ -1508,7 +1508,7 @@ function utf8Converter(array $array): array
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
- * @return resource|string|array
+ * @return string|array
  */
 function prepareExchangedData($teampassDir, $data, string $type, ?string $key = null)
 {

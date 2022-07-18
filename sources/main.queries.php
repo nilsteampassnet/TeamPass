@@ -265,7 +265,6 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 ),
                 'encode'
             );
-            break;
     }
 }
 
@@ -339,6 +338,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         case 'user_is_ready'://action_user
             return userIsReady(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) $SETTINGS['cpassman_dir']
             );
 
         /*
@@ -352,7 +352,6 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 ),
                 'encode'
             );
-            break;
     }
 }
 
@@ -390,8 +389,14 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
             sendEmailsNotSent(
                 $SETTINGS
             );
-            echo '';
-            break;
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => 'mail_sent',
+                ),
+                'encode'
+            );
 
         /*
         * Default case
@@ -404,7 +409,6 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                 ),
                 'encode'
             );
-            break;
     }
 }
 
@@ -498,7 +502,6 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 ),
                 'encode'
             );
-            break;
     }
 }
 
@@ -529,14 +532,20 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
             sendingStatistics(
                 $SETTINGS
             );
-            break;
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                ),
+                'encode'
+            );
 
         /*
             * Generate BUG report
             */
         case 'generate_bug_report'://action_system
             return generateBugReport(
-                (string) $post_data,
+                (array) $dataReceived,
                 $SETTINGS
             );
 
@@ -590,7 +599,6 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
                 ),
                 'encode'
             );
-            break;
     }
 }
 
@@ -599,9 +607,10 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
  * Permits to set the user ready
  *
  * @param integer $userid
+ * @param string $dir
  * @return string
  */
-function userIsReady(int $userid): string
+function userIsReady(int $userid, string $dir): string
 {
     DB::update(
         prefixTable('users'),
@@ -614,12 +623,12 @@ function userIsReady(int $userid): string
 
     // Send back
     return prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
-            array(
-                'error' => false,
-            ),
-            'encode'
-        ); 
+        $dir,
+        array(
+            'error' => false,
+        ),
+        'encode'
+    ); 
 }
 
 /**
@@ -1205,7 +1214,7 @@ function sendingStatistics(
 }
 
 function generateBugReport(
-    string $data,
+    array $data,
     array $SETTINGS
 ): string
 {
@@ -1218,7 +1227,7 @@ function generateBugReport(
     );
 
     // Get data
-    $post_data = json_decode($data, true);
+    //$post_data = json_decode($data, true);
 
     // Read config file
     $list_of_options = '';
@@ -1286,7 +1295,7 @@ function generateBugReport(
 
     // Now prepare text
     $txt = '### Page on which it happened
-' . $post_data['current_page'] . '
+' . $data['current_page'] . '
 
 ### Steps to reproduce
 1.
@@ -1320,9 +1329,9 @@ Tell us what happens instead
 
 ### Client configuration
 
-**Browser:** ' . $post_data['browser_name'] . ' - ' . $post_data['browser_version'] . '
+**Browser:** ' . $data['browser_name'] . ' - ' . $data['browser_version'] . '
 
-**Operating system:** ' . $post_data['os'] . ' - ' . $post_data['os_archi'] . 'bits
+**Operating system:** ' . $data['os'] . ' - ' . $data['os_archi'] . 'bits
 
 ### Logs
 
@@ -1656,7 +1665,7 @@ function sendMailToUser(
     array $SETTINGS
 ): string
 {
-    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+    if (is_null($post_replace) === false && count($post_replace) > 0) {
         $post_body = str_replace(
             array_keys($post_replace),
             array_values($post_replace),

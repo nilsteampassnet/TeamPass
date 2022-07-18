@@ -1450,7 +1450,7 @@ if (
             "sources/main.queries.php", {
                 type: 'generate_bug_report',
                 type_category: 'action_system',
-                data: JSON.stringify(data),
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
