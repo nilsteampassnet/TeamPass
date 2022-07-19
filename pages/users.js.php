@@ -2231,115 +2231,150 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // 3/ generate keys for this user with encryption key
 
                     
+                    if (data.post_action === 'prepare_tasks') {
+                        // If expected to create new encryption key
+                        var parameters = {
+                            'user_id': data.user_id,
+                        };
 
-                    // call the recursive function
-                    callRecurive(data.user_id, 'step0', 0); 
+                        console.info('Prepare TASK for new user encryption keys')
+                        $.post(
+                            'sources/main.queries.php', {
+                                type: 'generate_temporary_encryption_key',
+                                type_category: 'action_key',
+                                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key: "<?php echo $_SESSION['key']; ?>"
+                            },
+                            function(data_tasks) {
+                                data_tasks = prepareExchangedData(data_tasks, 'decode', '<?php echo $_SESSION['key']; ?>');
 
-                    // recursive action to encrypt the keys
-                    function callRecurive(
-                        userId,
-                        step,
-                        start
-                    ) {
-                        var dfd = $.Deferred();
-                        
-                        var stepText = '';
-                        console.log('Performing '+step)
-
-                        // Prepare progress string
-                        if (step === 'step0') {
-                            stepText = '<?php echo langHdl('inititialization'); ?>';
-                        } else if (step === 'step1') {
-                            stepText = '<?php echo langHdl('items'); ?>';
-                        } else if (step === 'step2') {
-                            stepText = '<?php echo langHdl('logs'); ?>';
-                        } else if (step === 'step3') {
-                            stepText = '<?php echo langHdl('suggestions'); ?>';
-                        } else if (step === 'step4') {
-                            stepText = '<?php echo langHdl('fields'); ?>';
-                        } else if (step === 'step5') {
-                            stepText = '<?php echo langHdl('files'); ?>';
-                        } else if (step === 'step6') {
-                            stepText = '<?php echo langHdl('personal_items'); ?>';
-                        }
-
-                        if (step !== 'finished') {
-                            // Inform user
-                            $("#warningModal-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
-                                stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']');
-
-                            var data = {
-                                'action': step,
-                                'start': start,
-                                'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
-                                'user_id': userId,
-                                'self_change': false,
+                                if (data_tasks.error !== false) {
+                                    // Show error
+                                    toastr.remove();
+                                    toastr.error(
+                                        data_tasks.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true
+                                        }
+                                    );
+                                } else {
+                                    // update the process
+                                    // add all tasks
+                                    userTasksCreation(formUserId, data.user_pwd, data_tasks.userTemporaryCode);
+                                }
                             }
-                            console.log("start encryption")
-                            console.log(data)
-                            // Do query
-                            $.post(
-                                "sources/main.queries.php", {
-                                    type: "user_sharekeys_reencryption_next",
-                                    type_category: 'action_key',
-                                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                                    key: '<?php echo $_SESSION['key']; ?>'
-                                },
-                                function(data) {
-                                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                                    console.log(data);
-                                    console.log("---")
-                                    
-                                    if (data.error === true) {
-                                        // error
-                                        $('#warningModal').modal('hide');
-                                        toastr.remove();
-                                        toastr.error(
-                                            data.message,
-                                            '<?php echo langHdl('caution'); ?>', {
-                                                timeOut: 5000,
-                                                progressBar: true
-                                            }
-                                        );
+                        );
+                    } else {
+                        // call the recursive function
+                        callRecurive(data.user_id, 'step0', 0); 
 
-                                        dfd.reject();
-                                    } else {
-                                        // Prepare variables
-                                        userId = data.userId;
-                                        step = data.step;
-                                        start = data.start;
-
-                                        // Do recursive call until step = finished
-                                        callRecurive(
-                                            userId,
-                                            step,
-                                            start
-                                        ).done(function(response) {
-                                            dfd.resolve(response);
-                                        });
-                                    }
-                                }
-                            );
-                        } else {
-                            console.log('Generation des clés terminée')
-                            // Finalizing
-                            $('#warningModal').modal('hide');
+                        // recursive action to encrypt the keys
+                        function callRecurive(
+                            userId,
+                            step,
+                            start
+                        ) {
+                            var dfd = $.Deferred();
                             
-                            // refresh the list of users in LDAP not added in Teampass
-                            refreshListUsersLDAP();    
+                            var stepText = '';
+                            console.log('Performing '+step)
 
-                            // Rrefresh list of users in Teampass
-                            oTable.ajax.reload();
+                            // Prepare progress string
+                            if (step === 'step0') {
+                                stepText = '<?php echo langHdl('inititialization'); ?>';
+                            } else if (step === 'step1') {
+                                stepText = '<?php echo langHdl('items'); ?>';
+                            } else if (step === 'step2') {
+                                stepText = '<?php echo langHdl('logs'); ?>';
+                            } else if (step === 'step3') {
+                                stepText = '<?php echo langHdl('suggestions'); ?>';
+                            } else if (step === 'step4') {
+                                stepText = '<?php echo langHdl('fields'); ?>';
+                            } else if (step === 'step5') {
+                                stepText = '<?php echo langHdl('files'); ?>';
+                            } else if (step === 'step6') {
+                                stepText = '<?php echo langHdl('personal_items'); ?>';
+                            }
 
-                            toastr.remove(); 
-                            toastr.success(
-                                '<?php echo langHdl('done'); ?>',
-                                '', {
-                                    timeOut: 1000
+                            if (step !== 'finished') {
+                                // Inform user
+                                $("#warningModal-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+                                    stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']');
+
+                                var data = {
+                                    'action': step,
+                                    'start': start,
+                                    'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
+                                    'user_id': userId,
+                                    'self_change': false,
                                 }
-                            );
+                                console.log("start encryption")
+                                console.log(data)
+                                // Do query
+                                $.post(
+                                    "sources/main.queries.php", {
+                                        type: "user_sharekeys_reencryption_next",
+                                        type_category: 'action_key',
+                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                        key: '<?php echo $_SESSION['key']; ?>'
+                                    },
+                                    function(data) {
+                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                        console.log(data);
+                                        console.log("---")
+                                        
+                                        if (data.error === true) {
+                                            // error
+                                            $('#warningModal').modal('hide');
+                                            toastr.remove();
+                                            toastr.error(
+                                                data.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
+                                                }
+                                            );
+
+                                            dfd.reject();
+                                        } else {
+                                            // Prepare variables
+                                            userId = data.userId;
+                                            step = data.step;
+                                            start = data.start;
+
+                                            // Do recursive call until step = finished
+                                            callRecurive(
+                                                userId,
+                                                step,
+                                                start
+                                            ).done(function(response) {
+                                                dfd.resolve(response);
+                                            });
+                                        }
+                                    }
+                                );
+                            } else {
+                                console.log('Generation des clés terminée')
+                                // Finalizing
+                                $('#warningModal').modal('hide');
+                                
+                                // refresh the list of users in LDAP not added in Teampass
+                                refreshListUsersLDAP();    
+
+                                // Rrefresh list of users in Teampass
+                                oTable.ajax.reload();
+
+                                toastr.remove(); 
+                                toastr.success(
+                                    '<?php echo langHdl('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
+                            }
+                            return dfd.promise();
                         }
-                        return dfd.promise();
                     }
                 }
             }

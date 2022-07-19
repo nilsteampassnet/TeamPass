@@ -2594,7 +2594,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
@@ -2756,6 +2759,7 @@ if (null !== $post_type) {
                     'user_id' => $newUserId,
                     'user_code' => $password,
                     'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
+                    'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                     //'extra' => decryptPrivateKey($password, $userKeys['private_key']),
                     //'extra2' => $userKeys['private_key'],
                 ),
