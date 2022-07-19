@@ -2292,6 +2292,8 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_user_id
                 );
+            } else if($post_field === 'user_api_key') {
+                $_SESSION['user']['api-key'] = $post_new_value;
             }
 
             // send data

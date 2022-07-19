@@ -266,7 +266,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 numerals: "true",
                 capitalize: "true",
                 symbols: "false",
-                secure: "false"
+                secure: "false",
+                key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
@@ -275,15 +276,21 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     newApiKey = data.key;
 
                     // Save key in session and database
-                    var data = "{\"field\":\"user_api_key\" ,\"new_value\":\"" + newApiKey + "\" ,\"user_id\":\"<?php echo $_SESSION['user_id']; ?>\"}";
-
+                    var data = {
+                        'field' : 'user_api_key',
+                        'value' : newApiKey[0],
+                        'user_id' : <?php echo $_SESSION['user_id']; ?>,
+                        'context' : ''
+                    };
+                    
                     $.post(
-                        "sources/main.queries.php", {
-                            type: "update_user_field",
-                            data: prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        "sources/users.queries.php", {
+                            type: "save_user_change",
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key: "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                             $("#" + target).text(newApiKey);
                             if (silent === false) {
                                 $('#profile-tabs a[href="#tab_information"]').tab('show');
