@@ -1037,7 +1037,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                                                 progressBar: true
                                                             }
                                                         );
-
                                                     } else {
                                                         // show message to user
                                                         $('#warningModal').modal('hide');
