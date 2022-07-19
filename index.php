@@ -37,7 +37,7 @@ header('X-Frame-Options: SameOrigin');
 //ini_set('session.cookie_secure', 0);
 //ini_set('session.cookie_samesite', 'Lax');
 // Before we start processing, we should abort no install is present
-if (file_exists('includes/config/settings.php') === false) {
+if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {
@@ -50,15 +50,13 @@ if (file_exists('includes/config/settings.php') === false) {
 }
 
 // initialise CSRFGuard library
-require_once './includes/libraries/csrfp/libs/csrf/csrfprotector.php';
+require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
 session_id();
 
 // Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
+if (file_exists(__DIR__.'/includes/config/tp.config.php') === true) {
+    include_once __DIR__.'/includes/config/tp.config.php';
 } else {
     throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
 }
@@ -68,7 +66,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     if (isset($SETTINGS['cpassman_dir']) === false) {
         $SETTINGS = [];
     }
-    $SETTINGS['cpassman_dir'] = '.';
+    $SETTINGS['cpassman_dir'] = __DIR__;
 }
 
 // Include files

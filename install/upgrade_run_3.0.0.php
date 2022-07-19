@@ -939,6 +939,11 @@ if ($res === false) {
     exit();
 }
 
+mysqli_query(
+    $db_link,
+    'UPDATE `' . $pre . 'users` SET is_ready_for_usage = 1 WHERE is_ready_for_usage = 0;'
+);
+
 // Add new table PROCESSES_TASKS
 mysqli_query(
     $db_link,
