@@ -2740,16 +2740,18 @@ if (null !== $post_type) {
             }
 
             // Send email to new user
-            sendEmail(
-                langHdl('email_subject_new_user'),
-                str_replace(
-                    array('#tp_login#', '#enc_code#', '#tp_link#'),
-                    array(addslashes($post_login), addslashes($password), $SETTINGS['email_server_url']),
-                    langHdl('email_body_user_added_from_ldap_encryption_code')
-                ),
-                $post_email,
-                $SETTINGS
-            );
+            if (isset($SETTINGS['enable_tasks_manager']) === false || (int) $SETTINGS['enable_tasks_manager'] === 0) {
+                sendEmail(
+                    langHdl('email_subject_new_user'),
+                    str_replace(
+                        array('#tp_login#', '#enc_code#', '#tp_link#'),
+                        array(addslashes($post_login), addslashes($password), $SETTINGS['email_server_url']),
+                        langHdl('email_body_user_added_from_ldap_encryption_code')
+                    ),
+                    $post_email,
+                    $SETTINGS
+                );
+            }
 
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],

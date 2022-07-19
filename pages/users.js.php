@@ -1009,7 +1009,58 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                         } else {
                                             // update the process
                                             // add all tasks
-                                            userTasksCreation(formUserId, data.user_pwd, data_tasks.userTemporaryCode);
+                                            var data_to_send = {
+                                                user_id: data.user_id,
+                                                user_pwd: data.user_code,
+                                                user_code: userTemporaryCode,
+                                            }
+
+                                            // Do query
+                                            $.post(
+                                                "sources/users.queries.php", {
+                                                    type: "create_new_user_tasks",
+                                                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                                    key: '<?php echo $_SESSION['key']; ?>'
+                                                },
+                                                function(data) {
+                                                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                                    console.info("Réception des données :")
+                                                    console.log(data);
+                                                    
+                                                    if (data.error === true) {
+                                                        // error
+                                                        toastr.remove();
+                                                        toastr.error(
+                                                            data.message,
+                                                            '<?php echo langHdl('caution'); ?>', {
+                                                                timeOut: 5000,
+                                                                progressBar: true
+                                                            }
+                                                        );
+
+                                                    } else {
+                                                        // show message to user
+                                                        $('#warningModal').modal('hide');
+
+                                                        // Inform user
+                                                        toastr.remove();
+                                                        toastr.success(
+                                                            '<?php echo langHdl('done'); ?>',
+                                                            '', {
+                                                                timeOut: 2000
+                                                            }
+                                                        );
+
+                                                        // Reload list of users
+                                                        oTable.ajax.reload();
+
+                                                        // Prepare UI
+                                                        $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                                                        $('#row-form').addClass('hidden');
+                                                    }
+                                                }
+                                            );
+
                                         }
                                     }
                                 );
@@ -2262,6 +2313,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     // update the process
                                     // add all tasks
                                     userTasksCreation(formUserId, data.user_pwd, data_tasks.userTemporaryCode);
+
+                                    // Finalizing
+                                    $('#warningModal').modal('hide');
+                                    
+                                    // refresh the list of users in LDAP not added in Teampass
+                                    refreshListUsersLDAP();    
+
+                                    // Rrefresh list of users in Teampass
+                                    oTable.ajax.reload();
+
+                                    toastr.remove(); 
+                                    toastr.success(
+                                        '<?php echo langHdl('done'); ?>',
+                                        '', {
+                                            timeOut: 1000
+                                        }
+                                    );
                                 }
                             }
                         );
