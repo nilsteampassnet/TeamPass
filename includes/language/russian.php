@@ -22,6 +22,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'execution_time' => 'Execution time',
     'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
     'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
     'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',

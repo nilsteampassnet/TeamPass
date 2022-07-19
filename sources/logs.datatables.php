@@ -908,6 +908,10 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        // play with dates
+        $start = strtotime(date('Y-m-d H:i:s', (int) $record['created_at']));
+        $end = strtotime(date('Y-m-d H:i:s', (int) $record['finished_at']));
+        
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-id=\"'.$record['is_in_progress'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
@@ -925,7 +929,8 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         );
         $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
         // col6
-        $sOutput .= '""';
+        $diff = abs($end - $start) / 60;
+        $sOutput .= '"'.floor($diff / 60).':'.($diff % 60).'"';
         //Finish the line
         $sOutput .= '],';
     }

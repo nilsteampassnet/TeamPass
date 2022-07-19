@@ -145,9 +145,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             'autoWidth': true,
             'ajax': {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_finished',
-                /*data: function(d) {
-                    d.letter = _alphabetSearch
-                }*/
             },
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt'

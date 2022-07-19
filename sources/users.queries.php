@@ -2488,7 +2488,7 @@ if (null !== $post_type) {
             );
 
             $users = $connection->query()
-                ->in((isset($SETTINGS['ldap_dn_additional_user_dn']) === true ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                ->in((isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn'] === false) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->get();
             

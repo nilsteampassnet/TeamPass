@@ -111,7 +111,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <th style=""><?php echo langHdl('finished_at'); ?></th>
                                             <th style=""><?php echo langHdl('type'); ?></th>
                                             <th style=""><?php echo langHdl('user'); ?></th>
-                                            <th style=""></th>
+                                            <th style=""><?php echo langHdl('execution_time'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
