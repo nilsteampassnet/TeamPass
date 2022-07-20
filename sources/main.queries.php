@@ -1727,7 +1727,7 @@ function generateOneTimeCode(
             );
 
             return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1738,7 +1738,7 @@ function generateOneTimeCode(
         }
         
         return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('no_email_set'),
@@ -1748,7 +1748,7 @@ function generateOneTimeCode(
     }
         
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_no_user'),

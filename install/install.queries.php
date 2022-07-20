@@ -1220,7 +1220,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "cache_tree` (
-                            `increment_id` int(12) NOT NULL,
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(12) NOT NULL
@@ -1230,7 +1230,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_tasks` (
-                            `increment_id` int(12) NOT NULL,
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `process_id` int(12) NOT NULL,
                             `created_at` varchar(50) NOT NULL,
                             `updated_at` varchar(50) DEFAULT NULL,
@@ -1238,14 +1238,15 @@ $SETTINGS = array (';
                             `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
                             `system_process_id` int(12) DEFAULT NULL,
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
-                            `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0
+                            `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task === 'processes') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes` (
-                            `increment_id` int(12) NOT NULL,
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(50) NOT NULL,
                             `updated_at` varchar(50) DEFAULT NULL,
                             `finished_at` varchar(50) DEFAULT NULL,
@@ -1253,7 +1254,8 @@ $SETTINGS = array (';
                             `process_type` varchar(20) NOT NULL,
                             `output` text DEFAULT NULL,
                             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
-                            `is_in_progress` tinyint(1) NOT NULL DEFAULT 0
+                            `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     }

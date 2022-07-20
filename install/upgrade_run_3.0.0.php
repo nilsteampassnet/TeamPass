@@ -860,7 +860,7 @@ if (intval($tmp) === 0) {
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'cache_tree` (
-        `increment_id` int(12) NOT NULL,
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
         `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
         `timestamp` varchar(50) NOT NULL,
         `user_id` int(12) NOT NULL
@@ -948,7 +948,7 @@ mysqli_query(
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'processes_tasks` (
-        `increment_id` int(12) NOT NULL,
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
         `process_id` int(12) NOT NULL,
         `created_at` varchar(50) NOT NULL,
         `updated_at` varchar(50) DEFAULT NULL,
@@ -956,7 +956,8 @@ mysqli_query(
         `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
         `system_process_id` int(12) DEFAULT NULL,
         `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
-        `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0
+        `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`increment_id`)
         ) CHARSET=utf8;'
 );
 
@@ -964,7 +965,7 @@ mysqli_query(
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'processes` (
-        `increment_id` int(12) NOT NULL,
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
         `created_at` varchar(50) NOT NULL,
         `updated_at` varchar(50) DEFAULT NULL,
         `finished_at` varchar(50) DEFAULT NULL,
@@ -972,7 +973,8 @@ mysqli_query(
         `process_type` varchar(20) NOT NULL,
         `output` text DEFAULT NULL,
         `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
-        `is_in_progress` tinyint(1) NOT NULL DEFAULT 0
+        `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`increment_id`)
         ) CHARSET=utf8;'
 );
 
