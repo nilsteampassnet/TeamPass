@@ -2245,14 +2245,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
                                 key: "<?php echo $_SESSION['key']; ?>"
                             },
-                            function(data_tasks) {
-                                data_tasks = prepareExchangedData(data_tasks, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            function(data_otc) {
+                                data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $_SESSION['key']; ?>');
 
-                                if (data_tasks.error !== false) {
+                                if (data_otc.error !== false) {
                                     // Show error
                                     toastr.remove();
                                     toastr.error(
-                                        data_tasks.message,
+                                        data_otc.message,
                                         '<?php echo langHdl('caution'); ?>', {
                                             timeOut: 5000,
                                             progressBar: true
@@ -2264,26 +2264,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     var data_to_send = {
                                         user_id: data.user_id,
                                         user_pwd: data.user_code,
-                                        user_code: userTemporaryCode,
+                                        user_code: data_otc.userTemporaryCode,
                                     }
 
                                     // Do query
                                     $.post(
                                         "sources/users.queries.php", {
                                             type: "create_new_user_tasks",
-                                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                            data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
                                             key: '<?php echo $_SESSION['key']; ?>'
                                         },
-                                        function(data) {
-                                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                                            console.info("Réception des données :")
-                                            console.log(data);
+                                        function(data_tasks) {
+                                            data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $_SESSION['key']; ?>");
                                             
-                                            if (data.error === true) {
+                                            if (data_tasks.error === true) {
                                                 // error
                                                 toastr.remove();
                                                 toastr.error(
-                                                    data.message,
+                                                    data_tasks.message,
                                                     '<?php echo langHdl('caution'); ?>', {
                                                         timeOut: 5000,
                                                         progressBar: true

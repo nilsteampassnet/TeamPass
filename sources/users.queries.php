@@ -3257,6 +3257,16 @@ if (null !== $post_type) {
                 )
             );
 
+            //update user is not ready
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'is_ready_for_usage' => 0,
+                ),
+                'id = %i',
+                $post_user_id
+            );
+
             break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
