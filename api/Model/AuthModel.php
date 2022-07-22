@@ -41,7 +41,7 @@ class AuthModel extends Database
     public function getUserAuth(string $login, string $password, string $apikey): array
     {
         // Check if user exists
-        $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits FROM " . prefixTable('users') . " WHERE login='".$login."'");
+        $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits, user_api_key FROM " . prefixTable('users') . " WHERE login='".$login."'");
         $userInfoRes[0]['special'] = '';
         $userInfo = $userInfoRes[0];
         
@@ -53,8 +53,9 @@ class AuthModel extends Database
         if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
             // Correct credentials
             // Now check apikey
+            // We check if it is the correct user api or if it is a generic api key
             $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$apikey."'");
-            if ((int) $apiInfo[0]['count(*)'] === 1) {
+            if ($apikey === $userInfo['user_api_key'] || (int) $apiInfo[0]['count(*)'] === 1) {
                 // get user keys
                 $privateKeyClear = decryptPrivateKey($password, (string) $userInfo['private_key']); //prepareUserEncryptionKeys($userInfo, $password);
 
