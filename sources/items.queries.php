@@ -6072,8 +6072,8 @@ if (is_null($inputData['type']) === false) {
             }
 
             $arr_data = array();
-
-            foreach (json_decode($inputData['data']) as $folder) {
+            $inputData = json_decode($inputData['data'], true);
+            foreach ($inputData as $folder) {
                 // Do we have Categories
                 if (
                     isset($SETTINGS['item_extra_fields']) === true
@@ -6162,7 +6162,10 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+                    $SETTINGS['cpassman_dir'],
+                    array('error' => 'ERR_KEY_NOT_CORRECT'),
+                    'encode'
+                );
                 break;
             }
 

@@ -978,6 +978,42 @@ mysqli_query(
         ) CHARSET=utf8;'
 );
 
+// Add field masked to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre . 'categories',
+    'masked',
+    "tinyint(1) NOT NULL default '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field masked to table CATEGORIES! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field role_visibility to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre . 'categories',
+    'role_visibility',
+    "varchar(255) NOT NULL DEFAULT 'all';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field role_visibility to table CATEGORIES! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field is_mandatory to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre . 'categories',
+    'is_mandatory',
+    "tinyint(1) NOT NULL default '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_mandatory to table CATEGORIES! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 //---<END 3.0.0.18
 
