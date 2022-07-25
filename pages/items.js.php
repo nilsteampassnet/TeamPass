@@ -3165,7 +3165,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .end()
                         .append(html_visible);
                     $(".no-root option[value='0']").remove();
-                    if (debugJavascript === true) console.log(html_visible);
+                    if (debugJavascript === true) {
+                        console.log(html_visible);
+                    }
 
                     // Store in teampassUser
                     store.update(
