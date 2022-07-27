@@ -781,8 +781,8 @@ function handleNode(
                     'data-title' => $currentNode->title,
                 ),
                 'is_pf' => in_array($nodeId, $inputData['personalFolders']) === true ? 1 : 0,
-                'can_edit' => (int) $inputData['userCanCreateRootFolder'],
-                'children' => count($nodeDirectDescendants) > 0 ? true : false,
+                'can_edit' => (int) $inputData['userCanCreateRootFolder']
+                //,'children' => count($nodeDirectDescendants) > 0 ? true : false,
             )
         );
     } elseif ($nodeData['show_but_block'] === true) {
