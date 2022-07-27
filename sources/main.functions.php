@@ -3506,7 +3506,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
                 'timestamp' => time(),
                 'data' => $data,
             ],
-            'user_id = %i',
+            'increment_id = %i',
             $userCacheId['increment_id']
         );
     }

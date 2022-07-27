@@ -2185,7 +2185,7 @@ if (null !== $post_type) {
                 $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
                 $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
                 $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $_SESSION['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
                 $_SESSION['user_agsescardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
                 $_SESSION['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
             } else {
@@ -3317,13 +3317,12 @@ if (null !== $post_type) {
             );
             // refresh SESSION if requested
             if ($value[0] === 'treeloadstrategy') {
-                $_SESSION['user_treeloadstrategy'] = $post_newValue;
+                $_SESSION['user']['user_treeloadstrategy'] = $post_newValue;
             } elseif ($value[0] === 'usertimezone') {
                 // special case for usertimezone where session needs to be updated
                 $_SESSION['user_timezone'] = $post_newValue;
             } elseif ($value[0] === 'userlanguage') {
                 // special case for user_language where session needs to be updated
-                $_SESSION['user_language'] = $post_newValue;
                 $_SESSION['user_language'] = $post_newValue;
             } elseif ($value[0] === 'agses-usercardid') {
                 // special case for agsescardid where session needs to be updated

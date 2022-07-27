@@ -459,7 +459,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'SESSION',
             'user'
         );
-        $superGlobal->put('user_treeloadstrategy', $userInfo['treeloadstrategy'], 'SESSION', 'user');
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
