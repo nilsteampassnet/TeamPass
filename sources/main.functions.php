@@ -657,7 +657,7 @@ function identUser(
 
     // Return data
     $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
-    $superGlobal->put('groupes_visibles', array_merge($allowedFolders, $personalFolders), 'SESSION');
+    $superGlobal->put('groupes_visibles', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC), 'SESSION');
     $superGlobal->put('read_only_folders', $readOnlyFolders, 'SESSION');
     $superGlobal->put('no_access_folders', $noAccessFolders, 'SESSION');
     $superGlobal->put('personal_folders', $personalFolders, 'SESSION');
@@ -667,12 +667,12 @@ function identUser(
     $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
     $superGlobal->put(
         'all_folders_including_no_access',
-        array_merge(
+        array_unique(array_merge(
             $allowedFolders,
             $personalFolders,
             $noAccessFolders,
             $readOnlyFolders
-        ),
+        ), SORT_NUMERIC),
         'SESSION'
     );
     // Folders and Roles numbers
@@ -792,7 +792,7 @@ function identUserGetPFList(
             // get all descendants
             $ids = $tree->getDescendants($persoFld['id'], false, false, true);
             foreach ($ids as $id) {
-                    array_push($allowedFolders, $id);
+                    //array_push($allowedFolders, $id);
                     array_push($personalFolders, $id);
             }
         }
@@ -801,6 +801,7 @@ function identUserGetPFList(
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
+    $where->add('id NOT IN ('.implode(',', $personalFolders).')');
     if (
         (int) $enablePfFeature === 1
         && (int) $globalsPersonalFolders === 1
@@ -819,20 +820,20 @@ function identUserGetPFList(
     }
 
     // All folders visibles
-    $allowedFolders = array_merge(
+    $allowedFolders = array_unique(array_merge(
         $allowedFolders,
         $foldersLimitedFull,
         $allowedFoldersByRoles,
         $restrictedFoldersForItems,
         $readOnlyFolders
-    );
+    ), SORT_NUMERIC);
     // Exclude from allowed folders all the specific user forbidden folders
     if (count($noAccessFolders) > 0) {
         $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
     }
 
     return [
-        'allowedFolders' => $allowedFolders,
+        'allowedFolders' => array_diff(array_diff($allowedFolders, $noAccessPersonalFolders), $personalFolders),
         'personalFolders' => $personalFolders,
         'noAccessPersonalFolders' => $noAccessPersonalFolders
     ];
