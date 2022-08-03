@@ -862,10 +862,25 @@ mysqli_query(
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'cache_tree` (
         `increment_id` int(12) NOT NULL AUTO_INCREMENT,
         `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
+        `visible_folders` longtext NOT NULL,
         `timestamp` varchar(50) NOT NULL,
-        `user_id` int(12) NOT NULL
+        `user_id` int(12) NOT NULL,
+        PRIMARY KEY (`increment_id`)
     ) CHARSET=utf8;'
 );
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT"
+);
+
+// Add field status to CACHE_TREE table
+$res = addColumnIfNotExist(
+    $pre . 'cache_tree',
+    'visible_folders',
+    "longtext NOT NULL"
+);
+
 
 // Add field status to FILES table
 $res = addColumnIfNotExist(

@@ -221,7 +221,7 @@ if ($post_type === 'identify_duo_user') {
 
     // Encrypt data to return
     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         [
             'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
             'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,

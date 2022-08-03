@@ -6040,6 +6040,15 @@ if (is_null($inputData['type']) === false) {
                 }
             }
 
+            // save to cache_tree
+            cacheTreeUserHandler(
+                (int) $_SESSION['user_id'],
+                json_encode($arr_data['folders']),
+                $SETTINGS,
+                'visible_folders',
+            );
+
+            // Prepare data to provide
             $data = array(
                 'error' => 'false',
                 'html_json' => $arr_data,
@@ -6178,7 +6187,7 @@ if (is_null($inputData['type']) === false) {
             );
 
             // get item history
-            $history = array();
+            $history = [];
             $rows = DB::query(
                 'SELECT l.date as date, l.action as action, l.raison as raison,
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
@@ -6288,7 +6297,10 @@ if (is_null($inputData['type']) === false) {
             
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
 
@@ -6296,7 +6308,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6307,7 +6319,10 @@ if (is_null($inputData['type']) === false) {
             }
             // decrypt and retrieve data in JSON format
             $data_received = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label'], ENT_QUOTES);
@@ -6382,7 +6397,7 @@ if (is_null($inputData['type']) === false) {
             }
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => '',
                 ),

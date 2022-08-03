@@ -792,8 +792,8 @@ function identUserGetPFList(
             // get all descendants
             $ids = $tree->getDescendants($persoFld['id'], false, false, true);
             foreach ($ids as $id) {
-                    //array_push($allowedFolders, $id);
-                    array_push($personalFolders, $id);
+                //array_push($allowedFolders, $id);
+                array_push($personalFolders, $id);
             }
         }
     }
@@ -801,7 +801,9 @@ function identUserGetPFList(
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
-    $where->add('id NOT IN ('.implode(',', $personalFolders).')');
+    if (count($personalFolders) > 0) {
+        $where->add('id NOT IN ('.implode(',', $personalFolders).')');
+    }
     if (
         (int) $enablePfFeature === 1
         && (int) $globalsPersonalFolders === 1
@@ -1527,34 +1529,31 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
 
     //load ClassLoader
     include_once $teampassDir . '/sources/SplClassLoader.php';
-    //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', $teampassDir . '/includes/libraries');
-    $aes->register();
+    //Load CRYPTOJS
+    include_once $teampassDir . '/includes/libraries/Encryption/CryptoJs/Encryption.php';
     if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format
         $data = utf8Converter($data);
         // Now encode
-        return Encryption\Crypt\aesctr::encrypt(
+        return Encryption\CryptoJs\Encryption::encrypt(
             json_encode(
                 $data,
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
             ),
-            $globalsKey,
-            256
+            $globalsKey
         );
     }
     if ($type === 'decode' && is_array($data) === false) {
         return json_decode(
-            Encryption\Crypt\aesctr::decrypt(
-                /** @scrutinizer ignore-type */
-                (string) $data,
-                $globalsKey,
-                256
+            Encryption\CryptoJs\Encryption::decrypt(
+                $data,
+                $globalsKey
             ),
             true
         );
     }
 }
+
 
 /**
  * Create a thumbnail.
@@ -3463,9 +3462,10 @@ function dataSanitizer(
  * @param integer $user_id
  * @param string $data
  * @param array $SETTINGS
+ * @param string $field_update
  * @return void
  */
-function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
+function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '')
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     //Connect to DB
@@ -3489,7 +3489,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
         WHERE user_id = %i',
         $user_id
     );
-
+    
     if (is_null($userCacheId) === true || count($userCacheId) === 0) {
         DB::insert(
             prefixTable('cache_tree'),
@@ -3500,15 +3500,26 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS)
             )
         );
     } else {
-        DB::update(
-            prefixTable('cache_tree'),
-            [
-                'timestamp' => time(),
-                'data' => $data,
-            ],
-            'increment_id = %i',
-            $userCacheId['increment_id']
-        );
+        if (empty($field_update) === true) {
+            DB::update(
+                prefixTable('cache_tree'),
+                [
+                    'timestamp' => time(),
+                    'data' => $data,
+                ],
+                'increment_id = %i',
+                $userCacheId['increment_id']
+            );
+        } else {
+            DB::update(
+                prefixTable('cache_tree'),
+                [
+                    $field_update => $data,
+                ],
+                'increment_id = %i',
+                $userCacheId['increment_id']
+            );
+        }
     }
 }
 

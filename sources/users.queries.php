@@ -50,28 +50,18 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_STRING);
-if (
-    checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
-    || checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false
-) {
-    if (
-        null === $isprofileupdate
-        || $isprofileupdate === false
-    ) {
-        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-        include $SETTINGS['cpassman_dir'] . '/error.php';
-        exit();
-    } else {
-        // Do special check to allow user to change attributes of his profile
-        if (
-            $isprofileupdate === false
-            || checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
-        ) {
-            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include $SETTINGS['cpassman_dir'] . '/error.php';
-            exit();
-        }
-    }
+
+// DO check for "users" rights
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false && (null === $isprofileupdate || $isprofileupdate === false)) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit();
+} else if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false && null !== $isprofileupdate && $isprofileupdate === true) {
+
+} else {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit();
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';

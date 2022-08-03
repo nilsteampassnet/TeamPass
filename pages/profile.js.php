@@ -280,7 +280,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         'field' : 'user_api_key',
                         'value' : newApiKey[0],
                         'user_id' : <?php echo $_SESSION['user_id']; ?>,
-                        'context' : ''
+                        'context' : '',
+                        'isprofileupdate' : 1,
                     };
                     
                     $.post(

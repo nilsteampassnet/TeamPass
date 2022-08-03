@@ -780,8 +780,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 "decode",
                                 "<?php echo $_SESSION['key']; ?>"
                             );
-                            //console.info('Identification answer:')
-                            //console.log(data);
+                            console.info('Identification answer:')
+                            console.log(data.value);
                             toastr.remove();
                             
                             // Maintenance mode is enabled?

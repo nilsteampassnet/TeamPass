@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -111,6 +111,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         console.log('User infor')
         console.log(store.get('teampassUser'))
     }
+
+    // Show loader
+    toastr.remove();
+    toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
     // Build tree
     $('#jstree').jstree({
@@ -1285,7 +1289,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
-                if (data.error !== true) {
+                if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
                     // Warn user
                     toastr.success(
@@ -1402,7 +1406,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
 
-                if (data.error !== true) {
+                if (typeof data !== 'undefined' && data.error !== true) {
                     // Warn user
                     toastr.success(
                         '<?php echo langHdl('success'); ?>',
@@ -3121,7 +3125,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     console.log(data);
                 }
                 //check if format error
-                if (data.error !== true) {
+                if (typeof data !== 'undefined' && data.error !== true) {
                     // Build html lists
                     var html_visible = '',
                         html_full_visible = '',
@@ -3224,12 +3228,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
                 //check if format error
-                if (data.error !== true) {
+                if (typeof data !== 'undefined' && data.error !== true) {
                     // Store in session
                     if (action === 'clear') {
                         // Handle the data
                         $.each(folders, function(index, item) {
-                            if (data.result[item.id] !== null) {
+                            if (typeof data.result !== 'undefined' && data.result[item.id] !== null) {
                                 folders[index]['categories'] = data.result[item.id].categories;
                                 folders[index]['complexity'] = data.result[item.id].complexity;
                                 folders[index]['visibilityRoles'] = data.result[item.id].visibilityRoles;
@@ -3273,6 +3277,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     );
                     return false;
                 }
+                toastr.remove();
             }
         );
     }
@@ -3414,15 +3419,15 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Prepare data to be sent
             var dataArray = {
                 id: store.get('teampassApplication').selectedFolder,
-                restricted: restricted,
+                restricted: restricted === "" ? "" : restricted,
                 start: start !== undefined ? start : 0,
-                uniqueLoadData: store.get('teampassApplication').queryUniqueLoad,
+                uniqueLoadData: store.get('teampassApplication').queryUniqueLoad !== undefined ? store.get('teampassApplication').queryUniqueLoad : "",
                 nb_items_to_display_once: store.get('teampassApplication').itemsShownByQuery,
             };
 
             if (debugJavascript === true) {
                 console.log('Do list of items in folder with next parameters:');
-                console.log(dataArray);
+                console.log(JSON.stringify(dataArray));
             }
             
             //ajax query
@@ -4926,8 +4931,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         function(data) {
                             //decrypt data
                             data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                            if (debugJavascript === true) console.info('History:');
-                            if (debugJavascript === true) console.log(data);
+                            if (debugJavascript === true) {
+                                console.info('History:');
+                                console.log(data);
+                            }
                             if (data.error === '') {
                                 var html = '',
                                     nbHistoryEvents = 0;

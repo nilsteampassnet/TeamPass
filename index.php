@@ -1136,9 +1136,9 @@ if (($session_validite_pw === null
     <script type="text/javascript" src="plugins/toastr/toastr.min.js"></script>
     <!-- STORE.JS -->
     <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
-    <!-- aes -->
-    <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.js"></script>
-    <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes-ctr.js"></script>
+    <!-- cryptojs-aesphp -->
+    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/crypto-js.js"></script>
+    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/encryption.js"></script>
     <!-- pace -->
     <script type="text/javascript" data-pace-options='{ "ajax": true }' src="plugins/pace-progress/pace.min.js"></script>
     <!-- clipboardjs -->

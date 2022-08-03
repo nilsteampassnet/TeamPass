@@ -176,7 +176,7 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
     {
         if ($inputData['userTreeLoadStrategy'] === 'sequential') {
             // SEQUENTIAL MODE
-            $completTree = $tree->getDescendants(empty($nodeId) === true ? '' : $nodeId, false, true, false);
+            $completTree = $tree->getDescendants(empty($nodeId) === true ? '' : (int) $nodeId, false, true, false);
             foreach ($completTree as $child) {
                 recursiveTree(
                     (int) $child->id,
@@ -252,8 +252,7 @@ function showFolderToUser(
 {
     $big_array = array_diff(array_unique(array_merge($session_groupes_visibles, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys), SORT_NUMERIC), $session_forbiden_pfs);
     //print_r($session_groupes_visibles);
-    if (
-        in_array($nodeId, $big_array) === true) {
+    if ($nodeId === 0 || in_array($nodeId, $big_array) === true) {
         return true;
     }
     return false;
@@ -498,8 +497,8 @@ function handleNode(
         $inputData['limitedFolders'],
         (int) $SETTINGS['show_only_accessible_folders'],
         $nodeDirectDescendants,
-        isset($SETTINGS['tree_counters']) === true ? (int) $SETTINGS['tree_counters'] : '',
-        (int) $inputData['userReadOnly'],
+        isset($SETTINGS['tree_counters']) === true ? (int) $SETTINGS['tree_counters'] : 0,
+        (bool) $inputData['userReadOnly'],
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
@@ -544,8 +543,6 @@ function handleNode(
         );
         
         if ($inputData['userTreeLoadStrategy'] === 'sequential') {
-            //print_r($ret_json[count($ret_json) - 1]);
-            //array_push($ret_json[count($ret_json) - 1], array('children' => count($nodeDirectDescendants) > 0 ? true : false,));
             $ret_json[count($ret_json) - 1]['children'] = count($nodeDirectDescendants) > 0 ? true : false;
         }
 
@@ -601,7 +598,7 @@ function handleNode(
  * @param integer $show_only_accessible_folders
  * @param array $nodeDirectDescendants
  * @param integer $tree_counters
- * @param integer $session_user_read_only
+ * @param bool $session_user_read_only
  * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
@@ -621,7 +618,7 @@ function prepareNodeData(
     int $show_only_accessible_folders,
     array $nodeDirectDescendants,
     int $tree_counters,
-    int $session_user_read_only,
+    bool $session_user_read_only,
     array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
@@ -632,7 +629,7 @@ function prepareNodeData(
     $title = '';
     if (
         $session_user_read_only === true
-        && in_array($completTree[$nodeId]->id, $session_user_read_only) === false
+        || in_array((int) $completTree->id, $session_read_only_folders) === false
     ) {
         $title = langHdl('read_only_account');
     }

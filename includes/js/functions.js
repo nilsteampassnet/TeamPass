@@ -107,30 +107,6 @@ function extractLast( term ) {
     return split( term ).pop();
 }
 
-
-
-/**
- * [aesEncrypt description]
- * @param  {[type]} text [description]
- * @param  {[type]} key  [description]
- * @return {[type]}      [description]
- */
-function aesEncrypt(text, key)
-{
-    return Aes.Ctr.encrypt(text, key, 256);
-}
-
-/**
- * [aesDecrypt description]
- * @param  {[type]} text [description]
- * @param  {[type]} key  [description]
- * @return {[type]}      [description]
- */
-function aesDecrypt(text, key)
-{
-    return Aes.Ctr.decrypt(text, key, 256);
-}
-
 /**
  * Shows error message
  * @param  {string} message  Message to display
@@ -179,17 +155,19 @@ function prepareExchangedData(data, type, key)
             }
         } else {
             try {
-                return $.parseJSON(aesDecrypt(data, key));
+                let encryption = new Encryption();
+                return JSON.parse(encryption.decrypt(data, key));
             }
             catch (e) {
-                return jsonErrorHdl((data));
+                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>');
             }
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServer').val()) === 0) {
             return stripHtml(data);
         } else {
-            return aesEncrypt(data, key);
+            let encryption = new Encryption();
+            return encryption.encrypt(data, key);
         }
     } else {
         return false;
@@ -241,7 +219,7 @@ function unCryptData(data, key)
 function decodeQueryReturn(data, key)
 {
     try {
-        data = prepareExchangedData(data , "decode", key);
+        return prepareExchangedData(data , "decode", key);
     } catch (e) {
         // error
         toastr.remove();
@@ -254,8 +232,6 @@ function decodeQueryReturn(data, key)
         );
         return false;
     }
-
-    return data;
 }
 
 /**
@@ -358,4 +334,25 @@ function htmlEncode(str){
     return String(str).replace(/[^\w. ]/gi, function(c){
         return '&#'+c.charCodeAt(0)+';';
     });
+}
+
+/* Extend String object with method to encode multi-byte string to utf8
+ * - monsur.hossa.in/2012/07/20/utf-8-in-javascript.html
+ * - note utf8Encode is an identity function with 7-bit ascii strings, but not with 8-bit strings;
+ * - utf8Encode('x') = 'x', but utf8Encode('ça') = 'Ã§a', and utf8Encode('Ã§a') = 'ÃÂ§a'*/
+if (typeof String.prototype.utf8Encode == 'undefined') {
+    String.prototype.utf8Encode = function() {
+        return unescape( encodeURIComponent( this ) );
+    };
+}
+
+/* Extend String object with method to decode utf8 string to multi-byte */
+if (typeof String.prototype.utf8Decode == 'undefined') {
+    String.prototype.utf8Decode = function() {
+        try {
+            return decodeURIComponent( escape( this ) );
+        } catch (e) {
+            return this; // invalid UTF-8? return as-is
+        }
+    };
 }

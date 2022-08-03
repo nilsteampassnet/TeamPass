@@ -129,13 +129,13 @@ function mainQuery(array $SETTINGS)
         );
         return false;
     }
-
+    
     // decrypt and retreive data in JSON format
-    $dataReceived = prepareExchangedData(
+    $dataReceived = empty($post_data) === false ? prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         $post_data,
         'decode'
-    );
+    ) : '';
 
     switch ($post_type_category) {
         case 'action_password':
@@ -554,11 +554,13 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
         */
         case 'get_teampass_settings'://action_system
             // Encrypt data to return
-            return prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                $SETTINGS,
-                'encode'
-            );
+            if (is_array($SETTINGS) === true) {
+                return prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    $SETTINGS,
+                    'encode'
+                );
+            }
 
         /*
             * Generates a TOKEN with CRYPT
