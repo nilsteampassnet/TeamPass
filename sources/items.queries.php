@@ -5940,6 +5940,22 @@ if (is_null($inputData['type']) === false) {
                 $arr_data['can_create_root_folder'] = 0;
             }
 
+            // do we have a cache to be used?            
+            $goCachedFolders = loadFoldersListByCache();
+            if ($goCachedFolders['state'] === true) {
+                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
+                // send data
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    [
+                        'error' => 'false',
+                        'html_json' => $arr_data,
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
             // Build list of visible folders
             if (
                 (int) $_SESSION['user_admin'] === 1
@@ -6048,15 +6064,13 @@ if (is_null($inputData['type']) === false) {
                 'visible_folders',
             );
 
-            // Prepare data to provide
-            $data = array(
-                'error' => 'false',
-                'html_json' => $arr_data,
-            );
             // send data
             echo (string) prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
-                $data,
+                [
+                    'error' => 'false',
+                    'html_json' => $arr_data,
+                ],
                 'encode'
             );
 

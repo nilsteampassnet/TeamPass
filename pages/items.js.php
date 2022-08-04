@@ -3169,7 +3169,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .end()
                         .append(html_visible);
                     $(".no-root option[value='0']").remove();
+
                     if (debugJavascript === true) {
+                        console.info('HTML VISIBLE:')
                         console.log(html_visible);
                     }
 
@@ -3209,12 +3211,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var action = action || '',
             sending = '';
 
+        if (null === folders) return false;
+
         if (action === 'clear') {
             sending = JSON.stringify(folders.map(a => parseInt(a.id)));
-            if (debugJavascript === true) console.log(sending)
         } else if (action === 'update') {
             sending = JSON.stringify([folders]);
-            if (debugJavascript === true) console.log(sending)
+        }
+
+        if (debugJavascript === true) {
+            console.info('INPUTS for refresh_folders_other_info');
+            console.log(sending);
         }
         
         $.post(
@@ -3226,6 +3233,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                if (debugJavascript === true) {
+                    console.info('RESULTS for refresh_folders_other_info');
+                    console.log(sending);
+                }
 
                 //check if format error
                 if (typeof data !== 'undefined' && data.error !== true) {

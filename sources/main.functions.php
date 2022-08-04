@@ -3532,7 +3532,71 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
  * @return float
  */
 function pourcentage(float $nombre, float $total, float $pourcentage): float
-    { 
-        $resultat = ($nombre/$total) * $pourcentage;
-        return round($resultat);
-    } 
+{ 
+    $resultat = ($nombre/$total) * $pourcentage;
+    return round($resultat);
+}
+
+function loadFoldersListByCache(
+    bool $forceRefresh = false
+): array
+{
+    // Case when refresh is EXPECTED / MANDATORY
+    if ($forceRefresh === true) {
+        return [
+            'state' => false,
+            'data' => [],
+        ];
+    }
+
+    // Get last folder update
+    $lastFolderChange = DB::queryfirstrow(
+        'SELECT valeur FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s',
+        'timestamp',
+        'last_folder_change'
+    );
+    if (DB::count() === 0) {
+        $lastFolderChange['valeur'] = 0;
+    }
+
+    // Get last tree refresh
+    //$userTreeLastRefresh = isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : 0
+
+    // Case when an update in the tree has been done
+    // Refresh is then mandatory
+    if ((int) $lastFolderChange['valeur'] > (int) (isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : 0)) {
+        return [
+            'state' => false,
+            'data' => [],
+        ];
+    }
+
+    // Does this user has the tree structure in session?
+    // If yes then use it
+    if (count(isset($_SESSION['teampassUser']['folders']) === true ? $_SESSION['teampassUser']['folders'] : []) > 0) {
+        return [
+            'state' => true,
+            'data' => json_encode($_SESSION['teampassUser']['folders']),
+        ];
+    }
+
+    // Does this user has a tree cache
+    $userCacheTree = DB::queryfirstrow(
+        'SELECT visible_folders
+        FROM ' . prefixTable('cache_tree') . '
+        WHERE user_id = %i',
+        $_SESSION['user_id']
+    );
+    if (empty($userCacheTree['visible_folders']) === false && $userCacheTree['visible_folders'] !== '[]') {
+        return [
+            'state' => true,
+            'data' => $userCacheTree['visible_folders'],
+        ];
+    }
+
+    return [
+        'state' => false,
+        'data' => [],
+    ];
+}
