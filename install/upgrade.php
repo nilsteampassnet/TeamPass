@@ -720,7 +720,20 @@ function manageUpgradeScripts(file_number)
                     .success('Done with initialization phase', 3)
                     .dismissOthers();
 
-                migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false);
+                $.when(
+                    migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false)
+                ).then(function() {
+                    // refresh categories cache
+                    request = $.post(
+                        "upgrade_ajax.php",
+                        {
+                            type : "perform_nestedtree_categories_population_3.0.0.18"
+                        },
+                        function(data) {
+                            console.log("Tash perform_nestedtree_categories_population_3.0.0.18 DONE");
+                        }
+                    );
+                });
             }
         },
         "json"

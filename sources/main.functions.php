@@ -1545,8 +1545,8 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
     }
     if ($type === 'decode' && is_array($data) === false) {
         return json_decode(
-            Encryption\CryptoJs\Encryption::decrypt(
-                $data,
+            (string) Encryption\CryptoJs\Encryption::decrypt(
+                (string) $data,
                 $globalsKey
             ),
             true
@@ -3537,7 +3537,17 @@ function pourcentage(float $nombre, float $total, float $pourcentage): float
     return round($resultat);
 }
 
+/**
+ * Load the folders list from the cache
+ *
+ * @param string $fieldName
+ * @param string $sessionName
+ * @param boolean $forceRefresh
+ * @return array
+ */
 function loadFoldersListByCache(
+    string $fieldName,
+    string $sessionName,
     bool $forceRefresh = false
 ): array
 {
@@ -3560,9 +3570,6 @@ function loadFoldersListByCache(
         $lastFolderChange['valeur'] = 0;
     }
 
-    // Get last tree refresh
-    //$userTreeLastRefresh = isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : 0
-
     // Case when an update in the tree has been done
     // Refresh is then mandatory
     if ((int) $lastFolderChange['valeur'] > (int) (isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : 0)) {
@@ -3574,24 +3581,24 @@ function loadFoldersListByCache(
 
     // Does this user has the tree structure in session?
     // If yes then use it
-    if (count(isset($_SESSION['teampassUser']['folders']) === true ? $_SESSION['teampassUser']['folders'] : []) > 0) {
+    if (count(isset($_SESSION['teampassUser'][$sessionName]) === true ? $_SESSION['teampassUser'][$sessionName] : []) > 0) {
         return [
             'state' => true,
-            'data' => json_encode($_SESSION['teampassUser']['folders']),
+            'data' => json_encode($_SESSION['teampassUser'][$sessionName]),
         ];
     }
 
     // Does this user has a tree cache
     $userCacheTree = DB::queryfirstrow(
-        'SELECT visible_folders
+        'SELECT '.$fieldName.'
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
         $_SESSION['user_id']
     );
-    if (empty($userCacheTree['visible_folders']) === false && $userCacheTree['visible_folders'] !== '[]') {
+    if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
         return [
             'state' => true,
-            'data' => $userCacheTree['visible_folders'],
+            'data' => $userCacheTree[$fieldName],
         ];
     }
 
@@ -3599,4 +3606,105 @@ function loadFoldersListByCache(
         'state' => false,
         'data' => [],
     ];
+}
+
+
+/**
+ * Permits to refresh the categories of folders
+ *
+ * @param array $folderIds
+ * @return void
+ */
+function handleFoldersCategories(
+    array $folderIds,
+)
+{
+    $arr_data = array();
+
+    // force full list of folders
+    if (count($folderIds) === 0) {
+        $folderIds = DB::queryFirstColumn(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE personal_folder=%i',
+            0
+        );
+    }
+
+    // Get complexity
+    defineComplexity();
+
+    // update
+    foreach ($folderIds as $folder) {
+        // Do we have Categories
+        // get list of associated Categories
+        $arrCatList = array();
+        $rows_tmp = DB::query(
+            'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+            f.id_category AS category_id
+            FROM ' . prefixTable('categories_folders') . ' AS f
+            INNER JOIN ' . prefixTable('categories') . ' AS c ON (f.id_category = c.parent_id)
+            WHERE id_folder=%i',
+            $folder
+        );
+        if (DB::count() > 0) {
+            foreach ($rows_tmp as $row) {
+                $arrCatList[$row['id']] = array(
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'level' => $row['level'],
+                    'type' => $row['type'],
+                    'masked' => $row['masked'],
+                    'order' => $row['order'],
+                    'encrypted_data' => $row['encrypted_data'],
+                    'role_visibility' => $row['role_visibility'],
+                    'is_mandatory' => $row['is_mandatory'],
+                    'category_id' => $row['category_id'],
+                );
+            }
+        }
+        $arr_data['categories'] = $arrCatList;
+
+        // Now get complexity
+        $valTemp = '';
+        $data = DB::queryFirstRow(
+            'SELECT valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE type = %s AND intitule=%i',
+            'complex',
+            $folder
+        );
+        if (DB::count() > 0 && empty($data['valeur']) === false) {
+            $valTemp = array(
+                'value' => $data['valeur'],
+                'text' => TP_PW_COMPLEXITY[$data['valeur']][1],
+            );
+        }
+        $arr_data['complexity'] = $valTemp;
+
+        // Now get Roles
+        $valTemp = '';
+        $rows_tmp = DB::query(
+            'SELECT t.title
+            FROM ' . prefixTable('roles_values') . ' as v
+            INNER JOIN ' . prefixTable('roles_title') . ' as t ON (v.role_id = t.id)
+            WHERE v.folder_id = %i
+            GROUP BY title',
+            $folder
+        );
+        foreach ($rows_tmp as $record) {
+            $valTemp .= (empty($valTemp) === true ? '' : ' - ') . $record['title'];
+        }
+        $arr_data['visibilityRoles'] = $valTemp;
+
+        // now save in DB
+        DB::update(
+            prefixTable('nested_tree'),
+            array(
+                'categories' => json_encode($arr_data),
+            ),
+            'id = %i',
+            $folder
+        );
+    }
 }

@@ -1166,6 +1166,17 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             '}]';
 
             break;
+
+        case 'perform_nestedtree_categories_population_3.0.0.18':
+            include_once '../sources/main.functions.php';
+            handleFoldersCategories(
+                []
+            );
+
+            echo '[{"error" : ""}]';
+
+            break;
+    
     }
 }
 //

@@ -85,7 +85,7 @@ if (
     // Start real time
     // get list of last items
     if (store.get('teampassUser') !== undefined &&
-        store.get('teampassUser').user_id !== '' &&
+        parseInt(store.get('teampassUser').user_id) > 0 &&
         (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)
     ) {
         $.when(
@@ -200,7 +200,7 @@ if (
                             );
                         });
                     },
-                    5000
+                    3000
                 );
             });
         });

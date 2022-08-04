@@ -5941,7 +5941,7 @@ if (is_null($inputData['type']) === false) {
             }
 
             // do we have a cache to be used?            
-            $goCachedFolders = loadFoldersListByCache();
+            $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
                 $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
                 // send data
@@ -6094,84 +6094,30 @@ if (is_null($inputData['type']) === false) {
                 break;
             }
 
-            $arr_data = array();
-            $inputData = json_decode($inputData['data'], true);
-            foreach ($inputData as $folder) {
-                // Do we have Categories
-                if (
-                    isset($SETTINGS['item_extra_fields']) === true
-                    && (int) $SETTINGS['item_extra_fields'] === 1
-                ) {
-                    // get list of associated Categories
-                    $arrCatList = array();
-                    $rows_tmp = DB::query(
-                        'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
-                        f.id_category AS category_id
-                        FROM ' . prefixTable('categories_folders') . ' AS f
-                        INNER JOIN ' . prefixTable('categories') . ' AS c ON (f.id_category = c.parent_id)
-                        WHERE id_folder=%i',
-                        $folder
-                    );
-                    if (DB::count() > 0) {
-                        foreach ($rows_tmp as $row) {
-                            $arrCatList[$row['id']] = array(
-                                'id' => $row['id'],
-                                'title' => $row['title'],
-                                'level' => $row['level'],
-                                'type' => $row['type'],
-                                'masked' => $row['masked'],
-                                'order' => $row['order'],
-                                'encrypted_data' => $row['encrypted_data'],
-                                'role_visibility' => $row['role_visibility'],
-                                'is_mandatory' => $row['is_mandatory'],
-                                'category_id' => $row['category_id'],
-                            );
-                        }
-                    }
-                    $arr_data[$folder]['categories'] = $arrCatList;
-                }
-
-                // Now get complexity
-                $valTemp = '';
-                $data = DB::queryFirstRow(
-                    'SELECT valeur
-                    FROM ' . prefixTable('misc') . '
-                    WHERE type = %s AND intitule=%i',
-                    'complex',
-                    $folder
-                );
-                if (DB::count() > 0 && empty($data['valeur']) === false) {
-                    $valTemp = array(
-                        'value' => $data['valeur'],
-                        'text' => TP_PW_COMPLEXITY[$data['valeur']][1],
+            $ret = [];
+            $foldersArray = json_decode($inputData['data'], true);
+            $rows = DB::query(
+                'SELECT id, categories
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id IN (%l)',
+                implode(',', $foldersArray)
+            );
+            foreach ($rows as $record) {
+                if (empty($record['categories']) === false) {
+                    array_push(
+                        $ret,
+                        array($record['id'] => json_decode($record['categories'], true))
                     );
                 }
-                $arr_data[$folder]['complexity'] = $valTemp;
-
-                // Now get Roles
-                $valTemp = '';
-                $rows_tmp = DB::query(
-                    'SELECT t.title
-                    FROM ' . prefixTable('roles_values') . ' as v
-                    INNER JOIN ' . prefixTable('roles_title') . ' as t ON (v.role_id = t.id)
-                    WHERE v.folder_id = %i
-                    GROUP BY title',
-                    $folder
-                );
-                foreach ($rows_tmp as $record) {
-                    $valTemp .= (empty($valTemp) === true ? '' : ' - ') . $record['title'];
-                }
-                $arr_data[$folder]['visibilityRoles'] = $valTemp;
             }
 
-            $data = array(
-                'error' => '',
-                'result' => $arr_data,
-            );
             // send data
             echo (string) prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
-                $data,
+                [
+                    'error' => '',
+                    'result' => $ret,
+                ],
                 'encode'
             );
 

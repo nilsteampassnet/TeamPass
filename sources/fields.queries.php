@@ -85,7 +85,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -95,7 +95,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -219,7 +219,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -234,7 +234,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -244,7 +244,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -256,7 +256,10 @@ if (null !== $post_type) {
 
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
@@ -296,9 +299,14 @@ if (null !== $post_type) {
                     ]
                 );
             }
+            
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     'message' => '',
@@ -312,7 +320,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -322,7 +330,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -334,7 +342,10 @@ if (null !== $post_type) {
 
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
@@ -371,9 +382,14 @@ if (null !== $post_type) {
                     ]
                 );
             }
+echo "couocu2";
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -387,7 +403,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -397,7 +413,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -409,7 +425,10 @@ if (null !== $post_type) {
 
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_idToRemove = filter_var($dataReceived['idToRemove'], FILTER_SANITIZE_NUMBER_INT);
@@ -469,8 +488,13 @@ if (null !== $post_type) {
                 );
             }
 
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
+
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -484,7 +508,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -494,7 +518,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -506,7 +530,10 @@ if (null !== $post_type) {
 
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
@@ -543,7 +570,7 @@ if (null !== $post_type) {
                 // encrypt/decrypt existing data
                 $rowsF = DB::query(
                     'SELECT i.id, i.data, i.data_iv, i.encryption_type
-                    FROM '.$pre.'categories_items AS i
+                    FROM '.prefixTable('categories_items').' AS i
                     INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id = c.id)
                     WHERE c.id = %i',
                     $post_fieldId
@@ -585,7 +612,7 @@ if (null !== $post_type) {
                 }
             } else {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_could_not_update_the_field'),
@@ -596,7 +623,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     'message' => '',
@@ -610,7 +637,7 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -620,7 +647,7 @@ if (null !== $post_type) {
                 break;
             } elseif ($_SESSION['is_admin'] === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -632,7 +659,10 @@ if (null !== $post_type) {
 
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
@@ -671,8 +701,13 @@ if (null !== $post_type) {
                 $newFieldId
             );
 
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
+
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     'message' => '',

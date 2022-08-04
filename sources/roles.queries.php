@@ -461,6 +461,11 @@ if (null !== $post_type) {
                     TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
                 ]
             );
+
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
             
             $return = array_merge(
                 $return,
@@ -549,6 +554,11 @@ if (null !== $post_type) {
                     );
                 }
             }
+
+            // ensure categories are set
+            handleFoldersCategories(
+                []
+            );
 
             // send data
             echo prepareExchangedData(

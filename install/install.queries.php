@@ -750,6 +750,7 @@ $SETTINGS = array (';
                             `renewal_period` int(5) NOT null DEFAULT '0',
                             `fa_icon` VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder',
                             `fa_icon_selected` VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder-open',
+                            `categories` longtext NOT NULL,
                             PRIMARY KEY (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),

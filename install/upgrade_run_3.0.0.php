@@ -860,7 +860,7 @@ if (intval($tmp) === 0) {
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'cache_tree` (
-        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `increment_id` int(32) NOT NULL AUTO_INCREMENT,
         `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
         `visible_folders` longtext NOT NULL,
         `timestamp` varchar(50) NOT NULL,
@@ -868,10 +868,9 @@ mysqli_query(
         PRIMARY KEY (`increment_id`)
     ) CHARSET=utf8;'
 );
-
 mysqli_query(
     $db_link,
-    "ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT"
+    'ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT'
 );
 
 // Add field status to CACHE_TREE table
@@ -1029,6 +1028,12 @@ if ($res === false) {
     exit();
 }
 
+// Add field categories to NESTED_TREE table
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'categories',
+    "longtext NOT NULL"
+);
 
 //---<END 3.0.0.18
 

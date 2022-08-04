@@ -526,8 +526,23 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
             );
 
         /*
-            * Sending statistics
-            */
+        * refresh_folders_categories
+        */
+        case 'refresh_folders_categories'://action_system
+            handleFoldersCategories(
+                []
+            );
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                ),
+                'encode'
+            );
+
+        /*
+        * Sending statistics
+        */
         case 'sending_statistics'://action_system
             sendingStatistics(
                 $SETTINGS

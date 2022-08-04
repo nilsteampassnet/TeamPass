@@ -478,6 +478,11 @@ if (null !== $post_type) {
                 'complex'
             );
 
+            // ensure categories are set
+            handleFoldersCategories(
+                [$dataFolder['id']]
+            );
+
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
@@ -688,6 +693,11 @@ if (null !== $post_type) {
                         'intitule' => $newId,
                         'valeur' => $post_complexicity,
                     )
+                );
+
+                // ensure categories are set
+                handleFoldersCategories(
+                    [$newId]
                 );
 
                 // Update timestamp
