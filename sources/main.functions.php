@@ -3616,7 +3616,7 @@ function loadFoldersListByCache(
  * @return void
  */
 function handleFoldersCategories(
-    array $folderIds,
+    array $folderIds
 )
 {
     $arr_data = array();

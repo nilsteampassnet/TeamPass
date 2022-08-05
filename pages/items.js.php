@@ -3235,7 +3235,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
                 if (debugJavascript === true) {
                     console.info('RESULTS for refresh_folders_other_info');
-                    console.log(sending);
+                    console.log(data);
                 }
 
                 //check if format error

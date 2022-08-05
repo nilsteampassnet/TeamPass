@@ -716,23 +716,31 @@ function manageUpgradeScripts(file_number)
             }
             // work finished
             else {
-                alertify
-                    .success('Done with initialization phase', 3)
-                    .dismissOthers();
-
-                $.when(
-                    migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false)
-                ).then(function() {
-                    // refresh categories cache
-                    request = $.post(
-                        "upgrade_ajax.php",
-                        {
-                            type : "perform_nestedtree_categories_population_3.0.0.18"
-                        },
-                        function(data) {
-                            console.log("Tash perform_nestedtree_categories_population_3.0.0.18 DONE");
-                        }
+                // refresh categories cache
+                rand_number = createRandomId();
+                $("#step4_progress")
+                    .html(
+                        "<div>" + getTime() + " - <span id='user_"+rand_number+"'>Performing database update operations ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ 
+                        $("#step4_progress").html()
                     );
+                $.ajax({
+                    url: "upgrade_ajax.php",
+                    type : "POST",
+                    dataType : "json",
+                    async: false,
+                    data : {
+                        type : "perform_nestedtree_categories_population_3.0.0.18"
+                    },
+                    complete : function(result, status) {
+                        console.log("Tash perform_nestedtree_categories_population_3.0.0.18 DONE");
+                        $("#user_"+rand_number)
+                            .html('Database update operations done <i class="fas fa-thumbs-up" style="color:green"></i>'); 
+                        migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false);
+
+                        alertify
+                            .success('Done with initialization phase', 3)
+                            .dismissOthers();
+                    }
                 });
             }
         },
