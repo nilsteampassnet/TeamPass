@@ -147,7 +147,13 @@ class Encoding
        "\xc5\xb8" => "\x9f",
     ];
 
-    public static function toUTF8(array|string $text): array|string
+    /**
+     * Undocumented function
+     *
+     * @param array|string $text
+     * @return array|string
+     */
+    public static function toUTF8( $text)
     {
         /**
          * Function \ForceUTF8\Encoding::toUTF8.
@@ -241,7 +247,14 @@ class Encoding
         return $buf;
     }
 
-    public static function toWin1252($text, ?string $option = self::WITHOUT_ICONV): bool|array|string
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @param string|null $option
+     * @return boolean|array|string
+     */
+    public static function toWin1252($text, ?string $option = self::WITHOUT_ICONV)
     {
         if (is_array($text)) {
             foreach ($text as $k => $v) {
@@ -258,17 +271,38 @@ class Encoding
         }
     }
 
-    public static function toISO8859($text, ?string $option = self::WITHOUT_ICONV): bool|array|string
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @param string|null $option
+     * @return boolean|array|string
+     */
+    public static function toISO8859($text, ?string $option = self::WITHOUT_ICONV)
     {
         return self::toWin1252($text, $option);
     }
 
-    public static function toLatin1($text, ?string $option = self::WITHOUT_ICONV): bool|array|string
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @param string|null $option
+     * @return boolean|array|string
+     */
+    public static function toLatin1($text, ?string $option = self::WITHOUT_ICONV)
     {
         return self::toWin1252($text, $option);
     }
 
-    public static function fixUTF8($text, ?string $option = self::WITHOUT_ICONV): bool|array|string|null
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @param string|null $option
+     * @return boolean|array|string|null
+     */
+    public static function fixUTF8($text, ?string $option = self::WITHOUT_ICONV)
     {
         if (is_array($text)) {
             foreach ($text as $k => $v) {
@@ -292,7 +326,13 @@ class Encoding
         return self::toUTF8(static::utf8_decode($text, $option));
     }
 
-    public static function UTF8FixWin1252Chars($text): array|string
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @return array|string
+     */
+    public static function UTF8FixWin1252Chars($text)
     {
         // If you received an UTF-8 string that was converted from Windows-1252 as it was ISO8859-1
         // (ignoring Windows-1252 chars from 80 to 9F) use this function to fix it.
@@ -301,6 +341,12 @@ class Encoding
         return str_replace(array_keys(self::$brokenUtf8ToUtf8), array_values(self::$brokenUtf8ToUtf8), $text);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string|null $str
+     * @return string
+     */
     public static function removeBOM(?string $str = ''): string
     {
         if (substr($str, 0, 3) === pack('CCC', 0xEF, 0xBB, 0xBF)) {
@@ -310,13 +356,25 @@ class Encoding
         return $str;
     }
 
-    protected static function strlen(string $text): bool|int
+    /**
+     * Undocumented function
+     *
+     * @param string $text
+     * @return boolean|integer
+     */
+    protected static function strlen(string $text)
     {
         return (function_exists('mb_strlen') && ((int) ini_get('mbstring.func_overload')) & 2)
             ? mb_strlen($text, '8bit')
             : strlen($text);
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string $encodingLabel
+     * @return string
+     */
     public static function normalizeEncoding(string $encodingLabel): string
     {
         $encoding = strtoupper($encodingLabel);
@@ -341,7 +399,14 @@ class Encoding
         return $equivalences[$encoding];
     }
 
-    public static function encode(string $encodingLabel, array|string $text): bool|array|string
+    /**
+     * Undocumented function
+     *
+     * @param string $encodingLabel
+     * @param array|string $text
+     * @return boolean|array|string
+     */
+    public static function encode(string $encodingLabel, $text)
     {
         $encodingLabel = self::normalizeEncoding($encodingLabel);
         if ('ISO-8859-1' === $encodingLabel) {
@@ -352,7 +417,14 @@ class Encoding
         return self::toUTF8($text);
     }
 
-    protected static function utf8_decode($text, ?string $option = self::WITHOUT_ICONV): bool|string
+    /**
+     * Undocumented function
+     *
+     * @param [type] $text
+     * @param string|null $option
+     * @return boolean|string
+     */
+    protected static function utf8_decode($text, ?string $option = self::WITHOUT_ICONV)
     {
         if (self::WITHOUT_ICONV == $option || !function_exists('iconv')) {
             $o = utf8_decode(
