@@ -26,6 +26,7 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
+use \ForceUTF8\Encoding;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -1527,13 +1528,16 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
         $globalsKey = $superGlobal->get('key', 'SESSION');
     }
 
-    //load ClassLoader
-    include_once $teampassDir . '/sources/SplClassLoader.php';
+    //load Encoding
+    include_once $teampassDir . '/includes/libraries/ForceUTF8/Encoding.php';
+    
     //Load CRYPTOJS
     include_once $teampassDir . '/includes/libraries/Encryption/CryptoJs/Encryption.php';
+
+    // Perform
     if ($type === 'encode' && is_array($data) === true) {
         // Ensure UTF8 format
-        $data = utf8Converter($data);
+        $data = Encoding::fixUTF8($data);
         // Now encode
         return Encryption\CryptoJs\Encryption::encrypt(
             json_encode(
@@ -3619,6 +3623,25 @@ function handleFoldersCategories(
     array $folderIds
 )
 {
+    //load ClassLoader
+    include_once __DIR__. '/../sources/SplClassLoader.php';
+    // Load superglobal
+    include_once __DIR__. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //Connect to DB
+    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     $arr_data = array();
 
     // force full list of folders

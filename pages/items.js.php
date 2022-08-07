@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -3244,7 +3244,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     if (action === 'clear') {
                         // Handle the data
                         $.each(folders, function(index, item) {
-                            if (typeof data.result !== 'undefined' && data.result[item.id] !== null) {
+                            if (typeof data.result !== 'undefined' && typeof data.result[item.id] !== 'undefined') {
                                 folders[index]['categories'] = data.result[item.id].categories;
                                 folders[index]['complexity'] = data.result[item.id].complexity;
                                 folders[index]['visibilityRoles'] = data.result[item.id].visibilityRoles;
@@ -4294,7 +4294,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     return false;
                 } else if ((data.user_can_modify === 0 && actionType === 'edit') ||
-                    data.show_details === 0
+                    parseInt(data.show_details) === 0
                 ) {
                     toastr.remove();
                     toastr.error(
@@ -4316,10 +4316,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $(window).scrollTop(0);
 
                 // SHould we show?
-                if (data.show_detail_option === 1 || itemExpired === 1) {
+                if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
                     // SHow expiration alert
                     $('#card-item-expired').removeClass('hidden');
-                } else if (data.show_detail_option === 2) {
+                } else if (parseInt(data.show_detail_option) === 2) {
                     // Don't show anything
                     toastr.remove();
                     toastr.error(
@@ -4691,7 +4691,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Prepare auto_update info
                 $('#card-item-misc').html('');
-                if (data.auto_update_pwd_frequency !== '0') {
+                if (parseInt(data.auto_update_pwd_frequency) !== '0') {
                     $('#card-item-misc')
                         .append('<span class="fas fa-shield infotip mr-4" title="<?php echo langHdl('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
                 }
@@ -4711,7 +4711,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Delete after X views
                 if (data.to_be_deleted !== '') {
-                    if (data.to_be_deleted_type === 1) {
+                    if (parseInt(data.to_be_deleted_type) === 1) {
                         $('#form-item-deleteAfterShown').val(data.to_be_deleted);
                         $('#form-item-deleteAfterDate').val('');
                     } else {
@@ -4727,18 +4727,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#card-item-pwd').removeClass('pwd-shown');
 
                 //Anyone can modify button
-                if (data.anyone_can_modify === 1) {
+                if (parseInt(data.anyone_can_modify) === 1) {
                     $('#form-item-anyoneCanModify').iCheck('check');
                 } else {
                     $('#form-item-anyoneCanModify').iCheck('uncheck');
                 }
 
-
-
-                if (data.show_details === 1 && data.show_detail_option !== 2) {
+                if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
                     // continue loading data
                     showDetailsStep2(itemId, actionType);
-                } else if (data.show_details === 1 && data.show_detail_option === 2) {
+                } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
                     $('#item_details_nok').addClass('hidden');
                     $('#item_details_ok').addClass('hidden');
                     $('#item_details_expired_full').show();

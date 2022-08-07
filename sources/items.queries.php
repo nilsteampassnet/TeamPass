@@ -4095,7 +4095,10 @@ if (is_null($inputData['type']) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $returnValues,
+                'encode'
+            );
 
             break;
 
@@ -6153,10 +6156,10 @@ if (is_null($inputData['type']) === false) {
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
                 FROM ' . prefixTable('log_items') . ' as l
                 LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
-                WHERE id_item=%i AND action <> %s
+                WHERE id_item=%i AND l.action NOT IN (%l)
                 ORDER BY date DESC',
                 $inputData['itemId'],
-                'at_shown'
+                '"at_shown","at_password_copied", "at_shown", "at_password_shown"'
             );
             foreach ($rows as $record) {
                 if (empty($record['raison']) === true) {
@@ -6169,96 +6172,87 @@ if (is_null($inputData['type']) === false) {
                 if (empty($record['login'])) {
                     $record['login'] = langHdl('imported_via_api') . ' [' . $record['raison'] . ']';
                 }
-
-                if (
-                    in_array(
-                        $record['action'],
-                        array('at_password_copied', 'at_shown', 'at_password_shown')
-                    ) === false
-                ) {
-                    // Prepare avatar
-                    if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
-                        if (file_exists($SETTINGS['cpassman_dir'] . '/includes/avatars/' . $record['avatar_thumb'])) {
-                            $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $record['avatar_thumb'];
-                        } else {
-                            $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
-                        }
+                
+                // Prepare avatar
+                if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
+                    if (file_exists($SETTINGS['cpassman_dir'] . '/includes/avatars/' . $record['avatar_thumb'])) {
+                        $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $record['avatar_thumb'];
                     } else {
                         $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                     }
-
-                    // Prepare action
-                    $action = '';
-                    $detail = '';
-                    if ($reason[0] === 'at_pw') {
-                        $action = langHdl($reason[0]);
-                    } elseif ($record['action'] === 'at_manual') {
-                        $detail = $reason[0];
-                        $action = langHdl($record['action']);
-                    } elseif ($reason[0] === 'at_description') {
-                        $action = langHdl('description_has_changed');
-                    } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
-                        $action = langHdl($reason[0]);
-                        if ($reason[0] === 'at_moved') {
-                            $tmp = explode(' -> ', $reason[1]);
-                            $detail = langHdl('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . langHdl('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
-                        } elseif ($reason[0] === 'at_field') {
-                            $tmp = explode(' => ', $reason[1]);
-                            if (count($tmp) > 1) {
-                                $detail = '<b>' . trim($tmp[0]) . '</b> | ' . langHdl('previous_value') .
-                                    ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
-                            } else {
-                                $detail = trim($reason[1]);
-                            }
-                        } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
-                            $tmp = explode(' => ', $reason[1]);
-                            $detail = empty(trim($tmp[0])) === true ?
-                                langHdl('no_previous_value') : langHdl('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
-                        } elseif ($reason[0] === 'at_automatic_del') {
-                            $detail = langHdl($reason[1]);
-                        } elseif ($reason[0] === 'at_anyoneconmodify') {
-                            $detail = langHdl($reason[1]);
-                        } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
-                            $tmp = explode(':', $reason[1]);
-                            $tmp = explode('.', $tmp[0]);
-                            $detail = isBase64($tmp[0]) === true ?
-                                base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0];
-                        } elseif ($reason[0] === 'at_import') {
-                            $detail = '';
-                        } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
-                            $detail = $reason[0];
-                            $action = langHdl('exported_to_file');
-                        } else {
-                            $detail = $reason[0];
-                        }
-                    } else {
-                        $detail = langHdl($record['action']);
-                        $action = '';
-                    }
-
-                    array_push(
-                        $history,
-                        array(
-                            'avatar' => $avatar,
-                            'login' => $record['login'],
-                            'name' => $record['name'] . ' ' . $record['lastname'],
-                            'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
-                            'action' => $action,
-                            'detail' => $detail,
-                        )
-                    );
+                } else {
+                    $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                 }
+
+                // Prepare action
+                $action = '';
+                $detail = '';
+                if ($reason[0] === 'at_pw') {
+                    $action = langHdl($reason[0]);
+                } elseif ($record['action'] === 'at_manual') {
+                    $detail = $reason[0];
+                    $action = langHdl($record['action']);
+                } elseif ($reason[0] === 'at_description') {
+                    $action = langHdl('description_has_changed');
+                } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
+                    $action = langHdl($reason[0]);
+                    if ($reason[0] === 'at_moved') {
+                        $tmp = explode(' -> ', $reason[1]);
+                        $detail = langHdl('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . langHdl('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
+                    } elseif ($reason[0] === 'at_field') {
+                        $tmp = explode(' => ', $reason[1]);
+                        if (count($tmp) > 1) {
+                            $detail = '<b>' . trim($tmp[0]) . '</b> | ' . langHdl('previous_value') .
+                                ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
+                        } else {
+                            $detail = trim($reason[1]);
+                        }
+                    } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
+                        $tmp = explode(' => ', $reason[1]);
+                        $detail = empty(trim($tmp[0])) === true ?
+                            langHdl('no_previous_value') : langHdl('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                    } elseif ($reason[0] === 'at_automatic_del') {
+                        $detail = langHdl($reason[1]);
+                    } elseif ($reason[0] === 'at_anyoneconmodify') {
+                        $detail = langHdl($reason[1]);
+                    } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
+                        $tmp = explode(':', $reason[1]);
+                        $tmp = explode('.', $tmp[0]);
+                        $detail = isBase64($tmp[0]) === true ?
+                            base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0];
+                    } elseif ($reason[0] === 'at_import') {
+                        $detail = '';
+                    } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
+                        $detail = $reason[0];
+                        $action = langHdl('exported_to_file');
+                    } else {
+                        $detail = $reason[0];
+                    }
+                } else {
+                    $detail = langHdl($record['action']);
+                    $action = '';
+                }
+
+                array_push(
+                    $history,
+                    array(
+                        'avatar' => $avatar,
+                        'login' => $record['login'],
+                        'name' => $record['name'] . ' ' . $record['lastname'],
+                        'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
+                        'action' => $action,
+                        'detail' => $detail,
+                    )
+                );
             }
 
-            $data = array(
-                'error' => '',
-                'history' => $history,
-            );
-            
             // send data
             echo (string) prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
-                $data,
+                [
+                    'error' => '',
+                    'history' => $history,
+                ],
                 'encode'
             );
 
