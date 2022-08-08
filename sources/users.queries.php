@@ -52,13 +52,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_STRING);
 
 // DO check for "users" rights
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false && (null === $isprofileupdate || $isprofileupdate === false)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
-} else if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false && null !== $isprofileupdate && $isprofileupdate === true) {
-
-} else {
+if (
+    (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false)
+    || (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false && (null === $isprofileupdate || $isprofileupdate === false))
+) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit();

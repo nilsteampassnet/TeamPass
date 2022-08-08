@@ -124,7 +124,11 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         ),
     );
     // Convert to array
-    $pageVisited = array($pageVisited);
+    if (is_array(json_decode($pageVisited, true)) === true) {
+        $pageVisited = json_decode($pageVisited, true);
+    } else {
+        $pageVisited = [$pageVisited];
+    }
 
     // Load
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';

@@ -315,9 +315,21 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         * Refresh list of last items seen
         */
         case 'refresh_list_items_seen'://action_user
-            return refreshUserItemsSeenList(
-                $SETTINGS
-            );
+            if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] > 0) {
+                return refreshUserItemsSeenList(
+                    $SETTINGS
+                );
+
+            } else {
+                return json_encode(
+                    array(
+                        'error' => '',
+                        'existing_suggestions' => 0,
+                        'html_json' => '',
+                    ),
+                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+                );
+            }
 
         /*
         * This will generate the QR Google Authenticator
