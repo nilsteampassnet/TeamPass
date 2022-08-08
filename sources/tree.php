@@ -176,7 +176,7 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
     {
         if ($inputData['userTreeLoadStrategy'] === 'sequential') {
             // SEQUENTIAL MODE
-            $completTree = $tree->getDescendants(empty($nodeId) === true ? [] : (int) $nodeId, false, true, false);
+            $completTree = $tree->getDescendants(empty($nodeId) === true ? 0 : (int) $nodeId, false, true, false);
             foreach ($completTree as $child) {
                 recursiveTree(
                     (int) $child->id,

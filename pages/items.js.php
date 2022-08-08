@@ -2974,7 +2974,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
                 .removeClass('hidden');
-            $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action, #item-details-card-categories')
+            $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action, #item-details-card-categories, #folders-tree-card, .columns-position')
                 .addClass('hidden');
 
             // Initial 'user did a change'
@@ -2998,10 +2998,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             }            
 
             // is user allowed to edit this item - overpass readonly folder
-            var itemsList = JSON.parse(store.get('teampassApplication').itemsList);
-            userItemRight = itemsList[store.get('teampassItem').id].rights;
-            if (userItemRight > 40 && $('#form-item-folder option:selected').attr('disabled') === 'disabled') {
-                $('#form-item-folder option:selected').removeAttr('disabled');
+            if (typeof store.get('teampassApplication').itemsList !== 'undefined') {
+                var itemsList = JSON.parse(store.get('teampassApplication').itemsList);
+                userItemRight = itemsList[store.get('teampassItem').id].rights;
+                if (userItemRight > 40 && $('#form-item-folder option:selected').attr('disabled') === 'disabled') {
+                    $('#form-item-folder option:selected').removeAttr('disabled');
+                }
             }
 
             toastr.remove();
@@ -3261,7 +3263,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         // Store the data
                         var currentFoldersList = store.get('teampassApplication').foldersList;
                         $.each(currentFoldersList, function(index, item) {
-                            if (item.id === parseInt(folders)) {
+                            if (item.id === parseInt(folders) && typeof data.result[folders] !== 'undefined') {
                                 currentFoldersList[index].categories = data.result[folders].categories;
                                 currentFoldersList[index].complexity = data.result[folders].complexity;
                                 currentFoldersList[index].visibilityRoles = data.result[folders].visibilityRoles;

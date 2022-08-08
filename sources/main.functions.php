@@ -26,7 +26,7 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
-use \ForceUTF8\Encoding;
+use ForceUTF8\Encoding;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -70,11 +70,12 @@ function langHdl(string $string): string
         print_r($session_language);
         $session_language = $language_array[trim($string)];
     }
-    return str_replace(
+    /*return str_replace(
         ["'"],
         ['&apos;'],
         $session_language
-    );
+    );*/
+    return $session_language;
 }
 
 /**
@@ -119,6 +120,7 @@ function cryption(string $message, string $ascii_key, string $type, array $SETTI
 {
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
     $err = false;
+    $SETTINGS['cpassman_dir'] = (count($SETTINGS)) > 0 ? $SETTINGS['cpassman_dir'] : __DIR__.'/..';
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
@@ -3617,21 +3619,21 @@ function loadFoldersListByCache(
  * Permits to refresh the categories of folders
  *
  * @param array $folderIds
+ * @param array $SETTINGS
  * @return void
  */
 function handleFoldersCategories(
-    array $folderIds
+    array $folderIds,
+    array $SETTINGS
 )
 {
     //load ClassLoader
     include_once __DIR__. '/../sources/SplClassLoader.php';
-    // Load superglobal
-    include_once __DIR__. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    
     //Connect to DB
     include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, []));
     }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
