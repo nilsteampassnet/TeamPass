@@ -116,17 +116,12 @@ function bCrypt(
  *
  * @return array
  */
-function cryption(string $message, string $ascii_key, string $type, array $SETTINGS): array
+function cryption(string $message, string $ascii_key, string $type, ?array $SETTINGS = []): array
 {
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
     $err = false;
-    $SETTINGS['cpassman_dir'] = (count($SETTINGS)) > 0 ? $SETTINGS['cpassman_dir'] : __DIR__.'/..';
-    // load PhpEncryption library
-    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
-    }
+    
+    $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
 
     include_once $path . 'Exception/CryptoException.php';
     include_once $path . 'Exception/BadFormatException.php';
@@ -3619,12 +3614,10 @@ function loadFoldersListByCache(
  * Permits to refresh the categories of folders
  *
  * @param array $folderIds
- * @param array $SETTINGS
  * @return void
  */
 function handleFoldersCategories(
-    array $folderIds,
-    array $SETTINGS
+    array $folderIds
 )
 {
     //load ClassLoader
