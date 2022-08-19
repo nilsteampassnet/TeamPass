@@ -681,6 +681,7 @@ if (null !== $post_type) {
                         'bloquer_modification' => isset($post_edit_auth_without) === true && (int) $post_edit_auth_without === 1 ? '1' : $parentBloquerModification,
                         'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
                         'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
+                        'categories' => '',
                     )
                 );
                 $newId = DB::insertId();

@@ -6099,18 +6099,20 @@ if (is_null($inputData['type']) === false) {
 
             $ret = [];
             $foldersArray = json_decode($inputData['data'], true);
-            $rows = DB::query(
-                'SELECT id, categories
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE id IN (%l)',
-                implode(',', $foldersArray)
-            );
-            foreach ($rows as $record) {
-                if (empty($record['categories']) === false) {
-                    array_push(
-                        $ret,
-                        array($record['id'] => json_decode($record['categories'], true))
-                    );
+            if (is_array($foldersArray) === true && $inputData['data'] !== '[null]') {
+                $rows = DB::query(
+                    'SELECT id, categories
+                    FROM ' . prefixTable('nested_tree') . '
+                    WHERE id IN (%l)',
+                    implode(',', $foldersArray)
+                );
+                foreach ($rows as $record) {
+                    if (empty($record['categories']) === false) {
+                        array_push(
+                            $ret,
+                            array($record['id'] => json_decode($record['categories'], true))
+                        );
+                    }
                 }
             }
 
