@@ -703,7 +703,8 @@ if (isset($post_type)) {
             // If settings.php file doesn't contain DB_HOST then regenerate it
             $settingsFile = '../includes/config/settings.php';
             include_once $settingsFile;
-            if (defined('DB_HOST') === false) {
+
+            if (defined('DB_SSL') === false) {
                 //Do a copy of the existing file
                 if (!copy(
                     $settingsFile,
@@ -831,30 +832,30 @@ if (isset($post_type)) {
                     $file_handled,
                     utf8_encode(
                         '<?php
-// DATABASE connexion parameters
-define("DB_HOST", "' . DB_HOST . '");
-define("DB_USER", "' . DB_USER . '");
-define("DB_PASSWD", "' . defuse_return_decrypted(DB_PASSWD) . '");
-define("DB_NAME", "' . DB_NAME . '");
-define("DB_PREFIX", "' . DB_PREFIX . '");
-define("DB_PORT", "' . DB_PORT . '");
-define("DB_ENCODING", "' . DB_ENCODING . '");
-define("DB_SSL", array(
-    "key" => "",
-    "cert" => "",
-    "ca_cert" => "",
-    "ca_path" => "",
-    "cipher" => ""
-));
-define("DB_CONNECT_OPTIONS", array(
+    // DATABASE connexion parameters
+    define("DB_HOST", "' . DB_HOST . '");
+    define("DB_USER", "' . DB_USER . '");
+    define("DB_PASSWD", "' . defuse_return_decrypted(DB_PASSWD) . '");
+    define("DB_NAME", "' . DB_NAME . '");
+    define("DB_PREFIX", "' . DB_PREFIX . '");
+    define("DB_PORT", "' . DB_PORT . '");
+    define("DB_ENCODING", "' . DB_ENCODING . '");
+    define("DB_SSL", array(
+        "key" => "",
+        "cert" => "",
+        "ca_cert" => "",
+        "ca_path" => "",
+        "cipher" => ""
+    ));
+    define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
-));
-define("SECUREPATH", "' . SECUREPATH. '");
+    ));
+    define("SECUREPATH", "' . SECUREPATH. '");
 
-if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
-}
-'
+    }
+    '
                     )
                 );
 

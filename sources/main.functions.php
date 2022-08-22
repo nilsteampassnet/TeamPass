@@ -3497,7 +3497,8 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
             array(
                 'data' => $data,
                 'timestamp' => time(),
-                'user_id' => $user_id
+                'user_id' => $user_id,
+                'visible_folders' => '',
             )
         );
     } else {
