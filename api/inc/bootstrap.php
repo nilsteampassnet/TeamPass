@@ -21,11 +21,13 @@
  *
  * @see       https://www.teampass.net
  */
+
 define("API_ROOT_PATH", __DIR__ . "/..");
+
 // include main configuration file
-require __DIR__ . '/../../includes/config/settings.php';
-require __DIR__ . '/../../includes/config/tp.config.php';
-require __DIR__ . '/../../sources/main.functions.php';
+require API_ROOT_PATH . '/../includes/config/settings.php';
+require API_ROOT_PATH . '/../includes/config/tp.config.php';
+require API_ROOT_PATH . '/../sources/main.functions.php';
 
 // Load superglobal
 require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -160,5 +162,4 @@ function errorHdl(string $errorHeader, string $errorValues)
     header($errorHeader);
 
     echo $errorValues;
-    exit;
 }

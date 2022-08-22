@@ -839,11 +839,17 @@ define("DB_NAME", "' . DB_NAME . '");
 define("DB_PREFIX", "' . DB_PREFIX . '");
 define("DB_PORT", "' . DB_PORT . '");
 define("DB_ENCODING", "' . DB_ENCODING . '");
-define("SECUREPATH", "' . SECUREPATH . '");
-define("IKEY", "' , defined(IKEY) === true ? IKEY : "" , '");
-define("SKEY", "' , defined(SKEY) === true ? SKEY : "" , '");
-define("AKEY", "' , defined(AKEY) === true ? AKEY : "" , '");
-define("HOST", "' , defined(HOST) === true ? HOST : "" , '");
+define("DB_SSL", array(
+    "key" => "",
+    "cert" => "",
+    "ca_cert" => "",
+    "ca_path" => "",
+    "cipher" => ""
+));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
+define("SECUREPATH", "' . SECUREPATH. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
