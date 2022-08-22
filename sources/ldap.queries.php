@@ -79,7 +79,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 switch ($post_type) {
-        //CASE for getting informations about the tool
+    //CASE for getting informations about the tool
     case 'ldap_test_configuration':
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
@@ -165,7 +165,7 @@ switch ($post_type) {
         $connection = new Connection($config);
 
         try {
-            $connection->connect();        
+            $connection->connect();
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
 
@@ -173,7 +173,7 @@ switch ($post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    'message' => "Error : ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );
@@ -206,7 +206,7 @@ switch ($post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => langHdl('error'),
+                    'message' => langHdl('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );
@@ -232,7 +232,7 @@ switch ($post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
-                    'message' => langHdl('error').' : '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+                    'message' => langHdl('error').' : '.(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );

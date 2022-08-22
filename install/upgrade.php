@@ -142,7 +142,7 @@ echo '
                 <input type="hidden" name="menu_action" id="menu_action" value="" />
                 <input type="hidden" name="user_granted" id="user_granted" value="" />
                 <input type="hidden" name="infotmp" id="infotmp" value="', isset($post_infotmp) ? $post_infotmp : '', '" />
-                <input type="hidden" name="url_path" id="url_path" value="', (isset($post_root_url) === true && empty($post_root_url) === false) ? $post_root_url : $post_url_path, '" />
+                <input type="hidden" name="url_path" id="url_path" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" />
                 <input type="hidden" name="session_salt" id="session_salt" value="', (isset($post_session_salt) && !empty($post_session_salt)) ? $post_session_salt : @$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($post_step)) {

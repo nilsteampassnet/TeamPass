@@ -1034,6 +1034,7 @@ if (null !== $post_type) {
                         'renewal_period' => $nodeInfo->renewal_period,
                         'bloquer_creation' => $nodeInfo->bloquer_creation,
                         'bloquer_modification' => $nodeInfo->bloquer_modification,
+                        'categories'  => '',
                     )
                 );
                 $newFolderId = DB::insertId();

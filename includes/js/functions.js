@@ -159,7 +159,7 @@ function prepareExchangedData(data, type, key)
                 return JSON.parse(encryption.decrypt(data, key));
             }
             catch (e) {
-                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>');
+                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div><div><br><b>Raw answer from server:</b><br>'+data+'</div>');
             }
         }
     } else if (type === 'encode') {
@@ -173,6 +173,7 @@ function prepareExchangedData(data, type, key)
         return false;
     }
 }
+
 
 /**
  * Returns the text from a HTML string

@@ -1216,7 +1216,7 @@ foreach ($rows as $reccord) {
                     </div>
                     <div class="form-group">
                         <label><?php echo langHdl('select_source_folder'); ?></label>
-                        <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-source" required></select>
+                        <select class="form-control form-folder-control select2 no-root" style="width:100%;" id="form-folder-copy-source" required></select>
                     </div>
                     <div class="form-group">
                         <label><?php echo langHdl('select_destination_folder'); ?></label>

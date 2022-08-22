@@ -169,21 +169,19 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
         $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
         $session_user_language = $SETTINGS['default_language'];
     }
-} elseif ($session_user_language === '0') {
-    $superGlobal->put('user_language', $SETTINGS['default_lang uage'], 'SESSION');
+} elseif ((int) $session_user_language === 0) {
+    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
     $session_user_language = $SETTINGS['default_language'];
 }
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
-    $SETTINGS['cpassman_dir'] = '.';
+    $SETTINGS['cpassman_dir'] = __DIR__;
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
 }
 
 // Load user languages files
-if (in_array($session_user_language, $languagesList) === true) {
-    if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
-        $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
-    }
+if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
+    $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     //not allowed page
