@@ -864,6 +864,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
                 'parent_id' => $parentId,
                 'title' => stripslashes($folderTitle),
                 'nlevel' => $folderLevel,
+                'categories' => '',
             )
         );
         $id = DB::insertId();

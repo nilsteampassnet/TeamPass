@@ -1393,6 +1393,7 @@ function ldapCreateUser(string $username, string $passwordClear, string $retLDAP
                 'bloquer_creation' => '0',
                 'bloquer_modification' => '0',
                 'personal_folder' => '1',
+                'categories' => '',
             ]
         );
         // Rebuild tree

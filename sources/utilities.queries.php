@@ -234,6 +234,7 @@ if (null !== $post_type) {
                             'bloquer_modification' => $folderData[7],
                             'personal_folder' => $folderData[8],
                             'renewal_period' => $folderData[9],
+                            'categories' => '',
                         )
                     );
 
@@ -372,6 +373,7 @@ if (null !== $post_type) {
                             'bloquer_modification' => $folderData[7],
                             'personal_folder' => $folderData[8],
                             'renewal_period' => $folderData[9],
+                            'categories' => '',
                         )
                     );
                     // Delete folder

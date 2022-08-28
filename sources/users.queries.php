@@ -236,6 +236,7 @@ if (null !== $post_type) {
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
                             'personal_folder' => '1',
+                            'categories' => '',
                         )
                     );
                     $tree->rebuild();
@@ -2716,6 +2717,7 @@ if (null !== $post_type) {
                         'personal_folder' => '1',
                         'fa_icon' => 'fas fa-folder',
                         'fa_icon_selected' => 'fas fa-folder-open',
+                        'categories' => '',
                     )
                 );
 
@@ -3148,6 +3150,9 @@ if (null !== $post_type) {
                         'owner_id' => (int) $_SESSION['user_id'],
                         'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
                     ]),
+                    'updated_at' => '',
+                    'finished_at' => '',
+                    'output' => '',
                 )
             );
             $processId = DB::insertId();

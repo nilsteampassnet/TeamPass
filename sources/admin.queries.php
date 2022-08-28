@@ -223,6 +223,7 @@ switch ($post_type) {
                         'parent_id' => '0',
                         'title' => $record['id'],
                         'personal_folder' => '1',
+                        'categories' => '',
                     )
                 );
 

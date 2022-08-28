@@ -1413,9 +1413,10 @@ function isUserPasswordCorrect(
             $post_user_id
         );
         if (DB::count() > 0 && empty($userInfo['private_key']) === false) {
+            // Get itemKey from current user
             // Get one item
-            $record = DB::queryFirstRow(
-                'SELECT object_id
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT object_id, share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i',
                 $post_user_id
@@ -1434,15 +1435,6 @@ function isUserPasswordCorrect(
                     'encode'
                 );
             }
-
-            // Get itemKey from current user
-            $currentUserKey = DB::queryFirstRow(
-                'SELECT share_key, increment_id
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE object_id = %i AND user_id = %i',
-                $record['object_id'],
-                $post_user_id
-            );
 
             if ($currentUserKey !== null) {
                 // Decrypt itemkey with user key
