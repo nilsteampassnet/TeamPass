@@ -926,7 +926,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'form-create-root-folder': $('#form-create-root-folder').prop('checked'),
                     'form-user-disabled': $('#form-user-disabled').prop('checked'),
                 };
-                //console.log(data);
+                console.log(data);
                 var formUserId = store.get('teampassApplication').formUserId;
 
                 $.post(
@@ -937,7 +937,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        //console.log(data);
+                        console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -949,7 +949,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
-                        /*} else if (data.post_action !== "") {
+                        } else if (store.get('teampassApplication').formUserAction === 'add_new_user' && data.post_action !== "") {
                             // Case where we need to encrypt new keys for the user
                             // Process is: 
                             // 1/ generate encryption key (to be shared by email)
@@ -1070,7 +1070,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 // call the recursive function
                                 callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
                             }
-                            // ---*/
+                            // ---
                         } else {
                             // Inform user
                             toastr.remove();

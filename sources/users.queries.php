@@ -3306,6 +3306,15 @@ if (null !== $post_type) {
                 $post_user_id
             );
 
+            echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                array(
+                    'message' => '',
+                    'error' => false,
+                ),
+                'encode'
+            );
+
             break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##

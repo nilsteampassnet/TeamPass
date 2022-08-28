@@ -793,7 +793,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
-    $sWhere = ' WHERE ((finished_at IS NULL)';
+    $sWhere = ' WHERE ((finished_at = "")';
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
@@ -870,7 +870,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
     }
 
-    $sWhere = ' WHERE ((finished_at IS NOT NULL)';
+    $sWhere = ' WHERE ((finished_at != "")';
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
