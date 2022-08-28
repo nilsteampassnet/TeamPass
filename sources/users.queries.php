@@ -1755,10 +1755,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
-
             // Prepare variables
             $post_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
@@ -1816,7 +1812,7 @@ if (null !== $post_type) {
                 foreach($arrData['allowed_folders'] as $Fld) {
                     array_push($arrFolders, array('id' => $Fld, 'type' => 'W', 'special' => true));
                 }
-
+                
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     foreach ($arrFolders as $fld) {
@@ -1852,6 +1848,8 @@ if (null !== $post_type) {
                                 $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
                                     '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
                                     '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
+                            } elseif ($fld['type'] == '') {
+                                $label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="' . langHdl('no_access') . '"></i>';
                             } else {
                                 $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . langHdl('read') . '"></i>';
                             }
@@ -1872,7 +1870,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'html' => $html_full,
                     'error' => false,
@@ -2689,7 +2687,8 @@ if (null !== $post_type) {
                     'public_key' => $userKeys['public_key'],
                     'private_key' => $userKeys['private_key'],
                     'special' => 'user_added_from_ldap',
-                    'auth_type' => 'ldap'
+                    'auth_type' => 'ldap',
+                    'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
                 )
             );
             $newUserId = DB::insertId();
@@ -2753,6 +2752,54 @@ if (null !== $post_type) {
                     'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                     //'extra' => decryptPrivateKey($password, $userKeys['private_key']),
                     //'extra2' => $userKeys['private_key'],
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+            * ADD USER FROM LDAP - FINISHING
+            */
+        case 'finishing_user_creation_from_ldap':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $post_userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
+
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'is_ready_for_usage' => 1,
+                ),
+                'id = %i',
+                $post_userId
+            );
+
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'message' => '',
+                    'error' => false,
                 ),
                 'encode'
             );

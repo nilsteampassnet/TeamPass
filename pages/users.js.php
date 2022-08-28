@@ -58,6 +58,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     // Initialization
     var userDidAChange = false,
         userTemporaryCode = '',
+        constVisibleOTP = false,
         userClipboard;
 
     browserSession(
@@ -541,6 +542,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
                 '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
+            // If expected, show the OPT to the admin
+            if (constVisibleOTP === true) {
+                $('#warningModal-user-otp')
+                    .html('<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>')
+                    .removeClass('hidden');
+            }
+
             var data = {
                 action: step,
                 start: start,
@@ -941,7 +949,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
-                        } else if (data.post_action !== "") {
+                        /*} else if (data.post_action !== "") {
                             // Case where we need to encrypt new keys for the user
                             // Process is: 
                             // 1/ generate encryption key (to be shared by email)
@@ -1050,6 +1058,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                                 }
                                             );
                                         } else {
+                                            userTemporaryCode = data.userTemporaryCode;
+                                            constVisibleOTP = data.visible_otp;
                                             // call the recursive function
                                             //console.log('Starting encryption for '+formUserId+' at step0')
                                             callRecursiveUserDataEncryption(formUserId, 'step0', 0);
@@ -1060,7 +1070,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 // call the recursive function
                                 callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
                             }
-                            // ---
+                            // ---*/
                         } else {
                             // Inform user
                             toastr.remove();
@@ -2190,6 +2200,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
                 //console.log(data);
+                userTemporaryCode = data.user_code;
 
                 if (data.error !== false) {
                     // Show error
@@ -2221,7 +2232,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // If expected, show the OPT to the admin
                     if (data.visible_otp === true) {
                         $('#warningModal-user-otp')
-                            .html('<?php echo langHdl('show_encryption_code_to_admin');?> ' + data.user_code)
+                            .html('<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>')
                             .removeClass('hidden');
                     }
 
@@ -2403,8 +2414,26 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             } else {
                                 console.log('Generation des clés terminée')
                                 // Finalizing
-                                $('#warningModal').modal('hide');
-                                
+                                var data = {
+                                    'action': 'stepFinishing',
+                                    'user_id': userId,
+                                }
+                                console.log("Finishing user creation from LDAP")
+                                console.log(data)
+                                // Do query
+                                $.post(
+                                    "sources/users.queries.php", {
+                                        type: "finishing_user_creation_from_ldap",
+                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                        key: '<?php echo $_SESSION['key']; ?>'
+                                    },
+                                    function(data) {
+                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                        console.log(data);
+                                        console.log("---");
+                                    }
+                                );
+
                                 // refresh the list of users in LDAP not added in Teampass
                                 refreshListUsersLDAP();    
 
@@ -2418,6 +2447,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                         timeOut: 1000
                                     }
                                 );
+
+                                $('#warningModal').modal('hide');
                             }
                             return dfd.promise();
                         }

@@ -1753,6 +1753,7 @@ function generateOneTimeCode(
                     'error' => false,
                     'message' => '',
                     'userTemporaryCode' => $password,
+                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                 ),
                 'encode'
             );
