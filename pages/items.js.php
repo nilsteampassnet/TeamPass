@@ -2620,7 +2620,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Label is empty
                 toastr.remove();
                 toastr.error(
-                    '<?php echo langHdl('error_label'); ?>',
+                    "<?php echo langHdl('error_label'); ?>",
                     '', {
                         timeOut: 5000,
                         progressBar: true
