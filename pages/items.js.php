@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = false;
+        debugJavascript = true;
 
     // Manage memory
     browserSession(
@@ -273,31 +273,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
         });
-
-    } else {
-        /*// On page load, refresh list of items
-        selectedFolder = $('#jstree').jstree('get_selected', true)[0];
-        if (debugJavascript === true) console.log(selectedFolder);
-        selectedFolderId = selectedFolder.id.split('_')[1];
-        if (debugJavascript === true) console.info('SELECTED NODE ' + selectedFolderId);
-        if (debugJavascript === true) console.log(selectedFolder);
-
-        
-
-        store.update(
-            'teampassApplication',
-            function (teampassApplication)
-            {
-                teampassApplication.selectedFolder = selectedFolderId;
-            }
-        )
-        
-
-        // Prepare list of items
-        if (startedItemsListQuery === false) {
-            startedItemsListQuery = true;
-            ListerItems(selectedFolderId, '', 0);
-        }*/
     }
 
     // Preload list of items
@@ -1707,7 +1682,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders();
+                    refreshVisibleFolders(true);
                     if ($('#form-folder-add').data('action') === 'add') {
                         // Refresh tree
                         refreshTree(data.newId, true);
@@ -1813,7 +1788,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders();
+                    refreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree(data.parent_id, true);
                     // Refresh list of items inside the folder
@@ -1897,7 +1872,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders();
+                    refreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree($('#form-folder-copy-destination option:selected').val(), true);
                     // Refresh list of items inside the folder
@@ -3113,10 +3088,19 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      *
      * @return void
      */
-    function refreshVisibleFolders() {
+    function refreshVisibleFolders(forceRefreshCache = false) {
+        var data = {
+            'force_refresh_cache': forceRefreshCache,
+        }
+        if (debugJavascript === true) {
+            console.log('Refresh visible folders');
+            console.log(data);
+        }
+
         $.post(
             'sources/items.queries.php', {
                 type: 'refresh_visible_folders',
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
@@ -3323,12 +3307,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 });
         }
 
-        if (refresh_visible_folders === 1) {
-            $(this).delay(500).queue(function() {
-                refreshVisibleFolders();
-                $(this).dequeue();
-            });
-        }
+        $(this).delay(500).queue(function() {
+            refreshVisibleFolders(true);
+            $(this).dequeue();
+        });
     }
 
     /**

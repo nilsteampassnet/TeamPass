@@ -584,7 +584,22 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
             if (is_array($SETTINGS) === true) {
                 return prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
-                    $SETTINGS,
+                    array_intersect_key(
+                        $SETTINGS, 
+                        array(
+                            'ldap_user_attribute' => '',
+                            'enable_pf_feature' => '',
+                            'clipboard_life_duration' => '',
+                            'enable_favourites' => '',
+                            'copy_to_clipboard_small_icons' => '',
+                            'enable_attachment_encryption' => '',
+                            'google_authentication' => '',
+                            'agses_authentication_enabled' => '',
+                            'yubico_authentication' => '',
+                            'duo' => '',
+                            'personal_saltkey_security_level' => '',
+                        )
+                    ),
                     'encode'
                 );
             }

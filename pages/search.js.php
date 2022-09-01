@@ -202,7 +202,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '</label>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
-                        '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode(); + '">' +
+                        '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode() + '">' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
                         '</div>' +
                         (data.login === '' ? '' :
@@ -442,7 +442,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     data.password
                 );
             }
-
+            
             // Change class and show spinner
             $('.pwd-show-spinner')
                 .removeClass('far fa-eye')

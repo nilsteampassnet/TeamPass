@@ -3418,7 +3418,7 @@ if (is_null($inputData['type']) === false) {
             break;
 
             /*
-        * CASE
+        * CASErefresh_visible_folders
         * Store hierarchic position of Group
         */
         case 'save_position':
@@ -5933,6 +5933,13 @@ if (is_null($inputData['type']) === false) {
             }
             $arr_data = [];
 
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
+
             // Will we show the root folder?
             if (
                 isset($_SESSION['can_create_root_folder']) === true
@@ -5943,20 +5950,22 @@ if (is_null($inputData['type']) === false) {
                 $arr_data['can_create_root_folder'] = 0;
             }
 
-            // do we have a cache to be used?            
-            $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
-            if ($goCachedFolders['state'] === true) {
-                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
-                // send data
-                echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
-                    [
-                        'error' => 'false',
-                        'html_json' => $arr_data,
-                    ],
-                    'encode'
-                );
-                break;
+            // do we have a cache to be used?
+            if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
+                $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
+                if ($goCachedFolders['state'] === true) {
+                    $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
+                    // send data
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        [
+                            'error' => 'false',
+                            'html_json' => $arr_data,
+                        ],
+                        'encode'
+                    );
+                    break;
+                }
             }
 
             // Build list of visible folders
