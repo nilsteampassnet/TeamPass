@@ -2357,36 +2357,13 @@ switch ($post_type) {
         $SETTINGS['api'] = $post_status;
         break;
 
-    case 'save_duo_status':
-        DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'duo');
-        $counter = DB::count();
-        if ($counter === 0) {
-            DB::insert(
-                prefixTable('misc'),
-                array(
-                    'type' => 'admin',
-                    'intitule' => 'duo',
-                    'valeur' => $post_status,
-                )
-            );
-        } else {
-            DB::update(
-                prefixTable('misc'),
-                array(
-                    'valeur' => $post_status,
-                ),
-                'type = %s AND intitule = %s',
-                'admin',
-                'duo'
-            );
-        }
-        break;
-
-    case 'save_duo_in_sk_file':
+    case 'run_duo_config_check':
+        //Libraries call
+        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2396,50 +2373,83 @@ switch ($post_type) {
             break;
         }
 
-        // decrypt and retrieve data in JSON format
+        // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
-        // Store in DB
-        foreach ($dataReceived as $key => $value) {
-            DB::query(
-                'SELECT * 
-                FROM ' . prefixTable('misc') . '
-                WHERE type = %s AND intitule = %s',
-                'admin',
-                $key
+            $SETTINGS['cpassman_dir'],
+            $post_data,
+            'decode'
+        );
+
+        // Check if we have what we need first
+        if (empty($dataReceived['duo_ikey']) || empty($dataReceived['duo_skey']) || empty($dataReceived['duo_host'])) {
+            echo prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                    'message' => langHdl('data_are_missing'),
+                ),
+                'encode'
             );
-            $counter = DB::count();
-            if ($counter === 0) {
-                DB::insert(
-                    prefixTable('misc'),
+            break;
+        }
+
+        // Load Duo Web SDK
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/ExpiredException.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/SignatureInvalidException.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/JWT.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/Key.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/DuoException.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/Client.php';
+
+        // Run Duo Config Check
+        try {
+            $duo_client = new Duo\DuoUniversal\Client(
+                $dataReceived['duo_ikey'],
+                $dataReceived['duo_skey'],
+                $dataReceived['duo_host'],
+                $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
+            );
+        } catch (Duo\DuoUniversal\DuoException $e) {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
                     array(
-                        'type' => 'admin',
-                        'intitule' => $key,
-                        'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
-                    )
-                );
-            } else {
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => filter_var($value, FILTER_SANITIZE_STRING),
+                        'error' => true,
+                        'message' => langHdl('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
                     ),
-                    'type = %s AND intitule = %s',
-                    'admin',
-                    $key
-                );
-            }
+                    'encode'
+            );
+            break;
+        }
 
-            // Refresh settings
-            $SETTINGS[$key] = $value;
-
-            // save change in config file
-            handleConfigFile('update', $SETTINGS, $key, $value);
+        // Run healthcheck against Duo with the config
+        try {
+            $duo_client->healthCheck();
+        } catch (Duo\DuoUniversal\DuoException $e) {
+            /*if ($SETTINGS['duo_failmode'] == "OPEN") {
+                # If we're failing open, errors in 2FA still allow for success
+                $duo_error = langHdl('duo_error_failopen');
+                $data["duo_check"] = "open";
+            } else {
+                # Duo has failed and is unavailable, redirect user to the login page
+                $duo_error = langHdl('duo_error_secure');
+                $data["duo_check"] = "failed";
+            }*/
+            $duo_error = langHdl('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => $duo_error,
+                    ),
+                    'encode'
+            );
+            break;
         }
 
         // send data
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',

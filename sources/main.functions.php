@@ -3167,14 +3167,14 @@ function format_timezone_name($name): string
 }
 
 /**
- * Provides info about if user should use MFA
+ * Provides info if user should use MFA based on roles
  *
  * @param string $userRolesIds  User roles ids
  * @param string $mfaRoles      Roles for which MFA is requested
  *
  * @return bool
  */
-function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
+function mfa_auth_requested_roles(string $userRolesIds, string $mfaRoles): bool
 {
     if (empty($mfaRoles) === true) {
         return true;
@@ -3182,13 +3182,10 @@ function mfa_auth_requested(string $userRolesIds, string $mfaRoles): bool
 
     $mfaRoles = array_values(json_decode($mfaRoles, true));
     $userRolesIds = array_filter(explode(';', $userRolesIds));
-    if (count($mfaRoles) === 0 || count($mfaRoles) === 0) {
+    if (count($mfaRoles) === 0 || count(array_intersect($mfaRoles, $userRolesIds)) > 0) {
         return true;
     }
 
-    if (count(array_intersect($mfaRoles, $userRolesIds)) > 0) {
-        return true;
-    }
     return false;
 }
 

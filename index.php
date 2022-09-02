@@ -188,16 +188,6 @@ if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_use
     include $SETTINGS['cpassman_dir'] . '/error.php';
 }
 
-// load 2FA Google
-if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
-}
-
-// load 2FA Yubico
-if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/Yubico/Yubico.php';
-}
-
 // Some template adjust
 if (array_key_exists($get['page'], $mngPages) === true) {
     $menuAdmin = true;
@@ -1120,8 +1110,9 @@ if (($session_validite_pw === null
     <link rel="stylesheet" href="plugins/fontawesome-free/css/all.css">
     <!-- jQuery -->
     <script src="plugins/jquery/jquery.min.js"></script>
-    <!-- jQuery -->
+    <!-- jQuery UI -->
     <script src="plugins/jqueryUI/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css">
     <!-- Popper -->
     <script src="plugins/popper/umd/popper.min.js"></script>
     <!-- Bootstrap -->
