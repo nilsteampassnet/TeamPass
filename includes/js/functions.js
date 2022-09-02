@@ -141,9 +141,11 @@ function jsonErrorHdl(message)
  * @param  {[type]} data [description]
  * @param  {[type]} type [description]
  * @param  {[type]} key  [description]
+ * @param  {[type]} fileName  [description]
+ * @param  {[type]} functionName  [description]
  * @return {[type]}      [description]
  */
-function prepareExchangedData(data, type, key)
+function prepareExchangedData(data, type, key, fileName = '', functionName = '')
 {
     if (type === 'decode') {
         if (parseInt($('#encryptClientServer').val()) === 0) {
@@ -159,7 +161,9 @@ function prepareExchangedData(data, type, key)
                 return JSON.parse(encryption.decrypt(data, key));
             }
             catch (e) {
-                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div><div><br><b>Raw answer from server:</b><br>'+data+'</div>');
+                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>'
+                    + (fileName !== '' ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>': '')
+                    + '<div><br><b>Raw answer from server:</b><br>'+data+'</div>');
             }
         }
     } else if (type === 'encode') {
@@ -216,11 +220,13 @@ function unCryptData(data, key)
  * 
  * @param {string}data Crypted string
  * @param {string}key  Session key
+ * @param  {[type]} fileName  [description]
+ * @param  {[type]} functionName  [description]
  */
-function decodeQueryReturn(data, key)
+function decodeQueryReturn(data, key, fileName = '', functionName = '')
 {
     try {
-        return prepareExchangedData(data , "decode", key);
+        return prepareExchangedData(data , "decode", key, fileName, functionName);
     } catch (e) {
         // error
         toastr.remove();

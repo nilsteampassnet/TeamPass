@@ -581,28 +581,26 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
         */
         case 'get_teampass_settings'://action_system
             // Encrypt data to return
-            if (is_array($SETTINGS) === true) {
-                return prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
-                    array_intersect_key(
-                        $SETTINGS, 
-                        array(
-                            'ldap_user_attribute' => '',
-                            'enable_pf_feature' => '',
-                            'clipboard_life_duration' => '',
-                            'enable_favourites' => '',
-                            'copy_to_clipboard_small_icons' => '',
-                            'enable_attachment_encryption' => '',
-                            'google_authentication' => '',
-                            'agses_authentication_enabled' => '',
-                            'yubico_authentication' => '',
-                            'duo' => '',
-                            'personal_saltkey_security_level' => '',
-                        )
-                    ),
-                    'encode'
-                );
-            }
+            return prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array_intersect_key(
+                    $SETTINGS, 
+                    array(
+                        'ldap_user_attribute' => '',
+                        'enable_pf_feature' => '',
+                        'clipboard_life_duration' => '',
+                        'enable_favourites' => '',
+                        'copy_to_clipboard_small_icons' => '',
+                        'enable_attachment_encryption' => '',
+                        'google_authentication' => '',
+                        'agses_authentication_enabled' => '',
+                        'yubico_authentication' => '',
+                        'duo' => '',
+                        'personal_saltkey_security_level' => '',
+                    )
+                ),
+                'encode'
+            );
 
         /*
             * Generates a TOKEN with CRYPT
@@ -1040,7 +1038,6 @@ function sendEmailsNotSent(
                 'sent'
             );
             foreach ($rows as $record) {
-                //echo $record['increment_id'] . " >> ";
                 // Send email
                 $ret = json_decode(
                     sendEmail(
@@ -1701,7 +1698,7 @@ function sendMailToUser(
     array $SETTINGS
 ): string
 {
-    if (is_null($post_replace) === false && count($post_replace) > 0) {
+    if (count($post_replace) > 0) {
         $post_body = str_replace(
             array_keys($post_replace),
             array_values($post_replace),

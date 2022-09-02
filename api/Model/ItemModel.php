@@ -22,7 +22,7 @@
  * @see       https://www.teampass.net
  */
 require_once API_ROOT_PATH . "/Model/Database.php";
- 
+
 class ItemModel extends Database
 {
 
@@ -34,6 +34,7 @@ class ItemModel extends Database
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
+     * 
      * @return array
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array

@@ -1035,6 +1035,18 @@ $res = addColumnIfNotExist(
     "longtext NOT NULL"
 );
 
+// Alter field subject in EMAILS table
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'emails` MODIFY `subject` text NOT NULL'
+);
+
+// Alter field receivers in EMAILS table
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'emails` MODIFY `receivers` text NOT NULL'
+);
+
 //---<END 3.0.0.18
 
 // Finished

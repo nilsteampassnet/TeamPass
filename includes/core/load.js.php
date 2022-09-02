@@ -84,9 +84,9 @@ if (
 
     // Start real time
     // get list of last items
-    if (store.get('teampassUser') !== undefined &&
-        parseInt(store.get('teampassUser').user_id) > 0 &&
-        (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)
+    if (store.get('teampassUser') !== undefined && parseInt(store.get('teampassUser').user_id) > 0
+        && String('<?php echo $_SESSION['key']; ?>') === store.get('teampassUser').sessionKey
+        && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)
     ) {
         $.when(
             // Load teampass settings
@@ -96,86 +96,81 @@ if (
                 // Refresh list of last items shopwn
                 refreshListLastSeenItems()
             ).then(function() {
-                setTimeout(
-                    function() {
-                        // Check if new privatekey needs to be adapted
-                        var data = {
-                            'user_id': store.get('teampassUser').user_id,
-                            'fields' : 'special, auth_type',
-                        }
-                        $.post(
-                            "sources/main.queries.php", {
-                                type: "get_user_info",
-                                type_category: 'action_user',
-                                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                                key: "<?php echo $_SESSION['key']; ?>"
-                            },
-                            function(data) {
-                                //decrypt data
-                                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                                if (debugJavascript === true) console.log(data);
-
-                                if (data.error === false && data.queryResults.special === 'generate-keys') {
-                                    // Now we need to perform re-encryption due to LDAP password change
-                                    if (debugJavascript === true) console.log('User has to regenerate keys')
-                                    // HIde
-                                    $('.content-header, .content').addClass('hidden');
-                                    $('#dialog-user-temporary-code-info').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
-
-                                    // Show passwords inputs and form
-                                    $('#dialog-user-temporary-code').removeClass('hidden');
-
-                                    // ----
-                                } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'local') {
-                                    // USer's password has been reseted, he shall change it
-                                    if (debugJavascript === true) console.log('User has to change his auth password')
-                                    // HIde
-                                    $('.content-header, .content').addClass('hidden');
-
-                                    // Show passwords inputs and form
-                                    $('#dialog-user-change-password-info')
-                                        .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
-                                        .removeClass('hidden');
-                                    $('#dialog-user-change-password').removeClass('hidden');
-
-                                // ----
-                                } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'ldap') {
-                                    // USer's password has been reseted, he shall change it
-                                    if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
-                                    // HIde
-                                    $('.content-header, .content').addClass('hidden');
-
-                                    // Show passwords inputs and form
-                                    $('#dialog-ldap-user-change-password-info')
-                                        .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
-                                        .removeClass('hidden');
-                                    $('#dialog-ldap-user-change-password').removeClass('hidden');
-                                    
-                                    // ----
-                                } else if (
-                                    (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap')
-                                    || (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'otc_is_required_on_next_login')
-                                ) {
-                                    // USer's password has been reseted, he shall change it
-                                    if (debugJavascript === true) console.log('NEW LDAP user password - we need to encrypt items')
-                                    // HIde
-                                    $('.content-header, .content').addClass('hidden');
-
-                                    // Show form
-                                    $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
-                                } else if (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'recrypt-private-key') {
-                                    // USer's password has been reseted, he shall change it
-                                    if (debugJavascript === true) console.log('NEW LDAP - we need to encrypt private key')
-                                    // HIde
-                                    $('.content-header, .content').addClass('hidden');
-
-                                    // Show form
-                                    $('#dialog-ldap-user-change-password').removeClass('hidden');
-                                }
-                            }
-                        );
+                // Check if new privatekey needs to be adapted
+                var data = {
+                    'user_id': store.get('teampassUser').user_id,
+                    'fields' : 'special, auth_type',
+                }
+                $.post(
+                    "sources/main.queries.php", {
+                        type: "get_user_info",
+                        type_category: 'action_user',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                        key: "<?php echo $_SESSION['key']; ?>"
                     },
-                    500
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error === false && data.queryResults.special === 'generate-keys') {
+                            // Now we need to perform re-encryption due to LDAP password change
+                            if (debugJavascript === true) console.log('User has to regenerate keys')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+                            $('#dialog-user-temporary-code-info').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+
+                            // Show passwords inputs and form
+                            $('#dialog-user-temporary-code').removeClass('hidden');
+
+                            // ----
+                        } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'local') {
+                            // USer's password has been reseted, he shall change it
+                            if (debugJavascript === true) console.log('User has to change his auth password')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // Show passwords inputs and form
+                            $('#dialog-user-change-password-info')
+                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
+                                .removeClass('hidden');
+                            $('#dialog-user-change-password').removeClass('hidden');
+
+                        // ----
+                        } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'ldap') {
+                            // USer's password has been reseted, he shall change it
+                            if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // Show passwords inputs and form
+                            $('#dialog-ldap-user-change-password-info')
+                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                                .removeClass('hidden');
+                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            
+                            // ----
+                        } else if (
+                            (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap')
+                            || (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'otc_is_required_on_next_login')
+                        ) {
+                            // USer's password has been reseted, he shall change it
+                            if (debugJavascript === true) console.log('NEW LDAP user password - we need to encrypt items')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // Show form
+                            $('#dialog-ldap-user-build-keys-database').removeClass('hidden');
+                        } else if (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'recrypt-private-key') {
+                            // USer's password has been reseted, he shall change it
+                            if (debugJavascript === true) console.log('NEW LDAP - we need to encrypt private key')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // Show form
+                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                        }
+                    }
                 );
             }).then(function() {
                 setTimeout(
@@ -1224,21 +1219,11 @@ if (
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                } catch (e) {
-                    // error
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo langHdl('server_answer_error'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                    return false;
-                };
-                if (debugJavascript === true) console.log(data)
+                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                if (debugJavascript === true) {
+                    console.log('Loading settings result:');
+                    console.log(data);
+                }
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage
@@ -1366,6 +1351,10 @@ if (
                     data = $.parseJSON(data)
                 } catch (e) {
                     return false;
+                }
+                if (debugJavascript === true) {
+                    console.log('Refresh last item seen result');
+                    console.log(data);
                 }
                 //check if format error
                 if (data.error === '') {

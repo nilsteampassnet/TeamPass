@@ -39,8 +39,10 @@ if (file_exists('../includes/config/tp.config.php')) {
 // Do checks
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
+    echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
@@ -804,7 +806,8 @@ if (is_null($inputData['type']) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],$arrData,
+                $SETTINGS['cpassman_dir'],
+                $arrData,
                 'encode'
             );
             break;
@@ -949,7 +952,7 @@ if (is_null($inputData['type']) === false) {
                     'complex',
                     $inputData['folderId']
                 );
-                $itemInfos['requested_folder_complexity'] = (int) $folderComplexity['valeur'];
+                $itemInfos['requested_folder_complexity'] = is_null($folderComplexity) === false ? (int) $folderComplexity['valeur'] : 0;
                 // Check COMPLEXITY
                 if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_modification'] === 0) {
                     echo (string) prepareExchangedData(
@@ -1829,17 +1832,34 @@ if (is_null($inputData['type']) === false) {
                     if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
-                                sendEmail(
-                                    langHdl('email_subject_item_updated'),
-                                    str_replace(
-                                        array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                        array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
-                                        langHdl('email_body_item_updated')
-                                    ),
-                                    $emailAddress,
-                                    $SETTINGS,
-                                    str_replace('#item_label#', $inputData['label'], langHdl('email_bodyalt_item_updated'))
-                                );
+                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true || isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
+                                    DB::insert(
+                                        prefixTable('emails'),
+                                        array(
+                                            'timestamp' => time(),
+                                            'subject' => langHdl('email_body_item_updated'),
+                                            'body' => str_replace(
+                                                array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                                array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
+                                                langHdl('email_body_item_updated')
+                                            ),
+                                            'receivers' => $emailAddress,
+                                            'status' => '',
+                                        )
+                                    );
+                                } else {
+                                    sendEmail(
+                                        langHdl('email_subject_item_updated'),
+                                        str_replace(
+                                            array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                            array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
+                                            langHdl('email_body_item_updated')
+                                        ),
+                                        $emailAddress,
+                                        $SETTINGS,
+                                        str_replace('#item_label#', $inputData['label'], langHdl('email_bodyalt_item_updated'))
+                                    );
+                                }
                             }
                         }
                     }
@@ -1886,7 +1906,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -1897,7 +1917,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -2212,7 +2232,7 @@ if (is_null($inputData['type']) === false) {
                 updateCacheTable('reload', $SETTINGS, null);
 
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
                         'message' => '',
@@ -2915,7 +2935,7 @@ if (is_null($inputData['type']) === false) {
             ) {
                 $returnArray['show_details'] = 0;
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     $returnArray,
                     'encode'
                 );
@@ -3089,8 +3109,7 @@ if (is_null($inputData['type']) === false) {
             } else {
                 echo (string) prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
-                    $returnArray,
-                    'encode'
+                    $returnArray
                 );
             }
             break;
@@ -3103,7 +3122,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3157,7 +3176,7 @@ if (is_null($inputData['type']) === false) {
             $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
             if ($granted !== true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => $granted,
@@ -3197,7 +3216,7 @@ if (is_null($inputData['type']) === false) {
             updateCacheTable('delete_value', $SETTINGS, (int) $inputData['itemId']);
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -3214,7 +3233,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3225,7 +3244,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -3331,7 +3350,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -3342,7 +3361,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -4442,7 +4461,10 @@ if (is_null($inputData['type']) === false) {
                 'itemAccessRight' => isset($accessLevel) === true ? $accessLevel : '',
             );
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $returnValues,
+                'encode'
+            );
             break;
 
             /*
@@ -4612,7 +4634,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4623,7 +4645,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -4907,7 +4929,10 @@ if (is_null($inputData['type']) === false) {
                 'to_folder' => $inputData['folderId'],
             );
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $returnValues,
+                'encode'
+            );
             break;
 
             /*
@@ -4918,7 +4943,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -4929,7 +4954,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5226,7 +5251,7 @@ if (is_null($inputData['type']) === false) {
             updateCacheTable('reload', $SETTINGS, null);
 
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -5243,7 +5268,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY and rights
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -5254,7 +5279,7 @@ if (is_null($inputData['type']) === false) {
             }
             if ($_SESSION['user_read_only'] === true) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5800,7 +5825,7 @@ if (is_null($inputData['type']) === false) {
 
             // Encrypt data to return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'filename' => $post_title . '.' . $file_info['extension'],
@@ -6151,7 +6176,7 @@ if (is_null($inputData['type']) === false) {
                 );
                 break;
             }
-
+            
             // get item info
             $dataItem = DB::queryFirstRow(
                 'SELECT *
@@ -6397,14 +6422,17 @@ if (is_null($inputData['type']) === false) {
 
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
             break;
 
         case 'send_request_access':
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6415,7 +6443,10 @@ if (is_null($inputData['type']) === false) {
             }
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
 
             // prepare variables
             //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_STRING);
@@ -6484,7 +6515,7 @@ if (is_null($inputData['type']) === false) {
 
             // Return
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -6502,7 +6533,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6513,7 +6544,10 @@ if (is_null($inputData['type']) === false) {
             }
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
 
             // prepare variables
             $post_notification_status = (int) filter_var($dataReceived['notification_status'], FILTER_SANITIZE_NUMBER_INT);
@@ -6558,7 +6592,10 @@ if (is_null($inputData['type']) === false) {
 
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
 
@@ -6570,7 +6607,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6581,7 +6618,10 @@ if (is_null($inputData['type']) === false) {
             }
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
 
             // prepare variables
             $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -6634,7 +6674,10 @@ if (is_null($inputData['type']) === false) {
 
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
 
@@ -6646,7 +6689,7 @@ if (is_null($inputData['type']) === false) {
             // Check KEY
             if ($inputData['key'] !== $_SESSION['key']) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => 'key_not_conform',
                         'message' => langHdl('key_is_not_correct'),
@@ -6691,7 +6734,10 @@ if (is_null($inputData['type']) === false) {
 
             // send data
             echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$data, 'encode');
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
 
             break;
     }

@@ -1043,9 +1043,9 @@ $SETTINGS = array (';
                             'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'emails` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `timestamp` INT(30) NOT null ,
-                            `subject` VARCHAR(255) NOT null ,
+                            `subject` TEXT NOT null ,
                             `body` TEXT NOT null ,
-                            `receivers` VARCHAR(255) NOT null ,
+                            `receivers` TEXT NOT null ,
                             `status` VARCHAR(30) NOT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;'

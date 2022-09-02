@@ -108,7 +108,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     );
 
     if (debugJavascript === true) {
-        console.log('User infor')
+        console.log('User information')
         console.log(store.get('teampassUser'))
     }
 
@@ -934,7 +934,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
                         if (debugJavascript === true) console.log(data);
                     }
                 );
@@ -1045,7 +1045,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'send_request_access');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1126,7 +1126,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'save_notification_status');
 
                 if (data.error !== false) {
                     // Show error
@@ -1201,7 +1201,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'send_email');
 
                 if (data.error !== false) {
                     // Show error
@@ -1262,7 +1262,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
@@ -1572,7 +1572,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'suggest_item_change');
 
                 if (data.error === true) {
                     // ERROR
@@ -1668,7 +1668,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
 
                 if (data.error === true) {
                     // ERROR
@@ -1774,7 +1774,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', 'delete_folders');
 
                 if (data.error === true) {
                     // ERROR
@@ -1858,7 +1858,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', 'copy_folder');
 
                 if (data.error === true) {
                     // ERROR
@@ -3043,7 +3043,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     icon_pwd,
                     icon_favorite;
 
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'find.queries.php', type);
                 if (debugJavascript === true) console.log(data);
 
                 // Ensure correct div is not hidden
@@ -3105,7 +3105,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_visible_folders');
                 if (debugJavascript === true) {
                     console.log('TREE');
                     console.log(data);
@@ -3218,7 +3218,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_folders_other_info');
                 if (debugJavascript === true) {
                     console.info('RESULTS for refresh_folders_other_info');
                     console.log(data);
@@ -3433,7 +3433,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 },
                 function(retData) {
                     //get data
-                    data = decodeQueryReturn(retData, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(retData, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'do_items_list_in_folder');
 
                     if (debugJavascript === true) {
                         console.log('LIST ITEMS');
@@ -3750,7 +3750,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     function sList(listOfItems) {
-        if (debugJavascript === true) console.log(listOfItems);
+        if (debugJavascript === true) {
+            console.log(listOfItems);
+        }
         var counter = 0,
             prevIdForNextItem = -1;
 
@@ -3787,7 +3789,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Should I populate previous item with this new id
                 if (debugJavascript === true) {
                     console.log('current id: '+value.item_id);
-                    console.log(prevIdForNextItem)
+                    console.log(prevIdForNextItem);
                 }
                 if (prevIdForNextItem !== -1) {
                     $('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
@@ -4075,7 +4077,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         },
                         function(data) {
                             //decrypt data
-                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'move_item');
 
                             if (debugJavascript === true) console.log(data)
 
@@ -4245,7 +4247,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
                 requestRunning = true;
                 if (debugJavascript === true) console.log("RECEIVED");
                 if (debugJavascript === true) console.log(data);
@@ -4788,10 +4790,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'showDetailsStep2');
 
                 if (debugJavascript === true) {
-                    console.log('RECEIVED STEP2');
+                    console.log('RECEIVED STEP2 - used key: <?php echo $_SESSION['key']; ?>');
                     console.log(data);
                 }
 
@@ -4868,7 +4870,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Hide loading state
                 $('#card-item-attachments').nextAll().addClass('hidden');
 
-
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
@@ -4923,7 +4924,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         },
                         function(data) {
                             //decrypt data
-                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'load_item_history');
                             if (debugJavascript === true) {
                                 console.info('History:');
                                 console.log(data);
@@ -5045,7 +5046,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     key: '<?php echo $_SESSION['key']; ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'history_entry_add');
                     if (debugJavascript === true) console.log(data);
                     $('.history').val('');
 
@@ -5087,7 +5088,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_attached_file');
                     if (debugJavascript === true) console.log(data);
 
                     //check if format error
@@ -5139,7 +5140,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'image_preview_preparation');
                 //if (debugJavascript === true) console.log(data);
 
                 //check if format error
@@ -5297,7 +5298,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'get_complixity_level');
 
                 if (debugJavascript === true) console.info('GET COMPLEXITY LEVEL');
                 if (debugJavascript === true) console.log(data);
