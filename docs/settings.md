@@ -11,6 +11,7 @@
 This option should be enabled when Teampass stores a lot of items or when the server performance are limited.
 Currently implemented in case of:
 * new user creation (keys encryption step)
+* email sending
 
 ### Options
 
@@ -29,7 +30,14 @@ _This value is to adapt depending on what happen. But you should not change it._
 
 ### Setting up the cron job
 
-The goal here is to define a new cron job executing the file `./scripts/processing_background_tasks.php` at a defined frequency.
+The goal here is to define a new cron job executing a specific action at a defined frequency.
+
+| File name | Purpose | Comment |
+| --------- | ------- | ------- |
+| background_tasks___user_keys_creation.php | Finalizing the user creation process | Could be performed every 5 minutes |
+| background_tasks___sending_emails.php | Sending emails | Could be performed every 1 minute |
+
+> 👉 The files are located in Teampass folder under `\scripts`.
 
 _Note: the example provided below are based upon a Linux server based and should be adapted for other._
 
@@ -37,7 +45,7 @@ First you need to get the location to php (you can run `locate php`).
 
 Then open the crons manager (`crontab -e`)
 and add the input permitting the job to run each 5 minutes for example.
-``*/5 * * * * /usr/bin/php /var/www/html/TeamPass/scripts/processing_background_tasks.php``
+``*/5 * * * * /usr/bin/php /var/www/html/TeamPass/scripts/background_tasks___user_keys_creation.php``
 
 As a consequence, the script will be run every 5 minutes. Depending on existing tasks in the backlog to run, it will handle them silently.
 As an admin, you have a view permitting to see the progress status.

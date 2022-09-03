@@ -926,12 +926,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col4
         $sOutput .= '"'.$record['process_type'].'", ';
         // col5
-        $data_user = DB::queryfirstrow(
-            'SELECT name, lastname FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            json_decode($record['arguments'], true)['new_user_id']
-        );
-        $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        if ($record['process_type'] === 'create_user_keys') {
+            $data_user = DB::queryfirstrow(
+                'SELECT name, lastname FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                json_decode($record['arguments'], true)['new_user_id']
+            );
+            $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        } elseif ($record['process_type'] === 'send_email') {
+            $sOutput .= '"'.json_decode($record['arguments'], true)['receiver_name'].'", ';
+        }
         // col6
         $diff = abs($end - $start) / 60;
         $sOutput .= '"'.floor($diff / 60).':'.($diff % 60).'"';

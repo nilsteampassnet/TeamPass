@@ -9,7 +9,7 @@
  *
  * @project   Teampass
  *
- * @file      processing_background_tasks.php
+ * @file      background_tasks___user_keys_creation.php
  * ---
  *
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -57,13 +57,14 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
 // Task to treat selection is:
 // 1- take first is_in_progress === 1
 // 2- take first is_in_progress === 0 and finished_at === null
-
+DB::debugmode(false);
 $process_to_perform = DB::queryfirstrow(
     'SELECT *
     FROM ' . prefixTable('processes') . '
-    WHERE is_in_progress = %i
+    WHERE is_in_progress = %i AND process_type = %s
     ORDER BY increment_id ASC',
-    1
+    1,
+    'create_user_keys'
 );
 
 if (DB::count() > 0) {
@@ -79,7 +80,7 @@ if (DB::count() > 0) {
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes') . '
-        WHERE is_in_progress = %i AND finished_at IS NULL
+        WHERE is_in_progress = %i AND finished_at = ""
         ORDER BY increment_id ASC',
         0
     );
