@@ -646,7 +646,7 @@ if (null !== $post_type) {
                         $post_parent_id,
                         'complex'
                     );
-                    if (intval($post_complexicity) < intval($data['valeur'])) {
+                    if (isset($data['valeur']) === true && intval($post_complexicity) < intval($data['valeur'])) {
                         echo prepareExchangedData(
                             $SETTINGS['cpassman_dir'],
                             array(
