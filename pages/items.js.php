@@ -2666,8 +2666,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Manage diffusion list
                 var diffusion = new Array();
+                var diffusionNames = new Array();
                 $('#form-item-anounce option:selected').each(function() {
                     diffusion.push($(this).val());
+                    diffusionNames.push($(this).text());
                 });
 
                 // Get item field values
@@ -2707,6 +2709,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
                     'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? $('#form-item-description').summernote('code') : '',
                     'diffusion_list': diffusion,
+                    'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
                     'email': $('#form-item-email').val(),
                     'fields': fields,
@@ -2729,8 +2732,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
                     'fa_icon': $('#form-item-icon').val(),
                 };
-                if (debugJavascript === true) console.log('SAVING DATA');
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.log('SAVING DATA');
+                    console.log(data);
+                }
                 // Inform user
                 toastr.remove();
                 toastr.info(

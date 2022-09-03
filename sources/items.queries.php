@@ -200,6 +200,10 @@ if (is_null($inputData['type']) === false) {
                     FILTER_SANITIZE_STRING
                 );
                 $post_diffusion_list = $post_diffusion_list !== false ? json_decode($post_diffusion_list) : '';
+                $post_diffusion_list_names = filter_var_array(
+                    $dataReceived['diffusion_list_names'],
+                    FILTER_SANITIZE_STRING
+                );
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
                 $post_fields = filter_var(
                     $dataReceived['fields'],
@@ -742,24 +746,64 @@ if (is_null($inputData['type']) === false) {
                         );
 
                         // send email
+                        $cpt = 0;
                         foreach (explode(';', $post_diffusion_list) as $emailAddress) {
                             if (empty($emailAddress) === false) {
                                 // send it
-                                sendEmail(
-                                    langHdl('email_subject'),
-                                    str_replace(
-                                        array('#label', '#link'),
-                                        array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                        langHdl('new_item_email_body')
-                                    ),
-                                    $emailAddress,
-                                    $SETTINGS,
-                                    str_replace(
-                                        array('#label', '#link'),
-                                        array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                        langHdl('new_item_email_body')
-                                    )
-                                );
+                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
+                                    DB::insert(
+                                        prefixTable('emails'),
+                                        array(
+                                            'timestamp' => time(),
+                                            'subject' => langHdl('email_subject_item_updated'),
+                                            'body' => str_replace(
+                                                array('#label', '#link'),
+                                                    array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                                    langHdl('new_item_email_body')
+                                            ),
+                                            'receivers' => $emailAddress,
+                                            'status' => '',
+                                        )
+                                    );
+                                } elseif (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
+                                    DB::insert(
+                                        prefixTable('processes'),
+                                        array(
+                                            'created_at' => time(),
+                                            'process_type' => 'send_email',
+                                            'arguments' => json_encode([
+                                                'subject' => langHdl('email_subject'),
+                                                'receivers' => $emailAddress,
+                                                'body' => str_replace(
+                                                    array('#label', '#link'),
+                                                    array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                                    langHdl('new_item_email_body')
+                                                ),
+                                                'receiver_name' => $post_diffusion_list_names[$cpt],
+                                            ]),
+                                            'updated_at' => '',
+                                            'finished_at' => '',
+                                            'output' => '',
+                                        )
+                                    );
+                                } else {
+                                    sendEmail(
+                                        langHdl('email_subject'),
+                                        str_replace(
+                                            array('#label', '#link'),
+                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                            langHdl('new_item_email_body')
+                                        ),
+                                        $emailAddress,
+                                        $SETTINGS,
+                                        str_replace(
+                                            array('#label', '#link'),
+                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                            langHdl('new_item_email_body')
+                                        )
+                                    );
+                                }
+                                $cpt++;
                             }
                         }
                     }
@@ -877,6 +921,11 @@ if (is_null($inputData['type']) === false) {
                     $dataReceived['diffusion_list'],
                     FILTER_SANITIZE_STRING
                 );
+                $post_diffusion_list_names = filter_var_array(
+                    $dataReceived['diffusion_list_names'],
+                    FILTER_SANITIZE_STRING
+                );
+                //$post_diffusion_list_names = $post_diffusion_list_names !== false ? json_decode($post_diffusion_list_names) : '';
                 $post_to_be_deleted_after_x_views = filter_var(
                     $dataReceived['to_be_deleted_after_x_views'],
                     FILTER_SANITIZE_NUMBER_INT
@@ -1830,14 +1879,15 @@ if (is_null($inputData['type']) === false) {
 
                     // Send email
                     if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
+                        $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
-                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true || isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
+                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
                                     DB::insert(
                                         prefixTable('emails'),
                                         array(
                                             'timestamp' => time(),
-                                            'subject' => langHdl('email_body_item_updated'),
+                                            'subject' => langHdl('email_subject_item_updated'),
                                             'body' => str_replace(
                                                 array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
                                                 array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
@@ -1845,6 +1895,27 @@ if (is_null($inputData['type']) === false) {
                                             ),
                                             'receivers' => $emailAddress,
                                             'status' => '',
+                                        )
+                                    );
+                                } elseif (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
+                                    DB::insert(
+                                        prefixTable('processes'),
+                                        array(
+                                            'created_at' => time(),
+                                            'process_type' => 'send_email',
+                                            'arguments' => json_encode([
+                                                'subject' => langHdl('email_subject_item_updated'),
+                                                'receivers' => $emailAddress,
+                                                'body' => str_replace(
+                                                    array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                                    array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
+                                                    langHdl('email_body_item_updated')
+                                                ),
+                                                'receiver_name' => $post_diffusion_list_names[$cpt],
+                                            ]),
+                                            'updated_at' => '',
+                                            'finished_at' => '',
+                                            'output' => '',
                                         )
                                     );
                                 } else {
@@ -1860,6 +1931,7 @@ if (is_null($inputData['type']) === false) {
                                         str_replace('#item_label#', $inputData['label'], langHdl('email_bodyalt_item_updated'))
                                     );
                                 }
+                                $cpt++;
                             }
                         }
                     }
@@ -1929,7 +2001,7 @@ if (is_null($inputData['type']) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $inputData['data'],
                 'decode'
             );
@@ -1947,7 +2019,7 @@ if (is_null($inputData['type']) === false) {
                     || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
             ) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -1976,7 +2048,7 @@ if (is_null($inputData['type']) === false) {
                 // Check if the folder where this item is accessible to the user
                 if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -2004,7 +2076,7 @@ if (is_null($inputData['type']) === false) {
                 if (DB::count() === 0) {
                     // ERROR - No sharekey found for this item and user
                     echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),

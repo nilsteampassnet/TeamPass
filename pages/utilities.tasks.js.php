@@ -78,7 +78,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'searching': true,
         'sPaginationType': 'listbox',
         'order': [
-            [2, 'asc']
+            [1, 'asc']
         ],
         'info': true,
         'processing': false,
@@ -88,9 +88,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'autoWidth': true,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_in_progress',
-            /*data: function(d) {
-                d.letter = _alphabetSearch
-            }*/
         },
         'language': {
             'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt'
@@ -108,17 +105,20 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                     timeOut: 1000
                 }
             );
-            $('#in_edition-tab-refresh').html('');
         },
         'columnDefs': [{
             'width': '100px',
             'targets': 0,
             'render': function(data, type, row, meta) {
-                if ($(data).data('id') === 1) {
-                    return '<i class="fas fa-play text-warning"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                if ($(data).data('type') === 'create_user_keys') {
+                    if ($(data).data('done') === 1) {
+                        return '<i class="fas fa-play text-warning"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                    } else {
+                        return '<i class="fars fa-hand-papper text-info"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                    }
                 } else {
-                    return '<i class="fars fa-hand-papper text-info"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
-                } 
+                    return '';
+                }
             }
         }],
     });

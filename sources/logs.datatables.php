@@ -728,18 +728,18 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sWhere .= ') ';
     DB::query(
-    'SELECT COUNT(timestamp)
-        FROM '.prefixTable('users').' '.
-        $sWhere
-);
+        'SELECT COUNT(timestamp)
+            FROM '.prefixTable('users').' '.
+            $sWhere
+    );
     $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT *
-        FROM '.prefixTable('users').' '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT *
+            FROM '.prefixTable('users').' '.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
@@ -802,16 +802,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
     $sWhere .= ') ';
-    //DB::debugmode(true);
+    DB::debugmode(false);
     DB::query(
-    'SELECT COUNT(increment_id)
+        'SELECT COUNT(increment_id)
         FROM '.prefixTable('processes').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
         $sWhere
     );
     $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT *
+        'SELECT *
         FROM '.prefixTable('processes').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
         $sWhere.
@@ -831,20 +831,24 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     foreach ($rows as $record) {
         $sOutput .= '[';
         //col1
-        $sOutput .= '"<span data-id=\"'.$record['is_in_progress'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
+        $sOutput .= '"<span data-done=\"'.$record['is_in_progress'].'\" data-type=\"'.$record['process_type'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
-        $sOutput .= '"'.($record['updated_at'] === null ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
+        $sOutput .= '"'.($record['updated_at'] === '' ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
         //col4
         $sOutput .= '"'.$record['process_type'].'", ';
         // col5
-        $data_user = DB::queryfirstrow(
-            'SELECT name, lastname FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            json_decode($record['arguments'], true)['new_user_id']
-        );
-        $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        if ($record['process_type'] === 'create_user_keys') {
+            $data_user = DB::queryfirstrow(
+                'SELECT name, lastname FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                json_decode($record['arguments'], true)['new_user_id']
+            );
+            $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+        } elseif ($record['process_type'] === 'send_email') {
+            $sOutput .= '"'.json_decode($record['arguments'], true)['receiver_name'].'", ';
+        }
         // col6
         $sOutput .= '""';
         //Finish the line
@@ -914,7 +918,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         
         $sOutput .= '[';
         //col1
-        $sOutput .= '"<span data-id=\"'.$record['is_in_progress'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
+        $sOutput .= '"<span data-done=\"'.$record['is_in_progress'].'\" data-type=\"'.$record['process_type'].'\"  data-process-id=\"'.$record['increment_id'].'\"></span>", ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
