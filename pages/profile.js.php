@@ -54,16 +54,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
 
 <script type='text/javascript'>
-    // If user api is empty then generate one
-    if ($('#profile-user-api-token').text().length !== 39) {
-        generateNewUserApiKey('profile-user-api-token', true);
-    }
+    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
+        // If user api is empty then generate one
+        if ($('#profile-user-api-token').text().length !== 39) {
+            generateNewUserApiKey('profile-user-api-token', true);
+        }
 
-
-    $('#profile-button-api_token').click(function() {
-        generateNewUserApiKey('profile-user-api-token', false);
-    });
-
+        $('#profile-button-api_token').click(function() {
+            generateNewUserApiKey('profile-user-api-token', false);
+        });
+    <?php endif; ?>
 
     //iCheck for checkbox and radio inputs
     $('#tab_reset_psk input[type="checkbox"]').iCheck({
