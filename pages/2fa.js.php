@@ -76,22 +76,21 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
     })
 
 
-    $(document).on('click', '#button-duo-save', function() {
-        var data = "{\"akey\":\"" + sanitizeString($("#duo_akey").val()) + "\", \"ikey\":\"" + sanitizeString($("#duo_ikey").val()) + "\", \"skey\":\"" + sanitizeString($("#duo_skey").val()) + "\", \"host\":\"" + sanitizeString($("#duo_host").val()) + "\"}";
+    $(document).on('click', '#button-duo-config-check', function() {
+        var data = "{\"ikey\":\"" + sanitizeString($("#duo_ikey").val()) + "\", \"skey\":\"" + sanitizeString($("#duo_skey").val()) + "\", \"host\":\"" + sanitizeString($("#duo_host").val()) + "\"}";
 
         // Prepare data
         var data = {
-            'duo_akey': $('#duo_akey').val(),
             'duo_ikey': $('#duo_ikey').val(),
             'duo_skey': $('#duo_skey').val(),
-            'duo_host': $('#duo_host').val(),
+            'duo_host': $('#duo_host').val()
         }
         console.log(data);
 
         // Launch action
         $.post(
             'sources/admin.queries.php', {
-                type: 'save_duo_in_sk_file',
+                type: 'run_duo_config_check',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: '<?php echo $_SESSION['key']; ?>'
             },
@@ -103,9 +102,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        data.message,
                         '', {
-                            timeOut: 5000,
+                            timeOut: 15000,
                             progressBar: true
                         }
                     );
@@ -113,9 +112,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     // Inform user
                     toastr.remove();
                     toastr.info(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo langHdl('duo-config-check-success'); ?>',
                         '', {
-                            timeOut: 1000
+                            timeOut: 5000
                         }
                     );
                 }

@@ -53,22 +53,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
-// If Debug then clean the files
-if (DEBUGLDAP === true) {
-    define('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'] . '/ldap.debug.txt');
-    $fp = fopen(DEBUGLDAPFILE, 'w');
-    fclose($fp);
-}
-if (DEBUGDUO === true) {
-    define('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'] . '/duo.debug.txt');
-    $fp = fopen(DEBUGDUOFILE, 'w');
-    fclose($fp);
-}
-
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-$post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 //$post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
@@ -88,75 +75,8 @@ DB::$port = DB_PORT;
 DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
-if ($post_type === 'identify_duo_user') {
-    //--------
-    // DUO AUTHENTICATION
-    //--------
-    // This step creates the DUO request encrypted key
 
-    // load library
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $sig_request = Duo::signRequest(
-        $SETTINGS['IKEY'],
-        $SETTINGS['SKEY'],
-        $SETTINGS['AKEY'],
-        $post_login
-    );
-    if (DEBUGDUO === true) {
-        debugIdentify(
-            DEBUGDUO,
-            DEBUGDUOFILE,
-            "\n\n-----\n\n" .
-                'sig request : ' . $post_login . "\n" .
-                'resp : ' . $sig_request . "\n"
-        );
-    }
-
-    // load csrfprotector
-    $csrfp_config = include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/csrfp/libs/csrfp.config.php';
-    // return result
-    echo '[{"sig_request" : "' . $sig_request . '" , "csrfp_token" : "' . $csrfp_config['CSRFP_TOKEN'] . '" , "csrfp_key" : "' . filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING) . '"}]';
-// ---
-    // ---
-} elseif ($post_type === 'identify_duo_user_check') {
-    //--------
-    // DUO AUTHENTICATION
-    // this step is verifying the response received from the server
-    //--------
-
-    // load library
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $authenticated_username = Duo::verifyResponse(
-        $SETTINGS['duo_ikey'],
-        $SETTINGS['duo_skey'],
-        $SETTINGS['duo_akey'],
-        $post_sig_response
-    );
-
-    // return the response (which should be the user name)
-    if ($authenticated_username === $post_login) {
-        // Check if this account exists in Teampass or only in LDAP
-        if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true) {
-            // is user in Teampass?
-            DB::queryfirstrow(
-                'SELECT id
-                FROM ' . prefixTable('users') . '
-                WHERE login = %s',
-                $post_login
-            );
-            if (DB::count() === 0) {
-                // Ask your administrator to create your account in Teampass
-                echo '[{"authenticated_username" : "ERR|This user is not yet imported inside Teampass."}]';
-            }
-        }
-
-        echo '[{"authenticated_username" : "' . $authenticated_username . '"}]';
-    } else {
-        echo '[{"authenticated_username" : "' . $authenticated_username . '"}]';
-    }
-    // ---
-    // ---
-} elseif ($post_type === 'identify_user') {
+if ($post_type === 'identify_user') {
     //--------
     // NORMAL IDENTICATION STEP
     //--------
@@ -167,6 +87,18 @@ if ($post_type === 'identify_duo_user') {
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // If Debug then clean the files
+    if (DEBUGLDAP === true) {
+        define('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'] . '/ldap.debug.txt');
+        file_put_contents(DEBUGLDAPFILE, '');
+    }
+    
+    if (DEBUGDUO === true) {
+        define('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'] . '/duo.debug.txt');
+        if($superGlobal->get('duo_status','SESSION') !== 'IN_PROGRESS')file_put_contents(DEBUGDUOFILE, '');
+    }
+
     // Prepare GET variables
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     // increment counter of login attempts
@@ -298,6 +230,35 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('key', $sessionKey, 'SESSION');
     }
 
+    // Check if Duo auth is in progress and pass the pw and login back to the standard login process
+    if(
+        isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
+        && $dataReceived['user_2fa_selection'] === 'duo'
+        && $superGlobal->get('duo_status','SESSION') === 'IN_PROGRESS'
+        && !empty($dataReceived['duo_state'])
+    ){
+        $key = hash('sha256', $dataReceived['duo_state']);
+        $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
+        $duo_data_dec = openssl_decrypt(base64_decode($superGlobal->get('duo_data','SESSION')), 'AES-256-CBC', $key, 0, $iv);
+        // Clear the data from the Duo process to continue clean with the standard login process
+        $superGlobal->forget('duo_data','SESSION');
+        if($duo_data_dec === false){
+            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Duo data session decrypt Error".PHP_EOL);
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'error' => true,
+                    'message' => langHdl('duo_error_decrypt'),
+                ],
+                'encode'
+            );
+            return false;
+        }
+        $duo_data = unserialize($duo_data_dec);
+        $dataReceived['pw'] = $duo_data['duo_pwd'];
+        $dataReceived['login'] = $duo_data['duo_login'];
+    }
+
     // prepare variables    
     $userCredentials = identifyGetUserCredentials(
         $SETTINGS,
@@ -308,7 +269,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     $username = $userCredentials['username'];
     $passwordClear = $userCredentials['passwordClear'];
-
+    
     // DO initial checks
     $userInitialData = identifyDoInitialChecks(
         $SETTINGS,
@@ -364,39 +325,69 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-
-    // Check user against MFA method if selected
-    $userMfa = identifyDoMFAChecks(
-        $SETTINGS,
-        $userInfo,
-        $dataReceived,
-        $userInitialData,
-        (string) $username
-    );
-    if ($userMfa['error'] === true) {
-        echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
-            $userMfa['mfaData'],
-            'encode'
+    // Check if MFA is required
+    if ((isOneVarOfArrayEqualToValue(
+                [
+                    (int) $SETTINGS['yubico_authentication'],
+                    (int) $SETTINGS['google_authentication'],
+                    (int) $SETTINGS['duo']
+                ],
+                1
+            ) === true)
+        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+        && $userInfo['mfa_auth_requested_roles'] === true
+    ) {
+        // Check user against MFA method if selected
+        $userMfa = identifyDoMFAChecks(
+            $SETTINGS,
+            $userInfo,
+            $dataReceived,
+            $userInitialData,
+            (string) $username
         );
-        return false;
-    } elseif ($userMfa['mfaQRCodeInfos'] === true) {
-        // Case where user has initiated Google Auth
-        // Return QR code
-        echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
-            [
-                'value' => $userMfa['mfaData']['value'],
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => false,
-                'message' => $userMfa['mfaData']['message'],
-                'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
-            ],
-            'encode'
-        );
-        return false;
+        if ($userMfa['error'] === true) {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $userMfa['mfaData'],
+                'encode'
+            );
+            return false;
+        } elseif ($userMfa['mfaQRCodeInfos'] === true) {
+            // Case where user has initiated Google Auth
+            // Return QR code
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'value' => $userMfa['mfaData']['value'],
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => false,
+                    'message' => $userMfa['mfaData']['message'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
+                'encode'
+            );
+            return false;
+        } elseif ($userMfa['duo_url_ready'] === true) {
+            // Case where user has initiated Duo Auth
+            // Return the DUO redirect URL
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => false,
+                    'message' => $userMfa['mfaData']['message'],
+                    'duo_url_ready' => $userMfa['mfaData']['duo_url_ready'],
+                    'duo_redirect_url' => $userMfa['mfaData']['duo_redirect_url'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
+                'encode'
+            );
+            return false;
+        }
     }
 
     // Can connect if
@@ -701,7 +692,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'initial_url' => $antiXss->xss_clean($sessionUrl),
                 'pwd_attempts' => 0,
                 'error' => false,
-                'message' => $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') !== null && (int) $superGlobal->get('user_upgrade_needed', 'SESSION', 'user') === 1 ? 'ask_for_otc' : '',
+                'message' => $superGlobal->get('user_upgrade_needed', 'SESSION') !== null && (int) $superGlobal->get('user_upgrade_needed', 'SESSION') === 1 ? 'ask_for_otc' : '',
                 'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -1446,7 +1437,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                     'error' => true,
                     'message' => langHdl('ga_bad_code'),
                     'proceedIdentification' => false,
-                    'mfaStatus' => '',
+                    'ga_bad_code' => true,
                     'firstTime' => $firstTime,
                 ];
             }
@@ -1486,6 +1477,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                     'error' => true,
                     'message' => langHdl('ga_bad_code'),
                     'proceedIdentification' => false,
+                    'ga_bad_code' => true,
                     'firstTime' => $firstTime,
                 ];
             }
@@ -1495,6 +1487,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             'error' => true,
             'message' => langHdl('ga_bad_code'),
             'proceedIdentification' => false,
+            'ga_bad_code' => true,
             'firstTime' => [],
         ];
     }
@@ -1504,6 +1497,212 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
         'message' => '',
         'proceedIdentification' => $proceedIdentification,
         'firstTime' => $firstTime,
+    ];
+}
+
+/**
+ * Create the redirect URL or check if the DUO Universal prompt was completed successfully.
+ *
+ * @param string                $username     Username
+ * @param string|array|resource $dataReceived DataReceived
+ * @param array                 $SETTINGS     Teampass settings
+ *
+ * @return array
+ */
+function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
+{
+    // Load superGlobals
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    
+    # Retrieve the previously stored state and username from the session
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $saved_state = $superGlobal->get('duo_state','SESSION');
+    $duo_status = $superGlobal->get('duo_status','SESSION');
+    
+    //Debug
+    debugIdentify(DEBUGDUO,DEBUGDUOFILE,
+        "\n----------\n" .
+        "duo_status : " . $duo_status . "\n" .
+        "login received: " . $dataReceived['login'] . "\n" .
+        "received_state : " . $dataReceived['duo_state'] . "\n"
+    );
+
+    if (
+        (empty($saved_state) || empty($dataReceived['login']) || !isset($dataReceived['duo_state']) || empty($dataReceived['duo_state']))
+        && $duo_status === 'IN_PROGRESS'
+        && $dataReceived['duo_status'] !== 'start_duo_auth'
+    ) {
+        return [
+            'error' => true,
+            'message' => langHdl('duo_no_data'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+
+    // Ensure state matches from initial request
+    if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
+        // We did not received a proper Duo state
+        return [
+            'error' => true,
+            'message' => langHdl('duo_error_state'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+
+    // load libraries
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/ExpiredException.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/SignatureInvalidException.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/JWT.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/Key.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/DuoException.php';
+    require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/Client.php';
+
+    try {
+        $duo_client = new Duo\DuoUniversal\Client(
+            $SETTINGS['duo_ikey'],
+            $SETTINGS['duo_skey'],
+            $SETTINGS['duo_host'],
+            $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
+        );
+    } catch (Duo\DuoUniversal\DuoException $e) {
+        return [
+            'error' => true,
+            'message' => langHdl('duo_config_error'),
+            'debug_message' => $e->getMessage(),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+        
+    try {
+        $duo_client->healthCheck();
+    } catch (Duo\DuoUniversal\DuoException $e) {
+        //Not implemented Duo Failmode in case the Duo services are not available
+        /*if ($SETTINGS['duo_failmode'] == "safe") {
+            # If we're failing open, errors in 2FA still allow for success
+            $duo_error = langHdl('duo_error_failopen');
+            $duo_failmode = "safe";
+        } else {
+            # Duo has failed and is unavailable, redirect user to the login page
+            $duo_error = langHdl('duo_error_secure');
+            $duo_failmode = "secure";
+        }*/
+        $duo_error = langHdl('duo_error_secure');
+        return [
+            'error' => true,
+            'message' => $duo_error . langHdl('duo_error_check_config'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'debug_message' => $e->getMessage(),
+            'proceedIdentification' => false,
+        ];
+    }
+    
+    // Check if no one played with the javascript
+    if ($duo_status !== 'IN_PROGRESS' && $dataReceived['duo_status'] === 'start_duo_auth') {
+        # Create the Duo URL to send the user to
+        try {
+            $duo_state = $duo_client->generateState();
+            $duo_redirect_url = $duo_client->createAuthUrl($username, $duo_state);
+        } catch (Duo\DuoUniversal\DuoException $e) {
+            return [
+                'error' => true,
+                'message' => $duo_error . langHdl('duo_error_url'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'debug_message' => $e->getMessage(),
+                'proceedIdentification' => false,
+            ];
+        }
+        debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Generated Duo state: ".$duo_state."\n");
+        // Somethimes Duo return success but fail to return a URL, double check if the URL has been created
+        if (!empty($duo_redirect_url) && isset($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
+            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Generated Duo URL: ".$duo_redirect_url."\n");
+            // Since Duo Universal requires a redirect, let's store some info when the user get's back after completing the Duo prompt
+            $key = hash('sha256', $duo_state);
+            $iv = substr(hash('sha256', $duo_state), 0, 16);
+            $duo_data = serialize([
+                'duo_login' => $username,
+                'duo_pwd' => $dataReceived['pw'],
+            ]);
+            $duo_data_enc = openssl_encrypt($duo_data, 'AES-256-CBC', $key, 0, $iv);
+            $superGlobal->put('duo_state', $duo_state, 'SESSION');
+            $superGlobal->put('duo_data', base64_encode($duo_data_enc), 'SESSION');
+            $superGlobal->put('duo_status', 'IN_PROGRESS', 'SESSION');
+            // If we got here we can reset the password attempts
+            $superGlobal->put('pwd_attempts', 0, 'SESSION');
+            unset($superGlobal);
+            return [
+                'error' => false,
+                'message' => '',
+                'proceedIdentification' => false,
+                'duo_url_ready' => true,
+                'duo_redirect_url' => $duo_redirect_url,
+                'duo_failmode' => $duo_failmode,
+            ];
+        } else {
+            return [
+                'error' => true,
+                'message' => $duo_error . langHdl('duo_error_url'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'proceedIdentification' => false,
+            ];
+        }
+    } elseif ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_code'] !== '') {
+        try {
+            // Check if the Duo code received is valid
+            $decoded_token = $duo_client->exchangeAuthorizationCodeFor2FAResult($dataReceived['duo_code'], $username);
+        } catch (Duo\DuoUniversal\DuoException $e) {
+            return [
+                'error' => true,
+                'message' => langHdl('duo_error_decoding'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'debug_message' => $e->getMessage(),
+                'proceedIdentification' => false,
+            ];
+        }
+        // return the response (which should be the user name)
+        if ($decoded_token['preferred_username'] === $username) {
+            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Successfull Duo Auth for user: ".$username."\n");
+            $superGlobal->put('duo_status', 'COMPLET', 'SESSION');
+            $superGlobal->forget('duo_state','SESSION');
+            $superGlobal->forget('duo_data','SESSION');
+            unset($superGlobal);
+
+            return [
+                'error' => false,
+                'message' => '',
+                'proceedIdentification' => true,
+                'authenticated_username' => $decoded_token['preferred_username']
+            ];
+        } else {
+            // Something wrong, username from the original Duo request is different than the one received now
+            $superGlobal->forget('duo_status','SESSION');
+            $superGlobal->forget('duo_state','SESSION');
+            $superGlobal->forget('duo_data','SESSION');
+            unset($superGlobal);
+
+            return [
+                'error' => true,
+                'message' => langHdl('duo_login_mismatch'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'proceedIdentification' => false,
+            ];
+        }
+    }
+    // If we are here something wrong
+    debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Could not complete Duo Auth.\n");
+    $superGlobal->forget('duo_status','SESSION');
+    $superGlobal->forget('duo_state','SESSION');
+    $superGlobal->forget('duo_data','SESSION');
+    unset($superGlobal);
+    return [
+        'error' => true,
+        'message' => langHdl('duo_login_mismatch'),
+        'pwd_attempts' => (int) $sessionPwdAttempts,
+        'proceedIdentification' => false,
     ];
 }
 
@@ -1684,31 +1883,6 @@ function identifyDoInitialChecks(
         ];
     }
 
-    // Check if 2FA code is requested
-    if ((empty($user_2fa_selection) === true &&
-            isOneVarOfArrayEqualToValue(
-                [
-                    (int) $SETTINGS['yubico_authentication'],
-                    (int) $SETTINGS['google_authentication'],
-                    (int) $SETTINGS['duo']
-                ],
-                1
-            ) === true)
-        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-    ) {
-        return [
-            'error' => true,
-            'array' => [
-                'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => '2fa_not_set',
-                'message' => langHdl('2fa_credential_not_correct'),
-            ]
-        ];
-    }
-
     // Check if user exists
     $userInfo = DB::queryFirstRow(
         'SELECT *
@@ -1747,6 +1921,43 @@ function identifyDoInitialChecks(
         ];
     }
 
+    // ensure user fonction_id is set to false if not existing
+    if (is_null($userInfo['fonction_id']) === true) {
+        $userInfo['fonction_id'] = '';
+    }
+    
+    // user should use MFA?
+    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+        (string) $userInfo['fonction_id'],
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+
+    // Check if 2FA code is requested
+    if ((empty($user_2fa_selection) === true &&
+            isOneVarOfArrayEqualToValue(
+                [
+                    (int) $SETTINGS['yubico_authentication'],
+                    (int) $SETTINGS['google_authentication'],
+                    (int) $SETTINGS['duo']
+                ],
+                1
+            ) === true)
+        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+        && $userInfo['mfa_auth_requested_roles'] === true
+    ) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '2fa_not_set',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => '2fa_not_set',
+                'message' => langHdl('select_valid_2fa_credentials'),
+            ]
+        ];
+    }
+
     // If admin user then check if folder install exists
     // if yes then refuse connection
     if ((int) $userInfo['admin'] === 1 && is_dir('../install') === true) {
@@ -1763,16 +1974,7 @@ function identifyDoInitialChecks(
         ];
     }
 
-    // ensure user fonction_id is set to false if not existing
-    if (is_null($userInfo['fonction_id']) === true) {
-        $userInfo['fonction_id'] = $userInfo['fonction_id'];
-    }
-    
-    // user should use MFA?
-    $userInfo['mfa_auth_requested'] = mfa_auth_requested(
-        (string) $userInfo['fonction_id'],
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
+
 
     // Return some usefull information about user
     return [
@@ -1842,70 +2044,99 @@ function identifyDoMFAChecks(
     string $username
 ): array
 {    
-    if (
-        // ---------
-        // check GA code
-        // ---------
-        (int) $SETTINGS['google_authentication'] === 1
-        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
-        && $userInitialData['user_mfa_mode'] === 'google'
-        && $userInfo['mfa_auth_requested'] === true
-    ) {
-        $ret = googleMFACheck(
-            $username,
-            $userInfo,
-            $dataReceived,
-            $SETTINGS
-        );
-        if ($ret['error'] !== false) {
-            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
-            
+    switch ($userInitialData['user_mfa_mode']) {
+        case 'google':
+            $ret = googleMFACheck(
+                $username,
+                $userInfo,
+                $dataReceived,
+                $SETTINGS
+            );
+            if ($ret['error'] !== false) {
+                logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                return [
+                    'error' => true,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+
             return [
-                'error' => true,
+                'error' => false,
                 'mfaData' => $ret['firstTime'],
-                'mfaQRCodeInfos' => false,
+                'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
+                && count($ret['firstTime']) > 0 ? true : false,
             ];
-            // ---
-        }
+            break;
 
-        return [
-            'error' => false,
-            'mfaData' => $ret['firstTime'],
-            'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
-            && count($ret['firstTime']) > 0 ? true : false,
-        ];
-
-        // ---
-        // ---
-    } else if (
-        // ---------
-        // Check Yubico
-        // ---------
-        isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true
-        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInitialData['user_mfa_mode'] === 'yubico'
-        && $userInfo['mfa_auth_requested'] === true
-    ) {
-        $ret = yubicoMFACheck(
-            $dataReceived,
-            $userInfo,
-            $SETTINGS
-        );
-        if ($ret['error'] !== '') {
+        case 'yubico':
+            $ret = yubicoMFACheck(
+                $dataReceived,
+                $userInfo,
+                $SETTINGS
+            );
+            if ($ret['error'] !== false) {
+                return [
+                    'error' => true,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+            break;
+        
+        case 'duo':
+            $ret = duoMFACheck(
+                $username,
+                $dataReceived,
+                $SETTINGS
+            );
+            if ($ret['error'] !== false) {
+                logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
+                // Log to debug file
+                debugIdentify(DEBUGDUO, DEBUGDUOFILE, $ret['message']."\n Debug: ".$ret['debug_message']."\n");
+                // Load superGlobals
+                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                # Retrieve the previously stored state and username from the session
+                $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                $superGlobal->forget('duo_state','SESSION');
+                $superGlobal->forget('duo_data','SESSION');
+                $superGlobal->forget('duo_status','SESSION');
+                unset($superGlobal);
+                return [
+                    'error' => true,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            } else if ($ret['duo_url_ready'] === true){
+                return [
+                    'error' => false,
+                    'mfaData' => $ret,
+                    'duo_url_ready' => true,
+                    'mfaQRCodeInfos' => false,
+                ];
+            } else if ($ret['error'] === false) {
+                return [
+                    'error' => false,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+            break;
+        
+        default:
+            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             return [
                 'error' => true,
-                'mfaData' => $ret,
+                'mfaData' => ['message' => langHdl('wrong_mfa_code')],
                 'mfaQRCodeInfos' => false,
             ];
-        }
-        
-        // ---
-        // ---
     }
 
+    // If something went wrong, let's catch and return an error
+    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
     return [
-        'error' => false,
-        'mfaData' => '',
+        'error' => true,
+        'mfaData' => ['message' => langHdl('wrong_mfa_code')],
         'mfaQRCodeInfos' => false,
     ];
 }

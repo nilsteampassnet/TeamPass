@@ -38,10 +38,11 @@ require_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 $get = [];
 $get['post_type'] = $superGlobal->get('post_type', 'GET');
-$post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
-$post_duo_login = filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
-$post_duo_pwd = filter_input(INPUT_POST, 'duo_pwd', FILTER_SANITIZE_STRING);
-$post_duo_data = filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
+if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
+    $get['duo_state'] = $superGlobal->get('state', 'GET');
+    $get['duo_code'] = $superGlobal->get('duo_code', 'GET');
+}
+
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
@@ -119,12 +120,9 @@ echo '
         </div>';
 // 2FA auth selector
 echo '
-        <input type="hidden" id="2fa_user_selection" value="',
-    (isset($get['post_type']) === true && $get['post_type'] === 'duo' ? 'duo' : ''),
-    '" />
-        <input type="hidden" id="duo_sig_response" value="',
-    $post_sig_response !== null ? $post_sig_response : '',
-    '" />
+        <input type="hidden" id="2fa_user_selection" value="', isset($get['post_type']) === true && $get['post_type'] === 'duo' ? 'duo' : '', '" />
+        <input type="hidden" id="duo_code" value="', $get['duo_code'] !== null ? $get['duo_code'] : '', '" />
+        <input type="hidden" id="duo_state" value="', $get['duo_state'] !== null ? $get['duo_state'] : '', '" />
         <div class="row mb-3 hidden" id="2fa_methods_selector">
             <div class="col-12">
                 <h8 class="login-box-msg">' . langHdl('2fa_authentication_selector') . '</h8>
@@ -147,16 +145,12 @@ echo '
                 </div>
             </div>
         </div>';
+
 // DUO box
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
     echo '
         <div id="div-2fa-duo" class="row mb-3 div-2fa-method hidden">
             <div id="div-2fa-duo-progress" class="text-center hidden"></div>
-            <form method="post" id="duo_form" action="">
-                <input type="hidden" id="duo_login" name="duo_login" value="', $post_duo_login !== null ? $post_duo_login : '', '" />
-                <input type="hidden" id="duo_pwd" name="duo_pwd" value="', $post_duo_pwd !== null ? $post_duo_pwd : '', '" />
-                <input type="hidden" id="duo_data" name="duo_data" value="', $post_duo_data !== null ? $post_duo_data : '', '" />
-            </form>
         </div>';
 }
 

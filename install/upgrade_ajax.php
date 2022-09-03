@@ -80,91 +80,67 @@ if (defined("DB_PASSWD") === false) {
 				include_once $filename;
 				unlink($filename);
 
-				// AKEY
-				$tmp = mysqli_num_rows(mysqli_query(
-					$db_link,
-					"SELECT INTO `" . $pre . "misc`
-					WHERE type = 'duoSecurity' AND intitule = 'akey'"
-				));
-				if ($tmp == 0) {
-					mysqli_query(
-						$db_link,
-						"INSERT INTO `" . $pre . "misc`
-						(`valeur`, `type`, `intitule`)
-						VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
-					);
-				} else {
-					mysqli_query(
-						$db_link,
-						"INSERT INTO `" . $pre . "misc`
-						(`valeur`, `type`, `intitule`)
-						VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
-					);
-				}
-
+                // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
 				// SKEY
-				$tmp = mysqli_num_rows(mysqli_query(
+				$tmp = mysqli_query(
 					$db_link,
 					"SELECT INTO `" . $pre . "misc`
-					WHERE type = 'duoSecurity' AND intitule = 'skey'"
-				));
-				if ($tmp == 0) {
+					WHERE type = 'admin' AND intitule = 'duo_skey'"
+				);
+				if ($tmp) {
 					mysqli_query(
 						$db_link,
-						"INSERT INTO `" . $pre . "misc`
-						(`valeur`, `type`, `intitule`)
-						VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+						"UPDATE `" . $pre . "misc`
+						set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
 					);
 				} else {
-					mysqli_query(
+                    mysqli_query(
 						$db_link,
 						"INSERT INTO `" . $pre . "misc`
 						(`valeur`, `type`, `intitule`)
-						VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+						VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
 					);
 				}
 
 				// IKEY
-				$tmp = mysqli_num_rows(mysqli_query(
+				$tmp = mysqli_query(
 					$db_link,
 					"SELECT INTO `" . $pre . "misc`
-					WHERE type = 'duoSecurity' AND intitule = 'ikey'"
-				));
-				if ($tmp == 0) {
-					mysqli_query(
+					WHERE type = 'admin' AND intitule = 'duo_ikey'"
+				);
+				if ($tmp) {
+                    mysqli_query(
 						$db_link,
-						"INSERT INTO `" . $pre . "misc`
-						(`valeur`, `type`, `intitule`)
-						VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+						"UPDATE `" . $pre . "misc`
+						set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
 					);
 				} else {
 					mysqli_query(
 						$db_link,
 						"INSERT INTO `" . $pre . "misc`
 						(`valeur`, `type`, `intitule`)
-						VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+						VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
 					);
 				}
 
 				// HOST
-				$tmp = mysqli_num_rows(mysqli_query(
+				$tmp = mysqli_query(
 					$db_link,
 					"SELECT INTO `" . $pre . "misc`
-					WHERE type = 'duoSecurity' AND intitule = 'host'"
-				));
-				if ($tmp == 0) {
-					mysqli_query(
+					WHERE type = 'admin' AND intitule = 'duo_host'"
+				);
+				if ($tmp) {
+                    mysqli_query(
 						$db_link,
-						"INSERT INTO `" . $pre . "misc`
-						(`valeur`, `type`, `intitule`)
-						VALUES ('" . $server . "', 'duoSecurity', 'host')"
+						"UPDATE `" . $pre . "misc`
+						set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
 					);
 				} else {
 					mysqli_query(
 						$db_link,
 						"INSERT INTO `" . $pre . "misc`
 						(`valeur`, `type`, `intitule`)
-						VALUES ('" . $server . "', 'duoSecurity', 'host')"
+						VALUES ('" . HOST . "', 'admin', 'duo_host')"
 					);
 				}
 			}
@@ -207,10 +183,6 @@ define("IKEY", "");';
 define("SKEY", "' . SKEY . '");';
 		else $settingsTxt .= '
 define("SKEY", "");';
-		if (defined('AKEY') === true) $settingsTxt .= '
-define("AKEY", "' . AKEY . '");';
-		else $settingsTxt .= '
-define("AKEY", "");';
 		if (defined('HOST') === true) $settingsTxt .= '
 define("HOST", "' . HOST . '");';
 		else $settingsTxt .= '
@@ -730,91 +702,67 @@ if (isset($post_type)) {
                         include_once $filename;
                         unlink($filename);
 
-                        // AKEY
-                        $tmp = mysqli_num_rows(mysqli_query(
-                            $db_link,
-                            "SELECT INTO `" . $pre . "misc`
-                            WHERE type = 'duoSecurity' AND intitule = 'akey'"
-                        ));
-                        if ($tmp == 0) {
-                            mysqli_query(
-                                $db_link,
-                                "INSERT INTO `" . $pre . "misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
-                            );
-                        } else {
-                            mysqli_query(
-                                $db_link,
-                                "INSERT INTO `" . $pre . "misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('" . AKEY . "', 'duoSecurity', 'akey')"
-                            );
-                        }
-
+                        // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
                         // SKEY
-                        $tmp = mysqli_num_rows(mysqli_query(
+                        $tmp = mysqli_query(
                             $db_link,
                             "SELECT INTO `" . $pre . "misc`
-                            WHERE type = 'duoSecurity' AND intitule = 'skey'"
-                        ));
-                        if ($tmp == 0) {
+                            WHERE type = 'admin' AND intitule = 'duo_skey'"
+                        );
+                        if ($tmp) {
                             mysqli_query(
                                 $db_link,
-                                "INSERT INTO `" . $pre . "misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
                             );
                         } else {
                             mysqli_query(
                                 $db_link,
                                 "INSERT INTO `" . $pre . "misc`
                                 (`valeur`, `type`, `intitule`)
-                                VALUES ('" . SKEY . "', 'duoSecurity', 'skey')"
+                                VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
                             );
                         }
 
                         // IKEY
-                        $tmp = mysqli_num_rows(mysqli_query(
+                        $tmp = mysqli_query(
                             $db_link,
                             "SELECT INTO `" . $pre . "misc`
-                            WHERE type = 'duoSecurity' AND intitule = 'ikey'"
-                        ));
-                        if ($tmp == 0) {
+                            WHERE type = 'admin' AND intitule = 'duo_ikey'"
+                        );
+                        if ($tmp) {
                             mysqli_query(
                                 $db_link,
-                                "INSERT INTO `" . $pre . "misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
                             );
                         } else {
                             mysqli_query(
                                 $db_link,
                                 "INSERT INTO `" . $pre . "misc`
                                 (`valeur`, `type`, `intitule`)
-                                VALUES ('" . IKEY . "', 'duoSecurity', 'ikey')"
+                                VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
                             );
                         }
 
                         // HOST
-                        $tmp = mysqli_num_rows(mysqli_query(
+                        $tmp = mysqli_query(
                             $db_link,
                             "SELECT INTO `" . $pre . "misc`
-                            WHERE type = 'duoSecurity' AND intitule = 'host'"
-                        ));
-                        if ($tmp == 0) {
+                            WHERE type = 'admin' AND intitule = 'duo_host'"
+                        );
+                        if ($tmp) {
                             mysqli_query(
                                 $db_link,
-                                "INSERT INTO `" . $pre . "misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('" . HOST . "', 'duoSecurity', 'host')"
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
                             );
                         } else {
                             mysqli_query(
                                 $db_link,
                                 "INSERT INTO `" . $pre . "misc`
                                 (`valeur`, `type`, `intitule`)
-                                VALUES ('" . HOST . "', 'duoSecurity', 'host')"
+                                VALUES ('" . HOST . "', 'admin', 'duo_host')"
                             );
                         }
                     }

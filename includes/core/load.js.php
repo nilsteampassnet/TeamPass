@@ -1228,7 +1228,7 @@ if (
                 if (typeof data === 'object') {
                     // Store settings in localstorage
                     // except sensitive data
-                    var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn', 'duo', 'email','bck_script_passkey'];
+                    var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn', 'email','bck_script_passkey'];
 
                     store.remove("teampassSettings");
 

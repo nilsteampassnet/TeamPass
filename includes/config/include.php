@@ -54,6 +54,10 @@ define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
 
+// Duo
+define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');
+define('DUO_CALLBACK', 'index.php?post_type=duo');
+
 define('DEBUG', false);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
 define('DEBUGDUO', false); //Can be used in order to debug DUO authentication

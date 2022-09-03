@@ -126,10 +126,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>
                             </li>
-                            <!--
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo langHdl('duo_security'); ?></a>
                             </li>
+                            <!--
                                 <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo langHdl('yubico'); ?></a>
                             </li>
@@ -184,7 +184,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <?php echo langHdl('settings_duo_tip'); ?>
                                         </small>
                                         <div>
-                                            <small><a href="https://duo.com/docs/duoweb#overview" target="_blank"><?php echo langHdl('more_information'); ?></a></small>
+                                            <small><a href="<?php echo DUO_ADMIN_URL_INFO; ?>" target="_blank"><?php echo langHdl('more_information'); ?></a></small>
                                         </div>
                                     </div>
                                     <div class="col-3">
@@ -201,19 +201,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     </div>
                                 </div>
 
-                                <!--
-                                <div class="row mb-2">
-                                    <div class="col-5">
-                                        <?php echo langHdl('admin_duo_akey'); ?>
-                                    </div>
-                                    <div class="col-7 input-group mb-0">
-                                        <input type="text" class="form-control form-control-sm" id="duo_akey" value="<?php echo isset($SETTINGS['duo_akey']) === true ? $SETTINGS['duo_akey'] : ''; ?>">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary btn-no-click infotip generate-key" data-length="40" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                                -->
                                 <div class="row mb-2">
                                     <div class="col-5">
                                         <?php echo langHdl('admin_duo_ikey'); ?>
@@ -240,8 +227,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </div>
 
                                 <div class="row mb-2">
-                                    <button class="btn btn-primary" id="button-duo-save">
-                                        <?php echo langHdl('save'); ?>
+                                    <button class="btn btn-primary" id="button-duo-config-check">
+                                        <?php echo langHdl('duo-run-config-check'); ?>
                                     </button>
                                 </div>
                             </div>
