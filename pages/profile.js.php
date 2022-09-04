@@ -281,13 +281,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         'value' : newApiKey[0],
                         'user_id' : <?php echo $_SESSION['user_id']; ?>,
                         'context' : '',
-                        'isprofileupdate' : 1,
                     };
                     
                     $.post(
                         "sources/users.queries.php", {
                             type: "save_user_change",
                             data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            isprofileupdate: true,
                             key: "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
