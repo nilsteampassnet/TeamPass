@@ -820,8 +820,9 @@ $SETTINGS = array (';
                             `public_key` TEXT DEFAULT NULL,
                             `private_key` TEXT DEFAULT NULL,
                             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
-                            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local', 
-                            `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE ,
+                            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
+                            `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

@@ -238,7 +238,7 @@ foreach ($rows as $record) {
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             addslashes(str_replace("'", '&lsquo;', empty($record['name']) === false ? $record['name'] : '')).' '.
             addslashes(str_replace("'", '&lsquo;', empty($record['lastname']) === false ? $record['lastname'] : '')).
-            '\" data-auth-type=\"'.$record['auth_type'].'\"></span>", ';
+            '\" data-auth-type=\"'.$record['auth_type'].'\" data-otp-provided=\"'.$record['otp_provided'].'\"></span>", ';
         //col2
         $sOutput .= '"'.
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'

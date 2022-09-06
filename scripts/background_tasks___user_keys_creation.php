@@ -852,26 +852,41 @@ function cronContinueReEncryptingUserSharekeysStep6(
     // if done then send email to new user
     // get user info
     $userInfo = DB::queryFirstRow(
-        'SELECT email, login 
+        'SELECT email, login, auth_type
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $extra_arguments['new_user_id']
     );
 
-    sendMailToUser(
-        filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
-        langHdl('email_body_new_user'),
-        'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-        (array) filter_var_array(
-            [
-                '#code#' => $extra_arguments['new_user_code'],
-                '#login#' => $userInfo['login'],
-                '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
-            ],
-            FILTER_SANITIZE_STRING
-        ),
-        $SETTINGS
-    );
+    if ($userInfo['auth_type'] === 'local') {
+        sendMailToUser(
+            filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
+            langHdl('email_body_new_user'),
+            'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+            (array) filter_var_array(
+                [
+                    '#code#' => $extra_arguments['new_user_code'],
+                    '#login#' => $userInfo['login'],
+                    '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
+                ],
+                FILTER_SANITIZE_STRING
+            ),
+            $SETTINGS
+        );
+    } else {
+        sendMailToUser(
+            filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
+            langHdl('email_body_user_added_from_ldap_encryption_code'),
+            'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+            (array) filter_var_array(
+                [
+                    '#enc_code#' => $extra_arguments['new_user_code'],
+                ],
+                FILTER_SANITIZE_STRING
+            ),
+            $SETTINGS
+        );
+    }
 
     // Set user as ready for usage
     DB::update(

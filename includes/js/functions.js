@@ -20,6 +20,15 @@
 **/
 function countdown()
 {
+    // if a process is in progress then do not decrease the time counter.
+    if (typeof ProcessInProgress !== 'undefined' && ProcessInProgress === true) {
+        $('.countdown-icon')
+            .addClass('fas fa-history')
+            .removeClass('far fa-clock');
+        return;
+    }
+
+    // Continue
     let DayTill;
     let hoursInDay = 24;
     let limitTen = 10;
@@ -57,7 +66,7 @@ function countdown()
 
     //Rewrite the string to the correct information.
     if ($('#countdown')) {
-        $('#countdown').html(DayTill);
+        $('#countdown').html('<i class="far fa-clock countdown-icon mr-1"></i>' + DayTill);
     }
 
     //Create the timer 'counter' that will automatic restart function countdown() again every second.

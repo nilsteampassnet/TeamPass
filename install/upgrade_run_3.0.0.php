@@ -1047,6 +1047,19 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'emails` MODIFY `receivers` text NOT NULL'
 );
 
+// Add field otp_provided to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'otp_provided',
+    "BOOLEAN NOT NULL DEFAULT FALSE"
+);
+
+// Update this new field
+mysqli_query(
+    $db_link,
+    'UPDATE `' . $pre . 'users` SET otp_provided = 1 WHERE `last_connexion` != "";'
+);
+
 //---<END 3.0.0.18
 
 // Finished

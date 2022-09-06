@@ -221,8 +221,8 @@ if (null !== $post_type) {
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
                         'special' => 'auth-pwd-change',
-                        'special' => 'auth-pwd-change',
                         'is_ready_for_usage' => 0,
+                        'otp_used' => 0,
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -3311,6 +3311,102 @@ if (null !== $post_type) {
                 array(
                     'message' => '',
                     'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * GENERATE NEW KEYS AND OTP FOR A USER - STEP 1
+         */
+        case 'generate_new_otp__preparation':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            // get user info
+            $userInfo = DB::queryFirstRow(
+                'SELECT *
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $user_id
+            );
+
+            // Generate pwd
+            $password = generateQuickPassword();
+
+            // GEnerate new keys
+            $userKeys = generateUserKeys($password);
+
+            // Prepare values to change
+            $values = array(
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                'is_ready_for_usage' => 0,
+                'otp_provided' => 0,
+            );
+
+            if ($userInfo['auth_type'] === 'local') {
+                $values['special'] = 'generate-keys';
+                /*array_push(
+                    $values,
+                    array('special' => 'generate-keys')
+                );*/
+            } elseif ($userInfo['auth_type'] === 'ldap') {
+                $values['special'] = 'user_added_from_ldap';
+                /*array_push(
+                    $values,
+                    array('special' => 'user_added_from_ldap')
+                );*/
+            }
+
+            // update profil
+            DB::update(
+                prefixTable('users'),
+                $values,
+                'id = %i',
+                $user_id
+            );
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'user_id' => $user_id,
+                    'user_code' => $password,
+                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
+                    'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                 ),
                 'encode'
             );

@@ -1514,7 +1514,7 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
     // Load superGlobals
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     
-    # Retrieve the previously stored state and username from the session
+    // Retrieve the previously stored state and username from the session
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $saved_state = $superGlobal->get('duo_state','SESSION');
@@ -1579,6 +1579,8 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
     }
         
     try {
+        $duo_error = langHdl('duo_error_secure');
+        $duo_failmode = "none";
         $duo_client->healthCheck();
     } catch (Duo\DuoUniversal\DuoException $e) {
         //Not implemented Duo Failmode in case the Duo services are not available
@@ -1591,7 +1593,6 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
             $duo_error = langHdl('duo_error_secure');
             $duo_failmode = "secure";
         }*/
-        $duo_error = langHdl('duo_error_secure');
         return [
             'error' => true,
             'message' => $duo_error . langHdl('duo_error_check_config'),
@@ -2067,7 +2068,6 @@ function identifyDoMFAChecks(
                 'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
                 && count($ret['firstTime']) > 0 ? true : false,
             ];
-            break;
 
         case 'yubico':
             $ret = yubicoMFACheck(
