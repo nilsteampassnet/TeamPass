@@ -3181,7 +3181,8 @@ if (is_null($inputData['type']) === false) {
             } else {
                 echo (string) prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
-                    $returnArray
+                    $returnArray,
+                    'encode'
                 );
             }
             break;
