@@ -219,8 +219,8 @@ if (null !== $post_type) {
                     'error' => false,
                     'message' => '',
                     'matrix' => $arrData,
-                    'user_is_admin' => (int) $_SESSION['is_admin'],
-                    'user_can_create_root_folder' => (int) $_SESSION['can_create_root_folder'],
+                    'userIsAdmin' => (int) $_SESSION['is_admin'],
+                    'userCanCreateRootFolder' => (int) $_SESSION['can_create_root_folder'],
                     'fullComplexity' => $complexity,
                 ),
                 'encode'
@@ -529,7 +529,7 @@ if (null !== $post_type) {
 
             // prepare variables
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
-            $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_parent_id = isset($dataReceived['parentId']) === true ? filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
