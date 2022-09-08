@@ -222,7 +222,7 @@ if (null !== $post_type) {
                         'private_key' => $userKeys['private_key'],
                         'special' => 'auth-pwd-change',
                         'is_ready_for_usage' => 0,
-                        'otp_used' => 0,
+                        'otp_provided' => 0,
                     )
                 );
                 $new_user_id = DB::insertId();
