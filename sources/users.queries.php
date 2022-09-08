@@ -160,12 +160,12 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ($dataReceived['admin'] === 'true' && (int) $_SESSION['user_admin'] !== 1) {
+                if ($dataReceived['admin'] === true && (int) $_SESSION['user_admin'] !== 1) {
                     echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
-                            'message' => langHdl('error_empty_data'),
+                            'message' => langHdl('error_not_allowed_to'),
                         ),
                         'encode'
                     );
