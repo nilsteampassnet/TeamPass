@@ -102,7 +102,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         'info': true,
         'processing': false,
         'serverSide': true,
-        'responsive': true,
+        'responsive': false,
         'select': false,
         'stateSave': true,
         'autoWidth': true,
@@ -180,12 +180,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Inform user
             toastr.remove();
-            /*toastr.success(
-                '<?php echo langHdl('done'); ?>',
-                '', {
-                    timeOut: 1000
-                }
-            );*/
         },
         /*'createdRow': function( row, data, dataIndex ) {
             var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
@@ -552,9 +546,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // If expected, show the OPT to the admin
             if (constVisibleOTP === true) {
-                $('#warningModal-user-otp')
-                    .html('<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>')
-                    .removeClass('hidden');
                 toastr.info(
                     '<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
                     + '<br /><button type="button" class="btn clear"><?php echo langHdl('close');?></button>',
@@ -564,7 +555,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         timeOut: 0,
                         tapToDismiss: false,
                         newestOnTop: true,
-                        preventDuplicates: false
+                        preventDuplicates: true,
+                        onHidden: (toast) => {
+                            // prevent against multiple occurances (#3305)
+                            constVisibleOTP = false;
+                        },
                     }
                 );
             }
@@ -655,9 +650,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     5000
                 );
             });
-
-            
-            
         }
         return dfd.promise();
     }
