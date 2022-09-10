@@ -2,6 +2,8 @@
 
 # Teampass 3
 
+[![StandWithUkraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+
 ![](https://img.shields.io/github/stars/nilsteampassnet/TeamPass?style=social)
 ![](https://img.shields.io/github/license/nilsteampassnet/teampass)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
