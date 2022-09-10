@@ -181,7 +181,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         for ($i = 0; $i < count($aColumns); ++$i) {
             $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
 
     $iTotal = DB::queryFirstField(

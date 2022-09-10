@@ -111,7 +111,19 @@ if (
                     function(data) {
                         //decrypt data
                         data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                        if (debugJavascript === true) console.log(data);
+                        if (debugJavascript === true) {
+                            console.info('Get user info results:');
+                            console.log(data);
+                        }
+
+                        // update local storage
+                        store.update(
+                            'teampassUser', {},
+                            function(teampassUser) {
+                                teampassUser.special = data.queryResults.special;
+                                teampassUser.auth_type = data.queryResults.auth_type;
+                            }
+                        );
 
                         if (data.error === false && data.queryResults.special === 'generate-keys') {
                             // Now we need to perform re-encryption due to LDAP password change
