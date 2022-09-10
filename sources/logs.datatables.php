@@ -113,23 +113,22 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT l.date as date, l.label as label, l.qui as who, u.login as login
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
-        $sWhere.
-        $sOrder
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_system').' as l
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
+            $sWhere.
+            $sOrder
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as date, l.label as label, l.qui as who, 
-        u.login as login, u.name AS name, u.lastname AS lastname
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT l.date as date, l.label as label, l.qui as who, 
+            u.login as login, u.name AS name, u.lastname AS lastname
+            FROM '.prefixTable('log_system').' as l
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     /*
            * Output
@@ -185,38 +184,34 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT *
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
-        $sWhere,
-        [
-            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        ]
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_items').' as l
+            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
+            $sWhere,
+            [
+                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            ]
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as date, u.login as login, i.label as label
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-        $sWhere
-        $sOrder
-        $sLimit',
-        [
-            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        ]
-);
+        'SELECT l.date as date, u.login as login, i.label as label
+            FROM '.prefixTable('log_items').' as l
+            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+            $sWhere
+            $sOrder
+            $sLimit',
+            [
+                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            ]
+    );
     $iFilteredTotal = DB::count();
     // Output
-    if ($iTotal === '') {
-        $iTotal = 0;
-    }
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
@@ -268,24 +263,23 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT *
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
-        $sWhere.
-        $sOrder
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_items').' as l
+            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
+            $sWhere.
+            $sOrder
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
+            FROM '.prefixTable('log_items').' as l
+            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
@@ -341,21 +335,20 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT *
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
         $sWhere
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label
+            FROM '.prefixTable('log_system').' as l
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     /*
          * Output
@@ -412,33 +405,31 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $sWhere = substr_replace($sWhere, '', -3).') ';
         }
     }
-
-    DB::query(
-        'SELECT *
-        FROM '.prefixTable('log_items').' AS l
-        INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
-        INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id) '.
-        $sWhere.
-        $sOrder
+    
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_items').' AS l
+            INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
+            INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
+            INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id) '.
+            $sWhere.
+            $sOrder
     );
-    $iTotal = DB::count();
+
     $rows = DB::query(
-    'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
+        'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
             i.perso AS perso, l.action AS action, t.title AS folder,
             i.id AS id
             FROM '.prefixTable('log_items').' AS l
             INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
             INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
             INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id) '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
-    /*
-         * Output
-        */
+    // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
@@ -505,19 +496,18 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT *
-        FROM '.prefixTable('log_system').' as l '.
-        $sWhere
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_system').' as l '.
+            $sWhere
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
-        FROM '.prefixTable('log_system').' as l '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
+            FROM '.prefixTable('log_system').' as l '.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     // Output
     if ($iTotal === '') {
@@ -582,23 +572,22 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT *
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-        $sWhere.
-        $sOrder
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(*)
+            FROM '.prefixTable('log_system').' as l
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
+            $sWhere.
+            $sOrder
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT l.date as date, l.label as label, l.qui as who,
-        u.login as login, u.name AS name, u.lastname AS lastname
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-        $sWhere.
-        $sOrder.
-        $sLimit
-);
+        'SELECT l.date as date, l.label as label, l.qui as who,
+            u.login as login, u.name AS name, u.lastname AS lastname
+            FROM '.prefixTable('log_system').' as l
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
+            $sWhere.
+            $sOrder.
+            $sLimit
+    );
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
@@ -654,23 +643,22 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
 
-    DB::query(
-        'SELECT e.timestamp
-        FROM '.prefixTable('items_edition').' AS e
-        INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
-        $sWhere.
-        $sOrder
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(e.timestamp)
+            FROM '.prefixTable('items_edition').' AS e
+            INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
+            $sWhere.
+            $sOrder
     );
-    $iTotal = DB::count();
     $rows = DB::query(
-    'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
-        FROM '.prefixTable('items_edition').' AS e
-        INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
-        $sWhere.
-        $sOrder.
-        $sLimit
+        'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
+            FROM '.prefixTable('items_edition').' AS e
+            INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
+            INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
+            $sWhere.
+            $sOrder.
+            $sLimit
     );
     $iFilteredTotal = DB::count();
     // Output
@@ -727,12 +715,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
     $sWhere .= ') ';
-    DB::query(
+    $iTotal = DB::queryFirstField(
         'SELECT COUNT(timestamp)
             FROM '.prefixTable('users').' '.
             $sWhere
     );
-    $iTotal = DB::count();
     $rows = DB::query(
         'SELECT *
             FROM '.prefixTable('users').' '.
@@ -803,20 +790,19 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sWhere .= ') ';
     DB::debugmode(false);
-    DB::query(
-        'SELECT COUNT(increment_id)
+    $iTotal = DB::queryFirstField(
+    'SELECT COUNT(increment_id)
         FROM '.prefixTable('processes').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
         $sWhere
     );
-    $iTotal = DB::count();
     $rows = DB::query(
         'SELECT *
-        FROM '.prefixTable('processes').' AS p 
-        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-        $sWhere.
-        $sOrder.
-        $sLimit
+            FROM '.prefixTable('processes').' AS p 
+            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+            $sWhere.
+            $sOrder.
+            $sLimit
     );
     $iFilteredTotal = DB::count();
     // Output
@@ -884,22 +870,21 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sWhere .= ') ';
     
-    //DB::debugmode(true);
-    DB::query(
-    'SELECT COUNT(increment_id)
-        FROM '.prefixTable('processes').' AS p 
-        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-        $sWhere
+    DB::debugmode(false);
+    $iTotal = DB::queryFirstField(
+        'SELECT COUNT(increment_id)
+            FROM '.prefixTable('processes').' AS p 
+            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+            $sWhere
     );
-    $iTotal = DB::count();
 
     $rows = DB::query(
-    'SELECT *
-        FROM '.prefixTable('processes').' AS p 
-        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-        $sWhere.
-        $sOrder.
-        $sLimit
+        'SELECT *
+            FROM '.prefixTable('processes').' AS p 
+            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
+            $sWhere.
+            $sOrder.
+            $sLimit
     );
     $iFilteredTotal = DB::count();
     // Output

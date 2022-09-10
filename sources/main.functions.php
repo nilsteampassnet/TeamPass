@@ -65,16 +65,22 @@ function langHdl(string $string): string
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
     if (isset($session_language) === false) {
-        // Manage error and get English version
-        $language_array = include __DIR__. '/../includes/language/english.php';
-        print_r($session_language);
-        $session_language = $language_array[trim($string)];
+        /* 
+            Load the English version to $_SESSION so we don't 
+            return bad JSON (multiple includes add BOM characters to the json returned 
+            which makes jquery unhappy on the UI, especially on the log page)
+            and improve performance by avoiding to include the file for every missing strings.
+        */
+        $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
+        if (isset($session_language) === false) {
+            $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
+            $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
+        }
     }
-    /*return str_replace(
-        ["'"],
-        ['&apos;'],
-        $session_language
-    );*/
+    // If after all this, we still don't have the string even in english (especially with old logs), return the language code
+    if (empty($session_language) === true) {
+        return trim($string);
+    }
     return $session_language;
 }
 

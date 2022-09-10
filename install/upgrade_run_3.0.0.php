@@ -1060,6 +1060,518 @@ mysqli_query(
     'UPDATE `' . $pre . 'users` SET otp_provided = 1 WHERE `last_connexion` != "";'
 );
 
+// --- DB consolidation from fretch install --- //
+// Alter table api
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "api` MODIFY COLUMN `id` INT(20) AUTO_INCREMENT;"
+);
+
+// Add the Primary INDEX item_id to the automatic_del table
+$res = checkIndexExist(
+    $pre . 'automatic_del',
+    'PRIMARY',
+    "ADD PRIMARY KEY (`item_id`)"
+);
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX item_id to the automatic_del table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add column increment_id to cache table
+$res = addColumnIfNotExist(
+    $pre . 'cache',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table cache! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table cache
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "cache`
+        MODIFY COLUMN `id` INT(12) NOT NULL,
+        MODIFY COLUMN `label` VARCHAR(500) NOT NULL,
+        MODIFY COLUMN `tags` text DEFAULT NULL,
+        MODIFY COLUMN `id_tree` INT(12) NOT NULL,
+        MODIFY COLUMN `restricted_to` VARCHAR(200) DEFAULT NULL,
+        MODIFY COLUMN `login` text DEFAULT NULL,
+        MODIFY COLUMN `timestamp` VARCHAR(50) DEFAULT NULL,
+        MODIFY COLUMN `encryption_type` VARCHAR(50) DEFAULT '0';"
+);
+
+// Alter table categories
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "categories`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `parent_id` INT(12) NOT NULL,
+        MODIFY COLUMN `level` INT(2) NOT NULL,
+        MODIFY COLUMN `masked` tinyint(1) NOT NULL DEFAULT 0 AFTER `type`,
+        MODIFY COLUMN `order` INT(12) NOT NULL DEFAULT 0;"
+);
+
+// Add column increment_id to categories_folders table
+$res = addColumnIfNotExist(
+    $pre . 'categories_folders',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table categories_folders! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table categories_folders
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "categories_folders` 
+        MODIFY COLUMN `id_category` INT(12) NOT NULL,
+        MODIFY COLUMN `id_folder` INT(12) NOT NULL;"
+);
+
+// Add column is_mandatory to categories_items table
+$res = addColumnIfNotExist(
+    $pre . 'categories_items',
+    'is_mandatory',
+    "TINYINT(1) NOT NULL DEFAULT 0 AFTER `encryption_type`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table categories_items! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table categories_items
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "categories_items`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT;"
+);
+
+// Add column increment_id to emails table
+$res = addColumnIfNotExist(
+    $pre . 'emails',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table emails! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table emails
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "emails`
+        MODIFY COLUMN `timestamp` INT(30) NOT NULL;"
+);
+
+// Add column increment_id to export table
+$res = addColumnIfNotExist(
+    $pre . 'export',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table export! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+// Alter table export
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "export`
+        MODIFY COLUMN `id` int(12) NOT NULL,
+        MODIFY COLUMN `label` VARCHAR(500) NOT NULL,
+        MODIFY COLUMN `path` VARCHAR(500) NOT NULL;"
+);
+
+// Alter table files
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "files`
+        MODIFY COLUMN `size` INT(10) NOT NULL,
+        MODIFY COLUMN `type` VARCHAR(255) NOT NULL,
+        MODIFY COLUMN `content` longblob DEFAULT NULL AFTER `status`;"
+);
+
+// Alter table items
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "items` SET `auto_update_pwd_next_date` = '0' WHERE `auto_update_pwd_next_date` IS NULL;"
+);
+
+// Alter table items
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "items`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `label` VARCHAR(500) NOT NULL,
+        MODIFY COLUMN `pw_len` INT(5) NOT NULL DEFAULT 0,
+        MODIFY COLUMN `restricted_to` VARCHAR(200) DEFAULT NULL,
+        MODIFY COLUMN `viewed_no` INT(12) NOT NULL DEFAULT 0,
+        MODIFY COLUMN `complexity_level` VARCHAR(3) NOT NULL DEFAULT '-1',
+        MODIFY COLUMN `auto_update_pwd_frequency` tinyint(2) NOT NULL DEFAULT 0,
+        MODIFY COLUMN `auto_update_pwd_next_date` VARCHAR(100) NOT NULL DEFAULT '0',
+        MODIFY COLUMN `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set';"
+);
+
+// Alter table items_change
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "items_change`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL,
+        MODIFY COLUMN `folder_id` tinyint(12) NOT NULL,
+        MODIFY COLUMN `user_id` INT(12) NOT NULL;"
+);
+
+// Add column increment_id to items_edition table
+$res = addColumnIfNotExist(
+    $pre . 'items_edition',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table items_edition! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add the INDEX item_id_idx to the items_edition table
+$res = checkIndexExist(
+    $pre . 'items_edition',
+    'item_id_idx',
+    "ADD KEY `item_id_idx` (`item_id`)"
+);
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX role_id_idx to the items_edition table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table items_edition
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "items_edition`
+        MODIFY COLUMN `user_id` INT(12) NOT NULL;"
+);
+
+// Alter table kb
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `category_id` INT(12) NOT NULL,
+        MODIFY COLUMN `author_id` INT(12) NOT NULL;"
+);
+
+// Alter table kb_categories
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_categories` MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT;"
+);
+
+// Add column increment_id to kb_items table
+$res = addColumnIfNotExist(
+    $pre . 'kb_items',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table kb_items! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table kb_items
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_items`
+        MODIFY COLUMN `kb_id` INT(12) NOT NULL,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL;"
+);
+
+// Alter table languages
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "languages` MODIFY COLUMN `id` INT(10) NOT NULL AUTO_INCREMENT;"
+);
+
+// Alter table log_items
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "log_items`
+        MODIFY COLUMN `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `id_item` INT(8) NOT NULL,
+        MODIFY COLUMN `id_user` INT(8) NOT NULL;"
+);
+
+// Alter table log_system
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "log_system`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `qui` VARCHAR(255) NOT NULL;"
+);
+
+// Alter table misc column name if necessary
+$exists = false;
+$columns = mysqli_query($db_link, "show columns from `" . $pre . "misc`");
+while ($col = mysqli_fetch_assoc($columns)) {
+    if ($col['Field'] == 'increment_id') {
+        $exists = true;
+    }
+}
+if (!$exists) {
+    mysqli_query($db_link, "ALTER TABLE `" . $pre . "misc` CHANGE COLUMN `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
+}
+
+// Alter table misc
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "misc`
+        MODIFY COLUMN `valeur` varchar(500) NOT NULL;"
+);
+
+// Alter table nested_tree
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "nested_tree` MODIFY COLUMN `renewal_period` int(5) NOT NULL DEFAULT 0;"
+);
+
+// Remove the INDEX id from the nested_tree table
+$mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "nested_tree` WHERE key_name LIKE \"id\"");
+if (mysqli_fetch_row($mysqli_result)){
+    $res = mysqli_query($db_link, "ALTER TABLE `" . $pre . "nested_tree` DROP INDEX `id`");
+    if (!$res) {
+        echo '[{"finish":"1", "msg":"", "error":"An error appears when removing the INDEX id from the nested_tree table! ' . mysqli_error($db_link) . '!"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// Alter table otv
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "otv`
+        MODIFY COLUMN `id` INT(10) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL,
+        MODIFY COLUMN `originator` INT(12) NOT NULL;"
+);
+
+// Add column increment_id to restriction_to_roles table
+$res = addColumnIfNotExist(
+    $pre . 'restriction_to_roles',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table restriction_to_roles! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table restriction_to_roles
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "restriction_to_roles`
+        MODIFY COLUMN `role_id` INT(12) NOT NULL,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL;"
+);
+
+// Remove the INDEX role_id_idx from the restriction_to_roles table
+$mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "restriction_to_roles` WHERE key_name LIKE \"role_id_idx\"");
+if (mysqli_fetch_row($mysqli_result)){
+    $res = mysqli_query($db_link, "ALTER TABLE `" . $pre . "restriction_to_roles` DROP INDEX `role_id_idx`");
+    if (!$res) {
+        echo '[{"finish":"1", "msg":"", "error":"An error appears when removing the INDEX role_id_idx from the restriction_to_roles table! ' . mysqli_error($db_link) . '!"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// Alter table rights
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "rights`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `tree_id` INT(12) NOT NULL,
+        MODIFY COLUMN `fonction_id` INT(12) NOT NULL;"
+);
+
+// Alter table roles_title
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "roles_title`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `complexity` INT(5) NOT NULL DEFAULT 0;"
+);
+
+// Add column increment_id to roles_values table
+$res = addColumnIfNotExist(
+    $pre . 'roles_values',
+    'increment_id',
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST,
+    ADD PRIMARY KEY (increment_id)"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field increment_id to table roles_values! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table roles_values
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "roles_values`
+        MODIFY COLUMN `role_id` INT(12) NOT NULL,
+        MODIFY COLUMN `folder_id` INT(12) NOT NULL;"
+);
+
+// Add column suggestion_type to suggestion table (fresh install create this column)
+$res = addColumnIfNotExist(
+    $pre . 'suggestion',
+    'suggestion_type',
+    "VARCHAR(10) NOT NULL DEFAULT 'new'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field suggestion_type to table suggestion! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter table suggestion
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "suggestion`
+        MODIFY COLUMN `id` tinyint(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `pw_len` INT(5) NOT NULL,
+        MODIFY COLUMN `author_id` INT(12) NOT NULL,
+        MODIFY COLUMN `folder_id` INT(12) NOT NULL;"
+);
+
+// Alter table tags
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "tags`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL;"
+);
+
+// Remove the INDEX id from the tags table
+$mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "tags` WHERE key_name LIKE \"id\"");
+if (mysqli_fetch_row($mysqli_result)){
+    $res = mysqli_query($db_link, "ALTER TABLE `" . $pre . "tags` DROP INDEX `id`");
+    if (!$res) {
+        echo '[{"finish":"1", "msg":"", "error":"An error appears when removing the INDEX id from the tags table! ' . mysqli_error($db_link) . '!"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// Alter table templates
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "templates`
+        MODIFY COLUMN `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `item_id` INT(12) NOT NULL,
+        MODIFY COLUMN `category_id` INT(12) NOT NULL;"
+);
+
+// Alter table tokens
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "tokens`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `user_id` INT(12) NOT NULL;"
+);
+
+// Add column user_ip_lastdate to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'user_ip_lastdate',
+    "VARCHAR(50) NULL DEFAULT NULL AFTER `user_ip`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_ip_lastdate to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add column user_api_key to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'user_api_key',
+    "VARCHAR(500) NOT NULL DEFAULT 'none' AFTER `user_ip_lastdate`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_api_key to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add column yubico_user_key to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'yubico_user_key',
+    "VARCHAR(100) NOT NULL DEFAULT 'none' AFTER `user_api_key`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_key to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add column yubico_user_id to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'yubico_user_id',
+    "VARCHAR(100) NOT NULL DEFAULT 'none' AFTER `yubico_user_key`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_id to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter USERS table
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "users`
+        MODIFY COLUMN `id` INT(12) NOT NULL AUTO_INCREMENT,
+        MODIFY COLUMN `pw` VARCHAR(400) NOT NULL,
+        MODIFY COLUMN `groupes_visibles` VARCHAR(1000) NOT NULL,
+        MODIFY COLUMN `fonction_id` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `groupes_interdits` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `email` VARCHAR(300) NOT NULL DEFAULT 'none',
+        MODIFY COLUMN `favourites` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `latest_items` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `personal_folder` INT(1) NOT NULL DEFAULT 0,
+        MODIFY COLUMN `isAdministratedByRole` tinyint(5) NOT NULL DEFAULT 0,
+        MODIFY COLUMN `avatar` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `avatar_thumb` VARCHAR(1000) DEFAULT NULL,
+        MODIFY COLUMN `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
+        MODIFY COLUMN `encrypted_psk` text DEFAULT NULL,
+        MODIFY COLUMN `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none';"
+);
+// --- End DB consolidation from fresh install --- //
+
 //---<END 3.0.0.18
 
 // Finished

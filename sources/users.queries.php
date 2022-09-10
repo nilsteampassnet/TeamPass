@@ -49,12 +49,19 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+// Prepare post variables
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_STRING);
+$password_do_not_change = 'do_not_change';
 
 // DO check for "users" rights
 if (
     (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false)
-    || (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false && (null === $isprofileupdate || $isprofileupdate === false))
+    && (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false 
+        && (null === $isprofileupdate || $isprofileupdate === false)
+        && !in_array($post_type, ['user_profile_update','save_user_change'], true))
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -77,12 +84,6 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-// Prepare post variables
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$password_do_not_change = 'do_not_change';
 
 if (null !== $post_type) {
     switch ($post_type) {

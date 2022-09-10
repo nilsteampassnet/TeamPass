@@ -910,7 +910,7 @@ $SETTINGS = array (';
                             `perso` tinyint(1) NOT NULL,
                             `restricted_to` varchar(200) DEFAULT NULL,
                             `login` text DEFAULT NULL,
-                            `folder` varchar(300) NOT NULL,
+                            `folder` text NOT NULL,
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
@@ -1155,6 +1155,7 @@ $SETTINGS = array (';
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
                             `suggestion_type` varchar(10) NOT NULL default 'new',
+                            `encryption_type` varchar(20) NOT NULL default 'not_set',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -1222,7 +1223,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "cache_tree` (
-                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                            `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT,
                             `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
                             `visible_folders` longtext NOT NULL,
                             `timestamp` varchar(50) NOT NULL,

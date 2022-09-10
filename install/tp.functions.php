@@ -128,7 +128,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
 }
 
 /**
- * Undocumented function
+ * Check if an INDEX exist, run the SQL query if not
  *
  * @param string $table Table
  * @param string $index Index
@@ -136,11 +136,10 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
  *
  * @return array
  */
-function addIndexIfNotExist($table, $index, $sql)
+function checkIndexExist($table, $index, $sql)
 {
     global $db_link;
-
-    $mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
+    $mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM $table WHERE column_name LIKE \"$index\"");
     $res = mysqli_fetch_row($mysqli_result);
 
     // if index does not exist, then add it
