@@ -126,7 +126,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             ''
                         ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></li>' +
-                        ($(data).data('otp-provided') === 0 ?
+                        ($(data).data('otp-provided') !== ""?
                             '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fas fa-mask mr-2"></i><?php echo langHdl('generate_new_otp'); ?></li>' :
                             ''
                         ) +
@@ -1736,7 +1736,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Show spinner
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
                 // Prepare data
                 var data = {
@@ -1754,7 +1754,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     function(data) {
                         //decrypt data
                         data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        //console.log(data);
+                        userTemporaryCode = data.user_code;
+                        constVisibleOTP = data.visible_otp;
 
                         if (data.error === true) {
                             // ERROR
@@ -1768,7 +1770,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             );
                         } else {
                             // generate keys
-                            generateUserKeys(data, data.user_code);
+                            generateUserKeys(data, userTemporaryCode);
                         }
                     }
                 );
