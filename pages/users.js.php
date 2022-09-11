@@ -170,7 +170,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         'preDrawCallback': function() {
             //toastr.remove();
             toastr.info(
-                '<?php echo langHdl('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>',
+                '<?php echo langHdl('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
             );
         },
@@ -178,8 +178,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // Tooltips
             $('.infotip').tooltip();
 
-            // Inform user
-            toastr.remove();
+            // Remove progress toast
+            $('.close-toastr-progress').closest('.toast').remove();
         },
         /*'createdRow': function( row, data, dataIndex ) {
             var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
@@ -1989,8 +1989,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      */
     function refreshListUsersLDAP() {
         // FIND ALL USERS IN LDAP
-        toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        //toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-ldap-body')
             .addClass('overlay')
@@ -2008,7 +2008,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
+                    //toastr.remove();
                     toastr.error(
                         data.message,
                         '<?php echo langHdl('caution'); ?>', {
@@ -2099,6 +2099,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             timeOut: 1000
                         }
                     );
+                    $('.close-toastr-progress').closest('.toast').remove();
                 }
             }
         );
@@ -2248,7 +2249,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function addUserInTeampass() {
         $('#warningModal').modal('hide');
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         // what roles
         var roles = [];
@@ -2274,8 +2275,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                //console.log(data);
+                console.log(data);
                 userTemporaryCode = data.user_code;
+                constVisibleOTP = data.visible_otp;
 
                 if (data.error !== false) {
                     // Show error
@@ -2287,7 +2289,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             progressBar: true
                         }
                     );
-                } else {
+                } else {                    
                     generateUserKeys(data, userTemporaryCode);
                 }
             }
@@ -2313,7 +2315,31 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             false,
         );
 
-        var visibleOtc = data.visible_otp;
+        // Now close in progress toast
+        $('.close-toastr-progress').closest('.toast').remove();
+
+        // If expected, show the OPT to the admin
+        if (constVisibleOTP === true) {
+            toastr.info(
+                '<span id="user-creation-otp-toast"></span><?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
+                + '<br /><button type="button" class="btn btn-default clear close-toastr-button"><?php echo langHdl('close');?></button>',
+                '<?php echo langHdl('information'); ?>',
+                {
+                    extendedTimeOut: 0,
+                    timeOut: 0,
+                    tapToDismiss: false,
+                    newestOnTop: true,
+                    preventDuplicates: true,
+                    onHidden: (toast) => {
+                        // prevent against multiple occurances (#3305)
+                        constVisibleOTP = false;
+                    },
+                }
+            );
+            $('body').on('click', '.close-toastr-button', function () {
+                $('.close-toastr-button').closest('.toast').remove();
+            });
+        }
 
         // Case where we need to encrypt new keys for the user
         // Process is: 
@@ -2388,29 +2414,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     // Rrefresh list of users in Teampass
                                     oTable.ajax.reload();
 
-                                    toastr.remove();
                                     toastr.success(
                                         '<?php echo langHdl('done'); ?>',
                                         '', {
                                             timeOut: 1000
                                         }
                                     );
-
-                                    // If expected, show the OPT to the admin
-                                    if (visibleOtc === true) {
-                                        toastr.info(
-                                            '<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
-                                            + '<br /><button type="button" class="btn clear"><?php echo langHdl('close');?></button>',
-                                            '<?php echo langHdl('information'); ?>',
-                                            {
-                                                extendedTimeOut: 0,
-                                                timeOut: 0,
-                                                tapToDismiss: false,
-                                                newestOnTop: true,
-                                                preventDuplicates: false
-                                            }
-                                        );
-                                    }
                                 }
                             }
                         );
@@ -2480,7 +2489,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             if (data.error === true) {
                                 // error
                                 $('#warningModal').modal('hide');
-                                toastr.remove();
+                                //toastr.remove();
                                 toastr.error(
                                     data.message,
                                     '<?php echo langHdl('caution'); ?>', {
@@ -2536,17 +2545,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Rrefresh list of users in Teampass
                     oTable.ajax.reload();
 
-                    toastr.remove(); 
-                    toastr.success(
-                        '<?php echo langHdl('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-
                     $('#warningModal').modal('hide');
 
+                    // restart time expiration counter
                     ProcessInProgress = false;
+                    console.log('TOUT EST TERMINE')
                 }
                 return dfd.promise();
             }

@@ -83,7 +83,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         'info': true,
         'processing': false,
         'serverSide': true,
-        'responsive': true,
+        'responsive': false,
         'stateSave': true,
         'autoWidth': true,
         'ajax': {
@@ -106,21 +106,38 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
                 }
             );
         },
-        'columnDefs': [{
-            'width': '100px',
-            'targets': 0,
-            'render': function(data, type, row, meta) {
-                if ($(data).data('type') === 'create_user_keys') {
-                    if ($(data).data('done') === 1) {
-                        return '<i class="fas fa-play text-warning"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+        'columnDefs': [
+            {
+                'width': '100px',
+                'targets': 0,
+                'render': function(data, type, row, meta) {
+                    if ($(data).data('type') === 'create_user_keys') {
+                        if ($(data).data('done') === 1) {
+                            return '<i class="fas fa-play text-warning"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                        } else {
+                            return '<i class="fars fa-hand-papper text-info"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                        }
                     } else {
-                        return '<i class="fars fa-hand-papper text-info"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                        return '';
                     }
-                } else {
-                    return '';
                 }
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
             }
-        }],
+        ],
     });
 
     /**
