@@ -2524,13 +2524,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     var data = {
                         'action': 'stepFinishing',
                         'user_id': userId,
+                        'user_new_otp': userTemporaryCode,
                     }
-                    console.log("Finishing user creation from LDAP")
+                    //console.log("Finishing user creation from LDAP")
                     console.log(data)
+
                     // Do query
                     $.post(
                         "sources/users.queries.php", {
-                            type: "finishing_user_creation_from_ldap",
+                            type: "finishing_user_keys_creation",
                             data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                             key: '<?php echo $_SESSION['key']; ?>'
                         },
@@ -2538,20 +2540,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                             console.log(data);
                             console.log("---");
+                            
+                            // refresh the list of users in LDAP not added in Teampass
+                            refreshListUsersLDAP();    
+
+                            // Rrefresh list of users in Teampass
+                            oTable.ajax.reload();
+
+                            $('#warningModal').modal('hide');
+
+                            // restart time expiration counter
+                            ProcessInProgress = false;
                         }
                     );
-
-                    // refresh the list of users in LDAP not added in Teampass
-                    refreshListUsersLDAP();    
-
-                    // Rrefresh list of users in Teampass
-                    oTable.ajax.reload();
-
-                    $('#warningModal').modal('hide');
-
-                    // restart time expiration counter
-                    ProcessInProgress = false;
-                    console.log('TOUT EST TERMINE')
                 }
                 return dfd.promise();
             }

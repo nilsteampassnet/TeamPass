@@ -25,7 +25,14 @@ function countdown()
         $('.countdown-icon')
             .addClass('fas fa-history')
             .removeClass('far fa-clock');
-        return;
+        
+        $(this).delay(1000).queue(function()
+        {
+            countdown();
+            $(this).dequeue();
+        });
+
+        return false;
     }
 
     // Continue

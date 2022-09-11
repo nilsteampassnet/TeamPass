@@ -2760,9 +2760,9 @@ if (null !== $post_type) {
             break;
 
         /*
-            * ADD USER FROM LDAP - FINISHING
-            */
-        case 'finishing_user_creation_from_ldap':
+        * ADD USER KEYS CREATION - FINISHING
+        */
+        case 'finishing_user_keys_creation':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
@@ -2785,6 +2785,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
+            $post_otp = filter_var($dataReceived['user_new_otp'], FILTER_SANITIZE_STRING);
 
             DB::update(
                 prefixTable('users'),
@@ -2793,6 +2794,24 @@ if (null !== $post_type) {
                 ),
                 'id = %i',
                 $post_userId
+            );
+
+            // Send mail to user with new OTP
+            $userInfo = DB::queryFirstRow(
+                'SELECT email
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_userId
+            );
+            sendEmail(
+                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+                str_replace(
+                    array('#enc_code#'),
+                    array($post_otp),
+                    langHdl('email_body_user_added_from_ldap_encryption_code')
+                ),
+                $userInfo['email'],
+                $SETTINGS
             );
 
 
@@ -3379,16 +3398,8 @@ if (null !== $post_type) {
 
             if ($userInfo['auth_type'] === 'local') {
                 $values['special'] = 'generate-keys';
-                /*array_push(
-                    $values,
-                    array('special' => 'generate-keys')
-                );*/
             } elseif ($userInfo['auth_type'] === 'ldap') {
                 $values['special'] = 'user_added_from_ldap';
-                /*array_push(
-                    $values,
-                    array('special' => 'user_added_from_ldap')
-                );*/
             }
 
             // update profil
