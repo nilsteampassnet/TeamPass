@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = false;
+        debugJavascript = true;
 
     // Manage memory
     browserSession(
@@ -459,6 +459,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Show copy form
             $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
             $('.form-folder-add').removeClass('hidden');
+
             // Prepare some data in the form
             if (selectedFolder.parent !== undefined && selectedFolder.parent !== '') {
                 $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
@@ -880,6 +881,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // > END <
             //
         }
+
+        return false;
     });
 
     /**
@@ -4114,42 +4117,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     );
                 }
             });
-
-            // refine users list to the related roles
-            /*$.post(
-                'sources/items.queries.php',
-                {
-                    type        : 'get_refined_list_of_users',
-                    iFolderId   : $('#hid_cat').val(),
-                    key         : '<?php echo $_SESSION['key']; ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                    if (debugJavascript === true) console.log(data);
-                    // *** restricted_to_list ***
-                    $('#form-item-restrictedto')
-                        .find('option').remove().end()
-                        .val('');
-                    // add list of users
-                    if ($('#form-item-restrictedToUsers').val() !== undefined) {
-                        $('#form-item-restrictedto').append(data.selOptionsUsers);
-                        if (data.setting_restricted_to_roles === 1) {
-                            //add optgroup
-                            var optgroup = $('<optgroup>');
-                            optgroup.attr('label', '<?php echo langHdl('users'); ?>');
-                            $('.folder_rights_user').wrapAll(optgroup);
-                        }
-                    }
-                    //Add list of roles if option is set
-                    if (data.setting_restricted_to_roles === 1 && $('#form-item-restrictedto').val() !== undefined) {
-                        //add optgroup
-                        var optgroup = $('<optgroup>');
-                        optgroup.attr('label', '<?php echo langHdl('roles'); ?>');
-                        $('#form-item-restrictedto').append(data.selOptionsRoles);
-                        $('.folder_rights_role').wrapAll(optgroup);
-                    }
-                }
-            );*/
         }
     }
 

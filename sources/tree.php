@@ -357,78 +357,71 @@ function recursiveTree(
     // Load config
     include __DIR__.'/../includes/config/tp.config.php';
 
+    $displayThisNode = false;
+    $nbChildrenItems = 0;
+    $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, true);
+    array_shift($nodeDirectDescendants); // get only the children
 
-    // Be sure that user can only see folders he/she is allowed to
-    if (
-        //in_array($nodeId, $session_forbiden_pfs) === false
-        //|| in_array($nodeId, $session_groupes_visibles) === true
-        in_array($nodeId, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
-    ) {
-        $displayThisNode = false;
-        $nbChildrenItems = 0;
-        $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, true);
-        array_shift($nodeDirectDescendants); // get only the children
-
-        // Check if any allowed folder is part of the descendants of this node
-        foreach ($nodeDescendants as $node) {
-            // manage tree counters
-            if (
-                isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true
-                && in_array(
-                    $node,
-                    array_merge(
-                        $inputData['visibleFolders'],
-                        is_null($inputData['restrictedFoldersForItems']) === true ? [] : $inputData['restrictedFoldersForItems']
-                    )
-                ) === true
-            ) {
-                DB::query(
-                    'SELECT * FROM ' . prefixTable('items') . '
-                    WHERE inactif=%i AND id_tree = %i',
-                    0,
-                    $node
-                );
-                $nbChildrenItems += DB::count();
-            }
-
-            if (
-                in_array($node, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
-            ) {
-                // Final check - is PF allowed?
-                $nodeDetails = $tree->getNode($node);
-                if (
-                    (int) $nodeDetails->personal_folder === 1
-                    && (int) $SETTINGS['enable_pf_feature'] === 1
-                    && in_array($node, $inputData['personalFolders']) === false
-                ) {
-                    $displayThisNode = false;
-                } else {
-                    $displayThisNode = true;
-                    // not adding a break in order to permit a correct count of items
-                }
-                $text = '';
-            }
-        }
-        
-        if ($displayThisNode === true) {
-            handleNode(
-                (int) $nodeId,
-                $currentNode,
-                $tree,
-                $listFoldersLimitedKeys,
-                $listRestrictedFoldersForItemsKeys,
-                $last_visible_parent,
-                $last_visible_parent_level,
-                $SETTINGS,
-                $inputData,
-                $text,
-                $nbChildrenItems,
-                $nodeDescendants,
-                $nodeDirectDescendants,
-                $ret_json
+    // Check if any allowed folder is part of the descendants of this node
+    foreach ($nodeDescendants as $node) {
+        // manage tree counters
+        if (
+            isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true
+            && in_array(
+                $node,
+                array_merge(
+                    $inputData['visibleFolders'],
+                    is_null($inputData['restrictedFoldersForItems']) === true ? [] : $inputData['restrictedFoldersForItems']
+                )
+            ) === true
+        ) {
+            DB::query(
+                'SELECT * FROM ' . prefixTable('items') . '
+                WHERE inactif=%i AND id_tree = %i',
+                0,
+                $node
             );
+            $nbChildrenItems += DB::count();
+        }
+
+        if (
+            in_array($node, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
+        ) {
+            // Final check - is PF allowed?
+            $nodeDetails = $tree->getNode($node);
+            if (
+                (int) $nodeDetails->personal_folder === 1
+                && (int) $SETTINGS['enable_pf_feature'] === 1
+                && in_array($node, $inputData['personalFolders']) === false
+            ) {
+                $displayThisNode = false;
+            } else {
+                $displayThisNode = true;
+                // not adding a break in order to permit a correct count of items
+            }
+            $text = '';
         }
     }
+    
+    if ($displayThisNode === true) {
+        handleNode(
+            (int) $nodeId,
+            $currentNode,
+            $tree,
+            $listFoldersLimitedKeys,
+            $listRestrictedFoldersForItemsKeys,
+            $last_visible_parent,
+            $last_visible_parent_level,
+            $SETTINGS,
+            $inputData,
+            $text,
+            $nbChildrenItems,
+            $nodeDescendants,
+            $nodeDirectDescendants,
+            $ret_json
+        );
+    }
+    
     return $ret_json;
 }
 

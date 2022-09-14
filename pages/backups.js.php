@@ -247,10 +247,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             runtimes: "gears,html5,flash,silverlight,browserplus",
             browse_button: "onthefly-restore-file-select",
             container: "onthefly-restore-file",
-            max_file_size: "10mb",
-            chunk_size: "1mb",
+            max_file_size: "100mb",
+            chunk_size: "10mb",
             unique_names: true,
-            dragdrop: false,
+            dragdrop: true,
             multiple_queues: false,
             multi_selection: false,
             max_file_count: 1,
@@ -268,13 +268,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         "sources/main.queries.php", {
                             type: "save_token",
                             type_category: 'action_system',
-                            size: 50,
+                            size: 25,
                             capital: true,
                             numeric: true,
-                            lowercase: true,
-                            secure: false,
+                            ambiguous: true,
                             reason: "restore_db",
-                            duration: 10
+                            duration: 10,
+                            key: '<?php echo $_SESSION['key']; ?>'
                         },
                         function(data) {
                             console.log(data);
@@ -324,6 +324,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 }
             }
         });
+
     // Uploader options
     uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
         console.log(object)
@@ -333,8 +334,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
+        console.log("ERREUR");
         console.log(err)
-        var myData = prepareExchangedData(err, "decode", "<?php echo $_SESSION['key']; ?>");
+        //var myData = prepareExchangedData(err, "decode", "<?php echo $_SESSION['key']; ?>");
         $("#onthefly-restore-progress")
             .removeClass('hidden')
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +

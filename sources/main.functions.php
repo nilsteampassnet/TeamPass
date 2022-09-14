@@ -714,7 +714,6 @@ function identUser(
  */
 function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readOnlyFolders, $allowedFolders) : array
 {
-    
     $rows = DB::query(
         'SELECT *
         FROM ' . prefixTable('roles_values') . '

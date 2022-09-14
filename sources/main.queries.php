@@ -1265,6 +1265,11 @@ function generateBugReport(
         'email_auth_username',
         'email_auth_pwd',
         'email_from',
+        'onthefly-restore-key',
+        'onthefly-backup-key',
+        'ldap_password',
+        'ldap_hosts',
+        'proxy_ip',
     );
 
     // Get data

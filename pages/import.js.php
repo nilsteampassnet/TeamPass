@@ -286,7 +286,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 if (data.error == "bad_structure") {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -410,7 +410,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -478,7 +478,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         ambiguous: true,
                         reason: "import_items_from_keepass",
                         duration: 10,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
                         store.update(
@@ -587,7 +587,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -626,7 +626,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             if (data.error === true) {
                                 toastr.remove();
                                 toastr.error(
-                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
                                     '', {
                                         timeOut: 10000,
                                         closeButton: true,
@@ -686,7 +686,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                                     // ERROR
                                                     toastr.remove();
                                                     toastr.error(
-                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('import_error_no_read_possible'); ?>',
+                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
                                                         '', {
                                                             timeOut: 10000,
                                                             closeButton: true,

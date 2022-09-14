@@ -641,7 +641,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 "<?php echo $_SESSION['key']; ?>"
                             );
                             console.info('Identification answer:')
-                            if (debugJavascript === true) console.log(data);
+                            if (debugJavascript === true) {
+                                console.log('SESSION KEY is: <?php echo $_SESSION['key']; ?>');
+                                console.log(data);
+                            }
                             
                             // Maintenance mode is enabled?
                             if (data.error === 'maintenance_mode_enabled') {
