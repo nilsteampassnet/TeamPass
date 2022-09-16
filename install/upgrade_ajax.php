@@ -825,6 +825,20 @@ if (isset($post_type)) {
                         )
                     );
                 }
+                // reload the file
+                include '../includes/config/settings.php';
+
+                // ensure the new constant is set
+                define("DB_SSL", array(
+                    "key" => "",
+                    "cert" => "",
+                    "ca_cert" => "",
+                    "ca_path" => "",
+                    "cipher" => ""
+                ));
+                define("DB_CONNECT_OPTIONS", array(
+                    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+                ));
             }
 
             // Manage saltkey.txt file
