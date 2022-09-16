@@ -287,7 +287,7 @@ if (null !== $post_type) {
 
             $post_backupFile = $data['valeur'];
 
-            // Undecrypt the file
+            // Uncrypt the file
             if (empty($post_key) === false) {
                 // Decrypt the file
                 $ret = prepareFileWithDefuse(
@@ -299,7 +299,14 @@ if (null !== $post_type) {
                 );
 
                 if (empty($ret) === false) {
-                    echo '[{"result":"db_restore" , "message":"' . $ret . '"}]';
+                    echo prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        array(
+                            'error' => true,
+                            'message' => 'Error: '.$ret,
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 

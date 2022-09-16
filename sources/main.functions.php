@@ -2244,7 +2244,7 @@ function prepareFileWithDefuse(
     }
 
     // return error
-    return empty($err) === false ? $err : '';
+    return $err === true ? '' : $err;
 }
 
 /**
@@ -2265,6 +2265,11 @@ function defuseFileEncrypt(
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
@@ -2310,6 +2315,11 @@ function defuseFileDecrypt(
 ) {
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';

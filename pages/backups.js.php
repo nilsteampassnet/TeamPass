@@ -79,6 +79,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         );
     });
 
+    $(document).on('click', '.btn-choose-file', function() {
+        $('#onthefly-restore-progress, #onthefly-backup-progress')
+            .addClass('hidden')
+            .html('');
+    });
+
     $(document).on('click', '.start', function() {
         var action = $(this).data('action');
 
@@ -247,8 +253,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             runtimes: "gears,html5,flash,silverlight,browserplus",
             browse_button: "onthefly-restore-file-select",
             container: "onthefly-restore-file",
-            max_file_size: "100mb",
-            chunk_size: "10mb",
+            max_file_size: "50mb",
+            chunk_size: "0",
             unique_names: true,
             dragdrop: true,
             multiple_queues: false,
@@ -260,6 +266,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             filters: [{
                 title: "SQL files",
                 extensions: "sql"
+                //mime_types : "application/zip"
             }],
             init: {
                 FilesAdded: function(up, files) {
@@ -327,15 +334,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 
     // Uploader options
     uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
-        console.log(object)
         var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
-        console.log(myData);
         $('#onthefly-restore-file').data('operation-id', myData.operation_id);
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
-        console.log("ERREUR");
-        console.log(err)
         //var myData = prepareExchangedData(err, "decode", "<?php echo $_SESSION['key']; ?>");
         $("#onthefly-restore-progress")
             .removeClass('hidden')

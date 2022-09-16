@@ -448,11 +448,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     // Plupload for KEEPASS
     var uploader_keepass = new plupload.Uploader({
-        runtimes: "html5,flash,silverlight,html4",
+        runtimes: "gears,html5,flash,silverlight,browserplus",
         browse_button: "import-keepass-attach-pickfile-keepass",
         container: "import-keepass-upload-zone",
         max_file_size: "10mb",
-        chunk_size: "1mb",
+        chunk_size: "0",
         unique_names: true,
         dragdrop: true,
         multiple_queues: false,
@@ -542,6 +542,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('.keepass-setup').removeClass('hidden');
                 }
                 upldr.splice(); // clear the file queue
+            },
+            Error: function(up, data) {
+                toastr.warning(
+                    data.message + ' (' + up.settings.max_file_size + ')',
+                    '<?php echo langHdl('caution'); ?>',
+                    {
+                        timeOut: 4000,
+                        progressBar: true
+                    }
+                );
             }
         }
     });
@@ -567,6 +577,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $('#import-feedback-progress-text')
             .html('<?php echo langHdl('reading_file'); ?>');
             $('#import-feedback').removeClass('hidden');
+        
+        // block time counter
+        ProcessInProgress = true;
 
         data = {
             'file': store.get('teampassApplication').uploadedFileId,
@@ -727,6 +740,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         $('#import-feedback-result').append(data.info)
                                         $('#import-feedback-progress').addClass('hidden');
                                         $('#import-feedback div').removeClass('hidden');
+                                        $('#import-feedback-progress-text').html('');
                                         
                                         // Show
                                         toastr.remove();
@@ -751,6 +765,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                                 teampassApplication.uploadedFileId = '';
                                             }
                                         );
+
+                                        // restart time expiration counter
+                                        ProcessInProgress = false;
                                     }
                                     
                                     return dfd.promise();
