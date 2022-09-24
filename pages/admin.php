@@ -80,6 +80,21 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                 <div class="card card-default">
                     <div class="card-header">
                         <h3 class="card-title">
+                            <i class="fas fa-hand-holding-heart mr-2 text-danger"></i>Become a sponsor
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                    <div class="alert bg-olive disabled" role="alert">
+                        <p>People sponsoring my open source work each month help motivate me to devote time and resources to producing the best quality work I can for everyone who uses Teampass.</p>
+                        <p>Read my <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
+                    </div>
+                    </div>
+                </div>
+                
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h3 class="card-title">
                             <i class="fas fa-bullhorn mr-2"></i>
                             <?php echo langHdl('communication_means'); ?>
                         </h3>
@@ -92,7 +107,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                         </div>
                         <div class="callout callout-info">
                             <h5><i class="fas fa-book fa-lg fa-fw mr-2"></i><?php echo langHdl('documentation_canal'); ?>
-                                <a class="text-info" target="_blank" href="https://teampass.readthedocs.org">ReadTheDoc</a></h5>
+                                <a class="text-info" target="_blank" href="https://documentation.teampass.net/#/">ReadTheDoc</a></h5>
                         </div>
                         <div class="callout callout-info">
                             <h5><i class="fas fa-bug fa-lg fa-fw mr-2"></i><?php echo langHdl('bug_canal'); ?>
@@ -107,16 +122,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                             <h5><i class="fas fa-hands-helping fa-lg fa-fw mr-2"></i><?php echo langHdl('feature_support_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://www.reddit.com/r/TeamPass">Reddit</a></h5>
                         </div>
--->
                         <div class="callout callout-info">
                             <h5><i class="fas fa-donate fa-lg fa-fw mr-2"></i><?php echo langHdl('consider_a_donation'); ?>
                                 <a class="text-info" target="_blank" href="https://teampass.net/donation"><?php echo langHdl('more_information'); ?></a></h5>
                         </div>
+                        -->
                     </div>
                     <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
             </div>
+
+
             <!-- /.col -->
             <div class="col-md-6">
                 <div class="card card-default">
@@ -130,24 +147,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <div class="card-body">
                         <?php
                         // Display the readme file
-                        $Fnm = 'changelog.txt';
-if (file_exists($Fnm)) {
-    $tab = file($Fnm);
-    if ($tab !== false) {
-        $cnt = 0;
-        foreach ($tab as $cle => $val) {
-            if (! (strpos(trim($val), '/*') === 0 || strpos(trim($val), '*') === 0)) {
-                if ($cnt < 19) {
-                    echo $val . '<br />';
-                    ++$cnt;
-                } elseif ($cnt === 19) {
-                    echo '...<br /><br /><b><a href="changelog.txt" target="_blank"><span class="fa fa-book"></span>' . langHdl('readme_open') . '</a></b>';
-                    break;
-                }
-            }
-        }
-    }
-}
+                        $homepage = file_get_contents('changelog.txt', false, null, 530);
+                        echo $homepage;
                         ?>
                     </div>
                     <!-- /.card-body -->

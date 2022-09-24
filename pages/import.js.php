@@ -622,7 +622,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     }
                     // Show spinner
                     $('#import-feedback-progress-text')
-                        .html('<?php echo langHdl('folder'); ?> <?php echo langHdl('at_creation'); ?>');
+                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('folder'); ?> <?php echo langHdl('at_creation'); ?>');
 
                     console.info("Now creating folders")
                     //console.log(data);
@@ -673,7 +673,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<?php echo langHdl('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
+                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
@@ -737,9 +737,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         console.log('Importing is now finished');
 
                                         // Show results
-                                        $('#import-feedback-result').append(data.info)
                                         $('#import-feedback-progress').addClass('hidden');
                                         $('#import-feedback div').removeClass('hidden');
+                                        $('#import-feedback-result').append(data.info)
                                         $('#import-feedback-progress-text').html('');
                                         
                                         // Show

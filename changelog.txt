@@ -16,17 +16,22 @@
  */
 
 
-You are using branch 3 of Teampass.
-If you have upgraded from previous branch 2.x then some features have not yet being implemented.
+<h5><i class="fas fa-handshake mr-2 text-info"></i>Thank you for using Teampass V3 </h5>
+<br>
 
-Clear clipboard requires Firefox config value "dom.events.testing.asyncClipboard" set to "true".
+<h5><i class="fas fa-glasses mr-2 text-info"></i>Tips</h5>
+<p><ul>
+    <li>Clear clipboard requires Firefox config value "dom.events.testing.asyncClipboard" set to "true".</li>
+    <li>Clear the browser cache after each upgrade.</li>
+ </ul></p>
+<br>
 
-
-// TODO
- - API update
- - Update server password
- - Suggestion
- - Knowledge base
- - Offline mode
- - Backups
- 
+<h5><i class="fas fa-terminal mr-2 text-info"></i>Remains to be done</h5>
+<p><ul>
+    <li>API update</li>
+    <li>Update server password</li>
+    <li>Suggestion</li>
+    <li>Knowledge base</li>
+    <li>Offline mode</li>
+    <li>Backups</li>
+ </ul></p>

@@ -209,7 +209,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <h5><i class="icon fas fa-info-circle mr-2"></i><?php echo langHdl('info'); ?></h5>
                         <div class="row hidden" id="import-feedback-result"></div>
                         <div class="row" id="import-feedback-progress">
-                            <i class="fas fa-cog fa-spin fa-2x ml-4 mr-2"></i>
                             <span id="import-feedback-progress-text"></span>
                         </div>
                     </div>

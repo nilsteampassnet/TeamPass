@@ -878,6 +878,17 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             )
         );
 
+        // Indicate that a change has been done to force tree user reload
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => time(),
+            ),
+            'type = %s AND intitule = %s',
+            'timestamp',
+            'last_folder_change'
+        );
+
         //For each role to which the user depends on, add the folder just created.
         foreach ($_SESSION['arr_roles'] as $role) {
             DB::insert(
