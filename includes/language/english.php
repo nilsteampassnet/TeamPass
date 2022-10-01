@@ -22,6 +22,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS', 
+    'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
     'generate_new_otp' => 'Generate new OTP',
     'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
     'html' => 'html',

@@ -390,6 +390,24 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_tls_certifacte_check'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_tls_certifacte_check_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <select class='form-control form-control-sm' id='ldap_tls_certifacte_check'>
+                                            <option value="LDAP_OPT_X_TLS_NEVER" <?php echo isset($SETTINGS['ldap_tls_certifacte_check']) === true && $SETTINGS['ldap_tls_certifacte_check'] === 'LDAP_OPT_X_TLS_NEVER' ? ' selected' : ''; ?>>LDAP_OPT_X_TLS_NEVER</option>
+                                            <option value="LDAP_OPT_X_TLS_HARD" <?php echo isset($SETTINGS['ldap_tls_certifacte_check']) === true && $SETTINGS['ldap_tls_certifacte_check'] === 'LDAP_OPT_X_TLS_HARD' ? ' selected' : ''; ?>>LDAP_OPT_X_TLS_HARD</option>
+                                            <option value="LDAP_OPT_X_TLS_DEMAND" <?php echo isset($SETTINGS['ldap_tls_certifacte_check']) === true && $SETTINGS['ldap_tls_certifacte_check'] === 'LDAP_OPT_X_TLS_DEMAND' ? ' selected' : ''; ?>>LDAP_OPT_X_TLS_DEMAND</option>
+                                            <option value="LDAP_OPT_X_TLS_ALLOW" <?php echo isset($SETTINGS['ldap_tls_certifacte_check']) === true && $SETTINGS['ldap_tls_certifacte_check'] === 'LDAP_OPT_X_TLS_ALLOW' ? ' selected' : ''; ?>>LDAP_OPT_X_TLS_ALLOW</option>
+                                            <option value="LDAP_OPT_X_TLS_TRY" <?php echo isset($SETTINGS['ldap_tls_certifacte_check']) === true && $SETTINGS['ldap_tls_certifacte_check'] === 'LDAP_OPT_X_TLS_TRY' ? ' selected' : ''; ?>>LDAP_OPT_X_TLS_TRY</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
                                         <?php echo langHdl('settings_ldap_elusers'); ?>
