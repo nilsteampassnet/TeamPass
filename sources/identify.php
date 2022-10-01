@@ -1172,7 +1172,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         if (
             (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
             ||
-            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time())
+            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
         ) {
             return [
                 'error' => true,
