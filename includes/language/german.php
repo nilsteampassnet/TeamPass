@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'Element hat kein Passwort',
     'bug_report_to_github' => 'Füllen Sie den Berichts aus, kopieren ihn in die Zwischenablage und fügen ihn dann in die Github New Issue Page ein.',
     'open_bug_report_in_github' => 'Neue Meldung auf Github eröffnen',
-    'bugs_page' => 'Falls Sie in Teampass einen Fehler entdecken, können Sie ihn direkt posten unter &lt;a href=\'http://code.google.com/p/TeamPass/issues/list\' target=\'_blank\'&gt;&lt;u&gt;Bugs&lt;/u&gt;&lt;/a&gt;.',
+    'bugs_page' => 'Wenn Sie einen Fehler entdecken, melden Sie ihn bitte.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Benutzerrecht "Änderbar durch alle derselben Rolle" für alle importierten Elemente setzen',
     'import_csv_anyone_can_modify_txt' => 'Benutzerrecht "Änderbar durch alle" für alle importierten Elemente setzen',
     'settings_upload_imageresize_options' => 'Sollte die Größe der Bilder verändert werden?',

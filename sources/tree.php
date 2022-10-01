@@ -38,7 +38,7 @@ include __DIR__.'/../includes/config/tp.config.php';
 // includes
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
 // header

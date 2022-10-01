@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
-    'bugs_page' => 'Se você encontrar um bug poderá postar diretamente em &lt;a href=\'http://code.google.com/p/TeamPass/issues/list\' target=\'_blank\'&gt;&lt;u&gt;Bugs&lt;/u&gt;&lt;/a&gt;.',
+    'bugs_page' => 'Se você descobrir um bug, por favor, reporte-o.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Define \'ninguém pode modificar na mesma regra\' aplica para todos os itens importados.',
     'import_csv_anyone_can_modify_txt' => 'Define \'qualquer um pode modificar\' aplica para todos os itens importados.',
     'settings_upload_imageresize_options' => 'Resize uploaded images',

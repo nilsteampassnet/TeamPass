@@ -118,91 +118,91 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     // Build tree
     $('#jstree').jstree({
-            'core': {
-                'animation': 0,
-                'check_callback': true,
-                'data': {
-                    'url': './sources/tree.php',
-                    'dataType': 'json',
-                    'icons': false,
-                    'data': function(node) {
-                        if (debugJavascript === true) {
-                            console.info('Les répertoires sont chargés');
-                            console.log(node);
-                        }
-                        return {
-                            'id': node.id.split('_')[1],
-                            'force_refresh': store.get('teampassApplication') !== undefined ?
-                                store.get('teampassApplication').jstreeForceRefresh : 0
-                        };
+        'core': {
+            'animation': 0,
+            'check_callback': true,
+            'data': {
+                'url': './sources/tree.php',
+                'dataType': 'json',
+                'icons': false,
+                'data': function(node) {
+                    if (debugJavascript === true) {
+                        console.info('Les répertoires sont chargés');
+                        console.log(node);
                     }
-                },
-                'strings': {
-                    'Loading ...': '<?php echo langHdl('loading'); ?>...'
-                },
-                'themes': {
-                    'icons': false,
-                },
-            },
-            'plugins': [
-                'state', 'search'
-            ]
-        })
-        // On node select
-        .bind('select_node.jstree', function(e, data) {
-            if (debugJavascript === true) console.log('JSTREE BIND');
-            selectedFolder = $('#jstree').jstree('get_selected', true)[0]
-            selectedFolderId = parseInt(selectedFolder.id.split('_')[1]);
-
-            // manage icon open/closed
-            var selectedFolderIcon = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder'),
-                selectedFolderIconSelected = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder-selected');
-
-            // remove selected on previous folder
-            $($('#fld_'+previousSelectedFolder).children('.tree-folder'))
-                .removeClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder-selected'))
-                .addClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder'));
-            // show selected icon
-            $('#fld_'+selectedFolderId).children('.tree-folder')
-                .removeClass(selectedFolderIcon)
-                .addClass(selectedFolderIconSelected);
-
-            if (debugJavascript === true) {
-                console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
-                console.log(selectedFolder);
-                console.log(selectedFolder.original.is_pf)
-            }
-
-            store.update(
-                'teampassApplication',
-                function(teampassApplication) {
-                    teampassApplication.selectedFolder = selectedFolderId,
-                    teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
-                    teampassApplication.selectedFolderParentId = selectedFolder.parent !== "#" ? selectedFolder.parent.split('_')[1] : 0,
-                    teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
-                    teampassApplication.selectedFolderIcon = selectedFolderIcon,
-                    teampassApplication.selectedFolderIconSelected = selectedFolderIconSelected,
-                    teampassApplication.selectedFolderIsPF = selectedFolder.original.is_pf,
-                    teampassApplication.userCanEdit = selectedFolder.original.can_edit
+                    return {
+                        'id': node.id.split('_')[1],
+                        'force_refresh': store.get('teampassApplication') !== undefined ?
+                            store.get('teampassApplication').jstreeForceRefresh : 0
+                    };
                 }
-            )
+            },
+            'strings': {
+                'Loading ...': '<?php echo langHdl('loading'); ?>...'
+            },
+            'themes': {
+                'icons': false,
+            },
+        },
+        'plugins': [
+            'state', 'search'
+        ]
+    })
+    // On node select
+    .bind('select_node.jstree', function(e, data) {
+        if (debugJavascript === true) console.log('JSTREE BIND');
+        selectedFolder = $('#jstree').jstree('get_selected', true)[0]
+        selectedFolderId = parseInt(selectedFolder.id.split('_')[1]);
 
-            // Prepare list of items
-            if (startedItemsListQuery === false) {
-                startedItemsListQuery = true;
-                ListerItems(selectedFolderId, '', 0);
-            }
+        // manage icon open/closed
+        var selectedFolderIcon = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder'),
+            selectedFolderIconSelected = $('#fld_'+selectedFolderId).children('.tree-folder').attr('data-folder-selected');
 
-            previousSelectedFolder = selectedFolderId;
-            initialPageLoad = false;
-        })
-        // Search in tree
-        .bind('search.jstree', function(e, data) {
-            if (data.nodes.length == 1) {
-                //open the folder
-                ListerItems($('#jstree li>a.jstree-search').attr('id').split('_')[1], '', 0);
+        // remove selected on previous folder
+        $($('#fld_'+previousSelectedFolder).children('.tree-folder'))
+            .removeClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder-selected'))
+            .addClass($('#fld_'+previousSelectedFolder).children('.tree-folder').attr('data-folder'));
+        // show selected icon
+        $('#fld_'+selectedFolderId).children('.tree-folder')
+            .removeClass(selectedFolderIcon)
+            .addClass(selectedFolderIconSelected);
+
+        if (debugJavascript === true) {
+            console.info('SELECTED NODE ' + selectedFolderId + " -- " + startedItemsListQuery);
+            console.log(selectedFolder);
+            console.log(selectedFolder.original.is_pf)
+        }
+
+        store.update(
+            'teampassApplication',
+            function(teampassApplication) {
+                teampassApplication.selectedFolder = selectedFolderId,
+                teampassApplication.selectedFolderTitle = selectedFolder.a_attr['data-title'],
+                teampassApplication.selectedFolderParentId = selectedFolder.parent !== "#" ? selectedFolder.parent.split('_')[1] : 0,
+                teampassApplication.selectedFolderParentTitle = selectedFolder.a_attr['data-title'],
+                teampassApplication.selectedFolderIcon = selectedFolderIcon,
+                teampassApplication.selectedFolderIconSelected = selectedFolderIconSelected,
+                teampassApplication.selectedFolderIsPF = selectedFolder.original.is_pf,
+                teampassApplication.userCanEdit = selectedFolder.original.can_edit
             }
-        });
+        )
+
+        // Prepare list of items
+        if (startedItemsListQuery === false) {
+            startedItemsListQuery = true;
+            ListerItems(selectedFolderId, '', 0);
+        }
+
+        previousSelectedFolder = selectedFolderId;
+        initialPageLoad = false;
+    })
+    // Search in tree
+    .bind('search.jstree', function(e, data) {
+        if (data.nodes.length == 1) {
+            //open the folder
+            ListerItems($('#jstree li>a.jstree-search').attr('id').split('_')[1], '', 0);
+        }
+    });
 
     // Find folders in jstree
     $('#jstree_search')
@@ -3302,7 +3302,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             return false;
         }
 
-        if (do_refresh === true) {
+        if (do_refresh === true || store.get('teampassApplication').jstreeForceRefresh === 1) {
             $('#jstree').jstree(true).refresh();
         }
 

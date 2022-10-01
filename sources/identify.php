@@ -195,7 +195,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare GET variables
-    $sessionUserLanguage = $superGlobal->get('user_language', 'SESSION');
+    $sessionUserLanguage = $superGlobal->get('user_language', 'SESSION', 'user');
     $sessionKey = $superGlobal->get('key', 'SESSION');
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -437,7 +437,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
         $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');
         $superGlobal->put('personal_folder', $userInfo['personal_folder'], 'SESSION');
-        $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION');
         $superGlobal->put('user_email', $userInfo['email'], 'SESSION');
         $superGlobal->put('user_ga', $userInfo['ga'], 'SESSION');
         $superGlobal->put('user_avatar', $userInfo['avatar'], 'SESSION');

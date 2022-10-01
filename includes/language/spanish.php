@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'El artículo no tiene contraseña',
     'bug_report_to_github' => 'Completa el contenido del informe, cópialo en el portapapeles y pégualo en la página de nueva incidencia en Github',
     'open_bug_report_in_github' => 'Abrir informe de problema en Github',
-    'bugs_page' => 'Si descubre un bug, puede postearlo directamente en el &lt;a href=\'https://github.com/nilsteampassnet/TeamPass/issues\' target=\'_blank\'&gt;&lt;u&gt;Foro de Bugs&lt;/u&gt;&lt;/a&gt;.',
+    'bugs_page' => 'Si descubre un error, por favor repórtelo.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Activar "todos los del mismo rol pueden modificar" en todos los elementos importados.',
     'import_csv_anyone_can_modify_txt' => 'Activar "todos pueden modificar" en todos los elementos importados.',
     'settings_upload_imageresize_options' => '¿Deberían redimensionarse las imágenes?',

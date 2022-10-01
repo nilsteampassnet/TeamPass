@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
-    'bugs_page' => 'Kui leiad rakenduses vea, palun teavita sellest <a href="https://sourceforge.net/tracker/?group_id=280505&amp;atid=1190333" target="_blank"><u>TeamPassi foorumis</u></a>.',
+    'bugs_page' => 'Kui avastate vea, teatage sellest.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Määra "igaüks samas rollis saab muuta" õigus kõigile imporditud kirjetele.',
     'import_csv_anyone_can_modify_txt' => 'Määra "igaüks saab muuta" õigus kõigile imporditud kirjetele.',
     'settings_upload_imageresize_options' => 'Kas piltide suurust tuleks muuta',

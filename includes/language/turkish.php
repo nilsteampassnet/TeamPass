@@ -462,7 +462,7 @@ return array(
     'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
-    'bugs_page' => 'Herhangi bir hata bulursanız, direk olarak  <a href="https://sourceforge.net/tracker/?group_id=280505&amp;atid=1190333" target="_blank"><u>Bugs Forum</u></a>\' a gönderebilirsiniz.',
+    'bugs_page' => 'Bir hata keşfederseniz, lütfen bildirin.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Tüm içe aktarılan öğelerde "aynı roldeki herhangi bir kimse değiştirebilir" hakkını aktif et.',
     'import_csv_anyone_can_modify_txt' => 'Tüm içe aktarılan öğelerde "herhangi bir kimse değiştirebilir" hakkını aktif et.',
     'settings_upload_imageresize_options' => 'Yüklenen resimleri boyutlandır',

@@ -70,7 +70,7 @@ if (
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
@@ -2174,7 +2174,7 @@ if (null !== $post_type) {
                 $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
                 $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
                 $_SESSION['user_agsescardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
-                $_SESSION['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -3479,7 +3479,7 @@ if (null !== $post_type) {
                 $_SESSION['user_timezone'] = $post_newValue;
             } elseif ($value[0] === 'userlanguage') {
                 // special case for user_language where session needs to be updated
-                $_SESSION['user_language'] = $post_newValue;
+                $_SESSION['user']['user_language'] = $post_newValue;
             } elseif ($value[0] === 'agses-usercardid') {
                 // special case for agsescardid where session needs to be updated
                 $_SESSION['user_agsescardid'] = $post_newValue;

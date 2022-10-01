@@ -341,8 +341,8 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         ?>
                                     </ul>
                                 </div>
-                                                            </div>
-
+                            </div>
+                            
                             <!-- SETTINGS -->
                             <div class="tab-pane" id="tab_settings">
                                 <form class="needs-validation" novalidate onsubmit="return false;">
@@ -391,9 +391,8 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 <?php
                                                     foreach ($languages as $language) {
                                                         echo '<option value="' . $language['name'] . '"',
-                                                        $_SESSION['user_language'] === strtolower($language['name']) ?
-                                                        ' selected="selected"' :
-                                                        ($SETTINGS['default_language'] === strtolower($language['name']) ? ' selected="selected"' : ''),
+                                                        strtolower($_SESSION['user']['user_language']) === strtolower($language['name']) ?
+                                                        ' selected="selected"' : '',
                                                     '>' . $language['label'] . '</option>';
                                                     }
                                                 ?>
@@ -407,11 +406,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             <select class="form-control" id="profile-user-treeloadstrategy">
                                                 
                                                 <option value="<?php echo langHdl('sequential'); ?>"
-                                                    <?php echo isset($_SESSION['user_treeloadstrategy']) === true && $_SESSION['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>
+                                                    <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>
                                                 ><?php echo langHdl('sequential'); ?></option>
                                                 
                                                 <option value="<?php echo langHdl('full'); ?>"
-                                                    <?php echo isset($_SESSION['user_treeloadstrategy']) === true && $_SESSION['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>
+                                                    <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>
                                                 ><?php echo langHdl('full'); ?></option>
                                             </select>
                                         </div>

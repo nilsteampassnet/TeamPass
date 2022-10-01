@@ -140,13 +140,13 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 
     // Securize language
     if (
-        is_null($superGlobal->get('user_language', 'SESSION')) === true
-        || empty($superGlobal->get('user_language', 'SESSION')) === true
+        is_null($superGlobal->get('user_language', 'SESSION', 'user')) === true
+        || empty($superGlobal->get('user_language', 'SESSION', 'user')) === true
     ) {
-        $superGlobal->put('user_language', 'english', 'SESSION');
+        $superGlobal->put('user_language', 'english', 'SESSION', 'user');
     }
 
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION') . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION', 'user') . '.php';
     include_once 'SplClassLoader.php';
     include_once 'main.functions.php';
 

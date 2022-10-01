@@ -112,7 +112,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
 $post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STRING);
 // Prepare superGlobal variables
-$session_user_language = $superGlobal->get('user_language', 'SESSION');
+$session_user_language = $superGlobal->get('user_language', 'SESSION', 'user');
 $session_user_id = $superGlobal->get('user_id', 'SESSION');
 $session_user_admin = (int) $superGlobal->get('user_admin', 'SESSION');
 $session_user_human_resources = (int) $superGlobal->get('user_can_manage_all_users', 'SESSION');
@@ -147,31 +147,28 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
         ]
     );
     if (empty($dataLanguage['valeur'])) {
-        $superGlobal->put('user_language', 'english', 'SESSION');
+        $superGlobal->put('user_language', 'english', 'SESSION', 'user');
         $superGlobal->put('user_language_flag', 'us.png', 'SESSION');
         $session_user_language = 'english';
     } else {
-        $superGlobal->put('user_language', $dataLanguage['valeur'], 'SESSION');
+        $superGlobal->put('user_language', $dataLanguage['valeur'], 'SESSION', 'user');
         $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');
         $session_user_language = $dataLanguage['valeur'];
     }
 } elseif (isset($SETTINGS['default_language']) === true && $session_user_language === null) {
-    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
+    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
     $session_user_language = $SETTINGS['default_language'];
-} elseif ($post_language !== null) {
-    $superGlobal->put('user_language', $post_language, 'SESSION');
+} elseif ($post_language !== null) {echo " --2-- ";
+    $superGlobal->put('user_language', $post_language, 'SESSION', 'user');
     $session_user_language = $post_language;
 } elseif ($session_user_language === null || empty($session_user_language) === true) {
     if ($post_language !== null) {
-        $superGlobal->put('user_language', $post_language, 'SESSION');
+        $superGlobal->put('user_language', $post_language, 'SESSION', 'user');
         $session_user_language = $post_language;
     } elseif ($session_user_language !== null) {
-        $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
+        $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
         $session_user_language = $SETTINGS['default_language'];
     }
-} elseif ((int) $session_user_language === 0) {
-    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION');
-    $session_user_language = $SETTINGS['default_language'];
 }
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
@@ -179,6 +176,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
 }
 
+//print_r($_SESSION['user']);
 // Load user languages files
 if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
     $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';

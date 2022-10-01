@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'Item has no password',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
-    'bugs_page' => 'Se scopri un bug, puoi postarlo direttamente nel &lt;a href=\'https://sourceforge.net/tracker/?group_id=280505&amp;atid=1190333\' target=\'_blank\'&gt;&lt;u&gt;Bugs Forum&lt;/u&gt;&lt;/a&gt;.',
+    'bugs_page' => 'Se scopri un bug, segnalalo.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Imposta il permesso "chiunque nello stesso ruolo può modificare" su tutti gli elementi importati.',
     'import_csv_anyone_can_modify_txt' => 'Imposta il permesso "chiunque può modificare" su tutti gli elementi importati.',
     'settings_upload_imageresize_options' => 'Le immagini vanno ridimensionate',

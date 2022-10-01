@@ -91,7 +91,7 @@ function mainQuery(array $SETTINGS)
 
 
     // Includes
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
@@ -109,7 +109,7 @@ function mainQuery(array $SETTINGS)
     DB::$connect_options = DB_CONNECT_OPTIONS;
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);

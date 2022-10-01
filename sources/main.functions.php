@@ -81,7 +81,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return $session_language;
+    return addslashes($session_language);
 }
 
 /**
@@ -1297,7 +1297,7 @@ function sendEmail(
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get user language
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION') ? $superGlobal->get('user_language', 'SESSION') : 'english') . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION', 'user') ? $superGlobal->get('user_language', 'SESSION', 'user') : 'english') . '.php';
     // Load library
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // load PHPMailer

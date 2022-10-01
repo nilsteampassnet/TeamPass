@@ -479,7 +479,7 @@ return array(
     'password_is_empty' => 'Položka nemá heslo',
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'open_bug_report_in_github' => 'Open issue report in Github',
-    'bugs_page' => 'Objevíte-li v aplikaci chybu, můžete ji přímo oznámit na &lt;a href="http://code.google.com/p/TeamPass/issues/list" target="_blank"&gt;&lt;u&gt;chyb&lt;/u&gt;&lt;/a&gt;.',
+    'bugs_page' => 'Pokud objevíte chybu, nahlaste ji.',
     'import_csv_anyone_can_modify_in_role_txt' => 'Nastavit právo "kdokoliv ve stejné roli smí měnit" pro všechny importované položky',
     'import_csv_anyone_can_modify_txt' => 'Nastavit právo "kdokoliv smí měnit" pro všechny importované položky',
     'settings_upload_imageresize_options' => 'Chcete změnit velikost obrázků',

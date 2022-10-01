@@ -70,6 +70,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         checkboxClass: 'icheckbox_flat-blue'
     })
 
+    // Select user properties
+    $('#profile-user-language option[value=<?php echo $_SESSION['user']['user_language'];?>').attr('selected','selected');
+
 
     // AVATAR IMPORT
     var uploader_photo = new plupload.Uploader({
@@ -171,7 +174,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
             'agsescardid': $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
         }
-        console.log(data)
+        //console.log(data)
         // Inform user
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
@@ -213,7 +216,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('#profile-username').html($('#profile-user-name').val() + ' ' + $('#profile-user-lastname').val());
 
                     // reload page in case of language change
-                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $_SESSION['user_language'];?>') {
+                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $_SESSION['user']['user_language'];?>') {
                         // prepare reload
                         $(this).delay(3000).queue(function() {
                             document.location.href = "index.php?page=profile";
@@ -239,6 +242,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
+                            }
+                        );
+
+                        // Force tree refresh
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.jstreeForceRefresh = 1
                             }
                         );
                     }

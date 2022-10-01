@@ -93,7 +93,7 @@ if (isset($server['https']) === true
 // Load pwComplexity
 if (defined('TP_PW_COMPLEXITY') === false) {
     // Pw complexity levels
-    if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== '0') {
+    if (isset($_SESSION['user']['user_language']) === true && $_SESSION['user']['user_language'] !== '0') {
         define(
             'TP_PW_COMPLEXITY',
             [
@@ -177,7 +177,7 @@ if (isset($languagesList) === false) {
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if (isset($_SESSION['user_language']) && $record['name'] === $_SESSION['user_language']) {
+        if (isset($_SESSION['user']['user_language']) && $record['name'] === $_SESSION['user']['user_language']) {
             $_SESSION['user_language_flag'] = $record['flag'];
             $_SESSION['user_language_code'] = $record['code'];
             $_SESSION['user_language_label'] = $record['label'];
