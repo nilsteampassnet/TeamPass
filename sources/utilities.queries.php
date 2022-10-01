@@ -547,11 +547,6 @@ if (null !== $post_type) {
                         $post_date_to
                     );
                 } elseif ($post_log_type === 'errors') {
-                    //db::debugmode(true);
-                    echo 'SELECT * FROM ' . prefixTable('log_items') . '
-                    WHERE (date BETWEEN '.$post_date_from.' AND '.$post_date_to.')'
-                    . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
-                    . ((int) $post_filter_user === -1 ? '' : ' AND id_user = '.(int) $post_filter_user);
                     DB::query(
                         'SELECT * FROM ' . prefixTable('log_system') . ' WHERE type=%s ' .
                             'AND (date BETWEEN %i AND %i)',
