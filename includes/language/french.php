@@ -22,6 +22,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'sync_new_ldap_password' => 'Synchroniser le mot de passe',
+    'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',
+    'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS', 
+    'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
+    'generate_new_otp' => 'Generate new OTP',
+    'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
     'html' => 'html',
     'execution_time' => 'Execution time',
     'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',

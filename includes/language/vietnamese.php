@@ -22,6 +22,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'sync_new_ldap_password' => 'Synchronize new password',
+    'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',
+    'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS', 
+    'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
+    'generate_new_otp' => 'Generate new OTP',
+    'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
     'html' => 'html',
     'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
     'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
