@@ -512,6 +512,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         start
     ) {
         var dfd = $.Deferred();
+        ProcessInProgress = true;
         
         var stepText = '';
         console.log('Performing '+step)
@@ -650,6 +651,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     5000
                 );
             });
+
+            ProcessInProgress = false;
         }
         return dfd.promise();
     }

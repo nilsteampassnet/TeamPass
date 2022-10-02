@@ -389,6 +389,21 @@ if (
         if ($(this).data('name') !== undefined) {
             if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
+            } else if ($(this).data('name') === 'sync-new-ldap-password') {
+                // This case permits to handle a case where user has changed his password in LDAP
+                console.log('show sync-new-ldap-password')
+                
+                if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
+                // HIde
+                $('.content-header, .content').addClass('hidden');
+
+                // Show passwords inputs and form
+                $('#dialog-ldap-user-change-password-info')
+                    .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                    .removeClass('hidden');
+                $('#dialog-ldap-user-change-password').removeClass('hidden');
+
+                // ----
             } else if ($(this).data('name') === 'password-change') {
                 console.log('show password change')
                 // HIde
@@ -1213,12 +1228,12 @@ if (
             );
         }
     });
-    $(document).on('click', '#dialog-user-change-password-close', function() {
+    $(document).on('click', '#dialog-ldap-user-change-password-close', function() {
         // HIde
         $('.content-header, .content').removeClass('hidden');
 
         // SHow form
-        $('#dialog-user-change-password, #dialog-user-change-password-info').addClass('hidden');
+        $('#dialog-ldap-user-change-password, #dialog-ldap-user-change-password-info').addClass('hidden');
     });
     // --- END ---
 

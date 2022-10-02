@@ -2547,10 +2547,27 @@ if (is_null($inputData['type']) === false) {
                     $pw = '';
                 }
             } else {
-                $pw = doDataDecryption(
-                    $dataItem['pw'],
-                    decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key'])
-                );
+                $decryptedObject = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                // if null then we have an error.
+                // suspecting bad password
+                if (empty($decryptedObject) === false) {
+                    $pw = doDataDecryption(
+                        $dataItem['pw'],
+                        $decryptedObject
+                    );
+                } else {
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_new_ldap_password_detected'),
+                            'show_detail_option' => 2,
+                            'error_type' => 'user_should_reencrypt_private_key',
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
             }
 
             // echo $dataItem['id_tree']." ;; ";

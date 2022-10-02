@@ -332,6 +332,12 @@ if (($session_validite_pw === null
                                         <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
                                     </a>
                                 <?php
+                                    } elseif ($session_auth_type === 'ldap') {
+                                        ?>
+                                    <a class="dropdown-item user-menu" href="#" data-name="sync-new-ldap-password">
+                                        <i class="fas fa-key fa-fw mr-2"></i><?php echo langHdl('sync_new_ldap_password'); ?>
+                                    </a>
+                                <?php
                                     } ?>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">

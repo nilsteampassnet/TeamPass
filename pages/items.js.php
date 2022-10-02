@@ -4229,17 +4229,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 if (data.error === true) {
                     toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
                     requestRunning = false;
 
                     // Manage personal items key error
                     if (data.error_type !== 'undefined' && data.error_type === 'private_items_to_encrypt') {
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
                         store.update(
                             'teampassUser', {},
                             function(teampassUser) {
@@ -4247,6 +4248,25 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             }
                         );
                         document.location.href = "index.php?page=items";
+                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key') {
+                        // we have to ask the user to re-encrypt his privatekey
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 10000,
+                                progressBar: true
+                            }
+                        );
+                        
+                        if (debugJavascript === true) console.log('LDAP user password has to encrypt his private key with hos new LDAP password')
+                        // HIde
+                        $('.content-header, .content').addClass('hidden');
+
+                        // Show passwords inputs and form
+                        $('#dialog-ldap-user-change-password-info')
+                            .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                            .removeClass('hidden');
+                        $('#dialog-ldap-user-change-password').removeClass('hidden');
                     }
 
 

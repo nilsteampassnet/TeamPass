@@ -2756,7 +2756,12 @@ function decryptUserObjectKey(string $key, string $privateKey): string
     $rsa->loadKey(base64_decode($privateKey));
     // Decrypt
     try {
-        $ret = base64_encode($rsa->decrypt(base64_decode($key)));
+        $tmpValue = $rsa->decrypt(base64_decode($key));
+        if (is_bool($tmpValue) === false) {
+            $ret = base64_encode($tmpValue);
+        } else {
+            $ret = '';
+        }
     } catch (Exception $e) {
         return $e;
     }
