@@ -29,9 +29,8 @@ class ItemController extends BaseController
      * Manage case inFolder
      *
      * @param array $userData
-     * @return string
      */
-    public function inFoldersAction(array $userData): string
+    public function inFoldersAction(array $userData): void
     {
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
