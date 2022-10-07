@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -2582,7 +2582,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (debugJavascript === true) console.log(arrayQuery);
 
         // is user allowed to edit this item
-        if (store.get('teampassApplication').itemsList !== undefined) {
+        if (typeof store.get('teampassApplication').itemsList !== 'undefined') {
             itemsList = JSON.parse(store.get('teampassApplication').itemsList);
         }
         if (itemsList.length > 0) {
@@ -3127,7 +3127,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         indentation = '',
                         disabled = '';
 
-                    if (typeof data.html_json.folders === 'undefined') {
+                    if (typeof data.html_json === 'undefined' || typeof data.html_json.folders === 'undefined') {
                         $('#jstree').html('<div class="alert alert-warning mt-3 mr-1 ml-1"><i class="fas fa-exclamation-triangle mr-2"></i>' +
                             '<?php echo langHdl('no_data_to_display'); ?>' +
                             '</div>');

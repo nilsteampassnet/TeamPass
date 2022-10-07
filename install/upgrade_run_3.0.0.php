@@ -868,6 +868,12 @@ mysqli_query(
         PRIMARY KEY (`increment_id`)
     ) CHARSET=utf8;'
 );
+
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'cache_tree` ADD UNIQUE `CACHE` (`increment_id`, `user_id`)'
+);
+
 mysqli_query(
     $db_link,
     'ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT'
