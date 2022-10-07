@@ -479,7 +479,6 @@ function handleNode(
     $currentNode->title = htmlspecialchars_decode($currentNode->title, ENT_QUOTES);
 
     $nodeData = prepareNodeData(
-        $currentNode,
         (int) $nodeId,
         $inputData['visibleFolders'],
         $inputData['readOnlyFolders'],
@@ -579,7 +578,6 @@ function handleNode(
 /**
  * Get the context of the folder
  *
- * @param stdClass $completTree
  * @param integer $nodeId
  * @param array $session_groupes_visibles
  * @param array $session_read_only_folders
@@ -599,7 +597,6 @@ function handleNode(
  * @return array
  */
 function prepareNodeData(
-    stdClass $completTree,
     int $nodeId,
     array $session_groupes_visibles,
     array $session_read_only_folders,

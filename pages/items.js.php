@@ -617,8 +617,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             // Get some info
             $.when(
-                getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
+                retPrivileges = getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
             ).then(function() {
+                if (retPrivileges === false) {
+                    return false;
+                }
                 // If previous item was seen then clean session
                 store.update(
                     'teampassItem',
@@ -5268,11 +5271,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
         if (debugJavascript === true) console.log('Get privilege for folder ' + val);
             
-        if (val === "") {
+        if (val === "" || typeof val === "undefined" || val === false) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('error'); ?>',
-                '<?php echo langHdl('data_inconsistency'); ?>',
+                '',
+                '<?php echo langHdl('please_select_a_folder'); ?>',
                 {
                     timeOut: 5000,
                     positionClass: 'toast-top-right',
