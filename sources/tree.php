@@ -618,16 +618,8 @@ function prepareNodeData(
     array $session_personal_folder
 ): array
 {
-    // special case for READ-ONLY folder
-    $title = '';
-    if (
-        $session_user_read_only === true
-        || in_array((int) $completTree->id, $session_read_only_folders) === false
-    ) {
-        $title = langHdl('read_only_account');
-    }
-
     if (in_array($nodeId, $session_groupes_visibles) === true) {
+        // special case for READ-ONLY folder
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
@@ -647,7 +639,7 @@ function prepareNodeData(
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
                     ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
-                'title' => $title,
+                'title' => langHdl('read_only_account'),
                 'restricted' => 0,
                 'folderClass' => 'folder',
                 'show_but_block' => false,
@@ -659,7 +651,7 @@ function prepareNodeData(
         return [
             'html' => '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
                 ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
-            'title' => $title,
+            'title' => '',
             'restricted' => 0,
             'folderClass' => 'folder',
             'show_but_block' => false,
@@ -671,7 +663,7 @@ function prepareNodeData(
         return [
             'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>',
-            'title' => $title,
+            'title' => '',
             'restricted' => 1,
             'folderClass' => 'folder',
             'show_but_block' => false,
@@ -683,7 +675,7 @@ function prepareNodeData(
         return [
             'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
-            'title' => $title,
+            'title' => '',
             'restricted' => 1,
             'folderClass' => 'folder',
             'show_but_block' => false,
@@ -710,7 +702,7 @@ function prepareNodeData(
             // show it but block it
             return [
                 'html' => '',
-                'title' => $title,
+                'title' => '',
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => true,
@@ -722,7 +714,7 @@ function prepareNodeData(
         // hide it
         return [
             'html' => '',
-            'title' => $title,
+            'title' => '',
             'restricted' => 1,
             'folderClass' => 'folder_not_droppable',
             'show_but_block' => false,

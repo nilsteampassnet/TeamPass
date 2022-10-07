@@ -5262,8 +5262,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     function getPrivilegesOnItem(val, edit, context) {
         context = context || ""; // make context optional
 
-        // Clear memory
-        //localStorage.setItem("teampassItem", '');
+        // make sure to use correct selected folder
+        if (val === false) {
+            val = selectedFolderId;
+        }
         if (debugJavascript === true) console.log('Get privilege for folder ' + val);
             
         if (val === "") {
@@ -5292,8 +5294,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'get_complixity_level');
 
-                if (debugJavascript === true) console.info('GET COMPLEXITY LEVEL');
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.info('GET COMPLEXITY LEVEL');
+                    console.log(data);
+                }
                 var executionStatus = true;
 
                 if (data.error === false) {

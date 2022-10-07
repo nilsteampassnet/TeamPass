@@ -2555,6 +2555,18 @@ if (is_null($inputData['type']) === false) {
                         $dataItem['pw'],
                         $decryptedObject
                     );
+                /*} elseif ($_SESSION['user']['auth_type'] === 'ldap') {
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_new_ldap_password_detected'),
+                            'show_detail_option' => 2,
+                            'error_type' => 'user_should_reencrypt_private_key',
+                        ),
+                        'encode'
+                    );
+                    break;*/
                 } else {
                     echo (string) prepareExchangedData(
                         $SETTINGS['cpassman_dir'],
