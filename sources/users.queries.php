@@ -1599,6 +1599,13 @@ if (null !== $post_type) {
                         $post_id
                     );
 
+                    // CLear cache tree for this user to force tree building
+                    DB::delete(
+                        prefixTable('cache_tree'),
+                        'user_id = %i',
+                        $post_id
+                    );
+
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
                         logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
