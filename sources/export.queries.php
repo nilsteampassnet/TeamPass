@@ -340,8 +340,8 @@ if (null !== $post_type) {
                             );
 
                             // Uncrypt PW
-                            if (DB::count() === 0) {
-                                // No share key found
+                            if (DB::count() === 0 || empty($dataItem['pw']) === true) {
+                                // No share key found OR password is empty
                                 $pw = '';
                             } else {
                                 $pw = base64_decode(doDataDecryption(
