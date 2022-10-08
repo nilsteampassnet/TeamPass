@@ -1599,7 +1599,7 @@ if (null !== $post_type) {
                         $post_id
                     );
 
-                    // CLear cache tree for this user to force tree building
+                    // CLear cache tree for this user to force tree
                     DB::delete(
                         prefixTable('cache_tree'),
                         'user_id = %i',
@@ -2433,7 +2433,7 @@ if (null !== $post_type) {
             $config = [
                 // Mandatory Configuration Options
                 'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
-                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
@@ -2484,7 +2484,7 @@ if (null !== $post_type) {
             );
 
             $users = $connection->query()
-                ->in((isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn'] === false) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->get();
             
