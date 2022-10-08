@@ -1538,8 +1538,6 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
 
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
-        // Ensure UTF8 format
-        $data = Encoding::fixUTF8($data);
         // Now encode
         return Encryption\CryptoJs\Encryption::encrypt(
             json_encode(
