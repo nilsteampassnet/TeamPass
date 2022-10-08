@@ -101,7 +101,6 @@ $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
 $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
 $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
 $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
 
@@ -1045,7 +1044,7 @@ function checkPageBreak($height)
  *
  * @return string
  */
-function array2csv($fields, $delimiter = ';', $enclosure = '"', $escape_char = '\\')
+function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '\\')
 {
     $buffer = fopen('php://temp', 'r+');
     if ($buffer === false) {

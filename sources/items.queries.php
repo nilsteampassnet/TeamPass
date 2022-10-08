@@ -3539,7 +3539,7 @@ if (is_null($inputData['type']) === false) {
             break;
 
             /*
-        * CASErefresh_visible_folders
+        * CASE
         * Store hierarchic position of Group
         */
         case 'save_position':

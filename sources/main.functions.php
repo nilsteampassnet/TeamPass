@@ -3744,3 +3744,34 @@ function handleFoldersCategories(
         );
     }
 }
+
+/**
+ * List all users that have specific roles
+ *
+ * @param array $roles
+ * @return array
+ */
+function getUsersWithRoles(
+    array $roles
+): array
+{
+    $arrUsers = array();
+
+    foreach ($roles as $role) {
+        // loop on users and check if user has this role
+        $rows = DB::query(
+            'SELECT id, fonction_id
+            FROM ' . prefixTable('users') . '
+            WHERE id != %i',
+            $_SESSION['user_id']
+        );
+        foreach ($rows as $user) {
+            $userRoles = explode(';', $user['fonction_id']);
+            if (in_array($role, $userRoles, true) === true) {
+                array_push($arrUsers, $user['id']);
+            }
+        }
+    }
+
+    return $arrUsers;
+}

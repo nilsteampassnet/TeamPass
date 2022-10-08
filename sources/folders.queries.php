@@ -422,7 +422,7 @@ if (null !== $post_type) {
                     }
                 }
             }
-
+            
             // Prepare update parameters
             $folderParameters = array(
                 'parent_id' => $post_parent_id,
@@ -437,14 +437,10 @@ if (null !== $post_type) {
             ) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction
-                && empty($post_add_restriction) === false
-            ) {
+            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if ($dataFolder['bloquer_modification'] !== (int) $post_edit_restriction
-                && empty($post_edit_restriction) === false
-            ) {
+            if ($dataFolder['bloquer_modification'] !== (int) $post_edit_restriction) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
             }
             
@@ -541,20 +537,18 @@ if (null !== $post_type) {
             $error = false;
             $newId = $access_level_by_role = $errorMessage = '';
 
-            //if ((int) $post_parent_id === 0) {
-                if (isset($dataReceived['accessRight']) === true) {
-                    $access_level_by_role = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
+            if (isset($dataReceived['accessRight']) === true) {
+                $access_level_by_role = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
+            } else {
+                if (
+                    (int) $_SESSION['user_manager'] === 1
+                    || (int) $_SESSION['user_can_manage_all_users'] === 1
+                ) {
+                    $access_level_by_role = 'W';
                 } else {
-                    if (
-                        (int) $_SESSION['user_manager'] === 1
-                        || (int) $_SESSION['user_can_manage_all_users'] === 1
-                    ) {
-                        $access_level_by_role = 'W';
-                    } else {
-                        $access_level_by_role = '';
-                    }
+                    $access_level_by_role = '';
                 }
-            //}
+            }
 
             // check if title is numeric
             if (is_numeric($post_title) === true) {
@@ -722,18 +716,16 @@ if (null !== $post_type) {
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                if ((int) $isPersonal !== 1
-                    //&& (int) $post_parent_id === 0
-                ) {
+                if ((int) $isPersonal !== 1) {
                     //add access to this new folder
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                        if (empty($role) === false && empty($access_level_by_role) === false) {
+                        if (empty($role) === false) {// && empty($access_level_by_role) === false
                             DB::insert(
                                 prefixTable('roles_values'),
                                 array(
                                     'role_id' => $role,
                                     'folder_id' => $newId,
-                                    'type' => $access_level_by_role,
+                                    'type' => 'W',
                                 )
                             );
                         }
@@ -771,6 +763,20 @@ if (null !== $post_type) {
                         )
                     );
                 }
+
+                // clear cache cache for each user that have at least one similar role as the current user
+                $usersWithSimilarRoles = getUsersWithRoles(
+                    explode(";", $_SESSION['fonction_id'])
+                );
+                foreach ($usersWithSimilarRoles as $user) {
+                    // delete cache tree
+                    DB::delete(
+                        prefixTable('cache_tree'),
+                        'user_id = %i',
+                        $user
+                    );
+                }
+
             } else {
                 $error = true;
                 $errorMessage = langHdl('error_not_allowed_to');
