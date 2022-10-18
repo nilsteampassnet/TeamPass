@@ -6194,14 +6194,15 @@ if (is_null($inputData['type']) === false) {
                     }
                 }
             }
-
-            // save to cache_tree
-            cacheTreeUserHandler(
-                (int) $_SESSION['user_id'],
-                json_encode($arr_data['folders']),
-                $SETTINGS,
-                'visible_folders',
-            );
+            if (isset($arr_data['folders']) === true) {
+                // save to cache_tree
+                cacheTreeUserHandler(
+                    (int) $_SESSION['user_id'],
+                    json_encode($arr_data['folders']),
+                    $SETTINGS,
+                    'visible_folders',
+                );
+            }
 
             // send data
             echo (string) prepareExchangedData(

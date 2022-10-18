@@ -532,6 +532,7 @@ if (null !== $post_type) {
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
+            $post_access_right = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
 
             // Init
             $error = false;
@@ -717,18 +718,17 @@ if (null !== $post_type) {
                 $tree->rebuild();
 
                 if ((int) $isPersonal !== 1) {
-                    //add access to this new folder
-                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                        if (empty($role) === false) {// && empty($access_level_by_role) === false
-                            DB::insert(
-                                prefixTable('roles_values'),
-                                array(
-                                    'role_id' => $role,
-                                    'folder_id' => $newId,
-                                    'type' => 'W',
-                                )
-                            );
-                        }
+                    //add access to this new folder 
+                    $rows = DB::query('SELECT id FROM ' . prefixTable('roles_title'));
+                    foreach ($rows as $record) {
+                        DB::insert(
+                            prefixTable('roles_values'),
+                            array(
+                                'role_id' => $record['id'],
+                                'folder_id' => $newId,
+                                'type' => $post_access_right,
+                            )
+                        );
                     }
                 }
 
