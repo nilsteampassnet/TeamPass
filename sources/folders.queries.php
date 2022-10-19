@@ -532,24 +532,11 @@ if (null !== $post_type) {
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
-            $post_access_right = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
 
             // Init
             $error = false;
-            $newId = $access_level_by_role = $errorMessage = '';
-
-            if (isset($dataReceived['accessRight']) === true) {
-                $access_level_by_role = filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING);
-            } else {
-                if (
-                    (int) $_SESSION['user_manager'] === 1
-                    || (int) $_SESSION['user_can_manage_all_users'] === 1
-                ) {
-                    $access_level_by_role = 'W';
-                } else {
-                    $access_level_by_role = '';
-                }
-            }
+            $newId = $errorMessage = '';
+            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING) : '';
 
             // check if title is numeric
             if (is_numeric($post_title) === true) {
@@ -719,6 +706,8 @@ if (null !== $post_type) {
 
                 if ((int) $isPersonal !== 1) {
                     //add access to this new folder 
+
+                    // 1- create entries based upon default provided right
                     $rows = DB::query('SELECT id FROM ' . prefixTable('roles_title'));
                     foreach ($rows as $record) {
                         DB::insert(
@@ -726,9 +715,25 @@ if (null !== $post_type) {
                             array(
                                 'role_id' => $record['id'],
                                 'folder_id' => $newId,
-                                'type' => $post_access_right,
+                                'type' => $access_level_by_role,
                             )
                         );
+                    }
+                    if ((int) $_SESSION['is_admin'] !== 1) {
+                        // 2- add the user right to this folder
+                        foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                            if (empty($role) === false) {
+                                DB::update(
+                                    prefixTable('roles_values'),
+                                    array(
+                                        'type' => 'W',
+                                    ),
+                                    'folder_id = %i and role_id = %i',
+                                    $newId,
+                                    $role
+                                );
+                            }
+                        }
                     }
                 }
 
