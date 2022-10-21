@@ -51,14 +51,14 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 ?>
-<body class="hold-transition otv-page">
-    <div class="login-box" style="margin-top:10%; width:90%; opacity:0.9;">
+<body class="hold-transition login-page ">
+    <div class="login-box" style="margin-top:100px; width:700px;">
         
         <!-- /.login-logo -->
-        <div class="card">
-        <div class="login-logo">
-            <a href="../../index.php"><b><?php echo TP_TOOL_NAME; ?></b></a>
-        </div>
+        <div class="card card-outline card-primary">
+            <div class="card-header text-center">
+                <a href="../../index.php" class="h1"><b><?php echo TP_TOOL_NAME; ?></b></a>
+            </div>
             <div class="card-body login-card-body">
 <?php
 if (!empty($superGlobal->get('code', 'GET')) === true
@@ -78,8 +78,9 @@ if (!empty($superGlobal->get('code', 'GET')) === true
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     if (isset($SETTINGS['otv_is_enabled']) === false
         || (int) $SETTINGS['otv_is_enabled'] === 0
     ) {
@@ -97,7 +98,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
         WHERE code = %s',
         filter_input(INPUT_GET, 'code', FILTER_SANITIZE_STRING)
     );
-    if ((int) $data['timestamp'] === (int) filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT)) {
+    if (DB::count() > 0  && (int) $data['timestamp'] === (int) filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT)) {
         // otv is too old
         if ($data['timestamp'] < time() - ($SETTINGS['otv_expiration_period'] * 86400)) {
             $html = 'Link is too old!';
@@ -198,7 +199,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
             // delete entry
             DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
             // display
-            echo $html;
+            echo $html."</div></div>";
         }
     } else {
         echo '<div class="text-center text-danger">

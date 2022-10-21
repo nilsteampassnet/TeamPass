@@ -1742,7 +1742,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
             toastr.error(
                 '<?php echo langHdl('please_confirm'); ?>',
-                '', {
+                '',
+                {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -1752,7 +1753,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
             toastr.error(
                 '<?php echo langHdl('error_not_allowed_to'); ?>',
-                '', {
+                '',
+                {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -1760,6 +1762,33 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             return false;
         }
 
+        // Is a folder selected
+        if ($('#form-folder-delete-selection option:selected').val() === '') {
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('please_select_a_folder'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        
+        // Ensure Root is not selected
+        } else if (parseInt($('#form-folder-delete-selection option:selected').val()) === 0) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('please_select_a_folder'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+        
         // Show cog
         toastr
             .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');

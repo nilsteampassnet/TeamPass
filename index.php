@@ -248,32 +248,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 <?php
 
-// display an item in the context of OTV link
-if (($session_validite_pw === null
-        || empty($session_validite_pw) === true
-        || empty($session_user_id) === true)
-    && empty($get['otv']) === false
-) {
-    // case where one-shot viewer
-    if (empty($superGlobal->get('code', 'GET')) === false && empty($superGlobal->get('stamp', 'GET')) === false
-    ) {
-        include './includes/core/otv.php';
-    } else {
-        $_SESSION['error']['code'] = ERR_VALID_SESSION;
-        $superGlobal->put(
-            'initial_url',
-            filter_var(
-                substr(
-                    $server['request_uri'],
-                    strpos($server['request_uri'], 'index.php?')
-                ),
-                FILTER_SANITIZE_URL
-            ),
-            'SESSION'
-        );
-        include $SETTINGS['cpassman_dir'] . '/error.php';
-    }
-} elseif (
+if (
     $session_validite_pw !== null
     && $session_validite_pw === true
     && empty($get['page']) === false
@@ -1037,22 +1012,34 @@ if (($session_validite_pw === null
         <!-- ./wrapper -->
 
     <?php
-        /*
-    // SENDING STATISTICS?
-    if (isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === '1'
-        && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== '1')
-    ) {
-        echo '
-<input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
-    } else {
-        echo '
-<input type="hidden" name="send_statistics" id="send_statistics" value="0" />';
-    }
-    */
-
         /* MAIN PAGE */
         echo '
 <input type="hidden" id="temps_restant" value="', $_SESSION['sessionDuration'] ?? '', '" />';
+// display an item in the context of OTV link
+} elseif (($session_validite_pw === null
+        || empty($session_validite_pw) === true
+        || empty($session_user_id) === true)
+    && empty($get['otv']) === false
+) {
+    // case where one-shot viewer
+    if (empty($superGlobal->get('code', 'GET')) === false && empty($superGlobal->get('stamp', 'GET')) === false
+    ) {
+        include './includes/core/otv.php';
+    } else {
+        $_SESSION['error']['code'] = ERR_VALID_SESSION;
+        $superGlobal->put(
+            'initial_url',
+            filter_var(
+                substr(
+                    $server['request_uri'],
+                    strpos($server['request_uri'], 'index.php?')
+                ),
+                FILTER_SANITIZE_URL
+            ),
+            'SESSION'
+        );
+        include $SETTINGS['cpassman_dir'] . '/error.php';
+    }
 } elseif ((empty($session_user_id) === false
             && $session_user_id !== null)
         || empty($session_user_id) === true
