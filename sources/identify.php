@@ -93,11 +93,6 @@ if ($post_type === 'identify_user') {
         define('DEBUGLDAPFILE', $SETTINGS['path_to_files_folder'] . '/ldap.debug.txt');
         file_put_contents(DEBUGLDAPFILE, '');
     }
-    
-    if (DEBUGDUO === true) {
-        define('DEBUGDUOFILE', $SETTINGS['path_to_files_folder'] . '/duo.debug.txt');
-        if($superGlobal->get('duo_status','SESSION') !== 'IN_PROGRESS')file_put_contents(DEBUGDUOFILE, '');
-    }
 
     // Prepare GET variables
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -243,7 +238,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // Clear the data from the Duo process to continue clean with the standard login process
         $superGlobal->forget('duo_data','SESSION');
         if($duo_data_dec === false){
-            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Duo data session decrypt Error".PHP_EOL);
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 [
@@ -404,12 +398,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     ) {
         $superGlobal->put('autoriser', true, 'SESSION');
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
-        /*// Debug
-                debugIdentify(
-                    DEBUGDUO,
-                    DEBUGDUOFILE,
-                    "User's token: " . $key . "\n"
-                );*/
 
         // Check if any unsuccessfull login tries exist
         $attemptsInfos = handleLoginAttempts(
@@ -1519,14 +1507,6 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
     $saved_state = $superGlobal->get('duo_state','SESSION');
     $duo_status = $superGlobal->get('duo_status','SESSION');
     
-    //Debug
-    debugIdentify(DEBUGDUO,DEBUGDUOFILE,
-        "\n----------\n" .
-        "duo_status : " . $duo_status . "\n" .
-        "login received: " . $dataReceived['login'] . "\n" .
-        "received_state : " . $dataReceived['duo_state'] . "\n"
-    );
-
     if (
         (empty($saved_state) || empty($dataReceived['login']) || !isset($dataReceived['duo_state']) || empty($dataReceived['duo_state']))
         && $duo_status === 'IN_PROGRESS'
@@ -1616,10 +1596,9 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
                 'proceedIdentification' => false,
             ];
         }
-        debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Generated Duo state: ".$duo_state."\n");
+        
         // Somethimes Duo return success but fail to return a URL, double check if the URL has been created
         if (!empty($duo_redirect_url) && isset($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
-            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Generated Duo URL: ".$duo_redirect_url."\n");
             // Since Duo Universal requires a redirect, let's store some info when the user get's back after completing the Duo prompt
             $key = hash('sha256', $duo_state);
             $iv = substr(hash('sha256', $duo_state), 0, 16);
@@ -1665,7 +1644,6 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
         }
         // return the response (which should be the user name)
         if ($decoded_token['preferred_username'] === $username) {
-            debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Successfull Duo Auth for user: ".$username."\n");
             $superGlobal->put('duo_status', 'COMPLET', 'SESSION');
             $superGlobal->forget('duo_state','SESSION');
             $superGlobal->forget('duo_data','SESSION');
@@ -1693,7 +1671,6 @@ function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
         }
     }
     // If we are here something wrong
-    debugIdentify(DEBUGDUO, DEBUGDUOFILE, "Could not complete Duo Auth.\n");
     $superGlobal->forget('duo_status','SESSION');
     $superGlobal->forget('duo_state','SESSION');
     $superGlobal->forget('duo_data','SESSION');
@@ -2091,8 +2068,6 @@ function identifyDoMFAChecks(
             );
             if ($ret['error'] !== false) {
                 logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
-                // Log to debug file
-                debugIdentify(DEBUGDUO, DEBUGDUOFILE, $ret['message']."\n Debug: ".$ret['debug_message']."\n");
                 // Load superGlobals
                 include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
                 # Retrieve the previously stored state and username from the session
