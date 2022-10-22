@@ -32,6 +32,7 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
+$uriCount = count($uri)-1;
 
 // Prepare DB password
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -43,12 +44,12 @@ $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
-if ($uri[4] === 'authorize') {
+if ($uri[$uriCount] === 'authorize') {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
         require API_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
-        $strMethodName = $uri[4] . 'Action';
+        $strMethodName = $uri[$uriCount] . 'Action';
         $objFeedController->{$strMethodName}();
     } else {
         // Error management
@@ -61,6 +62,10 @@ if ($uri[4] === 'authorize') {
     // get infos from JWT parameters
     $userData = json_decode(getDataFromToken(), true);
 
+    // define the position of controller in $uri
+    $controller = $uri[$uriCount - 1];
+    $action = $uri[$uriCount];
+
     if ($userData['error'] === true) {
         // Error management
         errorHdl(
@@ -69,22 +74,22 @@ if ($uri[4] === 'authorize') {
         );
 
     // action related to USER
-    } elseif ($uri[4] === 'user') {
+    } elseif ($controller === 'user') {
         require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
-        $strMethodName = $uri[5] . 'Action';
+        $strMethodName = $action . 'Action';
         $objFeedController->{$strMethodName}();
 
     // action related to ITEM
-    } elseif ($uri[4] === 'item') {        
+    } elseif ($controller === 'item') {        
         // Manage requested action
         itemAction(
-            array_slice($uri, 5),
+            array_slice($uri, $uriCount),
             $userData['data']
         ); 
 
     // action related to FOLDER
-    } elseif ($uri[4] === 'folder') {
+    } elseif ($controller === 'folder') {
 
 
     // no action where find

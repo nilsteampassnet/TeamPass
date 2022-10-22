@@ -20,6 +20,12 @@ API is by default disabled.
 
 > The usage of the API requires <mark>a valid account and a valid API key</mark>.
 
+## Define _LimitRequestFieldsize_ directive in Apache settings
+
+Before starting using Teampass API, it is requested to change the default value _LimitRequestFieldsize_ directive in Apache settings.
+This directive defines the limit on the allowed size of an HTTP request-header field below the normal input buffer size compiled with the server.
+
+> Set `LimitRequestFieldSize 200000` in _apache2.conf_ file.
 
 ## Setup API in Teampass
 

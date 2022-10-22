@@ -85,6 +85,10 @@ class ItemModel extends Database
         }
 
         return $ret;
+        /*[
+            'number' => count($ret),
+            'values' => $ret
+        ];*/
     }
     //end getItems() 
 }

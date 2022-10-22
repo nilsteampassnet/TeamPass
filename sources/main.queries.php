@@ -1270,7 +1270,12 @@ function generateBugReport(
         'ldap_password',
         'ldap_hosts',
         'proxy_ip',
-        'ldap_bind_passwd'
+        'ldap_bind_passwd',
+        'syslog_host',
+        'duo_akey',
+        'duo_ikey',
+        'duo_skey',
+        'duo_host'
     );
 
     // Get data
