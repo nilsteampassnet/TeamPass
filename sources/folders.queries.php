@@ -310,9 +310,9 @@ if (null !== $post_type) {
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_STRING) : '';
-            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
-            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
+            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
+            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
+            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
 
