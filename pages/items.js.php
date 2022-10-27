@@ -3116,6 +3116,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('#form-folder-path').html('');
                     $('#find_items').val('');
 
+                    // Do drag'n'drop for the folders
+                    prepareFolderDragNDrop();
+
                     adjustElemsSize();
                 }
             }
@@ -3824,6 +3827,20 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             counter += 1;
 
+            // ENsure numbers are ints
+            value.anyone_can_modify = parseInt(value.anyone_can_modify);
+            value.canMove = parseInt(value.canMove);
+            value.expired = parseInt(value.expired);
+            value.is_favorite = parseInt(value.is_favorite);
+            value.is_result_of_search = parseInt(value.is_result_of_search);
+            value.item_id = parseInt(value.item_id);
+            value.open_edit = parseInt(value.open_edit);
+            value.rights = parseInt(value.rights);
+            value.tree_id = parseInt(value.tree_id);
+            value.display = parseInt(value.display);
+            value.display_item = parseInt(value.display_item);
+            value.enable_favourites = parseInt(value.enable_favourites);
+
             // Check access restriction
             if (value.rights > 0) {
                 // Should I populate previous item with this new id
@@ -3885,7 +3902,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
-                    (value.canMove === 1 && value.is_result_of_search === 0 ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') +
+                    (value.canMove === 1  ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
                     (value.expired === 1 ? '<i class="far fa-calendar-times mr-2 text-warning infotip" title="<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
@@ -4059,96 +4076,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
 
-
-            // Prepare items dragable on folders
-            $('.is-draggable').draggable({
-                cursor: 'move',
-                cursorAt: {
-                    top: -5,
-                    left: -5
-                },
-                opacity: 0.8,
-                appendTo: 'body',
-                stop: function(event, ui) {
-                    $(this).removeClass('bg-warning');
-                },
-                start: function(event, ui) {
-                    $(this).addClass('bg-warning');
-                },
-                helper: function(event) {
-                    return $('<div class="bg-gray p-2 font-weight-light">' + $(this).find('.list-item-row-description').text() + '</div>');
-                }
-            });
-            $('.folder').droppable({
-                hoverClass: 'bg-warning',
-                tolerance: 'pointer',
-                drop: function(event, ui) {
-                    // Check if same folder
-                    if (parseInt($(this).attr('id').substring(4)) === parseInt(ui.draggable.data('item-tree-id'))) {
-                        toastr.remove();
-                        toastr.error(
-                            '<?php echo langHdl('error_not_allowed_to'); ?>',
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                        return false;
-                    }
-
-                    // Warn user that it starts
-                    toastr.info(
-                        '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
-                    );
-
-                    // Hide helper
-                    ui.draggable.addClass('hidden');
-
-                    //move item
-                    var data = {
-                        'item_id': ui.draggable.data('item-id'),
-                        'folder_id': $(this).attr('id').substring(4)
-                    }
-                    $.post(
-                        'sources/items.queries.php', {
-                            type: 'move_item',
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                            key: '<?php echo $_SESSION['key']; ?>'
-                        },
-                        function(data) {
-                            //decrypt data
-                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'move_item');
-
-                            if (debugJavascript === true) console.log(data)
-
-                            if (data.error === true) {
-                                toastr.remove();
-                                toastr.error(
-                                    data.message,
-                                    '', {
-                                        timeOut: 5000,
-                                        progressBar: true
-                                    }
-                                );
-                                ui.draggable.removeClass('hidden');
-                                return false;
-                            }
-
-                            //increment / decrement number of items in folders
-                            $('#itcount_' + data.from_folder).text(Math.floor($('#itcount_' + data.from_folder).text()) - 1);
-                            $('#itcount_' + data.to_folder).text(Math.floor($('#itcount_' + data.to_folder).text()) + 1);
-
-                            toastr.remove();
-                            toastr.info(
-                                '<?php echo langHdl('success'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
-                            );
-                        }
-                    );
-                }
-            });
+            // Do drag'n'drop for the folders
+            prepareFolderDragNDrop();
         }
     }
 
@@ -5502,6 +5431,122 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 top: store.get('teampassApplication').tempScrollTop
             });
         }
+    }
+
+
+    function prepareFolderDragNDrop()
+    {
+        $('.is-draggable').draggable({
+            cursor: 'move',
+            cursorAt: {
+                top: -5,
+                left: -5
+            },
+            opacity: 0.8,
+            appendTo: 'body',
+            stop: function(event, ui) {
+                $(this).removeClass('bg-warning');
+            },
+            start: function(event, ui) {
+                $(this).addClass('bg-warning');
+            },
+            helper: function(event) {
+                return $('<div class="bg-gray p-2 font-weight-light">' + $(this).find('.list-item-row-description').text() + '</div>');
+            }
+        });
+        $('.folder').droppable({
+            hoverClass: 'bg-warning',
+            tolerance: 'pointer',
+            drop: function(event, ui) {
+                // Check if same folder
+                if (parseInt($(this).attr('id').substring(4)) === parseInt(ui.draggable.data('item-tree-id'))) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('error_not_allowed_to'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // Warn user that it starts
+                toastr.info(
+                    '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
+                );
+
+                // Hide helper
+                ui.draggable.addClass('hidden');
+
+                //move item
+                var data = {
+                    'item_id': ui.draggable.data('item-id'),
+                    'folder_id': $(this).attr('id').substring(4)
+                }
+                $.post(
+                    'sources/items.queries.php', {
+                        type: 'move_item',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                        key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'move_item');
+
+                        if (debugJavascript === true) console.log(data)
+
+                        if (data.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            ui.draggable.removeClass('hidden');
+                            return false;
+                        }
+                        
+                        //increment / decrement number of items in folders
+                        $('#itcount_' + data.from_folder).text(refreshFolderCounters($('#itcount_' + data.from_folder).text(), 'decrement'));
+                        $('#itcount_' + data.to_folder).text(refreshFolderCounters($('#itcount_' + data.to_folder).text(), 'increment'));
+
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('success'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Permits to refresh the folder counters when performing an item drag and drop
+     */
+    function refreshFolderCounters(counter, operation)
+    {
+        var splitCounter = counter.split('/');
+        if (splitCounter.length <= 3) {
+            if (operation === 'increment') {
+                splitCounter[0]++;
+                if (splitCounter.length === 3) {
+                    splitCounter[1]++;
+                }
+            } else {
+                splitCounter[0]--;
+                if (splitCounter.length === 3) {
+                    splitCounter[1]--;
+                }
+            }
+        }
+        
+        return splitCounter.join('/');
     }
 
     /*

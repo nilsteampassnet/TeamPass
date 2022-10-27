@@ -4759,7 +4759,7 @@ if (is_null($inputData['type']) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $inputData['data'],
                 'decode'
             );
@@ -4790,7 +4790,7 @@ if (is_null($inputData['type']) === false) {
                 //|| (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
             ) {
                 echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_not_allowed_to'),
@@ -5024,6 +5024,13 @@ if (is_null($inputData['type']) === false) {
                 'at_moved : ' . $dataSource['title'] . ' -> ' . $dataDestination['title']
             );
 
+            // Update cache table
+            updateCacheTable(
+                'update_value',
+                $SETTINGS,
+                (int) $inputData['itemId']
+            );
+
             $returnValues = array(
                 'error' => '',
                 'message' => '',
@@ -5068,7 +5075,7 @@ if (is_null($inputData['type']) === false) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $inputData['data'],
                 'decode'
             );
@@ -5093,7 +5100,7 @@ if (is_null($inputData['type']) === false) {
                         || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
                     ) {
                         echo (string) prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                            $SETTINGS['cpassman_dir'],
                             array(
                                 'error' => true,
                                 'message' => langHdl('error_not_allowed_to'),
