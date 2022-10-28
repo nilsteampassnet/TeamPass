@@ -1263,6 +1263,53 @@ function getStatisticsData(array $SETTINGS): array
 }
 
 /**
+ * Permits to prepare the way to send the email
+ * 
+ * @param string $subject       email subject
+ * @param string $body          email message
+ * @param string $email         email
+ * @param string $receiverName  Receiver name
+ * @param array  $SETTINGS      settings
+ *
+ * @return void
+ */
+function prepareSendingEmail(
+    $subject,
+    $body,
+    $email,
+    $receiverName,
+    $SETTINGS
+): void 
+{
+    if (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
+        DB::insert(
+            prefixTable('processes'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'send_email',
+                'arguments' => json_encode([
+                    'subject' => $subject,
+                    'receivers' => $email,
+                    'body' => $body,
+                    'receiver_name' => $receiverName,
+                ]),
+                'updated_at' => '',
+                'finished_at' => '',
+                'output' => '',
+            )
+        );
+    } else {
+        sendEmail(
+            $subject,
+            $body,
+            $email,
+            $SETTINGS,
+            $body
+        );
+    }
+}
+
+/**
  * Permits to send an email.
  *
  * @param string $subject     email subject
@@ -1835,7 +1882,7 @@ function logItems(
     }
 
     // send notification if enabled
-    notifyOnChange($item_id, $action, $SETTINGS);
+    //notifyOnChange($item_id, $action, $SETTINGS);
 }
 
 /**
@@ -1847,6 +1894,7 @@ function logItems(
  * 
  * @return void
  */
+/*
 function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
 {
     if (
@@ -1890,6 +1938,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
         );
     }
 }
+*/
 
 /**
  * Prepare notification email to subscribers.

@@ -6,12 +6,14 @@
 
 ## Tasks
 
-> Permits to handle heavy treatment using dedicated server cron job.
+> Permits to handle heavy treatment using background server jobs. 
 
-This option should be enabled when Teampass stores a lot of items or when the server performance are limited.
+This option should be considered as a good practice and should be enabled.
 Currently implemented in case of:
 * new user creation (keys encryption step)
-* email sending
+* email sending (except immediate emails)
+
+Notice that when not enabled, emails are sent on page browsing which could lead to latencies for your users.
 
 ### Options
 
@@ -30,28 +32,24 @@ _This value is to adapt depending on what happen. But you should not change it._
 
 ### Setting up the cron job
 
-The goal here is to define a new cron job executing a specific action at a defined frequency.
-
-| File name | Purpose | Comment |
-| --------- | ------- | ------- |
-| background_tasks___user_keys_creation.php | Finalizing the user creation process | Could be performed every 5 minutes |
-| background_tasks___sending_emails.php | Sending emails | Could be performed every 1 minute |
-
-> 👉 The files are located in Teampass folder under `\scripts`.
-
-_Note: the example provided below are based upon a Linux server based and should be adapted for other._
+To be enabled, it is required to add a new entry inside the crontab.
+Only one entry is expected, each job has its own execution frequency.
 
 First you need to get the location to php (you can run `locate php`).
 
 Then open the crons manager (`crontab -e`)
 and add the input permitting the job to run each 5 minutes for example.
-``*/5 * * * * /usr/bin/php /var/www/html/TeamPass/scripts/background_tasks___user_keys_creation.php``
+``* * * * * /path/to/phpbin /path/to/Teampass/sources/scheduler.php  1>> /dev/null 2>&1``
 
-As a consequence, the script will be run every 5 minutes. Depending on existing tasks in the backlog to run, it will handle them silently.
-As an admin, you have a view permitting to see the progress status.
+It is mandatory to define it to run every minute.
 
 ### Tasks management follow up page
 
-> This page permits to get track of all tasks being performed in time and to follow the ones on-going.
+> This page permits to:
+> * define the job execution frequency,
+> * follow on-going task execution,
+> * get track of all tasks being performed in time.
 
-Navigate to `Administration > Utilities > Tasks`.
+Navigate to `Administration > Tasks`.
+
+![Settings tasks definition](./_media/settings_tasks_options_02.png)

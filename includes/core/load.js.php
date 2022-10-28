@@ -185,30 +185,34 @@ if (
                     }
                 );
             }).then(function() {
-                setTimeout(
-                    function() {
-                        $.when(
-                            // send email
-                            $.post(
-                                "sources/main.queries.php", {
-                                    type: "send_waiting_emails",
-                                    type_category: 'action_mail',
-                                    key: "<?php echo $_SESSION['key']; ?>"
-                                }
-                            )
-                        ).then(function() {
-                            // send statistics
-                            $.post(
-                                "sources/main.queries.php", {
-                                    type: "sending_statistics",
-                                    type_category: 'action_system',
-                                    key: "<?php echo $_SESSION['key']; ?>"
-                                }
-                            );
-                        });
-                    },
-                    3000
-                );
+                console.log('Est-ce que je passe ici? '+store.get('teampassSettings').enable_tasks_manager);
+                if (store.get('teampassSettings') === undefined || parseInt(store.get('teampassSettings').enable_tasks_manager) === 0) {
+                    console.log('Now sending emails')
+                    setTimeout(
+                        function() {
+                            $.when(
+                                // send email
+                                $.post(
+                                    "sources/main.queries.php", {
+                                        type: "send_waiting_emails",
+                                        type_category: 'action_mail',
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    }
+                                )
+                            ).then(function() {
+                                // send statistics
+                                $.post(
+                                    "sources/main.queries.php", {
+                                        type: "sending_statistics",
+                                        type_category: 'action_system',
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    }
+                                );
+                            });
+                        },
+                        3000
+                    );
+                }
             });
         });
     }

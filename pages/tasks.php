@@ -12,7 +12,7 @@ declare(strict_types=1);
  *
  * @project   Teampass
  *
- * @file      utilities.tasks.php
+ * @file      tasks.php
  * ---
  *
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -44,7 +44,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.tasks', $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
@@ -78,7 +78,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <div class="card-body">
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#jobs" aria-controls="jobs" aria-selected="true"><?php echo langHdl('tasks'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo langHdl('done'); ?></a>
@@ -87,7 +90,47 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 
                         <div class="tab-content mt-1" id="myTabContent">
-                            <div class="tab-pane fade show active" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
+                            <div class="tab-pane fade show active" id="jobs" role="tabpanel" aria-labelledby="jobs-tab">
+                                <div class="card-body p-0">
+
+                                    <div class="callout callout-info alert-dismissible mt-3">
+                                        <h5><i class="fas fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                                        <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+                                    </div>
+
+                                    <div class='row ml-1 mt-3 mb-2'>
+                                        <div class='col-5'>
+                                        <i class="fas fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
+                                            <!--<small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('settings_ldap_mode_tip'); ?>
+                                            </small>-->
+                                        </div>
+                                        <div class='col-5 text-right'>
+                                            <?php echo langHdl('task_frequency'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='sending_emails_job_frequency' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-5'>
+                                        <i class="fas fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
+                                            <!--<small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('settings_ldap_mode_tip'); ?>
+                                            </small>-->
+                                        </div>
+                                        <div class='col-5 text-right'>
+                                            <?php echo langHdl('task_frequency'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='user_keys_job_frequency' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
                                 <div class="" id="in_edition-tab-refresh"></div>
                                 <table class="table table-striped" id="table-tasks_in_progress" style="">
                                     <thead>
@@ -102,6 +145,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     </thead>
                                 </table>
                             </div>
+
                             <div class="tab-pane fade" id="finished" role="tabpanel" aria-labelledby="finished-tab">
                                 <table class="table table-striped" id="table-tasks_finished" style="">
                                     <thead>

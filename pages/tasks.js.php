@@ -12,7 +12,7 @@ declare(strict_types=1);
  *
  * @project   Teampass
  *
- * @file      utilities.tasks.js.php
+ * @file      tasks.js.php
  * ---
  *
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -44,7 +44,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';

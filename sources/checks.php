@@ -107,12 +107,12 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         'manager' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
             'import', 'export', 'offline', 'process',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
         ),
         'human_resources' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
             'import', 'export', 'offline', 'process',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
         ),
         'admin' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
@@ -120,7 +120,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
             'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
             'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.tasks',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
         ),
     );
     // Convert to array

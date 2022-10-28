@@ -543,7 +543,18 @@ if (
                                 </a>
                             </li>
                         </ul>
-                    </li>
+                    </li>';
+
+                    if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
+                        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
+                        <i class="fas fa-tasks nav-icon"></i>
+                        <p>' . langHdl('tasks') . '</p>
+                        </a>
+                    </li>';
+                    }
+                    echo '
                     <li class="nav-item">
                         <a href="#" data-name="actions" class="nav-link', $get['page'] === 'actions' ? ' active' : '', '">
                         <i class="nav-icon fas fa-cogs"></i>
@@ -613,18 +624,7 @@ if (
                                 <i class="fas fa-database nav-icon"></i>
                                 <p>' . langHdl('database') . '</p>
                                 </a>
-                            </li>';
-
-                            if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
-                                echo '
-                            <li class="nav-item">
-                                <a href="#" data-name="utilities.tasks" class="nav-link', $get['page'] === 'utilities.tasks' ? ' active' : '', '">
-                                <i class="fas fa-tasks nav-icon"></i>
-                                <p>' . langHdl('tasks') . '</p>
-                                </a>
-                            </li>';
-                            }
-                            echo '
+                            </li>
                         </ul>
                     </li>';
     } ?>
@@ -930,7 +930,7 @@ if (
                     </div>
                 </div>
                 <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
-             
+                
 
                 <?php
                     if ($session_initial_url !== null && empty($session_initial_url) === false) {

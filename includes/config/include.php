@@ -66,6 +66,7 @@ define("ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT", true);
 // Management Pages
 $mngPages = array(
     'admin' => 'admin.php',
+    'tasks' => 'tasks.php',
     'options' => 'options.php',
     'statistics' => 'statistics.php',
     '2fa' => '2fa.php',
@@ -86,5 +87,4 @@ $utilitiesPages = array(
     'utilities.deletion' => 'utilities.deletion.php',
     'utilities.logs' => 'utilities.logs.php',
     'utilities.database' => 'utilities.database.php',
-    'utilities.tasks' => 'utilities.tasks.php',
 );

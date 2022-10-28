@@ -746,61 +746,20 @@ if (is_null($inputData['type']) === false) {
                         );
 
                         // send email
-                        $cpt = 0;
-                        foreach (explode(';', $post_diffusion_list) as $emailAddress) {
-                            if (empty($emailAddress) === false) {
-                                // send it
-                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
-                                    DB::insert(
-                                        prefixTable('emails'),
-                                        array(
-                                            'timestamp' => time(),
-                                            'subject' => langHdl('email_subject_item_updated'),
-                                            'body' => str_replace(
-                                                array('#label', '#link'),
-                                                    array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                                    langHdl('new_item_email_body')
-                                            ),
-                                            'receivers' => $emailAddress,
-                                            'status' => '',
-                                        )
-                                    );
-                                } elseif (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
-                                    DB::insert(
-                                        prefixTable('processes'),
-                                        array(
-                                            'created_at' => time(),
-                                            'process_type' => 'send_email',
-                                            'arguments' => json_encode([
-                                                'subject' => langHdl('email_subject'),
-                                                'receivers' => $emailAddress,
-                                                'body' => str_replace(
-                                                    array('#label', '#link'),
-                                                    array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                                    langHdl('new_item_email_body')
-                                                ),
-                                                'receiver_name' => $post_diffusion_list_names[$cpt],
-                                            ]),
-                                            'updated_at' => '',
-                                            'finished_at' => '',
-                                            'output' => '',
-                                        )
-                                    );
-                                } else {
-                                    sendEmail(
-                                        langHdl('email_subject'),
+                        if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
+                            $cpt = 0;
+                            foreach (explode(';', $post_diffusion_list) as $emailAddress) {
+                                if (empty($emailAddress) === false) {
+                                    prepareSendingEmail(
+                                        langHdl('email_subject_item_updated'),
                                         str_replace(
                                             array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                            langHdl('new_item_email_body')
+                                                array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                                langHdl('new_item_email_body')
                                         ),
                                         $emailAddress,
-                                        $SETTINGS,
-                                        str_replace(
-                                            array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                            langHdl('new_item_email_body')
-                                        )
+                                        $post_diffusion_list_names[$cpt],
+                                        $SETTINGS
                                     );
                                 }
                                 $cpt++;
@@ -1135,6 +1094,23 @@ if (is_null($inputData['type']) === false) {
                             'at_pw',
                             TP_ENCRYPTION_NAME
                         );
+
+                        /*
+                        // send email if asked
+                        if (isKeyExistingAndEqual('enable_email_notification_on_user_pw_change', 1, $SETTINGS) === true) {
+                            prepareSendingEmail(
+                                langHdl('email_subject_item_updated'),
+                                str_replace(
+                                    array('#label', '#link'),
+                                        array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                        langHdl('new_item_email_body')
+                                ),
+                                $emailAddress,
+                                $post_diffusion_list_names[$cpt],
+                                $SETTINGS
+                            );
+                        }
+                        */
                     }
 
                     // encrypt PW
@@ -1882,55 +1858,17 @@ if (is_null($inputData['type']) === false) {
                         $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
-                                if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
-                                    DB::insert(
-                                        prefixTable('emails'),
-                                        array(
-                                            'timestamp' => time(),
-                                            'subject' => langHdl('email_subject_item_updated'),
-                                            'body' => str_replace(
-                                                array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                                array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
-                                                langHdl('email_body_item_updated')
-                                            ),
-                                            'receivers' => $emailAddress,
-                                            'status' => '',
-                                        )
-                                    );
-                                } elseif (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
-                                    DB::insert(
-                                        prefixTable('processes'),
-                                        array(
-                                            'created_at' => time(),
-                                            'process_type' => 'send_email',
-                                            'arguments' => json_encode([
-                                                'subject' => langHdl('email_subject_item_updated'),
-                                                'receivers' => $emailAddress,
-                                                'body' => str_replace(
-                                                    array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                                    array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
-                                                    langHdl('email_body_item_updated')
-                                                ),
-                                                'receiver_name' => $post_diffusion_list_names[$cpt],
-                                            ]),
-                                            'updated_at' => '',
-                                            'finished_at' => '',
-                                            'output' => '',
-                                        )
-                                    );
-                                } else {
-                                    sendEmail(
-                                        langHdl('email_subject_item_updated'),
-                                        str_replace(
-                                            array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                            array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
-                                            langHdl('email_body_item_updated')
-                                        ),
-                                        $emailAddress,
-                                        $SETTINGS,
-                                        str_replace('#item_label#', $inputData['label'], langHdl('email_bodyalt_item_updated'))
-                                    );
-                                }
+                                prepareSendingEmail(
+                                    langHdl('email_subject_item_updated'),
+                                    str_replace(
+                                        array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                        array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
+                                        langHdl('email_body_item_updated')
+                                    ),
+                                    $emailAddress,
+                                    $post_diffusion_list_names[$cpt],
+                                    $SETTINGS
+                                );
                                 $cpt++;
                             }
                         }
@@ -2460,15 +2398,6 @@ if (is_null($inputData['type']) === false) {
                 /*if (in_array($user['id'], $arrData['notification_list']) === true) {
                     $_SESSION['listNotificationEmails'] .= $user['email'].',';
                 }*/
-
-                // Add Admins to notification list if expected
-                if (
-                    isset($SETTINGS['enable_email_notification_on_item_shown']) === true
-                    && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
-                    && (int) $user['admin'] === 1
-                ) {
-                    $_SESSION['listNotificationEmails'] .= $user['email'] . ',';
-                }
             }
 
             // manage case of API user
@@ -3171,24 +3100,33 @@ if (is_null($inputData['type']) === false) {
                         $path = addslashes($dataItem['label']) . ' (' . $path . ')';
                     }
 
-                    // send back infos
-                    DB::insert(
-                        prefixTable('emails'),
-                        array(
-                            'timestamp' => time(),
-                            'subject' => langHdl('email_on_open_notification_subject'),
-                            'body' => str_replace(
-                                array('#tp_user#', '#tp_item#', '#tp_link#'),
-                                array(
-                                    addslashes($_SESSION['login']),
-                                    $path,
-                                    $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $dataItem['id'],
-                                ),
-                                langHdl('email_on_open_notification_mail')
+                    // Add Admins to notification list if expected
+                    $reveivers = [];
+                    $rows = DB::query(
+                        'SELECT email
+                        FROM ' . prefixTable('users').'
+                        WHERE admin = %i',
+                        1
+                    );
+                    foreach ($rows as $user) {
+                        array_push($reveivers, $user['email']);
+                    }
+
+                    // prepare sending email
+                    prepareSendingEmail(
+                        langHdl('email_on_open_notification_subject'),
+                        str_replace(
+                            array('#tp_user#', '#tp_item#', '#tp_link#'),
+                            array(
+                                addslashes($_SESSION['login']),
+                                $path,
+                                $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $dataItem['id'],
                             ),
-                            'receivers' => $_SESSION['listNotificationEmails'],
-                            'status' => '',
-                        )
+                            langHdl('email_on_open_notification_mail')
+                        ),
+                        implode(",", $reveivers),
+                        "",
+                        $SETTINGS
                     );
                 }
 
@@ -5540,18 +5478,17 @@ if (is_null($inputData['type']) === false) {
                     $SETTINGS
                 );
 
-                $ret = json_decode(
-                    sendEmail(
-                        langHdl('email_request_access_subject'),
-                        str_replace(
-                            array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                            array(' ' . addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
-                            langHdl('email_request_access_mail')
-                        ),
-                        $dataAuthor['email'],
-                        $SETTINGS
+                // Prepare email
+                prepareSendingEmail(
+                    langHdl('email_request_access_subject'),
+                    str_replace(
+                        array('#tp_item_author#', '#tp_user#', '#tp_item#'),
+                        array(' ' . addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                        langHdl('email_request_access_mail')
                     ),
-                    true
+                    $dataAuthor['email'],
+                    "",
+                    $SETTINGS
                 );
             } elseif ($inputData['cat'] === 'share_this_item') {
                 $dataItem = DB::queryfirstrow(
@@ -5568,39 +5505,28 @@ if (is_null($inputData['type']) === false) {
                     $SETTINGS
                 );
 
-                // send email
-                $ret = json_decode(
-                    sendEmail(
-                        langHdl('email_share_item_subject'),
-                        str_replace(
-                            array(
-                                '#tp_link#',
-                                '#tp_user#',
-                                '#tp_item#',
-                            ),
-                            array(
-                                empty($SETTINGS['email_server_url']) === false ?
-                                    $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'] : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'],
-                                addslashes($_SESSION['login']),
-                                addslashes($path),
-                            ),
-                            langHdl('email_share_item_mail')
+                // Prepare email
+                prepareSendingEmail(
+                    langHdl('email_share_item_subject'),
+                    str_replace(
+                        array(
+                            '#tp_link#',
+                            '#tp_user#',
+                            '#tp_item#',
                         ),
-                        $inputData['receipt'],
-                        $SETTINGS
+                        array(
+                            empty($SETTINGS['email_server_url']) === false ?
+                                $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'] : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'],
+                            addslashes($_SESSION['login']),
+                            addslashes($path),
+                        ),
+                        langHdl('email_share_item_mail')
                     ),
-                    true
+                    $inputData['receipt'],
+                    "",
+                    $SETTINGS
                 );
             }
-
-            echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                array(
-                    'error' => empty($ret['error']) === true ? false : true,
-                    'message' => $ret['message'],
-                ),
-                'encode'
-            );
 
             break;
 

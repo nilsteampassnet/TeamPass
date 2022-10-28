@@ -88,3 +88,9 @@ foreach ($rows as $record) {
         $record['increment_id']
     );
 }
+
+// Now send statitics
+if (isset($SETTINGS['send_stats']) === true && (int) $SETTINGS['send_stats'] === 1) {
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
+    sendingStatistics($SETTINGS);
+}

@@ -921,23 +921,20 @@ function sendMailToUser(
             $post_body
         );
     }
-    
-    $ret = sendEmail(
+
+    prepareSendingEmail(
         $post_subject,
         $post_body,
         $post_receipt,
-        $SETTINGS,
-        '',
-        false
+        "",
+        $SETTINGS
     );
-
-    $ret = json_decode($ret, true);
-
+    
     return prepareExchangedData(
     $SETTINGS['cpassman_dir'],
         array(
             'error' => empty($ret['error']) === true ? false : true,
-            'message' => $ret['message'],
+            'message' => "",
         ),
         'encode'
     );

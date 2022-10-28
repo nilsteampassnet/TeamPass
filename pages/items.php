@@ -296,8 +296,8 @@ foreach ($rows as $reccord) {
                                     ?>
                                     <div class="form-check mb-3 icheck-blue">
                                         <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-anyoneCanModify" <?php
-                                                                                                                                                                    echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                                                                                                                                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
+                                            echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                                            && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
                                         <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                     </div>
                                 <?php
