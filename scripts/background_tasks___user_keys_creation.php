@@ -268,7 +268,6 @@ function performUserCreationKeys(
                 $return = cronContinueReEncryptingUserSharekeysStep1(
                     $post_user_id,
                     $post_self_change,
-                    $post_action,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -284,7 +283,6 @@ function performUserCreationKeys(
                 $return = cronContinueReEncryptingUserSharekeysStep2(
                     $post_user_id,
                     $post_self_change,
-                    $post_action,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -300,7 +298,6 @@ function performUserCreationKeys(
                 $return = cronContinueReEncryptingUserSharekeysStep3(
                     $post_user_id,
                     $post_self_change,
-                    $post_action,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -316,7 +313,6 @@ function performUserCreationKeys(
                 $return = cronContinueReEncryptingUserSharekeysStep4(
                     $post_user_id,
                     $post_self_change,
-                    $post_action,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -332,7 +328,6 @@ function performUserCreationKeys(
                 $return = cronContinueReEncryptingUserSharekeysStep5(
                     $post_user_id,
                     $post_self_change,
-                    $post_action,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -347,11 +342,6 @@ function performUserCreationKeys(
                 provideLog('[STEP][16][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep6(
                     $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
                     $SETTINGS,
                     $extra_arguments
                 );
@@ -395,10 +385,21 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
 }
 
 
+/**
+ * Handle step 1
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep1(
     int $post_user_id,
     bool $post_self_change,
-    string $post_action,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -492,10 +493,22 @@ function cronContinueReEncryptingUserSharekeysStep1(
     ];
 }
 
+
+/**
+ * Handle step 2
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep2(
     int $post_user_id,
     bool $post_self_change,
-    string $post_action,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -577,10 +590,22 @@ function cronContinueReEncryptingUserSharekeysStep2(
     ];
 }
 
+
+/**
+ * Handle step 3 of re-encrypting user sharekeys
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep3(
     int $post_user_id,
     bool $post_self_change,
-    string $post_action,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -662,10 +687,22 @@ function cronContinueReEncryptingUserSharekeysStep3(
     ];
 }
 
+
+/**
+ * Handle step 4
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep4(
     int $post_user_id,
     bool $post_self_change,
-    string $post_action,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -745,10 +782,22 @@ function cronContinueReEncryptingUserSharekeysStep4(
     ];
 }
 
+
+/**
+ * Handle step 5
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep5(
     int $post_user_id,
     bool $post_self_change,
-    string $post_action,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -830,13 +879,20 @@ function cronContinueReEncryptingUserSharekeysStep5(
     ];
 }
 
+
+/**
+ * Handle step 6
+ *
+ * @param integer $post_user_id
+ * @param integer $post_start
+ * @param integer $post_length
+ * @param string $user_public_key
+ * @param array $SETTINGS
+ * @param array $extra_arguments
+ * @return array
+ */
 function cronContinueReEncryptingUserSharekeysStep6(
     int $post_user_id,
-    bool $post_self_change,
-    string $post_action,
-    int $post_start,
-    int $post_length,
-    string $user_public_key,
     array $SETTINGS,
     array $extra_arguments
 ): array
@@ -905,14 +961,23 @@ function cronContinueReEncryptingUserSharekeysStep6(
 }
 
 
-
+/**
+ * SEnd email to user
+ *
+ * @param string $post_receipt
+ * @param string $post_body
+ * @param string $post_subject
+ * @param array $post_replace
+ * @param array $SETTINGS
+ * @return void
+ */
 function sendMailToUser(
     string $post_receipt,
     string $post_body,
     string $post_subject,
     array $post_replace,
     array $SETTINGS
-): string
+): void
 {
     if (count($post_replace) > 0 && is_null($post_replace) === false) {
         $post_body = str_replace(
@@ -928,15 +993,6 @@ function sendMailToUser(
         $post_receipt,
         "",
         $SETTINGS
-    );
-    
-    return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
-        array(
-            'error' => empty($ret['error']) === true ? false : true,
-            'message' => "",
-        ),
-        'encode'
     );
 }
 
