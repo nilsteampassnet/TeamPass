@@ -1,81 +1,18 @@
-﻿<?php
+<?php
 /**
- * Teampass - a collaborative passwords manager.
- * ---
+ *
+ * @package       romanian.php
+ * @author        Nils Laumaillé <nils@teampass.net>
+ * @version       3.0.0.20
+ * @copyright     2009 - 2022 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * ---
- *
- * @project   Teampass
- *
- * @file      romanian.php
- * ---
- *
- * @author    Nils Laumaillé (nils@teampass.net)
- *
- * @copyright 2009-2022 Teampass.net
- *
- * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
- *
- * @see       https://www.teampass.net
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 return array(
-    'user_keys_management' => 'User keys management',
-    'sending_emails' => 'Sending emails',
-    'task_frequency' => 'Frequency (in minutes)',
-    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
-    'sync_new_ldap_password' => 'Synchronize new password',
-    'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',
-    'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS', 
-    'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
-    'generate_new_otp' => 'Generate new OTP',
-    'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
-    'html' => 'html',
-    'execution_time' => 'Execution time',
-    'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
-    'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
-    'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',
-    'maximum_time_script_allowed_to_run_tip' => 'By default, the PHP script cannot run more than the duration defined by max_execution_time parameter in php.ini file. The goal here is to define a more higher value to ensure that the script is performing completely.',
-    'refresh_data_every_on_screen' => 'Screen refreshing period (in seconds)',
-    'refresh_data_every_on_screen_tip' => 'When browsing the tasks view, this permits to have an updated list based.',
-    'refreshed' => 'Refreshed',
-    'process_details' => 'Process details',
-    'created_at' => 'Created at',
-    'updated_at' => 'Updated at',
-    'finished_at' => 'Finished at',
-    'tasks_manager' => 'Tasks manager',
-    'tasks' => 'Tasks',
-    'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
-    'enable_tasks_manager' => 'Enable heavy tasks to be performed by cron manager',
-    'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
-    'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
-    'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
-    'show_encryption_code_to_admin' => 'This is the encrypted code the user will need on this logon. You have asked to see it, please copy it and share in a secure way. Code is',
-    'previous_password' => 'Previous password used to connect to Teampass',
-    'icon' => 'Icon',
-    'icon_on_selection' => 'Icon on selection',
-    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
-    'at_creation' => 'Creation',
-    'at_add_file' => 'File added',
-    'at_del_file' => 'File deleted',
-    'at_manual' => 'Manuel modification',
-    'at_tag' => 'Tag',
-    'at_field' => 'Field',
-    'at_automatic_del' => 'Automatic deletion',
-    'at_import' => 'Import',
-    'error_no_user_password_exists' => 'No user password found. Please reconnect!',
-    'error_no_user_encryption_keys' => 'User has no encryption keys. Please reconnect!',
-    'user_specific_right' => 'User specific right',
-    'email_debug_level' => 'Select a debug level',
-    'email_debug_client' => 'Client commands',
-    'email_debug_server' => 'Client commands and server responses',
-    'email_debug_connection' => 'Client commands, server responses and connection status',
-    'email_debug_low_level' => 'Low-level data output, all messages',
-    'email_debug_level_usage' => 'This setting should be set to None. Only to be used for email debuging during testing purpose. When enabled, it will permit to show an output of the email commands.',
-    'email_body_temporary_login_password' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has changed your login password for Teampass. Next time you will connect to Teampass, please use the next one:<br><br><b>#enc_code#</b><br><br><br>Cheers',
-    'your_new_password' => 'Your new password',
     'show_user_temporary_encryption_code' => 'Show user encryption code',
     'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
     'user_password' => 'User password',
@@ -114,7 +51,7 @@ return array(
     'inititialization' => 'Initialization',
     'bad_password' => 'Bad password',
     'perform_checks' => 'Perform checks',
-    'email_body_temporary_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Some changes were performed on your account that require a new encryption of items for data security. Next time you will connect to Teampass, use your current credentials and use this temporary encryption code when requested:<br><br><b>#enc_code#</b><br><br><br>Cheers',
+    'email_body_temporary_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Some changes were performed on your account that require a new encryption of items for data security. Next time you will connect to Teampass, please use the next code:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'temporary_encryption_code' => 'Your temporary encryption code',
     'renecyption_expected' => 'We need to renecrypt your keys to fit the privileges corresponding to your account and rights.',
     'error_no_user_in_ad' => 'User not found in AD!',
@@ -890,30 +827,13 @@ return array(
     'log_user_pwd_changed' => 'Parola a fost schimbata',
     'settings_default_session_expiration_time' => 'Perioada implicita de expirare a sesiunii',
     'settings_duo' => 'Activare autetificare DUO security 2F',
-    'settings_duo_tip' => 'Duo Security cloud-based two-factor authentication from duo.com. One-time use login passcodes via SMS, voice call, or mobile app. An account with Duo is required to use this feature. Two-factor login via Duo will be required for all non-admin users when activated.<br/>Create or convert the teampass application to the Universal Prompt from the Duo administration page.',
-    'admin_duo_ikey' => 'Client ID (duo_ikey)',
-    'admin_duo_skey' => 'Client secret (duo_skey)',
-    'admin_duo_host' => 'API hostname (HOST)',
-    'settings_duo_explanation' => 'Application credentials from the account Duo security administration page must be input here.',
-    'admin_duo_intro' => 'Input your Duo application credentials',
-    'select_valid_2fa_credentials' => 'Please make sure to select a valid 2FA method',
-    'duo_config_error' => '= Duo config error =<br/> Check your Duo config <br/>',
-    'duo_error_failopen' => 'Could not connect to Duo, 2FA cannot be performed but config is configured to continue.',
-    'duo_error_secure' => 'Duo is currently unavailable. <br/>Login cannot proceed, contact your administrator if the issue persist.',
-    'duo_error_check_config' => '<br/><br/>Administrator, please confirm your Duo config is correct.<br/>',
-    'duo_error_auth' => 'Error while trying to complet Duo Authentication. <br /> ',
-    'duo_redirect_uri' => 'Redirecting to Duo Prompt',
-    'duo_no_data' => 'Missing data or no saved Duo state were found, please login again.',
-    'duo_no_state_received' => 'No state received from Duo. Try again or contact your administrator.',
-    'duo_error_state' => 'Duo state mismatch. Please login again',
-    'duo_error_decoding' => 'Error decoding the Duo result. Contact your administrator if the issue persist.',
-    'duo_login_mismatch' => 'Error login mismatch between Duo and Teampass. Confirm your information are correct.',
-    'duo-run-config-check' => 'Check Duo Config',
-    'duo-config-check-success' => 'Duo config correct and Teampass server able to talk to the Duo API',
-    'duo_login_mismatch' => 'Username from the original Duo request does not match the login submitted.',
-    'duo_error_url' => 'Error while creating the DUO Universal Prompt URL',
-    'duo_error_decrypt' => 'Error while completing Duo authentication, please login again.',
-    'wrong_mfa_code' => 'Wrong MFA code provided',
+    'settings_duo_tip' => 'Duo Security cloud-based two-factor authentication from duo.com. One-time use login passcodes via SMS, voice call, or mobile app. An account with Duo is required to use this feature. Two-factor login via Duo will be required for all non-admin users when activated.',
+    'admin_duo_akey' => 'AKEY',
+    'admin_duo_ikey' => 'IKEY',
+    'admin_duo_skey' => 'SKEY',
+    'admin_duo_host' => 'HOST',
+    'settings_duo_explanation' => 'Credentials from the Duo Security administration page for your account must be input here. Settings will be stored in the sk.php file only after pressing the save button.',
+    'admin_duo_intro' => 'Input or generate Duo Security secret',
     'edit' => 'Editare',
     'user_info_locked' => 'Contul este BLOCAT.',
     'user_info_unlock_question' => 'Deblocare cont?',
@@ -1057,6 +977,49 @@ return array(
     'enable_http_request_login' => 'Automatic login using http header credentials',
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
+    'email_debug_level' => 'Select a debug level',
+    'email_debug_client' => 'Client commands',
+    'email_debug_server' => 'Client commands and server responses',
+    'email_debug_connection' => 'Client commands, server responses and connection status',
+    'email_debug_low_level' => 'Low-level data output, all messages',
+    'email_debug_level_usage' => 'This setting should be set to None. Only to be used for email debuging during testing purpose. When enabled, it will permit to show an output of the email commands.',
+    'email_body_temporary_login_password' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has changed your login password for Teampass. Next time you will connect to Teampass, please use the next one:<br><br><b>#enc_code#</b><br><br><br>Cheers',
+    'your_new_password' => 'Your new password',
+    'user_specific_right' => 'User specific right',
+    'icon' => 'Icon',
+    'icon_on_selection' => 'Icon on selection',
+    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon.',
+    'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
+    'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
+    'show_encryption_code_to_admin' => 'This is the encrypted code the user will need on this logon. You have asked to see it, please copy it and share in a secure way. Code is',
+    'previous_password' => 'Previous password used to connect to Teampass',
+    'generate_new_otp' => 'Generate new OTP',
+    'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
+    'html' => 'html',
+    'execution_time' => 'Execution time',
+    'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
+    'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
+    'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',
+    'maximum_time_script_allowed_to_run_tip' => 'By default, the PHP script cannot run more than the duration defined by max_execution_time parameter in php.ini file. The goal here is to define a more higher value to ensure that the script is performing completely.',
+    'refresh_data_every_on_screen' => 'Screen refreshing period (in seconds)',
+    'refresh_data_every_on_screen_tip' => 'When browsing the tasks view, this permits to have an updated list based.',
+    'refreshed' => 'Refreshed',
+    'process_details' => 'Process details',
+    'created_at' => 'Created at',
+    'updated_at' => 'Updated at',
+    'finished_at' => 'Finished at',
+    'tasks_manager' => 'Tasks manager',
+    'tasks' => 'Tasks',
+    'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
+    'enable_tasks_manager' => 'Enable heavy tasks to be performed by cron manager',
+    'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
+    'sync_new_ldap_password' => 'Synchronize new password',
+    'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',
+    'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS',
+    'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
+    'user_keys_management' => 'User keys management',
+    'sending_emails' => 'Sending emails',
+    'task_frequency' => 'Frequency (in minutes)',
+    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+
 );
-
-

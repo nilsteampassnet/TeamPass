@@ -158,7 +158,7 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
 } elseif (isset($SETTINGS['default_language']) === true && $session_user_language === null) {
     $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
     $session_user_language = $SETTINGS['default_language'];
-} elseif ($post_language !== null) {echo " --2-- ";
+} elseif ($post_language !== null) {
     $superGlobal->put('user_language', $post_language, 'SESSION', 'user');
     $session_user_language = $post_language;
 } elseif ($session_user_language === null || empty($session_user_language) === true) {

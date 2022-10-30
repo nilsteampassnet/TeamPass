@@ -64,7 +64,7 @@ function langHdl(string $string): string
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
-    if (isset($session_language) === false) {
+    if (is_null($session_language) === true) {
         /* 
             Load the English version to $_SESSION so we don't 
             return bad JSON (multiple includes add BOM characters to the json returned 

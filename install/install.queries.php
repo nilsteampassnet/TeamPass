@@ -1002,7 +1002,8 @@ $SETTINGS = array (';
                             `name` VARCHAR(50) NOT null ,
                             `label` VARCHAR(50) NOT null ,
                             `code` VARCHAR(10) NOT null ,
-                            `flag` VARCHAR(30) NOT NULL,
+                            `flag` VARCHAR(50) NOT NULL,
+                            `code_poeditor` VARCHAR(30) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;'
                         );
@@ -1012,31 +1013,31 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysql_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`name`, `label`, `code`, `flag`) VALUES
-                                ('french', 'French' , 'fr', 'fr.png'),
-                                ('english', 'English' , 'us', 'us.png'),
-                                ('spanish', 'Spanish' , 'es', 'es.png'),
-                                ('german', 'German' , 'de', 'de.png'),
-                                ('czech', 'Czech' , 'cz', 'cz.png'),
-                                ('italian', 'Italian' , 'it', 'it.png'),
-                                ('russian', 'Russian' , 'ru', 'ru.png'),
-                                ('turkish', 'Turkish' , 'tr', 'tr.png'),
-                                ('norwegian', 'Norwegian' , 'no', 'no.png'),
-                                ('japanese', 'Japanese' , 'ja', 'ja.png'),
-                                ('portuguese', 'Portuguese' , 'pr', 'pr.png'),
-                                ('portuguese_br', 'Portuguese (Brazil)' , 'pr-bt', 'pr-bt.png'),
-                                ('chinese', 'Chinese' , 'cn', 'cn.png'),
-                                ('swedish', 'Swedish' , 'se', 'se.png'),
-                                ('dutch', 'Dutch' , 'nl', 'nl.png'),
-                                ('catalan', 'Catalan' , 'ct', 'ct.png'),
-                                ('bulgarian', 'Bulgarian' , 'bg', 'bg.png'),
-                                ('greek', 'Greek' , 'gr', 'gr.png'),
-                                ('hungarian', 'Hungarian' , 'hu', 'hu.png'),
-                                ('polish', 'Polish' , 'pl', 'pl.png'),
-                                ('romanian', 'Romanian' , 'ro', 'ro.png'),
-                                ('ukrainian', 'Ukrainian' , 'ua', 'ua.png'),
-                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
-                                ('estonian', 'Estonian' , 'ee', 'ee.png');"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`name`, `label`, `code`, `flag`, `code_poeditor`) VALUES
+                                (1, 'french', 'French', 'fr', 'fr.png', 'fr'),
+                                (2, 'english', 'English', 'us', 'us.png', 'en'),
+                                (3, 'spanish', 'Spanish', 'es', 'es.png', 'es'),
+                                (4, 'german', 'German', 'de', 'de.png', 'de'),
+                                (5, 'czech', 'Czech', 'cs', 'cz.png', 'cs'),
+                                (6, 'italian', 'Italian', 'it', 'it.png', 'it'),
+                                (7, 'russian', 'Russian', 'ru', 'ru.png', 'ru'),
+                                (8, 'turkish', 'Turkish', 'tr', 'tr.png', 'tr'),
+                                (9, 'norwegian', 'Norwegian', 'no', 'no.png', 'no'),
+                                (10, 'japanese', 'Japanese', 'ja', 'ja.png', 'ja'),
+                                (11, 'portuguese', 'Portuguese', 'pr', 'pr.png', 'pt'),
+                                (12, 'portuguese_br', 'Portuguese (Brazil)', 'pr-bt', 'pr-bt.png', 'pt-br'),
+                                (13, 'chinese', 'Chinese', 'zh-Hans', 'cn.png', 'zh-Hans'),
+                                (14, 'swedish', 'Swedish', 'se', 'se.png', 'sv'),
+                                (15, 'dutch', 'Dutch', 'nl', 'nl.png', 'nl'),
+                                (16, 'catalan', 'Catalan', 'ca', 'ct.png', 'ca'),
+                                (17, 'bulgarian', 'Bulgarian', 'bg', 'bg.png', 'bg'),
+                                (18, 'greek', 'Greek', 'gr', 'gr.png', 'el'),
+                                (19, 'hungarian', 'Hungarian', 'hu', 'hu.png', 'hu'),
+                                (20, 'polish', 'Polish', 'pl', 'pl.png', 'pl'),
+                                (21, 'romanian', 'Romanian', 'ro', 'ro.png', 'ro'),
+                                (22, 'ukrainian', 'Ukrainian', 'ua', 'ua.png', 'uk'),
+                                (23, 'vietnamese', 'Vietnamese', 'vi', 'vi.png', 'vi'),
+                                (24, 'estonian', 'Estonian', 'et', 'ee.png', 'et');"
                             );
                         }
                     } elseif ($task === 'emails') {
