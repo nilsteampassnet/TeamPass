@@ -1,16 +1,20 @@
 <?php
 /**
- *
- * @package       polish.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       3.0.0.20
- * @copyright     2009 - 2022 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
- *
+ * Teampass - a collaborative passwords manager.
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @version   3.0.0.20
+ * @file      polish.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009 - 2022 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
 return array(
     'show_user_temporary_encryption_code' => 'Wyświetl kod szyfrowania użytkownika',
@@ -1021,5 +1025,6 @@ return array(
     'sending_emails' => 'Sending emails',
     'task_frequency' => 'Frequency (in minutes)',
     'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+    'bad_duo_mfa' => 'Bad DUO code',
 
 );

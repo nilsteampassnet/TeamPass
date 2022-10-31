@@ -73,8 +73,7 @@ function langHdl(string $string): string
         */
         if (isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
             $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
-            echo $string." ; ";
-            $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
+            $session_language = isset($_SESSION['teampass']['en_lang'][trim($string)]) === false ? '' : $_SESSION['teampass']['en_lang'][trim($string)];
         } else {
             $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
         }
