@@ -310,9 +310,9 @@ if (null !== $post_type) {
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_STRING) : '';
-            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
-            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : '';
+            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : -1;
+            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
+            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
 
@@ -431,16 +431,14 @@ if (null !== $post_type) {
                 'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
                 'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
             );
-            if (
-                $dataFolder['renewal_period'] !== (int) $post_renewal_period
-                && empty($post_renewal_period) === false
-            ) {
+            
+            if ($post_renewal_period !== -1 && $dataFolder['renewal_period'] !== $post_renewal_period) {
                 $folderParameters['renewal_period'] = $post_renewal_period;
             }
-            if ((int) $dataFolder['bloquer_creation'] !== (int) $post_add_restriction) {
+            if ($post_add_restriction !== -1 && $dataFolder['bloquer_creation'] !== $post_add_restriction) {
                 $folderParameters['bloquer_creation'] = $post_add_restriction;
             }
-            if ($dataFolder['bloquer_modification'] !== (int) $post_edit_restriction) {
+            if ($post_edit_restriction !== -1 && $dataFolder['bloquer_modification'] !== $post_edit_restriction) {
                 $folderParameters['bloquer_modification'] = $post_edit_restriction;
             }
             
