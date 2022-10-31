@@ -185,7 +185,6 @@ if (
                     }
                 );
             }).then(function() {
-                console.log('Est-ce que je passe ici? '+store.get('teampassSettings').enable_tasks_manager);
                 if (store.get('teampassSettings') === undefined || parseInt(store.get('teampassSettings').enable_tasks_manager) === 0) {
                     console.log('Now sending emails')
                     setTimeout(

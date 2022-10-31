@@ -133,9 +133,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
             },
             {
                 className: 'dt-body-left'
-            },
-            {
-                className: 'dt-body-left'
             }
         ],
     });

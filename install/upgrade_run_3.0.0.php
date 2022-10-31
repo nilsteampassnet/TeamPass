@@ -1622,6 +1622,9 @@ mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`tr` WHE
 mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`uk` WHERE `name`=`ukrainian`;');
 mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`vi` WHERE `name`=`vietnamese`;');
 
+// Fix a potential issue in table log_items
+mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modification` WHERE `action` = `at_modification2`;');
+
 //---<END 3.0.0.20
 
 // Finished

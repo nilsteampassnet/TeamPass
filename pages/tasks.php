@@ -131,8 +131,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
 
                             <div class="tab-pane fade" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
-                                <div class="" id="in_edition-tab-refresh"></div>
-                                <table class="table table-striped" id="table-tasks_in_progress" style="">
+                                <table class="table table-striped" id="table-tasks_in_progress" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""></th>
@@ -140,7 +139,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <th style=""><?php echo langHdl('updated_at'); ?></th>
                                             <th style=""><?php echo langHdl('type'); ?></th>
                                             <th style=""><?php echo langHdl('user'); ?></th>
-                                            <th style=""></th>
                                         </tr>
                                     </thead>
                                 </table>

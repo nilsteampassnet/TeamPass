@@ -176,7 +176,6 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
 }
 
-//print_r($_SESSION['user']);
 // Load user languages files
 if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
     $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
@@ -1154,6 +1153,17 @@ if (
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <!-- DataTables -->
+        <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
+        <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
+        <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
+        <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
+        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
+        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js"></script>
+        <script type="text/javascript" src="./plugins/datatables/plugins/select.js"></script>
+        <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+        <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {
@@ -1178,7 +1188,7 @@ if (
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'utilities.tasks']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -1283,6 +1293,8 @@ if (
             include_once $SETTINGS['cpassman_dir'] . '/pages/options.js.php';
         } elseif ($get['page'] === 'statistics') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/statistics.js.php';
+        } elseif ($get['page'] === 'tasks') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/tasks.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {
@@ -1313,8 +1325,6 @@ if (
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
-        } elseif ($get['page'] === 'utilities.tasks') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.tasks.js.php';
         }
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';

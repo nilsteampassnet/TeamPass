@@ -612,7 +612,7 @@ if (is_null($inputData['type']) === false) {
                                     'item_id' => $newID,
                                     'del_enabled' => 1,
                                     'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                    'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                    'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
                                 )
                             );
                         }
@@ -1154,17 +1154,20 @@ if (is_null($inputData['type']) === false) {
                     );
 
                     // Add new tags
-                    $postArrayTags = explode(' ', $post_tags);
-                    foreach ($postArrayTags as $tag) {
-                        if (empty($tag) === false) {
-                           // save in DB
-                            DB::insert(
-                                prefixTable('tags'),
-                                array(
-                                    'item_id' => $inputData['itemId'],
-                                    'tag' => strtolower($tag),
-                                )
-                            );
+                    $postArrayTags = [];
+                    if (empty($post_tags) === false) {
+                        $postArrayTags = explode(' ', $post_tags);
+                        foreach ($postArrayTags as $tag) {
+                            if (empty($tag) === false) {
+                            // save in DB
+                                DB::insert(
+                                    prefixTable('tags'),
+                                    array(
+                                        'item_id' => $inputData['itemId'],
+                                        'tag' => strtolower($tag),
+                                    )
+                                );
+                            }
                         }
                     }
 
@@ -1475,7 +1478,7 @@ if (is_null($inputData['type']) === false) {
                                         'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
                                         'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                            (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                            (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
                                     )
                                 );
 
@@ -1509,7 +1512,7 @@ if (is_null($inputData['type']) === false) {
                                         'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
                                             1 : 2, //1 = numeric : 2 = date
                                         'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                            $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
+                                            $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
                                     ),
                                     'item_id = %i',
                                     $inputData['itemId']
@@ -1534,7 +1537,7 @@ if (is_null($inputData['type']) === false) {
                                     (int) $inputData['itemId'],
                                     $inputData['label'],
                                     $_SESSION['user_id'],
-                                    'at_modification2',
+                                    'at_modification',
                                     $_SESSION['login'],
                                     'at_automatic_del : disabled'
                                 );

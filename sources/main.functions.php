@@ -71,9 +71,11 @@ function langHdl(string $string): string
             which makes jquery unhappy on the UI, especially on the log page)
             and improve performance by avoiding to include the file for every missing strings.
         */
-        $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
-        if (isset($session_language) === false) {
+        if (isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
             $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
+            echo $string." ; ";
+            $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
+        } else {
             $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
         }
     }
@@ -1480,18 +1482,18 @@ function generateKey(): string
 /**
  * Convert date to timestamp.
  *
- * @param string $date     The date
- * @param array  $SETTINGS Teampass settings
+ * @param string $date        The date
+ * @param string $date_format Date format
  *
- * @return string
+ * @return int
  */
-function dateToStamp(string $date, array $SETTINGS): string
+function dateToStamp(string $date, string $date_format): int
 {
-    $date = date_parse_from_format($SETTINGS['date_format'], $date);
+    $date = date_parse_from_format($date_format, $date);
     if ((int) $date['warning_count'] === 0 && (int) $date['error_count'] === 0) {
         return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     }
-    return '';
+    return 0;
 }
 
 /**
