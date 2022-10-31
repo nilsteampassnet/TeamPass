@@ -8,7 +8,7 @@
  * ---
  *
  * @project   Teampass
- *
+ * @version   
  * @file      background_tasks___user_keys_creation.php
  * ---
  *
@@ -633,43 +633,45 @@ function cronContinueReEncryptingUserSharekeysStep3(
             $extra_arguments['owner_id']
         );
 
-        // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
+        if (isset($currentUserKey['share_key']) === true) {
+            // Decrypt itemkey with admin key
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
 
-        // Encrypt Item key
-        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
 
-        // Save the key in DB
-        if ($post_self_change === false) {
-            DB::insert(
-                prefixTable('sharekeys_fields'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
-            );
-        } else {
-            // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $extra_arguments['owner_id']) {
-                $currentUserKey = DB::queryFirstRow(
-                    'SELECT increment_id
-                    FROM ' . prefixTable('sharekeys_items') . '
-                    WHERE object_id = %i AND user_id = %i',
-                    $record['id'],
-                    $post_user_id
+            // Save the key in DB
+            if ($post_self_change === false) {
+                DB::insert(
+                    prefixTable('sharekeys_fields'),
+                    array(
+                        'object_id' => (int) $record['id'],
+                        'user_id' => (int) $post_user_id,
+                        'share_key' => $share_key_for_item,
+                    )
+                );
+            } else {
+                // Get itemIncrement from selected user
+                if ((int) $post_user_id !== (int) $extra_arguments['owner_id']) {
+                    $currentUserKey = DB::queryFirstRow(
+                        'SELECT increment_id
+                        FROM ' . prefixTable('sharekeys_items') . '
+                        WHERE object_id = %i AND user_id = %i',
+                        $record['id'],
+                        $post_user_id
+                    );
+                }
+
+                // NOw update
+                DB::update(
+                    prefixTable('sharekeys_fields'),
+                    array(
+                        'share_key' => $share_key_for_item,
+                    ),
+                    'increment_id = %i',
+                    $currentUserKey['increment_id']
                 );
             }
-
-            // NOw update
-            DB::update(
-                prefixTable('sharekeys_fields'),
-                array(
-                    'share_key' => $share_key_for_item,
-                ),
-                'increment_id = %i',
-                $currentUserKey['increment_id']
-            );
         }
     }
 

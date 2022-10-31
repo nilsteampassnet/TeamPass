@@ -12,7 +12,7 @@
  * @copyright 2009-2022 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
- * @version   GIT: <git_id>
+ * @version   3.0.0.20
  *
  * @see      http://www.teampass.net
  */

@@ -10,6 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
+ * @version   3.0.0.20
  * @file      items.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -6244,7 +6245,7 @@ if (is_null($inputData['type']) === false) {
                 }
                 
                 // imported via API
-                if (empty($record['login'])) {
+                if (empty($record['login']) === true) {
                     $record['login'] = langHdl('imported_via_api') . ' [' . $record['raison'] . ']';
                 }
                 

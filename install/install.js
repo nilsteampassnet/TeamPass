@@ -6,6 +6,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
+ * @version   
  * @file      install.js
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)

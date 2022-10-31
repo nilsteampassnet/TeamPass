@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- *
+ * @version   3.0.0.20
  * @file      folders.datatable.php
  * ---
  *

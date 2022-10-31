@@ -7,7 +7,8 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  *
- * @project   Teampass API
+ * @project   Teampass
+ * @version    API
  *
  * @file      BaseController.php
  * ---

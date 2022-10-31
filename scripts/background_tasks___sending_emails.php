@@ -8,7 +8,7 @@
  * ---
  *
  * @project   Teampass
- *
+ * @version   
  * @file      background_tasks___sending_emails.php
  * ---
  *

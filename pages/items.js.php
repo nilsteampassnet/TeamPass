@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- *
+ * @version   3.0.0.20
  * @file      items.js.php
  * ---
  *
@@ -4182,8 +4182,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
                 requestRunning = true;
-                if (debugJavascript === true) console.log("RECEIVED");
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.log("RECEIVED");
+                    console.log(data);
+                }
 
                 // remove any track-change class on item form
                 //$('.form-item-control').removeClass('track-change');

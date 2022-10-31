@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- *
+ * @version   
  * @file      error.php
  * ---
  *
