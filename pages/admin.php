@@ -147,7 +147,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <div class="card-body">
                         <?php
                         // Display the readme file
-                        $homepage = file_get_contents('changelog.txt', false, null, 530);
+                        $homepage = file_get_contents('changelog.txt', false, null, 543);
                         echo $homepage;
                         ?>
                     </div>
