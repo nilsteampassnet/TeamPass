@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   
+ * @version   3.0.0.20
  * @file      upgrade_scripts_manager.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
