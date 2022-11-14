@@ -11,7 +11,7 @@ declare(strict_types=1);
   * ---
   *
   * @project   Teampass
- * @version   3.0.0.20
+ * @version   3.0.0.22
   *
   * @file      search.js.php
   * ---

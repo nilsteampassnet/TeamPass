@@ -1,16 +1,20 @@
 <?php
 /**
- *
- * @package       arabic.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
- *
+ * Teampass - a collaborative passwords manager.
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
+ * @project   Teampass
+ * @version   3.0.0.22
+ * @file      arabic.php
+ * ---
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009 - 2022 Teampass.net
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * ---
+ * @see       https://www.teampass.net
  */
 global $LANG;
 $LANG = array(

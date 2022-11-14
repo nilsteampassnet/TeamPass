@@ -6,19 +6,14 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
- *
  * @project   Teampass
- *
+ * @version   3.0.0.22
  * @file      english.php
  * ---
- *
  * @author    Nils Laumaillé (nils@teampass.net)
- *
- * @copyright 2009-2022 Teampass.net
- *
+ * @copyright 2009 - 2022 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
- *
  * @see       https://www.teampass.net
  */
 return array(

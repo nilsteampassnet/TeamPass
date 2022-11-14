@@ -7,8 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   
- * @version   3.0.0.21
+ * @version   3.0.0.22
  * @file      turkish.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
