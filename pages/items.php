@@ -1151,6 +1151,15 @@ foreach ($rows as $reccord) {
                                 ?>
                             </select>
                         </div>
+                        <!--
+                        <div class="form-group">
+                            <label><?php echo langHdl('folder_creation_rights_strategy'); ?></label>
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-add-rights" required>
+                                <option value="folder_creation_rights_as_user_groups"><?php echo langHdl('folder_creation_rights_as_user_groups').' ('.langHdl('by_default').')'; ?></option>
+                                <option value="folder_creation_rights_as_folder_groups"><?php echo langHdl('folder_creation_rights_as_folder_groups'); ?></option>
+                            </select>
+                        </div>
+                            -->
                         <div class="form-group">
                             <label><?php echo langHdl('icon'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">

@@ -1014,7 +1014,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysql_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`name`, `label`, `code`, `flag`, `code_poeditor`) VALUES
+                                "INSERT INTO `" . $var['tbl_prefix'] . "languages` (`id`, `name`, `label`, `code`, `flag`, `code_poeditor`) VALUES
                                 (1, 'french', 'French', 'fr', 'fr.png', 'fr'),
                                 (2, 'english', 'English', 'us', 'us.png', 'en'),
                                 (3, 'spanish', 'Spanish', 'es', 'es.png', 'es'),

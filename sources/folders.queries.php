@@ -531,6 +531,7 @@ if (null !== $post_type) {
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
+            //$post_access_rights_strategy = filter_var($dataReceived['access_rights_strategy'], FILTER_SANITIZE_STRING);
 
             // Init
             $error = false;
@@ -718,24 +719,9 @@ if (null !== $post_type) {
                             )
                         );
                     }
-                    if ((int) $_SESSION['is_admin'] !== 1) {
-                        // 2- add the user right to this folder
-                        foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                            if (empty($role) === false) {
-                                DB::update(
-                                    prefixTable('roles_values'),
-                                    array(
-                                        'type' => 'W',
-                                    ),
-                                    'folder_id = %i and role_id = %i',
-                                    $newId,
-                                    $role
-                                );
-                            }
-                        }
-                    }
                 }
 
+                // Create expected groups access rights based upon option selected
                 if (
                     isset($SETTINGS['subfolder_rights_as_parent']) === true
                     && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
@@ -752,6 +738,22 @@ if (null !== $post_type) {
                                 'type' => $record['type'],
                             )
                         );
+                    }
+                } elseif ((int) $_SESSION['is_admin'] !== 1) {
+                    // If not admin and no option enabled
+                    // then provide expected rights based upon user's roles
+                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                        if (empty($role) === false) {
+                            DB::update(
+                                prefixTable('roles_values'),
+                                array(
+                                    'type' => 'W',
+                                ),
+                                'folder_id = %i and role_id = %i',
+                                $newId,
+                                $role
+                            );
+                        }
                     }
                 }
 

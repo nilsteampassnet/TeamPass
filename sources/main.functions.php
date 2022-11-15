@@ -71,7 +71,7 @@ function langHdl(string $string): string
             which makes jquery unhappy on the UI, especially on the log page)
             and improve performance by avoiding to include the file for every missing strings.
         */
-        if (isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
+        if (isset($_SESSION['teampass']) === true && isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
             $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
             $session_language = isset($_SESSION['teampass']['en_lang'][trim($string)]) === false ? '' : $_SESSION['teampass']['en_lang'][trim($string)];
         } else {

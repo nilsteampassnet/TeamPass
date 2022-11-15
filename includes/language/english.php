@@ -17,6 +17,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'by_default' => 'by default',
+    'folder_creation_rights_strategy' => 'Rights creation strategy',
+    'folder_creation_rights_as_user_groups' => 'Same groups you belong to',
+    'folder_creation_rights_as_folder_groups' => 'Same roles and rights as the parent folder',
     'user_keys_management' => 'User keys management',
     'sending_emails' => 'Sending emails',
     'task_frequency' => 'Frequency (in minutes)',

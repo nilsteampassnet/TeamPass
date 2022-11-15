@@ -1659,6 +1659,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'title': $('#form-folder-add-label').val(),
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
+            //'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),
             'icon': $('#form-folder-add-icon').val(),
             'iconSelected': $('#form-folder-add-icon-selected').val(),
             'id': selectedFolderId,

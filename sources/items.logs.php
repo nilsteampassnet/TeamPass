@@ -107,14 +107,16 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            logItems(
-                $SETTINGS,
-                (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
-                filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING),
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                filter_var(htmlspecialchars_decode($dataReceived['action']), FILTER_SANITIZE_STRING),
-                filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING)
-            );
+            if (null !== filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT)) {
+                logItems(
+                    $SETTINGS,
+                    (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
+                    filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING),
+                    (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                    filter_var(htmlspecialchars_decode($dataReceived['action']), FILTER_SANITIZE_STRING),
+                    filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING)
+                );
+            }
             break;
     }
 }
