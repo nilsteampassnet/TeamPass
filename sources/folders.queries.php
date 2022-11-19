@@ -536,7 +536,7 @@ if (null !== $post_type) {
             // Init
             $error = false;
             $newId = $errorMessage = '';
-            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING) : '';
+            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING) : 'W';
 
             // check if title is numeric
             if (is_numeric($post_title) === true) {
@@ -704,6 +704,7 @@ if (null !== $post_type) {
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
+                /*
                 if ((int) $isPersonal !== 1) {
                     //add access to this new folder 
 
@@ -720,6 +721,7 @@ if (null !== $post_type) {
                         );
                     }
                 }
+                */
 
                 // Create expected groups access rights based upon option selected
                 if (
@@ -744,14 +746,13 @@ if (null !== $post_type) {
                     // then provide expected rights based upon user's roles
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                         if (empty($role) === false) {
-                            DB::update(
+                            DB::insert(
                                 prefixTable('roles_values'),
                                 array(
-                                    'type' => 'W',
-                                ),
-                                'folder_id = %i and role_id = %i',
-                                $newId,
-                                $role
+                                    'role_id' => $role,
+                                    'folder_id' => $newId,
+                                    'type' => $access_level_by_role,
+                                )
                             );
                         }
                     }
