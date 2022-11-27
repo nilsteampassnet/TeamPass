@@ -54,6 +54,9 @@ define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
 
+// Fontawesome icons
+define('FONTAWESOME_URL', 'https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free');
+
 // Duo
 define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');
 define('DUO_CALLBACK', 'index.php?post_type=duo');

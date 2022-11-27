@@ -682,14 +682,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '<label><?php echo langHdl('icon'); ?></label>' +
             '<input type="text" class="form-control form-folder-control" id="folder-edit-icon" value="'+folderIcon+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?>' +
+            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label><?php echo langHdl('icon_on_selection'); ?></label>' +
             '<input type="text" class="form-control form-folder-control" id="folder-edit-icon-selected" value="'+folderIconSelection+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?>' +
+            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2" id="folder-rights-tuned">' +

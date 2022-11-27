@@ -992,7 +992,7 @@ return array(
     'user_specific_right' => 'User specific right',
     'icon' => 'Ikona',
     'icon_on_selection' => 'Ikona gdy zaznaczono',
-    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in <a href=https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Free and Solid icons</a>. Leave empty for default icon."',
+    'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in Free and Solid icons. Leave empty for default icon."',
     'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
     'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
     'show_encryption_code_to_admin' => 'TTo jest zaszyfrowany kod, którego użytkownik będzie potrzebował podczas tego logowania. Poprosiłeś o jego obejrzenie, skopiuj go i udostępnij w bezpieczny sposób. Kod to',

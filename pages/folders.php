@@ -174,14 +174,14 @@ foreach ($tst as $t) {
                                     <label><?php echo langHdl('icon'); ?></label>
                                     <input type="text" class="form-control form-folder-control" id="new-folder-add-icon">
                                     <small class='form-text text-muted'>
-                                        <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                        <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                                     </small>
                                 </div>
                                 <div class="form-group">
                                     <label><?php echo langHdl('icon_on_selection'); ?></label>
                                     <input type="text" class="form-control form-folder-control" id="new-folder-add-icon-selected">
                                     <small class='form-text text-muted'>
-                                        <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                        <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                                     </small>
                                 </div>
                                 <div class="form-group">

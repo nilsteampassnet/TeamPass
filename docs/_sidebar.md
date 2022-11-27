@@ -8,7 +8,8 @@
 - **Features**
 - [Authentication](authentication.md)
 - **Manage**
-- [Settings](settings.md)
+- [Settings](manage/settings.md)
+- [Tasks](manage/tasks.md)
 - **API**
 - [Basic usage](api-basic.md)
 - **Help**

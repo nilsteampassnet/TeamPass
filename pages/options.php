@@ -97,8 +97,7 @@ $zones = timezone_list();
                                     <?php echo langHdl('admin_misc_cpassman_dir'); ?>
                                 </label>
                                 <div class='col-sm-12'>
-                                    <input type='text' class='form-control form-control-sm' id='cpassman_dir' value='<?php echo isset($SETTINGS['cpassman_dir']) === true ? $SETTINGS['cpassman_dir'] : '
-                          '; ?>'>
+                                    <input type='text' class='form-control form-control-sm' id='cpassman_dir' value='<?php echo isset($SETTINGS['cpassman_dir']) === true ? $SETTINGS['cpassman_dir'] : ''; ?>'>
                                 </div>
                             </div>
 
@@ -174,7 +173,7 @@ $zones = timezone_list();
                     <!-- /.card-header -->
                     <!-- form start -->
                     <div class='card-body'>
-                        <div class='row mb-2 option' data-keywords="setting">
+                        <div class='row mb-2 option' data-keywords="setting maintenance mode">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_maintenance_mode'); ?>
                             </div>
@@ -183,7 +182,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="server setting">
+                        <div class='row mb-2 option' data-keywords="server setting session expiration time">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_default_session_expiration_time'); ?>
                             </div>
@@ -192,7 +191,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="server setting">
+                        <div class='row mb-2 option' data-keywords="server setting ">
                             <div class='col-10'>
                                 <?php echo langHdl('enable_http_request_login'); ?>
                             </div>
@@ -213,7 +212,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="server setting">
+                        <div class='row mb-2 option' data-keywords="server setting proxy ip">
                             <div class='col-10'>
                                 <?php echo langHdl('admin_proxy_ip'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -225,7 +224,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="server setting">
+                        <div class='row mb-2 option' data-keywords="server setting proxy port">
                             <div class='col-10'>
                                 <?php echo langHdl('admin_proxy_port'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -237,7 +236,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="user ui setting login">
+                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
                             <div class='col-10'>
                                 <?php echo langHdl('admin_pwd_maximum_length'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -249,7 +248,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="user ui setting">
+                        <div class='row mb-2 option' data-keywords="user ui setting time date">
                             <div class='col-4'>
                                 <?php echo langHdl('timezone_selection'); ?>
                             </div>
@@ -267,7 +266,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="user ui setting">
+                        <div class='row mb-2 option' data-keywords="user ui setting date format">
                             <div class='col-4'>
                                 <?php echo langHdl('date_format'); ?>
                             </div>
@@ -286,7 +285,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="user ui setting">
+                        <div class='row mb-2 option' data-keywords="user ui setting time format">
                             <div class='col-4'>
                                 <?php echo langHdl('time_format'); ?>
                             </div>
@@ -301,7 +300,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="user ui setting">
+                        <div class='row mb-2 option' data-keywords="user ui setting language">
                             <div class='col-8'>
                                 <?php echo langHdl('settings_default_language'); ?>
                             </div>
@@ -329,7 +328,7 @@ $zones = timezone_list();
                     </div>
                     -->
 
-                        <div class='row mb-2 option' data-keywords="user login">
+                        <div class='row mb-2 option' data-keywords="user login password duration">
                             <div class='col-10'>
                                 <?php echo langHdl('pw_life_duration'); ?>
                             </div>
@@ -338,7 +337,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="log user login">
+                        <div class='row mb-2 option' data-keywords="log user login password security">
                             <div class='col-10'>
                                 <?php echo langHdl('nb_false_login_attempts'); ?>
                             </div>
@@ -358,7 +357,7 @@ $zones = timezone_list();
                         </div>
                         -->
 
-                        <div class='row mb-2 option' data-keywords="log item password">
+                        <div class='row mb-2 option' data-keywords="log item password log security">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_log_accessed'); ?>
                             </div>
@@ -638,7 +637,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="folder display optimization">
+                        <div class='row mb-2 option' data-keywords="folder display optimization hide">
                             <div class='col-10'>
                                 <?php echo langHdl('show_only_accessible_folders'); ?>
                                 <small class='form-text text-muted'>

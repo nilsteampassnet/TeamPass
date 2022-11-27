@@ -1,10 +1,6 @@
-<!-- docs/settings.md -->
-
+<!-- docs/manage/tasks.md -->
 
 ## Generalities
-
-
-## Tasks
 
 > Permits to handle heavy treatment using background server jobs. 
 
@@ -15,7 +11,7 @@ Currently implemented in case of:
 
 Notice that when not enabled, emails are sent on page browsing which could lead to latencies for your users.
 
-### Options
+## Options
 
 > You should use the options to set up the tasks management to fit your PHP server configuration.
 
@@ -30,7 +26,7 @@ _This value is to adapt depending on what happen. But you should not change it._
 3. Set the delay after which the data is refreshed in the tasks management follow up page.
 
 
-### Setting up the cron job
+## Setting up the cron job
 
 To be enabled, it is required to add a new entry inside the crontab.
 Only one entry is expected, each job has its own execution frequency.
@@ -43,7 +39,7 @@ and add the input permitting the job to run each 5 minutes for example.
 
 It is mandatory to define it to run every minute.
 
-### Tasks management follow up page
+## Tasks management follow up page
 
 > This page permits to:
 > * define the job execution frequency,

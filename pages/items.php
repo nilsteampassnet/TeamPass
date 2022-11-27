@@ -262,7 +262,7 @@ foreach ($rows as $reccord) {
                                     <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
                                 </div>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                    <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                                 </small>
                             </div>
 
@@ -1164,14 +1164,14 @@ foreach ($rows as $reccord) {
                             <label><?php echo langHdl('icon'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                             </small>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('icon_on_selection'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon-selected">
                             <small class='form-text text-muted'>
-                                <?php echo langHdl('fontawesome_icon_tip'); ?>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                             </small>
                         </div>
                     </div>
