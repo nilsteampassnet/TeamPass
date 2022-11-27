@@ -161,7 +161,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     .append(droplist);
                             }
                         );
-
+/*
                         // refresh cache tree
                         var data = {
                             'force_refresh_cache': true,
@@ -177,7 +177,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_visible_folders');
                             }
                         );
-
+*/
                         $('.form').addClass('hidden');
                         $('#folders-list').removeClass('hidden');
                     }

@@ -1496,7 +1496,7 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'subfolders' => ($subfolders),
