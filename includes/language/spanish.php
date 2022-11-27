@@ -248,8 +248,7 @@ return array(
     'api_configuration' => 'Configuración API',
     'mfa_configuration' => 'Configuración AMF',
     'yubico_authentication_tip' => 'Para más información, visita www.yubico.com.',
-    'complexity_level_not_reached' => 'No se alcanza el nivel de complejidad
-',
+    'complexity_level_not_reached' => 'No se alcanza el nivel de complejidad',
     'expected_complexity_level' => 'Nivel de complejidad esperado',
     'your_attention_is_required' => 'Se requiere tu atención',
     'favorite' => 'Favorito',
