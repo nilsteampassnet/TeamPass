@@ -161,23 +161,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     .append(droplist);
                             }
                         );
-/*
-                        // refresh cache tree
-                        var data = {
-                            'force_refresh_cache': true,
-                        }
-                        $.post(
-                            'sources/items.queries.php', {
-                                type: 'refresh_visible_folders',
-                                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                                key: '<?php echo $_SESSION['key']; ?>'
-                            },
-                            function(data) {
-                                //decrypt data
-                                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_visible_folders');
-                            }
-                        );
-*/
+
                         $('.form').addClass('hidden');
                         $('#folders-list').removeClass('hidden');
                     }
