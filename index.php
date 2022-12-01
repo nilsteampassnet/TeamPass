@@ -340,7 +340,7 @@ if (($session_validite_pw === null
             <!-- Main Sidebar Container -->
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
-                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=items'; ?>" class="brand-link">
+                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=' . ($session_user_admin === 1 ? 'admin' : 'items'); ?>" class="brand-link">
                     <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                     <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
@@ -348,7 +348,7 @@ if (($session_validite_pw === null
                 <!-- Sidebar -->
                 <div class="sidebar">
                     <!-- Sidebar Menu -->
-                    <nav class="mt-2" style="margin-bottom:20px;">
+                    <nav class="mt-2" style="margin-bottom:40px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
                                 if ($session_user_admin === 0) {
