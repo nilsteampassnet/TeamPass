@@ -247,7 +247,14 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 <?php
 
-if (
+// display an item in the context of OTV link
+if (($session_validite_pw === null
+        || empty($session_validite_pw) === true
+        || empty($session_user_id) === true)
+    && empty($get['otv']) === false)
+{
+    include './includes/core/otv.php';
+} elseif (
     $session_validite_pw !== null
     && $session_validite_pw === true
     && empty($get['page']) === false
