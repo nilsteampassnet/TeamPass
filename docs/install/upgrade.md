@@ -1,11 +1,4 @@
-<!-- docs/start.md -->
-
-
-
-
-## Installation
-
-> To be written ...
+<!-- docs/install/upgrade.md -->
 
 
 
@@ -20,9 +13,22 @@
 
 ### Steps
 
+#### Get new version, using Git
+
+```
+cd path/to/teampass/folder
+git pull
+```
+
+#### Or manually using zip package
+
 * Download latest release from [Teampass](https://github.com/nilsteampassnet/TeamPass/releases/latest)
 * Unzip and overwrite existing files in Teampass folder
+
+#### Then perform upgrade 
+
 * Browse to `Teampass` upgrade page by selecting url `https://<your_teampass_instance>/install/upgrade.php`
+* Run all steps
 
 
 ## Upgrading from 2.x branch

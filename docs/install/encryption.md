@@ -1,4 +1,4 @@
-<!-- docs/encryption.md -->
+<!-- docs/install/encryption.md -->
 
 
 ## Client-Server exchanges

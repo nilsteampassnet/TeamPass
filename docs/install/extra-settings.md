@@ -1,4 +1,4 @@
-<!-- docs/extra-settings.md -->
+<!-- docs/install/extra-settings.md -->
 
 
 ## Mysql connection with ssl enabled
