@@ -1628,5 +1628,14 @@ mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modificat
 
 //---<END 3.0.0.20
 
+
+
+//--->BEGIN 3.0.0.22
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'cache_tree MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
+);
+//---<END 3.0.0.22
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
