@@ -116,9 +116,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'width': '80px',
                 className: 'details-control',
                 'render': function(data, type, row, meta) {
-                    return '<span class="input-group-btn btn-user-action">' +
-                        '<button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">' +
-                        '<i class="fas fa-gear"></i>' +
+                    return '<div class="group-btn btn-user-action">' +
+                        '' +
+                        '<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><i class="fas fa-cog"></i>&nbsp;' +
                         '</button>' +
                         '<ul class="dropdown-menu" role="menu">' +
                         ($(data).data('auth-type') === 'local' ?
@@ -136,7 +136,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fas fa-user-slash text-warning mr-2" disabled></i><?php echo langHdl('disable_enable'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fas fa-user-minus text-danger mr-2" disabled></i><?php echo langHdl('delete'); ?></li>' +
                         '</ul>' +
-                        '</span>';
+                        '</div>';
                 }
             },
             {

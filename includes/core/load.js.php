@@ -212,6 +212,28 @@ if (
                         3000
                     );
                 }
+
+                // Save user location
+                console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
+                if (store.get('teampassUser').location_stored !== 1) {
+                // Save user location
+                    $.post(
+                        "sources/users.queries.php", {
+                            type: 'save_user_location',
+                            step: "perform",
+                            key: "<?php echo $_SESSION['key']; ?>"
+                        },
+                        function(data) {
+                            // update local storage
+                            store.update(
+                                'teampassUser', {},
+                                function(teampassUser) {
+                                    teampassUser.location_stored = 1;
+                                }
+                            );
+                        }
+                    );
+                }
             });
         });
     }

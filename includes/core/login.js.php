@@ -707,6 +707,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                         teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
                                         teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
                                         teampassUser.special = data.special;
+                                        teampassUser.auth_type = '';
+                                        teampassUser.location_stored = 0;
                                     }
                                 );
 

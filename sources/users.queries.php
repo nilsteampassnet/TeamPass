@@ -2344,29 +2344,25 @@ if (null !== $post_type) {
                     break;
                 }
             } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'perform') {
-                $post_location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
-                if (empty($post_location) === false) {
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'user_ip' => $post_location,
-                            'user_ip_lastdate' => time(),
-                        ),
-                        'id = %i',
-                        $_SESSION['user_id']
-                    );
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'user_ip' => getClientIpServer(),
+                        'user_ip_lastdate' => time(),
+                    ),
+                    'id = %i',
+                    $_SESSION['user_id']
+                );
 
-                    echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
-                        array(
-                            'refresh' => false,
-                            'error' => '',
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else { }
+                echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                    array(
+                        'refresh' => false,
+                        'error' => '',
+                    ),
+                    'encode'
+                );
+            }
 
             echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],

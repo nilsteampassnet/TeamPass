@@ -17,6 +17,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'never' => 'Never',
+    'creation_date' => 'Creation date',
     'by_default' => 'by default',
     'folder_creation_rights_strategy' => 'Rights creation strategy',
     'folder_creation_rights_as_user_groups' => 'Same groups you belong to',

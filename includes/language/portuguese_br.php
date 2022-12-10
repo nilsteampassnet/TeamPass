@@ -346,7 +346,7 @@ return array(
     'notification_engaged' => 'Você está recebendo notificações em eventos de modificação do Item',
     'notification_not_engaged' => 'Você não está recebendo notificações em eventos de modificação do Item',
     'viewed_number' => 'Número de Visualizações',
-    'automatic_deletion_engaged' => 'Exclusão automático',
+    'automatic_deletion_engaged' => 'Exclusão automática',
     'auto_update_enabled' => 'Alteração automática de senha de usuário habilitada. Próxima alteração prevista para',
     'copy_folder' => 'Copiar pasta',
     'select_source_folder' => 'Selecione a pasta para copiar',
@@ -685,7 +685,7 @@ return array(
     'error_tags' => 'Não é permitido pontuação nas TAGS! Apenas espaço.',
     'error_user_exists' => 'O usuário já existe',
     'expiration_date' => 'Data de expiração',
-    'find' => 'Encontrar',
+    'find' => 'Pesquisar',
     'forbidden_groups' => 'Pastas proibidas',
     'forgot_my_pw_email_sent' => 'O e-mail foi enviado',
     'functions' => 'Papéis',
@@ -1026,5 +1026,7 @@ return array(
     'task_frequency' => 'Frequência (em minutos)',
     'tasks_information' => 'A tarefa depende de um trabalho cron dedicado. Para isso, é necessário adicionar uma nova entrada ao seu crontab para executar o agendador do TeamPass a cada minuto.<br>A entrada a seguir deve ser adicionada:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Nota: por favor, adapte o caminho para o executável do PHP (na maioria dos casos, ele pode ser substituído por <code>php</code>).',
     'bad_duo_mfa' => 'Código DUO inválido',
+    'creation_date' => 'Creation date',
+    'never' => 'Never',
 
 );

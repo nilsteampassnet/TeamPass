@@ -251,3 +251,17 @@
     text-decoration: inherit;
     color: inherit;
 }
+
+.tooltip {
+    top:0px;
+    background-color:black;
+    color:white;
+    border-radius:5px;
+    opacity:0;
+    position:absolute;
+    -webkit-transition: opacity 0.5s;
+    -moz-transition:  opacity 0.5s;
+    -ms-transition: opacity 0.5s;
+    -o-transition:  opacity 0.5s;
+    transition:  opacity 0.5s;
+}

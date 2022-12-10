@@ -205,36 +205,22 @@ foreach ($rows as $record) {
                 $listAlloFcts = '<i class="fas fa-exclamation-triangle text-danger infotip" title="'.langHdl('user_alarm_no_function').'"></i>';
             }
         }
-        /*
-        // Get list of allowed groups
-        $listAlloGrps = '';
-        if ((int) $record['admin'] !== 1) {
-            if (count($treeDesc) > 0) {
-                foreach ($treeDesc as $t) {
-                    if (@in_array($t->id, $_SESSION['no_access_folders']) === false && in_array($t->id, $_SESSION['groupes_visibles']) === true) {
-                        $ident = '';
-                        if (in_array($t->id, explode(';', $record['groupes_visibles']))) {
-                            $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($ident.$t->title, FILTER_SANITIZE_STRING)).'<br />';
-                        }
-                        $prev_level = $t->nlevel;
-                    }
-                }
-            }
-        }
-        // Get list of forbidden groups
-        $listForbGrps = '';
-        if ((int) $record['admin'] !== 1) {
-            if (count($treeDesc) > 0) {
-                foreach ($treeDesc as $t) {
-                    $ident = '';
-                    if (in_array($t->id, explode(';', $record['groupes_interdits']))) {
-                        $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($ident.$t->title, FILTER_SANITIZE_STRING)).'<br />';
-                    }
-                    $prev_level = $t->nlevel;
-                }
-            }
-        }
-        */
+
+        $userDate = DB::queryfirstrow(
+            'SELECT date FROM '.prefixTable('log_system ').' WHERE type = %s AND field_1 = %i',
+            'user_mngt',
+            $record['id']
+        );
+
+        // Get some infos about user
+        $userDisplayInfos = 
+            (isset($userDate['date']) ? '<i class=\"fas fa-calendar-day infotip text-info ml-2\" title=\"'.langHdl('creation_date').': '.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $userDate['date']).'\"></i>' : '')
+            .
+            ((int) $record['last_connexion'] > 0 ? '<i class=\"far fa-clock infotip text-info ml-2\" title=\"'.langHdl('index_last_seen').": ".
+            date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['last_connexion']).'\"></i>' : '')
+            .
+            ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.langHdl('ip').": ".($record['user_ip']).'\"></i>' : '');
+        
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             addslashes(str_replace("'", '&lsquo;', empty($record['name']) === false ? $record['name'] : '')).' '.
             addslashes(str_replace("'", '&lsquo;', empty($record['lastname']) === false ? $record['lastname'] : '')).
@@ -244,8 +230,10 @@ foreach ($rows as $record) {
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
-            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-3\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').
-            ((isset($record['is_ready_for_usage']) === true && (int) $record['is_ready_for_usage'] === 0 && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1) ? '<i class=\"fas fa-hourglass-half infotip text-info ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').'" , ';
+            $userDisplayInfos.
+            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').
+            ((isset($record['is_ready_for_usage']) === true && (int) $record['is_ready_for_usage'] === 0 && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1) ? '<i class=\"fas fa-hourglass-half infotip text-info ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').
+            '" , ';
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name'] === NULL ? '' : $record['name']).'</span>", ';
         //col4
