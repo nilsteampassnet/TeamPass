@@ -2162,10 +2162,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 );
 
+                var data = {
+                    item_id: $(this).data('item-id'),
+                    action: $(this).data('item-favourited'),
+                }
+
+                console.log(data)
+
                 $.post('sources/items.queries.php', {
                         type: 'action_on_quick_icon',
-                        item_id: $(this).data('item-id'),
-                        action: $(this).data('item-favourited'),
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                         key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(ret) {

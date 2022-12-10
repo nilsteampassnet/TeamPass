@@ -4619,7 +4619,16 @@ if (is_null($inputData['type']) === false) {
                 exit;
             }
 
-            if ((int) $inputData['destination'] === 0) {
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
+            $inputData['action'] = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
+            $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            if ((int) $inputData['action'] === 0) {
                 // Add new favourite
                 array_push($_SESSION['favourites'], $inputData['itemId']);
                 //print_r($_SESSION['favourites']);
@@ -4635,13 +4644,14 @@ if (is_null($inputData['type']) === false) {
                 $data = DB::queryfirstrow(
                     'SELECT label,id_tree
                     FROM ' . prefixTable('items') . '
-                    WHERE id = ' . mysqli_real_escape_string($link, $inputData['itemId'])
+                    WHERE id = %i',
+                    $inputData['itemId']
                 );
                 $_SESSION['favourites_tab'][$inputData['itemId']] = array(
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
                 );
-            } elseif ((int) $inputData['destination'] === 1) {
+            } elseif ((int) $inputData['action'] === 1) {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
                     if ($_SESSION['favourites'][$key] === $inputData['itemId']) {
