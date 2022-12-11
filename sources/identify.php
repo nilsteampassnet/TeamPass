@@ -1487,49 +1487,31 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
     ];
 }
 
+
 /**
  * Create the redirect URL or check if the DUO Universal prompt was completed successfully.
  *
- * @param string                $username     Username
- * @param string|array|resource $dataReceived DataReceived
- * @param array                 $SETTINGS     Teampass settings
+ * @param string                $username               Username
+ * @param string|array|resource $dataReceived           DataReceived
+ * @param array                 $sessionPwdAttempts     Nb of pwd attempts
+ * @param array                 $saved_state            Saved state
+ * @param array                 $duo_status             Duo status
+ * @param array                 $SETTINGS               Teampass settings
  *
  * @return array
  */
-function duoMFACheck(string $username, $dataReceived, array $SETTINGS): array
+function duoMFAPerform(
+    string $username,
+    $dataReceived,
+    int $sessionPwdAttempts,
+    string $saved_state,
+    string $duo_status,
+    array $SETTINGS
+): array
 {
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    
-    // Retrieve the previously stored state and username from the session
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
-    $saved_state = $superGlobal->get('duo_state','SESSION');
-    $duo_status = $superGlobal->get('duo_status','SESSION');
-    
-    if (
-        (empty($saved_state) || empty($dataReceived['login']) || !isset($dataReceived['duo_state']) || empty($dataReceived['duo_state']))
-        && $duo_status === 'IN_PROGRESS'
-        && $dataReceived['duo_status'] !== 'start_duo_auth'
-    ) {
-        return [
-            'error' => true,
-            'message' => langHdl('duo_no_data'),
-            'pwd_attempts' => (int) $sessionPwdAttempts,
-            'proceedIdentification' => false,
-        ];
-    }
-
-    // Ensure state matches from initial request
-    if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
-        // We did not received a proper Duo state
-        return [
-            'error' => true,
-            'message' => langHdl('duo_error_state'),
-            'pwd_attempts' => (int) $sessionPwdAttempts,
-            'proceedIdentification' => false,
-        ];
-    }
 
     // load libraries
     require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
@@ -2061,11 +2043,49 @@ function identifyDoMFAChecks(
             break;
         
         case 'duo':
-            $ret = duoMFACheck(
+            // Prepare Duo connection if set up
+            // Load superGlobals
+            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
+            $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+            $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+            $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
+            $duo_status = null !== $superGlobal->get('duo_status','SESSION') ? $superGlobal->get('duo_status','SESSION') : '';
+
+            // Ensure state and login are set
+            if (
+                (empty($saved_state) || empty($dataReceived['login']) || !isset($dataReceived['duo_state']) || empty($dataReceived['duo_state']))
+                && $duo_status === 'IN_PROGRESS'
+                && $dataReceived['duo_status'] !== 'start_duo_auth'
+            ) {
+                return [
+                    'error' => true,
+                    'message' => langHdl('duo_no_data'),
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'proceedIdentification' => false,
+                ];
+            }
+        
+            // Ensure state matches from initial request
+            if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
+                // We did not received a proper Duo state
+                return [
+                    'error' => true,
+                    'message' => langHdl('duo_error_state'),
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'proceedIdentification' => false,
+                ];
+            }
+
+            $ret = duoMFAPerform(
                 $username,
                 $dataReceived,
+                $sessionPwdAttempts,
+                $saved_state,
+                $duo_status,
                 $SETTINGS
             );
+
             if ($ret['error'] !== false) {
                 logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
                 // Load superGlobals

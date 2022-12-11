@@ -1028,5 +1028,6 @@ return array(
     'bad_duo_mfa' => 'Código DUO inválido',
     'creation_date' => 'Creation date',
     'never' => 'Never',
+    'loading_main_page' => 'Please wait, loading main page ...',
 
 );

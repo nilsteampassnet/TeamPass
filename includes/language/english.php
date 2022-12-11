@@ -17,6 +17,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'loading_main_page' => 'Please wait, loading main page ...',
     'never' => 'Never',
     'creation_date' => 'Creation date',
     'by_default' => 'by default',

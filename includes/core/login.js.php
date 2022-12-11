@@ -45,23 +45,32 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
         // Manage DUO SEC login
         if ($("#2fa_user_selection").val() === "duo" && $("#duo_code").val() !== "" && $("#duo_state").val() !== "") {
-            console.log('After identify_duo_user_check');
-            if (debugJavascript === true) console.log('{ Duo code: ' + $("#duo_code").val() + ', Duo state: ' + $("#duo_state").val() + '}');
+            if (debugJavascript === true) {
+                console.log('After identify_duo_user_check');
+                console.log('{ Duo code: ' + $("#duo_code").val() + ', Duo state: ' + $("#duo_state").val() + '}');
+            }
             
-            toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                '',{positionClass: "toast-top-center",}
+            toastr.success(
+                '<?php echo langHdl('loading_main_page'); ?><i class="fas fa-circle-notch fa-spin ml-3"></i>',
+                '',
+                {
+                    positionClass: "toast-top-center",
+                    preventDuplicates: true
+                }
             );
             
             // Launch identification process inside Teampass.
-            console.log('User starts auth');
+            if (debugJavascript === true) {
+                console.log('User starts auth');
+            }
             launchIdentify(true, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         }
 
         // Click on log in button
         $('#but_identify_user').click(function() {
-            console.log('User starts auth');
+            if (debugJavascript === true) {
+                console.log('User starts auth');
+            }
             launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
@@ -526,7 +535,6 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
                 let mfaData = {},
                     mfaMethod = '';
-                    //nbMfaMethods = 0;
 
                 // Get selected user MFA method
                 if ($(".2fa_selector_select").length > 1) {
@@ -534,40 +542,16 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 } else {
                     if (data.google === true) {
                         mfaMethod = 'google';
-                        //nbMfaMethods ++;
                     } else if (data.duo === true) {
                         mfaMethod = 'duo';
-                        //nbMfaMethods ++;
                     } else if (data.yubico === true) {
                         mfaMethod = 'yubico';
-                        //nbMfaMethods ++;
-                        //} else if (data.agses === true) {
-                        //    mfaMethod = 'agses';
                     }
                 }
 
-                /*if (nbMfaMethods > 1) {
-                    $('#2fa_methods_selector').removeClass('hidden');
-                }*/
-
                 // Google 2FA
                 if (mfaMethod === 'google' && data.google === true) {
-                    //if ($('#ga_code').val() !== undefined && $('#ga_code').val() !== '') {
                         mfaData['GACode'] = $('#ga_code').val();
-                    /*} else {
-                        $('#ga_code').focus();
-                        $("#ga_code").addClass("ui-state-error");
-                        toastr.remove();
-                        toastr.error(
-                            '<?php echo langHdl('ga_bad_code'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true,
-                                positionClass: "toast-top-right"
-                            }
-                        );
-                        return false;
-                    }*/
                 }
 
                 // Yubico
@@ -609,8 +593,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     mfaData['duo_status'] = 'start_duo_auth';
                 }
 
-                if (debugJavascript === true) console.log('Data submitted to identifyUser:');
-                if (debugJavascript === true) console.log(mfaData);
+                if (debugJavascript === true) {
+                    console.log('Data submitted to identifyUser:');
+                    console.log(mfaData);
+                }
                 
                 identifyUser(redirect, psk, mfaData, randomstring);
             }
@@ -626,8 +612,11 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             },
             function(check_data) {
                 if (parseInt(check_data) === 1) {
-                    console.info('Session existance check:')
-                    if (debugJavascript === true) console.log(data);
+                    if (debugJavascript === true) {
+                        console.info('Session existance check:')
+                        console.log(data);
+                    }
+
                     //send query
                     $.post(
                         "sources/identify.php", {
@@ -732,7 +721,6 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 );
                                 if(data.ga_bad_code === true)
                                 {
-                                    //$('#ga_code').focus();
                                     $("#ga_code").addClass("ui-state-error");
                                 }
                             } else {
