@@ -1860,7 +1860,15 @@ class initialChecks {
     public $login;
 
     // Methods
-    function get_user_info($login) {
+    public function get_is_too_much_attempts($attempts) {
+        if ($attempts > 3) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+
+    public function get_user_info($login) {
         $data = DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('users') . ' WHERE login=%s',
@@ -1882,7 +1890,7 @@ class initialChecks {
         return $data;
     }
 
-    function get_teampass_in_maintenance_mode($maintenance_mode, $user_admin) {
+    public function get_teampass_in_maintenance_mode($maintenance_mode, $user_admin) {
         if ((int) $maintenance_mode === 1 && (int) $user_admin === 0) {
             throw new Exception(
                 "error" 
@@ -1890,7 +1898,7 @@ class initialChecks {
         }
     }
 
-    function get_mfa_code_is_set(
+    public function get_mfa_code_is_set(
         $yubico,
         $ga,
         $duo,
@@ -1918,7 +1926,7 @@ class initialChecks {
         }
     }
 
-    function get_install_folder_is_not_present($admin, $install_folder) {
+    public function get_install_folder_is_not_present($admin, $install_folder) {
         if ((int) $admin === 1 && is_dir($install_folder) === true) {
             throw new Exception(
                 "error" 
@@ -1948,8 +1956,12 @@ function identifyDoInitialChecks(
     string $user_2fa_selection
 ): array
 {
+    $checks = new initialChecks();
+    
     // Brute force management
-    if ($sessionPwdAttempts > 3) {
+    try {
+        $userInfo = $checks->get_user_info($username);
+    } catch (Exception $e) {
         // Load superGlobals
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -1970,8 +1982,6 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
-    $checks = new initialChecks();
 
     // Check if user exists
     try {
