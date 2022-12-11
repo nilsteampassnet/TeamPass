@@ -1855,6 +1855,79 @@ function identifyGetUserCredentials(
 }
 
 
+class initialChecks {
+    // Properties
+    public $login;
+
+    // Methods
+    function get_user_info($login) {
+        $data = DB::queryFirstRow(
+            'SELECT *
+            FROM ' . prefixTable('users') . ' WHERE login=%s',
+            $login
+        );
+
+        // User doesn't exist then stop
+        if (DB::count() === 0) {
+            throw new Exception(
+                "error" 
+            );
+        }
+
+        // ensure user fonction_id is set to false if not existing
+        if (is_null($data['fonction_id']) === true) {
+            $data['fonction_id'] = '';
+        }
+
+        return $data;
+    }
+
+    function get_teampass_in_maintenance_mode($maintenance_mode, $user_admin) {
+        if ((int) $maintenance_mode === 1 && (int) $user_admin === 0) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+
+    function get_mfa_code_is_set(
+        $yubico,
+        $ga,
+        $duo,
+        $admin,
+        $adminMfaRequired,
+        $mfa,
+        $userMfaSelection
+    ) {
+        if (
+            (empty($userMfaSelection) === true &&
+            isOneVarOfArrayEqualToValue(
+                [
+                    (int) $yubico,
+                    (int) $ga,
+                    (int) $duo
+                ],
+                1
+            ) === true)
+            && ((int) $admin !== 1 || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
+            && $mfa === true
+        ) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+
+    function get_install_folder_is_not_present($admin, $install_folder) {
+        if ((int) $admin === 1 && is_dir($install_folder) === true) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+}
+
+
 /**
  * Permit to get info about user before auth step
  *
@@ -1898,17 +1971,13 @@ function identifyDoInitialChecks(
         ];
     }
 
-    // Check if user exists
-    $userInfo = DB::queryFirstRow(
-        'SELECT *
-        FROM ' . prefixTable('users') . ' WHERE login=%s',
-        $username
-    );
-    
-    // User doesn't exist then stop
-    if (DB::count() === 0) {
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+    $checks = new initialChecks();
 
+    // Check if user exists
+    try {
+        $userInfo = $checks->get_user_info($username);
+    } catch (Exception $e) {
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         return [
             'error' => true,
             'array' => [
@@ -1919,10 +1988,15 @@ function identifyDoInitialChecks(
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             ]
         ];
-    }
+    }    
 
     // Manage Maintenance mode
-    if ((int) $SETTINGS['maintenance_mode'] === 1 && (int) $userInfo['admin'] === 0) {
+    try {
+        $checks->get_teampass_in_maintenance_mode(
+            $SETTINGS['maintenance_mode'],
+            $userInfo['admin']
+        );
+    } catch (Exception $e) {
         return [
             'error' => true,
             'array' => [
@@ -1935,11 +2009,6 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
-    // ensure user fonction_id is set to false if not existing
-    if (is_null($userInfo['fonction_id']) === true) {
-        $userInfo['fonction_id'] = '';
-    }
     
     // user should use MFA?
     $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
@@ -1948,18 +2017,17 @@ function identifyDoInitialChecks(
     );
 
     // Check if 2FA code is requested
-    if ((empty($user_2fa_selection) === true &&
-            isOneVarOfArrayEqualToValue(
-                [
-                    (int) $SETTINGS['yubico_authentication'],
-                    (int) $SETTINGS['google_authentication'],
-                    (int) $SETTINGS['duo']
-                ],
-                1
-            ) === true)
-        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInfo['mfa_auth_requested_roles'] === true
-    ) {
+    try {
+        $checks->get_mfa_code_is_set(
+            $SETTINGS['yubico_authentication'],
+            $SETTINGS['google_authentication'],
+            $SETTINGS['duo'],
+            $userInfo['admin'],
+            $SETTINGS['admin_2fa_required'],
+            $userInfo['mfa_auth_requested_roles'],
+            $user_2fa_selection
+        );
+    } catch (Exception $e) {
         return [
             'error' => true,
             'array' => [
@@ -1975,7 +2043,12 @@ function identifyDoInitialChecks(
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
-    if ((int) $userInfo['admin'] === 1 && is_dir('../install') === true) {
+    try {
+        $checks->get_install_folder_is_not_present(
+            $userInfo['admin'],
+            '../install'
+        );
+    } catch (Exception $e) {
         return [
             'error' => true,
             'array' => [
@@ -1988,8 +2061,6 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
-
 
     // Return some usefull information about user
     return [
