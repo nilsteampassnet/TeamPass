@@ -1340,6 +1340,51 @@ function sendEmail(
         );
     }
 
+    // Build and send email
+    $email = buildEmail(
+        $subject,
+        $textMail,
+        $email,
+        $SETTINGS,
+        $textMailAlt = null,
+        $silent = true
+    );
+
+    if ($silent === false) {
+        return json_encode(
+            [
+                'error' => false,
+                'message' => langHdl('forgot_my_pw_email_sent'),
+            ]
+        );
+    }
+    // Debug purpose
+    if ((int) $SETTINGS['email_debug_level'] !== 0) {
+        return json_encode(
+            [
+                'error' => true,
+                'message' => $email['ErrorInfo'],
+            ]
+        );
+    }
+    return json_encode(
+        [
+            'error' => false,
+            'message' => langHdl('share_sent_ok'),
+        ]
+    );
+}
+
+
+function buildEmail(
+    $subject,
+    $textMail,
+    $email,
+    $SETTINGS,
+    $textMailAlt = null,
+    $silent = true
+)
+{
     // Load settings
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     // Load superglobal
@@ -1412,27 +1457,9 @@ function sendEmail(
     }
     $mail->smtpClose();
 
-    if ($silent === false) {
-        return json_encode(
-            [
-                'error' => false,
-                'message' => langHdl('forgot_my_pw_email_sent'),
-            ]
-        );
-    }
-    // Debug purpose
-    if ((int) $SETTINGS['email_debug_level'] !== 0) {
-        return json_encode(
-            [
-                'error' => true,
-                'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
-            ]
-        );
-    }
     return json_encode(
         [
-            'error' => false,
-            'message' => langHdl('share_sent_ok'),
+            'ErrorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
         ]
     );
 }

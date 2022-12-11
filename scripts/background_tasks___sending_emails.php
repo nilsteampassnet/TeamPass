@@ -94,3 +94,8 @@ if (isset($SETTINGS['send_stats']) === true && (int) $SETTINGS['send_stats'] ===
     require_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
     sendingStatistics($SETTINGS);
 }
+
+// Now send waiting emails - TODO - remove this in the future
+sendEmailsNotSent(
+    $SETTINGS
+);
