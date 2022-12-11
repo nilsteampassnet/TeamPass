@@ -1960,7 +1960,7 @@ function identifyDoInitialChecks(
     
     // Brute force management
     try {
-        $userInfo = $checks->get_user_info($username);
+        $checks->get_is_too_much_attempts($sessionPwdAttempts);
     } catch (Exception $e) {
         // Load superGlobals
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
