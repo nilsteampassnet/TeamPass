@@ -1492,7 +1492,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
  * Perform DUO checks
  *
  * @param string $username
- * @param [type] $dataReceived
+ * @param string|array|resource $dataReceived
  * @param array $SETTINGS
  * @return array
  */

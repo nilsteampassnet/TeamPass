@@ -1097,7 +1097,11 @@ if (
     <!-- REQUIRED SCRIPTS -->
 
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="plugins/fontawesome-free/css/all.css">
+    <link href="plugins/fontawesome-free-6/css/fontawesome.min.css" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/solid.min.css" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/regular.min.css" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/brands.min.css" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/v5-font-face.min.css" rel="stylesheet" /> 
     <!-- jQuery -->
     <script src="plugins/jquery/jquery.min.js"></script>
     <!-- jQuery UI -->
