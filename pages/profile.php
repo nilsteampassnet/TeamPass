@@ -84,8 +84,8 @@ $userSeenItemsNumber = DB::count();
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenPasswordsNumber = DB::count();
 $userInfo = DB::queryFirstRow(
-    'SELECT avatar 
-    FROM ' . prefixTable('users') . ' 
+    'SELECT avatar
+    FROM ' . prefixTable('users') . '
     WHERE id = "' . $_SESSION['user_id'] . '"'
 );
 if (empty($userInfo['avatar']) === true) {
@@ -98,8 +98,8 @@ if (empty($userInfo['avatar']) === true) {
 $userParOfGroups = [];
 foreach ($_SESSION['user_roles'] as $role) {
     $tmp = DB::queryFirstRow(
-        'SELECT title 
-        FROM ' . prefixTable('roles_title') . ' 
+        'SELECT title
+        FROM ' . prefixTable('roles_title') . '
         WHERE id = "' . $role . '"'
     );
     if ($tmp !== null) {
@@ -259,7 +259,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
                                         <a class="float-right">
-                                            <span id="profile-plupload-runtime"><?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true ? $_SESSION['user']['user_treeloadstrategy'] : ''; ?></span>
+                                            <span id="profile-plupload-runtime"><?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true ? langHdl($_SESSION['user']['user_treeloadstrategy']) : ''; ?></span>
                                         </a>
                                     </li>
                                     <?php
@@ -314,7 +314,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <ul class="list-group list-group-flush">
                                         <?php
                                         $rows = DB::query(
-                                            'SELECT label AS labelAction, date, null
+                                            'SELECT label AS labelAction, date, field_1
                                                     FROM ' . prefixTable('log_system') . '
                                                     WHERE qui = %i
                                                     UNION
@@ -328,13 +328,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             $_SESSION['user_id']
                                         );
                                         foreach ($rows as $record) {
+                                            // TODO a refaire
                                             if (substr($record['labelAction'], 0, 3) === 'at_') {
-                                                $text = langHdl(substr($record['labelAction'], 3));
+                                                $text = str_replace('#user_login#', $record['field_1'], langHdl($record['labelAction']));
                                             } else {
                                                 $text = langHdl($record['labelAction']);
-                                            }
-                                            if (empty($record['NULL']) === false) {
-                                                $text .= ' ' . langHdl('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
                                             }
                                             echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - ' . $text . '</li>';
                                         }
@@ -342,7 +340,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     </ul>
                                 </div>
                             </div>
-                            
+
                             <!-- SETTINGS -->
                             <div class="tab-pane" id="tab_settings">
                                 <form class="needs-validation" novalidate onsubmit="return false;">
@@ -404,12 +402,12 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <label class="col-sm-10 control-label"><?php echo langHdl('tree_load_strategy'); ?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
-                                                
-                                                <option value="<?php echo langHdl('sequential'); ?>"
+
+                                                <option value="sequential"
                                                     <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>
                                                 ><?php echo langHdl('sequential'); ?></option>
-                                                
-                                                <option value="<?php echo langHdl('full'); ?>"
+
+                                                <option value="full"
                                                     <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>
                                                 ><?php echo langHdl('full'); ?></option>
                                             </select>
