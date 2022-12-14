@@ -35,12 +35,12 @@ require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.p
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // include the base controller file
-require API_ROOT_PATH . "/Controller/Api/BaseController.php";
+require API_ROOT_PATH . "/Controller/BaseController.php";
 
 // include the use model file
 require API_ROOT_PATH . "/Model/UserModel.php";
 require API_ROOT_PATH . "/Model/ItemModel.php";
-
+require API_ROOT_PATH . "/Model/FolderModel.php";
 
 /**
  * Launch expected action for ITEM
@@ -51,13 +51,28 @@ require API_ROOT_PATH . "/Model/ItemModel.php";
  */
 function itemAction(array $actions, array $userData)
 {
-    require API_ROOT_PATH . "/Controller/Api/ItemController.php";
-    
+    require API_ROOT_PATH . "/Controller/ItemController.php";
+
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
     $objFeedController->{$strMethodName}($userData);
 }
 
+/**
+ * Launch expected action for FOLDER
+ *
+ * @param array $actions
+ * @param array $userData
+ * @return void
+ */
+function folderAction(array $actions, array $userData)
+{
+    require API_ROOT_PATH . "/Controller/FolderController.php";
+
+    $objFeedController = new FolderController();
+    $strMethodName = $actions[0] . 'Action';
+    $objFeedController->{$strMethodName}($userData);
+}
 
 /**
  * Check if API usage is allowed in Teampass settings
@@ -86,7 +101,6 @@ function apiIsEnabled(): string
         );
     }
 }
-
 
 /**
  * Check if connection is authorized
@@ -117,7 +131,6 @@ function verifyAuth(): string
     }
 }
 
-
 /**
  * Get the payload from bearer
  *
@@ -147,7 +160,6 @@ function getDataFromToken(): string
         );
     }
 }
-
 
 /**
  * Send error output
