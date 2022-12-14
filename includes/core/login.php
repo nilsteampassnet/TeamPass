@@ -46,9 +46,9 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['po
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
-    <div class="login-logo"><div style="margin-top:20px;">',
+    <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; height:100px;" />' :
+        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; max-width: 100%;" />' :
         '<img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>
@@ -114,8 +114,8 @@ echo '
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fas fa-clock fa-fw"></i></span>
             </div>
-            <input type="text" id="session_duration" class="form-control submit-button" 
-            placeholder="' . langHdl('index_session_duration') .'&nbsp;(' . langHdl('minutes') . ')" 
+            <input type="text" id="session_duration" class="form-control submit-button"
+            placeholder="' . langHdl('index_session_duration') .'&nbsp;(' . langHdl('minutes') . ')"
             value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
 // 2FA auth selector
@@ -172,7 +172,7 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
                     <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
                 </div>
                 <div class="col-1">
-                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info" 
+                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info"
                     title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></i>
                 </div>
             </div>
@@ -238,7 +238,7 @@ echo '
         <div class="row mb-3 mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">' . langHdl('log_in') . '</button>
-                
+
                 <!-- In case of upgrade, the user has to provide his One Time Code -->
                 <div class="card-body user-one-time-code-card-body hidden">
                     <h5 class="login-box-msg">' . langHdl('provide_personal_one_time_code') . '</h5>
