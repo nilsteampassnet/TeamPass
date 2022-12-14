@@ -1,7 +1,7 @@
 /*!
  *   AdminLTE v3.0.0-alpha
  *   Author: Abdullah Almsaeed
- *	 Website: AdminLTE.io <http://adminlte.io>
+ *   Website: AdminLTE.io <http://adminlte.io>
  *   License: Open source - MIT <http://opensource.org/licenses/MIT>
  */
 /*!
@@ -19,7 +19,7 @@
     -o-background-size: cover;
     height: 100%;
     background-position: center center;
-    background-size: cover; 
+    background-size: cover;
 }
 
 .otv-page {
@@ -30,7 +30,9 @@
     -o-background-size: cover;
     height: 100%;
     background-position: center center;
-    background-size: cover; 
+    background-size: cover;
+    display: flex;
+    justify-content: center;
 }
 
 .hidden {
@@ -52,7 +54,7 @@
 }
 
 .table {
-	table-layout:fixed;
+    table-layout:fixed;
 }
 
 .table-truncated td {
@@ -124,7 +126,7 @@
     white-space: nowrap;
     cursor: pointer;
 }
-  
+
 .ui-state-focus, .ui-state-active {
     color: #ffffff;
     text-decoration: none;
@@ -176,20 +178,20 @@
     background-color: #026fcc;
 }
 
-.btn-group {  
-    white-space: nowrap;              
+.btn-group {
+    white-space: nowrap;
 }
-.btn-group .btn {  
+.btn-group .btn {
     float: none;
     display: inline-block;
 }
- .btn + .dropdown-toggle { 
+ .btn + .dropdown-toggle {
     margin-left: -4px;
 }
 
-.dataTables_wrapper { 
-    overflow-x: visible; 
-    overflow-y: visible; 
+.dataTables_wrapper {
+    overflow-x: visible;
+    overflow-y: visible;
 }
 
 .is-invalid .select2-selection,
