@@ -29,8 +29,6 @@ require_once API_ROOT_PATH . "/Model/Database.php";
 
 class AuthModel extends Database
 {
-
-
     /**
      * Is the user allowed
      *
@@ -43,40 +41,47 @@ class AuthModel extends Database
     {
         // Check if user exists
         $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits, user_api_key FROM " . prefixTable('users') . " WHERE login='".$login."'");
-        $userInfoRes[0]['special'] = '';
-        $userInfo = $userInfoRes[0];
-        
-        // Check password
-        include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
-        $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
-        $pwdlib->register();
-        $pwdlib = new PasswordLib\PasswordLib();
-        if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
-            // Correct credentials
-            // Now check apikey
-            // We check if it is the correct user api or if it is a generic api key
-            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$apikey."'");
-            if ($apikey === $userInfo['user_api_key'] || (int) $apiInfo[0]['count(*)'] === 1) {
-                // get user keys
-                $privateKeyClear = decryptPrivateKey($password, (string) $userInfo['private_key']); //prepareUserEncryptionKeys($userInfo, $password);
 
-                // get user folders list
-                $folders = $this->buildUserFoldersList($userInfo);
+        if (!empty($userInfoRes)) {
+            $userInfoRes[0]['special'] = '';
+            $userInfo = $userInfoRes[0];
 
-                // create JWT
-                return $this->createUserJWT(
-                    $userInfo['id'],
-                    $login,
-                    $userInfo['personal_folder'],
-                    $userInfo['public_key'],
-                    $privateKeyClear,
-                    implode(",", $folders)
-                );
+            // Check password
+            include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
+
+            $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+
+            if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
+                // Correct credentials
+                // Now check apikey
+                // We check if it is the correct user api or if it is a generic api key
+                $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$apikey."'");
+                if ($apikey === $userInfo['user_api_key'] || (int) $apiInfo[0]['count(*)'] === 1) {
+                    // get user keys
+                    $privateKeyClear = decryptPrivateKey($password, (string) $userInfo['private_key']); //prepareUserEncryptionKeys($userInfo, $password);
+
+                    // get user folders list
+                    $folders = $this->buildUserFoldersList($userInfo);
+
+                    // create JWT
+                    return $this->createUserJWT(
+                        $userInfo['id'],
+                        $login,
+                        $userInfo['personal_folder'],
+                        $userInfo['public_key'],
+                        $privateKeyClear,
+                        implode(",", $folders)
+                    );
+                } else {
+                    return ["error" => "Login failed", "info" => "ApiKey not valid"];
+                }
             } else {
-                return ["error" => "Login failed.", "apikey" => "Not valid"];
+                return ["error" => "Login failed", "info" => "Wrong password"];
             }
         } else {
-            return ["error" => "Login failed.", "password" => $password];
+            return ["error" => "Login failed", "info" => "Wrong login"];
         }
     }
     //end getUserAuth
@@ -96,9 +101,9 @@ class AuthModel extends Database
     {
         require API_ROOT_PATH . '/../includes/config/tp.config.php';
         $headers = ['alg'=>'HS256','typ'=>'JWT'];
-		$payload = [
+        $payload = [
             'username' => $login,
-            'id' => $id, 
+            'id' => $id,
             'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
             'public_key' => $pubkey,
             'private_key' => $privkey,
@@ -107,7 +112,7 @@ class AuthModel extends Database
         ];
 
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-		return ['token' => generate_jwt($headers, $payload)];
+        return ['token' => generate_jwt($headers, $payload)];
     }
 
     //end createUserJWT
@@ -125,7 +130,7 @@ class AuthModel extends Database
         $tree = new SplClassLoader('Tree\NestedTree', API_ROOT_PATH . '/../includes/libraries');
         $tree->register();
         $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-        
+
         // Start by adding the manually added folders
         $allowedFolders = explode(";", $userInfo['groupes_visibles']);
         $readOnlyFolders = [];
@@ -157,7 +162,7 @@ class AuthModel extends Database
                 }
             }
         }
-        
+
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = $this->select("SELECT id, id_tree FROM " . prefixTable('items') . " WHERE restricted_to LIKE '".$userInfo['id']."'".
