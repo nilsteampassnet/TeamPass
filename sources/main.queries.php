@@ -130,7 +130,7 @@ function mainQuery(array $SETTINGS)
         );
         return false;
     }
-    
+
     // decrypt and retreive data in JSON format
     $dataReceived = empty($post_data) === false ? prepareExchangedData(
         $SETTINGS['cpassman_dir'],
@@ -159,7 +159,7 @@ function mainQuery(array $SETTINGS)
             echo systemHandler($post_type, $dataReceived, $SETTINGS);
             break;
     }
-    
+
     // Manage type of action asked
     //switch ($post_type) {
         /*
@@ -177,12 +177,12 @@ function mainQuery(array $SETTINGS)
                 echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
                 break;
             }
-            
+
             if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
                 echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
                 break;
             }
-            
+
             echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
 
             break;
@@ -281,7 +281,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
 {
     switch ($post_type) {
         /*
-        * Get info 
+        * Get info
         */
         case 'get_user_info'://action_user
             return getUserInfo(
@@ -394,7 +394,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                 ),
                 $SETTINGS
             );
-        
+
         /*
         * Send emails not sent
         */
@@ -444,7 +444,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
-        
+
         /*
         * user_sharekeys_reencryption_start
         */
@@ -585,7 +585,7 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
             return prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array_intersect_key(
-                    $SETTINGS, 
+                    $SETTINGS,
                     array(
                         'ldap_user_attribute' => '',
                         'enable_pf_feature' => '',
@@ -617,7 +617,7 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
                 null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
                 $SETTINGS
             );
-            
+
             // store in DB
             DB::insert(
                 prefixTable('tokens'),
@@ -672,7 +672,7 @@ function userIsReady(int $userid, string $dir): string
             'error' => false,
         ),
         'encode'
-    ); 
+    );
 }
 
 /**
@@ -709,7 +709,7 @@ function getNumberOfItemsToTreat(
 
 
 /**
- * 
+ *
  */
 function changePassword(
     string $post_new_password,
@@ -827,7 +827,7 @@ function changePassword(
                 $post_user_id
             );
             // update LOG
-            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $dataUser['name'] . ' ' . $dataUser['lastname'] . ' ('. $post_user_id . ')');
 
             // Send back
             return prepareExchangedData(
@@ -943,7 +943,7 @@ function generateQRCode(
             'encode'
         );
     }
-    
+
     if (empty($data['email']) === true) {
         return prepareExchangedData(
             $SETTINGS['cpassman_dir'],
@@ -954,7 +954,7 @@ function generateQRCode(
             'encode'
         );
     }
-    
+
     // generate new GA user code
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
     $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
@@ -1003,7 +1003,7 @@ function generateQRCode(
             'encode'
         );
     }
-    
+
     // send back
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
@@ -1095,7 +1095,7 @@ function generateGenericPassword(
             'encode'
         );
     }
-    
+
     $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
     $generator->register();
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
@@ -1480,13 +1480,13 @@ function isUserPasswordCorrect(
                     );
                 }
             }
-            
+
             // Use the password check
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
-            
+
             if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
                 // GOOD password
                 return prepareExchangedData(
@@ -1585,7 +1585,7 @@ function changePrivateKeyEncryptionPassword(
             'encode'
         );
     }
-    
+
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         array(
@@ -1691,7 +1691,7 @@ function initializeUserPassword(
             'encode'
         );
     }
-    
+
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         array(
@@ -1718,7 +1718,7 @@ function sendMailToUser(
             $post_body
         );
     }
-    
+
     $ret = sendEmail(
         $post_subject,
         $post_body,
@@ -1783,7 +1783,7 @@ function generateOneTimeCode(
                 'encode'
             );
         }
-        
+
         return prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             array(
@@ -1793,7 +1793,7 @@ function generateOneTimeCode(
             'encode'
         );
     }
-        
+
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         array(
@@ -1904,7 +1904,7 @@ function continueReEncryptingUserSharekeys(
 
                 $return['post_action'] = 'step1';
             }
-            
+
             // STEP 1 - ITEMS
             elseif ($post_action === 'step1') {
                 $return = continueReEncryptingUserSharekeysStep1(
@@ -1943,7 +1943,7 @@ function continueReEncryptingUserSharekeys(
                     $SETTINGS
                 );
             }
-            
+
             // STEP 4 - SUGGESTIONS
             elseif ($post_action === 'step4') {
                 $return = continueReEncryptingUserSharekeysStep4(
@@ -1956,7 +1956,7 @@ function continueReEncryptingUserSharekeys(
                     $SETTINGS
                 );
             }
-            
+
             // STEP 5 - FILES
             elseif ($post_action === 'step5') {
                 $return = continueReEncryptingUserSharekeysStep5(
@@ -1969,7 +1969,7 @@ function continueReEncryptingUserSharekeys(
                     $SETTINGS
                 );
             }
-            
+
             // STEP 6 - PERSONAL ITEMS
             elseif ($post_action === 'step6') {
                 $return = continueReEncryptingUserSharekeysStep6(
@@ -1982,7 +1982,7 @@ function continueReEncryptingUserSharekeys(
                     $SETTINGS
                 );
             }
-            
+
             // Continu with next step
             return prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
@@ -1997,7 +1997,7 @@ function continueReEncryptingUserSharekeys(
                 'encode'
             );
         }
-        
+
         // Nothing to do
         return prepareExchangedData(
             $SETTINGS['cpassman_dir'],
@@ -2012,7 +2012,7 @@ function continueReEncryptingUserSharekeys(
             'encode'
         );
     }
-    
+
     // Nothing to do
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
@@ -2033,7 +2033,7 @@ function continueReEncryptingUserSharekeysStep1(
     int $post_length,
     string $user_public_key,
     array $SETTINGS
-): array 
+): array
 {
     // Loop on items
     $rows = DB::query(
@@ -2055,10 +2055,10 @@ function continueReEncryptingUserSharekeysStep1(
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
-        
+
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
-        
+
         // Save the key in DB
         if ($post_self_change === false) {
             DB::insert(
@@ -2457,7 +2457,7 @@ function continueReEncryptingUserSharekeysStep6(
             'post_action' => 'finished',
         ];
     }
-    
+
     // Loop on persoanl items
     if (count($_SESSION['personal_folders']) > 0) {
         $rows = DB::query(
@@ -2540,7 +2540,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     array $SETTINGS
 ) {
     $next_step = '';
-    
+
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -2695,7 +2695,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                 );
             }
         }
-        
+
         // Nothing to do
         return prepareExchangedData(
             $SETTINGS['cpassman_dir'],
@@ -2706,7 +2706,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
             'encode'
         );
     }
-    
+
     // Nothing to do
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
@@ -2836,7 +2836,7 @@ function changeUserAuthenticationPassword(
                     'encode'
                 );
             }
-            
+
             // ERROR
             return prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
@@ -2848,7 +2848,7 @@ function changeUserAuthenticationPassword(
             );
         }
     }
-        
+
     return prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         array(
@@ -2859,7 +2859,7 @@ function changeUserAuthenticationPassword(
     );
 }
 
-            
+
 function changeUserLDAPAuthenticationPassword(
     int $post_user_id,
     string $post_previous_pwd,
@@ -2875,12 +2875,12 @@ function changeUserLDAPAuthenticationPassword(
             WHERE id = %i',
             $post_user_id
         );
-        
+
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
             // Now check if current password is correct (only if not ldap)
             if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
                 // As it is a change for an LDAP user
-                
+
                 // Now check if current password is correct
                 // For this, just check if it is possible to decrypt the privatekey
                 // And compare it to the one in session
@@ -2951,12 +2951,12 @@ function changeUserLDAPAuthenticationPassword(
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-                
+
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
                     // Encrypt it with current password
                     $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
-                    
+
                     // Update user account
                     DB::update(
                         prefixTable('users'),
@@ -2967,7 +2967,7 @@ function changeUserLDAPAuthenticationPassword(
                         'id = %i',
                         $post_user_id
                     );
-                    
+
                     // Load superGlobals
                     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
                     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -2983,7 +2983,7 @@ function changeUserLDAPAuthenticationPassword(
                     );
                 }
             }
-            
+
             // ERROR
             return prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
@@ -3028,6 +3028,6 @@ function increaseSessionDuration(
         // Return data
         return '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
     }
-    
+
     return '[{"new_value":"expired"}]';
 }
