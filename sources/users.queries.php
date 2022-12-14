@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.22                      
  * @file      users.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -60,7 +60,7 @@ $password_do_not_change = 'do_not_change';
 // DO check for "users" rights
 if (
     (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false)
-    && (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false 
+    && (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
         && (null === $isprofileupdate || $isprofileupdate === false)
         && !in_array($post_type, ['user_profile_update','save_user_change'], true))
 ) {
@@ -319,7 +319,7 @@ if (null !== $post_type) {
                     'at_user_added',
                     (string) $_SESSION['user_id'],
                     $_SESSION['login'],
-                    (string) $new_user_id
+                    $name . ' ' . $lastname . ' ('. $new_user_id . ')'
                 );
 
                 echo prepareExchangedData(
@@ -392,6 +392,16 @@ if (null !== $post_type) {
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
+                $user = DB::queryFirstRow(
+                    'SELECT name, lastname
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_id
+                    );
+
+                $user_name = $user['name'];
+                $user_lastname = $user['lastname'];
+
                 // delete user in database
                 DB::delete(
                     prefixTable('users'),
@@ -460,9 +470,9 @@ if (null !== $post_type) {
                     );
                 }
 
-                
+
                 // update LOG
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $user_name . ' ' . $user_lastname . ' ('. $post_id . ')');
 
                 //Send back
                 echo prepareExchangedData(
@@ -779,8 +789,8 @@ if (null !== $post_type) {
             );
 
             // Is this user allowed to do this?
-            if (
-                (int) $_SESSION['is_admin'] === 1
+                
+            if ((int) $_SESSION['is_admin'] === 1
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
@@ -800,7 +810,7 @@ if (null !== $post_type) {
                     'at_user_unlocked',
                     (string) $_SESSION['user_id'],
                     $_SESSION['login'],
-                    $post_id
+                    $user['name'] . ' ' . $user['$lastname'] . ' ('. $post_id . ')'
                 );
             }
             break;
@@ -935,7 +945,7 @@ if (null !== $post_type) {
                 foreach ($rows as $record) {
                     if ($post_scope === 'user_mngt') {
                         $user = DB::queryfirstrow(
-                            'SELECT login
+                            'SELECT login, name, lastname
                             from ' . prefixTable('users') . '
                             WHERE id=%i',
                             $record['qui']
@@ -995,7 +1005,7 @@ if (null !== $post_type) {
                     intval($_SESSION['user_id']),
                     '1'
                 );
-                
+
                 // Get through each subfolder
                 foreach ($tree->getDescendants($admin_folder['id'], true) as $folder) {
                     // Get each Items in PF
@@ -1144,7 +1154,7 @@ if (null !== $post_type) {
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                     $SETTINGS['cpassman_dir'],$post_data, 'decode');
-            
+
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -1374,7 +1384,7 @@ if (null !== $post_type) {
 
             break;
 
-            /*
+        /*
          * EDIT user
          */
         case 'store_user_changes':
@@ -1422,7 +1432,8 @@ if (null !== $post_type) {
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
 
-            // If user disables administrator role 
+            // TODO Marche pas - Bloque
+            // If user disables administrator role
             // then ensure that it exists still one administrator
             if (empty($post_is_admin) === false) {
                 // count number of admins
@@ -1443,7 +1454,7 @@ if (null !== $post_type) {
                     break;
                 }
             }
-            
+
             // Init post variables
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $action_to_perform_after = '';
@@ -1531,6 +1542,17 @@ if (null !== $post_type) {
                 // delete account
                 // delete user in database
                 if ($post_action_to_perform === 'delete') {
+
+                    $user = DB::queryFirstRow(
+                    'SELECT name, lastname
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_id
+                    );
+
+                    $user_name = $user['name'];
+                    $user_lastname = $user['lastname'];
+
                     DB::delete(
                         prefixTable('users'),
                         'id = %i',
@@ -1568,7 +1590,7 @@ if (null !== $post_type) {
                         $tree->rebuild();
                     }
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $user_name . ' ' . $user_lastname . ' ('. $post_id . ')');
                 } else {
                     // Get old data about user
                     $oldData = DB::queryfirstrow(
@@ -1609,7 +1631,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $_SESSION['user_id'], $_SESSION['login'], $post_name . ' ' . $post_lastname . ' ('. $post_id . ')');
                     }
                 }
                 echo prepareExchangedData(
@@ -1821,7 +1843,7 @@ if (null !== $post_type) {
                 foreach($arrData['allowed_folders'] as $Fld) {
                     array_push($arrFolders, array('id' => $Fld, 'type' => 'W', 'special' => true));
                 }
-                
+
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     foreach ($arrFolders as $fld) {
@@ -2344,25 +2366,29 @@ if (null !== $post_type) {
                     break;
                 }
             } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'perform') {
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'user_ip' => getClientIpServer(),
-                        'user_ip_lastdate' => time(),
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
+                $post_location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
+                if (empty($post_location) === false) {
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'user_ip' => $post_location,
+                            'user_ip_lastdate' => time(),
+                        ),
+                        'id = %i',
+                        $_SESSION['user_id']
+                    );
 
-                echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                    array(
-                        'refresh' => false,
-                        'error' => '',
-                    ),
-                    'encode'
-                );
-            }
+                    echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                        array(
+                            'refresh' => false,
+                            'error' => '',
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            } else { }
 
             echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
@@ -2433,7 +2459,7 @@ if (null !== $post_type) {
                 'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
-            
+
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
                 'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
@@ -2441,7 +2467,7 @@ if (null !== $post_type) {
                 'version'          => 3,
                 'timeout'          => 5,
                 'follow_referrals' => false,
-            
+
                 // Custom LDAP Options
                 'options' => [
                     // See: http://php.net/ldap_set_option
@@ -2456,7 +2482,7 @@ if (null !== $post_type) {
             // Connect to LDAP
             try {
                 $connection->connect();
-            
+
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
 
@@ -2484,10 +2510,10 @@ if (null !== $post_type) {
                 ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->get();
-            
+
             foreach($users as $i => $adUser) {
                 if (isset($adUser[$SETTINGS['ldap_user_attribute']]) === false) continue;
-                
+
                 // Build the list of all groups in AD
                 if (isset($adUser['memberof']) === true) {
                     foreach($adUser['memberof'] as $j => $adUserGroup) {
@@ -2513,7 +2539,7 @@ if (null !== $post_type) {
                     // Loop on all user attributes
                     $tmp = [
                         'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
-                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
+                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,
                     ];
                     foreach ($adUsedAttributes as $userAttribute) {
                         if (isset($adUser[$userAttribute]) === true) {
@@ -2560,7 +2586,7 @@ if (null !== $post_type) {
                     'ldap_groups' => $adRoles,
                     'teampass_groups' => $teampassRoles,
                     'usersAlreadyInTeampass' => $usersAlreadyInTeampass,
-                ), 
+                ),
                 'encode'
             );
 
@@ -2665,7 +2691,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            
+
             // We need to create his keys
             $userKeys = generateUserKeys($password);
 
@@ -2764,8 +2790,8 @@ if (null !== $post_type) {
             break;
 
         /*
-        * ADD USER KEYS CREATION - FINISHING
-        */
+         * ADD USER KEYS CREATION - FINISHING
+         */
         case 'finishing_user_keys_creation':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -2800,23 +2826,24 @@ if (null !== $post_type) {
                 $post_userId
             );
 
+            /* INUTILE */
             // Send mail to user with new OTP
-            $userInfo = DB::queryFirstRow(
-                'SELECT email
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_userId
-            );
-            sendEmail(
-                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-                str_replace(
-                    array('#enc_code#'),
-                    array($post_otp),
-                    langHdl('email_body_user_added_from_ldap_encryption_code')
-                ),
-                $userInfo['email'],
-                $SETTINGS
-            );
+            //$userInfo = DB::queryFirstRow(
+            //    'SELECT email
+            //    FROM ' . prefixTable('users') . '
+            //    WHERE id = %i',
+            //    $post_userId
+            //);
+            //sendEmail(
+            //    '[TeamPass] - ' . langHdl('temporary_encryption_code'),
+            //    str_replace(
+            //        array('#enc_code#'),
+            //        array($post_otp),
+            //        langHdl('email_body_user_added_from_ldap_encryption_code')
+            //    ),
+            //    $userInfo['email'],
+            //    $SETTINGS
+            //);
 
 
             echo prepareExchangedData(
@@ -2830,7 +2857,7 @@ if (null !== $post_type) {
 
             break;
 
-            /*
+        /*
          * CHANGE USER AUTHENTICATION TYPE
          */
         case 'change_user_auth_type':
@@ -3086,15 +3113,23 @@ if (null !== $post_type) {
                 );
                 break;
             }
+
             // Check if user already exists
-            DB::query(
-                'SELECT id
+            $user = DB::queryFirstRow(
+                'SELECT name, lastname
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
 
-            if (DB::count() > 0) {
+            if (null !== $user) {
+                $user = DB::queryFirstRow(
+                    'SELECT name, lastname
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $post_id
+                    );
+
                 // Change authentication type in DB
                 DB::update(
                     prefixTable('users'),
@@ -3109,10 +3144,10 @@ if (null !== $post_type) {
                 logEvents(
                     $SETTINGS,
                     'user_mngt',
-                    $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
+                    $post_user_disabled === '1' ? 'at_user_locked' : 'at_user_unlocked',
                     (string) $_SESSION['user_id'],
                     $_SESSION['login'],
-                    $post_id
+                    $user['name'] . ' ' . $user['$lastname'] . ' ('. $post_id . ')'
                 );
             } else {
                 echo prepareExchangedData(
@@ -3138,7 +3173,7 @@ if (null !== $post_type) {
             break;
 
         /**
-         * 
+         *
          */
         case 'update_user_field':
             // Check KEY
