@@ -500,7 +500,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $new = simplexml_load_string($xmlfile);
         $con = json_encode($new);
         $newArr = json_decode($con, true);
-        
+
         /**
          * Undocumented function
          *
@@ -531,7 +531,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         );
                         continue;
                     }
-                    
+
                     if ($key === "String") {
                         array_push(
                             $newItemsToAdd['items'],
@@ -567,7 +567,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         ]
                     );
                     $previousFolder = $value['UUID'];
-                    
+
                     if (isset($value['Entry']) === true) {
                         // recursive inside this entry
                         $newItemsToAdd = recursive(
@@ -579,17 +579,29 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             $newItemsToAdd,
                             $level + 1
                         );
+                    } else if (isset($value['Group']) === true) {
+                        // recursive inside this entry
+                        $newItemsToAdd = recursive(
+                            array_merge(
+                                ['Entry' => ''],
+                                ['Group' => $value['Group']],
+                            ),
+                            $previousFolder,
+                            $newItemsToAdd,
+                            $level + 1
+                        );
+
                     }
                     $previousFolder = $currentFolderId;
                 }
             }
-            
+
             return $newItemsToAdd;
         }
-        
+
         $ret = recursive(
             array_merge(
-                ['Entry' => $newArr['Root']['Group']['Entry']],
+                ['Entry' => isset($newArr['Root']['Group']['Entry']) ? $newArr['Root']['Group']['Entry'] : ''],
                 ['Group' => $newArr['Root']['Group']['Group']],
             ),
             $post_folder_id,
@@ -907,7 +919,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
 
         return $id;
     }
-    
+
     //get folder actual ID
     $data = DB::queryFirstRow(
         'SELECT id FROM '.prefixTable('nested_tree').'
@@ -919,12 +931,12 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     return $data['id'];
 }
 
-/** 
+/**
  * getFolderComplexity
- * 
+ *
  * @param int $folderId
  * @param boolean $isFolderPF
- * 
+ *
  * @return array
 */
 function getFolderComplexity($folderId, $isFolderPF)
