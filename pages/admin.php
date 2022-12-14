@@ -77,7 +77,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-6">
-                <div class="card card-default">
+                <div class="card card-default hidden">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-hand-holding-heart mr-2 text-danger"></i>Become a sponsor
