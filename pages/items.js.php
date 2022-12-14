@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -439,9 +439,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
 
             // Check privileges
-            if (store.get('teampassItem').hasAccessLevel < 30 &&
-                store.get('teampassUser').can_create_root_folder === 0
-            ) {
+            if (store.get('teampassItem').hasAccessLevel < 30) {
+
+
                 toastr.error(
                     '<?php echo langHdl('error_not_allowed_to'); ?>',
                     '', {
@@ -494,36 +494,36 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             if (debugJavascript === true) console.log(store.get('teampassApplication'));
 
             // Store current view
-            savePreviousView('.form-folder-add');
+            savePreviousView('.form-folder-edit');
 
             // Show edit form
             $('.form-item, .item-details-card, .form-item-action, #folders-tree-card, .columns-position').addClass('hidden');
-            $('.form-folder-add').removeClass('hidden');
+            $('.form-folder-edit').removeClass('hidden');
             // Prepare some data in the form
-            $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolder + "']")
+            $("#form-folder-edit-parent option[value='" + store.get('teampassApplication').selectedFolder + "']")
                 .prop('disabled', true);
-            $('#form-folder-add-parent').val(store.get('teampassApplication').selectedFolderParentId).change();
-            $("#form-folder-add-parent option[value='" + store.get('teampassApplication').selectedFolderParentId + "']")
+            $('#form-folder-edit-parent').val(store.get('teampassApplication').selectedFolderParentId).change();
+            $("#form-folder-edit-parent option[value='" + store.get('teampassApplication').selectedFolderParentId + "']")
                 .prop('disabled', false);
-            $('#form-folder-add-label')
+            $('#form-folder-edit-label')
                 .val(store.get('teampassApplication').selectedFolderParentTitle)
                 .focus();
             // is PF 1st level
             if (store.get('teampassApplication').selectedFolderIsPF === 1 && store.get('teampassApplication').selectedFolderParentId !== 0) {
-                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
+                $('#form-folder-edit-label, #form-folder-edit-parent').prop('disabled', false);
             } else if (store.get('teampassApplication').userCanEdit === 0) {
-                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', true);
+                $('#form-folder-edit-label, #form-folder-edit-parent').prop('disabled', true);
             } else {
-                $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
+                $('#form-folder-edit-label, #form-folder-edit-parent').prop('disabled', false);
             }
 
-            $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
-            $('#form-folder-add-icon')
+            $('#form-folder-edit-complexicity').val(store.get('teampassItem').folderComplexity).change();
+            $('#form-folder-edit-icon')
                 .val(store.get('teampassApplication').selectedFolderIcon);
-            $('#form-folder-add-icon-selected')
+            $('#form-folder-edit-icon-selected')
                 .val(store.get('teampassApplication').selectedFolderIconSelected);
             // Set type of action for the form
-            $('#form-folder-add').data('action', 'update');
+            $('#form-folder-edit').data('action', 'update');
 
             //
             // > END <
@@ -690,7 +690,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 } else {
                     $('#form-item-field, .form-item-category').addClass('hidden');
                 }
-                
+
                 // Add track-change class
                 //$('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change');
 
@@ -1659,7 +1659,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'title': $('#form-folder-add-label').val(),
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
-            //'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),
+			//'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),																			   
             'icon': $('#form-folder-add-icon').val(),
             'iconSelected': $('#form-folder-add-icon-selected').val(),
             'id': selectedFolderId,
@@ -1733,6 +1733,157 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         );
     });
 
+    /**
+     * FOLDER EDIT - Edit a new folder
+     */
+    $('#form-folder-edit-perform').click(function() {
+        var form = $('#form-folder-edit');
+        if (debugJavascript === true) console.log(form[0]);
+        if (debugJavascript === true) console.log(form[0].checkValidity());
+        if (form[0].checkValidity() === false) {
+            form.addClass('was-validated');
+
+            // Send alert to user
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('form_presents_inconsistencies'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+
+            return false;
+        }
+
+        // Error if folder text is only numeric
+        if (/^\d+$/.test($('#form-folder-edit-label').val())) {
+            $('#form-folder-edit-label').addClass('is-invalid');
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('error_only_numbers_in_folder_name'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+
+            return false;
+        }
+
+        // Is a folder selected
+        if ($('#form-folder-delete-selection option:selected').val() === '') {
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('please_select_a_folder'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+
+        // Ensure Root is not selected
+        } else if (parseInt($('#form-folder-delete-selection option:selected').val()) === 0) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo langHdl('please_select_a_folder'); ?>',
+                '',
+                {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
+        // Show cog
+        toastr
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        // Force user did a change to false
+        userDidAChange = false;
+        userUploadedFile = false;
+
+        var data = {
+            'title': $('#form-folder-edit-label').val(),
+            'parentId': $('#form-folder-edit-parent option:selected').val(),
+            'complexity': $('#form-folder-edit-complexicity option:selected').val(),
+            'icon': $('#form-folder-edit-icon').val(),
+            'iconSelected': $('#form-folder-edit-icon-selected').val(),
+            'id': selectedFolderId,
+        }
+        if (debugJavascript === true) console.log(data);
+
+        // Launch action
+        $.post(
+            'sources/folders.queries.php', {
+                type: $('#form-folder-edit').data('action') + '_folder',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data//decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // Refresh list of folders
+                    refreshVisibleFolders(true);
+                    if ($('#form-folder-edit').data('action') === 'edit') {
+                        // Refresh tree
+                        refreshTree(data.newId, true);
+                        // Refresh list of items inside the folder
+                        ListerItems(data.newId, '', 0);
+                    } else {
+                        // Refresh tree
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.jstreeForceRefresh = 1;
+                            }
+                        );
+                        refreshTree(selectedFolderId, true);
+                        // Refresh list of items inside the folder
+                        ListerItems(selectedFolderId, '', 0);
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.jstreeForceRefresh = 0;
+                            }
+                        );
+                    }
+                    // Back to list
+                    closeItemDetailsCard();
+                    // Warn user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('success'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+                // Enable the parent in select
+                if (selectedFolder.id !== undefined) {
+                    $("#form-folder-edit-parent option[value='" + selectedFolder.id.split('_')[1] + "']")
+                        .prop('disabled', false);
+                }
+            }
+        );
+    });
 
     /**
      * FOLDER DELETE - Delete an existing folder
@@ -1743,8 +1894,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
             toastr.error(
                 '<?php echo langHdl('please_confirm'); ?>',
-                '',
-                {
+                '', {
+
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -1754,8 +1905,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
             toastr.error(
                 '<?php echo langHdl('error_not_allowed_to'); ?>',
-                '',
-                {
+                '', {
+
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -1775,7 +1926,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
             return false;
-        
+
         // Ensure Root is not selected
         } else if (parseInt($('#form-folder-delete-selection option:selected').val()) === 0) {
             toastr.remove();
@@ -1789,7 +1940,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             );
             return false;
         }
-        
+
         // Show cog
         toastr
             .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
@@ -2043,7 +2194,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Restore scroll position
                 $(window).scrollTop(userScrollPosition);
 
-                userDidAChange = false;                
+                userDidAChange = false;
                 //$('.form-item-control').attr('data-change-ongoing', "");
 
                 // Enable the parent in select
@@ -2099,7 +2250,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
-            
+
             // Load item info
             Details($(this).closest('tr'), 'edit');
         });
@@ -2172,6 +2323,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $.post('sources/items.queries.php', {
                         type: 'action_on_quick_icon',
                         data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+																
                         key: '<?php echo $_SESSION['key']; ?>'
                     },
                     function(ret) {
@@ -2353,7 +2505,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
     };
     $('#form-item-password').pwstrength(pwdOptions);
-    
+
 
 
     /**
@@ -3017,7 +3169,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 })
             } else {
                 $('#form-item-field, .form-item-category').addClass('hidden');
-            }            
+            }
 
             // is user allowed to edit this item - overpass readonly folder
             if (typeof store.get('teampassApplication').itemsList !== 'undefined') {
@@ -3070,7 +3222,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     /**
-     * 
+     *
      */
     function finishingItemsFind(type, limited, criteria, start) {
         // send query
@@ -3198,7 +3350,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     });
 
                     // Append new list
-                    $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
+                    $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent, #form-folder-edit-parent,' +
                             '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')
                         .find('option')
                         .remove()
@@ -3259,7 +3411,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             console.info('INPUTS for refresh_folders_other_info');
             console.log(sending);
         }
-        
+
         $.post(
             'sources/items.queries.php', {
                 type: 'refresh_folders_other_info',
@@ -3364,7 +3516,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     /**
-     * 
+     *
      */
     function ListerItems(groupe_id, restricted, start, stop_listing_current_folder) {
         var me = $(this);
@@ -3453,7 +3605,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 '<?php echo langHdl('opening_folder'); ?><i class="fas fa-circle-notch fa-spin ml-2"></i>'
             );
 
-            // clear storage 
+            // clear storage
             store.update(
                 'teampassUser',
                 function(teampassUser) {
@@ -3474,7 +3626,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 console.log('Do list of items in folder with next parameters:');
                 console.log(JSON.stringify(dataArray));
             }
-            
+
             //ajax query
             var request = $.post('sources/items.queries.php', {
                     type: 'do_items_list_in_folder',
@@ -3527,7 +3679,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                     teampassItem.hasCustomCategories = data.categoriesStructure
                             }
                         );
-                        
+
 
                         // display path of folders
                         if ((initialQueryData.path.length > 0)) {
@@ -3634,7 +3786,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 e.trigger.dataset.itemId,
                                 e.trigger.dataset.itemLabel
                             );
-                            
+
                             // Warn user about clipboard clear
                             if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
@@ -3818,7 +3970,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 teampassApplication.itemsList = JSON.stringify(stored_datas);
             }
         );
-        
+
         $.each(listOfItems, function(i, value) {
             var new_line = '',
                 pwd_error = '',
@@ -3859,7 +4011,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
                     $('#list-item-row_' + value.item_id).attr('data-next-item-label', value.label);
                 }
-                
+
                 // Prepare anyone can modify icon
                 if (value.anyone_can_modify === 1 || value.open_edit === 1) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('edit'); ?>"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-pen fa-stack-1x fa-inverse"></i></span>';
@@ -3909,7 +4061,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
-                    (value.canMove === 1  ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
+                    (value.canMove === 1 ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') +
                     // Show user a ban icon if expired
                     (value.expired === 1 ? '<i class="far fa-calendar-times mr-2 text-warning infotip" title="<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
@@ -4099,7 +4251,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Store current view
         savePreviousView();
-        
+
         if (debugJavascript === true) console.log("Request is running: " + requestRunning)
 
         // Store status query running
@@ -4227,7 +4379,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 progressBar: true
                             }
                         );
-                        
+
                         if (debugJavascript === true) console.log('LDAP user password has to encrypt his private key with hos new LDAP password')
                         // HIde
                         $('.content-header, .content').addClass('hidden');
@@ -4458,7 +4610,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.no-item-fields').removeClass('hidden');
                     $('#card-item-fields').closest().addClass('collapsed');
                 } else {
-                    // 
+                    //
                     if (data.template_id === '') {
                         $('#list-group-item-main')
                             .children('.list-group')
@@ -4528,12 +4680,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             // Tick the box in edit mode
                             $('#template_' + data.template_id).iCheck('check');
 
-                            // Hide existing data as replaced by Category template                                
+                            // Hide existing data as replaced by Category template
                             $('#list-group-item-main, #item-details-card-categories')
                                 .children('.list-group')
                                 .addClass('hidden');
 
-                            // Move the template in place of item main  
+                            // Move the template in place of item main
                             $('#card-item-category-' + data.template_id)
                                 .addClass('fields-to-move')
                                 .detach()
@@ -4852,8 +5004,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
 
-                $('#edit_past_pwds').attr('title', (data.history_of_pwds)); //htmlspecialchars_decode 
-                $('#edit_past_pwds_div').html((data.history_of_pwds)); //htmlspecialchars_decode 
+                $('#edit_past_pwds').attr('title', (data.history_of_pwds)); //htmlspecialchars_decode
+                $('#edit_past_pwds_div').html((data.history_of_pwds)); //htmlspecialchars_decode
 
                 //$('#id_files').html(data.files_id);
                 //$('#hid_files').val(data.files_id);
@@ -5237,7 +5389,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             val = selectedFolderId;
         }
         if (debugJavascript === true) console.log('Get privilege for folder ' + val);
-            
+
         if (val === "" || typeof val === "undefined" || val === false) {
             toastr.remove();
             toastr.error(
@@ -5352,7 +5504,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (anyBoxesChecked === false || $('#pwd-definition-secure').prop('checked') === true) {
             secure_pwd = true;
         }
-        
+
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
@@ -5517,7 +5669,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             ui.draggable.removeClass('hidden');
                             return false;
                         }
-                        
+
                         //increment / decrement number of items in folders
                         $('#itcount_' + data.from_folder).text(refreshFolderCounters($('#itcount_' + data.from_folder).text(), 'decrement'));
                         $('#itcount_' + data.to_folder).text(refreshFolderCounters($('#itcount_' + data.to_folder).text(), 'increment'));
@@ -5554,7 +5706,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             }
         }
-        
+
         return splitCounter.join('/');
     }
 
@@ -5566,7 +5718,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // Case where we need to re-encrypt all share keys
         if (debugJavascript === true) console.log("ACTION RE-ENCRYPTION OF SHAREKEYS");
 
-        $('#dialog-encryption-keys').removeClass('hidden');    
+        $('#dialog-encryption-keys').removeClass('hidden');
 
         // Hide other
         $('.content-header, .content').addClass('hidden');
