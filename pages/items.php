@@ -158,7 +158,7 @@ foreach ($rows as $reccord) {
                     <ul class="nav nav-pills" id="form-item-nav-pills">
                         <li class="nav-item"><a class="nav-link active" href="#tab_1" data-toggle="tab"><i class="fas fa-home mr-2"></i><?php echo langHdl('main'); ?></a></li>
                         <li class="nav-item"><a class="nav-link" href="#tab_2" data-toggle="tab"><i class="fas fa-list mr-2"></i><?php echo langHdl('details'); ?></a></li>
-                        <li class="nav-item"><a class="nav-link" href="#tab_3" data-toggle="tab"><i class="fas fa-archive mr-2"></i><?php echo langHdl('attachments'); ?></a></li>
+                        <!--li class="nav-item"><a class="nav-link" href="#tab_3" data-toggle="tab"><i class="fas fa-archive mr-2"></i><?php echo langHdl('attachments'); ?></a></li-->
                         <?php
                         echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fas fa-cubes mr-2"></i>' . langHdl('fields') . '</a></li>' : '';
@@ -251,7 +251,7 @@ foreach ($rows as $reccord) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('url'); ?></span>
                                     </div>
-                                    <input id="form-item-url" type="url" class="form-control form-item-control" data-field-name="url" data-change-ongoing="">
+                                    <input id="form-item-url" type="text" class="form-control form-item-control" data-field-name="url" data-change-ongoing="">
                                 </div>
                                 <!-- ICON -->
                                 <div class="input-group mb-3">
@@ -274,14 +274,14 @@ foreach ($rows as $reccord) {
                                 </div>
 
                                 <!-- RESTRICTED TO -->
-                                <div class="input-group mb-3">
+                                <div class="input-group mb-3 hidden">
                                     <label><?php echo langHdl('restricted_to'); ?></label>
                                     <select id="form-item-restrictedto" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
                                     <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
                                     <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
                                 </div>
                                 <!-- TAGS -->
-                                <div class="input-group mb-3">
+                                <div class="input-group mb-3 hidden">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('tags'); ?></span>
                                     </div>
@@ -348,7 +348,7 @@ foreach ($rows as $reccord) {
                                 }
                                 ?>
 
-                                <div class="callout callout-primary mb-3">
+                                <div class="callout callout-primary mb-3 hidden">
                                     <div class="card-header">
                                         <h3 class="card-title">
                                             <i class="fas fa-bullhorn"></i>
@@ -552,7 +552,7 @@ foreach ($rows as $reccord) {
                                 <li class="nav-item">
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
                                 </li>
-                                <li class="nav-item">
+                                <li class="nav-item hidden">
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="far fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
                                 </li>
                                 <?php
@@ -629,15 +629,15 @@ foreach ($rows as $reccord) {
             <div class="card">
                 <div class="card-body">
                     <ul class="list-group list-group-unbordered mb-3">
-                        <li class="list-group-item">
+                        <li class="list-group-item hidden">
                             <b><?php echo langHdl('restricted_to'); ?></b>
                             <a id="card-item-restrictedto" class="float-right ml-1"></a>
                         </li>
-                        <li class="list-group-item">
+                        <li class="list-group-item hidden">
                             <b><?php echo langHdl('tags'); ?></b>
                             <a id="card-item-tags" class="float-right ml-1"></a>
                         </li>
-                        <li class="list-group-item">
+                        <li class="list-group-item hidden">
                             <b><?php echo langHdl('kbs'); ?></b>
                             <a id="card-item-kbs" class="float-right ml-1"></a>
                         </li>
@@ -706,7 +706,7 @@ foreach ($rows as $reccord) {
     ?>
 
     <div class="row hidden item-details-card item-card-attachments">
-        <div class="col-12">
+        <div class="col-12 hidden">
             <div class="card card-default collapsed">
                 <div class="card-header bg-gray-dark">
                     <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-attachments">
@@ -926,8 +926,8 @@ foreach ($rows as $reccord) {
         </div>
 
     <?php
-                            } else {
-                                ?>
+    } else {
+    ?>
         <!--
             <div class="mt-4">
             <div class="alert alert-warning">
@@ -1069,16 +1069,10 @@ foreach ($rows as $reccord) {
                 <div class="card-body">
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
-                        <p><?php
-                            echo str_replace(
-        ['##otv_expiration_period##', '. '],
-        ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
-        langHdl('otv_message')
-    );
-                            ?></p>
+                        <p>
+                        <?php echo str_replace(['##otv_expiration_period##', '. '], ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'], langHdl('otv_message')); ?>
+                        </p>
                     </div>
-
-
                     <div class="form-group">
                         <label for="form-item-otv-link"><?php echo langHdl('otv_link'); ?></label>
                         <div class="input-group mb-3">
@@ -1093,7 +1087,6 @@ foreach ($rows as $reccord) {
                     <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('close'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -1130,7 +1123,7 @@ foreach ($rows as $reccord) {
             <form id="form-folder-add" class="needs-validation" novalidate onsubmit="return false;" data-action="">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h5><i class="fas fa-plus mr-2"></i><?php echo langHdl('add_folder'); ?></h5>
+                        <h5><i class="fas fa-plus-square mr-2"></i><?php echo langHdl('add_folder'); ?></h5>
                     </div>
                     <div class="card-body">
                         <div class="form-group">
@@ -1177,6 +1170,58 @@ foreach ($rows as $reccord) {
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary" id="form-folder-add-perform"><?php echo langHdl('perform'); ?></button>
+                        <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- EDIT FOLDER FORM -->
+    <div class="row hidden form-folder-edit form-folder-action">
+        <div class="col-12">
+            <form id="form-folder-edit" class="needs-validation" novalidate onsubmit="return false;" data-action="">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5><i class="fas fa-edit mr-2"></i><?php echo langHdl('edit_folder'); ?></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label><?php echo langHdl('label'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-edit-label" required>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('select_folder_parent'); ?></label>
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-edit-parent" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('complex_asked'); ?></label>
+                            <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-edit-complexicity" required>
+                                <?php
+                                foreach (TP_PW_COMPLEXITY as $key => $value) {
+                                    echo '<option value="' . $key . '">' . $value[1] . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('icon'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-edit-icon">
+                            <small class='form-text text-muted'>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label><?php echo langHdl('icon_on_selection'); ?></label>
+                            <input type="text" class="form-control form-folder-control" id="form-folder-edit-icon-selected">
+                            <small class='form-text text-muted'>
+                                <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary" id="form-folder-edit-perform"><?php echo langHdl('perform'); ?></button>
                         <button type="submit" class="btn btn-default float-right but-back"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
