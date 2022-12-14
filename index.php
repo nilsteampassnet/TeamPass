@@ -247,7 +247,14 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 <?php
 
-if (
+// display an item in the context of OTV link
+if (($session_validite_pw === null
+        || empty($session_validite_pw) === true
+        || empty($session_user_id) === true)
+    && empty($get['otv']) === false)
+{
+    include './includes/core/otv.php';
+} elseif (
     $session_validite_pw !== null
     && $session_validite_pw === true
     && empty($get['page']) === false
@@ -333,7 +340,7 @@ if (
             <!-- Main Sidebar Container -->
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
-                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=items'; ?>" class="brand-link">
+                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=' . ($session_user_admin === 1 ? 'admin' : 'items'); ?>" class="brand-link">
                     <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                     <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
@@ -341,7 +348,7 @@ if (
                 <!-- Sidebar -->
                 <div class="sidebar">
                     <!-- Sidebar Menu -->
-                    <nav class="mt-2" style="margin-bottom:20px;">
+                    <nav class="mt-2" style="margin-bottom:40px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
                                 if ($session_user_admin === 0) {
@@ -358,40 +365,42 @@ if (
                                 }
 
     // IMPORT menu
-    if (
-                                    isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1
-                                    && $session_user_admin === 0
-                                ) {
+
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 && $session_user_admin === 0 )
+
+
+    {
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-file-import"></i>
-                        <p>
-                            ' . langHdl('import') . '
-                        </p>
-                        </a>
-                    </li>';
+            <li class="nav-item">
+                <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
+                <i class="nav-icon fas fa-file-import"></i>
+                <p>
+                    ' . langHdl('import') . '
+                </p>
+                </a>
+            </li>';
     }
     // EXPORT menu
-    if (
-                                    isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1
-                                    && isset($SETTINGS['roles_allowed_to_print_select']) === true
-                                    && empty($SETTINGS['roles_allowed_to_print_select']) === false
-                                    && count(array_intersect(
-                                        explode(';', $superGlobal->get('fonction_id', 'SESSION')),
-                                        explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
-                                    )) > 0
-                                    && (int) $session_user_admin === 0
-                                ) {
+
+    if (isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1
+
+        && isset($SETTINGS['roles_allowed_to_print_select']) === true
+        && empty($SETTINGS['roles_allowed_to_print_select']) === false
+        && count(array_intersect(
+            explode(';', $superGlobal->get('fonction_id', 'SESSION')),
+            explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
+        )) > 0
+        && (int) $session_user_admin === 0)
+    {
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-file-export"></i>
-                        <p>
-                            ' . langHdl('export') . '
-                        </p>
-                        </a>
-                    </li>';
+            <li class="nav-item">
+                <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
+                <i class="nav-icon fas fa-file-export"></i>
+                <p>
+                    ' . langHdl('export') . '
+                </p>
+                </a>
+            </li>';
     }
 
     /*
@@ -411,30 +420,31 @@ if (
 
     if ($session_user_admin === 0) {
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="search" class="nav-link', $get['page'] === 'search' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-search"></i>
-                        <p>
-                            ' . langHdl('find') . '
-                        </p>
-                        </a>
-                    </li>';
+            <li class="nav-item">
+                <a href="#" data-name="search" class="nav-link', $get['page'] === 'search' ? ' active' : '', '">
+                <i class="nav-icon fas fa-search"></i>
+                <p>
+                    ' . langHdl('find') . '
+                </p>
+                </a>
+            </li>';
     }
 
     // Favourites menu
-    if (
-                                    isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1
-                                    && (int) $session_user_admin === 0
-                                ) {
+
+    if (isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1 && (int) $session_user_admin === 0)
+
+    {
+
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
-                        <i class="nav-icon fas fa-star"></i>
-                        <p>
-                            ' . langHdl('favorites') . '
-                        </p>
-                        </a>
-                    </li>';
+            <li class="nav-item">
+                <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
+                <i class="nav-icon fas fa-star"></i>
+                <p>
+                    ' . langHdl('favorites') . '
+                </p>
+                </a>
+            </li>';
     }
     /*
         // KB menu
@@ -451,20 +461,22 @@ if (
                         </li>';
         }
     */
+
     // SUGGESTION menu
-    if (
-                                    isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
-                                    && $session_user_manager === 1
-                                ) {
+
+    if (isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 && $session_user_manager === 1)
+
+    {
+
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="suggestion" class="nav-link', $get['page'] === 'suggestion' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-lightbulb"></i>
-                        <p>
-                            ' . langHdl('suggestion_menu') . '
-                        </p>
-                        </a>
-                    </li>';
+            <li class="nav-item">
+                <a href="#" data-name="suggestion" class="nav-link', $get['page'] === 'suggestion' ? ' active' : '', '">
+                    <i class="nav-icon fas fa-lightbulb"></i>
+                    <p>
+                        ' . langHdl('suggestion_menu') . '
+                    </p>
+                </a>
+            </li>';
     }
 
     // Admin menu
@@ -528,20 +540,23 @@ if (
                                     <i class="fas fa-id-card nav-icon"></i>
                                     <p>' . langHdl('ldap') . '</p>
                                 </a>
-                            </li>
+                            </li>' .
+                            /*
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
                                     <i class="fas fa-file-upload nav-icon"></i>
                                     <p>' . langHdl('uploads') . '</p>
                                 </a>
-                            </li>
-                            <li class="nav-item">
+
+                            </li><li class="nav-item">
+
                                 <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
                                     <i class="fas fa-chart-bar nav-icon"></i>
                                     <p>' . langHdl('statistics') . '</p>
                                 </a>
                             </li>
-                        </ul>
+                            */
+                        '</ul>
                     </li>';
 
                     if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
@@ -562,14 +577,14 @@ if (
                         </p>
                         </a>
                     </li>';
-    }
+                    }
 
-    if (
-                                    $session_user_admin === 1
-                                    || $session_user_manager === 1
-                                    || $session_user_human_resources === 1
-                                ) {
-        echo '
+                    if (
+						$session_user_admin === 1
+						|| $session_user_manager === 1
+						|| $session_user_human_resources === 1
+					) {
+                    echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
                         <i class="nav-icon fas fa-folder-open"></i>
@@ -626,7 +641,7 @@ if (
                             </li>
                         </ul>
                     </li>';
-    } ?>
+                    } ?>
                         </ul>
                     </nav>
                     <!-- /.sidebar-menu -->
@@ -881,7 +896,7 @@ if (
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-build-keys-database-code">
                                 </div>
-                                
+
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-build-keys-database-progress">
                                     <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
                                 </div>
@@ -929,7 +944,7 @@ if (
                     </div>
                 </div>
                 <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
-                
+
 
                 <?php
                     if ($session_initial_url !== null && empty($session_initial_url) === false) {
@@ -1012,8 +1027,8 @@ if (
 
     <?php
         /* MAIN PAGE */
-        echo '
-<input type="hidden" id="temps_restant" value="', $_SESSION['sessionDuration'] ?? '', '" />';
+        echo '<input type="hidden" id="temps_restant" value="', $_SESSION['sessionDuration'] ?? '', '" />';
+
 // display an item in the context of OTV link
 } elseif (($session_validite_pw === null
         || empty($session_validite_pw) === true
@@ -1329,6 +1344,8 @@ if (
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
+
+
         }
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';
