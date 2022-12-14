@@ -288,7 +288,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -325,47 +325,49 @@ switch ($post_type) {
             }
         }
 
-        $items = DB::query('SELECT id,label FROM ' . prefixTable('items') . ' WHERE id_tree NOT IN %li', $foldersIds);
-        foreach ($items as $item) {
-            //Delete item
-            DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-
-            // Delete if template related to item
-            DB::delete(
-                prefixTable('templates'),
-                'item_id = %i',
-                $item['id']
-            );
-
-            //log
-            DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-
-            ++$nbItemsDeleted;
-        }
-
-        // delete orphan items
-        $rows = DB::query(
-            'SELECT id
-            FROM ' . prefixTable('items') . '
-            ORDER BY id ASC'
-        );
-        foreach ($rows as $item) {
-            DB::query(
-                'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i AND action = %s',
-                $item['id'],
-                'at_creation'
-            );
-            $counter = DB::count();
-            if ($counter === 0) {
+        if (count($foldersIds) > 0) {
+            $items = DB::query('SELECT id,label FROM ' . prefixTable('items') . ' WHERE id_tree NOT IN %li', $foldersIds);
+            foreach ($items as $item) {
+                //Delete item
                 DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-                DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
+
+                // Delete if template related to item
+                DB::delete(
+                    prefixTable('templates'),
+                    'item_id = %i',
+                    $item['id']
+                );
+
+                //log
                 DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
+
                 ++$nbItemsDeleted;
             }
-        }
 
-        //Update CACHE table
-        updateCacheTable('reload', $SETTINGS, null);
+            // delete orphan items
+            $rows = DB::query(
+                'SELECT id
+                FROM ' . prefixTable('items') . '
+                ORDER BY id ASC'
+            );
+            foreach ($rows as $item) {
+                DB::query(
+                    'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i AND action = %s',
+                    $item['id'],
+                    'at_creation'
+                );
+                $counter = DB::count();
+                if ($counter === 0) {
+                    DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
+                    DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
+                    DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
+                    ++$nbItemsDeleted;
+                }
+            }
+
+            //Update CACHE table
+            updateCacheTable('reload', $SETTINGS, null);
+        }
 
         // Log
         logEvents(
@@ -2376,7 +2378,7 @@ switch ($post_type) {
 
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
+           $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
