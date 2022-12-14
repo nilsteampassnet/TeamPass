@@ -64,14 +64,14 @@ function langHdl(string $string): string
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
-    if (is_null($session_language) === true) {
-        /* 
-            Load the English version to $_SESSION so we don't 
-            return bad JSON (multiple includes add BOM characters to the json returned 
+    if (isset($session_language) === false) {
+        /*
+            Load the English version to $_SESSION so we don't
+            return bad JSON (multiple includes add BOM characters to the json returned
             which makes jquery unhappy on the UI, especially on the log page)
             and improve performance by avoiding to include the file for every missing strings.
         */
-        if (isset($_SESSION['teampass']) === true && isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
+        if (isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
             $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
             $session_language = isset($_SESSION['teampass']['en_lang'][trim($string)]) === false ? '' : $_SESSION['teampass']['en_lang'][trim($string)];
         } else {
@@ -127,7 +127,7 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
 {
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
     $err = false;
-    
+
     $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
 
     include_once $path . 'Exception/CryptoException.php';
@@ -144,7 +144,7 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
     include_once $path . 'Core.php';
-    
+
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
     try {
@@ -240,7 +240,7 @@ function defuse_generate_personal_key(string $psk): string
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
     include_once $path . 'Core.php';
-    
+
     $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
@@ -412,7 +412,7 @@ function identifyUserRights(
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-    // Check if user is ADMINISTRATOR    
+    // Check if user is ADMINISTRATOR
     (int) $isAdmin === 1 ?
         identAdmin(
             $idFonctions,
@@ -560,7 +560,7 @@ function convertToArray($element): array
  * @param string|array $userRoles       Roles of user
  * @param array        $SETTINGS        Teampass settings
  * @param object       $tree            Tree of folders
- * 
+ *
  * @return bool
  */
 function identUser(
@@ -706,12 +706,12 @@ function identUser(
 
 /**
  * Get list of folders depending on Roles
- * 
+ *
  * @param array $userRoles
  * @param array $allowedFoldersByRoles
  * @param array $readOnlyFolders
  * @param array $allowedFolders
- * 
+ *
  * @return array
  */
 function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readOnlyFolders, $allowedFolders) : array
@@ -748,7 +748,7 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
 
 /**
  * Get list of Personal Folders
- * 
+ *
  * @param int $globalsPersonalFolders
  * @param array $allowedFolders
  * @param int $globalsUserId
@@ -761,7 +761,7 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
  * @param array $noAccessFolders
  * @param int $enablePfFeature
  * @param object $tree
- * 
+ *
  * @return array
  */
 function identUserGetPFList(
@@ -802,7 +802,7 @@ function identUserGetPFList(
             }
         }
     }
-    
+
     // Exclude all other PF
     $where = new WhereClause('and');
     $where->add('personal_folder=%i', 1);
@@ -853,7 +853,7 @@ function identUserGetPFList(
  * @param string $action   What to do
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
- * 
+ *
  * @return void
  */
 function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): void
@@ -877,7 +877,7 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
  * Cache table - refresh.
  *
  * @param array $SETTINGS Teampass settings
- * 
+ *
  * @return void
  */
 function cacheTableRefresh(array $SETTINGS): void
@@ -981,7 +981,7 @@ function cacheTableRefresh(array $SETTINGS): void
  *
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
- * 
+ *
  * @return void
  */
 function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
@@ -1070,7 +1070,7 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
  *
  * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
- * 
+ *
  * @return void
  */
 function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
@@ -1265,7 +1265,7 @@ function getStatisticsData(array $SETTINGS): array
 
 /**
  * Permits to prepare the way to send the email
- * 
+ *
  * @param string $subject       email subject
  * @param string $body          email message
  * @param string $email         email
@@ -1280,7 +1280,7 @@ function prepareSendingEmail(
     $email,
     $receiverName,
     $SETTINGS
-): void 
+): void
 {
     if (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
         DB::insert(
@@ -1469,35 +1469,40 @@ function buildEmail(
  *
  * @param string $textMail Text for the email
  */
+/* ADD */
 function emailBody(string $textMail): string
 {
-    return '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
-    w3.org/TR/html4/loose.dtd"><html>
-    <head><title>Email Template</title>
-    <style type="text/css">
-    body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
-    </style></head>
-    <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
-    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
-    <tr><td style="border-collapse: collapse;"><br>
-        <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
-        <tr><td style="border-collapse: collapse; padding: 11px 20px;">
-            <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
-        </td></tr></table></td>
-    </tr>
-    <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
-        <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-        <br><div style="float:right;">' .
-        $textMail .
-        '<br><br></td></tr></table>
-    </td></tr></table>
-    <br></body></html>';
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=w3.org/TR/html4/loose.dtd"><html>
+
+        <head>
+                <title>Email Template</title>
+
+                                                                            
+        </head>
+        <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0;" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+                <table width="100%" style="font-family: Helvetica, Verdana, sans-serif;">
+                        <tr>
+                                <td bgcolor="#17357c" style="padding: 10px 20px;">
+
+                                    <p style="font-size: 30px; color:#f0f0f0; font-weight:bold;">TEAMPASS</p>
+                                </td>
+                        </tr>
+                        <tr>
+                                <td align="left" style="background-color: #f0f0f0; padding: 10px 30px 8px 40px;">
+
+
+                                         
+                                        <p>' . $textMail . '</p>
+                                </td>
+                        </tr>
+                </table>
+        </body>
+    </html>';
 }
 
 /**
  * Generate a Key.
- * 
+ *
  * @return string
  */
 function generateKey(): string
@@ -1608,7 +1613,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
 
     //load Encoding
     include_once $teampassDir . '/includes/libraries/ForceUTF8/Encoding.php';
-    
+
     //Load CRYPTOJS
     include_once $teampassDir . '/includes/libraries/Encryption/CryptoJs/Encryption.php';
 
@@ -1641,7 +1646,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
  * @param string  $src           Source
  * @param string  $dest          Destination
  * @param int $desired_width Size of width
- * 
+ *
  * @return void|string|bool
  */
 function makeThumbnail(string $src, string $dest, int $desired_width)
@@ -1676,7 +1681,7 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
  * Check table prefix in SQL query.
  *
  * @param string $table Table name
- * 
+ *
  * @return string
  */
 function prefixTable(string $table): string
@@ -1700,7 +1705,7 @@ function prefixTable(string $table): string
  * @param bool $symbols Symbols
  * @param bool $lowercase Lowercase
  * @param array   $SETTINGS  SETTINGS
- * 
+ *
  * @return string
  */
 function GenerateCryptKey(
@@ -1722,7 +1727,7 @@ function GenerateCryptKey(
         $php7generator->register();
         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
     }
-    
+
     // Manage size
     $generator->setLength((int) $size);
     if ($secure === true) {
@@ -1747,7 +1752,7 @@ function GenerateCryptKey(
  * @param string    $host
  * @param int       $port
  * @param string    $component
- * 
+ *
  * @return void
 */
 function send_syslog($message, $host, $port, $component = 'teampass'): void
@@ -1767,7 +1772,7 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $who      Who
  * @param string $login    Login
  * @param string $field_1  Field
- * 
+ *
  * @return void
  */
 function logEvents(array $SETTINGS, string $type, string $label, string $who, ?string $login = null, ?string $field_1 = null): void
@@ -1830,7 +1835,7 @@ function logEvents(array $SETTINGS, string $type, string $label, string $who, ?s
  * @param string $login           User login
  * @param string $raison          Code for reason
  * @param string $encryption_type Encryption on
- * 
+ *
  * @return void
  */
 function logItems(
@@ -1919,7 +1924,7 @@ function logItems(
  * @param int    $item_id  Item id
  * @param string $action   Action to do
  * @param array  $SETTINGS Teampass settings
- * 
+ *
  * @return void
  */
 /*
@@ -1975,7 +1980,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
  * @param string $label    Item label
  * @param array  $changes  List of changes
  * @param array  $SETTINGS Teampass settings
- * 
+ *
  * @return void
  */
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
@@ -2030,7 +2035,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
  * @param int    $id_tree  Node id
  * @param string $label    Label
  * @param array  $SETTINGS TP settings
- * 
+ *
  * @return string
  */
 function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): string
@@ -2089,7 +2094,7 @@ function getClientIpServer(): string
  *
  * @param string $input    The input string
  * @param string $encoding Which character encoding are we using?
- * 
+ *
  * @return string
  */
 function noHTML(string $input, string $encoding = 'UTF-8'): string
@@ -2177,7 +2182,7 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
  * Permits to replace &#92; to permit correct display
  *
  * @param string $input Some text
- * 
+ *
  * @return string
  */
 function handleBackslash(string $input): string
@@ -2187,7 +2192,7 @@ function handleBackslash(string $input): string
 
 /**
  * Permits to load settings
- * 
+ *
  * @return void
 */
 function loadSettings(): void
@@ -2225,10 +2230,10 @@ function loadSettings(): void
 /**
  * check if folder has custom fields.
  * Ensure that target one also has same custom fields
- * 
+ *
  * @param int $source_id
- * @param int $target_id 
- * 
+ * @param int $target_id
+ *
  * @return bool
 */
 function checkCFconsistency(int $source_id, int $target_id): bool
@@ -2742,7 +2747,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
         // Load classes
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
+        $cipher->setPassword($userPwd);
         try {
             return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
         } catch (Exception $e) {
@@ -3290,7 +3295,7 @@ function mfa_auth_requested_roles(string $userRolesIds, string $mfaRoles): bool
  *
  * @param string $text
  * @param bool $emptyCheckOnly
- * 
+ *
  * @return string
  */
 function cleanStringForExport(string $text, bool $emptyCheckOnly = false): string
@@ -3333,7 +3338,7 @@ function isUserIdValid($userId): bool
  * @param string $key
  * @param integer|string $value
  * @param array $array
- * 
+ *
  * @return boolean
  */
 function isKeyExistingAndEqual(
@@ -3357,7 +3362,7 @@ function isKeyExistingAndEqual(
  *
  * @param string|null $var
  * @param integer|string $value
- * 
+ *
  * @return boolean
  */
 function isKeyNotSetOrEqual(
@@ -3381,7 +3386,7 @@ function isKeyNotSetOrEqual(
  * @param string $key
  * @param integer $value
  * @param array $array
- * 
+ *
  * @return boolean
  */
 function isKeyExistingAndInferior(string $key, int $value, array $array): bool
@@ -3398,7 +3403,7 @@ function isKeyExistingAndInferior(string $key, int $value, array $array): bool
  * @param string $key
  * @param integer $value
  * @param array $array
- * 
+ *
  * @return boolean
  */
 function isKeyExistingAndSuperior(string $key, int $value, array $array): bool
@@ -3583,7 +3588,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
         WHERE user_id = %i',
         $user_id
     );
-    
+
     if (is_null($userCacheId) === true || count($userCacheId) === 0) {
         DB::insert(
             prefixTable('cache_tree'),
@@ -3627,7 +3632,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
  * @return float
  */
 function pourcentage(float $nombre, float $total, float $pourcentage): float
-{ 
+{
     $resultat = ($nombre/$total) * $pourcentage;
     return round($resultat);
 }
@@ -3716,7 +3721,7 @@ function handleFoldersCategories(
 {
     //load ClassLoader
     include_once __DIR__. '/../sources/SplClassLoader.php';
-    
+
     //Connect to DB
     include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
