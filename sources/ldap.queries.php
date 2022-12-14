@@ -192,7 +192,7 @@ switch ($post_type) {
             );
             break;
         }
-        
+		
         // Get user info from AD
         // We want to isolate attribute ldap_user_attribute
         try {
@@ -202,7 +202,7 @@ switch ($post_type) {
             //print_r($user);
         } catch (\LdapRecord\LdapRecordException $e) {
             $error = $e->getDetailedError();
-            
+			
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
@@ -213,7 +213,7 @@ switch ($post_type) {
             );
             break;
         }
-        
+		
         try {
             if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
                 $userAuthAttempt = $connection->auth()->attempt(
@@ -228,7 +228,7 @@ switch ($post_type) {
             }
         } catch (\LdapRecord\LdapRecordException $e) {
             $error = $e->getDetailedError();
-            
+			
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
@@ -239,13 +239,14 @@ switch ($post_type) {
             );
             break;
         }
-        
+		
         if ($userAuthAttempt === true) {
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
-                    'message' => "User is successfully authenticated",
+					/* ADD */
+                    'message' => langHdl('user_authenticated'),
                     'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
                 ),
                 'encode'
