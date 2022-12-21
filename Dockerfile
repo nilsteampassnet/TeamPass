@@ -1,4 +1,4 @@
-FROM richarvey/nginx-php-fpm:1.9.1
+FROM richarvey/nginx-php-fpm:latest
 
 # The location of the web files
 ARG VOL=/var/www/html
@@ -7,10 +7,11 @@ VOLUME ${VOL}
 
 # Configure nginx-php-fpm image to use this dir.
 ENV WEBROOT ${VOL}
-RUN apk add -X https://nl.alpinelinux.org/alpine/edge/main -u alpine-keys --allow-untrusted
-RUN echo "@edge http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
-RUN apk update
-RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing gnu-libiconv
+#RUN apk add -X https://nl.alpinelinux.org/alpine/edge/main -u alpine-keys --allow-untrusted
+#RUN echo "@edge http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
+#RUN apk update
+#RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing gnu-libiconv
+RUN apk add --no-cache gnu-libiconv
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 
 RUN echo && \
