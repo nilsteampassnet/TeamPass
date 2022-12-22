@@ -33,7 +33,7 @@ RUN sed -i "/^}/i \
           try_files $uri $uri/ /api/index.php?$args;\
   }" /etc/nginx/sites-enabled/default.conf && \
     mkdir -p /var/www/html/includes/libraries/csrfp/log/ && \
-    chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log/ \
+    chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log/ 
 
 
 
