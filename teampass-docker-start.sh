@@ -16,9 +16,10 @@ then
 		git checkout $GIT_TAG -f
 	fi
 	mkdir ${VOL}/sk
+	mkdir ${VOL}/includes/libraries/csrfp/log
 	chown -Rf nginx:nginx ${VOL}
-	mkdir -p /var/www/html/includes/libraries/csrfp/log/
-        chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log/
+	
+        
 
 
 fi
