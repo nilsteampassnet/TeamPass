@@ -17,6 +17,10 @@ then
 	fi
 	mkdir ${VOL}/sk
 	chown -Rf nginx:nginx ${VOL}
+	mkdir -p /var/www/html/includes/libraries/csrfp/log/
+        chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log/
+
+
 fi
 
 if [ -f ${VOL}/includes/config/settings.php ] ;
