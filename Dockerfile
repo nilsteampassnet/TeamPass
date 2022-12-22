@@ -11,17 +11,18 @@ ENV WEBROOT ${VOL}
 #RUN echo "@edge http://nl.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories
 #RUN apk update
 #RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing gnu-libiconv
-RUN apk add --no-cache gnu-libiconv
+RUN apk add --no-cache gnu-libiconv libldap
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 
 RUN echo && \
   # Install and configure missing PHP requirements
   /usr/local/bin/docker-php-ext-configure bcmath && \
   /usr/local/bin/docker-php-ext-install bcmath && \
-  apk add --no-cache openldap-dev && \
+  apk add --no-cache --virtual .docker-php-ldap-dependancies \
+            openldap-dev && \ 
   /usr/local/bin/docker-php-ext-configure ldap && \
   /usr/local/bin/docker-php-ext-install ldap && \
-  apk del openldap-dev && \
+  apk del .docker-php-ldap-dependancies && \
   echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
 echo
 
