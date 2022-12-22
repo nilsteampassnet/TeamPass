@@ -7,7 +7,7 @@ VOLUME ${VOL}
 
 # Configure nginx-php-fpm image to use this dir.
 ENV WEBROOT ${VOL}
-RUN apk add --no-cache gnu-libiconv libldap tzdata
+RUN apk add --no-cache gnu-libiconv libldap
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 
 RUN echo && \
