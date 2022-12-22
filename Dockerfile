@@ -31,11 +31,7 @@ echo
 RUN sed -i "/^}/i \
   location /api/ {\
           try_files $uri $uri/ /api/index.php?$args;\
-  }" /etc/nginx/sites-enabled/default.conf && \
-    mkdir -p /var/www/html/includes/libraries/csrfp/log/ && \
-    chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log/ 
-
-
+  }" /etc/nginx/sites-enabled/default.conf
 
 COPY teampass-docker-start.sh /teampass-docker-start.sh
 
