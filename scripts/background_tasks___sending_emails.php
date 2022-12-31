@@ -25,6 +25,7 @@
 require_once __DIR__.'/../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
+$_SESSION['CPM'] = 1;
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
@@ -38,6 +39,8 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
+
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -73,7 +76,10 @@ foreach ($rows as $record) {
         $email['subject'],
         $email['body'],
         $email['receivers'],
-        $SETTINGS
+        $SETTINGS,
+        null,
+        true,
+        true
     );
 
     // update DB

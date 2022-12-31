@@ -1198,6 +1198,28 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         ];
     }
 
+    // Finalize authentication
+    finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
+
+    return [
+        'error' => false,
+        'message' => '',
+    ];
+}
+
+/**
+ * Permits to finalize the authentication process.
+ *
+ * @param array $userInfo
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ */
+function finalizeAuthentication(
+    array $userInfo,
+    string $passwordClear,
+    array $SETTINGS
+): void
+{
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $pwdlib->register();
@@ -1232,18 +1254,11 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             prefixTable('users'),
             [
                 'pw' => $hashedPassword,
-                //'special' => 'auth-pwd-change',
             ],
             'id = %i',
             $userInfo['id']
         );
     }
-
-    $userInfo['pw'] = $hashedPassword;
-    return [
-        'error' => false,
-        'message' => '',
-    ];
 }
 
 /**

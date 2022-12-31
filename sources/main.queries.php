@@ -31,7 +31,7 @@ if (isset($_SESSION) === false) {
 
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
     $_SESSION['error']['code'] = '1004';
-    include '../error.php';
+    include __DIR__.'/../error.php';
     exit();
 }
 
