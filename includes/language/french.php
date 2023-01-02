@@ -11,7 +11,7 @@
  * @file      french.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2022 Teampass.net
+ * @copyright 2009 - 2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -1008,26 +1008,27 @@ return array(
     'refresh_data_every_on_screen' => 'Screen refreshing period (in seconds)',
     'refresh_data_every_on_screen_tip' => 'When browsing the tasks view, this permits to have an updated list based.',
     'refreshed' => 'Rafraichi',
-    'process_details' => 'Process details',
-    'created_at' => 'Created at',
+    'process_details' => 'Détails',
+    'created_at' => 'Crée à',
     'updated_at' => 'Mis à jour à',
     'finished_at' => 'Terminé à',
-    'tasks_manager' => 'Tasks manager',
-    'tasks' => 'Tasks',
+    'tasks_manager' => 'Gestionnaire de tâches',
+    'tasks' => 'Tâches',
     'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
-    'enable_tasks_manager' => 'Enable heavy tasks to be performed by cron manager',
+    'enable_tasks_manager' => 'Activer le gestionnaire de tâches via cron',
     'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
     'sync_new_ldap_password' => 'Synchroniser les nouveaux mots de passe',
     'error_new_ldap_password_detected' => 'Teampass détecte un changement de mot de passe. Il est nécessaire de réencrypter votre clé principale.',
     'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS',
     'settings_ldap_tls_certifacte_check_tip' => 'Specifies the certificate checking strategy. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
-    'user_keys_management' => 'User keys management',
+    'user_keys_management' => 'Gestion des clés utilisateurs',
     'sending_emails' => 'Envoi d\'emails',
-    'task_frequency' => 'Frequency (in minutes)',
+    'task_frequency' => 'Fréquence',
     'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
     'bad_duo_mfa' => 'Code DUO eronné',
     'creation_date' => 'Date de création',
     'never' => 'Jamais',
     'loading_main_page' => 'Merci de patienter, la page se charge ...',
+    'alert_session_not_consistent' => 'La session courante est corrompue et doit être rafraichie. La page va être rechargée.',
 
 );

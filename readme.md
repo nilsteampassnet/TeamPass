@@ -16,20 +16,19 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2022, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2023, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
-- [Requirements](#requirements)   
-- [Usage](#usage)   
-   - [With Docker](#with-docker)   
-   - [With Docker Compose](#with-docker-compose)   
-- [Update](#update)   
-- [Languages](#languages)   
-- [Licence Agreement](#licence-agreement)   
-- [Website](#website)   
-- [Bugs](#bugs)   
-- [Requests](#requests)   
+- [Teampass 3](#teampass-3)
+  - [Requirements](#requirements)
+  - [Documentation](#documentation)
+    - [With Docker](#with-docker)
+    - [With Docker Compose](#with-docker-compose)
+  - [Languages](#languages)
+  - [Licence Agreement](#licence-agreement)
+  - [Website](#website)
+  - [Bugs](#bugs)
 
 <!-- /MDTOC -->
 
@@ -37,7 +36,7 @@ Teampass is a Collaborative Passwords Manager
 
 * MySQL 5.7 or higher,
 * Mariadb 10.7 or higher
-* PHP 7.4 or higher,
+* PHP 7.4 or higher (recommended is 8.x),
 * PHP extensions:
   * mcrypt
   * openssl
