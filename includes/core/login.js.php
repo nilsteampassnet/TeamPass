@@ -31,7 +31,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
 ?>
 <script type="text/javascript">
-    var debugJavascript = false;
+    var debugJavascript = true;
 
     // On page load
     $(function() {
@@ -511,10 +511,31 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 type: 'get2FAMethods'
             },
             function(data) {
-                console.info('Get 2FA Methods answer:')
+                data = JSON.parse(data);
+
+                if (data.key !== '<?php echo $_SESSION['key']; ?>') {
+                    // No session was found, warn user
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('alert_session_not_consistent'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+
+                    // Delay page submit
+                    $(this).delay(5000).queue(function() {
+                        document.location.reload(true);
+                        $(this).dequeue();
+                    });
+
+                    return false;
+                }
+
                 try {
                     data = prepareExchangedData(
-                        data,
+                        data.ret,
                         "decode",
                         "<?php echo $_SESSION['key']; ?>"
                     );
@@ -531,7 +552,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     );
                     return false;
                 }
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.info('Get 2FA Methods answer:');
+                    console.log(data);
+                }
 
                 let mfaData = {},
                     mfaMethod = '';
@@ -609,28 +633,50 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         $.post(
             "sources/checks.php", {
                 type: "checkSessionExists",
+                key: "<?php echo $_SESSION['key']; ?>"
             },
             function(check_data) {
-                if (parseInt(check_data) === 1) {
+                check_data = JSON.parse(check_data);
+                
+                if (check_data.status === true) {
                     if (debugJavascript === true) {
                         console.info('Session existance check:')
-                        console.log(data);
+                        console.log(check_data);
                     }
 
                     //send query
                     $.post(
                         "sources/identify.php", {
                             type: "identify_user",
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>')
+                            data: prepareExchangedData(
+                                JSON.stringify(data),
+                                'encode',
+                                '<?php echo $_SESSION['key']; ?>'
+                            )
                         },
                         function(receivedData) {
-                            var data = prepareExchangedData(
-                                receivedData,
-                                "decode",
-                                "<?php echo $_SESSION['key']; ?>"
-                            );
-                            console.info('Identification answer:')
+                            try {
+                                var data = prepareExchangedData(
+                                    receivedData,
+                                    "decode",
+                                    "<?php echo $_SESSION['key']; ?>"
+                                );
+                            } catch (e) {
+                                // error
+                                toastr.remove();
+                                toastr.error(
+                                    '<?php echo langHdl('server_answer_error'); ?>',
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true,
+                                        positionClass: "toast-top-right"
+                                    }
+                                );
+                                return false;
+                            }
+                            
                             if (debugJavascript === true) {
+                                console.info('Identification answer:')
                                 console.log('SESSION KEY is: <?php echo $_SESSION['key']; ?>');
                                 console.log(data);
                             }

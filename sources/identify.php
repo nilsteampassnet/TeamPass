@@ -49,9 +49,12 @@ if (! isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === t
     $SETTINGS['cpassman_dir'] = '..';
 }
 
+// Load libraries
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -147,16 +150,19 @@ if ($post_type === 'identify_user') {
     //
 
     // Encrypt data to return
-    echo prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
-        [
-            'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
-            'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
-            'yubico' => isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true ? true : false,
-            'duo' => isKeyExistingAndEqual('duo', 1, $SETTINGS) === true ? true : false,
-        ],
-        'encode'
-    );
+    echo json_encode([
+        'ret' => prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            [
+                'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
+                'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
+                'yubico' => isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true ? true : false,
+                'duo' => isKeyExistingAndEqual('duo', 1, $SETTINGS) === true ? true : false,
+            ],
+            'encode'
+        ),
+        'key' => $superGlobal->get('key', 'SESSION'),
+    ]);
     return false;
 }
 
@@ -251,6 +257,21 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $duo_data = unserialize($duo_data_dec);
         $dataReceived['pw'] = $duo_data['duo_pwd'];
         $dataReceived['login'] = $duo_data['duo_login'];
+    }
+
+    if(isset($dataReceived['pw']) === false || isset($dataReceived['login']) === false) {
+        echo json_encode([
+            'data' => prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'error' => true,
+                    'message' => langHdl('ga_enter_credentials'),
+                ],
+                'encode'
+            ),
+            'key' => $_SESSION['key']
+        ]);
+        return false;
     }
 
     // prepare variables    
@@ -762,7 +783,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-    
     echo prepareExchangedData(
         $SETTINGS['cpassman_dir'],
         [

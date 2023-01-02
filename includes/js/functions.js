@@ -195,6 +195,15 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
     }
 }
 
+function isJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
 
 /**
  * Returns the text from a HTML string

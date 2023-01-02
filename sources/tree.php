@@ -508,6 +508,7 @@ function handleNode(
         $last_visible_parent_level,
         $nodeId,
         $text,
+        $nodeDirectDescendants,
         $SETTINGS
     );    
     $last_visible_parent = $tmpRetArray['last_visible_parent'];
@@ -547,6 +548,7 @@ function handleNode(
  * @param integer $last_visible_parent_level
  * @param integer $nodeId
  * @param string $text
+ * @param array $nodeDirectDescendants
  * @param array $SETTINGS
  * @return array
  */
@@ -559,6 +561,7 @@ function prepareNodeJson(
     int &$last_visible_parent_level,
     int $nodeId,
     string $text,
+    array $nodeDirectDescendants,
     array $SETTINGS
 ): array
 {

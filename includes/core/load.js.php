@@ -1271,11 +1271,30 @@ if (
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                try {
+                    data = prepareExchangedData(
+                        data,
+                        "decode",
+                        "<?php echo $_SESSION['key']; ?>"
+                    );
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('server_answer_error'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true,
+                            positionClass: "toast-top-right"
+                        }
+                    );
+                    return false;
+                }
                 if (debugJavascript === true) {
                     console.log('Loading settings result:');
                     console.log(data);
                 }
+
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage

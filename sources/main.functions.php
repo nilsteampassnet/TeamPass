@@ -1627,6 +1627,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
         );
     }
     if ($type === 'decode' && is_array($data) === false) {
+        // check if key exists
         return json_decode(
             (string) Encryption\CryptoJs\Encryption::decrypt(
                 (string) $data,

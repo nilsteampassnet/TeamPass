@@ -36,6 +36,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 
+
 /*
 Handle CASES
  */
@@ -46,7 +47,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         session_start();
 
         if (isset($_SESSION['CPM']) === true) {
-            echo 1;
+            echo json_encode([
+                'status' => true,
+            ]);
         } else {
             // In case that no session is available
             // Force the page to be reloaded and attach the CSRFP info
