@@ -128,7 +128,7 @@ declare(strict_types=1);
         var field = $(this).attr('id'),
             value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val().map(Number));
 
-        if (field === '') return false;
+        if (field === '' || field === undefined) return false;
         
         // prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {

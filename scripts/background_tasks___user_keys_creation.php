@@ -80,9 +80,10 @@ if (DB::count() > 0) {
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes') . '
-        WHERE is_in_progress = %i AND finished_at = ""
+        WHERE is_in_progress = %i AND finished_at = "" AND process_type = %s
         ORDER BY increment_id ASC',
-        0
+        0,
+        'create_user_keys'
     );
     //print_r($process_to_perform);
     if (DB::count() > 0) {
@@ -103,7 +104,7 @@ if (DB::count() > 0) {
 function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
-    DB::debugmode(true);
+    //DB::debugmode(false);
     $task_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes_tasks') . '

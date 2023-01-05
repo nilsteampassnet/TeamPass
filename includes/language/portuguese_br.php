@@ -11,7 +11,7 @@
  * @file      portuguese_br.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2023 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -229,7 +229,7 @@ return array(
     'files_not_encrypted' => 'Os arquivos atualmente não estão encriptados. Você deve realizar essa mudança por razões de segurança.',
     'files_already_encrypted' => 'Os arquivos já estão encriptados. Você não deve alterar isso por razões de segurança.',
     'action_to_be_performed' => 'Ação a ser realizada',
-    'last_execution' => 'Última execução',
+    'last_execution' => 'Última execução em',
     'never_performed' => 'Nunca realizada',
     'launch' => 'Executar',
     'set_of_actions' => 'Conjunto de ações',
@@ -606,7 +606,7 @@ return array(
     'admin_action_purge_old_files' => 'Excluir arquivos antigos',
     'admin_action_purge_old_files_tip' => 'Isso excluirá todos os arquivos temporários mais velhos que 7 dias.',
     'admin_action_reload_cache_table' => 'Recarregar cache da tabela',
-    'admin_action_reload_cache_table_tip' => 'Isso permite recarregar o conteúdo completo da tabela Cache. Pode ser útil realizar isso algumas vezes.',
+    'admin_action_reload_cache_table_tip' => 'Recria o cache de itens. Pode corrigir problemas ao exibir ou salvar itens de senha.',
     'admin_help' => 'Ajuda',
     'admin_ldap_configuration' => 'Configuração LDAP',
     'admin_main' => 'Informações',
@@ -1029,6 +1029,6 @@ return array(
     'creation_date' => 'Data de criação',
     'never' => 'Nunca',
     'loading_main_page' => 'Por favor, aguarde. Carregando página inicial ...',
-    'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
+    'alert_session_not_consistent' => 'A sessão atual não é consistente e precisa ser atualizada. A página será recarregada.',
 
 );

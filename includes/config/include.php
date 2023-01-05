@@ -50,12 +50,13 @@ define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
+define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
 
 // Fontawesome icons
-define('FONTAWESOME_URL', 'https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free');
+define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');
 
 // Duo
 define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');

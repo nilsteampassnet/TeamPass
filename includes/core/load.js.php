@@ -214,7 +214,7 @@ if (
                 }
 
                 // Save user location
-                console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
+                //console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
                 if (store.get('teampassUser').location_stored !== 1) {
                 // Save user location
                     $.post(
