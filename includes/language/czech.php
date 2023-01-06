@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Více informací',
     'feature_request_canal' => 'Pro žádost o novou funkcionalitu použijte prosím',
     'bug_canal' => 'Pro oznámení chyby použijte prosím',
-    'documentation_canal' => 'Úplná dokumentace je k dispozici na',
+    'documentation_canal' => 'Dokumentace',
     'sending_anonymous_statistics_details' => 'Statistiky jsou nutné pro vývoj aplikace Teampass neboť informují o populaci uživatelů a způsobu užívání aplikace. Data, která dáte k dispozici, budou užívána výhradně interně pro datové vyhodnocení a nebudou v žádném případě předávána či prodávána třetím stranám.',
     'item_has_change_proposal' => 'Pro tuto položku existuje návrh na změnu',
     'check_data_after_reencryption' => 'Prosím zkontrolujte data. Během této operace byla vytvořena nová tabulka <b>Backup</b> (Záloha), která umožňuje vrátit se k předchozím datům.',

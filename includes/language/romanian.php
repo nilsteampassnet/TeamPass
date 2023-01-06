@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Mai multe informatii',
     'feature_request_canal' => 'Pentru cereri de facilitati noi, va rugam utilizati',
     'bug_canal' => 'Pentru erori, va rugam folositi',
-    'documentation_canal' => 'Documentatia completa este la',
+    'documentation_canal' => 'Documentatia',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
     'item_has_change_proposal' => 'Acest element are o propunere de schimbare',
     'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',

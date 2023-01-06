@@ -1744,8 +1744,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 var data = {
                     'user_id': userID,
                 }
-
-                console.log(data);
                 
                 $.post(
                     'sources/users.queries.php', {
@@ -1944,7 +1942,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'field': field,
                 'value': change.val()
             };
-            console.log(data)
+            
             // Save
             $.post(
                 'sources/users.queries.php', {

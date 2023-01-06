@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Mehr Informationen',
     'feature_request_canal' => 'Für Funktionsanfragen verwenden Sie bitte',
     'bug_canal' => 'Für Fehler verwenden Sie bitte',
-    'documentation_canal' => 'Komplette Dokumentation unter',
+    'documentation_canal' => 'Dokumentation',
     'sending_anonymous_statistics_details' => 'Statistiken werden benötigt, um Teampass zu verbessern, indem wir die Benutzerverteilung und die Nutzung kennen. Die Daten, die Sie zur Verfügung stellen, werden nur intern verwendet und werden sicher nicht an Dritte weitergegeben oder verkauft.',
     'item_has_change_proposal' => 'Dieses Element hat einen Änderungsvorschlag',
     'check_data_after_reencryption' => 'Bitte überprüfen Sie die Daten. Zur Rückgängigmachung wurde eine neue Tabelle <b>Backup</ b> erstellt.',

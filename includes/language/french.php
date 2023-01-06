@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Plus d\'information',
     'feature_request_canal' => 'Pour toute Question ou Demande, merci d\'utiliser',
     'bug_canal' => 'Pour tout Bug, merci d\'utiliser',
-    'documentation_canal' => 'La documentation est disponible sur',
+    'documentation_canal' => 'Documentation',
     'sending_anonymous_statistics_details' => 'Des statistiques relatives à l\'utilisation de Teampass sont nécessaires pour connaitre les contexts d\'utilisation de l\'outil par le développeur. Elles permettent d\'évaluer comment Teampass est utilisé et par conséquent orienter l\'implémentation des nouvelles fonctionnalités. Les données envoyées sont uniquement utilisées en interne and ne seront absolument pas distribuées ou vendues à un tiers.',
     'item_has_change_proposal' => 'Une proposition d\'évolution est disponible pour cet objet',
     'check_data_after_reencryption' => 'Merci d\'effectuer une vérification de vos données. Une table de sauvegarde <b>Backup</b> a été créée durant l\'opération de ré-encryptage.',

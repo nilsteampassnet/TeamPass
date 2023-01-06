@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Más información',
     'feature_request_canal' => 'Para Solicitudes o Preguntas, por favor utilice',
     'bug_canal' => 'Para Errores, por favor use',
-    'documentation_canal' => 'Documentación completa en',
+    'documentation_canal' => 'Documentación',
     'sending_anonymous_statistics_details' => 'Las estadísticas son necesarias para mejorar Teampass por conocer la población de usuarios y el uso. Los datos que proporcionará solo se utilizarán internamente para el datamining y no serán absolutamente distribuidos o vendidos a terceros.',
     'item_has_change_proposal' => 'Este artículo tiene una propuesta de cambio',
     'check_data_after_reencryption' => 'Por favor compruebe los datos. Una nueva tabla <b>Copia de seguridad</b> se creó durante esta operación permitiendo revertir.',

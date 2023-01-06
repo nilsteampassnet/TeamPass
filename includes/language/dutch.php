@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Meer informatie',
     'feature_request_canal' => 'Voor nieuwe features of vragen gebruik',
     'bug_canal' => 'Voor het melden van Bugs gebruik',
-    'documentation_canal' => 'De gehele documentatie bij',
+    'documentation_canal' => 'Documentatie',
     'sending_anonymous_statistics_details' => 'Door het gebruik en de populatie van gebruikers te meten kunnen we Teampass verbeteren. De data die u verstrekt zal alleen intern voor datamining worden gebruikt en niet worden verstrekt aan derde partijen.',
     'item_has_change_proposal' => 'Dit item heeft een wijzigingsverzoek',
     'check_data_after_reencryption' => 'Controleer de data. Een nieuwe <b>Backup</b> tabel is gemaakt waarmee het mogelijk is om deze actie ongedaan te maken.',

@@ -51,6 +51,7 @@ define('TP_PW_STRENGTH_5', 60);
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
+define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);

@@ -126,7 +126,7 @@ function sendEmailsNotSent(
             );
             foreach ($rows as $record) {
                 // Send email
-                $ret = json_decode(
+                json_decode(
                     sendEmail(
                         $record['subject'],
                         $record['body'],
