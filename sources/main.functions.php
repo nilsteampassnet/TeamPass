@@ -1365,7 +1365,7 @@ function sendEmail(
         return json_encode(
             [
                 'error' => true,
-                'message' => $email['ErrorInfo'],
+                'message' => isset($email['ErrorInfo']) === true ? $email['ErrorInfo'] : '',
             ]
         );
     }
@@ -1404,7 +1404,7 @@ function buildEmail(
 
     // send to user
     $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
-    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false ? $SETTINGS['email_debug_level'] : 0;
+    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false && $silent === false ? $SETTINGS['email_debug_level'] : 0;
     $mail->Port = (int) $SETTINGS['email_port'];
     //COULD BE USED
     $mail->CharSet = 'utf-8';
@@ -1452,7 +1452,7 @@ function buildEmail(
             return json_encode(
                 [
                     'error' => true,
-                    'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+                    'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
                 ]
             );
         }
@@ -1462,7 +1462,8 @@ function buildEmail(
 
     return json_encode(
         [
-            'ErrorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+            'error' => true,
+            'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
         ]
     );
 }

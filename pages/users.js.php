@@ -952,7 +952,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -2356,7 +2355,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // If expected to create new encryption key
             var parameters = {
                 'user_id': data.user_id,
+                'do_nothing': true,
             };
+console.log(parameters);
 
             console.info('Prepare TASK for new user encryption keys')
             $.post(
@@ -2385,8 +2386,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         var data_to_send = {
                             user_id: data.user_id,
                             user_pwd: data.user_code,
-                            user_code: data_otc.userTemporaryCode,
+                            user_code: userTemporaryCode,
                         }
+
+                        //console.log(data_to_send);
+                        //return false;
 
                         // Do query
                         $.post(

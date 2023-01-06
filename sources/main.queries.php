@@ -442,6 +442,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (bool) filter_var($dataReceived['do_nothing'], FILTER_SANITIZE_STRING),
                 $SETTINGS
             );
         
@@ -1442,11 +1443,14 @@ function isUserPasswordCorrect(
             // Get one item
             $currentUserKey = DB::queryFirstRow(
                 'SELECT object_id, share_key, increment_id
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = %i',
-                $post_user_id
+                FROM ' . prefixTable('sharekeys_items') . ' AS si
+                INNER JOIN ' . prefixTable('items') . ' AS i ON  (i.id = si.object_id)
+                INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON  (i.id_tree = nt.id)
+                WHERE user_id = %i AND nt.personal_folder = %i',
+                $post_user_id,
+                0
             );
-
+            
             if (DB::count() === 0) {
                 // This user has no items
                 // let's consider no items in DB
@@ -1466,6 +1470,8 @@ function isUserPasswordCorrect(
                 // use old password to decrypt private_key
                 $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+
+                //echo $post_user_password."  --  ".$userInfo['private_key']. ";;";
 
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
@@ -1508,6 +1514,8 @@ function isUserPasswordCorrect(
             'error' => true,
             'message' => langHdl('password_is_not_correct'),
             //'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
+            //'debug2' => $_SESSION['user']['private_key'],
+            //'debug3' => $post_user_password,
         ),
         'encode'
     );
@@ -1742,10 +1750,20 @@ function sendMailToUser(
 
 function generateOneTimeCode(
     int $post_user_id,
+    bool $do_nothing,
     array $SETTINGS
 ): string
 {
-    if (isUserIdValid($post_user_id) === true) {
+    if ($do_nothing === true) {
+        return prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+    } elseif (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT email, auth_type, login

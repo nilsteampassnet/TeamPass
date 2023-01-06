@@ -3217,7 +3217,7 @@ if (null !== $post_type) {
                     'arguments' => json_encode([
                         'new_user_id' => (int) $post_user_id,
                         'new_user_pwd' => cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
-                        'new_user_code' => $post_user_code,
+                        'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) $_SESSION['user_id'],
                         'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
                     ]),
@@ -3401,7 +3401,7 @@ if (null !== $post_type) {
             );
 
             if ($userInfo['auth_type'] === 'local') {
-                $values['special'] = 'generate-keys';
+                $values['special'] = 'otc_is_required_on_next_login';
             } elseif ($userInfo['auth_type'] === 'ldap') {
                 $values['special'] = 'user_added_from_ldap';
             }
