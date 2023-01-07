@@ -112,7 +112,11 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
         ORDER BY increment_id ASC',
         $processId
     );
-
+/*
+    print_r($ProcessArguments);
+    echo " ;; ".cryption($ProcessArguments['new_user_pwd'], '','decrypt', $SETTINGS)['string']." ;; ".cryption($ProcessArguments['new_user_code'], '','decrypt', $SETTINGS)['string']." ;; ";
+    return false;
+*/
     
     if (DB::count() > 0) {
         // check if a linux process is not currently on going
