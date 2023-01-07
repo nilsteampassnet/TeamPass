@@ -2302,23 +2302,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function generateUserKeys(data, userTemporaryCode)
     {
         // manage keys encryption for new user
-        showModalDialogBox(
-            '#warningModal',
-            '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('generating_keys'); ?>',
-            '<div class="form-group">'+
-                '<?php echo langHdl('this_may_take_time'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>' +
-            '</div>' +
-            '<div class="form-group" id="warningModal-progress"></div>' +
-            '<div class="alert alert-info hidden" id="warningModal-user-otp"><div>',
-            '',
-            '',
-            false,
-            false,
-            false,
-        );
-
-        // Now close in progress toast
-        $('.close-toastr-progress').closest('.toast').remove();
 
         // If expected, show the OPT to the admin
         if (constVisibleOTP === true) {
@@ -2355,7 +2338,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'user_id': data.user_id,
                 'do_nothing': true,
             };
-console.log(parameters);
+            console.log(parameters);
 
             console.info('Prepare TASK for new user encryption keys')
             $.post(
@@ -2413,7 +2396,10 @@ console.log(parameters);
                                 } else {
                                     // show message to user
                                     // Finalizing
-                                    $('#warningModal').modal('hide');
+                                    //$('#warningModal').modal('hide');
+
+                                    // Now close in progress toast
+                                    $('.close-toastr-progress').closest('.toast').remove();
                                     
                                     // refresh the list of users in LDAP not added in Teampass
                                     refreshListUsersLDAP();    
@@ -2434,6 +2420,25 @@ console.log(parameters);
                 }
             );
         } else {
+            // Case where we need to encrypt new keys for the user
+
+            // Now close in progress toast
+            $('.close-toastr-progress').closest('.toast').remove();
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('generating_keys'); ?>',
+                '<div class="form-group">'+
+                    '<?php echo langHdl('this_may_take_time'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>' +
+                '</div>' +
+                '<div class="form-group" id="warningModal-progress"></div>' +
+                '<div class="alert alert-info hidden" id="warningModal-user-otp"><div>',
+                '',
+                '',
+                false,
+                false,
+                false,
+            );
+
             // call the recursive function
             callRecurive(data.user_id, 'step0', 0); 
 
