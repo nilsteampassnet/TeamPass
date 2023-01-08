@@ -1636,21 +1636,40 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'cache_tree MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
 );
 
+// Remove indexes
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . '_sharekeys_items add index (object_id) ;'
+    'DROP INDEX IF EXISTS object_id ON ' . $pre . 'sharekeys_items;'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . '_sharekeys_items add index (user_id) ;'
+    'DROP INDEX IF EXISTS user_id ON ' . $pre . 'sharekeys_items;'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . '_sharekeys_logs add index (object_id) ;'
+    'DROP INDEX IF EXISTS object_id ON ' . $pre . 'sharekeys_logs;'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . '_sharekeys_logs add index (user_id) ;'
+    'DROP INDEX IF EXISTS user_id ON ' . $pre . 'sharekeys_logs;'
+);
+
+// Add indexes
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'sharekeys_items` add index (object_id);'
+);
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'sharekeys_items` add index (user_id);'
+);
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'sharekeys_logs` add index (object_id);'
+);
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'sharekeys_logs` add index (user_id);'
 );
 
 //---<END 3.0.0.22
