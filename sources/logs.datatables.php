@@ -917,7 +917,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
                 WHERE id = %i',
                 json_decode($record['arguments'], true)['new_user_id']
             );
-            $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+            $sOutput .= '"'.(isset($data_user['name']) === true ? $data_user['name'] : '').' '.(isset($data_user['lastname']) === true ? $data_user['lastname'] : '').'", ';
         } elseif ($record['process_type'] === 'send_email') {
             $sOutput .= '"'.json_decode($record['arguments'], true)['receiver_name'].'", ';
         }

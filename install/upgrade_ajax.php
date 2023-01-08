@@ -486,6 +486,13 @@ if (isset($post_type)) {
                     phpversion() . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
                     '</span><br />';
             }
+            if (!extension_loaded('gmp')) {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+            } else {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+            }
             $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
             $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
             if ($mysqlVersion && $mariadbVersion) {
