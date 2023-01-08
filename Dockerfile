@@ -7,18 +7,18 @@ VOLUME ${VOL}
 
 # Configure nginx-php-fpm image to use this dir.
 ENV WEBROOT ${VOL}
-RUN apk add --no-cache gnu-libiconv libldap
+RUN apk add --no-cache gnu-libiconv libldap gmp
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 
 RUN echo && \
   # Install and configure missing PHP requirements
   /usr/local/bin/docker-php-ext-configure bcmath && \
   /usr/local/bin/docker-php-ext-install bcmath && \
-  apk add --no-cache --virtual .docker-php-ldap-dependancies \
-            openldap-dev && \ 
-  /usr/local/bin/docker-php-ext-configure ldap && \
-  /usr/local/bin/docker-php-ext-install ldap && \
-  apk del .docker-php-ldap-dependancies && \
+  apk add --no-cache --virtual .docker-php-dependencies \
+            openldap-dev gmp-dev && \ 
+  /usr/local/bin/docker-php-ext-configure ldap gmp && \
+  /usr/local/bin/docker-php-ext-install ldap gmp && \
+  apk del .docker-php-dependencies && \
   echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
 echo
 
