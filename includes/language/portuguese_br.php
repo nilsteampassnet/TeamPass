@@ -11,7 +11,7 @@
  * @file      portuguese_br.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -229,7 +229,7 @@ return array(
     'files_not_encrypted' => 'Os arquivos atualmente não estão encriptados. Você deve realizar essa mudança por razões de segurança.',
     'files_already_encrypted' => 'Os arquivos já estão encriptados. Você não deve alterar isso por razões de segurança.',
     'action_to_be_performed' => 'Ação a ser realizada',
-    'last_execution' => 'Última execução',
+    'last_execution' => 'Última execução em',
     'never_performed' => 'Nunca realizada',
     'launch' => 'Executar',
     'set_of_actions' => 'Conjunto de ações',
@@ -439,7 +439,7 @@ return array(
     'start_upload' => 'Iniciar carregamento dos arquivos',
     'error_upload_runtime_not_found' => 'Recurso de upload: Tempo de execução não encontrado',
     'user_profile_api_key' => 'Your API key',
-    'index_change_pw' => 'Altere sua senha',
+    'index_change_pw' => 'Alterar sua senha',
     'admin_2factors_authentication_setting' => 'Ativar autenticação do Google em 2-passos',
     'admin_2factors_authentication_setting_tip' => '<span style="font-size:11px;max-width:300px;">A autenticação de dupla etapa do Google permite adicionar mais um nível de segurança na autenticação do usuário. No momento da autenticação no Teampass será gerado um QR code. Este QR code precisa ser escaneado para o usuário receber a senha dessa sessão.<br />CUIDADO: essa função extra requer conexão de internet e um dispositivo de escaneamento, como um smartphone.</span>',
     'admin_ga_website_name' => 'Nome mostrado no Google Authenticator para o Teampass',
@@ -606,7 +606,7 @@ return array(
     'admin_action_purge_old_files' => 'Excluir arquivos antigos',
     'admin_action_purge_old_files_tip' => 'Isso excluirá todos os arquivos temporários mais velhos que 7 dias.',
     'admin_action_reload_cache_table' => 'Recarregar cache da tabela',
-    'admin_action_reload_cache_table_tip' => 'Isso permite recarregar o conteúdo completo da tabela Cache. Pode ser útil realizar isso algumas vezes.',
+    'admin_action_reload_cache_table_tip' => 'Recria o cache de itens. Pode corrigir problemas ao exibir ou salvar itens de senha.',
     'admin_help' => 'Ajuda',
     'admin_ldap_configuration' => 'Configuração LDAP',
     'admin_main' => 'Informações',
@@ -703,7 +703,7 @@ return array(
     'import_keepass_to_folder' => 'Selecione a pasta de destino',
     'index_add_one_hour' => 'Extender sessão por 1 hora',
     'index_change_pw_confirmation' => 'Confirmar',
-    'index_expiration_in' => 'A sessão expira em',
+    'index_expiration_in' => 'Tempo de expiração da sessão',
     'index_get_identified' => 'Por favor, identifique-se',
     'index_last_pw_change' => 'Senha alterada em',
     'index_last_seen' => 'Última conexão em',
@@ -1026,8 +1026,9 @@ return array(
     'task_frequency' => 'Frequência (em minutos)',
     'tasks_information' => 'A tarefa depende de um trabalho cron dedicado. Para isso, é necessário adicionar uma nova entrada ao seu crontab para executar o agendador do TeamPass a cada minuto.<br>A entrada a seguir deve ser adicionada:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Nota: por favor, adapte o caminho para o executável do PHP (na maioria dos casos, ele pode ser substituído por <code>php</code>).',
     'bad_duo_mfa' => 'Código DUO inválido',
-    'creation_date' => 'Creation date',
-    'never' => 'Never',
-    'loading_main_page' => 'Please wait, loading main page ...',
+    'creation_date' => 'Data de criação',
+    'never' => 'Nunca',
+    'loading_main_page' => 'Por favor, aguarde. Carregando página inicial ...',
+    'alert_session_not_consistent' => 'A sessão atual não é consistente e precisa ser atualizada. A página será recarregada.',
 
 );

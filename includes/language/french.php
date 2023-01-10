@@ -11,12 +11,13 @@
  * @file      french.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
  */
 return array(
+    'alert_session_not_consistent' => 'La session courante est corrompue et doit être rafraichie. La page va être rechargée.',
     'loading_main_page' => 'Veuillez patienter, chargement de la page principale...',
     'jamais' => 'Jamais',
     'creation_date' => 'Date de création',
@@ -1071,7 +1072,7 @@ return array(
     'more_information' => 'Plus d&apos;information',
     'feature_request_canal' => 'Pour toute Question ou Demande, merci d&apos;utiliser',
     'bug_canal' => 'Pour tout Bug, merci d&apos;utiliser',
-    'documentation_canal' => 'La documentation est disponible sur',
+    'documentation_canal' => 'Documentation',
     'sending_anonymous_statistics_details' => 'Des statistiques relatives à l&apos;utilisation de Teampass sont nécessaires pour connaitre les contexts d&apos;utilisation de l&apos;outil par le développeur. Elles permettent d&apos;évaluer comment Teampass est utilisé et par conséquent orienter l&apos;implémentation des nouvelles fonctionnalités. Les données envoyées sont uniquement utilisées en interne and ne seront absolument pas distribuées ou vendues à un tiers.',
     'item_has_change_proposal' => 'Une proposition d&apos;évolution est disponible pour cet objet',
     'check_data_after_reencryption' => 'Merci d&apos;effectuer une vérification de vos données. Une table de sauvegarde <b>Backup</b> a été créée durant l&apos;opération de ré-encryptage.',

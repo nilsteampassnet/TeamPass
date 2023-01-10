@@ -14,7 +14,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -36,22 +36,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 // Load library
 require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-
-/*
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
-*/
 
 // Create a new scheduler
 $assert = new SplClassLoader('Webmozart\Assert', $SETTINGS['cpassman_dir'] . '/includes/libraries');

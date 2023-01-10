@@ -11,7 +11,7 @@
  * @file      install.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -209,6 +209,7 @@ define('MIN_PHP_VERSION', 7.4);
 					<li>PHP extension "xml" is loaded&nbsp;<span id="res2_check11"></span></li>
 					<li>PHP extension "gd" is loaded&nbsp;<span id="res2_check12"></span></li>
 					<li>PHP extension "curl" is loaded&nbsp;<span id="res2_check13"></span></li>
+					<li>PHP extension "gmp" is loaded&nbsp;<span id="res2_check16"></span></li>
 					<li>PHP version is greater or equal to '.MIN_PHP_VERSION.'&nbsp;<span id="res2_check14"></span></li>
 					<li>Execution time limit&nbsp;<span id="res2_check15"></span></li>
 					</ul>

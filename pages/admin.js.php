@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -128,7 +128,7 @@ declare(strict_types=1);
         var field = $(this).attr('id'),
             value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val().map(Number));
 
-        if (field === '') return false;
+        if (field === '' || field === undefined) return false;
         
         // prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {

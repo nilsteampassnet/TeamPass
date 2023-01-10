@@ -14,7 +14,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -80,9 +80,10 @@ if (DB::count() > 0) {
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes') . '
-        WHERE is_in_progress = %i AND finished_at = ""
+        WHERE is_in_progress = %i AND finished_at = "" AND process_type = %s
         ORDER BY increment_id ASC',
-        0
+        0,
+        'create_user_keys'
     );
     //print_r($process_to_perform);
     if (DB::count() > 0) {
@@ -103,7 +104,7 @@ if (DB::count() > 0) {
 function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
-    DB::debugmode(true);
+    //DB::debugmode(false);
     $task_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes_tasks') . '
@@ -111,7 +112,11 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
         ORDER BY increment_id ASC',
         $processId
     );
-
+/*
+    print_r($ProcessArguments);
+    echo " ;; ".cryption($ProcessArguments['new_user_pwd'], '','decrypt', $SETTINGS)['string']." ;; ".cryption($ProcessArguments['new_user_code'], '','decrypt', $SETTINGS)['string']." ;; ";
+    return false;
+*/
     
     if (DB::count() > 0) {
         // check if a linux process is not currently on going
@@ -378,7 +383,8 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
     // decrypt owner password
     $owner_pwd = cryption($owner_pwd, '','decrypt', $SETTINGS)['string'];
     provideLog('[USER][INFO]', $SETTINGS);
-    // uncrypt private key and send back
+    provideLog('[DEBUG] '.$owner_pwd." -- ", $SETTINGS);
+    // decrypt private key and send back
     return [
         'private_key' => decryptPrivateKey($owner_pwd, $userInfo['private_key']),
     ];
@@ -409,12 +415,13 @@ function cronContinueReEncryptingUserSharekeysStep1(
 {
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
-
+    
     // Loop on items
     $rows = DB::query(
         'SELECT id, pw
         FROM ' . prefixTable('items') . '
         WHERE perso = 0
+        ORDER BY id ASC
         LIMIT ' . $post_start . ', ' . $post_length
     );
     foreach ($rows as $record) {
@@ -923,7 +930,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
             'TEAMPASS - ' . langHdl('temporary_encryption_code'),
             (array) filter_var_array(
                 [
-                    '#code#' => $extra_arguments['new_user_code'],
+                    '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
                     '#login#' => $userInfo['login'],
                     '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
                 ],
@@ -938,7 +945,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
             'TEAMPASS - ' . langHdl('temporary_encryption_code'),
             (array) filter_var_array(
                 [
-                    '#enc_code#' => $extra_arguments['new_user_code'],
+                    '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
                 ],
                 FILTER_SANITIZE_STRING
             ),

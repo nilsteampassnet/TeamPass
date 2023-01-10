@@ -11,7 +11,7 @@
  * @file      german.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -954,7 +954,7 @@ return array(
     'more_information' => 'Mehr Informationen',
     'feature_request_canal' => 'Für Funktionsanfragen verwenden Sie bitte',
     'bug_canal' => 'Für Fehler verwenden Sie bitte',
-    'documentation_canal' => 'Komplette Dokumentation unter',
+    'documentation_canal' => 'Dokumentation',
     'sending_anonymous_statistics_details' => 'Statistiken werden benötigt, um Teampass zu verbessern, indem wir die Benutzerverteilung und die Nutzung kennen. Die Daten, die Sie zur Verfügung stellen, werden nur intern verwendet und werden sicher nicht an Dritte weitergegeben oder verkauft.',
     'item_has_change_proposal' => 'Dieses Element hat einen Änderungsvorschlag',
     'check_data_after_reencryption' => 'Bitte überprüfen Sie die Daten. Zur Rückgängigmachung wurde eine neue Tabelle <b>Backup</ b> erstellt.',
@@ -1029,5 +1029,6 @@ return array(
     'creation_date' => 'Creation date',
     'never' => 'Never',
     'loading_main_page' => 'Please wait, loading main page ...',
+    'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
 
 );

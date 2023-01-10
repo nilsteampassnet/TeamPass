@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -71,7 +71,7 @@ function langHdl(string $string): string
             which makes jquery unhappy on the UI, especially on the log page)
             and improve performance by avoiding to include the file for every missing strings.
         */
-        if (isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
+        if (isset($_SESSION['teampass']) === false || isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
             $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
             $session_language = isset($_SESSION['teampass']['en_lang'][trim($string)]) === false ? '' : $_SESSION['teampass']['en_lang'][trim($string)];
         } else {
@@ -1328,7 +1328,8 @@ function sendEmail(
     $email,
     $SETTINGS,
     $textMailAlt = null,
-    $silent = true
+    $silent = true,
+    $cron = false
 ) {
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
@@ -1347,7 +1348,8 @@ function sendEmail(
         $email,
         $SETTINGS,
         $textMailAlt = null,
-        $silent = true
+        $silent = true,
+        $cron
     );
 
     if ($silent === false) {
@@ -1359,11 +1361,11 @@ function sendEmail(
         );
     }
     // Debug purpose
-    if ((int) $SETTINGS['email_debug_level'] !== 0) {
+    if ((int) $SETTINGS['email_debug_level'] !== 0 && $cron === false) {
         return json_encode(
             [
                 'error' => true,
-                'message' => $email['ErrorInfo'],
+                'message' => isset($email['ErrorInfo']) === true ? $email['ErrorInfo'] : '',
             ]
         );
     }
@@ -1382,11 +1384,12 @@ function buildEmail(
     $email,
     $SETTINGS,
     $textMailAlt = null,
-    $silent = true
+    $silent = true,
+    $cron = false
 )
 {
     // Load settings
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -1401,7 +1404,7 @@ function buildEmail(
 
     // send to user
     $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
-    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true ? $SETTINGS['email_debug_level'] : 0;
+    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false && $silent === false ? $SETTINGS['email_debug_level'] : 0;
     $mail->Port = (int) $SETTINGS['email_port'];
     //COULD BE USED
     $mail->CharSet = 'utf-8';
@@ -1449,7 +1452,7 @@ function buildEmail(
             return json_encode(
                 [
                     'error' => true,
-                    'message' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+                    'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
                 ]
             );
         }
@@ -1459,7 +1462,8 @@ function buildEmail(
 
     return json_encode(
         [
-            'ErrorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+            'error' => true,
+            'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
         ]
     );
 }
@@ -1629,6 +1633,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
         );
     }
     if ($type === 'decode' && is_array($data) === false) {
+        // check if key exists
         return json_decode(
             (string) Encryption\CryptoJs\Encryption::decrypt(
                 (string) $data,

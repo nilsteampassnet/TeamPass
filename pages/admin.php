@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -140,7 +140,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-info-circle mr-2"></i>
-                            <?php echo langHdl('changelog'); ?>
+                            <?php echo langHdl('information'); ?>
                         </h3>
                     </div>
                     <!-- /.card-header -->

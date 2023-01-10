@@ -26,7 +26,7 @@ define('TP_IMAGE_FILE_EXT', array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp'));
 define('TP_OFFICE_FILE_EXT', array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx'));
 define('TP_ADMIN_FULL_RIGHT', false);
 define('TP_ADMIN_NO_INFO', false);
-define('TP_COPYRIGHT', '2009 - '.date('Y'));
+define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 100);
@@ -50,12 +50,14 @@ define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
 
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
+define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
+define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
 
 // Fontawesome icons
-define('FONTAWESOME_URL', 'https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free');
+define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');
 
 // Duo
 define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');

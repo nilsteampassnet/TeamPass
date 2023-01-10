@@ -14,7 +14,7 @@ declare(strict_types=1);
  * @file      tree.php
  *
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @see       https://www.teampass.net
@@ -498,6 +498,73 @@ function handleNode(
         $inputData['personalFolders']
     );
 
+    // Prepare JSON 
+    $tmpRetArray = prepareNodeJson(
+        $currentNode,
+        $nodeData,
+        $inputData,
+        $ret_json,
+        $last_visible_parent,
+        $last_visible_parent_level,
+        $nodeId,
+        $text,
+        $nodeDirectDescendants,
+        $SETTINGS
+    );    
+    $last_visible_parent = $tmpRetArray['last_visible_parent'];
+    $last_visible_parent_level = $tmpRetArray['last_visible_parent_level'];
+    $ret_json = $tmpRetArray['ret_json'];
+
+    // ensure we get the children of the folder
+    if (isset($currentNode->children) === false) {
+        $currentNode->children = $tree->getDescendants($nodeId, false, true, true);
+    }
+    if ($inputData['userTreeLoadStrategy'] === 'full' && isset($currentNode->children) === true) {
+        foreach ($currentNode->children as $child) {
+            recursiveTree(
+                (int) $child,
+                $tree->getNode($child),// get node info for this child
+                /** @scrutinizer ignore-type */ $tree,
+                $listFoldersLimitedKeys,
+                $listRestrictedFoldersForItemsKeys,
+                $last_visible_parent,
+                $last_visible_parent_level,
+                $SETTINGS,
+                $inputData,
+                $ret_json
+            );
+        }
+    }
+}
+
+/**
+ * Permits to prepare the node data
+ *
+ * @param stdClass $currentNode
+ * @param array $nodeData
+ * @param array $inputData
+ * @param array $ret_json
+ * @param integer $last_visible_parent
+ * @param integer $last_visible_parent_level
+ * @param integer $nodeId
+ * @param string $text
+ * @param array $nodeDirectDescendants
+ * @param array $SETTINGS
+ * @return array
+ */
+function prepareNodeJson(
+    stdClass $currentNode,
+    array $nodeData,
+    array $inputData,
+    array &$ret_json,
+    int &$last_visible_parent,
+    int &$last_visible_parent_level,
+    int $nodeId,
+    string $text,
+    array $nodeDirectDescendants,
+    array $SETTINGS
+): array
+{
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
 
@@ -554,26 +621,11 @@ function handleNode(
         );
     }
 
-    // ensure we get the children of the folder
-    if (isset($currentNode->children) === false) {
-        $currentNode->children = $tree->getDescendants($nodeId, false, true, true);
-    }
-    if ($inputData['userTreeLoadStrategy'] === 'full' && isset($currentNode->children) === true) {
-        foreach ($currentNode->children as $child) {
-            recursiveTree(
-                (int) $child,
-                $tree->getNode($child),// get node info for this child
-                /** @scrutinizer ignore-type */ $tree,
-                $listFoldersLimitedKeys,
-                $listRestrictedFoldersForItemsKeys,
-                $last_visible_parent,
-                $last_visible_parent_level,
-                $SETTINGS,
-                $inputData,
-                $ret_json
-            );
-        }
-    }
+    return [
+        'last_visible_parent' => (int) $last_visible_parent,
+        'last_visible_parent_level' => (int) $last_visible_parent_level,
+        'ret_json' => $ret_json
+    ];
 }
 
 /**

@@ -17,7 +17,7 @@ declare(strict_types=1);
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -214,7 +214,7 @@ if (
                 }
 
                 // Save user location
-                console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
+                //console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
                 if (store.get('teampassUser').location_stored !== 1) {
                 // Save user location
                     $.post(
@@ -1271,11 +1271,30 @@ if (
                 key: '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                try {
+                    data = prepareExchangedData(
+                        data,
+                        "decode",
+                        "<?php echo $_SESSION['key']; ?>"
+                    );
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('server_answer_error'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true,
+                            positionClass: "toast-top-right"
+                        }
+                    );
+                    return false;
+                }
                 if (debugJavascript === true) {
                     console.log('Loading settings result:');
                     console.log(data);
                 }
+
                 // Test if JSON object
                 if (typeof data === 'object') {
                     // Store settings in localstorage

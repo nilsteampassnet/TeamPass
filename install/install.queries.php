@@ -11,7 +11,7 @@
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -419,6 +419,12 @@ if (null !== $post_type) {
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
                         );
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_items`
+                                ADD KEY `object_id` (`object_id`),
+                                ADD KEY `user_id` (`user_id`);'
+                        );
                     } elseif ($task === 'sharekeys_logs') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -429,6 +435,12 @@ if (null !== $post_type) {
 								`share_key` text NOT NULL,
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
+                        );
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_logs`
+                                ADD KEY `object_id` (`object_id`),
+                                ADD KEY `user_id` (`user_id`);'
                         );
                     } elseif ($task === 'sharekeys_fields') {
                         $mysqli_result = mysqli_query(

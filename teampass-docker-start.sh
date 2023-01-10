@@ -16,7 +16,12 @@ then
 		git checkout $GIT_TAG -f
 	fi
 	mkdir ${VOL}/sk
+	mkdir ${VOL}/includes/libraries/csrfp/log
 	chown -Rf nginx:nginx ${VOL}
+	
+        
+
+
 fi
 
 if [ -f ${VOL}/includes/config/settings.php ] ;

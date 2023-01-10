@@ -14,7 +14,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -25,6 +25,7 @@
 require_once __DIR__.'/../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
+$_SESSION['CPM'] = 1;
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
@@ -38,6 +39,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -55,7 +57,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // Manage emails to send in queue.
 // Only manage 10 emails at time
-
+DB::debugmode(false);
 $rows = DB::query(
     'SELECT *
     FROM ' . prefixTable('processes') . '
@@ -73,7 +75,10 @@ foreach ($rows as $record) {
         $email['subject'],
         $email['body'],
         $email['receivers'],
-        $SETTINGS
+        $SETTINGS,
+        null,
+        true,
+        true
     );
 
     // update DB
@@ -99,3 +104,61 @@ if (isset($SETTINGS['send_stats']) === true && (int) $SETTINGS['send_stats'] ===
 sendEmailsNotSent(
     $SETTINGS
 );
+
+
+function sendEmailsNotSent(
+    array $SETTINGS
+)
+{
+    if ((int) $SETTINGS['enable_send_email_on_user_login'] === 1) {
+        $row = DB::queryFirstRow(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+            'cron',
+            'sending_emails'
+        );
+
+        if ((int) (time() - $row['valeur']) >= 300 || (int) $row['valeur'] === 0) {
+            $rows = DB::query(
+                'SELECT *
+                FROM ' . prefixTable('emails') .
+                ' WHERE status != %s',
+                'sent'
+            );
+            foreach ($rows as $record) {
+                // Send email
+                json_decode(
+                    sendEmail(
+                        $record['subject'],
+                        $record['body'],
+                        $record['receivers'],
+                        $SETTINGS,
+                        null,
+                        true,
+                        true
+                    ),
+                    true
+                );
+
+                // update item_id in files table
+                DB::update(
+                    prefixTable('emails'),
+                    array(
+                        'status' => 'sent',
+                    ),
+                    'increment_id = %i',
+                    $record['increment_id']
+                );
+            }
+        }
+        // update cron time
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => time(),
+            ),
+            'intitule = %s AND type = %s',
+            'sending_emails',
+            'cron'
+        );
+    }
+}

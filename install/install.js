@@ -10,7 +10,7 @@
  * @file      install.js
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -75,7 +75,7 @@ function checkPage()
         } else {
             jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
             dataToUse = JSON.stringify(jsonValues);
-            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time"];
+            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp"];
             multiple = true;
             $("#hid_absolute_path").val($("#absolute_path").val());
             $("#hid_url_path").val($("#url_path").val());

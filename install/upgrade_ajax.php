@@ -11,7 +11,7 @@
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2022 Teampass.net
+ * @copyright 2009-2023 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -485,6 +485,13 @@ if (isset($post_type)) {
                 $txt .= '<span>PHP version ' .
                     phpversion() . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
                     '</span><br />';
+            }
+            if (!extension_loaded('gmp')) {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+            } else {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
             }
             $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
             $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
