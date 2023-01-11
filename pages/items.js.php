@@ -850,16 +850,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             //
             // > END <
             //
-        } else if ($(this).data('item-action') === 'link') {
-            
-
-            
-
-
-
-            //
-            // > END <
-            //
         } else if ($(this).data('item-action') === 'otv') {
             if (debugJavascript === true) console.info('SHOW OTV ITEM');
             toastr.remove();
@@ -4580,39 +4570,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Waiting
                 $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
 
-                // Delete existing clipboard
-                if (clipboardForLink) {
-                    clipboardForLink.destroy();
-                }
-
-                // Prepare clipboard for clipboardForLink
-                clipboardForLink = new ClipboardJS('.get-link', {
-                    text: function(trigger) {console.log('ocuou');
-                        return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
-                    }
-                });
-                clipboardForLink.on('success', function(e) {     
-                    if (debugJavascript === true) console.info('GENERATE LINK TO ITEM');           
-                    // Warn user about clipboard clear
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo langHdl('copy_to_clipboard'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            positionClass: 'toast-top-right',
-                            progressBar: true
-                        }
-                    );
-                    console.log("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
-
-                    e.clearSelection();
-                });
-
-                // Manage clipboard button
-                if (itemClipboard) itemClipboard.destroy();
-                    itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
+                // Manage clipboard for link
+                if (clipboardForLink) clipboardForLink.destroy();
+                clipboardForLink = new ClipboardJS(
+                    '#get_item_link',
+                    {
                         text: function(e) {
-                            return ($($(e).data('clipboard-target')).val());
+                            return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
                         }
                     })
                     .on('success', function(e) {
@@ -4627,6 +4591,26 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         );
                         e.clearSelection();
                     });
+
+                // Manage clipboard button
+                if (itemClipboard) itemClipboard.destroy();
+                itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
+                    text: function(e) {
+                        return ($($(e).data('clipboard-target')).val());
+                    }
+                })
+                .on('success', function(e) {
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('copy_to_clipboard'); ?>',
+                        '', {
+                            timeOut: 2000,
+                            progressBar: true,
+                            positionClass: 'toast-top-right'
+                        }
+                    );
+                    e.clearSelection();
+                });
 
                 // Prepare clipboard - COPY LOGIN
                 if (data.login !== '') {
