@@ -1030,5 +1030,6 @@ return array(
     'never' => 'Jamais',
     'loading_main_page' => 'Merci de patienter, la page se charge ...',
     'alert_session_not_consistent' => 'La session courante est corrompue et doit être rafraichie. La page va être rechargée.',
+    'link' => 'Lien',
 
 );

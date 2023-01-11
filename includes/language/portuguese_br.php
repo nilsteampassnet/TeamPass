@@ -1030,5 +1030,6 @@ return array(
     'never' => 'Nunca',
     'loading_main_page' => 'Por favor, aguarde. Carregando página inicial ...',
     'alert_session_not_consistent' => 'A sessão atual não é consistente e precisa ser atualizada. A página será recarregada.',
+    'link' => 'Link',
 
 );
