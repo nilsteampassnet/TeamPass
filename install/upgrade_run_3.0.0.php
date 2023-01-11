@@ -1633,7 +1633,7 @@ mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modificat
 //--->BEGIN 3.0.0.22
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'cache_tree MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
+    'ALTER TABLE `' . $pre . 'cache_tree` MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
 );
 
 // Remove indexes

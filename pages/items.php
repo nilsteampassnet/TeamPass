@@ -549,6 +549,11 @@ foreach ($rows as $reccord) {
                                 <li class="nav-item">
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="far fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
                                 </li>
+                                <!--
+                                <li class="nav-item">
+                                    <a class="text-navy tp-action get-link ml-3" href="#" data-item-action="link"><i class="fa-solid fa-link mr-1"></i><small><?php echo langHdl('link'); ?></small></a>
+                                </li>
+                                    -->
                                 <li class="nav-item">
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
                                 </li>

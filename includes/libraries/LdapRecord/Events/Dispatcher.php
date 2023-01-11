@@ -46,7 +46,7 @@ class Dispatcher implements DispatcherInterface
     public function listen($events, $listener)
     {
         foreach ((array) $events as $event) {
-            if (strpos($event, '*') !== false) {
+            if (str_contains((string) $event, '*')) {
                 $this->setupWildcardListen($event, $listener);
             } else {
                 $this->listeners[$event][] = $this->makeListener($listener);
@@ -315,7 +315,7 @@ class Dispatcher implements DispatcherInterface
      */
     protected function parseListenerCallback($listener)
     {
-        return strpos($listener, '@') !== false
+        return str_contains((string) $listener, '@')
             ? explode('@', $listener, 2)
             : [$listener, 'handle'];
     }
@@ -325,7 +325,7 @@ class Dispatcher implements DispatcherInterface
      */
     public function forget($event)
     {
-        if (strpos($event, '*') !== false) {
+        if (str_contains((string) $event, '*')) {
             unset($this->wildcards[$event]);
         } else {
             unset($this->listeners[$event]);

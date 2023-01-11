@@ -2480,12 +2480,27 @@ if (null !== $post_type) {
                 'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
             );
 
+            /*
+            $connection->query()
+                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                ->whereHas($SETTINGS['ldap_user_attribute'])
+                ->listing()
+                ->chunk(10, function ($users, $SETTINGS) {
             $users = $connection->query()
                 ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->get();
             
             foreach($users as $i => $adUser) {
+                */
+            $users = $connection->query()
+                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                ->whereHas($SETTINGS['ldap_user_attribute'])
+                ->get();
+
+            foreach($users as $i => $adUser) {
+                //$adUser = json_decode(json_encode($adUser), true);
+                //print_r(($adUser) ); echo " <br> ";
                 if (isset($adUser[$SETTINGS['ldap_user_attribute']]) === false) continue;
                 
                 // Build the list of all groups in AD

@@ -2,6 +2,7 @@
 
 namespace LdapRecord\Models\Concerns;
 
+/** @mixin \LdapRecord\Models\Model */
 trait CanAuthenticate
 {
     /**
@@ -17,7 +18,7 @@ trait CanAuthenticate
     /**
      * Get the unique identifier for the user.
      *
-     * @return mixed
+     * @return string
      */
     public function getAuthIdentifier()
     {

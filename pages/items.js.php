@@ -61,6 +61,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     var requestRunning = false,
         clipboardForLogin,
         clipboardForPassword,
+        clipboardForLink,
         query_in_progress = 0,
         screenHeight = $(window).height(),
         quick_icon_query_status = true,
@@ -83,7 +84,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         'init',
         'teampassApplication', {
             lastItemSeen: false,
-            selectedFolder: false,
             itemsListStop: '',
             itemsListStart: '',
             selectedFolder: '',
@@ -103,7 +103,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             hasAccessLevel: '',
             hasCustomCategories: '',
             id: '',
-            timestamp: ''
+            timestamp: '',
+            folderId: ''
         }
     );
 
@@ -186,6 +187,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 teampassApplication.userCanEdit = selectedFolder.original.can_edit
             }
         )
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.folderId = selectedFolderId
+            }
+        );
 
         // Prepare list of items
         if (startedItemsListQuery === false) {
@@ -240,6 +247,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         store.set(
             'teampassApplication', {
                 selectedFolder: parseInt(queryDict['group']),
+                selectedItem: parseInt(queryDict['id'])
+            }
+        );
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.folderId = parseInt(queryDict['group'])
             }
         );
 
@@ -832,6 +846,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Show notify form
             $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
             $('.form-item-notify, .item-details-card-menu').removeClass('hidden');
+
+            //
+            // > END <
+            //
+        } else if ($(this).data('item-action') === 'link') {
+            
+
+            
+
+
 
             //
             // > END <
@@ -4555,6 +4579,34 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Waiting
                 $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
+
+                // Delete existing clipboard
+                if (clipboardForLink) {
+                    clipboardForLink.destroy();
+                }
+
+                // Prepare clipboard for clipboardForLink
+                clipboardForLink = new ClipboardJS('.get-link', {
+                    text: function(trigger) {console.log('ocuou');
+                        return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+                    }
+                });
+                clipboardForLink.on('success', function(e) {     
+                    if (debugJavascript === true) console.info('GENERATE LINK TO ITEM');           
+                    // Warn user about clipboard clear
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('copy_to_clipboard'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            positionClass: 'toast-top-right',
+                            progressBar: true
+                        }
+                    );
+                    console.log("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+
+                    e.clearSelection();
+                });
 
                 // Manage clipboard button
                 if (itemClipboard) itemClipboard.destroy();

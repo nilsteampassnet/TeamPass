@@ -10,6 +10,18 @@ use LdapRecord\Support\Arr;
 class Collection extends QueryCollection
 {
     /**
+     * Get a collection of the model's distinguished names.
+     *
+     * @return static
+     */
+    public function modelDns()
+    {
+        return $this->map(function (Model $model) {
+            return $model->getDn();
+        });
+    }
+
+    /**
      * Determine if the collection contains all of the given models, or any models.
      *
      * @param mixed $models

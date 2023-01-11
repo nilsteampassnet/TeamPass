@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use LdapRecord\Models\ActiveDirectory\Concerns\HasPrimaryGroup;
 use LdapRecord\Models\ActiveDirectory\Scopes\RejectComputerObjectClass;
+use LdapRecord\Models\Attributes\AccountControl;
 use LdapRecord\Models\Concerns\CanAuthenticate;
 use LdapRecord\Models\Concerns\HasPassword;
 use LdapRecord\Query\Model\Builder;
@@ -69,6 +70,38 @@ class User extends Entry implements Authenticatable
         // of the ActiveDirectory 'user' object classes. Without
         // this scope, they would be included in results.
         static::addGlobalScope(new RejectComputerObjectClass());
+    }
+
+    /**
+     * Determine if the user's account is enabled.
+     *
+     * @return bool
+     */
+    public function isEnabled()
+    {
+        return ! $this->isDisabled();
+    }
+
+    /**
+     * Determine if the user's account is disabled.
+     *
+     * @return bool
+     */
+    public function isDisabled()
+    {
+        return $this->accountControl()->has(AccountControl::ACCOUNTDISABLE);
+    }
+
+    /**
+     * Get the user's account control.
+     *
+     * @return AccountControl
+     */
+    public function accountControl()
+    {
+        return new AccountControl(
+            $this->getFirstAttribute('userAccountControl')
+        );
     }
 
     /**

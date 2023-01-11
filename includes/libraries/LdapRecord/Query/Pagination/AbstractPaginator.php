@@ -71,11 +71,23 @@ abstract class AbstractPaginator
             $this->updateServerControls($ldap, $resource);
 
             $pages[] = $this->query->parse($resource);
-        } while (! empty($this->fetchCookie()));
+        } while ($this->shouldContinue());
 
         $this->resetServerControls($ldap);
 
         return $pages;
+    }
+
+    /**
+     * Whether the paginater should continue iterating.
+     *
+     * @return bool
+     */
+    protected function shouldContinue()
+    {
+        $cookie = (string) $this->fetchCookie();
+
+        return $cookie !== '';
     }
 
     /**

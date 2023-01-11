@@ -6,6 +6,7 @@ use LdapRecord\ConnectionException;
 use LdapRecord\LdapRecordException;
 use LdapRecord\Models\Attributes\Password;
 
+/** @mixin \LdapRecord\Models\Model */
 trait HasPassword
 {
     /**
@@ -143,10 +144,14 @@ trait HasPassword
      */
     protected function setPassword($password, $attribute)
     {
+        $modtype = $this->exists
+            ? LDAP_MODIFY_BATCH_REPLACE
+            : LDAP_MODIFY_BATCH_ADD;
+
         $this->addModification(
             $this->newBatchModification(
                 $attribute,
-                LDAP_MODIFY_BATCH_REPLACE,
+                $modtype,
                 [$password]
             )
         );

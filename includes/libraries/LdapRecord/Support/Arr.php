@@ -122,7 +122,7 @@ class Arr
             return $array[$key];
         }
 
-        if (strpos($key, '.') === false) {
+        if (str_contains($key, '.')) {
             return $array[$key] ?? Helpers::value($default);
         }
 

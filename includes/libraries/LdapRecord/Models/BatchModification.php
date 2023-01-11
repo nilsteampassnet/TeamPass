@@ -11,9 +11,9 @@ class BatchModification
     /**
      * The array keys to be used in batch modifications.
      */
-    const KEY_ATTRIB = 'attrib';
-    const KEY_MODTYPE = 'modtype';
-    const KEY_VALUES = 'values';
+    public const KEY_ATTRIB = 'attrib';
+    public const KEY_MODTYPE = 'modtype';
+    public const KEY_VALUES = 'values';
 
     /**
      * The attribute of the modification.
@@ -207,7 +207,7 @@ class BatchModification
             case empty($this->original) && ! empty($this->values):
                 return $this->setType(LDAP_MODIFY_BATCH_ADD);
             default:
-               return $this->determineBatchTypeFromOriginal();
+                return $this->determineBatchTypeFromOriginal();
         }
     }
 

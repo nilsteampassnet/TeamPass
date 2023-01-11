@@ -63,7 +63,7 @@ trait DetectsErrors
     protected function errorContainsMessage($error, $messages = [])
     {
         foreach ((array) $messages as $message) {
-            if (strpos($error, $message) !== false) {
+            if (str_contains((string) $error, $message)) {
                 return true;
             }
         }

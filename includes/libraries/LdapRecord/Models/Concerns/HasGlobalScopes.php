@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use LdapRecord\Models\Scope;
 
+/** @mixin \LdapRecord\Models\Model */
 trait HasGlobalScopes
 {
     /**
