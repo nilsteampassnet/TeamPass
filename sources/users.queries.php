@@ -2478,7 +2478,7 @@ if (null !== $post_type) {
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->chunk(
                     10000,
-                    function ($users) use (&$output) {
+                    function ($users, $SETTINGS) use (&$output) {
                         include __DIR__ . '/../includes/config/tp.config.php';
                         $adUsersToSync = array();
                         $adRoles = array();

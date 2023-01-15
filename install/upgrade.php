@@ -235,7 +235,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <span>Directory "/upload/" is writable</span><br />
                             <span>PHP extension "openssl" is loaded</span><br />
                             <span>PHP extension "gd" is loaded</span><br />
+                            <span>PHP extension "mbstring" is loaded</span><br />
+                            <span>PHP extension "bcmath" is loaded</span><br />
+                            <span>PHP extension "iconv" is loaded</span><br />
+                            <span>PHP extension "xml" is loaded</span><br />
                             <span>PHP extension "curl" is loaded</span><br />
+                            <span>PHP extension "gmp" is loaded</span><br />
+                            <span>PHP extension "mcrypt" is loaded</span><br />
                             <span>PHP version is greater or equal to '.MIN_PHP_VERSION.'</span><br />
                             <span>SQL version is greater or equal to MySQL '.MIN_MYSQL_VERSION.' or MariaDB '.MIN_MARIADB_VERSION.'</span><br />
                             </div>
