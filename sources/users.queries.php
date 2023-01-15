@@ -2471,91 +2471,88 @@ if (null !== $post_type) {
                 break;
             }
 
-            $adRoles = array();
-            $adUsersToSync = array();
-            $teampassRoles = array();
-            $usersAlreadyInTeampass = array();
-            $adUsedAttributes = array(
-                'dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'],
-                'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
-            );
-
-            /*
-            $connection->query()
+            $output = [];
+            $ldapUserAttribute = $SETTINGS['ldap_user_attribute'];
+            $query = $connection->query()
                 ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
-                ->listing()
-                ->chunk(10, function ($users, $SETTINGS) {
-            $users = $connection->query()
-                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
-                ->whereHas($SETTINGS['ldap_user_attribute'])
-                ->get();
-            
-            foreach($users as $i => $adUser) {
-                */
-            $users = $connection->query()
-                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
-                ->whereHas($SETTINGS['ldap_user_attribute'])
-                ->get();
-
-            foreach($users as $i => $adUser) {
-                //$adUser = json_decode(json_encode($adUser), true);
-                //print_r(($adUser) ); echo " <br> ";
-                if (isset($adUser[$SETTINGS['ldap_user_attribute']]) === false) continue;
-                
-                // Build the list of all groups in AD
-                if (isset($adUser['memberof']) === true) {
-                    foreach($adUser['memberof'] as $j => $adUserGroup) {
-                        if (empty($adUserGroup) === false && $j !== "count") {
-                            $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
-                            if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
-                                array_push($adRoles, $adGroup);
-                            }
-                        }
-                    }
-                }
-
-                // Is user in Teampass ?
-                $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
-                if (null !== $userLogin) {
-                    // Get his ID
-                    $userInfo = DB::queryfirstrow(
-                        'SELECT id, login, fonction_id, auth_type
-                        FROM ' . prefixTable('users') . '
-                        WHERE login = %s',
-                        $userLogin
-                    );
-                    // Loop on all user attributes
-                    $tmp = [
-                        'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
-                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
-                    ];
-                    foreach ($adUsedAttributes as $userAttribute) {
-                        if (isset($adUser[$userAttribute]) === true) {
-                            if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
-                                // Loop on all entries
-                                $tmpAttrValue = '';
-                                foreach ($adUser[$userAttribute] as $userAttributeEntry) {
-                                    if ($userAttribute === 'memberof') {
-                                        $userAttributeEntry = substr($userAttributeEntry, 3, strpos($userAttributeEntry, ',') - 3);
-                                    }
-                                    if (empty($tmpAttrValue) === true) {
-                                        $tmpAttrValue = $userAttributeEntry;
-                                    } else {
-                                        $tmpAttrValue .= ','.$userAttributeEntry;
+                ->chunk(
+                    10000,
+                    function ($users) use (&$output) {
+                        include __DIR__ . '/../includes/config/tp.config.php';
+                        $adUsersToSync = array();
+                        $adRoles = array();
+                        $usersAlreadyInTeampass = array();
+                        $adUsedAttributes = array(
+                            'dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'],
+                            'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
+                        );
+                        
+                        foreach($users as $i => $adUser) {
+                            if (isset($adUser[$SETTINGS['ldap_user_attribute']][0]) === false) continue;
+                            // Build the list of all groups in AD
+                            if (isset($adUser['memberof']) === true) {
+                                foreach($adUser['memberof'] as $j => $adUserGroup) {
+                                    if (empty($adUserGroup) === false && $j !== "count") {
+                                        $adGroup = substr($adUserGroup, 3, strpos($adUserGroup, ',') - 3);
+                                        if (in_array($adGroup, $adRoles) === false && empty($adGroup) === false) {
+                                            array_push($adRoles, $adGroup);
+                                        }
                                     }
                                 }
-                                $tmp[$userAttribute] = $tmpAttrValue;
-                            } else {
-                                $tmp[$userAttribute] = $adUser[$userAttribute];
+                            }
+
+                            // Is user in Teampass ?
+                            $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
+                            if (null !== $userLogin) {
+                                // Get his ID
+                                $userInfo = DB::queryfirstrow(
+                                    'SELECT id, login, fonction_id, auth_type
+                                    FROM ' . prefixTable('users') . '
+                                    WHERE login = %s',
+                                    $userLogin
+                                );
+                                // Loop on all user attributes
+                                $tmp = [
+                                    'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
+                                    'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
+                                ];
+                                foreach ($adUsedAttributes as $userAttribute) {
+                                    if (isset($adUser[$userAttribute]) === true) {
+                                        if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
+                                            // Loop on all entries
+                                            $tmpAttrValue = '';
+                                            foreach ($adUser[$userAttribute] as $userAttributeEntry) {
+                                                if ($userAttribute === 'memberof') {
+                                                    $userAttributeEntry = substr($userAttributeEntry, 3, strpos($userAttributeEntry, ',') - 3);
+                                                }
+                                                if (empty($tmpAttrValue) === true) {
+                                                    $tmpAttrValue = $userAttributeEntry;
+                                                } else {
+                                                    $tmpAttrValue .= ','.$userAttributeEntry;
+                                                }
+                                            }
+                                            $tmp[$userAttribute] = $tmpAttrValue;
+                                        } else {
+                                            $tmp[$userAttribute] = $adUser[$userAttribute];
+                                        }
+                                    }
+                                }
+                                //print_r($tmp);
+                                array_push($adUsersToSync, $tmp);
                             }
                         }
+                        
+                        $output = [
+                            'adUsersToSync' => $adUsersToSync,
+                            'adRoles' => $adRoles,
+                            'usersAlreadyInTeampass' => $usersAlreadyInTeampass,
+                        ];
                     }
-                    array_push($adUsersToSync, $tmp);
-                }
-            }
+                );
 
             // Get all groups in Teampass
+            $teampassRoles = array();
             $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
             foreach ($rows as $record) {
                 array_push(
@@ -2571,10 +2568,10 @@ if (null !== $post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
-                    'entries' => $adUsersToSync,
-                    'ldap_groups' => $adRoles,
+                    'entries' => $output['adUsersToSync'],
+                    'ldap_groups' => $output['adRoles'],
                     'teampass_groups' => $teampassRoles,
-                    'usersAlreadyInTeampass' => $usersAlreadyInTeampass,
+                    'usersAlreadyInTeampass' => $output['usersAlreadyInTeampass'],
                 ), 
                 'encode'
             );
