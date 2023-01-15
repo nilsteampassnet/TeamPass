@@ -284,23 +284,21 @@ function getNodeInfos(
 {
     $ret = [];
     // get count of Items in this folder
-    DB::query(
-        'SELECT *
+    $ret['itemsNb'] = (int) DB::queryfirstrow(
+        'SELECT COUNT(*) AS num_results
         FROM ' . prefixTable('items') . '
         WHERE inactif=%i AND id_tree = %i',
         0,
         $nodeId
-    );
-    $ret['itemsNb'] = DB::count();
+    )['num_results'];
 
     // get info about current folder
-    DB::query(
-        'SELECT *
+    $ret['childrenNb'] = (int) DB::queryfirstrow(
+        'SELECT COUNT(*) AS num_results
         FROM ' . prefixTable('nested_tree') . '
         WHERE parent_id = %i',
         $nodeId
-    );
-    $ret['childrenNb'] = DB::count();
+    )['num_results'];
 
     // Manage node title
     if ($userIsRO === true && in_array($nodeId, $userPF) === false) {
@@ -376,13 +374,12 @@ function recursiveTree(
                 )
             ) === true
         ) {
-            DB::query(
-                'SELECT * FROM ' . prefixTable('items') . '
+            $nbChildrenItems = (int) DB::queryfirstrow(
+                'SELECT COUNT(*) AS num_results FROM ' . prefixTable('items') . '
                 WHERE inactif=%i AND id_tree = %i',
                 0,
                 $node
-            );
-            $nbChildrenItems += DB::count();
+            )['num_results'];
         }
 
         if (
@@ -463,13 +460,17 @@ function handleNode(
 )
 {
     // get info about current folder
-    DB::query(
-        'SELECT * FROM ' . prefixTable('items') . '
-        WHERE inactif=%i AND id_tree = %i',
-        0,
-        $nodeId
-    );
-    $itemsNb = DB::count();
+    if (isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true) {
+        // Get number of items in this folder (not recursive
+        $itemsNb = (int) DB::queryfirstrow(
+            'SELECT COUNT(*) AS num_results FROM ' . prefixTable('items') . '
+            WHERE inactif=%i AND id_tree = %i',
+            0,
+            $nodeId
+        )['num_results'];
+    } else {
+        $itemsNb = 0;
+    }
 
     // If personal Folder, convert id into user name
     if ((int) $currentNode->title === (int) $inputData['userId'] && (int) $currentNode->nlevel === 1) {
@@ -672,8 +673,8 @@ function prepareNodeData(
         // special case for READ-ONLY folder
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
-                'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
-                    ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
+                'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>'.
+                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
                 'title' => langHdl('read_only_account'),
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
@@ -687,8 +688,8 @@ function prepareNodeData(
             && in_array($nodeId, $session_personal_visible_groups) === false
         ) {
             return [
-                'html' => '<i class="far fa-eye fa-xs mr-1"></i><span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
-                    ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
+                'html' => '<i class="far fa-eye fa-xs mr-1"></i>'.
+                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
                 'title' => langHdl('read_only_account'),
                 'restricted' => 0,
                 'folderClass' => 'folder',
@@ -699,8 +700,7 @@ function prepareNodeData(
         }
         
         return [
-            'html' => '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .
-                ($tree_counters === 1 ? '/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1)  : '') . '</span>',
+            'html' => ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
             'title' => '',
             'restricted' => 0,
             'folderClass' => 'folder',
@@ -712,7 +712,7 @@ function prepareNodeData(
     } elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
         return [
             'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
-                '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>',
+                ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>' : ''),
             'title' => '',
             'restricted' => 1,
             'folderClass' => 'folder',

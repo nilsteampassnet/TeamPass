@@ -23,6 +23,7 @@ In addition to the Apache web server, the following PHP extensions are required 
 * `gd`
 * `mysqli_fetch_all`
 * `xml`
+* `gmp`
 
 Install them by running next commands:
 

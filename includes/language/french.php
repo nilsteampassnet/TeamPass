@@ -497,7 +497,7 @@ return array(
     'settings_item_extra_fields_tip' => 'Cette fonction permet d\'ajouter des champs personnalisés aux Éléments. Ces champs sont créés par un Administrateur et organisés en Catégories. Les données sauvegardées sont chiffrées. Attention, cette fonction consomme plus de requêtes SQL (environ 5 par champ lors de la mise à jour d\'un Élément) et peut surcharger votre serveur. Cela dépend de votre serveur.',
     'settings_ldap_type' => 'Type de serveur LDAP',
     'server_time' => 'Horaire serveur',
-    'settings_tree_counters' => 'Montrer plus de compteurs dans l\'arborescence',
+    'settings_tree_counters' => 'Montrer des compteurs dans l\'arborescence',
     'settings_tree_counters_tip' => 'Cette option affiche pour chaque dossier 3 compteurs : le nombre d\'éléments dans le dossier; le nombre d\'éléments dans l\'ensemble des sous-dossiers; le nombre de sous-dossiers. Cette option requiert des requêtes SQL supplémentaires.',
     'admin_action_check_pf' => 'Actualiser les Dossiers Personnels des utilisateurs (les créer s\'ils n\'existent pas)',
     'enable_personal_folder_feature_tip' => 'Une fois activé, il est nécessaire de lancer manuellement le script de mise à jour des dossiers personnels pour les utilisateurs existants. Cela ne créera les dossiers personnels que pour les utilisateurs n\'en n\'ayant pas à ce jour. Le script \'".$txt[\'admin_action_check_pf\']."\' est accessible dans l\'onglet \'".$txt[\'admin_actions_title\']."\'.',
