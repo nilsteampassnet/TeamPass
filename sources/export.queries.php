@@ -124,6 +124,7 @@ if (null !== $post_type) {
                 'email' => 'email',
                 'kbs' => 'kb',
                 'tags' => 'tag',
+                'folder' => 'folder',
             );
 
             $id_managed = '';
@@ -210,6 +211,34 @@ if (null !== $post_type) {
                                     array_push($arr_tags, $rec_tag['tag']);
                                 }
 
+                                // get FOLDERS tree
+                                $arr_trees = [];
+                                $rows_child_tree = DB::query(
+                                    'SELECT t.id, t.title
+                                    FROM ' . prefixTable('nested_tree') . ' AS t
+                                    INNER JOIN ' . prefixTable('items') . ' AS i ON (t.id = i.id_tree)
+                                    WHERE i.id = %i',
+                                    $record['id']
+                                );
+                                foreach ($rows_child_tree as $rec_child_tree) {
+                                    $stack = array();
+                                    $parent = $rec_child_tree['id'];
+                                    while($parent != 0){
+                                        $rows_parent_tree = DB::query(
+                                            'SELECT parent_id, title
+                                            FROM ' . prefixTable('nested_tree') . '
+                                            WHERE id = %i',
+                                            $parent
+                                        );
+                                        foreach ($rows_parent_tree as $rec_parent_tree) {
+                                            $parent = $rec_parent_tree['parent_id'];
+                                            array_push($arr_trees, $rec_parent_tree['title']);
+                                        }
+                                    }
+                                    
+                                    $arr_trees = array_reverse($arr_trees);
+                                }
+
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
                                     'label' => cleanStringForExport($record['label']),
@@ -222,6 +251,7 @@ if (null !== $post_type) {
                                     'email' => $record['email'] !== 'none' ? (is_null($record['email']) === false ? cleanStringForExport($record['email']) : '') : '',
                                     'kbs' => implode(' | ', $arr_kbs),
                                     'tags' => implode(' ', $arr_tags),
+                                    'folder' => implode(' > ', $arr_trees),
                                 );
                                 ++$i;
 
