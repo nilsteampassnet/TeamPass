@@ -7,7 +7,7 @@ class TSProperty
     /**
      * Nibble control values. The first value for each is if the nibble is <= 9, otherwise the second value is used.
      */
-    const NIBBLE_CONTROL = [
+    public const NIBBLE_CONTROL = [
         'X' => ['001011', '011010'],
         'Y' => ['001110', '011010'],
     ];
@@ -15,12 +15,12 @@ class TSProperty
     /**
      * The nibble header.
      */
-    const NIBBLE_HEADER = '1110';
+    public const NIBBLE_HEADER = '1110';
 
     /**
      * Conversion factor needed for time values in the TSPropertyArray (stored in microseconds).
      */
-    const TIME_CONVERSION = 60 * 1000;
+    public const TIME_CONVERSION = 60 * 1000;
 
     /**
      * A simple map to help determine how the property needs to be decoded/encoded from/to its binary value.

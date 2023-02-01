@@ -8,9 +8,9 @@ use ReflectionMethod;
 
 class Password
 {
-    const CRYPT_SALT_TYPE_MD5 = 1;
-    const CRYPT_SALT_TYPE_SHA256 = 5;
-    const CRYPT_SALT_TYPE_SHA512 = 6;
+    public const CRYPT_SALT_TYPE_MD5 = 1;
+    public const CRYPT_SALT_TYPE_SHA256 = 5;
+    public const CRYPT_SALT_TYPE_SHA512 = 6;
 
     /**
      * Make an encoded password for transmission over LDAP.

@@ -2,7 +2,9 @@
 
 namespace LdapRecord\Testing;
 
+use Closure;
 use LdapRecord\LdapRecordException;
+use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\Constraint\IsEqual;
 use UnexpectedValueException;
@@ -98,15 +100,17 @@ class LdapExpectation
      */
     public function with($args)
     {
-        $args = is_array($args) ? $args : func_get_args();
-
-        foreach ($args as $key => $arg) {
-            if (! $arg instanceof Constraint) {
-                $args[$key] = new IsEqual($arg);
+        $this->args = array_map(function ($arg) {
+            if ($arg instanceof Closure) {
+                return new Callback($arg);
             }
-        }
 
-        $this->args = $args;
+            if (! $arg instanceof Constraint) {
+                return new IsEqual($arg);
+            }
+
+            return $arg;
+        }, is_array($args) ? $args : func_get_args());
 
         return $this;
     }

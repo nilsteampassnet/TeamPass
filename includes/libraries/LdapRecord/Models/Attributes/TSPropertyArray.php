@@ -9,14 +9,14 @@ class TSPropertyArray
     /**
      * Represents that the TSPropertyArray data is valid.
      */
-    const VALID_SIGNATURE = 'P';
+    public const VALID_SIGNATURE = 'P';
 
     /**
      * The default values for the TSPropertyArray structure.
      *
      * @var array
      */
-    const DEFAULTS = [
+    public const DEFAULTS = [
         'CtxCfgPresent' => 2953518677,
         'CtxWFProfilePath' => '',
         'CtxWFProfilePathW' => '',

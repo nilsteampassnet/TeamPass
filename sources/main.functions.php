@@ -3861,3 +3861,11 @@ function getUsersWithRoles(
 
     return $arrUsers;
 }
+
+// #3476 - check if function str_contains exists (using PHP 8.0.0 or h)
+// else define it
+if (!function_exists('str_contains')) {
+    function str_contains($haystack, $needle) {
+        return $needle !== '' && mb_strpos($haystack, $needle) !== false;
+    }
+}

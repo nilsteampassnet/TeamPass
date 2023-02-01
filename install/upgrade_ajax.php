@@ -403,10 +403,10 @@ if (isset($post_type)) {
                 // check if writable
                 if (is_writable($elem)) {
                     $txt .= '<span>' .
-                        $elem . '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                        $elem . '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
                 } else {
                     $txt .= '<span>' .
-                        $elem . '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                        $elem . '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
                     $okWritable = false;
                 }
                 ++$var_x;
@@ -415,59 +415,66 @@ if (isset($post_type)) {
             if (!extension_loaded('openssl')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"openssl\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"openssl\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('gd')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"gd\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"gd\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('mbstring')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"mbstring\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"mbstring\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('bcmath')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"bcmath\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"bcmath\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('iconv')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"iconv\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"iconv\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('xml')) {
                 //$okExtensions = false;
                 $txt .= '<span>PHP extension \"xml\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"xml\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('curl')) {
                 $txt .= '<span>PHP extension \"curl\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"curl\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
-            if (ini_get('max_execution_time') < 60) {
+            if (!extension_loaded('gmp')) {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
+            } else {
+                $txt .= '<span>PHP extension \"gmp\"' .
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
+            }
+            if (ini_get('max_execution_time') < 30) {
                 $txt .= '<span>PHP \"Maximum ' .
                     'execution time\" is set to ' . ini_get('max_execution_time') . ' seconds.' .
                     ' Please try to set to 60s at least until Upgrade is finished.&nbsp;' .
@@ -475,7 +482,7 @@ if (isset($post_type)) {
             } else {
                 $txt .= '<span>PHP \"Maximum ' .
                     'execution time\" is set to ' . ini_get('max_execution_time') . ' seconds' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
+                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (version_compare(phpversion(), MIN_PHP_VERSION, '<')) {
                 $txt .= '<span>PHP version ' .
@@ -483,15 +490,8 @@ if (isset($post_type)) {
                     '<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span>PHP version ' .
-                    phpversion() . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                    phpversion() . ' is OK<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                     '</span><br />';
-            }
-            if (!extension_loaded('gmp')) {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fas fa-minus-circle text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fas fa-check-circle text-success ml-2\"></i></span><br />';
             }
             $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
             $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
@@ -508,11 +508,11 @@ if (isset($post_type)) {
             } else {
                 if ($mariadbVersion === '') {
                     $txt .= '<span>MySQL version ' .
-                        $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                        $db_link -> server_info . ' is OK<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                         '</span><br />';
                 } else {
                     $txt .= '<span>MySQL version ' .
-                        $db_link -> server_info . ' is OK<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                        $db_link -> server_info . ' is OK<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                         '</span><br />';
                 }
                 
@@ -526,7 +526,7 @@ if (isset($post_type)) {
                 if (file_exists($defuse_file)) {
                     $okEncryptKey = true;
                     $superGlobal->put('tp_defuse_installed', true, 'SESSION');
-                    $txt .= '<span>Defuse encryption key is defined<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                    $txt .= '<span>Defuse encryption key is defined<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                         '</span><br />';
                 }
 
@@ -537,7 +537,7 @@ if (isset($post_type)) {
                         '<img src=\"images/minus-circle.png\"></span><br />';
                 } else {
                     $okEncryptKey = true;
-                    $txt .= '<span>Encryption Key (SALT) is available<i class=\"fas fa-check-circle text-success ml-2\"></i>' .
+                    $txt .= '<span>Encryption Key (SALT) is available<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                         '</span><br />';
                 }
             } else {
@@ -555,7 +555,8 @@ if (isset($post_type)) {
             echo '[{'.
                 '"error" : "' . $error . '",'.
                 '"info" : "' . $txt . '",'.
-                '"index" : "'.($error === "" ? "" : $nextStep).'"'.
+                '"index" : "'.($error === "" ? "" : $nextStep).'",'.
+                '"infos" : "' . $okWritable." ; ".$okExtensions." ; ".$okEncryptKey." ; " . '"'.
             '}]';
             break;
 
@@ -829,7 +830,7 @@ if (isset($post_type)) {
                         $returnStatus, 
                         array(
                             'id' => 'step5_settingFile', 
-                            'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2"></i>',
+                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2"></i>',
                         )
                     );
                 }
@@ -857,16 +858,16 @@ if (isset($post_type)) {
                     $newfile = str_replace('teampass-seckey.txt', time());
                     rename($filename, $newfile);
                     unlink($filename);
-                    echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">You can remove file '.$newfile.'</span>");';
+                    echo '$("#step5_saltkeyFile").html("<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">You can remove file '.$newfile.'</span>");';
                 } else {
-                    echo '$("#step5_saltkeyFile").html("<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
+                    echo '$("#step5_saltkeyFile").html("<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
                 }
                 */
                 array_push(
                     $returnStatus, 
                     array(
                         'id' => 'step5_saltkeyFile', 
-                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
                     )
                 );
             } else {
@@ -874,7 +875,7 @@ if (isset($post_type)) {
                     $returnStatus, 
                     array(
                         'id' => 'step5_saltkeyFile', 
-                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
                     )
                 );
             }
@@ -890,7 +891,7 @@ if (isset($post_type)) {
                     $returnStatus, 
                     array(
                         'id' => 'step5_configFile', 
-                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i>',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i>',
                     )
                 );
             } else {
@@ -902,7 +903,7 @@ if (isset($post_type)) {
                     $returnStatus, 
                     array(
                         'id' => 'step5_configFile', 
-                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
                     )
                 );
             }
@@ -952,7 +953,7 @@ if (isset($post_type)) {
                     $returnStatus, 
                     array(
                         'id' => 'step5_csrfpFile', 
-                        'html' => '<i class="fas fa-check-circle fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
                     )
                 );
             } else {
@@ -960,7 +961,7 @@ if (isset($post_type)) {
                     $returnStatus, 
                     array(
                         'id' => 'step5_csrfpFile', 
-                        'html' => '<i class=\"fas fa-check-circle fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>',
+                        'html' => '<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>',
                     )
                 );
             }

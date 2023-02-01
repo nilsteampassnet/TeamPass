@@ -11,8 +11,6 @@ use LdapRecord\Container;
 use LdapRecord\EscapesValues;
 use LdapRecord\Models\Attributes\DistinguishedName;
 use LdapRecord\Models\Attributes\Guid;
-use LdapRecord\Models\Events\Renamed;
-use LdapRecord\Models\Events\Renaming;
 use LdapRecord\Query\Model\Builder;
 use LdapRecord\Support\Arr;
 use UnexpectedValueException;
@@ -27,6 +25,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     use Concerns\HasGlobalScopes;
     use Concerns\HidesAttributes;
     use Concerns\HasRelationships;
+    use Concerns\SerializesProperties;
 
     /**
      * Indicates if the model exists in the directory.
@@ -273,6 +272,18 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     }
 
     /**
+     * Make a new model instance.
+     *
+     * @param array $attributes
+     *
+     * @return static
+     */
+    public static function make($attributes = [])
+    {
+        return new static($attributes);
+    }
+
+    /**
      * Begin querying the model on a given connection.
      *
      * @param string|null $connection
@@ -301,15 +312,46 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     }
 
     /**
-     * Make a new model instance.
+     * Get the RootDSE (AD schema) record from the directory.
      *
-     * @param array $attributes
+     * @param string|null $connection
      *
-     * @return static
+     * @return Model
+     *
+     * @throws \LdapRecord\Models\ModelNotFoundException
      */
-    public static function make($attributes = [])
+    public static function getRootDse($connection = null)
     {
-        return new static($attributes);
+        $model = static::getRootDseModel();
+
+        return $model::on($connection ?? (new $model)->getConnectionName())
+            ->in(null)
+            ->read()
+            ->whereHas('objectclass')
+            ->firstOrFail();
+    }
+
+    /**
+     * Get the root DSE model.
+     *
+     * @return class-string<Model>
+     */
+    protected static function getRootDseModel()
+    {
+        $instance = (new static);
+
+        switch (true) {
+            case $instance instanceof Types\ActiveDirectory:
+                return ActiveDirectory\Entry::class;
+            case $instance instanceof Types\DirectoryServer:
+                return OpenLDAP\Entry::class;
+            case $instance instanceof Types\OpenLDAP:
+                return OpenLDAP\Entry::class;
+            case $instance instanceof Types\FreeIPA:
+                return FreeIPA\Entry::class;
+            default:
+                return Entry::class;
+        }
     }
 
     /**
@@ -630,7 +672,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     }
 
     /**
-     * Converts extra attributes for JSON serialization.
+     * Convert the attributes for JSON serialization.
      *
      * @param array $attributes
      *
@@ -638,15 +680,27 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     protected function convertAttributesForJson(array $attributes = [])
     {
-        // If the model has a GUID set, we need to convert
-        // it due to it being in binary. Otherwise we'll
-        // receive a JSON serialization exception.
-        if ($this->hasAttribute($this->guidKey)) {
-            return array_replace($attributes, [
-                $this->guidKey => [$this->getConvertedGuid()],
-            ]);
+        // If the model has a GUID set, we need to convert it to its
+        // string format, due to it being in binary. Otherwise
+        // we will receive a JSON serialization exception.
+        if (isset($attributes[$this->guidKey])) {
+            $attributes[$this->guidKey] = [$this->getConvertedGuid(
+                Arr::first($attributes[$this->guidKey])
+            )];
         }
 
+        return $attributes;
+    }
+
+    /**
+     * Convert the attributes from JSON serialization.
+     *
+     * @param array $attributes
+     *
+     * @return array
+     */
+    protected function convertAttributesFromJson(array $attributes = [])
+    {
         return $attributes;
     }
 
@@ -910,21 +964,55 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function getObjectClasses()
     {
-        return $this->getAttribute('objectclass') ?: [];
+        return $this->getAttribute('objectclass', static::$objectClasses);
     }
 
     /**
      * Get the model's string GUID.
      *
+     * @param string|null $guid
+     *
      * @return string|null
      */
-    public function getConvertedGuid()
+    public function getConvertedGuid($guid = null)
     {
         try {
-            return (string) new Guid($this->getObjectGuid());
+            return (string) $this->newObjectGuid(
+                $guid ?? $this->getObjectGuid()
+            );
         } catch (InvalidArgumentException $e) {
             return;
         }
+    }
+
+    /**
+     * Get the model's binary GUID.
+     *
+     * @param string|null $guid
+     *
+     * @return string|null
+     */
+    public function getBinaryGuid($guid = null)
+    {
+        try {
+            return $this->newObjectGuid(
+                $guid ?? $this->getObjectGuid()
+            )->getBinary();
+        } catch (InvalidArgumentException $e) {
+            return;
+        }
+    }
+
+    /**
+     * Make a new object Guid instance.
+     *
+     * @param string $value
+     *
+     * @return Guid
+     */
+    protected function newObjectGuid($value)
+    {
+        return new Guid($value);
     }
 
     /**
@@ -1037,11 +1125,13 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     {
         $this->fill($attributes);
 
-        $this->fireModelEvent(new Events\Saving($this));
+        $this->dispatch('saving');
 
         $this->exists ? $this->performUpdate() : $this->performInsert();
 
-        $this->fireModelEvent(new Events\Saved($this));
+        $this->dispatch('saved');
+
+        $this->modifications = [];
 
         $this->in = null;
     }
@@ -1071,7 +1161,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
             $this->setDn($this->getCreatableDn());
         }
 
-        $this->fireModelEvent(new Events\Creating($this));
+        $this->dispatch('creating');
 
         // Here we perform the insert of new object in the directory,
         // but filter out any empty attributes before sending them
@@ -1079,7 +1169,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
         // attributes have been given empty or null values.
         $query->insert($this->getDn(), array_filter($this->getAttributes()));
 
-        $this->fireModelEvent(new Events\Created($this));
+        $this->dispatch('created');
 
         $this->syncOriginal();
 
@@ -1101,15 +1191,13 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
             return;
         }
 
-        $this->fireModelEvent(new Events\Updating($this));
+        $this->dispatch('updating');
 
         $this->newQuery()->update($this->dn, $modifications);
 
-        $this->fireModelEvent(new Events\Updated($this));
+        $this->dispatch('updated');
 
         $this->syncOriginal();
-
-        $this->modifications = [];
     }
 
     /**
@@ -1143,11 +1231,15 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function createAttribute($attribute, $value)
     {
-        $this->requireExistence();
+        $this->assertExists();
+
+        $this->dispatch(['saving', 'updating']);
 
         $this->newQuery()->insertAttributes($this->dn, [$attribute => (array) $value]);
 
         $this->addAttributeValue($attribute, $value);
+
+        $this->dispatch(['updated', 'saved']);
     }
 
     /**
@@ -1162,7 +1254,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function update(array $attributes = [])
     {
-        $this->requireExistence();
+        $this->assertExists();
 
         $this->save($attributes);
     }
@@ -1180,11 +1272,15 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function updateAttribute($attribute, $value)
     {
-        $this->requireExistence();
+        $this->assertExists();
+
+        $this->dispatch(['saving', 'updating']);
 
         $this->newQuery()->updateAttributes($this->dn, [$attribute => (array) $value]);
 
         $this->addAttributeValue($attribute, $value);
+
+        $this->dispatch(['updated', 'saved']);
     }
 
     /**
@@ -1201,11 +1297,17 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     {
         $count = 0;
 
-        $dns = is_string($dns) ? (array) $dns : $dns;
-
         $instance = new static();
 
-        foreach ($dns as $dn) {
+        if ($dns instanceof Collection) {
+            $dns = $dns->modelDns()->toArray();
+        }
+
+        // Here we are iterating through each distinguished name and locating
+        // the associated model. While it's more resource intensive, we must
+        // do this in case of leaf nodes being given alongside any parent
+        // node, ensuring they can be deleted inside of the directory.
+        foreach ((array) $dns as $dn) {
             if (! $model = $instance->find($dn)) {
                 continue;
             }
@@ -1233,9 +1335,9 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function delete($recursive = false)
     {
-        $this->requireExistence();
+        $this->assertExists();
 
-        $this->fireModelEvent(new Events\Deleting($this));
+        $this->dispatch('deleting');
 
         if ($recursive) {
             $this->deleteLeafNodes();
@@ -1248,7 +1350,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
         // developers can hook in and run further operations.
         $this->exists = false;
 
-        $this->fireModelEvent(new Events\Deleted($this));
+        $this->dispatch('deleted');
     }
 
     /**
@@ -1288,9 +1390,11 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function deleteAttribute($attributes)
     {
-        $this->requireExistence();
+        $this->assertExists();
 
         $attributes = $this->makeDeletableAttributes($attributes);
+
+        $this->dispatch(['saving', 'updating']);
 
         $this->newQuery()->deleteAttributes($this->dn, $attributes);
 
@@ -1310,6 +1414,8 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
                 );
             }
         }
+
+        $this->dispatch(['updated', 'saved']);
 
         $this->syncOriginal();
     }
@@ -1350,7 +1456,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function move($newParentDn, $deleteOldRdn = true)
     {
-        $this->requireExistence();
+        $this->assertExists();
 
         if (! $rdn = $this->getRdn()) {
             throw new UnexpectedValueException('Current model does not contain an RDN to move.');
@@ -1373,7 +1479,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
      */
     public function rename($rdn, $newParentDn = null, $deleteOldRdn = true)
     {
-        $this->requireExistence();
+        $this->assertExists();
 
         if ($newParentDn instanceof self) {
             $newParentDn = $newParentDn->getDn();
@@ -1400,7 +1506,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
             $rdn = $this->getUpdateableRdn($rdn);
         }
 
-        $this->fireModelEvent(new Renaming($this, $rdn, $newParentDn));
+        $this->dispatch('renaming', [$rdn, $newParentDn]);
 
         $this->newQuery()->rename($this->dn, $rdn, $newParentDn, $deleteOldRdn);
 
@@ -1420,7 +1526,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
             = $this->original[$modelNameAttribute]
             = [reset($map[$modelNameAttribute])];
 
-        $this->fireModelEvent(new Renamed($this));
+        $this->dispatch('renamed');
 
         $this->wasRecentlyRenamed = true;
     }
@@ -1528,11 +1634,25 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable
     /**
      * Throw an exception if the model does not exist.
      *
+     * @deprecated
+     *
      * @return void
      *
      * @throws ModelDoesNotExistException
      */
     protected function requireExistence()
+    {
+        return $this->assertExists();
+    }
+
+    /**
+     * Throw an exception if the model does not exist.
+     *
+     * @return void
+     *
+     * @throws ModelDoesNotExistException
+     */
+    protected function assertExists()
     {
         if (! $this->exists || is_null($this->dn)) {
             throw ModelDoesNotExistException::forModel($this);

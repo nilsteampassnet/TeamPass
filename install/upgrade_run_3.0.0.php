@@ -75,6 +75,7 @@ if (mysqli_connect(
     exit();
 }
 
+
 // Load libraries
 require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -872,7 +873,7 @@ mysqli_query(
 
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'cache_tree` ADD UNIQUE `CACHE` (`increment_id`, `user_id`)'
+    'CREATE INDEX IF NOT EXISTS CACHE ON ' . $pre . 'cache_tree (increment_id, user_id)'
 );
 
 mysqli_query(
@@ -1594,85 +1595,81 @@ if (intval($tmp) === 0) {
 }
 
 // Add new field in table languages
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'languages` ADD `code_poeditor` VARCHAR(50) NOT NULL AFTER `flag`'
-);
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`bg` WHERE `name`=`bulgarian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ca` WHERE `name`=`catalan`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`zh-Hans` WHERE `name`=`chinese`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`cs` WHERE `name`=`czech`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`nl` WHERE `name`=`dutch`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`en` WHERE `name`=`english`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`et` WHERE `name`=`estonian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`fr` WHERE `name`=`french`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`de` WHERE `name`=`german`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`el` WHERE `name`=`greek`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`hu` WHERE `name`=`hungarian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`it` WHERE `name`=`italian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ja` WHERE `name`=`japanese`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`no` WHERE `name`=`norwegian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pl` WHERE `name`=`polish`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt` WHERE `name`=`portuguese`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt-br` WHERE `name`=`portuguese_br`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ro` WHERE `name`=`romanian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ru` WHERE `name`=`russian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`es` WHERE `name`=`spanish`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`sv` WHERE `name`=`swedish`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`tr` WHERE `name`=`turkish`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`uk` WHERE `name`=`ukrainian`;');
-mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`vi` WHERE `name`=`vietnamese`;');
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'languages` ADD `code_poeditor` VARCHAR(50) NOT NULL AFTER `flag`'
+    );
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`bg` WHERE `name`=`bulgarian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ca` WHERE `name`=`catalan`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`zh-Hans` WHERE `name`=`chinese`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`cs` WHERE `name`=`czech`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`nl` WHERE `name`=`dutch`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`en` WHERE `name`=`english`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`et` WHERE `name`=`estonian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`fr` WHERE `name`=`french`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`de` WHERE `name`=`german`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`el` WHERE `name`=`greek`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`hu` WHERE `name`=`hungarian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`it` WHERE `name`=`italian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ja` WHERE `name`=`japanese`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`no` WHERE `name`=`norwegian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pl` WHERE `name`=`polish`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt` WHERE `name`=`portuguese`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt-br` WHERE `name`=`portuguese_br`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ro` WHERE `name`=`romanian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ru` WHERE `name`=`russian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`es` WHERE `name`=`spanish`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`sv` WHERE `name`=`swedish`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`tr` WHERE `name`=`turkish`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`uk` WHERE `name`=`ukrainian`;');
+    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`vi` WHERE `name`=`vietnamese`;');
+} catch (Exception $e) {
+    // Do nothing
+}
 
 // Fix a potential issue in table log_items
-mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modification` WHERE `action` = `at_modification2`;');
+try {
+    mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modification` WHERE `action` = `at_modification2`;');
+} catch (Exception $e) {
+    // Do nothing
+}
 
 //---<END 3.0.0.20
 
 
 
 //--->BEGIN 3.0.0.22
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'cache_tree MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
-);
-
-// Remove indexes
-mysqli_query(
-    $db_link,
-    'DROP INDEX IF EXISTS object_id ON ' . $pre . 'sharekeys_items;'
-);
-mysqli_query(
-    $db_link,
-    'DROP INDEX IF EXISTS user_id ON ' . $pre . 'sharekeys_items;'
-);
-mysqli_query(
-    $db_link,
-    'DROP INDEX IF EXISTS object_id ON ' . $pre . 'sharekeys_logs;'
-);
-mysqli_query(
-    $db_link,
-    'DROP INDEX IF EXISTS user_id ON ' . $pre . 'sharekeys_logs;'
-);
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache_tree` MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
 
 // Add indexes
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'sharekeys_items` add index (object_id);'
+    'CREATE INDEX IF NOT EXISTS `OBJECT` ON ' . $pre . 'sharekeys_items (object_id)'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'sharekeys_items` add index (user_id);'
+    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'sharekeys_items (user_id)'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'sharekeys_logs` add index (object_id);'
+    'CREATE INDEX IF NOT EXISTS `OBJECT` ON ' . $pre . 'sharekeys_logs (object_id)'
 );
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'sharekeys_logs` add index (user_id);'
+    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'sharekeys_logs (user_id)'
 );
 
 //---<END 3.0.0.22
+
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

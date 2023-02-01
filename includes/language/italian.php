@@ -1030,5 +1030,6 @@ return array(
     'never' => 'Never',
     'loading_main_page' => 'Please wait, loading main page ...',
     'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
+    'link' => 'Link',
 
 );

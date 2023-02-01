@@ -46,8 +46,9 @@ Teampass is a Collaborative Passwords Manager
   * iconv
   * xml
   * gd
-  * openssl
+  * mysql
   * curl
+  * gmp
 
 ## Documentation
 

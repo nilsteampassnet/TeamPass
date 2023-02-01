@@ -39,6 +39,7 @@ class Paginator extends AbstractPaginator
     {
         $errorCode = 0;
         $dn = $errorMessage = $refs = null;
+        $controls = $this->query->controls;
 
         $ldap->parseResult(
             $resource,
@@ -46,20 +47,15 @@ class Paginator extends AbstractPaginator
             $dn,
             $errorMessage,
             $refs,
-            $this->query->controls
+            $controls
         );
 
-        $this->resetPageSize();
-    }
+        $cookie = $controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'] ?? '';
 
-    /**
-     * Reset the page control page size.
-     *
-     * @return void
-     */
-    protected function resetPageSize()
-    {
-        $this->query->controls[LDAP_CONTROL_PAGEDRESULTS]['value']['size'] = $this->perPage;
+        $this->query->controls[LDAP_CONTROL_PAGEDRESULTS]['value'] = [
+            'size' => $this->perPage,
+            'cookie' => $cookie,
+        ];
     }
 
     /**
@@ -67,6 +63,6 @@ class Paginator extends AbstractPaginator
      */
     protected function resetServerControls(LdapInterface $ldap)
     {
-        $this->query->controls = [];
+        unset($this->query->controls[LDAP_CONTROL_PAGEDRESULTS]);
     }
 }

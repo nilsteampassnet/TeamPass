@@ -61,6 +61,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     var requestRunning = false,
         clipboardForLogin,
         clipboardForPassword,
+        clipboardForLink,
         query_in_progress = 0,
         screenHeight = $(window).height(),
         quick_icon_query_status = true,
@@ -83,7 +84,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         'init',
         'teampassApplication', {
             lastItemSeen: false,
-            selectedFolder: false,
             itemsListStop: '',
             itemsListStart: '',
             selectedFolder: '',
@@ -103,7 +103,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             hasAccessLevel: '',
             hasCustomCategories: '',
             id: '',
-            timestamp: ''
+            timestamp: '',
+            folderId: ''
         }
     );
 
@@ -186,6 +187,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 teampassApplication.userCanEdit = selectedFolder.original.can_edit
             }
         )
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.folderId = selectedFolderId
+            }
+        );
 
         // Prepare list of items
         if (startedItemsListQuery === false) {
@@ -240,6 +247,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         store.set(
             'teampassApplication', {
                 selectedFolder: parseInt(queryDict['group']),
+                selectedItem: parseInt(queryDict['id'])
+            }
+        );
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.folderId = parseInt(queryDict['group'])
             }
         );
 
@@ -4708,11 +4722,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 // Waiting
                 $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
 
-                // Manage clipboard button
-                if (itemClipboard) itemClipboard.destroy();
-                    itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
+                // Manage clipboard for link
+                if (clipboardForLink) clipboardForLink.destroy();
+                clipboardForLink = new ClipboardJS(
+                    '#get_item_link',
+                    {
                         text: function(e) {
-                            return ($($(e).data('clipboard-target')).val());
+                            return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
                         }
                     })
                     .on('success', function(e) {
@@ -4727,6 +4743,26 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         );
                         e.clearSelection();
                     });
+
+                // Manage clipboard button
+                if (itemClipboard) itemClipboard.destroy();
+                itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
+                    text: function(e) {
+                        return ($($(e).data('clipboard-target')).val());
+                    }
+                })
+                .on('success', function(e) {
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('copy_to_clipboard'); ?>',
+                        '', {
+                            timeOut: 2000,
+                            progressBar: true,
+                            positionClass: 'toast-top-right'
+                        }
+                    );
+                    e.clearSelection();
+                });
 
                 // Prepare clipboard - COPY LOGIN
                 if (data.login !== '') {

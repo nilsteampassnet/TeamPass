@@ -17,6 +17,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'link' => 'Link',
     'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
     'loading_main_page' => 'Please wait, loading main page ...',
     'never' => 'Never',
@@ -574,7 +575,7 @@ return array(
     'settings_item_extra_fields_tip' => 'Enables another tab when creating password items, which contains custom fields for other types of data. An administrator must first create categories and the custom field labels to be displayed in those categories. This feature consumes more server resources.',
     'settings_ldap_type' => 'LDAP server type',
     'server_time' => 'Server time',
-    'settings_tree_counters' => 'Show more counters in folder tree',
+    'settings_tree_counters' => 'Show counters in folder tree',
     'settings_tree_counters_tip' => 'Enabling shows three numbers next to each folder: number of items in base folder; number of items including subfolders; number of subfolders. Enabling this feature may slow loading of the folder tree pane.',
     'admin_action_check_pf' => 'Create personal folders for all users without one',
     'enable_personal_folder_feature_tip' => 'Personal folders are a private location for individual user passwords. Password items are encrypted by a user&apos;s salt key (more secure) or by their password (easier). Enabling this feature does not create the actual folders for existing users - you must also run the create personal folders task.',
