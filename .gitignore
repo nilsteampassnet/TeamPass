@@ -1,3 +1,4 @@
+!/includes/libraries/csrfp/log
 *.DS_Store
 *.log
 *.zip
