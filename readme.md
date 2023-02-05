@@ -63,11 +63,13 @@ The Docker image provided will create a Teampass installation in its `/var/www/h
 ### With Docker Compose
 The included [docker-compose.yml](docker-compose.yml) file is an example setup, using virtual host-based reverse proxy routing to provide SSL. If you want to use the Compose file as-is, you will need to provide an SSL certificate with a CN matching the `teampass` service's `VIRTUAL_HOST` variable. See the documentation for the [jwilder/nginx-proxy](https://github.com/jwilder/nginx-proxy) image for details. In short, you'll need to put your certificate file (with extension .crt, e.g. teampass.domain.local.crt) and the according private key file (with extension .key, e.g. teampass.domain.local.key) into the directory ssl, named exactly after the FQDN you put into the `VIRTUAL_HOST` variable. Make sure to restart the nginx service after changes to the certificate or at least signal it with the reload command: `docker-compose exec nginx nginx -s reload`.
 
-**Note:** As you might have noticed, the docker hub image of teampass is currently sort of unmaintained as of Feb 2022. Therefore the docker-compose example provided here will build the teampass image out of the latest sources of this repository. When the docker hub image is getting built again, you may comment out `build: .` and remove the comment for `image: teampass/teampass`. We'll inform you here once that's the case.
+**Note1:** As you might have noticed, the docker hub image of teampass is currently sort of unmaintained as of Feb 2022. Therefore the docker-compose example provided here will build the teampass image out of the latest sources of this repository. When the docker hub image is getting built again, you may comment out `build: .` and remove the comment for `image: teampass/teampass`. We'll inform you here once that's the case.
 
-**Note:** The database's hostname is `db`. You can find the database's credentials in the environment variables of the `db` service.
+**Note2:** The database's hostname is `db`. You can find the database's credentials in the environment variables of the `db` service.
 
-**Note:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
+**Note3:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
+
+**Note4:** For more conviniance, you can follow complete instruction at [https://hub.docker.com/r/dormancygrace/teampass](https://hub.docker.com/r/dormancygrace/teampass)
 
 ## Languages
 
