@@ -82,7 +82,7 @@ if (file_exists($filename)) {
         <meta http-equiv="x-ua-compatible" content="ie=edge"/>
 
         <link rel="stylesheet" href="css/install.css" type="text/css" />
-        <link rel="stylesheet" href="../plugins/fontawesome-free/css/all.css">
+        <link rel="stylesheet" href="../plugins/fontawesome-free-6/css/all.css">
         
         <!-- Theme style -->
         <link rel="stylesheet" href="../plugins/adminlte/css/adminlte.min.css">

@@ -14,4 +14,4 @@
 - **API**
 - [Basic usage](api-basic.md)
 - **Help**
-- 
+- [Tips](misc/tips.md)
