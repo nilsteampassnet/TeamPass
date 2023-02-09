@@ -41,24 +41,55 @@ class AuthModel extends Database
      */
     public function getUserAuth(string $login, string $password, string $apikey): array
     {
-        // Check if user exists
-        $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits, user_api_key FROM " . prefixTable('users') . " WHERE login='".$login."'");
-        $userInfoRes[0]['special'] = '';
-        $userInfo = $userInfoRes[0];
+        // Sanitize
+        include_once API_ROOT_PATH . '/../sources/main.functions.php';
+        $inputData = dataSanitizer(
+            [
+                'login' => isset($login) === true ? $login : '',
+                'password' => isset($password) === true ? $password : '',
+                'apikey' => isset($apikey) === true ? $apikey : '',
+            ],
+            [
+                'login' => 'trim|escape',
+                'password' => 'trim|escape',
+                'apikey' => 'trim|escape',
+            ],
+            API_ROOT_PATH . '/..'
+        );
+        if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
+            return ["error" => "Login failed."];
+        }
         
-        // Check password
-        include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
-        $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
-        $pwdlib->register();
-        $pwdlib = new PasswordLib\PasswordLib();
-        if ($pwdlib->verifyPasswordHash($password, $userInfo['pw']) === true) {
-            // Correct credentials
-            // Now check apikey
-            // We check if it is the correct user api or if it is a generic api key
-            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$apikey."'");
-            if ($apikey === $userInfo['user_api_key'] || (int) $apiInfo[0]['count(*)'] === 1) {
+        // Check apikey
+        if (empty($inputData['password']) === true) {
+            // case where it is a generic key
+            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
+            if ((int) $apiInfo[0]['count(*)'] === 0) {
+                return ["error" => "Login failed.", "apikey" => "Not valid"];
+            }
+
+            return ["error" => "Not managed."];
+        } else {
+            // case where it is a user api key
+            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('users') . " WHERE user_api_key='".$inputData['apikey']."' AND login='".$inputData['login']."'");
+            if ((int) $apiInfo[0]['count(*)'] === 0) {
+                return ["error" => "Login failed.", "apikey" => "Not valid"];
+            }
+
+            // Check if user exists
+            $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits, user_api_key FROM " . prefixTable('users') . " WHERE login='".$inputData['login']."'");
+            $userInfoRes[0]['special'] = '';
+            $userInfo = $userInfoRes[0];
+            
+            // Check password
+            include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
+            $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            if ($pwdlib->verifyPasswordHash($inputData['password'], $userInfo['pw']) === true) {
+                // Correct credentials
                 // get user keys
-                $privateKeyClear = decryptPrivateKey($password, (string) $userInfo['private_key']); //prepareUserEncryptionKeys($userInfo, $password);
+                $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
 
                 // get user folders list
                 $folders = $this->buildUserFoldersList($userInfo);
@@ -66,17 +97,15 @@ class AuthModel extends Database
                 // create JWT
                 return $this->createUserJWT(
                     $userInfo['id'],
-                    $login,
+                    $inputData['login'],
                     $userInfo['personal_folder'],
                     $userInfo['public_key'],
                     $privateKeyClear,
                     implode(",", $folders)
                 );
             } else {
-                return ["error" => "Login failed.", "apikey" => "Not valid"];
+                return ["error" => "Login failed.", "password" => "Not valid"];
             }
-        } else {
-            return ["error" => "Login failed.", "password" => $password];
         }
     }
     //end getUserAuth
