@@ -260,66 +260,6 @@ function showFolderToUser(
 }
 
 
-/**
- * Get some infos for this node
- *
- * @param integer   $nodeId
- * @param integer   $nodeLevel
- * @param string    $nodeTitle
- * @param integer   $userId
- * @param string    $userLogin
- * @param bool      $userIsRO
- * @param array     $userPF
- * @return array
- */
-function getNodeInfos(
-    int $nodeId,
-    int $nodeLevel,
-    string $nodeTitle,
-    int $userId,
-    string $userLogin,
-    bool $userIsRO,
-    array $userPF
-) : array
-{
-    $ret = [];
-    // get count of Items in this folder
-    $ret['itemsNb'] = (int) DB::queryfirstrow(
-        'SELECT COUNT(*) AS num_results
-        FROM ' . prefixTable('items') . '
-        WHERE inactif=%i AND id_tree = %i',
-        0,
-        $nodeId
-    )['num_results'];
-
-    // get info about current folder
-    $ret['childrenNb'] = (int) DB::queryfirstrow(
-        'SELECT COUNT(*) AS num_results
-        FROM ' . prefixTable('nested_tree') . '
-        WHERE parent_id = %i',
-        $nodeId
-    )['num_results'];
-
-    // Manage node title
-    if ($userIsRO === true && in_array($nodeId, $userPF) === false) {
-        // special case for READ-ONLY folder
-        $ret['title'] = langHdl('read_only_account');
-    } else {
-        // If personal Folder, convert id into user name
-        $ret['title'] = (string) $nodeTitle === (string) $userId && (int) $nodeLevel === 1 ?
-        $userLogin :
-        htmlspecialchars_decode($nodeTitle, ENT_QUOTES);
-    }
-
-    $ret['text'] = str_replace(
-        '&',
-        '&amp;',
-        $ret['title']
-    );
-
-    return $ret;
-}
-
 
 /**
  * Get through complete tree
@@ -358,46 +298,27 @@ function recursiveTree(
 
     $displayThisNode = false;
     $nbChildrenItems = 0;
-    $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, true);
+    $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, false);
     array_shift($nodeDirectDescendants); // get only the children
 
-    // Check if any allowed folder is part of the descendants of this node
     foreach ($nodeDescendants as $node) {
-        // manage tree counters
         if (
-            isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true
-            && in_array(
-                $node,
-                array_merge(
-                    $inputData['visibleFolders'],
-                    is_null($inputData['restrictedFoldersForItems']) === true ? [] : $inputData['restrictedFoldersForItems']
-                )
-            ) === true
-        ) {
-            $nbChildrenItems = (int) DB::queryfirstrow(
-                'SELECT COUNT(*) AS num_results FROM ' . prefixTable('items') . '
-                WHERE inactif=%i AND id_tree = %i',
-                0,
-                $node
-            )['num_results'];
-        }
-
-        if (
-            in_array($node, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
+            in_array($node->id, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
         ) {
             // Final check - is PF allowed?
-            $nodeDetails = $tree->getNode($node);
             if (
-                (int) $nodeDetails->personal_folder === 1
+                (int) $node->personal_folder === 1
                 && (int) $SETTINGS['enable_pf_feature'] === 1
-                && in_array($node, $inputData['personalFolders']) === false
+                && in_array($node->id, $inputData['personalFolders']) === false
             ) {
                 $displayThisNode = false;
             } else {
                 $displayThisNode = true;
-                // not adding a break in order to permit a correct count of items
+                $nbItemsInSubfolders = (int) $node->nb_items_in_subfolders;
+                $nbItemsInFolder = (int) $node->nb_items_in_folder;
+                $nbSubfolders = (int) $node->nb_subfolders;
+                break;
             }
-            $text = '';
         }
     }
     
@@ -413,9 +334,9 @@ function recursiveTree(
             $SETTINGS,
             $inputData,
             $text,
-            $nbChildrenItems,
-            $nodeDescendants,
-            $nodeDirectDescendants,
+            $nbItemsInSubfolders,
+            $nbSubfolders,
+            $nbItemsInFolder,
             $ret_json
         );
     }
@@ -436,9 +357,9 @@ function recursiveTree(
  * @param array $SETTINGS
  * @param array $inputData
  * @param string $text
- * @param integer $nbChildrenItems
- * @param array $nodeDescendants
- * @param array $nodeDirectDescendants
+ * @param integer $nbItemsInSubfolders
+ * @param integer $nbSubfolders
+ * @param integer $nbItemsInFolder
  * @param array $ret_json
  * @return void
  */
@@ -453,25 +374,12 @@ function handleNode(
     array $SETTINGS,
     array $inputData,
     string $text,
-    int $nbChildrenItems,
-    array $nodeDescendants,
-    array $nodeDirectDescendants,
+    int $nbItemsInSubfolders,
+    int $nbSubfolders,
+    int $nbItemsInFolder,
     array &$ret_json = array()
 )
 {
-    // get info about current folder
-    if (isKeyExistingAndEqual('tree_counters', 1, $SETTINGS) === true) {
-        // Get number of items in this folder (not recursive
-        $itemsNb = (int) DB::queryfirstrow(
-            'SELECT COUNT(*) AS num_results FROM ' . prefixTable('items') . '
-            WHERE inactif=%i AND id_tree = %i',
-            0,
-            $nodeId
-        )['num_results'];
-    } else {
-        $itemsNb = 0;
-    }
-
     // If personal Folder, convert id into user name
     if ((int) $currentNode->title === (int) $inputData['userId'] && (int) $currentNode->nlevel === 1) {
         $currentNode->title = $inputData['userLogin'];
@@ -485,13 +393,12 @@ function handleNode(
         $inputData['visibleFolders'],
         $inputData['readOnlyFolders'],
         $inputData['personalVisibleFolders'],
-        (int) $nbChildrenItems,
-        $nodeDescendants,
-        (int) $itemsNb,
+        (int) $nbItemsInFolder,
+        (int) $nbItemsInSubfolders,
+        (int) $nbSubfolders,
         $inputData['limitedFolders'],
         (int) $SETTINGS['show_only_accessible_folders'],
-        $nodeDirectDescendants,
-        isset($SETTINGS['tree_counters']) === true ? (int) $SETTINGS['tree_counters'] : 0,
+        isset($SETTINGS['tree_counters']) === true && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
         (bool) $inputData['userReadOnly'],
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,
@@ -509,7 +416,7 @@ function handleNode(
         $last_visible_parent_level,
         $nodeId,
         $text,
-        $nodeDirectDescendants,
+        $nbSubfolders,
         $SETTINGS
     );    
     $last_visible_parent = $tmpRetArray['last_visible_parent'];
@@ -549,7 +456,7 @@ function handleNode(
  * @param integer $last_visible_parent_level
  * @param integer $nodeId
  * @param string $text
- * @param array $nodeDirectDescendants
+ * @param integer $nbSubfolders
  * @param array $SETTINGS
  * @return array
  */
@@ -562,7 +469,7 @@ function prepareNodeJson(
     int &$last_visible_parent_level,
     int $nodeId,
     string $text,
-    array $nodeDirectDescendants,
+    int $nbSubfolders,
     array $SETTINGS
 ): array
 {
@@ -604,7 +511,7 @@ function prepareNodeJson(
         );
         
         if ($inputData['userTreeLoadStrategy'] === 'sequential') {
-            $ret_json[count($ret_json) - 1]['children'] = count($nodeDirectDescendants) > 0 ? true : false;
+            $ret_json[count($ret_json) - 1]['children'] = $nbSubfolders > 0 ? true : false;
         }
 
     } elseif ($nodeData['show_but_block'] === true) {
@@ -636,12 +543,11 @@ function prepareNodeJson(
  * @param array $session_groupes_visibles
  * @param array $session_read_only_folders
  * @param array $session_personal_visible_groups
- * @param integer $nbChildrenItems
- * @param array $nodeDescendants
- * @param integer $itemsNb
- * @param array $session_list_folders_limited
+ * @param integer $nbItemsInFolder
+ * @param integer $nbItemsInSubfolders
+ * @param integer $nbSubfolders
+ * @param integer $session_list_folders_limited
  * @param integer $show_only_accessible_folders
- * @param array $nodeDirectDescendants
  * @param integer $tree_counters
  * @param bool $session_user_read_only
  * @param array $listFoldersLimitedKeys
@@ -655,12 +561,11 @@ function prepareNodeData(
     array $session_groupes_visibles,
     array $session_read_only_folders,
     array $session_personal_visible_groups,
-    int $nbChildrenItems,
-    array $nodeDescendants,
-    int $itemsNb,
+    int $nbItemsInFolder,
+    int $nbItemsInSubfolders,
+    int $nbSubfolders,
     array $session_list_folders_limited,
     int $show_only_accessible_folders,
-    array $nodeDirectDescendants,
     int $tree_counters,
     bool $session_user_read_only,
     array $listFoldersLimitedKeys,
@@ -674,7 +579,7 @@ function prepareNodeData(
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>'.
-                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
+                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
                 'title' => langHdl('read_only_account'),
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
@@ -689,7 +594,7 @@ function prepareNodeData(
         ) {
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1"></i>'.
-                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
+                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
                 'title' => langHdl('read_only_account'),
                 'restricted' => 0,
                 'folderClass' => 'folder',
@@ -700,7 +605,7 @@ function prepareNodeData(
         }
         
         return [
-            'html' => ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $itemsNb .'/'.$nbChildrenItems .'/'.(count($nodeDescendants) - 1). '</span>'  : ''),
+            'html' => ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
             'title' => '',
             'restricted' => 0,
             'folderClass' => 'folder',

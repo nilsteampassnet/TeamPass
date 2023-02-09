@@ -57,7 +57,7 @@ class NestedTree
             $this->fields['id'],
             $this->fields['parent'],
             $this->fields['sort'],
-            'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation', 'fa_icon', 'fa_icon_selected');
+            'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation', 'fa_icon', 'fa_icon_selected', 'nb_items_in_folder', 'nb_subfolders', 'nb_items_in_subfolders');
     }
 
     /**

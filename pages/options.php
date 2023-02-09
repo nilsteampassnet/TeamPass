@@ -869,7 +869,9 @@ $zones = timezone_list();
                                 <div class='toggle toggle-modern' id='show_description' data-toggle-on='<?php echo isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_description_input' value='<?php echo isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1' ? '1' : '0'; ?>' />
                             </div>
                         </div>
-
+<?php
+if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
+    ?>
                         <div class='row mb-2 option' data-keywords="display tree counter">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_tree_counters'); ?>
@@ -881,7 +883,9 @@ $zones = timezone_list();
                                 <div class='toggle toggle-modern' id='tree_counters' data-toggle-on='<?php echo isset($SETTINGS['tree_counters']) === true && $SETTINGS['tree_counters'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='tree_counters_input' value='<?php echo isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1' ? '1' : '0'; ?>' />
                             </div>
                         </div>
-
+<?php
+}
+?>
                         <div class='row mb-2 option' data-keywords="query display optimization">
                             <div class='col-10'>
                                 <?php echo langHdl('nb_items_by_query'); ?>

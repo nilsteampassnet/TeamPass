@@ -498,7 +498,7 @@ return array(
     'settings_ldap_type' => 'LDAP server type',
     'server_time' => 'Server time',
     'settings_tree_counters' => 'Show counters in folder tree',
-    'settings_tree_counters_tip' => 'Enabling shows three numbers next to each folder: number of items in base folder; number of items including subfolders; number of subfolders. Enabling this feature may slow loading of the folder tree pane.',
+    'settings_tree_counters_tip' => 'Enabling shows three numbers next to each folder: number of items in base folder; number of items including subfolders; number of subfolders. ',
     'admin_action_check_pf' => 'Create personal folders for all users without one',
     'enable_personal_folder_feature_tip' => 'Personal folders are a private location for individual user passwords. Password items are encrypted by a user\'s salt key (more secure) or by their password (easier). Enabling this feature does not create the actual folders for existing users - you must also run the create personal folders task.',
     'administrators_only' => 'Administrators only',

@@ -17,26 +17,31 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'show_user_temporary_encryption_code' => 'Show user encryption code',
-    'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
+    'show_user_temporary_encryption_code' => 'Benutzer-Verschlüsselungscode anzeigen',
+    'email_body_new_user' => 'Hallo,<br><br>dies ist eine generierte E-Mail von Teampass passwords manager.Ein Administrator hat für Sie ein Benutzerkonto auf Teampass erstellt. Wenn Sie sich das nächste Mal mit Teampass verbinden, verwenden Sie bitte die folgenden Anmeldedaten: <br><br>login: #login#<br><br>
+Kennwort: #password#<br><br>
+Verschlüsselungscode: #code#<br><br>
+',
     'user_password' => 'Benutzerkennwort',
-    'user_temporary_encryption_code' => 'User encryption code',
-    'no_email_set' => 'No email has been registered',
-    'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
-    'admin_change_user_encryption_code_info' => 'This operation will reset the encryption code for this user.',
+    'user_temporary_encryption_code' => '
+Benutzer-Verschlüsselungscode',
+    'no_email_set' => '
+Es wurde keine E-Mail-Adresse registriert',
+    'send_user_password_by_email' => 'Entscheiden Sie, ob das Benutzer-Login-Passwort per E-Mail gesendet werden soll.<br>Wenn ja, dann drücken Sie die Schaltfläche Senden.<br><br>Otherwize Verwenden Sie die Schaltfläche In Zwischenablage kopieren, um es auf andere Weise an den Benutzer zu senden.<br>Es liegt in Ihrer Verantwortung als Administrator, dem Benutzer das Passwort auf sichere Weise zur Verfügung zu stellen.',
+    'admin_change_user_encryption_code_info' => 'Dieser Vorgang setzt den Verschlüsselungscode für diesen Benutzer zurück.',
     'send_by_email' => 'Via E-Mail senden',
     'filters' => 'Filter',
     'show_user_password' => 'Benutzerpasswort anzeigen',
     'open_website' => 'Öffne Webseite',
-    'mfa_for_roles' => 'MFA is requested for users in Roles',
-    'mfa_for_roles_tip' => 'By default, once an MFA method is selected, it is enabled for all users. Nevertheless, you might select the roles for which it is expected.<br>NOT YET IMPLEMENTED',
-    'at_least_one_administrator_is_requested' => 'At least one administrator is requested',
-    'bad_code' => 'Bad code',
+    'mfa_for_roles' => 'MFA wird für Benutzer in Rollen angefordert',
+    'mfa_for_roles_tip' => 'Sobald eine MFA-Methode ausgewählt ist, ist sie standardmäßig für alle Benutzer aktiviert. Sie können jedoch die Rollen auswählen, für die dies erwartet wird.<br>NOCH NICHT IMPLEMENTIERT',
+    'at_least_one_administrator_is_requested' => 'Mindestens ein Administrator wird angefordert',
+    'bad_code' => 'Fehlerhafter Code',
     'generating_keys' => 'Generiere Schlüssel',
     'this_may_take_time' => 'Das kann einige Minuten dauern',
     'disable_enable' => 'Deaktivieren / Aktivieren',
-    'user_disable_status' => 'Tick the box to disable or leave empty to enable',
-    'help_for_launching_items_encryption' => 'We need to generate the keys database for your account. Please provide your encryption code.',
+    'user_disable_status' => 'Aktivieren Sie das Kontrollkästchen, um es zu deaktivieren, oder lassen Sie es leer, um es zu aktivieren.',
+    'help_for_launching_items_encryption' => 'Wir müssen die Schlüsseldatenbank für Ihr Konto generieren. Bitte geben Sie Ihren Verschlüsselungscode an.',
     'managed_through_ad' => 'Durch Active Directory verwaltet',
     'new_ldap_user_info' => 'Please complete the definition for user',
     'email_body_user_added_from_ldap_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You now have an account in Teampass. You can use your AD credentials to get logged.<br><br>On first login, an encryption code will be expected from you, please use:<br><br><b>#enc_code#</b><br><br><br>Cheers',

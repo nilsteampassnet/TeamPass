@@ -1667,6 +1667,25 @@ mysqli_query(
     'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'sharekeys_logs (user_id)'
 );
 
+// Add field nb_items_in_folder to NESTED_TREE table
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'nb_items_in_folder',
+    "int(10) NOT NULL DEFAULT '0'"
+);
+// Add field nb_subfolders to NESTED_TREE table
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'nb_subfolders',
+    "int(10) NOT NULL DEFAULT '0'"
+);
+// Add field nb_items_in_subfolders to NESTED_TREE table
+$res = addColumnIfNotExist(
+    $pre . 'nested_tree',
+    'nb_items_in_subfolders',
+    "int(10) NOT NULL DEFAULT '0'"
+);
+
 //---<END 3.0.0.22
 
 

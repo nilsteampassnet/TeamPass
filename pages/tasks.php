@@ -101,9 +101,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-5'>
                                         <i class="fas fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
-                                            <!--<small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('settings_ldap_mode_tip'); ?>
-                                            </small>-->
                                         </div>
                                         <div class='col-5 text-right'>
                                             <?php echo langHdl('task_frequency'); ?>
@@ -116,9 +113,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-5'>
                                         <i class="fas fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
-                                            <!--<small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('settings_ldap_mode_tip'); ?>
-                                            </small>-->
                                         </div>
                                         <div class='col-5 text-right'>
                                             <?php echo langHdl('task_frequency'); ?>
@@ -127,6 +121,19 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <input type='text' class='form-control form-control-sm' id='user_keys_job_frequency' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                     </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-5'>
+                                        <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
+                                        </div>
+                                        <div class='col-5 text-right'>
+                                            <?php echo langHdl('task_frequency'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='items_statistics_job_frequency' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 
