@@ -2382,12 +2382,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         browse_button: 'form-item-attach-pickfiles',
         container: 'form-item-upload-zone',
         max_file_size: '<?php
-                        if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
-                            echo $SETTINGS['upload_maxfilesize'] . 'mb';
-                        } else {
-                            echo $SETTINGS['upload_maxfilesize'];
-                        }
-                        ?>',
+            if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
+                echo $SETTINGS['upload_maxfilesize'] . 'mb';
+            } else {
+                echo $SETTINGS['upload_maxfilesize'];
+            }
+            ?>',
         chunk_size: '1mb',
         dragdrop: true,
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.attachments.php',
@@ -2468,7 +2468,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     edit_item: false,
                     user_token: store.get('teampassApplication').attachmentToken,
                     randomId: store.get('teampassApplication').uploadedFileId,
-                    files_number: $('#form-item-hidden-pickFilesNumber').val()
+                    files_number: $('#form-item-hidden-pickFilesNumber').val(),
+                    file_size: file.size
                 });
             }
         }
@@ -2476,7 +2477,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     // Uploader options
     uploader_attachments.bind('UploadProgress', function(up, file) {
-        console.log('uploader_attachments.bind')
+        //console.log('uploader_attachments.bind')
         $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' - ' + file.percent + '%');
     });
     uploader_attachments.bind('Error', function(up, err) {

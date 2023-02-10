@@ -70,6 +70,7 @@ $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 $post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
 $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
 $post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);
+$post_fileSize= filter_input(INPUT_POST, 'file_size', FILTER_SANITIZE_NUMBER_INT);
 
 // load functions
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -314,7 +315,7 @@ if (strpos($contentType, 'multipart') !== false) {
         if ($out !== false) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
-            $fileFullSize += $_FILES['file']['size'];
+            $fileFullSize += (int) $_FILES['file']['size'];
 
             if ($in !== false) {
                 while ($buff = fread($in, 4096)) {
@@ -385,7 +386,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         array(
             'id_item' => $post_itemId,
             'name' => $fileName,
-            'size' => $fileFullSize,
+            'size' => $post_fileSize,
             'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],
             'file' => $newFile['fileHash'],
