@@ -4892,7 +4892,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
 
 
-
                 $('#edit_past_pwds').attr('title', (data.history_of_pwds)); //htmlspecialchars_decode 
                 $('#edit_past_pwds_div').html((data.history_of_pwds)); //htmlspecialchars_decode 
 
@@ -5356,6 +5355,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .val(data.usersList.concat(
                             data.rolesList.map(i => 'role_' + i)))
                         .change();
+
+                    // If restricted to Users then select them
+                    if (store.get('teampassItem').id_restricted_to !== undefined) {
+                        $('#form-item-restrictedto')
+                            .val(store.get('teampassItem').id_restricted_to)
+                            .trigger('change');
+                    }
+
                 }
 
                 store.update(
