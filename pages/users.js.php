@@ -678,6 +678,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('#row-list').addClass('hidden');
             $('#row-form, #group-create-special-folder, .not-for-admin').removeClass('hidden');
 
+            // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
+            if (parseInt(store.get('teampassUser').user_admin) === 1) {
+                $('input[type=radio].only-admin').iCheck('enable');
+            } else if (parseInt(store.get('teampassUser').user_can_manage_all_users) === 1) {
+                $('input[type=radio].only-admin').iCheck('enable');
+                $('#privilege-admin').iCheck('disable');
+                $('#privilege-hr').iCheck('disable');
+            } else {
+                $('#privilege-admin').iCheck('disable');
+                $('#privilege-hr').iCheck('disable');
+                $('#privilege-manager').iCheck('disable');
+            }
+
             // Prepare checks
             $('#privilege-user').iCheck('check');
             $('#form-create-special-folder').iCheck('disable');
@@ -1122,7 +1135,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Prepare checks
             $('.form-check-input')
-                .iCheck('disable')
                 .iCheck('uncheck');
 
             // Remove action from store
