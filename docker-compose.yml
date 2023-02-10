@@ -14,7 +14,7 @@ services:
 
   teampass-web:
     build: .
-    #image: teampass/teampass
+    image: dormancygrace/teampass/teampass
     restart: unless-stopped
     environment:
       VIRTUAL_HOST: YOUR_HOSTNAME
@@ -22,9 +22,14 @@ services:
       CERT_NAME: YOUR_CERTIFICATE
     volumes:
       - ./teampass-html:/var/www/html
+    # uncomment ports to use without proxy
+    #ports:
+    #  - 80:80
     networks:
       - teampass-internal
       - backend
+    depends_on:
+      - db
   db:
     restart: unless-stopped
     image: yobasystems/alpine-mariadb:latest
