@@ -482,18 +482,8 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_log_type = filter_var($dataReceived['dataType'], FILTER_SANITIZE_STRING);
-            $post_date_from = strtotime(
-                date_format(
-                    date_create_from_format($SETTINGS['date_format'], filter_var($dataReceived['dateStart'], FILTER_SANITIZE_STRING)),
-                    'Y-m-d'
-                )
-            );
-            $post_date_to = strtotime(
-                date_format(
-                    date_create_from_format($SETTINGS['date_format'], filter_var($dataReceived['dateEnd'], FILTER_SANITIZE_STRING)),
-                    'Y-m-d'
-                )
-            );
+            $post_date_from = strtotime(filter_var($dataReceived['dateStart'], FILTER_SANITIZE_STRING));
+            $post_date_to = strtotime(filter_var($dataReceived['dateEnd'], FILTER_SANITIZE_STRING));
             $post_filter_user = filter_var($dataReceived['filter_user'], FILTER_SANITIZE_NUMBER_INT);
             $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_STRING);
 

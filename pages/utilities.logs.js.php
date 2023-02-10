@@ -490,6 +490,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
     });
 
     // Build date range picker
+    var dateRangeStart = '',
+        dateRangeEnd = '';
     $('#purge-date-range')
         .daterangepicker({
             locale: {
@@ -500,7 +502,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         })
         .bind('keypress', function(e) {
             e.preventDefault();
-        });
+        })
+        .on('apply.daterangepicker', function(ev, picker) {
+            dateRangeStart = picker.startDate.format('YYYY-MM-DD');
+            dateRangeEnd = picker.endDate.format('YYYY-MM-DD');
+        });;
 
     // Clear date range
     $('#clear-purge-date').click(function() {
@@ -527,11 +533,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
-            var dateRange = $('#purge-date-range').val().split('-');
             var data = {
                 'dataType': store.get('teampassApplication').logData,
-                'dateStart': dateRange[0].trim(),
-                'dateEnd': dateRange[1].trim(),
+                'dateStart': dateRangeStart,
+                'dateEnd': dateRangeEnd,
                 'filter_user': $('#purge-filter-user').val(),
                 'filter_action': $('#purge-filter-action').val(),
             }
