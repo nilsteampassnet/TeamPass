@@ -676,7 +676,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         if ($(this).data('action') === 'new') {
             // ADD NEW USER
             $('#row-list').addClass('hidden');
-            $('#row-form, #group-create-special-folder').removeClass('hidden');
+            $('#row-form, #group-create-special-folder, .not-for-admin').removeClass('hidden');
 
             // Prepare checks
             $('#privilege-user').iCheck('check');
