@@ -297,7 +297,7 @@ function recursiveTree(
     include __DIR__.'/../includes/config/tp.config.php';
 
     $displayThisNode = false;
-    $nbChildrenItems = 0;
+    $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
     $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, false);
     array_shift($nodeDirectDescendants); // get only the children
 
@@ -337,6 +337,7 @@ function recursiveTree(
             $nbItemsInSubfolders,
             $nbSubfolders,
             $nbItemsInFolder,
+            $nodeDirectDescendants,
             $ret_json
         );
     }
@@ -360,6 +361,7 @@ function recursiveTree(
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
  * @param integer $nbItemsInFolder
+ * @param array $nodeDirectDescendants
  * @param array $ret_json
  * @return void
  */
@@ -377,6 +379,7 @@ function handleNode(
     int $nbItemsInSubfolders,
     int $nbSubfolders,
     int $nbItemsInFolder,
+    array $nodeDirectDescendants,
     array &$ret_json = array()
 )
 {
@@ -403,7 +406,8 @@ function handleNode(
         $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
-        $inputData['personalFolders']
+        $inputData['personalFolders'],
+        $nodeDirectDescendants
     );
 
     // Prepare JSON 
@@ -554,6 +558,7 @@ function prepareNodeJson(
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
  * @param array $session_personal_folder
+ * @param array $nodeDirectDescendants
  * @return array
  */
 function prepareNodeData(
@@ -571,7 +576,8 @@ function prepareNodeData(
     array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
-    array $session_personal_folder
+    array $session_personal_folder,
+    array $nodeDirectDescendants
 ): array
 {
     if (in_array($nodeId, $session_groupes_visibles) === true) {
@@ -639,7 +645,7 @@ function prepareNodeData(
         ];
 
     } elseif ((int) $show_only_accessible_folders === 1
-        && (int) $nbChildrenItems === 0
+        && (int) $nbSubfolders === 0
     ) {
         // folder should not be visible
         // only if it has no descendants

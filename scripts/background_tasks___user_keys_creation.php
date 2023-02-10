@@ -52,6 +52,17 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
+// log start
+DB::insert(
+    prefixTable('processes_logs'),
+    array(
+        'created_at' => time(),
+        'job' => 'user_keys_creation',
+        'status' => 'start',
+    )
+);
+$logID = DB::insertId();
+
 
 // Manage the tasks in queue.
 // Task to treat selection is:
@@ -97,6 +108,17 @@ if (DB::count() > 0) {
 
     }
 }
+
+// log end
+DB::update(
+    prefixTable('processes_logs'),
+    array(
+        'status' => 'end',
+        'finished_at' => time(),
+    ),
+    'increment_id = %i',
+    $logID
+);
 
 
 

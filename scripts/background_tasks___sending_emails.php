@@ -54,6 +54,16 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
+// log start
+DB::insert(
+    prefixTable('processes_logs'),
+    array(
+        'created_at' => time(),
+        'job' => 'sending_emails',
+        'status' => 'start',
+    )
+);
+$logID = DB::insertId();
 
 // Manage emails to send in queue.
 // Only manage 10 emails at time
@@ -103,6 +113,17 @@ if (isset($SETTINGS['send_stats']) === true && (int) $SETTINGS['send_stats'] ===
 // Now send waiting emails - TODO - remove this in the future
 sendEmailsNotSent(
     $SETTINGS
+);
+
+// log end
+DB::update(
+    prefixTable('processes_logs'),
+    array(
+        'status' => 'end',
+        'finished_at' => time(),
+    ),
+    'increment_id = %i',
+    $logID
 );
 
 

@@ -54,6 +54,17 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
+// log start
+DB::insert(
+    prefixTable('processes_logs'),
+    array(
+        'created_at' => time(),
+        'job' => 'do_calculation',
+        'status' => 'start',
+    )
+);
+$logID = DB::insertId();
+
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -104,3 +115,14 @@ foreach ($ret as $folder) {
         $folder['id']
     );
 }
+
+// log end
+DB::update(
+    prefixTable('processes_logs'),
+    array(
+        'status' => 'end',
+        'finished_at' => time(),
+    ),
+    'increment_id = %i',
+    $logID
+);

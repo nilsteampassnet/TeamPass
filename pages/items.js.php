@@ -453,7 +453,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             toastr.remove();
 
             // Check privileges
-            if (store.get('teampassItem').hasAccessLevel < 30 &&
+            if (store.get('teampassItem').hasAccessLevel < 20 &&
                 store.get('teampassUser').can_create_root_folder === 0
             ) {
                 toastr.error(
@@ -1628,8 +1628,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     $('#form-folder-add-perform').click(function() {
         var form = $('#form-folder-add');
-        if (debugJavascript === true) console.log(form[0]);
-        if (debugJavascript === true) console.log(form[0].checkValidity());
+        if (debugJavascript === true) {
+            console.log(form[0]);
+            console.log(form[0].checkValidity());
+        }
         if (form[0].checkValidity() === false) {
             form.addClass('was-validated');
 
@@ -1690,7 +1692,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             function(data) {
                 //decrypt data//decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
-
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
