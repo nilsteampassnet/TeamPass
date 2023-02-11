@@ -1040,5 +1040,6 @@ Es wurde keine E-Mail-Adresse registriert',
     'enable_tasks_log' => 'Enable cron job log',
     'enable_tasks_log_tip' => 'Permits to log all tasks performed by the cron job inside table <i>processes_log</i>. Could be useful for checking events.',
     'items_and_folders_statistics' => 'Items and folders statistics',
+    'item_copying' => 'Item is being copied',
 
 );

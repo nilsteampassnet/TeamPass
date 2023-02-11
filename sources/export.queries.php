@@ -247,7 +247,7 @@ if (null !== $post_type) {
                                     'login' => cleanStringForExport($record['login']),
                                     'restricted_to' => isset($record['restricted_to']) === true ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
-                                    'url' => $record['url'] !== 'none' ? htmlspecialchars_decode($record['url']) : '',
+                                    'url' => $record['url'] !== 'none' && is_null($record['url']) === false && empty($record['url']) === false ? htmlspecialchars_decode($record['url']) : '',
                                     'email' => $record['email'] !== 'none' ? (is_null($record['email']) === false ? cleanStringForExport($record['email']) : '') : '',
                                     'kbs' => implode(' | ', $arr_kbs),
                                     'tags' => implode(' ', $arr_tags),

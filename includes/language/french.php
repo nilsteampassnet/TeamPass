@@ -1035,5 +1035,6 @@ return array(
     'enable_tasks_log' => 'Activer le log des taches du cron',
     'enable_tasks_log_tip' => 'Permet d\'enregistrer l\'exécution des taches du cron dans la table <i>processes_log</i>.  Cela peut être utile pour vérifier que les taches tournent correctement.',
     'items_and_folders_statistics' => 'Statistiques relatives aux objets et répertoires',
+    'item_copying' => 'Copie de l\'objet en cours',
 
 );
