@@ -155,10 +155,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $("#export-folders :selected").each(function(i, selected) {
             ids.push($(selected).val());
         });
-
+console.log($('#export-format').val())
         // No selection of folders done
         if (ids.length === 0) {
             $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('error_no_selected_folder'); ?>');
+
+            toastr.remove();
+            toastr.success(
+                '<?php echo langHdl('done'); ?>',
+                '', {
+                    timeOut: 1000
+                }
+            );
+
+            return;
+        } else if (null === $('#export-format').val()) {
+            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('export_format_type'); ?>');
 
             toastr.remove();
             toastr.success(
