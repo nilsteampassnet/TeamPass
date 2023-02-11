@@ -13,8 +13,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
   teampass-web:
-    build: .
-    image: dormancygrace/teampass/teampass
+    image: dormancygrace/teampass:latest
     restart: unless-stopped
     environment:
       VIRTUAL_HOST: YOUR_HOSTNAME
