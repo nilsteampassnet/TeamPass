@@ -34,6 +34,7 @@ class AuthController extends BaseController
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
         $responseData = '';
+        $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 

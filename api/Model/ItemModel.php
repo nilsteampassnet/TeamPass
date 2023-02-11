@@ -41,10 +41,11 @@ class ItemModel extends Database
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
     {
         $rows = $this->select(
-            "SELECT id, label, description, pw, url, id_tree, login, email, viewed_no, fa_icon, inactif, perso 
-            FROM ".prefixTable('items')."".
+            "SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso, t.title as folder_label
+            FROM ".prefixTable('items')." as i
+            LEFT JOIN ".prefixTable('nested_tree')." as t ON (t.id = i.id_tree) ".
             $sqlExtra . 
-            " ORDER BY id ASC" .
+            " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
         );
         $ret = [];
@@ -66,7 +67,20 @@ class ItemModel extends Database
                     )
                 ));
             }
-            
+
+            // get path to item
+            require_once API_ROOT_PATH. '/../includes/libraries/Tree/NestedTree/NestedTree.php';
+            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $arbo = $tree->getPath($row['id_tree'], false);
+            $path = '';
+            foreach ($arbo as $elem) {
+                if (empty($path) === true) {
+                    $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                } else {
+                    $path .= '>' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                }
+            }
+
             array_push(
                 $ret,
                 [
@@ -81,15 +95,14 @@ class ItemModel extends Database
                     'fa_icon' => $row['fa_icon'],
                     'inactif' => (int) $row['inactif'],
                     'perso' => (int) $row['perso'],
+                    'id_tree' => (int) $row['id_tree'],
+                    'folder_label' => $row['folder_label'],
+                    'path' => empty($path) === true ? '' : $path,
                 ]
             );
         }
 
         return $ret;
-        /*[
-            'number' => count($ret),
-            'values' => $ret
-        ];*/
     }
     //end getItems() 
 }

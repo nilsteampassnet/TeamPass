@@ -6,8 +6,8 @@
 
 - [x] Global API structure
 - [x] Authentication
-- [ ] Items - list with criteria
-- [ ] Items - get item info
+- [x] Items - list with criteria
+- [x] Items - get item info
 - [ ] Items - edit an item
 
 
@@ -64,6 +64,21 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 | PARAMETERS | folders=[<folder_id>,<folder_id>] |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of items in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 1027,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Teampass production",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "Use for administration",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Ajdh-652Syw-625sWW-Ca18",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "tpAdmin",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "nils@teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 54,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": null,<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0<br>&nbsp;&nbsp;}<br>] |
+
+### Get item data
+
+> :memo: **Note:** Returns the item definition based upon its ID (taking into account the user access rights)
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/get |
+| Type | GET |
+| URL | `<Teampass url>/api/index.php/item/get?id=2052` |
+| PARAMETERS | id=<item_id> |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id":2053,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label":"new object for #3500 v3",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description":"<p>bla bla</p>",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd":"SK^6A}]V$t^]",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login":"Me",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no":2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif":0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso":0<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 670,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "MACHINES",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": "issue3317>issue 3325>ITI - Speedcall 2>PROD - CLARANET"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+
+
 
 
 

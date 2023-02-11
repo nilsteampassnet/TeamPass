@@ -27,7 +27,7 @@ class ItemController extends BaseController
 
 
     /**
-     * Manage case inFolder
+     * Manage case inFolder - get items inside an array of folders
      *
      * @param array $userData
      */
@@ -102,4 +102,62 @@ class ItemController extends BaseController
         }
     }
     //end InFoldersAction() 
+
+
+    /**
+     * Manage case get - get an item
+     *
+     * @param array $userData
+     */
+    public function getAction(array $userData): void
+    {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $strErrorDesc = '';
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
+
+        // get parameters
+        $arrQueryStringParams = $this->getQueryStringParams();
+
+        if (strtoupper($requestMethod) === 'GET') {
+            // SQL where clause with item id
+            if (isset($arrQueryStringParams['id']) === true) {
+                // build sql where clause
+                $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'];
+            } else {
+                // Send error
+                $this->sendOutput(
+                    json_encode(['error' => 'Item id is mandatory']),
+                    ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
+                );
+            }
+
+            // send query
+            try {
+                $itemModel = new ItemModel();
+
+                $arrItems = $itemModel->getItems($sqlExtra, 0, $userData['private_key'], $userData['id']);
+                $responseData = json_encode($arrItems);
+            } catch (Error $e) {
+                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]), 
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end getAction() 
 }
