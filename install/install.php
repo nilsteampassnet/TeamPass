@@ -206,8 +206,8 @@ define('MIN_PHP_VERSION', 7.4);
 					<li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check8"></span></li>
 					<li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check9"></span></li>
 					<li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check10"></span></li>
-					<li>PHP extension "xml" is loaded&nbsp;<span id="res2_check11"></span></li>
-					<li>PHP extension "gd" is loaded&nbsp;<span id="res2_check12"></span></li>
+					<li>PHP extension "xml" is loaded&nbsp;<span id="res2_check12"></span></li>
+					<li>PHP extension "gd" is loaded&nbsp;<span id="res2_check11"></span></li>
 					<li>PHP extension "curl" is loaded&nbsp;<span id="res2_check13"></span></li>
 					<li>PHP extension "gmp" is loaded&nbsp;<span id="res2_check16"></span></li>
 					<li>PHP version is greater or equal to '.MIN_PHP_VERSION.'&nbsp;<span id="res2_check14"></span></li>
