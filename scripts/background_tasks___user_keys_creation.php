@@ -28,6 +28,7 @@ session_start();
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
+require_once __DIR__.'/background_tasks___functions.php';
 
 // increase the maximum amount of time a script is allowed to run
 set_time_limit($SETTINGS['task_maximum_run_time']);
@@ -53,15 +54,7 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-DB::insert(
-    prefixTable('processes_logs'),
-    array(
-        'created_at' => time(),
-        'job' => 'user_keys_creation',
-        'status' => 'start',
-    )
-);
-$logID = DB::insertId();
+$logID = doLog('start', 'user_keys', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
 
 // Manage the tasks in queue.
@@ -110,15 +103,7 @@ if (DB::count() > 0) {
 }
 
 // log end
-DB::update(
-    prefixTable('processes_logs'),
-    array(
-        'status' => 'end',
-        'finished_at' => time(),
-    ),
-    'increment_id = %i',
-    $logID
-);
+doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
 
 

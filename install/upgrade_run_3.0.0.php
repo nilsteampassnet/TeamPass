@@ -1686,6 +1686,36 @@ $res = addColumnIfNotExist(
     "int(10) NOT NULL DEFAULT '0'"
 );
 
+// Add new setting enable_tasks_log
+addNewSetting(
+    $pre . 'misc',
+    'admin',
+    'enable_tasks_log',
+    '0'
+);
+
+// remove setting ldap_elusers
+removeSetting(
+    $pre . 'misc',
+    'admin',
+    'ldap_elusers'
+);
+
+// Add new table PROCESSES_LOGS
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'processes_logs` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `created_at` varchar(20) NOT NULL,
+        `job` varchar(50) NOT NULL,
+        `status` varchar(10) NOT NULL,
+        `updated_at` varchar(20) DEFAULT NULL,
+        `finished_at` varchar(20) DEFAULT NULL,
+        PRIMARY KEY (`increment_id`)
+        ) CHARSET=utf8;'
+);
+
+
 //---<END 3.0.0.22
 
 

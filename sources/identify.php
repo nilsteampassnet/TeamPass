@@ -792,7 +792,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'error' => 'user_not_exists3',
-            'message' => langHdl('error_bad_credentials'),
+            'message' => langHdl('error_not_allowed_to_authenticate'),
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -910,7 +910,8 @@ function canUserGetLog(
     if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true 
         && (
             ($ldapConnection === true && $username !== 'admin')
-            || $username === 'admin')
+            || $username === 'admin'
+        )
     ) {
         return true;
     }
@@ -920,19 +921,7 @@ function canUserGetLog(
     ) {
         return true;
     }
-    /*
-    if (
-        (isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true && (int) $userInfoDisabled === 0)
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 2, $SETTINGS) === true && $ldapConnection === true && (int) $userInfoDisabled === 0 && $username !== 'admin')
-        || (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $username === 'admin' && (int) $userInfoDisabled === 0)
-        || (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
-            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
-            && (int) $userInfoDisabled === 0)
-    ) {
-        return true;
-    }
-    */
+
     return false;
 }
 

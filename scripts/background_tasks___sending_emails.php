@@ -29,6 +29,7 @@ $_SESSION['CPM'] = 1;
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
+require_once __DIR__.'/background_tasks___functions.php';
 
 // increase the maximum amount of time a script is allowed to run
 set_time_limit($SETTINGS['task_maximum_run_time']);
@@ -55,15 +56,7 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-DB::insert(
-    prefixTable('processes_logs'),
-    array(
-        'created_at' => time(),
-        'job' => 'sending_emails',
-        'status' => 'start',
-    )
-);
-$logID = DB::insertId();
+$logID = doLog('start', 'sending_email', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
 // Manage emails to send in queue.
 // Only manage 10 emails at time
@@ -116,15 +109,7 @@ sendEmailsNotSent(
 );
 
 // log end
-DB::update(
-    prefixTable('processes_logs'),
-    array(
-        'status' => 'end',
-        'finished_at' => time(),
-    ),
-    'increment_id = %i',
-    $logID
-);
+doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
 
 function sendEmailsNotSent(

@@ -589,7 +589,6 @@ $SETTINGS = array (';
                             array('admin', 'ldap_user_attribute', '0'),
                             array('admin', 'ldap_ssl', '0'),
                             array('admin', 'ldap_tls', '0'),
-                            array('admin', 'ldap_elusers', '0'),
                             array('admin', 'ldap_search_base', '0'),
                             array('admin', 'ldap_port', '389'),
                             array('admin', 'richtext', '0'),
@@ -714,6 +713,7 @@ $SETTINGS = array (';
                             array('admin', 'tasks_manager_refreshing_period', '20'),
                             array('admin', 'maximum_number_of_items_to_treat', '100'),
                             array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
+                            array('admin', 'enable_tasks_log', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -1278,6 +1278,18 @@ $SETTINGS = array (';
                             `output` text DEFAULT NULL,
                             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+                            PRIMARY KEY (`increment_id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($task === 'processes_logs') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_logs` (
+                            `created_at` varchar(20) NOT NULL,
+                            `job` varchar(50) NOT NULL,
+                            `status` varchar(10) NOT NULL,
+                            `updated_at` varchar(20) DEFAULT NULL,
+                            `finished_at` varchar(20) DEFAULT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );

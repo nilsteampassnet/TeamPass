@@ -96,6 +96,18 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <div class="callout callout-info alert-dismissible mt-3">
                                         <h5><i class="fas fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                                         <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+
+                                        <div class='row mt-4 option' data-keywords="favorite">
+                                            <div class='col-10'>
+                                            <h5><i class="fa-solid fa-rss mr-2"></i><?php echo langHdl('enable_tasks_log'); ?></h5>
+                                                <small class='form-text text-muted'>
+                                                    <?php echo langHdl('enable_tasks_log_tip'); ?>
+                                                </small>
+                                            </div>
+                                            <div class='col-2'>
+                                                <div class='toggle toggle-modern' id='enable_tasks_log' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_log']) === true && (int) $SETTINGS['enable_tasks_log'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_log_input' value='<?php echo isset($SETTINGS['enable_tasks_log']) && (int) $SETTINGS['enable_tasks_log'] === 1 ? 1 : 0; ?>' />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class='row ml-1 mt-3 mb-2'>

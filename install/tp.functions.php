@@ -227,3 +227,54 @@ function generateRandomKey()
 
     return $key[0];
 }
+
+/**
+ * Undocumented function
+ *
+ * @param string $table
+ * @param string $type
+ * @param string $label
+ * @param string $value
+ * @return void
+ */
+function addNewSetting($table, $type, $label, $value): void
+{
+    global $db_link;
+
+    // check if setting already exists
+    $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$table." WHERE type = '".$type."' AND intitule = '".$label."'"));
+    if ($data[0] == 0) {
+        // add setting
+        mysqli_query(
+            $db_link,
+            "INSERT INTO ".$pre."misc
+            (`type`, `intitule`, `valeur`)
+            VALUES ('".$type."', '".$label."', '".$value."')"
+        );
+    }
+}
+
+/**
+ * Permits to remove a setting
+ *
+ * @param string $table
+ * @param string $type
+ * @param string $label
+ * @return void
+ */
+function removeSetting($table, $type, $label): void
+{
+    global $db_link;
+
+    // check if setting already exists
+    $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$table." WHERE type = '".$type."' AND intitule = '".$label."'"));
+    if ($data[0] == 0) {
+        // delete setting
+        DB::delete(
+            prefixTable('misc'),
+            'type = %s AND intitule = %s',
+            $type,
+            $label
+        );
+    }
+}

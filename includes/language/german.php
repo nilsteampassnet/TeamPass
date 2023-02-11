@@ -1036,5 +1036,9 @@ Es wurde keine E-Mail-Adresse registriert',
     'loading_main_page' => 'Please wait, loading main page ...',
     'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
     'link' => 'Link',
+    'error_not_allowed_to_authenticate' => 'You are not allowed to authenticate',
+    'enable_tasks_log' => 'Enable cron job log',
+    'enable_tasks_log_tip' => 'Permits to log all tasks performed by the cron job inside table <i>processes_log</i>. Could be useful for checking events.',
+    'items_and_folders_statistics' => 'Items and folders statistics',
 
 );

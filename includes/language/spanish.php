@@ -1031,5 +1031,9 @@ return array(
     'loading_main_page' => 'Por favor espera, cargando página principal...',
     'alert_session_not_consistent' => 'La sesión actual no es consistente y necesita ser actualizada. La página se recargará.',
     'link' => 'Enlace',
+    'error_not_allowed_to_authenticate' => 'You are not allowed to authenticate',
+    'enable_tasks_log' => 'Enable cron job log',
+    'enable_tasks_log_tip' => 'Permits to log all tasks performed by the cron job inside table <i>processes_log</i>. Could be useful for checking events.',
+    'items_and_folders_statistics' => 'Items and folders statistics',
 
 );

@@ -410,18 +410,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_elusers'); ?>
-                                        <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_elusers_tip'); ?>
-                                        </small>
-                                    </div>
-                                    <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='ldap_elusers' data-toggle-on='<?php echo isset($SETTINGS['ldap_elusers']) === true && $SETTINGS['ldap_elusers'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_elusers_input' value='<?php echo isset($SETTINGS['ldap_elusers']) && (int) $SETTINGS['ldap_elusers'] === 1 ? 1 : 0; ?>'>
-                                    </div>
-                                </div>
-
-                                <div class='row mb-2 tr-ldap'>
-                                    <div class='col-10'>
                                         <?php echo langHdl('settings_ldap_and_local_authentication'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
                                             <?php echo langHdl('settings_ldap_and_local_authentication_tip'); ?>

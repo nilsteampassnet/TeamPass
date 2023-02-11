@@ -1031,5 +1031,9 @@ return array(
     'loading_main_page' => 'Merci de patienter, la page se charge ...',
     'alert_session_not_consistent' => 'La session courante est corrompue et doit être rafraichie. La page va être rechargée.',
     'link' => 'Lien',
+    'error_not_allowed_to_authenticate' => 'Vous n’êtes pas autorisé à vous authentifier',
+    'enable_tasks_log' => 'Activer le log des taches du cron',
+    'enable_tasks_log_tip' => 'Permet d\'enregistrer l\'exécution des taches du cron dans la table <i>processes_log</i>.  Cela peut être utile pour vérifier que les taches tournent correctement.',
+    'items_and_folders_statistics' => 'Statistiques relatives aux objets et répertoires',
 
 );
