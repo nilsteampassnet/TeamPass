@@ -113,6 +113,9 @@ class ItemController extends BaseController
     {
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
+        $sqlExtra = '';
+        $responseData = '';
+        $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters

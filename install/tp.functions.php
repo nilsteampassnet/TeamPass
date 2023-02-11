@@ -243,11 +243,11 @@ function addNewSetting($table, $type, $label, $value): void
 
     // check if setting already exists
     $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$table." WHERE type = '".$type."' AND intitule = '".$label."'"));
-    if ($data[0] == 0) {
+    if ((int) $data[0] === 0) {
         // add setting
         mysqli_query(
             $db_link,
-            "INSERT INTO ".$pre."misc
+            "INSERT INTO ".$table."
             (`type`, `intitule`, `valeur`)
             VALUES ('".$type."', '".$label."', '".$value."')"
         );
@@ -268,13 +268,12 @@ function removeSetting($table, $type, $label): void
 
     // check if setting already exists
     $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$table." WHERE type = '".$type."' AND intitule = '".$label."'"));
-    if ($data[0] == 0) {
+    if ((int) $data[0] === 1) {
         // delete setting
-        DB::delete(
-            prefixTable('misc'),
-            'type = %s AND intitule = %s',
-            $type,
-            $label
+        mysqli_query(
+            $db_link,
+            "DELETE FROM ".$table."
+            WHERE type = '".$type."' AND intitule = '".$label."'"
         );
     }
 }
