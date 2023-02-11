@@ -2474,6 +2474,7 @@ if (null !== $post_type) {
             $output = [];
             $ldapUserAttribute = $SETTINGS['ldap_user_attribute'];
             $query = $connection->query()
+                ->rawfilter($SETTINGS['ldap_user_object_filter'])
                 ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                 ->whereHas($SETTINGS['ldap_user_attribute'])
                 ->chunk(
