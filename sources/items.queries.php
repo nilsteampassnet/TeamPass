@@ -2374,15 +2374,17 @@ if (is_null($inputData['type']) === false) {
             }
 
             // Get all USERS infos
-            $listRest = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
+            $listeRestriction = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
             $_SESSION['listNotificationEmails'] = '';
-            $listeRestriction = array();
 
-            $user_in_restricted_list_of_item = false;
+            /*$user_in_restricted_list_of_item = false;
             $rows = DB::query(
                 'SELECT id, login, email, admin, name, lastname
-                FROM ' . prefixTable('users')
+                FROM ' . prefixTable('users') .'
+                WHERE id in %ls',
+                replace(';', ',', $dataItem['restricted_to'])
             );
+            $listeRestriction = [];
             foreach ($rows as $user) {
                 // Get auhtor
                 if ($user['id'] === $dataItem['id_user']) {
@@ -2398,11 +2400,8 @@ if (is_null($inputData['type']) === false) {
                         $user_in_restricted_list_of_item = true;
                     }
                 }
-                // Get notification list for users
-                /*if (in_array($user['id'], $arrData['notification_list']) === true) {
-                    $_SESSION['listNotificationEmails'] .= $user['email'].',';
-                }*/
-            }
+            }*/
+            $user_in_restricted_list_of_item = in_array($_SESSION['user_id'], $listeRestriction) === true ? true : false;
 
             // manage case of API user
             if ($dataItem['id_user'] === API_USER_ID) {

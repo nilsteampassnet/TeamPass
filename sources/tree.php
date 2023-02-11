@@ -130,7 +130,7 @@ if (DB::count() === 0) {
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChange['valeur'],
     (int) $inputData['userTreeLastRefresh'],
-    (array) (is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true) ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
+    /** @scrutinizer ignore-type */(array) (is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true) ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh']
 );

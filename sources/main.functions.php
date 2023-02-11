@@ -2839,7 +2839,7 @@ function decryptUserObjectKey(string $key, string $privateKey): string
     try {
         $tmpValue = $rsa->decrypt(base64_decode($key));
         if (is_bool($tmpValue) === false) {
-            $ret = base64_encode($tmpValue);
+            $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
         } else {
             $ret = '';
         }
