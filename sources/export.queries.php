@@ -242,7 +242,7 @@ if (null !== $post_type) {
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
                                     'label' => cleanStringForExport($record['label']),
-                                    'description' => cleanStringForExport(addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(utf8_decode($record['description']))))),
+                                    'description' => cleanStringForExport(str_replace(array(';', '<br />'), array('|', "\n\r"), utf8_decode($record['description']))),
                                     'pw' => cleanStringForExport(html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
                                     'login' => cleanStringForExport($record['login']),
                                     'restricted_to' => isset($record['restricted_to']) === true ? $record['restricted_to'] : '',

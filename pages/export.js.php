@@ -231,7 +231,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         }
                     );
 
-                    download(new Blob([atob(data[0].content)]), $('#export-filename').val(), "text/csv");
+                    download(new Blob([atob(data[0].content)]), $('#export-filename').val() + ".csv", "text/csv");
                 },
                 'json'
             );
