@@ -1377,7 +1377,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo langHdl('item_copying'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1413,6 +1413,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     refreshTree(parseInt($('#form-item-copy-destination').val()), true);
                     // Load list of items
                     ListerItems(parseInt($('#form-item-copy-destination').val()), '', 0);
+
+                    // Reopen Item details form
+                    Details(
+                        data.new_id,
+                        'show',
+                        true
+                    );
+                    
                     // Close
                     $('.item-details-card').removeClass('hidden');
                     $('.form-item-copy').addClass('hidden');
