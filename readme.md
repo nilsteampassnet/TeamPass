@@ -1,3 +1,7 @@
+# TEAMPASS V2 IS NOT MAINTAINTED ANYMORE. IT HAS BEEN REPLACED BY V3 NOW IN MASTER BRANCH.
+# NO ANSWER WILL BE PROVIDED TO BUG OR REQUEST REGARDING THIS VERSION.
+
+
 # Teampass
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c1709641128d42d1ac6ec7fad3cb921c)](https://www.codacy.com/app/nilsteampassnet/TeamPass?utm_source=github.com&utm_medium=referral&utm_content=nilsteampassnet/TeamPass&utm_campaign=badger)
@@ -105,11 +109,3 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 ## Website
 
 Visit [Teampass.net](https://teampass.net/)
-
-## Bugs
-
-If you discover bugs, please report them in [GitHub Issues](https://github.com/nilsteampassnet/TeamPass/issues).
-
-## Requests
-
-Please report feature requests in [UserEcho](https://teamPass.userecho.com).
