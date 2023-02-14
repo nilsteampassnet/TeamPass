@@ -5,9 +5,7 @@ This is ONLY for ISSUE / DEFECT / BUG.
 IN CASE OF DEFECT, THIS TEMPLATE HAS TO BE FOLLOWED.
 IF NOT, I WILL DELETE THE TICKET WITHOUT ANSWERING IT!
 
-Before creating a ticket, please check http://teampass.readthedocs.io/en/latest/errors for common errors
-
-If you have any FEATURE REQUEST or question, please use https://teampass.userecho.com/
+For QUESTIONS or REMARKS, please use https://github.com/nilsteampassnet/TeamPass/discussions
 
 To make it possible for us to help you please fill out below information carefully.
 --> 

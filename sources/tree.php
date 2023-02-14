@@ -307,9 +307,8 @@ function recursiveTree(
 
     $displayThisNode = false;
     $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
-    $nodeDescendants = $nodeDirectDescendants = $tree->getDescendants($nodeId, true, false, false);
-    array_shift($nodeDirectDescendants); // get only the children
-
+    $nodeDescendants = $tree->getDescendants($nodeId, true, false, false);
+    
     foreach ($nodeDescendants as $node) {
         if (
             in_array($node->id, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
@@ -346,7 +345,6 @@ function recursiveTree(
             $nbItemsInSubfolders,
             $nbSubfolders,
             $nbItemsInFolder,
-            $nodeDirectDescendants,
             $ret_json
         );
     }
@@ -370,7 +368,6 @@ function recursiveTree(
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
  * @param integer $nbItemsInFolder
- * @param array $nodeDirectDescendants
  * @param array $ret_json
  * @return void
  */
@@ -388,7 +385,6 @@ function handleNode(
     int $nbItemsInSubfolders,
     int $nbSubfolders,
     int $nbItemsInFolder,
-    array $nodeDirectDescendants,
     array &$ret_json = array()
 )
 {
@@ -416,7 +412,7 @@ function handleNode(
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
         $inputData['personalFolders'],
-        $nodeDirectDescendants
+        $tree
     );
 
     // Prepare JSON 
@@ -519,7 +515,6 @@ function prepareNodeJson(
                 ),
                 'is_pf' => in_array($nodeId, $inputData['personalFolders']) === true ? 1 : 0,
                 'can_edit' => (int) $inputData['userCanCreateRootFolder'],
-                //'children' => count($nodeDirectDescendants) > 0 ? true : false,
             )
         );
         
@@ -567,7 +562,7 @@ function prepareNodeJson(
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
  * @param array $session_personal_folder
- * @param array $nodeDirectDescendants
+ * @param Tree\NestedTree\NestedTree $tree
  * @return array
  */
 function prepareNodeData(
@@ -586,7 +581,7 @@ function prepareNodeData(
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
     array $session_personal_folder,
-    array $nodeDirectDescendants
+    Tree\NestedTree\NestedTree $tree
 ): array
 {
     if (in_array($nodeId, $session_groupes_visibles) === true) {
@@ -658,6 +653,7 @@ function prepareNodeData(
     ) {
         // folder should not be visible
         // only if it has no descendants
+        $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
         if (
             count(
                 array_diff(
