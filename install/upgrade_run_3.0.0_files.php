@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      upgrade_run_3.0.0_files.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -149,19 +149,8 @@ while ($file_info = mysqli_fetch_array($rows)) {
         // Is this file encrypted?
         // Force all files to be encrypted
         if ($file_info['status'] === 'encrypted') {
-            // load PhpEncryption library
-            /*include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';*/
-
             // get KEY
-            $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+            $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
 
             // Now decrypt the file
             $err = '';

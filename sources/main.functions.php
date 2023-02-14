@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      main.functions.php
  * ---
  *
@@ -125,7 +125,7 @@ function bCrypt(
  */
 function cryption(string $message, string $ascii_key, string $type, ?array $SETTINGS = []): array
 {
-    $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH . '/teampass-seckey.txt') : $ascii_key;
+    $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
     $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
@@ -637,7 +637,7 @@ function identUser(
     foreach ($rows as $record) {
         //if (isset($record['id_tree'])) {
             $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-            array_push($foldersLimitedFull, $record['item_id']);
+            array_push($foldersLimitedFull, $record['id_tree']);
             ++$inc;
         //}
     }
@@ -651,7 +651,7 @@ function identUser(
         $noAccessPersonalFolders,
         $foldersLimitedFull,
         $allowedFoldersByRoles,
-        $restrictedFoldersForItems,
+        array_keys($restrictedFoldersForItems),
         $readOnlyFolders,
         $noAccessFolders,
         isset($SETTINGS['enable_pf_feature']) === true ? $SETTINGS['enable_pf_feature'] : 0,
@@ -1293,7 +1293,7 @@ function prepareSendingEmail(
                     'receivers' => $email,
                     'body' => $body,
                     'receiver_name' => $receiverName,
-                ]),
+                ], JSON_HEX_QUOT | JSON_HEX_TAG),
                 'updated_at' => '',
                 'finished_at' => '',
                 'output' => '',
@@ -1433,7 +1433,7 @@ function buildEmail(
     foreach (array_filter(explode(',', $email)) as $dest) {
         $mail->addAddress($dest);
     }
-
+    
     // Prepare HTML
     $text_html = emailBody($textMail);
     $mail->WordWrap = 80;
@@ -2301,7 +2301,7 @@ function prepareFileWithDefuse(
     $target_file = $antiXss->xss_clean($target_file);
     if (empty($password) === true || is_null($password) === true) {
         // get KEY to define password
-        $ascii_key = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
+        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
         $password = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
     }
 

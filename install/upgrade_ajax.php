@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -175,6 +175,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");';
+define("SECUREFILE", "' . SECUREFILE. '");
 
 		if (defined('IKEY') === true) $settingsTxt .= '
 define("IKEY", "' . IKEY . '");';
@@ -220,6 +221,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
         define("DB_ENCODING", "' . $encoding . '");
 	}
 }
+
 
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
@@ -852,17 +854,6 @@ if (isset($post_type)) {
 
             // Manage saltkey.txt file
             if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-                /*
-                $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH).'/teampass-seckey.txt';
-                if (file_exists($filename)) {
-                    $newfile = str_replace('teampass-seckey.txt', time());
-                    rename($filename, $newfile);
-                    unlink($filename);
-                    echo '$("#step5_saltkeyFile").html("<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">You can remove file '.$newfile.'</span>");';
-                } else {
-                    echo '$("#step5_saltkeyFile").html("<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>");';
-                }
-                */
                 array_push(
                     $returnStatus, 
                     array(

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      english.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -517,7 +517,7 @@ return array(
     'api_whitelist_ips' => 'API IPs Whitelist',
     'api_whitelist_ips_tip' => 'If no API client IP addresses are explicitly listed here, then any IP address is authorized.',
     'email_share_item_subject' => 'A password item was shared with you',
-    'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item#.<br><br><a href=\'#tp_link#\'>Click this link</a> to access the item.<br><br><br>Greetings',
+    'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item#.<br><br><a href="#tp_link#">Click this link</a> to access the item.<br><br><br>Greetings',
     'index_maintenance_mode_admin' => 'Maintenance mode is enabled. Users cannot sign in.',
     '2fa_authentication_selector' => 'Select a 2 factor authentication method',
     'upload_empty_file' => 'Upload empty file',

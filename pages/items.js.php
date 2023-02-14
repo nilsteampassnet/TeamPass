@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      items.js.php
  * ---
  *
@@ -4116,6 +4116,35 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
 
+    function checkAccess(itemId, treeId, userId)
+    {
+        var data = {
+            'itemId': parseInt(itemId),
+            'treeId': parseInt(treeId),
+            'userId': parseInt(userId),
+        };
+
+        //Send query
+        $.post(
+            'sources/items.queries.php', {
+                type: 'check_current_access_rights',
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key: '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
+                requestRunning = true;
+                if (debugJavascript === true) {
+                    console.log("DEBUG: checkAccess");
+                    console.log(data);
+                }
+
+
+                return false;
+            }
+        );
+    }
 
 
     /**
@@ -4123,14 +4152,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     function Details(itemDefinition, actionType, hotlink = false) {
         if (debugJavascript === true) console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ')
-
-        // Store current view
-        savePreviousView();
-        
-        if (debugJavascript === true) console.log("Request is running: " + requestRunning)
-
-        // Store status query running
-        requestRunning = true;
 
         // Init
         if (hotlink === false) {
@@ -4155,6 +4176,28 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
         }
 
+        // check if user still has access
+        if (checkAccess(itemId, itemTreeId, <?php echo $_SESSION['user_id']; ?>) === false) {
+            toastr.remove();
+            toastr.warning(
+                '<?php echo langHdl('no_item_to_display'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+
+            // Finished
+            return false;
+        }
+
+        // Store current view
+        savePreviousView();
+        
+        if (debugJavascript === true) console.log("Request is running: " + requestRunning)
+
+        // Store status query running
+        requestRunning = true;
         userDidAChange = false;
 
         // Select tab#1

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      install.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -287,7 +287,7 @@ define('MIN_PHP_VERSION', 7.4);
 						<label>Absolute path to SaltKey</label>
 						<input type="text" class="form-control" name="sk_path" id="sk_path" class="ui-widget" value=""><span id="res4_check2"></span>
 						<small class="form-text text-muted">
-							The SaltKey is stored in a file called teampass-seckey.txt. For security reasons, this file should be stored in a folder outside the WWW folder of your server (example: /var/teampass/). This key will be used to encrypt data when sharing information with users without any Teampass account. If this field remains empty, this file will be stored in folder <path to Teampass>/includes/.
+							The SaltKey is stored in a file called teampass-seckey.txt and hashed for security purpose. For security reasons, this file should be stored in a folder outside the WWW folder of your server (example: /var/teampass/). This key will be used to encrypt data when sharing information with users without any Teampass account. If this field remains empty, this file will be stored in folder <path to Teampass>/includes/.
 						</small>
 					</div>
 		

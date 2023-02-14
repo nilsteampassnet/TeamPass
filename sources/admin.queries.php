@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      admin.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1048,7 +1048,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1060,7 +1060,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1074,22 +1074,22 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // store old sk
-        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
+        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
 
         // generate new saltkey
-        $old_sk_filename = SECUREPATH . '/teampass-seckey.txt.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
+        $old_sk_filename = SECUREPATH.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
         copy(
-            SECUREPATH . '/teampass-seckey.txt',
+            SECUREPATH.'/'.SECUREFILE,
             $old_sk_filename
         );
         $new_key = defuse_generate_key();
         file_put_contents(
-            SECUREPATH . '/teampass-seckey.txt',
+            SECUREPATH.'/'.SECUREFILE,
             $new_key
         );
 
         // store new sk
-        $_SESSION['reencrypt_new_salt'] = file_get_contents(SECUREPATH . '/teampass-seckey.txt');
+        $_SESSION['reencrypt_new_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
 
         //put tool in maintenance.
         DB::update(
@@ -1592,7 +1592,7 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1609,7 +1609,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1621,7 +1621,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1660,10 +1660,10 @@ switch ($post_type) {
 
         // restore saltkey file
         if (file_exists($previous_saltkey_filename)) {
-            unlink(SECUREPATH . '/teampass-seckey.txt');
+            unlink(SECUREPATH.'/'.SECUREFILE);
             rename(
                 $previous_saltkey_filename,
-                SECUREPATH . '/teampass-seckey.txt'
+                SECUREPATH.'/'.SECUREFILE
             );
         }
 
@@ -1672,7 +1672,7 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',

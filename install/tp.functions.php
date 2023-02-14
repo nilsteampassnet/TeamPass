@@ -1,5 +1,91 @@
 <?php
 
+// new SECUREFILE - 3.0.0.23
+function handleSecurefileConstant()
+{
+    if (defined('SECUREFILE') === false) {
+        define('SECUREFILE', generateRandomKey(25));
+        
+        // manage the file itself by renaming it
+        if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
+            echo '[{
+                "error" : "File `'.SECUREPATH.'/teampass-seckey.txt` could not be renamed. Please do it by yourself and click on button Launch.",
+                "index" : ""
+            }]';
+            exit;
+        }
+
+        // Ensure DB is read as UTF8
+        if (defined('DB_ENCODING') === false) {
+            define('DB_ENCODING', "utf8");
+        }
+
+        // Now create new file
+        $file_handled = fopen('../includes/config/settings.php', 'w');
+        
+        $settingsTxt = '<?php
+// DATABASE connexion parameters
+define("DB_HOST", "' . DB_HOST . '");
+define("DB_USER", "' . DB_USER . '");
+define("DB_PASSWD", "' . DB_PASSWD . '");
+define("DB_NAME", "' . DB_NAME . '");
+define("DB_PREFIX", "' . DB_PREFIX . '");
+define("DB_PORT", "' . DB_PORT . '");
+define("DB_ENCODING", "' . DB_ENCODING . '");
+define("DB_SSL", array(
+    "key" => "'.DB_SSL['key'].'",
+    "cert" => "'.DB_SSL['cert'].'",
+    "ca_cert" => ""'.DB_SSL['ca_cert'].',
+    "ca_path" => "'.DB_SSL['ca_path'].'",
+    "cipher" => "'.DB_SSL['cipher'].'"
+));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
+define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");
+define("SECUREFILE", "' . SECUREFILE. '");';
+
+        if (defined('IKEY') === true) $settingsTxt .= '
+define("IKEY", "' . IKEY . '");';
+        else $settingsTxt .= '
+define("IKEY", "");';
+        if (defined('SKEY') === true) $settingsTxt .= '
+define("SKEY", "' . SKEY . '");';
+        else $settingsTxt .= '
+define("SKEY", "");';
+        if (defined('HOST') === true) $settingsTxt .= '
+define("HOST", "' . HOST . '");';
+        else $settingsTxt .= '
+define("HOST", "");';
+
+
+        $settingsTxt .= '
+
+if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
+}
+';
+
+        $fileCreation = fwrite(
+            $file_handled,
+            utf8_encode($settingsTxt)
+        );
+
+        fclose($file_handled);
+        sleep(3);
+        if ($fileCreation === false) {
+            return [
+                'error' => true,
+                'message' => 'Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.',
+            ];
+        }
+
+        return [
+            'error' => false,
+            'message' => ''
+        ];
+    }
+}
 
 /**
  * Undocumented function
@@ -37,7 +123,8 @@ function defuseCryption($message, $ascii_key, $type)
     // init
     $err = '';
     if (empty($ascii_key) === true) {
-        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
+        // new check - 3.0.0.23
+        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
     }
     
     // convert KEY

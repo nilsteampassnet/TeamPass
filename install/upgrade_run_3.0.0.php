@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      upgrade_run_3.0.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -35,6 +35,15 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 require_once '../includes/config/tp.config.php';
+
+// 3.0.0.23
+$ret = handleSecurefileConstant();
+if ($ret['error'] === true) {
+    echo '[{"finish":"1", "msg":"", "error":"'.$ret['message'].'"}]';
+    exit();
+}
+
+// Get the encrypted password
 define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
 
 //Build tree
@@ -74,6 +83,8 @@ if (mysqli_connect(
     mysqli_close($db_link);
     exit();
 }
+
+
 
 
 // Load libraries

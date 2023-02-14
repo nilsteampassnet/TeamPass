@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      roles.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -250,6 +250,40 @@ if (null !== $post_type) {
                     }
                 }
             }
+
+            /*
+            // update folders rights for users in cache_tree
+            // Requested for real-time changes
+            $rows = DB::query(
+                'SELECT increment_id, folders
+                FROM ' . prefixTable('cache_tree'),
+            );
+
+            foreach($rows as $row) {
+                if ($row['folders'] === '' || $post_selectedFolders === null) {
+                    continue;
+                }
+                // get visible folders
+                $arr = json_decode($row['folders'], true);
+                
+                foreach($arr as $folder) {
+                    if (in_array($folder, $post_selectedFolders) === true) {
+                        unset($arr[$folder]);
+                    }
+                }
+                print_r($arr);
+
+                // update
+                /*DB::update(
+                    prefixTable('cache_tree'),
+                    array(
+                        'folders' => json_encode($arr),
+                    ),
+                    'increment_id = %i',
+                    $row['increment_id']
+                );*/
+            }
+            */
 
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],

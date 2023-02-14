@@ -12,12 +12,12 @@
  * @copyright 2009-2022 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
- * @version   3.0.0.22
+ * @version   3.0.0.23
  *
  * @see      http://www.teampass.net
  */
 define('TP_VERSION', '3.0.0');
-define('TP_VERSION_FULL', TP_VERSION.'.22');
+define('TP_VERSION_FULL', TP_VERSION.'.23');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);

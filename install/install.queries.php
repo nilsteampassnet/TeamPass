@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1350,7 +1350,8 @@ $SETTINGS = array (';
                 if ($task === 'settings.php') {
                     // first is to create teampass-seckey.txt
                     // 0- check if exists
-                    $filename_seckey = $securePath . '/teampass-seckey.txt';
+                    define('SECUREFILE', generateRandomKey(25));
+                    $filename_seckey = $securePath . '/' . SECUREFILE;
 
                     if (file_exists($filename_seckey)) {
                         if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
@@ -1424,6 +1425,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 define("SECUREPATH", "' . $securePath . '");
+define("SECUREFILE", "' . SECUREFILE. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);

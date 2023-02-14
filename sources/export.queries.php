@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      export.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -251,7 +251,7 @@ if (null !== $post_type) {
                                     'email' => $record['email'] !== 'none' ? (is_null($record['email']) === false ? cleanStringForExport($record['email']) : '') : '',
                                     'kbs' => implode(' | ', $arr_kbs),
                                     'tags' => implode(' ', $arr_tags),
-                                    'folder' => implode(' > ', $arr_trees),
+                                    'folder' => implode('/', $arr_trees),
                                 );
                                 ++$i;
 

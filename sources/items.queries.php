@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      items.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -6005,6 +6005,7 @@ if (is_null($inputData['type']) === false) {
                 break;
             }
             $arr_data = [];
+            $arr_folders = [];
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
@@ -6125,6 +6126,7 @@ if (is_null($inputData['type']) === false) {
                         $arr_data['folders'][$inc]['disabled'] = $disabled;
                         $arr_data['folders'][$inc]['parent_id'] = (int) $folder->parent_id;
                         $arr_data['folders'][$inc]['perso'] = (int) $folder->personal_folder;
+                        //array_push($arr_folders, (int) $folder->id);
 
                         // Is this folder an active folders? (where user can do something)
                         $is_visible_active = 0;
@@ -6140,6 +6142,7 @@ if (is_null($inputData['type']) === false) {
                     }
                 }
             }
+            /*
             if (isset($arr_data['folders']) === true) {
                 // save to cache_tree
                 cacheTreeUserHandler(
@@ -6148,7 +6151,16 @@ if (is_null($inputData['type']) === false) {
                     $SETTINGS,
                     'visible_folders',
                 );
+
+                // save to cache_tree
+                cacheTreeUserHandler(
+                    (int) $_SESSION['user_id'],
+                    json_encode($arr_folders),
+                    $SETTINGS,
+                    'folders',
+                );
             }
+            */
 
             // send data
             echo (string) prepareExchangedData(
@@ -6779,6 +6791,61 @@ if (is_null($inputData['type']) === false) {
             $data = array(
                 'error' => false,
                 'message' => '',
+            );
+
+            // send data
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $data,
+                'encode'
+            );
+
+            break;
+
+        /*
+        * CASE
+        * check_current_access_rights
+        */
+        case 'check_current_access_rights':
+            // Check KEY
+            if ($inputData['key'] !== $_SESSION['key']) {
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => 'key_not_conform',
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $inputData['data'],
+                'decode'
+            );
+
+            // prepare variables
+            $inputData['userId'] = (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
+            $inputData['itemId'] = (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT);
+            $inputData['treeId'] = (int) filter_var($dataReceived['treeId'], FILTER_SANITIZE_NUMBER_INT);
+
+            $data = DB::queryFirstRow(
+                'SELECT visible_folders
+                FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
+                $inputData['userId']
+            );
+            // Check if tree ID is in visible folders.
+            if (null !== $data['visible_folders']) {
+                $arr = json_decode($data['visible_folders'], true);
+                $ids = array_column($arr, 'id');
+            }
+
+
+            $data = array(
+                'error' => false,
+                'access' => isset($inputData['treeId']) === true && in_array($inputData['treeId'], $ids) === true ? true : false,
             );
 
             // send data

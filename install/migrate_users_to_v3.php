@@ -8,7 +8,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      migrate_users_to_v3.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)

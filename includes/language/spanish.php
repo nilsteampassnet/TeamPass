@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      spanish.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -447,7 +447,7 @@ return array(
     'api_whitelist_ips' => 'Lista blanca de IPs de la API',
     'api_whitelist_ips_tip' => 'Si no hay direcciones IP de clientes de la API enumeradas explícitamente aquí, cualquier dirección IP está autorizada.',
     'email_share_item_subject' => '[TeamPass] Un elemento ha sido compartido con usted',
-    'email_share_item_mail' => 'Hola,&lt;br&gt;&lt;br&gt;&lt;u&gt;#tp_user#&lt;/u&gt; ha compartido con usted el elemento &lt;b&gt;#tp_item#&lt;/b&gt;&lt;br&gt;Pulse &lt;a href=\'#tp_link#\'&gt;aquí&lt;/a&gt; para acceder.&lt;br&gt;&lt;br&gt;Saludos.',
+    'email_share_item_mail' => 'Hola,&lt;br&gt;&lt;br&gt;&lt;u&gt;#tp_user#&lt;/u&gt; ha compartido con usted el elemento &lt;b&gt;#tp_item#&lt;/b&gt;&lt;br&gt;Pulse &lt;a href="#tp_link#"&gt;aquí&lt;/a&gt; para acceder.&lt;br&gt;&lt;br&gt;Saludos.',
     'index_maintenance_mode_admin' => 'Modo de mantenimiento activado. En este momento los usuarios no pueden acceder a TeamPass.',
     '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'upload_empty_file' => 'Upload empty file',

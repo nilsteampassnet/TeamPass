@@ -8,7 +8,7 @@
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      scheduler.php
  * ---
  *

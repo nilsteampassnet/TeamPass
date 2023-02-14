@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @project   Teampass
- * @version   3.0.0.22
+ * @version   3.0.0.23
  * @file      tree.php
  *
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -251,8 +251,17 @@ function showFolderToUser(
     array $listRestrictedFoldersForItemsKeys
 ): bool
 {
-    $big_array = array_diff(array_unique(array_merge($session_groupes_visibles, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys), SORT_NUMERIC), $session_forbiden_pfs);
-    //print_r($session_groupes_visibles);
+    $big_array = array_diff(
+        array_unique(
+            array_merge(
+                $session_groupes_visibles, 
+                $listFoldersLimitedKeys, 
+                $listRestrictedFoldersForItemsKeys
+            ), 
+            SORT_NUMERIC
+        ), 
+        $session_forbiden_pfs
+    );
     if ($nodeId === 0 || in_array($nodeId, $big_array) === true) {
         return true;
     }
