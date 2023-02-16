@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Ultimo item visto',
     'ldap_extension_not_loaded' => 'A extensão LDAP não esta ativado no servidor',
     'level' => 'Nivel',
-    'login' => 'Login (se necessário)',
+    'login' => 'Login',
     'mask_pw' => 'Oculta/Mostra a senha',
     'max_last_items' => 'Tamanho da lista dos últimos itens vistos (padrão é 10)',
     'minutes' => 'minutos',

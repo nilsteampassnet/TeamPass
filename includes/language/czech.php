@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Poslední nahlédnuté položky',
     'ldap_extension_not_loaded' => 'LDAP není na serveru aktivováno',
     'level' => 'Umístění/úroveň',
-    'login' => 'Uživatelské jméno (je-li potřeba)',
+    'login' => 'Uživatelské jméno',
     'mask_pw' => 'Zakrýt/odkrýt heslo',
     'max_last_items' => 'Maximální množství Posledních nahlédnutých položek (standardně 10)',
     'minutes' => 'minut',

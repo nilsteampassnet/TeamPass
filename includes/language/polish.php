@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Ostatnio oglądane elementy',
     'ldap_extension_not_loaded' => 'Rozszerzenie LDAP nie zostało aktywowane na serwerze.',
     'level' => 'Poziom',
-    'login' => 'Login (jeśli wymagany)',
+    'login' => 'Login',
     'mask_pw' => 'Ukryj/Pokaż hasło',
     'max_last_items' => 'Maksymalna ilość ostatnio oglądanych elementów przez Użytkownika (domyślną wartością jest 10)',
     'minutes' => 'minuty',

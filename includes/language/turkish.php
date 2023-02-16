@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Son erişilen öğeler',
     'ldap_extension_not_loaded' => 'Sunucuda LDAP uzantısı aktif edilmemiştir.',
     'level' => 'Seviye',
-    'login' => 'Giriş(Eğer gerekli ise)',
+    'login' => 'Giriş',
     'mask_pw' => 'Şifreyi Maskele/Göster',
     'max_last_items' => 'Kullanıcı tarafından görülen maksimum son erişilenlerin sayısı (öntanımlı değer 10)',
     'minutes' => 'Dakika',

@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Laatst bekeken onderdelen',
     'ldap_extension_not_loaded' => 'De LDAP extensie is op deze server niet geactiveerd.',
     'level' => 'Level',
-    'login' => 'Gebruikersnaam (niet verplicht)',
+    'login' => 'Gebruikersnaam',
     'mask_pw' => 'Wachtwoord tonen/verbergen',
     'max_last_items' => 'Aantal laatst bekeken onderdelen weergeven (standaard is dit 10)',
     'minutes' => 'minuten',

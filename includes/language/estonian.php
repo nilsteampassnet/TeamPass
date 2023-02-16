@@ -722,7 +722,7 @@ return array(
     'last_items_title' => 'Viimati nähtud kirjed',
     'ldap_extension_not_loaded' => 'LDAP moodul ei ole serveris aktiveeritud.',
     'level' => 'Tase',
-    'login' => 'Kasutajatunnus (kui on vaja)',
+    'login' => 'Kasutajatunnus',
     'mask_pw' => 'Varja/Kuva parool',
     'max_last_items' => 'Maksimaalne viimati nähtud kirjete arv kasutaja kohta (vaikimisi on 10)',
     'minutes' => 'minutit',
