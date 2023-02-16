@@ -97,10 +97,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     // Filtering
@@ -168,10 +173,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     // Filtering
@@ -247,10 +257,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     // Filtering
@@ -323,6 +338,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     // Filtering
@@ -386,10 +404,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     // Filtering
@@ -475,10 +498,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     /*
@@ -551,10 +579,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     /*
@@ -623,10 +656,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     /*
@@ -700,10 +738,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     $sWhere = ' WHERE ((timestamp != "" AND session_end >= "'.time().'")';
@@ -774,10 +817,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     $sWhere = ' WHERE ((finished_at = "")';
@@ -854,10 +902,15 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
         && isset($_GET['order'][0]['column']) === true
+        && (int) $_GET['order'][0]['column'] !== 0
+        && $_GET['order'][0]['column'] !== 'asc'
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
             filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+    } else {
+        $sOrder = 'ORDER BY  '.
+            $aColumns[0].' DESC';
     }
 
     $sWhere = ' WHERE ((finished_at != "")';
