@@ -65,7 +65,7 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of items in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 1027,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Teampass production",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "Use for administration",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Ajdh-652Syw-625sWW-Ca18",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "tpAdmin",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "nils@teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 54,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": null,<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0<br>&nbsp;&nbsp;}<br>] |
 
-### Get item data
+### Get item data by ID
 
 > :memo: **Note:** Returns the item definition based upon its ID (taking into account the user access rights)
 
@@ -76,12 +76,41 @@ The base API url is: `<Teampass url>/api/index.php/<action criteria>`
 | URL | `<Teampass url>/api/index.php/item/get?id=2052` |
 | PARAMETERS | id=<item_id> |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id":2053,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label":"new object for #3500 v3",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description":"<p>bla bla</p>",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd":"SK^6A}]V$t^]",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login":"Me",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no":2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif":0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso":0<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 670,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "MACHINES",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": "issue3317>issue 3325>ITI - Speedcall 2>PROD - CLARANET"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id":2053,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label":"new object for #3500 v3",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description":"<p>bla bla</p>",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd":"SK^dsf123s_6A}]V$t^]",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login":"Me",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no":2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif":0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso":0<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 670,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "MACHINES",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": "issue3317>issue 3325>ITI 2>PROD"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
 
+### Get item data by LABEL
 
+> :memo: **Note:** Returns an item list definition based upon its LABEL (taking into account the user access rights)
 
+This query accepts an optional parameter called `like` that permits to perform a search on the field `label`.
+If `like=1` then you can add in parameter `label` the symbol `%` to refine the search.
 
+Example:
+* `label="%some text"` will search for all labels finishing by `some text`.
+* `label="%some text%"` will search for all labels containing `some text`.
+* `label="some text%"` will search for all labels starting by `some text`.
 
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/get |
+| Type | GET |
+| URL | `<Teampass url>/api/index.php/item/get?label="some text"&like=0` |
+| PARAMETERS | label="some text"&like=<O or 1> |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 21,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Voici un é1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 13,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;},<br>&nbsp;&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1 - 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "EwS5jc+S}Y6x",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 4,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+
+### Get item data by DESCRIPTION
+
+> :memo: **Note:** Returns an item list definition based upon its DESCRIPTION (taking into account the user access rights)
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/get |
+| Type | GET |
+| URL | `<Teampass url>/api/index.php/item/get?description="some text"&like=0` |
+| PARAMETERS | description="some text"&like=<O or 1> |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 21,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Voici un é1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 13,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;},<br>&nbsp;&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1 - 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "EwS5jc+S}Y6x",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 4,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
 
 
 

@@ -117,6 +117,7 @@ class ItemController extends BaseController
         $responseData = '';
         $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
+        $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].') OR i.id IN ('.$userData['restricted_items_list'].'))';
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
@@ -124,12 +125,18 @@ class ItemController extends BaseController
         if (strtoupper($requestMethod) === 'GET') {
             // SQL where clause with item id
             if (isset($arrQueryStringParams['id']) === true) {
-                // build sql where clause
-                $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'];
+                // build sql where clause by ID
+                $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+            } else if (isset($arrQueryStringParams['label']) === true) {
+                // build sql where clause by LABEL
+                $sqlExtra = ' WHERE i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['label'] : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+            } else if (isset($arrQueryStringParams['description']) === true) {
+                // build sql where clause by LABEL
+                $sqlExtra = ' WHERE i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
             } else {
                 // Send error
                 $this->sendOutput(
-                    json_encode(['error' => 'Item id is mandatory']),
+                    json_encode(['error' => 'Item id, label or description is mandatory']),
                     ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
                 );
             }

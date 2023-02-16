@@ -59,7 +59,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
             type: 'GET',
-            "dataSrc": function ( json ) {
+            "dataSrc": function ( json ) {console.log(json);
                 for ( var i=0, ien=json.data.length ; i<ien ; i++ ) {
                     json.data[i][1]=atob(json.data[i][1]).utf8Decode();
                     json.data[i][2]=atob(json.data[i][2]).utf8Decode();

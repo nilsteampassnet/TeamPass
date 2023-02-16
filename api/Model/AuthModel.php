@@ -92,7 +92,7 @@ class AuthModel extends Database
                 $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
 
                 // get user folders list
-                $folders = $this->buildUserFoldersList($userInfo);
+                $ret = $this->buildUserFoldersList($userInfo);
 
                 // create JWT
                 return $this->createUserJWT(
@@ -101,7 +101,8 @@ class AuthModel extends Database
                     $userInfo['personal_folder'],
                     $userInfo['public_key'],
                     $privateKeyClear,
-                    implode(",", $folders)
+                    implode(",", $ret['folders']),
+                    implode(",", $ret['items'])
                 );
             } else {
                 return ["error" => "Login failed.", "password" => "Not valid"];
@@ -121,7 +122,7 @@ class AuthModel extends Database
      * @param string $folders
      * @return array
      */
-    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders): array
+    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items): array
     {
         require API_ROOT_PATH . '/../includes/config/tp.config.php';
         $headers = ['alg'=>'HS256','typ'=>'JWT'];
@@ -133,6 +134,7 @@ class AuthModel extends Database
             'private_key' => $privkey,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
+            'restricted_items_list' => $items,
         ];
 
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
@@ -162,6 +164,7 @@ class AuthModel extends Database
         $restrictedFoldersForItems = [];
         $foldersLimited = [];
         $foldersLimitedFull = [];
+        $restrictedItems = [];
         $personalFolders = [];
 
         $userFunctionId = str_replace(";", ",", $userInfo['fonction_id']);
@@ -205,7 +208,9 @@ class AuthModel extends Database
             ORDER BY i.id_tree ASC");
         foreach ($rows as $record) {
             $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-            array_push($foldersLimitedFull, $record['item_id']);
+            //array_push($foldersLimitedFull, $record['item_id']);
+            array_push($restrictedItems, $record['item_id']);
+            array_push($foldersLimitedFull, $record['id_tree']);
             ++$inc;
         }
 
@@ -227,7 +232,8 @@ class AuthModel extends Database
         }
 
         // All folders visibles
-        return array_unique(
+        return [
+            'folders' => array_unique(
             array_filter(
                 array_merge(
                     $allowedFolders,
@@ -237,8 +243,10 @@ class AuthModel extends Database
                     $readOnlyFolders,
                     $personalFolders
                 )
-            )
-        );
+                )
+            ),
+            'items' => array_unique($restrictedItems),
+        ];
     }
     //end buildUserFoldersList
 }

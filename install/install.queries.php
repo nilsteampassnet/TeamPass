@@ -1246,6 +1246,7 @@ $SETTINGS = array (';
                             `visible_folders` longtext NOT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(12) NOT NULL,
+                            `folders` longtext DEFAULT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );

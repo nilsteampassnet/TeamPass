@@ -1725,9 +1725,28 @@ mysqli_query(
         PRIMARY KEY (`increment_id`)
         ) CHARSET=utf8;'
 );
-
-
 //---<END 3.0.0.22
+
+
+//--->BEGIN 3.0.0.23
+
+// Add field folders to cache_tree table
+$res = addColumnIfNotExist(
+    $pre . 'cache_tree',
+    'folders',
+    "longtext DEFAULT NULL"
+);
+
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache_tree` MODIFY column `folders` longtext DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+//---<END 3.0.0.23
 
 
 

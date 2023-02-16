@@ -57,16 +57,18 @@ class ItemModel extends Database
             );
             if (count($userKey) === 0 || empty($row['pw']) === true) {
                 // No share key found
-                $pwd = '';
-            } else {
-                $pwd = base64_decode(doDataDecryption(
-                    $row['pw'],
-                    decryptUserObjectKey(
-                        $userKey[0]['share_key'],
-                        $userPrivateKey
-                    )
-                ));
+                // Exit this item
+                continue;
             }
+            
+            // Get password
+            $pwd = base64_decode(doDataDecryption(
+                $row['pw'],
+                decryptUserObjectKey(
+                    $userKey[0]['share_key'],
+                    $userPrivateKey
+                )
+            ));
 
             // get path to item
             require_once API_ROOT_PATH. '/../includes/libraries/Tree/NestedTree/NestedTree.php';
