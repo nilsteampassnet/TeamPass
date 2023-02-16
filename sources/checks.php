@@ -35,12 +35,26 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
+// Prepare sanitization
+$data = [
+    'forbidenPfs' => isset($_POST['type']) === true ? $_POST['type'] : '',
+];
+$inputData = dataSanitizer(
+    [
+        'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+    ],
+    [
+        'type' => 'trim|escape',
+    ],
+    $SETTINGS['cpassman_dir']
+);
 
 /*
 Handle CASES
  */
-switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+switch ($inputData['type']) {
     case 'checkSessionExists':
         // Case permit to check if SESSION is still valid
         session_name('teampass_session');
