@@ -1015,7 +1015,7 @@ return array(
     'tasks_manager' => 'Tasks manager',
     'tasks' => 'Tasks',
     'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
-    'enable_tasks_manager' => 'Enable heavy tasks to be performed by cron manager',
+    'enable_tasks_manager' => 'Enable background tasks with cron manager',
     'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
     'sync_new_ldap_password' => 'Synchronize new password',
     'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',

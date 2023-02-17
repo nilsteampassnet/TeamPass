@@ -57,7 +57,7 @@ return array(
     'tasks_manager' => 'Tasks manager',
     'tasks' => 'Tasks',
     'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
-    'enable_tasks_manager' => 'Enable heavy tasks to be performed by cron manager',
+    'enable_tasks_manager' => 'Enable background tasks with cron manager',
     'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
     'settings_api_token_duration' => 'JWT token expiration delay (in seconds)',
     'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',

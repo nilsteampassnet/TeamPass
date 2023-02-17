@@ -2069,7 +2069,11 @@ function continueReEncryptingUserSharekeysStep1(
             $record['id'],
             $_SESSION['user_id']
         );
-        if ($currentUserKey === null || count($currentUserKey) === 0) continue;
+
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
@@ -2163,6 +2167,11 @@ function continueReEncryptingUserSharekeysStep2(
             $_SESSION['user_id']
         );
 
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
+
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
 
@@ -2244,6 +2253,11 @@ function continueReEncryptingUserSharekeysStep3(
             $_SESSION['user_id']
         );
 
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
+
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
 
@@ -2324,6 +2338,11 @@ function continueReEncryptingUserSharekeysStep4(
             $_SESSION['user_id']
         );
 
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
+
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
 
@@ -2403,6 +2422,11 @@ function continueReEncryptingUserSharekeysStep5(
             $record['id'],
             $_SESSION['user_id']
         );
+
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);

@@ -440,7 +440,11 @@ function cronContinueReEncryptingUserSharekeysStep1(
             $record['id'],
             $extra_arguments['owner_id']
         );
-        if ($currentUserKey === null || count($currentUserKey) === 0) continue;
+
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
@@ -549,6 +553,11 @@ function cronContinueReEncryptingUserSharekeysStep2(
             $record['increment_id'],
             $extra_arguments['owner_id']
         );
+
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
@@ -745,6 +754,11 @@ function cronContinueReEncryptingUserSharekeysStep4(
             $extra_arguments['owner_id']
         );
 
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
+
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
 
@@ -840,6 +854,11 @@ function cronContinueReEncryptingUserSharekeysStep5(
             $record['id'],
             $extra_arguments['owner_id']
         );
+
+        // do we have any input? (#3481)
+        if ($currentUserKey === null || count($currentUserKey) === 0) {
+            continue;
+        }
 
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
