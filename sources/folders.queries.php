@@ -704,6 +704,47 @@ if (null !== $post_type) {
                 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
+
+                // --> build json tree                
+                // Get path
+                $path = '';
+                $tree_path = $tree->getPath($folder->id, false);
+                foreach ($tree_path as $fld) {
+                    $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
+                }
+                $new_json = [
+                    "path" => $path,
+                    "id" => $newId,
+                    "level" => count($tree_path),
+                    "title" => $post_title,
+                    "disabled" => 0,
+                    "parent_id" => $post_parent_id,
+                    "perso" => $isPersonal,
+                    "is_visible_active" => 0,
+                ];
+
+                // update cache_tree
+                $cache_tree = DB::queryfirstrow(
+                    'SELECT increment_id, folders, visible_folders
+                    FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
+                    (int) $_SESSION['user_id']
+                );
+                $a_folders = json_decode($cache_tree['folders'], true);
+                $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
+                array_push($a_visible_folders, $new_json);
+                array_push($a_folders, $newId);
+                DB::update(
+                    prefixTable('cache_tree'),
+                    array(
+                        'folders' => json_encode($a_folders),
+                        'visible_folders' => json_encode($a_visible_folders),
+                        'timestamp' => time(),
+                    ),
+                    'increment_id = %i',
+                    (int) $cache_tree['increment_id']
+                );
+                // <-- end - build json tree
+
                 /*
                 if ((int) $isPersonal !== 1) {
                     //add access to this new folder 
@@ -899,6 +940,39 @@ if (null !== $post_type) {
                                     $SETTINGS,
                                     (int) $item['id']
                                 );
+
+                                // --> build json tree  
+                                // update cache_tree
+                                $cache_tree = DB::queryfirstrow(
+                                    'SELECT increment_id, folders, visible_folders
+                                    FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
+                                    (int) $_SESSION['user_id']
+                                );
+                                // remove id from folders
+                                $a_folders = json_decode($cache_tree['folders'], true);
+                                $key = array_search($item['id'], $a_folders, true);
+                                if ($key !== false) {
+                                    unset($a_folders[$key]);
+                                }
+                                // remove id from visible_folders
+                                $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
+                                foreach ($a_visible_folders as $i => $v) {
+                                    if ($v['id'] == $item['id']) {
+                                        unset($a_visible_folders[$i]);
+                                    }
+                                }
+
+                                DB::update(
+                                    prefixTable('cache_tree'),
+                                    array(
+                                        'folders' => json_encode($a_folders),
+                                        'visible_folders' => json_encode($a_visible_folders),
+                                        'timestamp' => time(),
+                                    ),
+                                    'increment_id = %i',
+                                    (int) $cache_tree['increment_id']
+                                );
+                                // <-- end - build json tree
                             }
 
                             //Actualize the variable
