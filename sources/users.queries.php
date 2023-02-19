@@ -302,7 +302,7 @@ if (null !== $post_type) {
                     array(
                         'type' => 'user',
                         'label' => $new_user_id,
-                        'value' => uniqidReal(39),
+                        'value' => encryptUserObjectKey(base64_encode($api_key), $userKeys['private_key']),
                         'timestamp' => time(),
                     )
                 );
@@ -396,6 +396,12 @@ if (null !== $post_type) {
                 DB::delete(
                     prefixTable('users'),
                     'id = %i',
+                    $post_id
+                );
+                // delete user api
+                DB::delete(
+                    prefixTable('api'),
+                    'user_id = %i',
                     $post_id
                 );
                 // delete personal folder and subfolders
@@ -2233,7 +2239,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -2244,7 +2253,7 @@ if (null !== $post_type) {
             // If
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
                 $data_user = DB::queryfirstrow(
-                    'SELECT fonction_id
+                    'SELECT fonction_id, public_key
                     FROM ' . prefixTable('users') . '
                     WHERE id = %i',
                     $post_user_id
@@ -2268,6 +2277,34 @@ if (null !== $post_type) {
                 }
             }
 
+            // Manage specific case of api key
+            if($post_field === 'user_api_key') {
+                $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $_SESSION['user']['public_key']);
+                $_SESSION['user']['api-key'] = $post_new_value;
+
+                DB::update(
+                    prefixTable('api'),
+                    array(
+                        'value' => $encrypted_key,
+                        'timestamp' => time()
+                    ),
+                    'user_id = %i',
+                    $post_user_id
+                );
+
+                // send data
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => false,
+                        'message' => ''
+                    ),
+                    'encode'
+                );
+
+                break;
+            }
+
             DB::update(
                 prefixTable('users'),
                 array(
@@ -2287,8 +2324,6 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_user_id
                 );
-            } else if($post_field === 'user_api_key') {
-                $_SESSION['user']['api-key'] = $post_new_value;
             }
 
             // send data
@@ -2717,8 +2752,9 @@ if (null !== $post_type) {
                 array(
                     'type' => 'user',
                     'label' => $newUserId,
-                    'value' => uniqidReal(39),
+                    'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['private_key']),
                     'timestamp' => time(),
+                    'user_id' => $newUserId,
                 )
             );
 
@@ -3150,51 +3186,6 @@ if (null !== $post_type) {
 
             break;
 
-        /**
-         * 
-         */
-        case 'update_user_field':
-            // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                $post_data,
-                'decode'
-            );
-
-            // Prepare variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_new_value = filter_var($dataReceived['new_value'], FILTER_SANITIZE_STRING);
-            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
-
-            // Prepare variables
-            DB::update(
-                prefixTable('users'),
-                array(
-                    $post_field => noHTML(htmlspecialchars_decode($post_new_value)),
-                ),
-                'id = %i',
-                (int) $dataReceived['user_id']
-            );
-
-            // Update session
-            if ($post_field === 'user_api_key') {
-                $_SESSION['user']['api-key'] = noHTML(htmlspecialchars_decode($post_new_value));
-            }
-            break;
-
         case "create_new_user_tasks":
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -3469,7 +3460,7 @@ if (null !== $post_type) {
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'user_api_key', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
         )) {
             DB::update(
                 prefixTable('users'),

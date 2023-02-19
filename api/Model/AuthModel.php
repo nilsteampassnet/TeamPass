@@ -71,13 +71,15 @@ class AuthModel extends Database
             return ["error" => "Not managed."];
         } else {
             // case where it is a user api key
-            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('users') . " WHERE user_api_key='".$inputData['apikey']."' AND login='".$inputData['login']."'");
-            if ((int) $apiInfo[0]['count(*)'] === 0) {
+            // Check if user exists
+            $userInfoRes = $this->select(
+                "SELECT u.id, u.pw, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
+                FROM " . prefixTable('users') . " AS u
+                INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
+                WHERE login='".$inputData['login']."'");
+            if (count($userInfoRes) === 0) {
                 return ["error" => "Login failed.", "apikey" => "Not valid"];
             }
-
-            // Check if user exists
-            $userInfoRes = $this->select("SELECT id, pw, public_key, private_key, personal_folder, fonction_id, groupes_visibles, groupes_interdits, user_api_key FROM " . prefixTable('users') . " WHERE login='".$inputData['login']."'");
             $userInfoRes[0]['special'] = '';
             $userInfo = $userInfoRes[0];
             
@@ -90,6 +92,11 @@ class AuthModel extends Database
                 // Correct credentials
                 // get user keys
                 $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
+
+                // check API key
+                if ($inputData['apikey'] !== base64_decode(decryptUserObjectKey($userInfo['user_api_key'], $privateKeyClear))) {
+                    return ["error" => "Login failed.", "apikey" => "Not valid"];
+                }
 
                 // get user folders list
                 $ret = $this->buildUserFoldersList($userInfo);

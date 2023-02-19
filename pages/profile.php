@@ -269,7 +269,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . langHdl('user_profile_api_key') . '</b>
                                         <a class="float-right" id="profile-user-api-token">',
                                             isset($_SESSION['user']['api-key']) === true ? $_SESSION['user']['api-key'] : '',
-                                            '</a>
+                                        '</a>
                                     </li>';
                                     }
                                     if (

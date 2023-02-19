@@ -1066,13 +1066,6 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'emails` MODIFY `receivers` text NOT NULL'
 );
 
-// --- DB consolidation from fretch install --- //
-// Alter table api
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `" . $pre . "api` MODIFY COLUMN `id` INT(20) AUTO_INCREMENT;"
-);
-
 // Add the Primary INDEX item_id to the automatic_del table
 $res = checkIndexExist(
     $pre . 'automatic_del',
@@ -1520,23 +1513,11 @@ if ($res === false) {
     exit();
 }
 
-// Add column user_api_key to USERS table
-$res = addColumnIfNotExist(
-    $pre . 'users',
-    'user_api_key',
-    "VARCHAR(500) NOT NULL DEFAULT 'none' AFTER `user_ip_lastdate`"
-);
-if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_api_key to table USERS! ' . mysqli_error($db_link) . '!"}]';
-    mysqli_close($db_link);
-    exit();
-}
-
 // Add column yubico_user_key to USERS table
 $res = addColumnIfNotExist(
     $pre . 'users',
     'yubico_user_key',
-    "VARCHAR(100) NOT NULL DEFAULT 'none' AFTER `user_api_key`"
+    "VARCHAR(100) NOT NULL DEFAULT 'none' AFTER `user_ip_lastdate`"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_key to table USERS! ' . mysqli_error($db_link) . '!"}]';
@@ -1746,9 +1727,157 @@ try {
     // Do nothing
 }
 
+// Add field folders to nested_tree table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'user_id',
+    "INT(12) DEFAULT NULL"
+);
+
+mysqli_query(
+    $db_link,
+    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'api (user_id)'
+);
+
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'api` MODIFY column `value` text DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'api` MODIFY column `label` VARCHAR(255) DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+// Alter table api column name if necessary
+changeColumnName(
+    $pre . 'api',
+    'id',
+    'increment_id',
+    "INT(20) NOT NULL AUTO_INCREMENT"
+);
+
+// Table API - get field user_id populated
+$columns = mysqli_query(
+    $db_link,
+    "SELECT `increment_id`, `label`
+    FROM ".$pre."api 
+    WHERE `user_id` IS NULL AND type = 'user' AND label > 0 AND label IS NOT NULL"
+);
+while ($col = mysqli_fetch_assoc($columns)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE ".$pre."api SET `user_id` = ".$col['label'].", `label` = NULL WHERE `increment_id` = ".$col['increment_id']
+    );
+}
+
+// Table API - get keys from USERS table and save them encrypted
+try {
+    // check if column exists
+    $exists = false;
+    $columns = mysqli_query($db_link, "show columns from ".$pre."users;");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ((string) $col['Field'] === "user_api_key") {
+            $exists = true;
+            break;
+        }
+    }
+    if ($exists === true) {
+        $rows = mysqli_query(
+            $db_link,
+            "SELECT u.user_api_key AS user_api_key, u.public_key AS user_public_key, a.increment_id AS increment_id
+            FROM ".$pre."users AS u
+            INNER JOIN ".$pre."api AS a ON (a.user_id = u.id)"
+        );
+        while ($row = mysqli_fetch_assoc($rows)) {
+            if (is_null($row['user_api_key']) === true || (string) $row['user_api_key'] === 'none' || is_null($row['user_public_key']) === true) {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE ".$pre."api 
+                    SET value = NULL 
+                    WHERE increment_id = ".$row['increment_id']
+                );
+            } else {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE ".$pre."api 
+                    SET value = '".encryptUserObjectKey(base64_encode($row['user_api_key']), $row['user_public_key'])."' 
+                    WHERE increment_id = ".$row['increment_id']
+                );
+            }
+        }
+
+        // Remove field user_api_key from USERS table
+        mysqli_query(
+            $db_link,
+            'ALTER TABLE `'.$pre.'users` DROP COLUMN `user_api_key`;'
+        );
+    }
+} catch (Exception $e) {
+    // Do nothing
+}
+
+// Remove keys that don't have any users left
+try {
+    $rows = mysqli_query(
+        $db_link,
+        "SELECT a.increment_id
+        FROM ".$pre."api AS a 
+        WHERE a.user_id NOT IN (SELECT u.id FROM ".$pre."users AS u)"
+    );
+    while ($row = mysqli_fetch_assoc($rows)) {
+        mysqli_query(
+            $db_link,
+            "DELETE FROM ".$pre."api WHERE increment_id = ".$row['increment_id']
+        );
+    }
+} catch (Exception $e) {
+    // Do nothing
+}
+
+/*
+// Table API - get field user_id populated
+$columns = mysqli_query(
+    $db_link,
+    "SELECT `increment_id`, `value`, `timestamp`
+    FROM ".$pre."api 
+    WHERE `user_id` IS NULL AND type = 'key' AND value IS NOT NULL"
+);
+while ($col = mysqli_fetch_assoc($columns)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE ".$pre."api 
+        SET `user_id` = -1, `value` = '".encryptUserObjectKey(base64_encode($col['value']), base64_encode($col['timestamp']))."' 
+        WHERE `increment_id` = ".$col['increment_id']
+    );
+}
+*/
+
+
+
 //---<END 3.0.0.23
 
-
+// Save timestamp
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', ".time().")"
+    );
+} else {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "misc` SET valeur = time() WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"
+    );
+}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

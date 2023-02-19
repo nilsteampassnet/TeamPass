@@ -1041,5 +1041,7 @@ Es wurde keine E-Mail-Adresse registriert',
     'enable_tasks_log_tip' => 'Permits to log all tasks performed by the cron job inside table <i>processes_log</i>. Could be useful for checking events.',
     'items_and_folders_statistics' => 'Items and folders statistics',
     'item_copying' => 'Item is being copied',
+    'upgrade_requested' => 'Teampass database is not up to date. Using it may generate errors ...',
+    'upgrade_requested_more' => 'Some inconsistencies have been identified between files and configuration, Your administrator should perform upgrade process before you continue.',
 
 );

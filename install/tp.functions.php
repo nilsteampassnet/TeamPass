@@ -202,7 +202,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
     $exists = false;
     $columns = mysqli_query($db_link, "show columns from $dbname");
     while ($col = mysqli_fetch_assoc($columns)) {
-        if ($col['Field'] == $column) {
+        if ((string) $col['Field'] === $column) {
             $exists = true;
             return true;
         }
@@ -362,5 +362,32 @@ function removeSetting($table, $type, $label): void
             "DELETE FROM ".$table."
             WHERE type = '".$type."' AND intitule = '".$label."'"
         );
+    }
+}
+
+/**
+ * Permits to change a column name if exists
+ *
+ * @param string $table
+ * @param string $oldName
+ * @param string $newName
+ * @param string $type
+ * @return void
+ */
+function changeColumnName($table, $oldName, $newName, $type): void
+{
+    global $db_link;
+
+    // check if column already exists
+    $columns = mysqli_query($db_link, "show columns from `" . $pre . $table . "`");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ((string) $col['Field'] === $oldName) {
+            // change column name
+            mysqli_query(
+                $db_link,
+                "ALTER TABLE ".$table." CHANGE `".$oldName."` `".$newName."` ".$type
+            );
+            break;
+        }
     }
 }

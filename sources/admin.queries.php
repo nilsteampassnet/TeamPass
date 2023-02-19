@@ -168,7 +168,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -180,7 +180,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -2155,7 +2155,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2167,7 +2167,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -2179,10 +2179,14 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+            $SETTINGS['cpassman_dir'],
+            $post_data,
+            'decode'
+        );
 
         $post_label = isset($dataReceived['label']) === true ? filter_var($dataReceived['label'], FILTER_SANITIZE_STRING) : '';
         $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+        $timestamp = time();
 
         // add new key
         if (null !== $post_action && $post_action === 'add') {
@@ -2190,15 +2194,19 @@ switch ($post_type) {
             require_once 'main.functions.php';
             $key = GenerateCryptKey(39, false, true, true, false, true, $SETTINGS);
 
+            // Generate objectKey
+            //$object = doDataEncryption($key, SECUREFILE.':'.$timestamp);
+            
             // Save in DB
             DB::insert(
                 prefixTable('api'),
                 array(
-                    'id' => null,
+                    'increment_id' => null,
                     'type' => 'key',
                     'label' => $post_label,
-                    'value' => $key,
-                    'timestamp' => time(),
+                    'value' => $key, //$object['encrypted'],
+                    'timestamp' => $timestamp,
+                    //'user_id' => -1,
                 )
             );
 
@@ -2211,7 +2219,7 @@ switch ($post_type) {
                 prefixTable('api'),
                 array(
                     'label' => $post_label,
-                    'timestamp' => time(),
+                    'timestamp' => $timestamp,
                 ),
                 'id=%i',
                 $post_id
@@ -2221,14 +2229,14 @@ switch ($post_type) {
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
 
             DB::query(
-                'DELETE FROM ' . prefixTable('api') . ' WHERE id = %i',
+                'DELETE FROM ' . prefixTable('api') . ' WHERE increment_id = %i',
                 $post_id
             );
         }
 
         // send data
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -2246,7 +2254,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2258,7 +2266,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -2270,7 +2278,10 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+            $SETTINGS['cpassman_dir'],
+            $post_data,
+            'decode'
+        );
 
         $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
 
@@ -2283,7 +2294,7 @@ switch ($post_type) {
             DB::insert(
                 prefixTable('api'),
                 array(
-                    'id' => null,
+                    'increment_id' => null,
                     'type' => 'ip',
                     'label' => $post_label,
                     'value' => $post_ip,
@@ -2311,17 +2322,17 @@ switch ($post_type) {
             DB::update(
                 prefixTable('api'),
                 $arr,
-                'id=%i',
+                'increment_id=%i',
                 $post_id
             );
             // Delete existing key
         } elseif (null !== $post_action && $post_action === 'delete') {
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
-            DB::query('DELETE FROM ' . prefixTable('api') . ' WHERE id=%i', $post_id);
+            DB::query('DELETE FROM ' . prefixTable('api') . ' WHERE increment_id=%i', $post_id);
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',

@@ -35,6 +35,25 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
     // On page load
     $(function() {
+        // Do we have to upgrade first
+        <?php
+        if (upgradeRequired() === true) {
+            ?>
+            toastr.error(
+                '<?php echo langHdl('upgrade_requested_more'); ?>',
+                '<h2></i><?php echo langHdl('upgrade_requested'); ?></h2>',
+                {
+                    positionClass: "toast-bottom-full-width",
+                    preventDuplicates: true,
+                    tapToDismiss: false
+                }
+            );
+
+            $('#but_identify_user').prop('disabled', true);
+            <?php
+        }
+        ?>
+
         // Set focus on login input
         $('#login').focus();
 

@@ -122,11 +122,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <div class="mt-4">
                                     <?php
                                     $rows = DB::query(
-    'SELECT id, label, value FROM ' . prefixTable('api') . '
+                                        'SELECT increment_id, label, timestamp, user_id, value 
+                                        FROM ' . prefixTable('api') . '
                                         WHERE type = %s
                                         ORDER BY timestamp ASC',
-    'key'
-);
+                                        'key'
+                                    );
                                     ?>
                                     <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
                                         <thead>
@@ -139,11 +140,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <tbody>
                                             <?php
                                             foreach ($rows as $record) {
+                                                //$apiKey = (int) $record['user_id'] === -1 ? doDataDecryption($record['value'], base64_encode(SECUREFILE.':'.$record['timestamp'])) : $record['value'];
                                                 echo '
-                                                    <tr data-id="' . $record['id'] . '">
+                                                    <tr data-id="' . $record['increment_id'] . '">
                                                     <td width="50px"><i class="fa fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $record['label'] . '</span></td>
-                                                    <td>' . $record['value'] . '</td>                        
+                                                    <td>' . $record['value']. '</td>                        
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -178,7 +180,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <div class="col-12 mt-4" id="table-api-ip">
                                     <?php
                                     $rows = DB::query(
-                                                'SELECT id, label, value FROM ' . prefixTable('api') . '
+                                                'SELECT increment_id, label, timestamp value FROM ' . prefixTable('api') . '
                                         WHERE type = %s
                                         ORDER BY timestamp ASC',
                                                 'ip'
@@ -196,7 +198,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <?php
                                             foreach ($rows as $record) {
                                                 echo '
-                                                <tr data-id="' . $record['id'] . '">
+                                                <tr data-id="' . $record['increment_id'] . '">
                                                     <td width="50px"><i class="fa fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
                                                     <td><span class="edit-api-ip pointer" data-field="label">' . $record['label'] . '</span></td>
                                                     <td><span class="edit-api-ip pointer" data-field="value">' . $record['value'] . '</span></td>                        

@@ -714,6 +714,7 @@ $SETTINGS = array (';
                             array('admin', 'maximum_number_of_items_to_treat', '100'),
                             array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
                             array('admin', 'enable_tasks_log', '0'),
+                            array('admin', 'upgrade_timestamp', '-1'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -831,7 +832,6 @@ $SETTINGS = array (';
                             `encrypted_psk` text NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
                             `user_ip_lastdate` varchar(50) NULL DEFAULT NULL,
-                            `user_api_key` varchar(500) NOT null DEFAULT 'none',
                             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
                             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
                             `public_key` TEXT DEFAULT NULL,
@@ -1138,12 +1138,14 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'api` (
-                            `id` int(20) NOT NULL AUTO_INCREMENT,
+                            `increment_id` int(20) NOT NULL AUTO_INCREMENT,
                             `type` varchar(15) NOT NULL,
-                            `label` varchar(255) NOT NULL,
-                            `value` varchar(255) NOT NULL,
+                            `label` varchar(255) DEFAULT NULL,
+                            `value` text DEFAULT NULL,
                             `timestamp` varchar(50) NOT NULL,
-                            PRIMARY KEY (`id`)
+                            `user_id` int(13) DEFAULT NULL,
+                            PRIMARY KEY (`id`),
+                            KEY `USER` (`user_id`)
                             ) CHARSET=utf8;'
                         );
                     } elseif ($task === 'otv') {

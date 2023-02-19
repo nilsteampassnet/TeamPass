@@ -56,7 +56,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 <script type='text/javascript'>
     <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
         // If user api is empty then generate one
-        if ($('#profile-user-api-token').text().length !== 39) {
+        if ($('#profile-user-api-token').text() === '') {
             generateNewUserApiKey('profile-user-api-token', true);
         }
 
@@ -293,6 +293,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         'user_id' : <?php echo $_SESSION['user_id']; ?>,
                         'context' : '',
                     };
+                    console.log(data)
                     
                     $.post(
                         "sources/users.queries.php", {

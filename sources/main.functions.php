@@ -2761,17 +2761,18 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  * Encrypts a string using AES.
  *
  * @param string $data String to encrypt
+ * @param string $key
  *
  * @return array
  */
-function doDataEncryption(string $data): array
+function doDataEncryption(string $data, string $key = NULL): array
 {
     // Includes
     include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
     // Generate an object key
-    $objectKey = uniqidReal(32);
+    $objectKey = is_null($key) === true ? uniqidReal(32) : $key;
     // Set it as password
     $cipher->setPassword($objectKey);
     return [
@@ -3863,4 +3864,34 @@ if (!function_exists('str_contains')) {
     function str_contains($haystack, $needle) {
         return $needle !== '' && mb_strpos($haystack, $needle) !== false;
     }
+}
+
+/**
+ * Is required an upgrade
+ *
+ * @return boolean
+ */
+function upgradeRequired(): bool
+{
+    // Get settings.php
+    include_once __DIR__. '/../includes/config/settings.php';
+
+    // Get timestamp in DB
+    $val = DB::queryfirstrow(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'upgrade_timestamp'
+    );
+    
+    // if not exists then error
+    if (is_null($val) === true || count($val) === 0) return true;
+
+    // if empty or too old then error
+    if (empty($val['valeur']) === true || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE) {
+        return true;
+    }
+
+    return false;
 }

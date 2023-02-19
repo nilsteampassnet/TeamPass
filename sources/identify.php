@@ -462,7 +462,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
-        $superGlobal->put('api-key', $userInfo['user_api_key'], 'SESSION', 'user');
+
+        // User signature keys
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);        
+        $superGlobal->put('public_key', $returnKeys['public_key'], 'SESSION', 'user');
+        $superGlobal->put('private_key', $returnKeys['private_key_clear'], 'SESSION', 'user');
+
+        // API key
+        $superGlobal->put(
+            'api-key',
+            empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
+            'SESSION',
+            'user'
+        );
+        
         $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
         $superGlobal->put('auth_type', $userInfo['auth_type'], 'SESSION', 'user');
         // manage session expiration
@@ -569,11 +582,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
         // Set some settings
         $SETTINGS['update_needed'] = '';
-
-        // User signature keys
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);        
-        $superGlobal->put('public_key', $returnKeys['public_key'], 'SESSION', 'user');
-        $superGlobal->put('private_key', $returnKeys['private_key_clear'], 'SESSION', 'user');
 
         // Update table
         DB::update(
@@ -1894,8 +1902,10 @@ class initialChecks {
 
     public function get_user_info($login) {
         $data = DB::queryFirstRow(
-            'SELECT *
-            FROM ' . prefixTable('users') . ' WHERE login=%s',
+            'SELECT u.*, a.value AS api_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
+            WHERE login=%s',
             $login
         );
 
