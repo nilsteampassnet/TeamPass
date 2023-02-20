@@ -17,7 +17,7 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'upgrade_requested' => 'Teampass database is not up to date. Using it may generate errors ...',
+    'upgrade_requested' => 'Teampass database is not up to date.',
     'upgrade_requested_more' => 'Some inconsistencies have been identified between files and configuration, Your administrator should perform upgrade process before you continue.',
     'item_copying' => 'Item is being copied',
     'error_not_allowed_to_authenticate' => 'You are not allowed to authenticate',

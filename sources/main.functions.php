@@ -3886,7 +3886,7 @@ function upgradeRequired(): bool
     );
     
     // if not exists then error
-    if (is_null($val) === true || count($val) === 0) return true;
+    if (is_null($val) === true || count($val) === 0 || defined('UPGRADE_MIN_DATE') === false) return true;
 
     // if empty or too old then error
     if (empty($val['valeur']) === true || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE) {
