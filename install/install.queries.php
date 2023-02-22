@@ -714,7 +714,7 @@ $SETTINGS = array (';
                             array('admin', 'maximum_number_of_items_to_treat', '100'),
                             array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
                             array('admin', 'enable_tasks_log', '0'),
-                            array('admin', 'upgrade_timestamp', ''),
+                            array('admin', 'upgrade_timestamp', time()),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
