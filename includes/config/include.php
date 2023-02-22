@@ -18,6 +18,7 @@
  */
 define('TP_VERSION', '3.0.0');
 define('TP_VERSION_FULL', TP_VERSION.'.23');
+define("UPGRADE_MIN_DATE", "1676793229");
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -49,6 +50,7 @@ define('TP_PW_STRENGTH_3', 38);
 define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
 
+// URLs
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
 define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
