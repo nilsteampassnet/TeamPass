@@ -1144,7 +1144,7 @@ $SETTINGS = array (';
                             `value` text DEFAULT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(13) DEFAULT NULL,
-                            PRIMARY KEY (`id`),
+                            PRIMARY KEY (`increment_id`),
                             KEY `USER` (`user_id`)
                             ) CHARSET=utf8;'
                         );
