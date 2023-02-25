@@ -214,6 +214,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_group_object_filter'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_group_object_filter_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_group_object_filter' value='<?php echo $SETTINGS['ldap_group_object_filter'] ?? ''; ?>'>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2'>
                                     <div class='col-5'>
                                         <?php echo langHdl('settings_ldap_type'); ?>
@@ -419,6 +431,32 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         <div class='toggle toggle-modern' id='ldap_and_local_authentication' data-toggle-on='<?php echo isset($SETTINGS['ldap_and_local_authentication']) === true && (int) $SETTINGS['ldap_and_local_authentication'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_and_local_authentication_input' value='<?php echo isset($SETTINGS['ldap_and_local_authentication']) && (int) $SETTINGS['ldap_and_local_authentication'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
+
+                                <?php if (defined('WIP') === true && WIP === true) { ?>
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-10'>
+                                        <?php echo langHdl('settings_ad_users_with_ad_groups'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ad_users_with_ad_groups_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-2'>
+                                        <div class='toggle toggle-modern' id='enable_ad_users_with_ad_groups' data-toggle-on='<?php echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_ad_users_with_ad_groups_input' value='<?php echo isset($SETTINGS['enable_ad_users_with_ad_groups']) && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 ? 1 : 0; ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-10'>
+                                        <?php echo langHdl('settings_ad_user_auto_creation'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ad_user_auto_creation_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-2'>
+                                        <div class='toggle toggle-modern' id='enable_ad_user_auto_creation' data-toggle-on='<?php echo isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_ad_user_auto_creation_input' value='<?php echo isset($SETTINGS['enable_ad_user_auto_creation']) && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? 1 : 0; ?>'>
+                                    </div>
+                                </div>
+                                <?php } ?>
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>

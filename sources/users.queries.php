@@ -2411,7 +2411,7 @@ if (null !== $post_type) {
             break;
 
             /*
-            * STORE USER LOCATION
+            * GET LDAP LIST OF USERS
             */
         case 'get_list_of_users_in_ldap':
             // Check KEY

@@ -31,6 +31,7 @@ define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 100);
+define('WIP', false);
 
 define('ERR_NOT_ALLOWED', '1000');
 define('ERR_NOT_EXIST', '1001');
@@ -42,8 +43,8 @@ define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
 define('TP_ENCRYPTION_NAME', 'teampass_aes');
-define('TP_DEFAULT_ICON', 'fas fa-folder');
-define('TP_DEFAULT_ICON_SELECTED', 'fas fa-folder-open');
+define('TP_DEFAULT_ICON', 'fa-solid fa-folder');
+define('TP_DEFAULT_ICON_SELECTED', 'fa-solid fa-folder-open');
 define('TP_PW_STRENGTH_1', 0);
 define('TP_PW_STRENGTH_2', 20);
 define('TP_PW_STRENGTH_3', 38);

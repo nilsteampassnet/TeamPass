@@ -715,6 +715,9 @@ $SETTINGS = array (';
                             array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
                             array('admin', 'enable_tasks_log', '0'),
                             array('admin', 'upgrade_timestamp', time()),
+                            array('admin', 'enable_ad_users_with_ad_groups', '0'),
+                            array('admin', 'enable_ad_user_auto_creation', '0'),
+                            array('admin', 'ldap_group_object_filter', ''),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -1296,7 +1299,20 @@ $SETTINGS = array (';
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
+                    } else if ($task === 'ldap_groups_roles') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "ldap_groups_roles` (
+                            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+                            `role_id` INT(12) NOT NULL,
+                            `ldap_group_id` INT(12) NOT NULL,
+                            `ldap_group_label` VARCHAR(255) NOT NULL,
+                            PRIMARY KEY (`increment_id`),
+                            KEY `ROLE` (`role_id`)
+                            ) CHARSET=utf8;"
+                        );
                     }
+
                 }
                 // answer back
                 if ($mysqli_result) {

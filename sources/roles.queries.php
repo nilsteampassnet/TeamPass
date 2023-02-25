@@ -20,6 +20,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use LdapRecord\Connection;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -547,7 +548,10 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
@@ -682,5 +686,266 @@ if (null !== $post_type) {
                 'encode'
             );
             break;
+
+        /*
+        * GET LDAP LIST OF GROUPS
+        */
+        case 'get_list_of_groups_in_ldap':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (empty($SETTINGS['ldap_group_object_filter']) === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('ldap_group_object_filter'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Load expected libraries
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Symfony/contracts/Translation/TranslatorInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonTimeZone.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Units.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Week.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Timestamp.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Test.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/ObjectInitialisation.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Serialization.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/IntervalRounding.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Rounding.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Localization.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Options.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Cast.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mutability.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Modifiers.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mixin.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Macro.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Difference.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Creator.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Converter.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Comparison.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Boundaries.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Date.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Carbon.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
+            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
+
+            // Build ldap configuration array
+            $config = [
+                // Mandatory Configuration Options
+                'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
+                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+                'username'         => $SETTINGS['ldap_username'],
+                'password'         => $SETTINGS['ldap_password'],
+            
+                // Optional Configuration Options
+                'port'             => $SETTINGS['ldap_port'],
+                'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+                'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+                'version'          => 3,
+                'timeout'          => 5,
+                'follow_referrals' => false,
+            
+                // Custom LDAP Options
+                'options' => [
+                    // See: http://php.net/ldap_set_option
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD
+                ]
+            ];
+
+            $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+            $ad->register();
+            $connection = new Connection($config);
+
+            // Connect to LDAP
+            try {
+                $connection->connect();
+            
+            } catch (\LdapRecord\Auth\BindException $e) {
+                $error = $e->getDetailedError();
+
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // prepare groups criteria
+            $pattern = '/\((.*?)\)/'; // matches anything inside parentheses
+            // finds all matches and saves them to $matches array
+            preg_match_all(
+                $pattern,
+                $SETTINGS['ldap_group_object_filter'],
+                $matches
+            );
+            $searchCriteria = array_map(function($item) {
+                $parts = explode("=", trim($item, '()')); // splits each match into an array of substrings
+                return [$parts[0], '=', $parts[1]]; // constructs the resulting array
+            }, $matches[0]);
+            
+            $retGroups = $connection->query()->where($searchCriteria)->get();
+
+            // check if synched with roles in Teampass
+            $retAD = [];
+            foreach($retGroups as $key => $group) {
+                // exists in Teampass
+                $role_detail = DB::queryfirstrow(
+                    'SELECT a.increment_id, a.role_id, r.title
+                    FROM '.prefixTable('ldap_groups_roles').' AS a
+                    INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
+                    WHERE ldap_group_id = %i',
+                    $group['gidnumber'][0]
+                );
+                $counter = DB::count();
+
+                if ($counter > 0) {
+                    $retGroups[$key]['teampass_role_id'] = $role_detail['role_id'];
+                } else {
+                    $retGroups[$key]['teampass_role_id'] = 0;
+                }
+
+                array_push(
+                    $retAD,
+                    [
+                        'ad_group_id' => (int) $group['gidnumber'][0],
+                        'ad_group_title' => $group['cn'][0],
+                        'role_id' => $counter> 0 ? (int) $role_detail['role_id'] : -1,
+                        'id' => $counter > 0 ? (int) $role_detail['increment_id'] : -1,
+                        'role_title' => $counter > 0 ? $role_detail['title'] : '',
+                    ]
+                );
+            }
+
+            
+            // Get all groups in Teampass
+            $teampassRoles = array();
+            $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
+            foreach ($rows as $record) {
+                array_push(
+                    $teampassRoles,
+                    array(
+                        'id' => $record['id'],
+                        'title' => $record['title']
+                    )
+                );
+            }
+
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'teampass_groups' => $teampassRoles,
+                    'ldap_groups' => $retAD,
+                ), 
+                'encode'
+            );
+
+            break;
+
+        //
+        case "map_role_with_adgroup":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $post_role_id = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_adgroup_id = filter_var($dataReceived['adGroupId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_adgroup_label = filter_var($dataReceived['adGroupLabel'], FILTER_SANITIZE_STRING);
+
+            $data = DB::queryfirstrow(
+                'SELECT *
+                FROM '.prefixTable('ldap_groups_roles').'
+                WHERE ldap_group_id = %i',
+                $post_adgroup_id
+            );
+            $counter = DB::count();
+
+            if ($counter === 0) {
+                // Adding new folder is possible as it doesn't exist
+                DB::insert(
+                    prefixTable('ldap_groups_roles'),
+                    array(
+                        'role_id' => $post_role_id,
+                        'ldap_group_id' => $post_adgroup_id,
+                        'ldap_group_label' => $post_adgroup_label,
+                    )
+                );
+                $new_id = DB::insertId();
+            } else {
+                if ((int) $post_role_id === -1) {
+                    // delete
+                    DB::delete(
+                        prefixTable('ldap_groups_roles'),
+                        'increment_id = %i',
+                        $data['increment_id']
+                    );
+                    $new_id = -1;
+                } else {
+                    // update
+                    DB::update(
+                        prefixTable('ldap_groups_roles'),
+                        array(
+                            'role_id' => $post_role_id,
+                        ),
+                        'increment_id = %i',
+                        $data['increment_id']
+                    );
+                    $new_id = '';
+                }
+            }
+
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'newId' => $new_id,
+                ), 
+                'encode'
+            );
+
+            break;
     }
 }
+

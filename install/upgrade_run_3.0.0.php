@@ -1862,6 +1862,41 @@ while ($col = mysqli_fetch_assoc($columns)) {
 */
 
 
+// Add new table ldap_groups_roles
+mysqli_query(
+    $db_link,
+    "CREATE TABLE IF NOT EXISTS `" . $pre . "ldap_groups_roles` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `role_id` INT(12) NOT NULL,
+        `ldap_group_id` INT(12) NOT NULL,
+        `ldap_group_label` VARCHAR(255) NOT NULL,
+        PRIMARY KEY (`increment_id`),
+        KEY `ROLE` (`role_id`)
+        ) CHARSET=utf8;"
+);
+
+// Add new setting enable_ad_users_with_ad_groups
+addNewSetting(
+    $pre . 'misc',
+    'admin',
+    'enable_ad_users_with_ad_groups',
+    '0'
+);
+// Add new setting enable_ad_user_auto_creation
+addNewSetting(
+    $pre . 'misc',
+    'admin',
+    'enable_ad_user_auto_creation',
+    '0'
+);
+// Add new setting ldap_group_object_filter
+addNewSetting(
+    $pre . 'misc',
+    'admin',
+    'ldap_group_object_filter',
+    ''
+);
+
 
 //---<END 3.0.0.23
 

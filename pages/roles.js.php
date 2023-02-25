@@ -69,8 +69,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             foldersList: [],
             personalSaltkeyRequired: 0,
             uploadedFileId: '',
+            rolesSelectOptions: '',
         }
     );
+
+    // Globals
+    var currentThis = '';
 
     // Preapre select drop list
     $('#roles-list.select2').select2({
@@ -444,17 +448,26 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     $(document).on('click', 'button', function() {
         // Init
         var selectedFolderText = $('#roles-list').find(':selected').text();
+        console.log("Click: "+$(this).data('action'));
 
         if ($(this).data('action') === 'cancel-edition') {
             $('#card-role-definition').addClass('hidden');
             $('#card-role-details, #card-role-selection').removeClass('hidden');
             $('#form-role-label').val('');
             $('#form-role-delete').iCheck('uncheck');
+
         } else if ($(this).data('action') === 'cancel-deletion') {
             $('#card-role-details, #card-role-selection').removeClass('hidden');
             $('#card-role-deletion').addClass('hidden');
             $('#form-role-delete').iCheck('uncheck');
             $('#form-role-delete').iCheck('uncheck');
+
+        } else if ($(this).data('action') === 'cancel-ldap') {
+            $('#card-role-selection').removeClass('hidden');
+            $('#card-roles-ldap-sync').addClass('hidden');
+            //$('#form-role-delete').iCheck('uncheck');
+            //$('#form-role-delete').iCheck('uncheck');
+
         } else if ($(this).data('action') === 'submit-edition') {
             // STORE ROLE CHANGES
 
@@ -581,6 +594,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 $('#card-role-deletion').removeClass('hidden');
                 $('#card-role-definition, #card-role-details, #card-role-selection').addClass('hidden');
             }
+        
+        } else if ($(this).data('action') === 'ldap') {
+            // SHOW LDAP SYNC FORM
+            console.log('LDAP SYNC');
+            if ($('#card-roles-ldap-sync').hasClass('hidden') === true) {
+                //$('#span-role-delete').html('- <?php echo langHdl('role'); ?> <b>' + selectedFolderText + '</b>');
+
+                $('#card-roles-ldap-sync').removeClass('hidden');
+                $('#card-role-definition, #card-role-details, #card-role-selection').addClass('hidden');
+
+                refreshLdapGroups();
+            }
+
+        } else if ($(this).data('action') === 'ldap-refresh') {
+            // REFRESH LDAP GROUPS LIST
+            refreshLdapGroups();
+
         } else if ($(this).data('action') === 'new') {
             // SHOW NEW FOLDER DEFINITION
             $('#form-role-label').val('');
@@ -741,8 +771,183 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 }
             );
             //---
+
+        } else if ($(this).data('action') === 'do-adgroup-role-mapping') {
+            var groupId = parseInt($(this).data('id')),
+                roleId = parseInt($('.select-role').val()),
+                groupTitle = $('.select-role option:selected').text();
+
+            if (roleId === '') {
+                return false;
+            }
+
+            // Show spinner
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            // Prepare data
+            var data = {
+                'roleId': roleId,
+                'adGroupId': groupId,
+                'adGroupLabel': groupTitle,
+            }
+            console.log(data)
+
+            // Launch action
+            $.post(
+                'sources/roles.queries.php', {
+                    type: 'map_role_with_adgroup',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                    if (data.error === true) {
+                        // ERROR
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Manage change in select
+                        currentThis.html(groupTitle);
+
+                        // Clean
+                        $('.temp-row').remove();
+
+                        // OK
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                }
+            );
+            //---
         }
         currentFolderEdited = '';
+    });
+
+
+    /**
+     * Refreshing list of groups from LDAP
+     *
+     * @return void
+     */
+    function refreshLdapGroups() {
+        // FIND ALL USERS IN LDAP
+        //toastr.remove();
+        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+        $('#row-ldap-body')
+            .addClass('overlay')
+            .html('');
+
+        $.post(
+            "sources/roles.queries.php", {
+                type: "get_list_of_groups_in_ldap",
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data)
+
+                if (data.error === true) {
+                    // ERROR
+                    //toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // loop on groups list
+                    var html = '',
+                        groupsNumber = 0,
+                        group,
+                        group_id;
+                    var entry;
+                    $.each(data.ldap_groups, function(i, ad_group) {
+                        // Get group name
+                        html += '<tr>' +
+                            '<td>' + ad_group.ad_group_title + '</td>' +
+                            '<td><i class="fa-solid fa-arrow-right-long"></i></td>' +
+                            '<td class="pointer change_adgroup_mapping" data-id="'+ad_group.ad_group_id+'">' + 
+                                (ad_group.role_title === "" ? '<i class="fa-solid fa-xmark text-danger infotip" title="<?php echo langHdl('none'); ?>"></i>' : ad_group.role_title) + 
+                            '</td>' +
+                            '</tr>';
+                    });
+
+                    $('#row-ldap-body').html(html);
+                    $('#row-ldap-body').removeClass('overlay');
+                    $('.infotip').tooltip('update');
+
+                    // prepare select
+                    rolesSelectOptions = '<option value="-1"><?php echo langHdl('none'); ?></option>';;
+                    $.each(data.teampass_groups, function(i, role) {
+                        rolesSelectOptions += '<option value="' + role.id + '">' + role.title + '</option>';
+                    });
+                    store.update(
+                        'teampassApplication',
+                        function(teampassApplication) {
+                            teampassApplication.rolesSelectOptions = rolesSelectOptions;
+                        }
+                    );
+
+
+                    // Inform user
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    $('.close-toastr-progress').closest('.toast').remove();
+                }
+            }
+        );
+    }
+
+    /**
+     * Refreshing list of groups from LDAP
+     *
+     * @return void
+     */
+    $(document).on('click', '.change_adgroup_mapping', function() {
+        // Init
+        currentThis = $(this);
+        var currentRow = $(this).closest('tr'),
+            groupId = $(this).data('id');
+
+        // Now show
+        $(currentRow).after(
+            '<tr class="temp-row"><td colspan="' + $(currentRow).children('td').length + '">' +
+            '<div class="card card-warning card-outline">' +
+            '<div class="card-body">' +
+            '<div class="form-group ml-2 mt-2"><?php echo langHdl('select_adgroup_mapping'); ?></div>' +
+            '<div class="form-group ml-2">' +
+            '<select class="select-role form-control form-item-control">' +
+                store.get('teampassApplication').rolesSelectOptions + '</select>' +
+            '</div>' +
+            '<div class="card-footer">' +
+            '<button type="button" class="btn btn-warning tp-action" data-action="do-adgroup-role-mapping" data-id="' + groupId + '"><?php echo langHdl('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '</div>' +
+            '</div>' +
+            '</td></tr>'
+        );
     });
 
     /**

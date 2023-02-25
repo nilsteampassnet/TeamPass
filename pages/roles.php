@@ -61,7 +61,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-graduation-cap mr-2"></i><?php echo langHdl('roles'); ?>
+                    <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo langHdl('roles'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -77,14 +77,21 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                 <div class="card">
                     <div class="card-header p-2">
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="new">
-                            <i class="fas fa-plus mr-2"></i><?php echo langHdl('new'); ?>
+                            <i class="fa-solid fa-plus mr-2"></i><?php echo langHdl('new'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2 disabled" data-action="edit" id="button-edit">
-                            <i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?>
+                            <i class="fa-solid fa-pen mr-2"></i><?php echo langHdl('edit'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2 disabled" data-action="delete" id="button-delete">
-                            <i class="fas fa-trash mr-2"></i><?php echo langHdl('delete'); ?>
+                            <i class="fa-solid fa-trash mr-2"></i><?php echo langHdl('delete'); ?>
                         </button>
+                        <?php
+                            echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
+                        '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap" id="button-ldap">
+                            <i class="fa-solid fa-address-card mr-2"></i>'.langHdl('ldap_synchronization').'
+                        </button>' : '';
+                        ?>
+                        
                     </div><!-- /.card-header -->
                     <div class="card-body">
                         <div class="form-group" id="card-role-selection">
@@ -164,6 +171,46 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             </div>
                         </div>
 
+                        <!-- LDAP SYNC FORM -->
+                        <?php
+                        if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1) {
+                            ?>
+                        <div class="card hidden card-info" id="card-roles-ldap-sync">
+                            <div class="card-header">
+                                <h5>
+                                    <?php echo langHdl('ad_groupe_and_roles_mapping'); ?>
+                                    <button type="button" class="btn btn-primary btn-sm tp-action ml-2" data-action="ldap-refresh">
+                                        <i class="fa-solid fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
+                                    </button>
+                                </h5>
+                            </div><!-- /.card-header -->
+                            <div class="card-body">
+                                
+                                <div class="card-body table-responsive p-0" id="ldap-groups-table">
+                                    <table class="table table-hover table-responsive">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo langHdl('ad_group'); ?></th>
+                                                <th style="width: 25pw;"></th>
+                                                <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo langHdl('mapped_with_role'); ?></th>
+                                                <!--<th><i class="text-center fa-solid fa-object-group mr-1"></i></th>
+                                                <th style=""><i class="fa-solid fa-wrench mr-1"></i><?php echo langHdl('action'); ?></th>-->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="row-ldap-body">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            
+                            </div>
+                            <div class="card-footer">
+                                <!--<button type="button" class="btn btn-danger tp-action" data-action="submit-"><?php echo langHdl('submit'); ?></button>-->
+                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-ldap"><?php echo langHdl('cancel'); ?></button>
+                            </div>
+                        </div>
+                            <?php
+                        } ?>
+
                     </div>
                 </div>
             </div>
@@ -189,7 +236,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <div class="input-group input-group-sm col-4">
                                         <div class="input-group-prepend">
                                             <div class="input-group-text">
-                                                <i class="fas fa-search"></i>
+                                                <i class="fa-solid fa-search"></i>
                                             </div>
                                         </div>
                                         <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="folders-search">

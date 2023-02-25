@@ -2690,7 +2690,7 @@ switch ($post_type) {
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
-
+        
         require_once 'main.functions.php';
 
         // In case of key, then encrypt it
