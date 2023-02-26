@@ -536,7 +536,17 @@ $zones = timezone_list();
                                 <input type='text' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
                             </div>
                         </div>
-
+                        <div class='row mb-2 option' data-keywords="server setting cron job task email">
+                            <div class='col-10'>
+                                <?php echo langHdl('enable_backlog_mail'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo langHdl('enable_backlog_mail'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_backlog_mail' data-toggle-on='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_backlog_mail_input' value='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

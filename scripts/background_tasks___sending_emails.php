@@ -116,7 +116,7 @@ function sendEmailsNotSent(
     array $SETTINGS
 )
 {
-    if ((int) $SETTINGS['enable_send_email_on_user_login'] === 1) {
+    if ((int) $SETTINGS['enable_backlog_mail'] === 1) {
         $row = DB::queryFirstRow(
             'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
             'cron',
