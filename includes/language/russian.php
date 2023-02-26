@@ -1042,5 +1042,17 @@ return array(
     'item_copying' => 'Item is being copied',
     'upgrade_requested' => 'Teampass database is not up to date.',
     'upgrade_requested_more' => 'Some inconsistencies have been identified between files and configuration, Your administrator should perform upgrade process before you continue.',
+    'settings_ldap_group_object_filter' => 'LDAP group object filter',
+    'settings_ldap_group_object_filter_tip' => 'LDAP filter to use to find the group object. For example: (objectClass=group1)(objectClass=group2)',
+    'settings_ad_users_with_ad_groups' => 'AD user roles mapped with their AD groups',
+    'settings_ad_users_with_ad_groups_tip' => 'Permits to map AD user roles with their AD groups. Those roles will be added to the one defined in their profile.',
+    'settings_ad_user_auto_creation' => 'AD user to get created automatically',
+    'settings_ad_user_auto_creation_tip' => 'Permits an AD user to get automatically created in Teampass when he logs in for the first time. Notice that if option AD user roles mapped with their AD groups enabled then he will get the roles mapped with his AD groups.',
+    'settings_ldap_guid_attibute' => 'LDAP GUID attribute',
+    'settings_ldap_guid_attibute_tip' => 'LDAP attribute to use to identify the GUID of an object. For example: objectGUID, objectSid, GUID, gidNumber, ...',
+    'ad_group' => 'AD group',
+    'mapped_with_role' => 'Mapped with role',
+    'ad_groupe_and_roles_mapping' => 'AD group and roles mapping',
+    'select_adgroup_mapping' => 'Select the role to map with current AD group',
 
 );

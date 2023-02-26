@@ -596,7 +596,7 @@ function identUser(
     $noAccessFolders = convertToArray($noAccessFolders);
     $userRoles = convertToArray($userRoles);
     $allowedFolders = convertToArray($allowedFolders);
-
+    
     // Get list of folders depending on Roles
     $arrays = identUserGetFoldersFromRoles(
         $userRoles,

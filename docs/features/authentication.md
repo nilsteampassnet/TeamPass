@@ -1,4 +1,4 @@
-<!-- docs/authentication.md -->
+<!-- docs/features/authentication.md -->
 
 
 ## Generalities
@@ -49,9 +49,11 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 * __User name attribute__ - The attribute field to use when loading the username. The default value in case of an `Active Directory` should be defined as `samaccountname`. In case of `OpenLDAP`, it should be `uid`.
 * __Additional User DN__ - This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN.
 * __User Object Filter__ - The filter to use when searching user objects.
+* __LDAP group object filter__ - The filter to use when searching group objects.
+* __LDAP GUID attribute__ - Provides the GUID attribute used in your directory.Only used when option (1) is enabled.
 
 #### Configure special Teampass characteritics
 
-* __Teampass local users only__ - When enabled, this will only allow users managed locally to get authenticated in Teampass. Users synchronized with AD remote server will always be rejected during authentication step.
 * __Local and LDAP users__ - If LDAP authentication is enabled, only users synchronized with AD remote server will be allowed to log in Teampass. Locally managed users will by default be rejected. With this option enabled, both kind of users can be allowed to log in Teampass.
+* __AD user roles mapped with their AD groups (1)__ - When enabled, Administrator will be able to map existing AD Groups with local Teampass roles. By doing so, any AD user belonging with one of this AD group will automatically be promoted to the mapped Teampass role.
 * __Hide forgot password link on Home page__ - If LDAP authentication is enabled, you should disable forgot password feature but it can be enabled for locally managed users.

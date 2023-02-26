@@ -537,6 +537,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 $superGlobal->get('user_id', 'SESSION')
             );
         }
+        // Append with roles from AD groups
+        if (is_null($userInfo['roles_from_ad_groups']) === false) {
+            $userInfo['fonction_id'] = empty($userInfo['fonction_id'])  === true ? $userInfo['roles_from_ad_groups'] : $userInfo['fonction_id']. ';' . $userInfo['roles_from_ad_groups'];
+        }
+        // store
         $superGlobal->put('fonction_id', $userInfo['fonction_id'], 'SESSION');
         $superGlobal->put('user_roles', array_filter(explode(';', $userInfo['fonction_id'])), 'SESSION');
         // build array of roles
@@ -1098,6 +1103,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 {
     // Load expected libraries
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Auth/Authenticatable.php';
+    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Support/Arrayable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
     require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
@@ -1166,6 +1172,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     try {
         // Connect to LDAP
         $connection->connect();
+        Container::addConnection($connection);
 
         // Get user info from AD
         // We want to isolate attribute ldap_user_attribute
@@ -1187,13 +1194,15 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         // User auth attempt
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+            $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
             $userAuthAttempt = $connection->auth()->attempt(
-                $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0],
+                $userDN,
                 $passwordClear
             );
         } else {
+            $userDN = $userADInfos['dn'];
             $userAuthAttempt = $connection->auth()->attempt(
-                $userADInfos['dn'],
+                $userDN,
                 $passwordClear
             );
         }
@@ -1215,6 +1224,31 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         ];
     }
 
+    // Update user info with his AD groups
+    $ret = '';
+    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+        require_once 'ldap.activedirectory.php';
+    } else {
+        require_once 'ldap.openldap.php';
+    }   
+    $ret = getUserADGroups(
+        $userDN, 
+        $connection, 
+        $SETTINGS
+    );
+    if ($ret['error'] === true) {
+        return [
+            'error' => true,
+            'message' => "Error: ".$ret['message'],
+        ];
+    }
+    handleUserADGroups(
+        $username,
+        $userInfo,
+        $ret['userGroups'],
+        $SETTINGS
+    );
+
     // Finalize authentication
     finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
 
@@ -1222,6 +1256,61 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         'error' => false,
         'message' => '',
     ];
+}
+
+/**
+ * Permits to update the user's AD groups with mapping roles
+ *
+ * @param string $username
+ * @param array $userInfo
+ * @param array $groups
+ * @param array $SETTINGS
+ * @return void
+ */
+function handleUserADGroups(string $username, array $userInfo, array $groups, array $SETTINGS): void
+{
+    if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
+        // Get user groups from AD
+        $user_ad_groups = [];
+        foreach($groups as $group) {
+            //print_r($group);
+            // get relation role id for AD group
+            $role = DB::queryFirstRow(
+                'SELECT lgr.role_id
+                FROM ' . prefixTable('ldap_groups_roles') . ' AS lgr
+                WHERE lgr.ldap_group_id = %i',
+                $group
+            );
+            if (DB::count() > 0) {
+                array_push($user_ad_groups, $role['role_id']); 
+            }
+        }
+        
+        // save
+        if (count($user_ad_groups) > 0) {
+            $user_ad_groups = implode(';', $user_ad_groups);
+            DB::update(
+                prefixTable('users'),
+                [
+                    'roles_from_ad_groups' => $user_ad_groups,
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            $userInfo['roles_from_ad_groups'] = $user_ad_groups;
+        }
+    } else {
+        // Delete all user's AD groups
+        DB::update(
+            prefixTable('users'),
+            [
+                'roles_from_ad_groups' => null,
+            ],
+            'id = %i',
+            $userInfo['id']
+        );
+    }
 }
 
 /**
@@ -1893,7 +1982,7 @@ class initialChecks {
 
     // Methods
     public function get_is_too_much_attempts($attempts) {
-        if ($attempts > 3) {
+        if ($attempts > 300) {
             throw new Exception(
                 "error" 
             );
@@ -2129,6 +2218,22 @@ function identifyDoLDAPChecks(
         && $username !== 'admin'
         && (string) $userInfo['auth_type'] === 'ldap'
     ) {
+        /*if ($SETTINGS['ldap_type'] === 'OpenLDAP') {
+            require_once 'ldap.openldap.php';
+            $retLDAP = authenticateThroughOpenLDAP(
+                $username,
+                $userInfo,
+                $passwordClear,
+                $SETTINGS
+            );
+        } elseif ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+            $retLDAP = authenticateThroughAD(
+                $username,
+                $userInfo,
+                $passwordClear,
+                $SETTINGS
+            );
+        }*/
         $retLDAP = authenticateThroughAD(
             $username,
             $userInfo,

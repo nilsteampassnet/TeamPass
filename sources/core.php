@@ -407,7 +407,7 @@ if (
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ' . prefixTable('users') . ' WHERE id=%i',
+        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups FROM ' . prefixTable('users') . ' WHERE id=%i',
         $_SESSION['user_id']
     );
     //Check if user has been deleted or unlogged
@@ -453,7 +453,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $data['groupes_visibles'],
             $data['groupes_interdits'],
             $data['admin'],
-            $data['fonction_id'],
+            is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
             $SETTINGS
         );
         if (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1) {

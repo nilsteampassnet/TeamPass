@@ -190,11 +190,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     <table class="table table-hover table-responsive">
                                         <thead>
                                             <tr>
-                                                <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo langHdl('ad_group'); ?></th>
+                                                <th style="width: 25%;"><i class="fa-solid fa-people-group mr-1"></i><?php echo langHdl('ad_group'); ?></th>
                                                 <th style="width: 25pw;"></th>
                                                 <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo langHdl('mapped_with_role'); ?></th>
-                                                <!--<th><i class="text-center fa-solid fa-object-group mr-1"></i></th>
-                                                <th style=""><i class="fa-solid fa-wrench mr-1"></i><?php echo langHdl('action'); ?></th>-->
                                             </tr>
                                         </thead>
                                         <tbody id="row-ldap-body">
@@ -204,7 +202,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             
                             </div>
                             <div class="card-footer">
-                                <!--<button type="button" class="btn btn-danger tp-action" data-action="submit-"><?php echo langHdl('submit'); ?></button>-->
                                 <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-ldap"><?php echo langHdl('cancel'); ?></button>
                             </div>
                         </div>

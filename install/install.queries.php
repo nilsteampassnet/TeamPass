@@ -718,6 +718,7 @@ $SETTINGS = array (';
                             array('admin', 'enable_ad_users_with_ad_groups', '0'),
                             array('admin', 'enable_ad_user_auto_creation', '0'),
                             array('admin', 'ldap_group_object_filter', ''),
+                            array('admin', 'ldap_guid_attibute', 'objectguid'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -843,6 +844,7 @@ $SETTINGS = array (';
                             `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
                             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
                             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `roles_from_ad_groups` varchar(1000) NULL,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

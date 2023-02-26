@@ -432,7 +432,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
-                                <?php if (defined('WIP') === true && WIP === true) { ?>
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
                                         <?php echo langHdl('settings_ad_users_with_ad_groups'); ?>
@@ -445,6 +444,19 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo langHdl('settings_ldap_guid_attibute'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo langHdl('settings_ldap_guid_attibute_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_guid_attibute' value='<?php echo $SETTINGS['ldap_guid_attibute'] ?? 'objectguid'; ?>'>
+                                    </div>
+                                </div>
+
+                                <?php if (defined('WIP') === true && WIP === true) { ?>
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
                                         <?php echo langHdl('settings_ad_user_auto_creation'); ?>

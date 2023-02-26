@@ -1896,7 +1896,25 @@ addNewSetting(
     'ldap_group_object_filter',
     ''
 );
+// Add new setting ldap_guid_attibute
+addNewSetting(
+    $pre . 'misc',
+    'admin',
+    'ldap_guid_attibute',
+    'objectguid'
+);
 
+// Add field public_key to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'roles_from_ad_groups',
+    "varchar(1000) NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field roles_from_ad_groups to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 //---<END 3.0.0.23
 

@@ -7,7 +7,8 @@
 - [Information](install/encryption.md)
 - [Extra](install/extra-settings.md)
 - **Features**
-- [Authentication](authentication.md)
+- [Authentication](features/authentication.md)
+- [Roles](features/roles.md)
 - **Manage**
 - [Settings](manage/settings.md)
 - [Tasks](manage/tasks.md)
