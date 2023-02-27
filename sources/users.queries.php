@@ -301,8 +301,8 @@ if (null !== $post_type) {
                     prefixTable('api'),
                     array(
                         'type' => 'user',
-                        'label' => $new_user_id,
-                        'value' => encryptUserObjectKey(base64_encode($api_key), $userKeys['private_key']),
+                        'user_id' => $new_user_id,
+                        'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
                         'timestamp' => time(),
                     )
                 );
@@ -2751,8 +2751,8 @@ if (null !== $post_type) {
                 prefixTable('api'),
                 array(
                     'type' => 'user',
-                    'label' => $newUserId,
-                    'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['private_key']),
+                    //'label' => $newUserId,
+                    'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
                     'timestamp' => time(),
                     'user_id' => $newUserId,
                 )

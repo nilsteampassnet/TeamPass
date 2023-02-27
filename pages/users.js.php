@@ -60,7 +60,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         userTemporaryCode = '',
         constVisibleOTP = false,
         userClipboard,
-        ProcessInProgress = false;
+        ProcessInProgress = false,
+        debugJavascript = false;
 
     browserSession(
         'init',
@@ -954,7 +955,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'form-create-root-folder': $('#form-create-root-folder').prop('checked'),
                     'form-user-disabled': $('#form-user-disabled').prop('checked'),
                 };
-                console.log(data);
+                if (debugJavascript === true) {
+                    console.log(data);
+                }                
                 var formUserId = store.get('teampassApplication').formUserId;
 
                 $.post(
