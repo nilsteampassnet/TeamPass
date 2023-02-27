@@ -1928,7 +1928,7 @@ if (intval($tmp) === 0) {
 } else {
     mysqli_query(
         $db_link,
-        "UPDATE `" . $pre . "misc` SET valeur = time() WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"
+        "UPDATE `" . $pre . "misc` SET valeur = ".time()." WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"
     );
 }
 

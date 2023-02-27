@@ -53,108 +53,109 @@ $post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
 
 
 // Do we need to rewrite the settings.php file?
-$settingsFile = '../includes/config/settings.php';
-if (null !== SECUREPATH) { //3.0.0.23
-    //Do a copy of the existing file
-    if (!copy(
-        $settingsFile,
-        $settingsFile . '.' . date(
-            'Y_m_d_H_i_s',
-            mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
-        )
-    )) {
-        echo '[{
-            "error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.",
-            "index" : ""
-        }]';
-        exit;
-    } else {
-        unlink($settingsFile);
-    }
-    
-    // CHeck if old sk.php exists.
-    // If yes then get keys to database and delete it
-    if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-        $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
-        if (file_exists($filename)) {
-            include_once $filename;
-            unlink($filename);
+if (defined("DB_PASSWD") === false) {
+	$settingsFile = '../includes/config/settings.php';
+    if (null !== SECUREPATH) { //3.0.0.23
+        //Do a copy of the existing file
+        if (!copy(
+            $settingsFile,
+            $settingsFile . '.' . date(
+                'Y_m_d_H_i_s',
+                mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+            )
+        )) {
+            echo '[{
+                "error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.",
+                "index" : ""
+            }]';
+            exit;
+        } else {
+            unlink($settingsFile);
+        }
+        
+        // CHeck if old sk.php exists.
+        // If yes then get keys to database and delete it
+        if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+            $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
+            if (file_exists($filename)) {
+                include_once $filename;
+                unlink($filename);
 
-            // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
-            // SKEY
-            $tmp = mysqli_query(
-                $db_link,
-                "SELECT INTO `" . $pre . "misc`
-                WHERE type = 'admin' AND intitule = 'duo_skey'"
-            );
-            if ($tmp) {
-                mysqli_query(
+                // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
+                // SKEY
+                $tmp = mysqli_query(
                     $db_link,
-                    "UPDATE `" . $pre . "misc`
-                    set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
+                    "SELECT INTO `" . $pre . "misc`
+                    WHERE type = 'admin' AND intitule = 'duo_skey'"
                 );
-            } else {
-                mysqli_query(
-                    $db_link,
-                    "INSERT INTO `" . $pre . "misc`
-                    (`valeur`, `type`, `intitule`)
-                    VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
-                );
-            }
+                if ($tmp) {
+                    mysqli_query(
+                        $db_link,
+                        "UPDATE `" . $pre . "misc`
+                        set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
+                    );
+                } else {
+                    mysqli_query(
+                        $db_link,
+                        "INSERT INTO `" . $pre . "misc`
+                        (`valeur`, `type`, `intitule`)
+                        VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
+                    );
+                }
 
-            // IKEY
-            $tmp = mysqli_query(
-                $db_link,
-                "SELECT INTO `" . $pre . "misc`
-                WHERE type = 'admin' AND intitule = 'duo_ikey'"
-            );
-            if ($tmp) {
-                mysqli_query(
+                // IKEY
+                $tmp = mysqli_query(
                     $db_link,
-                    "UPDATE `" . $pre . "misc`
-                    set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
+                    "SELECT INTO `" . $pre . "misc`
+                    WHERE type = 'admin' AND intitule = 'duo_ikey'"
                 );
-            } else {
-                mysqli_query(
-                    $db_link,
-                    "INSERT INTO `" . $pre . "misc`
-                    (`valeur`, `type`, `intitule`)
-                    VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
-                );
-            }
+                if ($tmp) {
+                    mysqli_query(
+                        $db_link,
+                        "UPDATE `" . $pre . "misc`
+                        set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
+                    );
+                } else {
+                    mysqli_query(
+                        $db_link,
+                        "INSERT INTO `" . $pre . "misc`
+                        (`valeur`, `type`, `intitule`)
+                        VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
+                    );
+                }
 
-            // HOST
-            $tmp = mysqli_query(
-                $db_link,
-                "SELECT INTO `" . $pre . "misc`
-                WHERE type = 'admin' AND intitule = 'duo_host'"
-            );
-            if ($tmp) {
-                mysqli_query(
+                // HOST
+                $tmp = mysqli_query(
                     $db_link,
-                    "UPDATE `" . $pre . "misc`
-                    set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
+                    "SELECT INTO `" . $pre . "misc`
+                    WHERE type = 'admin' AND intitule = 'duo_host'"
                 );
-            } else {
-                mysqli_query(
-                    $db_link,
-                    "INSERT INTO `" . $pre . "misc`
-                    (`valeur`, `type`, `intitule`)
-                    VALUES ('" . HOST . "', 'admin', 'duo_host')"
-                );
+                if ($tmp) {
+                    mysqli_query(
+                        $db_link,
+                        "UPDATE `" . $pre . "misc`
+                        set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
+                    );
+                } else {
+                    mysqli_query(
+                        $db_link,
+                        "INSERT INTO `" . $pre . "misc`
+                        (`valeur`, `type`, `intitule`)
+                        VALUES ('" . HOST . "', 'admin', 'duo_host')"
+                    );
+                }
             }
         }
-    }
 
-    // Ensure DB is read as UTF8
-    if (defined('DB_ENCODING') === false) {
-        define('DB_ENCODING', "utf8");
-    }
+        // Ensure DB is read as UTF8
+        if (defined('DB_ENCODING') === false) {
+            define('DB_ENCODING', "utf8");
+        }
 
-    // Now create new file
-    $file_handled = fopen($settingsFile, 'w');
-    
-    $settingsTxt = '<?php
+        // Now create new file
+        $file_handled = fopen($settingsFile, 'w');
+        
+        $settingsTxt = '<?php
 // DATABASE connexion parameters
 define("DB_HOST", "' . $server . '");
 define("DB_USER", "' . $user . '");
@@ -197,27 +198,28 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 }
 ';
 
-    $fileCreation = fwrite(
-        $file_handled,
-        utf8_encode($settingsTxt)
-    );
+        $fileCreation = fwrite(
+            $file_handled,
+            utf8_encode($settingsTxt)
+        );
 
-    fclose($file_handled);
-    if ($fileCreation === false) {
-        echo '[{
-            "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
-            "index" : ""
-        }]';
-        exit;
+        fclose($file_handled);
+        if ($fileCreation === false) {
+            echo '[{
+                "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
+                "index" : ""
+            }]';
+            exit;
+        }
+        
+        define("DB_HOST", "' . $server . '");
+        define("DB_USER", "' . $user . '");
+        define("DB_PASSWD", "' . $pass . '");
+        define("DB_NAME", "' . $database . '");
+        define("DB_PREFIX", "' . $pre . '");
+        define("DB_PORT", "' . $port . '");
+        define("DB_ENCODING", "' . $encoding . '");
     }
-    
-    define("DB_HOST", "' . $server . '");
-    define("DB_USER", "' . $user . '");
-    define("DB_PASSWD", "' . $pass . '");
-    define("DB_NAME", "' . $database . '");
-    define("DB_PREFIX", "' . $pre . '");
-    define("DB_PORT", "' . $port . '");
-    define("DB_ENCODING", "' . $encoding . '");
 }
 
 
@@ -229,13 +231,7 @@ $database = DB_NAME;
 $port = intval(DB_PORT);
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)) {
+try {
     $db_link = mysqli_connect(
         $server,
         $user,
@@ -245,9 +241,9 @@ if (mysqli_connect(
     );
     $res = 'Connection is successful';
     $db_link->set_charset(DB_ENCODING);
-} else {
+} catch (Exception $e) {
     echo '[{
-        "error" : "Impossible to get connected to server. Error is: " . addslashes(mysqli_connect_error()),
+        "error" : "Impossible to get connected to server. Ensure that file includes/config/settings.php exists and is correct.",
         "index" : ""
     }]';
     exit;
