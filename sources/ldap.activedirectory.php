@@ -71,12 +71,7 @@ function getUserADGroups(string $userDN, LdapRecord\Connection $connection, arra
             );
         }
     } catch (\LdapRecord\Auth\BindException $e) {
-        $error = $e->getDetailedError();
-        return [
-            'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
-
-        ];
+        // Do nothing
     }
 
     return [

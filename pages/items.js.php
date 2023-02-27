@@ -77,7 +77,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
