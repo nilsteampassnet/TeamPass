@@ -1236,12 +1236,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $connection, 
         $SETTINGS
     );
-    if ($ret['error'] === true) {
-        return [
-            'error' => true,
-            'message' => "Error: ".$ret['message'],
-        ];
-    }
+    
     handleUserADGroups(
         $username,
         $userInfo,

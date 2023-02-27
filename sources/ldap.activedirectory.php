@@ -47,11 +47,11 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
  */
 function getUserADGroups(string $userDN, LdapRecord\Connection $connection, array $SETTINGS): array
 {
+    // init
+    $groupsArr = [];
+    
     try {
         Container::addConnection($connection);
-
-        // init
-        $groupsArr = [];
         
         // get id attribute
         if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
