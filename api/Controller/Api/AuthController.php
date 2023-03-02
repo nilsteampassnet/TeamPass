@@ -49,7 +49,12 @@ class AuthController extends BaseController
             try {
                 $authModel = new AuthModel();
                 $arrUser = $authModel->getUserAuth($login, $password, $apikey);
-                $responseData = json_encode($arrUser);
+                if (array_key_exists("token", $arrUser)) {
+                    $responseData = json_encode($arrUser);
+                } else {
+                    $strErrorDesc = $arrUser['error'] . " (" . $arrUser['info'] . ")";
+                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                }
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().' Something went wrong! Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';

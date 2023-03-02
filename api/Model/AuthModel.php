@@ -57,7 +57,7 @@ class AuthModel extends Database
             API_ROOT_PATH . '/..'
         );
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
-            return ["error" => "Login failed."];
+            return ["error" => "Login failed.", "info" => "Empty entry"];
         }
         
         // Check apikey
@@ -65,10 +65,10 @@ class AuthModel extends Database
             // case where it is a generic key
             $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
             if ((int) $apiInfo[0]['count(*)'] === 0) {
-                return ["error" => "Login failed.", "apikey" => "Not valid"];
+                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
             }
 
-            return ["error" => "Not managed."];
+            return ["error" => "Login failed.", "info" => "Not managed."];
         } else {
             // case where it is a user api key
             // Check if user exists
@@ -78,7 +78,7 @@ class AuthModel extends Database
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
                 WHERE login='".$inputData['login']."'");
             if (count($userInfoRes) === 0) {
-                return ["error" => "Login failed.", "apikey" => "Not valid"];
+                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
             }
             $userInfoRes[0]['special'] = '';
             $userInfo = $userInfoRes[0];
@@ -112,7 +112,7 @@ class AuthModel extends Database
                     implode(",", $ret['items'])
                 );
             } else {
-                return ["error" => "Login failed.", "password" => "Not valid"];
+                return ["error" => "Login failed.", "info" => "password : Not valid"];
             }
         }
     }

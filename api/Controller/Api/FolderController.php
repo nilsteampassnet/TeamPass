@@ -28,11 +28,11 @@ class FolderController extends BaseController
 {
 
     /**
-     * Get list of users
+     * Get list of Folders
      *
      * @return void
      */
-    public function listInFoldersAction()
+    public function listFoldersAction(array $userData)
     {
         $superGlobal = new protect\SuperGlobal\SuperGlobal();
         $strErrorDesc = '';
@@ -42,19 +42,17 @@ class FolderController extends BaseController
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'GET') {
-            try {
-                $itemModel = new ItemModel();
-
-                $intLimit = 0;
-                if (isset($arrQueryStringParams['limit']) === true && empty($arrQueryStringParams['limit']) === false ) {
-                    $intLimit = $arrQueryStringParams['limit'];
+            if (empty($userData['folders_list'])) {
+                $this->sendOutput("", ['HTTP/1.1 204 No Content']);
+            } else {
+                try {
+                    $folderModel = new FolderModel();
+                    $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
+                    $responseData = json_encode($arrFolders);
+                } catch (Error $e) {
+                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
-
-                $arrItems = $itemModel->getItems($intLimit);
-                $responseData = json_encode($arrItems);
-            } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'Something went wrong! Please contact support.';
-                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
             $strErrorDesc = 'Method not supported';
@@ -69,7 +67,7 @@ class FolderController extends BaseController
             );
         } else {
             $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
+                json_encode(['error' => $strErrorDesc]),
                 ['Content-Type: application/json', $strErrorHeader]
             );
         }

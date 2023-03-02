@@ -74,7 +74,7 @@ class BaseController
         return dataSanitizer(
             $array,
             $filters,
-            __DIR__.'/../../..'
+            __DIR__.'/../..'
         );
     }
 

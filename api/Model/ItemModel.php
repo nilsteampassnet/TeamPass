@@ -107,4 +107,15 @@ class ItemModel extends Database
         return $ret;
     }
     //end getItems() 
+
+    /**
+     * Add item
+     *
+     * @return bool
+     */
+    public function addItem(string $idTree, string $userName, string $hostname, string $password) : bool
+    {
+        // TODO ecrire
+        return true;
+    }
 }

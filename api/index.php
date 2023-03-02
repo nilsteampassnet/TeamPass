@@ -33,7 +33,7 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
-$uriCount = count($uri)-1;
+//$uriCount = count($uri)-1;
 
 // Prepare DB password
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -45,12 +45,12 @@ $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
-if ($uri[$uriCount] === 'authorize') {
+if ($uri[3] === 'authorize') {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
-        require API_ROOT_PATH . "/Controller/Api/AuthController.php";
+        require API_ROOT_PATH . "/Controller/AuthController.php";
         $objFeedController = new AuthController();
-        $strMethodName = $uri[$uriCount] . 'Action';
+        $strMethodName = $uri[3] . 'Action';
         $objFeedController->{$strMethodName}();
     } else {
         // Error management
@@ -64,8 +64,8 @@ if ($uri[$uriCount] === 'authorize') {
     $userData = json_decode(getDataFromToken(), true);
 
     // define the position of controller in $uri
-    $controller = $uri[$uriCount - 1];
-    $action = $uri[$uriCount];
+    $controller = $uri[3];
+    $action = $uri[3];
 
     if ($userData['error'] === true) {
         // Error management
@@ -76,24 +76,26 @@ if ($uri[$uriCount] === 'authorize') {
 
     // action related to USER
     } elseif ($controller === 'user') {
-        require API_ROOT_PATH . "/Controller/Api/UserController.php";
+        require API_ROOT_PATH . "/Controller/UserController.php";
         $objFeedController = new UserController();
         $strMethodName = $action . 'Action';
         $objFeedController->{$strMethodName}();
 
     // action related to ITEM
-    } elseif ($controller === 'item') {        
+    } elseif ($controller === 'item') {
         // Manage requested action
         itemAction(
-            array_slice($uri, $uriCount),
+            array_slice($uri, 4),
             $userData['data']
         ); 
 
     // action related to FOLDER
     } elseif ($controller === 'folder') {
-
-
-    // no action where find
+        // Manage requested action
+        folderAction(
+            array_slice($uri, 4),
+            $userData['data']
+        );
     } else {
         errorHdl(
             "HTTP/1.1 404 Not Found",

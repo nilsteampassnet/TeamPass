@@ -26,12 +26,59 @@ require_once API_ROOT_PATH . "/Model/Database.php";
  
 class FolderModel extends Database
 {
-    public function getItems($limit)
+    public function getFoldersInfo(array $foldersId): array
     {
-        if ($limit > 0) {
-            return $this->select("SELECT * FROM ".prefixTable('items')." ORDER BY id ASC LIMIT ?", ["i", $limit]);
-        } else {
-            return $this->select("SELECT * FROM ".prefixTable('items')." WHERE id_tree=590 ORDER BY id ASC");
+        $rows = $this->select( "SELECT id, title FROM " . prefixTable('nested_tree') . " WHERE nlevel=1" );
+
+        $ret = [];
+
+        foreach ($rows as $row) {
+			$isVisible = in_array((int) $row['id'], $foldersId);
+            $childrens = $this->getFoldersChildren($row['id'], $foldersId);
+
+            if ($isVisible || count($childrens) > 0) {
+                array_push(
+                    $ret,
+                    [
+                        'id' => (int) $row['id'],
+                        'title' => $row['title'],
+						'isVisible' => $isVisible,
+                        'childrens' => $childrens
+                    ]
+                );
+            }
         }
+
+        return $ret;
+    }
+
+    private function getFoldersChildren(int $parentId, array $foldersId): array
+    {
+        $ret = [];
+
+        $nbVisible = 0;
+
+        $childrens = $this->select('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE parent_id=' . $parentId);
+
+        if ( count($childrens) > 0) {
+            foreach ($childrens as $children) {
+				$isVisible = in_array((int) $children['id'], $foldersId);
+                $childs = $this->getFoldersChildren($children['id'], $foldersId);
+
+                if (in_array((int) $children['id'], $foldersId) || count($childs) > 0) {
+                    array_push(
+                        $ret,
+                        [
+                            'id' => (int) $children['id'],
+                            'title' => $children['title'],
+							'isVisible' => $isVisible,
+                            'childrens' => $childs
+                        ]
+                    );
+                }
+            }
+        }
+
+        return $ret;
     }
 }

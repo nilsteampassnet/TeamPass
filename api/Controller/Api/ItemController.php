@@ -58,7 +58,16 @@ class ItemController extends BaseController
                 $foldersList = implode(',', array_intersect($arrQueryStringParams['folders'], $userData['folders_list']));
 
                 // build sql where clause
-                $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
+                if (!empty($foldersList)) {
+                    // build sql where clause
+                    $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
+                } else {
+                    // Send error
+                    $this->sendOutput(
+                        json_encode(['error' => 'Folders are mandatory']),
+                        ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
+                    );
+                }
             } else {
                 // Send error
                 $this->sendOutput(
@@ -78,7 +87,12 @@ class ItemController extends BaseController
                 $itemModel = new ItemModel();
 
                 $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userData['private_key'], $userData['id']);
-                $responseData = json_encode($arrItems);
+                if (!empty($arrItems)) {
+                    $responseData = json_encode($arrItems);
+                } else {
+                    $strErrorDesc = 'No content for this label';
+                    $strErrorHeader = 'HTTP/1.1 204 No Content';
+                }
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
@@ -101,7 +115,63 @@ class ItemController extends BaseController
             );
         }
     }
-    //end InFoldersAction() 
+    //end InFoldersAction()
+
+    /**
+     * Manage case Add
+     *
+     * @param array $userData
+     */
+    public function addAction(array $userData)
+    {
+        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $strErrorDesc = '';
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
+
+        if (strtoupper($requestMethod) === 'POST') {
+            if (empty($userData['folders_list']) === false) {
+                $userData['folders_list'] = explode(',', $userData['folders_list']);
+            } else {
+                $userData['folders_list'] = [];
+            }
+
+            $data = json_decode(file_get_contents("php://input"));
+
+            if (in_array($data->folderId, $userData['folders_list'])) {
+                // send query
+                try {
+                    $itemModel = new ItemModel();
+
+                    $itemModel->addItem($data->folderId, $data->userName, $data->hostname, $data->password);
+                } catch (Error $e) {
+                    $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                }
+            } else {
+                $strErrorDesc = 'Folders are mandatory';
+                $strErrorHeader = 'HTTP/1.1 401 Expected parameters not provided';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                "",
+                ['Content-Type: application/json', 'HTTP/1.1 201 Created']
+            );
+
+            //$this->sendOutput(['HTTP/1.1 201 Created']);
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end addAction()
 
 
     /**
