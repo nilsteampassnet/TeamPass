@@ -492,17 +492,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
-                                <div class='row mb-2 tr-ldap'>
-                                    <div class='col-5'>
-                                        <?php echo langHdl('newly_created_user_role'); ?>
-                                    </div>
-                                    <div class='col-7'>
-                                        <select class='form-control form-control-sm select2' id='ldap_new_user_role'>
-                                        </select>
-                                    </div>
-                                </div>
-
-
                             </div>
                         </form>
                     </div>

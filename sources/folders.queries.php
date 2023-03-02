@@ -708,7 +708,7 @@ if (null !== $post_type) {
                 // --> build json tree                
                 // Get path
                 $path = '';
-                $tree_path = $tree->getPath($folder->id, false);
+                $tree_path = $tree->getPath($tree->id, false);
                 foreach ($tree_path as $fld) {
                     $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
                 }
@@ -729,20 +729,33 @@ if (null !== $post_type) {
                     FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
                     (int) $_SESSION['user_id']
                 );
-                $a_folders = json_decode($cache_tree['folders'], true);
-                $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
-                array_push($a_visible_folders, $new_json);
-                array_push($a_folders, $newId);
-                DB::update(
-                    prefixTable('cache_tree'),
-                    array(
-                        'folders' => json_encode($a_folders),
-                        'visible_folders' => json_encode($a_visible_folders),
-                        'timestamp' => time(),
-                    ),
-                    'increment_id = %i',
-                    (int) $cache_tree['increment_id']
-                );
+                if (empty($cache_tree) === true) {
+                    DB::insert(
+                        prefixTable('cache_tree'),
+                        array(
+                            'user_id' => $_SESSION['user_id'],
+                            'folders' => json_encode($newId),
+                            'visible_folders' => json_encode($new_json),
+                            'timestamp' => time(),
+                        )
+                    );
+                } else {
+                    $a_folders = is_null($cache_tree['folders']) === true ? [] : json_decode($cache_tree['folders'], true);
+                    array_push($a_folders, $newId);
+                    $a_visible_folders = is_null($cache_tree['visible_folders']) === true || empty($cache_tree['visible_folders']) === true ? [] : json_decode($cache_tree['visible_folders'], true);
+                    array_push($a_visible_folders, $new_json);
+                    DB::update(
+                        prefixTable('cache_tree'),
+                        array(
+                            'folders' => json_encode($a_folders),
+                            'visible_folders' => json_encode($a_visible_folders),
+                            'timestamp' => time(),
+                        ),
+                        'increment_id = %i',
+                        (int) $cache_tree['increment_id']
+                    );
+                }
+                
                 // <-- end - build json tree
 
                 /*

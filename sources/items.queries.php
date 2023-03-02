@@ -6839,7 +6839,7 @@ if (is_null($inputData['type']) === false) {
             // Check if tree ID is in visible folders.
             if (null !== $data['visible_folders']) {
                 $arr = json_decode($data['visible_folders'], true);
-                $ids = array_column($arr, 'id');
+                $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
             }
 
 

@@ -196,8 +196,10 @@ foreach ($rows as $record) {
         if ((int) $record['admin'] !== 1) {
             if (count($rolesList) > 0) {
                 foreach ($rolesList as $fonction) {
-                    if (in_array($fonction['id'], explode(';', $record['fonction_id']))) {
-                        $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'<br />';
+                    if (is_null($record['fonction_id']) === false && in_array($fonction['id'], explode(';', $record['fonction_id']))) {
+                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'<br />';
+                    } else if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && is_null($record['roles_from_ad_groups']) === false && in_array($fonction['id'], explode(';', $record['roles_from_ad_groups']))) {
+                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i><i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'</i><i class="fa-solid fa-rectangle-ad ml-1 infotip" title="'.langHdl('ad_group').'"></i><br />';
                     }
                 }
             }
@@ -258,28 +260,28 @@ foreach ($rows as $record) {
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"fonction_id\" data-html=\"true\">'.addslashes($listAlloFcts).'</span>", ';
         // Get the user maximum privilege
         if ((int) $record['admin'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-user-cog infotip\" title=\"'.langHdl('god').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-cog infotip\" title=\"'.langHdl('god').'\"></i>", ';
         } elseif ((int) $record['can_manage_all_users'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-user-graduate infotip\" title=\"'.langHdl('human_resources').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-graduate infotip\" title=\"'.langHdl('human_resources').'\"></i>", ';
         } elseif ((int) $record['gestionnaire'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-user-tie infotip\" title=\"'.langHdl('gestionnaire').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-tie infotip\" title=\"'.langHdl('gestionnaire').'\"></i>", ';
         } elseif ((int) $record['read_only'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-book-reader infotip\" title=\"'.langHdl('read_only_account').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-book-reader infotip\" title=\"'.langHdl('read_only_account').'\"></i>", ';
         } else {
-            $sOutput .= '"<i class=\"fa fa-user infotip\" title=\"'.langHdl('user').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user infotip\" title=\"'.langHdl('user').'\"></i>", ';
         }
         //col12
         if ((int) $record['can_create_root_folder'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-toggle-on text-info\"></i>", ';
         } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-toggle-off\"></i>", ';
         }
 
         //col13
         if ((int) $record['personal_folder'] === 1) {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\"></i>"';
+            $sOutput .= '"<i class=\"fa-solid fa-toggle-on text-info\"></i>"';
         } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\"></i>"';
+            $sOutput .= '"<i class=\"fa-solid fa-toggle-off\"></i>"';
         }
 
         //Finish the line

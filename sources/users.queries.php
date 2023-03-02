@@ -1782,7 +1782,7 @@ if (null !== $post_type) {
 
             // get User info
             $rowUser = DB::queryFirstRow(
-                'SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
+                'SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb, roles_from_ad_groups
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
@@ -1792,6 +1792,9 @@ if (null !== $post_type) {
             $arrFolders = [];
             $html = '';
 
+            if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
+                $rowUser['fonction_id'] = empty($rowUser['fonction_id'])  === true ? $rowUser['roles_from_ad_groups'] : $rowUser['fonction_id']. ';' . $rowUser['roles_from_ad_groups'];
+            }
             $arrData['functions'] = array_filter(explode(';', $rowUser['fonction_id']));
             $arrData['allowed_folders'] = array_filter(explode(';', $rowUser['groupes_visibles']));
             $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));

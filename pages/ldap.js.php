@@ -117,7 +117,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
     $(function() {
         //requestRunning = true;
         // Load list of groups
-        $("#ldap_new_user_is_administrated_by, #ldap_new_user_role").empty();
+        $("#ldap_new_user_is_administrated_by").empty();
         $.post(
             "sources/admin.queries.php", {
                 type: "get_list_of_roles",
@@ -143,8 +143,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 }
                 $("#ldap_new_user_is_administrated_by").append(html_admin_by);
                 $("#ldap_new_user_is_administrated_by").val(selected_admin_by).change();
-                $("#ldap_new_user_role").append(html_roles);
-                $("#ldap_new_user_role").val(selected_role).change();
             }
         );
     });

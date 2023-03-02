@@ -2954,7 +2954,7 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2993,7 +2993,10 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$json, 'encode');
+            $SETTINGS['cpassman_dir'],
+            $json, 
+            'encode'
+        );
 
         break;
 }

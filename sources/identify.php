@@ -294,6 +294,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (string) $sessionUrl,
         (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING)
     );
+    // if user doesn't exist in Teampass then return error
     if ($userInitialData['error'] === true) {
         echo prepareExchangedData(
             $SETTINGS['cpassman_dir'],
@@ -321,6 +322,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'encode'
         );
         return false;
+    }
+    if (isset($userLdap['user_info']) === true && $userLdap['user_info']['has_been_created'] === 1) {
+        $userInfo = DB::queryfirstrow(
+            'SELECT *
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $username
+        );
+        //$userInfo = $userLdap['user_info'];
     }
 
     // Check user and password
@@ -404,7 +414,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
     }
-
+/*
+    print_r($userLdap);
+    print_r($userInfo);
+    return false;
+    */
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1215,7 +1229,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         ];
     }
-
+    
     // User is not auth then return error
     if ($userAuthAttempt === false) {
         return [
@@ -1224,8 +1238,29 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         ];
     }
 
+    // Create LDAP user if not exists and tasks enabled
+    if ($userInfo['ldap_user_to_be_created'] === true 
+        && (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1)
+    ) {   
+        $userInfo = ldapCreateUser(
+            $username,
+            $passwordClear,
+            $userADInfos['mail'][0],
+            $userADInfos['givenname'][0],
+            $userADInfos['sn'][0],
+            $SETTINGS
+        );
+
+        // prepapre background tasks for item keys generation
+
+
+        // Complete $userInfo
+        $userInfo['has_been_created'] = 1;
+    } else {
+        $userInfo['has_been_created'] = 0;
+    }
+
     // Update user info with his AD groups
-    $ret = '';
     if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
         require_once 'ldap.activedirectory.php';
     } else {
@@ -1250,6 +1285,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     return [
         'error' => false,
         'message' => '',
+        'user_info' => $userInfo,
     ];
 }
 
@@ -1326,6 +1362,7 @@ function finalizeAuthentication(
     $pwdlib->register();
     $pwdlib = new PasswordLib\PasswordLib();
     $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+
     //If user has never been connected then erase current pwd with the ldap's one
     if (empty($userInfo['pw']) === true) {
         // Password are similar in Teampass and AD
@@ -1443,40 +1480,61 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
  *
  * @param string $username      User name
  * @param string $passwordClear User password in clear
- * @param string $retLDAP       Received data from LDAP
- * @param array  $SETTINGS      Teampass settings
+ * @param array $retLDAP       Received data from LDAP
+ * @param array $SETTINGS      Teampass settings
  *
  * @return array
  */
-function ldapCreateUser(string $username, string $passwordClear, string $retLDAP, array $SETTINGS): array
+function ldapCreateUser(string $login, string $passwordClear, string $userEmail, string $userName, string $userLastname, array $SETTINGS): array
 {
     // Generate user keys pair
     $userKeys = generateUserKeys($passwordClear);
+
+    // load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
+    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+
     // Insert user in DB
     DB::insert(
         prefixTable('users'),
         [
-            'login' => $username,
-            'pw' => $retLDAP['hashedPassword'],
-            'email' => isset($retLDAP['user_info_from_ad'][0]['mail'][0]) === false ? '' : $retLDAP['user_info_from_ad'][0]['mail'][0],
-            'name' => $retLDAP['user_info_from_ad'][0]['givenname'][0],
-            'lastname' => $retLDAP['user_info_from_ad'][0]['sn'][0],
+            'login' => (string) $login,
+            'pw' => (string) $hashedPassword,
+            'email' => (string) $userEmail,
+            'name' => (string) $userName,
+            'lastname' => (string) $userLastname,
             'admin' => '0',
             'gestionnaire' => '0',
             'can_manage_all_users' => '0',
             'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-            'fonction_id' => (empty($retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass']) === false ? $retLDAP['user_info_from_ad'][0]['commonGroupsLdapVsTeampass'] . ';' : '') . (isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0'),
             'groupes_interdits' => '',
             'groupes_visibles' => '',
             'last_pw_change' => (int) time(),
-            'user_language' => $SETTINGS['default_language'],
+            'user_language' => (string) $SETTINGS['default_language'],
             'encrypted_psk' => '',
             'isAdministratedByRole' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
+            'special' => 'none',
+            'auth_type' => 'ldap',
+            'is_ready_for_usage' => '1',
         ]
     );
     $newUserId = DB::insertId();
+
+    // Create the API key
+    DB::insert(
+        prefixTable('api'),
+        array(
+            'type' => 'user',
+            'user_id' => $newUserId,
+            'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
+            'timestamp' => time(),
+        )
+    );
+
     // Create personnal folder
     if (isKeyExistingAndEqual('enable_pf_feature', 1, $SETTINGS) === true) {
         DB::insert(
@@ -1502,6 +1560,7 @@ function ldapCreateUser(string $username, string $passwordClear, string $retLDAP
         'message' => '',
         'proceedIdentification' => true,
         'user_initial_creation_through_ldap' => true,
+        'id' => $newUserId,
     ];
 }
 
@@ -1984,26 +2043,31 @@ class initialChecks {
         }
     }
 
-    public function get_user_info($login) {
+    public function get_user_info($login, $enable_ad_user_auto_creation) {
         $data = DB::queryFirstRow(
             'SELECT u.*, a.value AS api_key
             FROM ' . prefixTable('users') . ' AS u
             LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-            WHERE login=%s',
+            WHERE login = %s',
             $login
         );
-
-        // User doesn't exist then stop
-        if (DB::count() === 0) {
+        
+        // User doesn't exist then return error
+        // Except if user creation from LDAP is enabled
+        if (DB::count() === 0 && $enable_ad_user_auto_creation === false) {
             throw new Exception(
                 "error" 
             );
         }
+        $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 ? true : false;
 
         // ensure user fonction_id is set to false if not existing
-        if (is_null($data['fonction_id']) === true) {
+        /*if (is_null($data['fonction_id']) === true) {
             $data['fonction_id'] = '';
-        }
+        }*/
+
+        // Prepare user roles (fonction_id + roles_from_ad_groups)
+        $data['fonction_id'] = is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']);
 
         return $data;
     }
@@ -2075,6 +2139,7 @@ function identifyDoInitialChecks(
 ): array
 {
     $checks = new initialChecks();
+    $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
     
     // Brute force management
     try {
@@ -2103,7 +2168,7 @@ function identifyDoInitialChecks(
 
     // Check if user exists
     try {
-        $userInfo = $checks->get_user_info($username);
+        $userInfo = $checks->get_user_info($username, $enable_ad_user_auto_creation);
     } catch (Exception $e) {
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         return [
@@ -2116,8 +2181,8 @@ function identifyDoInitialChecks(
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             ]
         ];
-    }    
-
+    }
+    
     // Manage Maintenance mode
     try {
         $checks->get_teampass_in_maintenance_mode(
@@ -2211,24 +2276,8 @@ function identifyDoLDAPChecks(
     // Prepare LDAP connection if set up
     if ((int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
-        && (string) $userInfo['auth_type'] === 'ldap'
+        && ((string) $userInfo['auth_type'] === 'ldap' || $userInfo['ldap_user_to_be_created'] === true)
     ) {
-        /*if ($SETTINGS['ldap_type'] === 'OpenLDAP') {
-            require_once 'ldap.openldap.php';
-            $retLDAP = authenticateThroughOpenLDAP(
-                $username,
-                $userInfo,
-                $passwordClear,
-                $SETTINGS
-            );
-        } elseif ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-            $retLDAP = authenticateThroughAD(
-                $username,
-                $userInfo,
-                $passwordClear,
-                $SETTINGS
-            );
-        }*/
         $retLDAP = authenticateThroughAD(
             $username,
             $userInfo,

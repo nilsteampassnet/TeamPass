@@ -52,7 +52,7 @@ if (
 
 <script type="text/javascript">
     var userScrollPosition = 0,
-        debugJavascript = false;
+        debugJavascript = true;
     let hourInMinutes = 60;
 
     /**
