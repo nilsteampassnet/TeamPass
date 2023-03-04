@@ -247,7 +247,14 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 <?php
 
-if (
+// display an item in the context of OTV link
+if (($session_validite_pw === null
+    || empty($session_validite_pw) === true
+    || empty($session_user_id) === true)
+    && empty($get['otv']) === false)
+    {
+    include './includes/core/otv.php';
+} elseif (
     $session_validite_pw !== null
     && $session_validite_pw === true
     && empty($get['page']) === false
@@ -333,7 +340,7 @@ if (
             <!-- Main Sidebar Container -->
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
-                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=items'; ?>" class="brand-link">
+                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=' . ((int) $session_user_admin === 1 ? 'admin' : 'items'); ?>" class="brand-link">
                     <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                     <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
@@ -341,7 +348,7 @@ if (
                 <!-- Sidebar -->
                 <div class="sidebar">
                     <!-- Sidebar Menu -->
-                    <nav class="mt-2" style="margin-bottom:20px;">
+                    <nav class="mt-2" style="margin-bottom:40px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
                                 if ($session_user_admin === 0) {
@@ -358,10 +365,7 @@ if (
                                 }
 
     // IMPORT menu
-    if (
-                                    isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1
-                                    && $session_user_admin === 0
-                                ) {
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1&& $session_user_admin === 0) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">

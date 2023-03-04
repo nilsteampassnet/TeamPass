@@ -121,6 +121,7 @@ Note:
 * Point to htdocs folder `cd /opt/lampp/htdocs` - see the note above about distribution-specific folders
 * Enter the following commands
 ```
+chmod 0777 teampass/includes
 chmod -R 0777 teampass/includes/config
 chmod -R 0777 teampass/includes/avatars
 chmod -R 0777 teampass/includes/libraries/csrfp/libs

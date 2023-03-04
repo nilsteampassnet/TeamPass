@@ -1916,6 +1916,25 @@ if ($res === false) {
     exit();
 }
 
+// Add account
+$data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'secret' AND intitule = 'pwd'"));
+if ((int) $data[0] === 0) {
+    // generate key
+    $value = cryption(
+        GenerateCryptKey(25, true, true, true, true),
+        '',
+        'encrypt'
+    )['string'];
+
+    // add setting
+    mysqli_query(
+        $db_link,
+        "INSERT INTO ".$pre."misc
+        (`type`, `intitule`, `valeur`)
+        VALUES ('secret', 'pwd', '".$value."')"
+    );
+}
+
 //---<END 3.0.0.23
 
 // Save timestamp

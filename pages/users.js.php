@@ -668,7 +668,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         //$('#form-password').focus();
 
         // Hide if user is not admin
-        if (store.get('teampassUser').user_admin === 1 || store.get('teampassUser').user_can_manage_all_users === 1) {
+        if (parseInt(store.get('teampassUser').user_admin) === 1 || parseInt(store.get('teampassUser').user_can_manage_all_users) === 1) {
             $('.only-admin').removeClass('hidden');
         } else {
             $('.only-admin').addClass('hidden');
@@ -1137,8 +1137,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('#row-list').removeClass('hidden');
 
             // Prepare checks
-            $('.form-check-input')
-                .iCheck('uncheck');
+            $('.form-check-input').iCheck('uncheck');
 
             // Remove action from store
             store.update(

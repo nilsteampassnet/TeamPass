@@ -708,7 +708,7 @@ if (null !== $post_type) {
                 // --> build json tree                
                 // Get path
                 $path = '';
-                $tree_path = $tree->getPath($tree->id, false);
+                $tree_path = $tree->getPath(0, false);
                 foreach ($tree_path as $fld) {
                     $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
                 }

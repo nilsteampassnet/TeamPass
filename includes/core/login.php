@@ -46,9 +46,9 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['po
 echo '
 <body class="hold-transition login-page">
 <div class="login-box">
-    <div class="login-logo"><div style="margin-top:20px;">',
+    <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; height:100px;" />' :
+        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; max-width:100px;" />' :
         '<img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>

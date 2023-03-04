@@ -1717,13 +1717,13 @@ function GenerateCryptKey(
     bool $lowercase = false,
     array $SETTINGS = []
 ): string {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    $generator = new SplClassLoader('PasswordGenerator\Generator', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    include_once __DIR__ . '/../sources/SplClassLoader.php';
+    $generator = new SplClassLoader('PasswordGenerator\Generator', __DIR__. '/../includes/libraries');
     $generator->register();
     $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
     // Is PHP7 being used?
     if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
-        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', __DIR__ . '/../includes/libraries');
         $php7generator->register();
         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
     }

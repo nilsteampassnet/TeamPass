@@ -31,6 +31,8 @@
     height: 100%;
     background-position: center center;
     background-size: cover; 
+    display: flex;
+    justify-content: center;
 }
 
 .hidden {

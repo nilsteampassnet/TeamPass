@@ -28,79 +28,6 @@ $session_db_encoding = 'utf8';
 define('MIN_PHP_VERSION', 7.4);
 
 /**
-      Chmods files and folders with different permissions.
- 
-      This is an all-PHP alternative to using: \n
-      <tt>exec("find ".$path." -type f -exec chmod 644 {} \;");</tt> \n
-      <tt>exec("find ".$path." -type d -exec chmod 755 {} \;");</tt>
- 
-      @author Jeppe Toustrup (tenzer at tenzer dot dk)
-      @param $path An either relative or absolute path to a file or directory
-      which should be processed.
-      @param $filePerm The permissions any found files should get.
-      @param $dirPerm The permissions any found folder should get.
-      @return Returns TRUE if the path if found and FALSE if not.
-      @warning The permission levels has to be entered in octal format, which
-      normally means adding a zero ("0") in front of the permission level. \n
-      More info at: http://php.net/chmod.
-    */
- 
-    function recursiveChmod($path, $filePerm=0644, $dirPerm=0755) {
-        // Check if the path exists
-        if (!file_exists($path)) {
-            return(false);
-        }
- 
-        // See whether this is a file
-        if (is_file($path)) {
-            // Chmod the file with our given filepermissions
-            chmod($path, $filePerm);
- 
-        // If this is a directory...
-        } elseif (is_dir($path)) {
-            // Then get an array of the contents
-            $foldersAndFiles = scandir($path);
- 
-            // Remove "." and ".." from the list
-            $entries = array_slice($foldersAndFiles, 2);
- 
-            // Parse every result...
-            foreach ($entries as $entry) {
-                // And call this function again recursively, with the same permissions
-                recursiveChmod($path."/".$entry, $filePerm, $dirPerm);
-            }
- 
-            // When we are done with the contents of the directory, we chmod the directory itself
-            chmod($path, $dirPerm);
-        }
- 
-        // Everything seemed to work out well, return true
-        return(true);
-    }
-
-/**
- * genHash().
- *
- * Generate a hash for user login
- *
- * @param string $password
- */
-function bCrypt($password, $cost)
-{
-    $salt = sprintf('$2y$%02d$', $cost);
-    if (function_exists('openssl_random_pseudo_bytes')) {
-        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
-    } else {
-        $chars = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for ($i = 0; $i < 22; ++$i) {
-            $salt .= $chars[mt_rand(0, 63)];
-        }
-    }
-
-    return crypt($password, $salt);
-}
-
-/**
  * Generates a random key.
  */
 function generateRandomKey()
@@ -182,6 +109,7 @@ $post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
 $post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_STRING);
 
 // Load libraries
+require_once '../sources/main.functions.php';
 require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
@@ -753,6 +681,8 @@ $SETTINGS = array (';
                             )
                         );
                         fclose($file_handler);
+
+                        // --
                     } elseif ($task === 'nested_tree') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -1455,6 +1385,21 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         )
                     );
                     fclose($file_handler);
+
+                    // generate key
+                    $value = cryption(
+                        GenerateCryptKey(25, true, true, true, true),
+                        $new_salt,
+                        'encrypt'
+                    )['string'];
+
+                    // add account
+                    mysqli_query(
+                        $dbTmp,
+                        "INSERT INTO `" . $var['tbl_prefix'] . "misc`
+                        (`type`, `intitule`, `valeur`)
+                        VALUES ('secret', 'pwd', '".$value."')"
+                    );
                     if ($result === false) {
                         echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     } else {
@@ -1466,12 +1411,14 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     // is server Windows or Linux?
                     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
                         // Change directory permissions
-                        $result = recursiveChmod($session_abspath, 0770, 0740);
-                        if ($result) {
-                            $result = recursiveChmod($session_abspath . '/files', 0770, 0770);
-                        }
-                        if ($result) {
-                            $result = recursiveChmod($session_abspath . '/upload', 0770, 0770);
+                        if (is_null($session_abspath) === false) {
+                            $result = recursiveChmod($session_abspath, 0770, 0740);
+                            if ($result) {
+                                $result = recursiveChmod($session_abspath . '/files', 0770, 0770);
+                            }
+                            if ($result) {
+                                $result = recursiveChmod($session_abspath . '/upload', 0770, 0770);
+                            }
                         }
                     }
                     $result = true;
@@ -1507,6 +1454,8 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
                     mysqli_query($dbTmp, "INSERT INTO `" . $var['tbl_prefix'] . "misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')");
 
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                } elseif ($task === 'init') {
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
             }
