@@ -39,6 +39,7 @@ define('ERR_SESS_EXPIRED', '1002');
 define('ERR_NO_MCRYPT', '1003');
 define('ERR_VALID_SESSION', '1004');
 define('OTV_USER_ID', '9999991');
+define('TP_USER_ID', '9999997');
 define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);

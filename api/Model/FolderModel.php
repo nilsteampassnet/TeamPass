@@ -55,9 +55,6 @@ class FolderModel extends Database
     private function getFoldersChildren(int $parentId, array $foldersId): array
     {
         $ret = [];
-
-        $nbVisible = 0;
-
         $childrens = $this->select('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE parent_id=' . $parentId);
 
         if ( count($childrens) > 0) {

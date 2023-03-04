@@ -713,7 +713,19 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 return false;
                             }
 
-                            if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
+                            if (data.error === true) {
+                                if (typeof data.extra !== 'undefined' && data.extra === 'ad_user_created') {
+                                    toastr.remove();
+                                    toastr.info(
+                                        '<?php echo langHdl('your_attention_please'); ?>',
+                                        '<?php echo langHdl('ad_user_created_automatically'); ?>', {
+                                            timeOut: 0,
+                                            positionClass: "toast-top-center"
+                                        }
+                                    );
+                                    return false;
+                                }
+                            } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
                                 $('#div-2fa-google-qr')
                                     .removeClass('hidden')
                                     .html('<div class="col-12 alert alert-info">' +

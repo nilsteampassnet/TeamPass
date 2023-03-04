@@ -39,7 +39,7 @@ class FolderController extends BaseController
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters
-        $arrQueryStringParams = $this->getQueryStringParams();
+        //$arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'GET') {
             if (empty($userData['folders_list'])) {

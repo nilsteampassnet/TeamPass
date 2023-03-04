@@ -1592,37 +1592,37 @@ try {
         $db_link,
         'ALTER TABLE `' . $pre . 'languages` ADD `code_poeditor` VARCHAR(50) NOT NULL AFTER `flag`'
     );
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`bg` WHERE `name`=`bulgarian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ca` WHERE `name`=`catalan`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`zh-Hans` WHERE `name`=`chinese`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`cs` WHERE `name`=`czech`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`nl` WHERE `name`=`dutch`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`en` WHERE `name`=`english`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`et` WHERE `name`=`estonian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`fr` WHERE `name`=`french`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`de` WHERE `name`=`german`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`el` WHERE `name`=`greek`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`hu` WHERE `name`=`hungarian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`it` WHERE `name`=`italian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ja` WHERE `name`=`japanese`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`no` WHERE `name`=`norwegian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pl` WHERE `name`=`polish`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt` WHERE `name`=`portuguese`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`pt-br` WHERE `name`=`portuguese_br`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ro` WHERE `name`=`romanian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`ru` WHERE `name`=`russian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`es` WHERE `name`=`spanish`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`sv` WHERE `name`=`swedish`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`tr` WHERE `name`=`turkish`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`uk` WHERE `name`=`ukrainian`;');
-    mysqli_query($db_link, 'UPDATE `teampass_languages` SET `code_poeditor`=`vi` WHERE `name`=`vietnamese`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`bg` WHERE `name`=`bulgarian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`ca` WHERE `name`=`catalan`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`zh-Hans` WHERE `name`=`chinese`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`cs` WHERE `name`=`czech`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`nl` WHERE `name`=`dutch`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`en` WHERE `name`=`english`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`et` WHERE `name`=`estonian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`fr` WHERE `name`=`french`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`de` WHERE `name`=`german`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`el` WHERE `name`=`greek`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`hu` WHERE `name`=`hungarian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`it` WHERE `name`=`italian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`ja` WHERE `name`=`japanese`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`no` WHERE `name`=`norwegian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`pl` WHERE `name`=`polish`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`pt` WHERE `name`=`portuguese`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`pt-br` WHERE `name`=`portuguese_br`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`ro` WHERE `name`=`romanian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`ru` WHERE `name`=`russian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`es` WHERE `name`=`spanish`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`sv` WHERE `name`=`swedish`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`tr` WHERE `name`=`turkish`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`uk` WHERE `name`=`ukrainian`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'languages` SET `code_poeditor`=`vi` WHERE `name`=`vietnamese`;');
 } catch (Exception $e) {
     // Do nothing
 }
 
 // Fix a potential issue in table log_items
 try {
-    mysqli_query($db_link, 'UPDATE `teampass_log_items` SET `action` = `at_modification` WHERE `action` = `at_modification2`;');
+    mysqli_query($db_link, 'UPDATE `' . $pre . 'log_items` SET `action` = `at_modification` WHERE `action` = `at_modification2`;');
 } catch (Exception $e) {
     // Do nothing
 }
