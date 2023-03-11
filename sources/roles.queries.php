@@ -819,7 +819,7 @@ if (null !== $post_type) {
                     FROM '.prefixTable('ldap_groups_roles').' AS a
                     INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
                     WHERE ldap_group_id = %i',
-                    $group['gidnumber'][0]
+                    $group[(isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false ? $SETTINGS['ldap_guid_attibute']: 'gidnumber')][0]
                 );
                 $counter = DB::count();
 
@@ -828,11 +828,11 @@ if (null !== $post_type) {
                 } else {
                     $retGroups[$key]['teampass_role_id'] = 0;
                 }
-
+                
                 array_push(
                     $retAD,
                     [
-                        'ad_group_id' => (int) $group['gidnumber'][0],
+                        'ad_group_id' => (int) $group[(isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false ? $SETTINGS['ldap_guid_attibute'] : 'gidnumber')][0],
                         'ad_group_title' => $group['cn'][0],
                         'role_id' => $counter> 0 ? (int) $role_detail['role_id'] : -1,
                         'id' => $counter > 0 ? (int) $role_detail['increment_id'] : -1,
