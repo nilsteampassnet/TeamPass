@@ -705,57 +705,59 @@ if (null !== $post_type) {
                 $tree->rebuild();
 
 
-                // --> build json tree                
-                // Get path
-                $path = '';
-                $tree_path = $tree->getPath(0, false);
-                foreach ($tree_path as $fld) {
-                    $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
-                }
-                $new_json = [
-                    "path" => $path,
-                    "id" => $newId,
-                    "level" => count($tree_path),
-                    "title" => $post_title,
-                    "disabled" => 0,
-                    "parent_id" => $post_parent_id,
-                    "perso" => $isPersonal,
-                    "is_visible_active" => 0,
-                ];
+                // --> build json tree if not Admin
+                if ($_SESSION['is_admin'] === 0) {
+                    // Get path
+                    $path = '';
+                    $tree_path = $tree->getPath(0, false);
+                    foreach ($tree_path as $fld) {
+                        $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
+                    }
+                    $new_json = [
+                        "path" => $path,
+                        "id" => $newId,
+                        "level" => count($tree_path),
+                        "title" => $post_title,
+                        "disabled" => 0,
+                        "parent_id" => $post_parent_id,
+                        "perso" => $isPersonal,
+                        "is_visible_active" => 0,
+                    ];
 
-                // update cache_tree
-                $cache_tree = DB::queryfirstrow(
-                    'SELECT increment_id, folders, visible_folders
-                    FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
-                    (int) $_SESSION['user_id']
-                );
-                if (empty($cache_tree) === true) {
-                    DB::insert(
-                        prefixTable('cache_tree'),
-                        array(
-                            'user_id' => $_SESSION['user_id'],
-                            'folders' => json_encode($newId),
-                            'visible_folders' => json_encode($new_json),
-                            'timestamp' => time(),
-                        )
+                    // update cache_tree
+                    $cache_tree = DB::queryfirstrow(
+                        'SELECT increment_id, folders, visible_folders
+                        FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
+                        (int) $_SESSION['user_id']
                     );
-                } else {
-                    $a_folders = is_null($cache_tree['folders']) === true ? [] : json_decode($cache_tree['folders'], true);
-                    array_push($a_folders, $newId);
-                    $a_visible_folders = is_null($cache_tree['visible_folders']) === true || empty($cache_tree['visible_folders']) === true ? [] : json_decode($cache_tree['visible_folders'], true);
-                    array_push($a_visible_folders, $new_json);
-                    DB::update(
-                        prefixTable('cache_tree'),
-                        array(
-                            'folders' => json_encode($a_folders),
-                            'visible_folders' => json_encode($a_visible_folders),
-                            'timestamp' => time(),
-                        ),
-                        'increment_id = %i',
-                        (int) $cache_tree['increment_id']
-                    );
+                    if (empty($cache_tree) === true) {
+                        DB::insert(
+                            prefixTable('cache_tree'),
+                            array(
+                                'user_id' => $_SESSION['user_id'],
+                                'folders' => json_encode($newId),
+                                'visible_folders' => json_encode($new_json),
+                                'timestamp' => time(),
+                                'data' => '[{}]',
+                            )
+                        );
+                    } else {
+                        $a_folders = is_null($cache_tree['folders']) === true ? [] : json_decode($cache_tree['folders'], true);
+                        array_push($a_folders, $newId);
+                        $a_visible_folders = is_null($cache_tree['visible_folders']) === true || empty($cache_tree['visible_folders']) === true ? [] : json_decode($cache_tree['visible_folders'], true);
+                        array_push($a_visible_folders, $new_json);
+                        DB::update(
+                            prefixTable('cache_tree'),
+                            array(
+                                'folders' => json_encode($a_folders),
+                                'visible_folders' => json_encode($a_visible_folders),
+                                'timestamp' => time(),
+                            ),
+                            'increment_id = %i',
+                            (int) $cache_tree['increment_id']
+                        );
+                    }
                 }
-                
                 // <-- end - build json tree
 
                 /*
@@ -826,9 +828,9 @@ if (null !== $post_type) {
                 }
 
                 // clear cache cache for each user that have at least one similar role as the current user
-                $usersWithSimilarRoles = getUsersWithRoles(
+                $usersWithSimilarRoles = empty($_SESSION['fonction_id']) === false  ? getUsersWithRoles(
                     explode(";", $_SESSION['fonction_id'])
-                );
+                ) : [];
                 foreach ($usersWithSimilarRoles as $user) {
                     // delete cache tree
                     DB::delete(

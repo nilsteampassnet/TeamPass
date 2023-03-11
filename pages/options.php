@@ -501,6 +501,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-3 option' data-keywords="server setting cron job task email">
+                            <div class='col-10'>
+                                <?php echo langHdl('enable_backlog_mail'); ?>
+                                <!--<small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo langHdl('enable_backlog_mail'); ?>
+                                </small>-->
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_backlog_mail' data-toggle-on='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_backlog_mail_input' value='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-5 option' data-keywords="server setting cron job task duration">
                             <div class='col-10'>
                                 <?php echo langHdl('maximum_time_script_allowed_to_run'); ?>

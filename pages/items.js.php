@@ -2652,7 +2652,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             itemsList = JSON.parse(store.get('teampassApplication').itemsList);
         }
         if (itemsList.length > 0) {
-            userItemRight = itemsList[store.get('teampassItem').id].rights;
+            userItemRight = itemsList[store.get('teampassItem').id]?.rights;
         }
 
         // Do checks
@@ -2697,7 +2697,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 );
                 return false;
-            } else if ($('#form-item-folder option:selected').attr('disabled') === 'disabled' && userItemRight <= 40) {
+            } else if ($('#form-item-folder option:selected').attr('disabled') === 'disabled' && userItemRight && userItemRight <= 40) {
                 // Folder is not allowed
                 toastr.remove();
                 toastr.error(

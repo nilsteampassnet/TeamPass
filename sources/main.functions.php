@@ -3844,11 +3844,11 @@ function getUsersWithRoles(
         $rows = DB::query(
             'SELECT id, fonction_id
             FROM ' . prefixTable('users') . '
-            WHERE id != %i',
+            WHERE id != %i AND admin = 0 AND fonction_id IS NOT NULL AND fonction_id != ""',
             $_SESSION['user_id']
         );
         foreach ($rows as $user) {
-            $userRoles = explode(';', $user['fonction_id']);
+            $userRoles = explode(';', is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? $user['fonction_id'] : []);
             if (in_array($role, $userRoles, true) === true) {
                 array_push($arrUsers, $user['id']);
             }

@@ -1050,5 +1050,6 @@ return array(
     'mapped_with_role' => 'Lié au rôle',
     'ad_groupe_and_roles_mapping' => 'Liaison entre les groupes AD et les rôles',
     'select_adgroup_mapping' => 'Sélectionner le rôle à lier avec le groupe AD courant',
+    'enable_backlog_mail' => 'Activer l\'envoi des emails en attente',
 
 );

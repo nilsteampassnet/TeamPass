@@ -1050,5 +1050,6 @@ return array(
     'mapped_with_role' => 'Mapped with role',
     'ad_groupe_and_roles_mapping' => 'AD group and roles mapping',
     'select_adgroup_mapping' => 'Select the role to map with current AD group',
+    'enable_backlog_mail' => 'Enable sending backlog emails',
 
 );
