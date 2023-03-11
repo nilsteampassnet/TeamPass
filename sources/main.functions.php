@@ -2287,9 +2287,9 @@ function prepareFileWithDefuse(
     string $password = null
 ) {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/UTF8.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
     // Protect against bad inputs
     if (is_array($source_file) === true || is_array($target_file) === true) {
@@ -2456,9 +2456,9 @@ function debugTeampass(string $text): void
 function fileDelete(string $file, array $SETTINGS): void
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
     $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
@@ -3081,7 +3081,7 @@ function filterString(string $field)
     $field = filter_var(trim($field), FILTER_SANITIZE_STRING);
     if (empty($field) === false) {
         // Load AntiXSS
-        include_once __DIR__.'/../includes/libraries/voku/helper/AntiXSS.php';
+        include_once __DIR__.'/../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
         $antiXss = new voku\helper\AntiXSS();
         // Return
         return $antiXss->xss_clean($field);

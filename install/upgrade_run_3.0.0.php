@@ -1916,22 +1916,24 @@ if ($res === false) {
     exit();
 }
 
-// Add account
-$data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'secret' AND intitule = 'pwd'"));
+// Add account TP USER if not exist
+$data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "users WHERE id = '" . TP_USER_ID . "'"));
 if ((int) $data[0] === 0) {
-    // generate key
-    $value = cryption(
-        GenerateCryptKey(25, true, true, true, true),
+    // generate key for password
+    $pwd = GenerateCryptKey(25, true, true, true, true);
+    $encrypted_pwd = cryption(
+        $pwd,
         '',
         'encrypt'
     )['string'];
 
+    // GEnerate new public and private keys
+    $userKeys = generateUserKeys($pwd);
+
     // add setting
     mysqli_query(
         $db_link,
-        "INSERT INTO ".$pre."misc
-        (`type`, `intitule`, `valeur`)
-        VALUES ('secret', 'pwd', '".$value."')"
+        "INSERT INTO `".$pre."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."')"
     );
 }
 

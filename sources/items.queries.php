@@ -4427,7 +4427,7 @@ if (is_null($inputData['type']) === false) {
                 $rows2 = DB::query(
                     'SELECT id, login, fonction_id, email, name, lastname
                     FROM ' . prefixTable('users') . '
-                    WHERE admin = 0'
+                    WHERE admin = 0 AND fonction_id is not null'
                 );
                 foreach ($rows2 as $record2) {
                     foreach (explode(';', $record2['fonction_id']) as $role) {

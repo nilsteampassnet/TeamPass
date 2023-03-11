@@ -50,7 +50,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
 ?>
 
 <!-- Content Header (Page header) -->

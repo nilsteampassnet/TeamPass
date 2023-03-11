@@ -188,7 +188,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     error_reporting(E_ERROR);
 
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/voku/helper/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
     // Load superGlobals

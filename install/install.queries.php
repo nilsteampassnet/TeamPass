@@ -1386,20 +1386,27 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     );
                     fclose($file_handler);
 
-                    // generate key
-                    $value = cryption(
-                        GenerateCryptKey(25, true, true, true, true),
-                        $new_salt,
-                        'encrypt'
-                    )['string'];
+                    // Create TP USER
+                    require_once '../includes/config/include.php';
+                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE id = '" . TP_USER_ID . "'"));
+                    if ($tmp === 0) {
+                        // generate key for password
+                        $pwd = GenerateCryptKey(25, true, true, true, true);
+                        $encrypted_pwd = cryption(
+                            $pwd,
+                            $new_salt,
+                            'encrypt'
+                        )['string'];
 
-                    // add account
-                    mysqli_query(
-                        $dbTmp,
-                        "INSERT INTO `" . $var['tbl_prefix'] . "misc`
-                        (`type`, `intitule`, `valeur`)
-                        VALUES ('secret', 'pwd', '".$value."')"
-                    );
+                        // GEnerate new public and private keys
+                        $userKeys = generateUserKeys($pwd);
+
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."')"
+                        );
+                    }
+
                     if ($result === false) {
                         echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     } else {
