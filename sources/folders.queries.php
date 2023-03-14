@@ -963,30 +963,32 @@ if (null !== $post_type) {
                                     FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
                                     (int) $_SESSION['user_id']
                                 );
-                                // remove id from folders
-                                $a_folders = json_decode($cache_tree['folders'], true);
-                                $key = array_search($item['id'], $a_folders, true);
-                                if ($key !== false) {
-                                    unset($a_folders[$key]);
-                                }
-                                // remove id from visible_folders
-                                $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
-                                foreach ($a_visible_folders as $i => $v) {
-                                    if ($v['id'] == $item['id']) {
-                                        unset($a_visible_folders[$i]);
+                                if (DB::count()>0) {
+                                    // remove id from folders
+                                    $a_folders = json_decode($cache_tree['folders'], true);
+                                    $key = array_search($item['id'], $a_folders, true);
+                                    if ($key !== false) {
+                                        unset($a_folders[$key]);
                                     }
-                                }
+                                    // remove id from visible_folders
+                                    $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
+                                    foreach ($a_visible_folders as $i => $v) {
+                                        if ($v['id'] == $item['id']) {
+                                            unset($a_visible_folders[$i]);
+                                        }
+                                    }
 
-                                DB::update(
-                                    prefixTable('cache_tree'),
-                                    array(
-                                        'folders' => json_encode($a_folders),
-                                        'visible_folders' => json_encode($a_visible_folders),
-                                        'timestamp' => time(),
-                                    ),
-                                    'increment_id = %i',
-                                    (int) $cache_tree['increment_id']
-                                );
+                                    DB::update(
+                                        prefixTable('cache_tree'),
+                                        array(
+                                            'folders' => json_encode($a_folders),
+                                            'visible_folders' => json_encode($a_visible_folders),
+                                            'timestamp' => time(),
+                                        ),
+                                        'increment_id = %i',
+                                        (int) $cache_tree['increment_id']
+                                    );
+                                }
                                 // <-- end - build json tree
                             }
 
