@@ -84,6 +84,7 @@ $post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_NUMBER_INT);
 $post_extra = filter_input(INPUT_POST, 'extra', FILTER_SANITIZE_STRING);
+$post_tp_user = filter_input(INPUT_POST, 'tp_user_done', FILTER_SANITIZE_NUMBER_INT);
 
 if (null !== $post_step) {
     switch ($post_step) {
@@ -112,6 +113,45 @@ if (null !== $post_step) {
 
                 // Remove this ID from the array
                 array_shift($listOfUsers);
+            }
+
+            // 3.0.0.23 - special case of TP user just created.
+            // We need to create all its keys
+            if ((int) $post_tp_user === 0) {
+                $TPUserKeysExist = mysqli_fetch_array(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT count(*)
+                        FROM ' . $pre . 'sharekeys_items
+                        WHERE user_id = ' . (int) TP_USER_ID
+                    )
+                );
+                if ((int) $TPUserKeysExist[0] === 0) {
+                    // this user is new and needs to be populated
+                    $userQuery = mysqli_fetch_array(
+                        mysqli_query(
+                            $db_link,
+                            'SELECT pw, public_key, private_key, name, lastname, login
+                            FROM ' . $pre . 'users
+                            WHERE id = ' . (int) TP_USER_ID
+                        )
+                    );
+
+                    $usersArray = array(
+                        'id' => TP_USER_ID,
+                        'otp' => $random_string,
+                        'public_key' => $userQuery['public_key'],
+                        'private_key' => $userQuery['private_key'],
+                        'login' => $userQuery['login'],
+                        'name' => $userQuery['name'],
+                        'lastname' => $userQuery['lastname'],
+                    );
+
+                    // Return
+                    echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"1" , "loop_finished" : "' . (count($listOfUsers) === 0 ? "true" : "false") . '" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
+
+                    exit();
+                }
             }
             
             // Treat the 1st user in the list
