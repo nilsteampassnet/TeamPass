@@ -482,7 +482,7 @@ if (
                 document.location.href = "index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
                 // Logout directly to login form
-                window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                window.location.href = "./includes/core/logout.php?token=<?php echo $_SESSION['key']; ?>";
             }
         }
     });
@@ -1674,7 +1674,7 @@ if (
                         }
                     );
 
-                    window.location.href = "./includes/core/logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
+                    window.location.href = "./includes/core/logout.php?token=" + <?php echo $_SESSION['key']; ?>
                 } else if (store.get('teampassUser').admin_user_password) {
                     // now select if sending by email
                     $('#dialog-admin-change-user-password-info').html('<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?><br><br>'+

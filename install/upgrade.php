@@ -276,7 +276,36 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div class="card-header">
                         <h5>DataBase Informations</h5>
                     </div>
-                    <div class="card-body">';
+                    <div class="card-body">
+                        <!--<div class="form-group">
+                            <label>Host</label>
+                            <input type="text" class="form-control" name="db_host" id="db_host" class="ui-widget" value="'.DB_HOST.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Database name</label>
+                            <input type="text" class="form-control" name="db_name" id="db_name" class="ui-widget" value="'.DB_NAME.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Login</label>
+                            <input type="text" class="form-control" name="db_user" id="db_user" class="ui-widget" value="'.DB_USER.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.$visible_pwd.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Prefix</label>
+                            <input type="text" class="form-control" name="db_prefix" id="db_prefix" class="ui-widget" value="'.DB_PREFIX.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="text" class="form-control" name="db_port" id="db_port" class="ui-widget" value="'.DB_PORT.'">
+                        </div>-->';
 
     // check if all database  info are available
     if ($dbSettings === true) {
