@@ -355,7 +355,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => 'user_not_exists2',
+                'error' => true,
                 'message' => langHdl('error_bad_credentials'),
             ],
             'encode'
@@ -831,7 +831,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
-            'error' => 'user_not_exists3',
+            'error' => true,
             'message' => langHdl('error_not_allowed_to_authenticate'),
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
@@ -1207,40 +1207,39 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? strtolower($SETTINGS['ldap_user_attribute']) : 'distinguishedname', '=', $username)
             ->firstOrFail();
 
-        // Check shadowexpire attribute - if === 1 then user disabled
-        if (
-            (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
-            ||
-            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
-        ) {
-            return [
-                'error' => true,
-                'message' => langHdl('error_ad_user_expired'),
-            ];
-        }
-
-        // User auth attempt
-        if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-            $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
-            $userAuthAttempt = $connection->auth()->attempt(
-                $userDN,
-                $passwordClear
-            );
-        } else {
-            $userDN = $userADInfos['dn'];
-            $userAuthAttempt = $connection->auth()->attempt(
-                $userDN,
-                $passwordClear
-            );
-        }
-
-    } catch (\LdapRecord\Auth\BindException $e) {
-        $error = $e->getDetailedError();
+    } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
         return [
             'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+            'message' => langHdl('error_bad_credentials')
 
         ];
+    }
+
+    // Check shadowexpire attribute - if === 1 then user disabled
+    if (
+        (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
+        ||
+        (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
+    ) {
+        return [
+            'error' => true,
+            'message' => langHdl('error_ad_user_expired'),
+        ];
+    }
+
+    // User auth attempt
+    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+        $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
+        $userAuthAttempt = $connection->auth()->attempt(
+            $userDN,
+            $passwordClear
+        );
+    } else {
+        $userDN = $userADInfos['dn'];
+        $userAuthAttempt = $connection->auth()->attempt(
+            $userDN,
+            $passwordClear
+        );
     }
     
     // User is not auth then return error
@@ -2168,7 +2167,7 @@ class initialChecks {
 
     // Methods
     public function get_is_too_much_attempts($attempts) {
-        if ($attempts > 300) {
+        if ($attempts > 3) {
             throw new Exception(
                 "error" 
             );

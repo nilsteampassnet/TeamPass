@@ -724,6 +724,31 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                         }
                                     );
                                     return false;
+                                }  else if (data.error === true || data.error !== '') {
+                                    toastr.remove();
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>',
+                                        {
+                                            timeOut: 10000,
+                                            progressBar: true,
+                                            positionClass: "toast-top-right"
+                                        }
+                                    );
+                                    if(data.ga_bad_code === true)
+                                    {
+                                        $("#ga_code").addClass("ui-state-error");
+                                    }
+                                } else {
+                                    toastr.remove();
+                                    toastr.error(
+                                        '<?php echo langHdl('error_bad_credentials'); ?>',
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true,
+                                            positionClass: "toast-top-right"
+                                        }
+                                    );
                                 }
                             } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
                                 $('#div-2fa-google-qr')
@@ -786,30 +811,6 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 } else {
                                     window.location.href = 'index.php?page=items';
                                 }
-                            } else if (data.error === true || data.error !== '') {
-                                toastr.remove();
-                                toastr.error(
-                                    data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 10000,
-                                        progressBar: true,
-                                        positionClass: "toast-top-right"
-                                    }
-                                );
-                                if(data.ga_bad_code === true)
-                                {
-                                    $("#ga_code").addClass("ui-state-error");
-                                }
-                            } else {
-                                toastr.remove();
-                                toastr.error(
-                                    '<?php echo langHdl('error_bad_credentials'); ?>',
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 5000,
-                                        progressBar: true,
-                                        positionClass: "toast-top-right"
-                                    }
-                                );
                             }
 
                             // Clear Yubico
