@@ -68,7 +68,7 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
         ],
         'id=%i || key_tempo=%s',
         $user_id,
-        $user_token
+        isset($user_token) === true ? $user_token : ''
     );
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) === true
