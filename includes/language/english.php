@@ -17,6 +17,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'provide_label' => 'Provide a label',
     'enable_backlog_mail' => 'Enable sending backlog emails',
     'ad_user_created_automatically' => 'Your account has been created automatically by Teampass. Your keys are in creation. You will receive an email when your account will be activated.',
     'settings_ad_users_with_ad_groups' => 'AD user roles mapped with their AD groups',
