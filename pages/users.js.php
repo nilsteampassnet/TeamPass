@@ -957,9 +957,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 };
                 if (debugJavascript === true) {
                     console.log(data);
+                    console.log(store.get('teampassApplication').formUserAction);
                 }                
                 var formUserId = store.get('teampassApplication').formUserId;
-
+                
                 $.post(
                     'sources/users.queries.php', {
                         type: store.get('teampassApplication').formUserAction,

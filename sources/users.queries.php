@@ -139,6 +139,7 @@ if (null !== $post_type) {
             $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
 
             // Empty user
             if (empty($login) === true) {
@@ -225,6 +226,7 @@ if (null !== $post_type) {
                         'special' => 'auth-pwd-change',
                         'is_ready_for_usage' => 0,
                         'otp_provided' => 0,
+                        'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                     )
                 );
                 $new_user_id = DB::insertId();

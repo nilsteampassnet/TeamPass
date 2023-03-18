@@ -1674,7 +1674,7 @@ if (
                         }
                     );
 
-                    window.location.href = "./includes/core/logout.php?token=" + <?php echo $_SESSION['key']; ?>
+                    window.location.href = "./includes/core/logout.php?token=<?php echo $_SESSION['key']; ?>"
                 } else if (store.get('teampassUser').admin_user_password) {
                     // now select if sending by email
                     $('#dialog-admin-change-user-password-info').html('<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?><br><br>'+
