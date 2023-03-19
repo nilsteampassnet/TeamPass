@@ -1053,5 +1053,7 @@ return array(
     'enable_backlog_mail' => 'Activer l\'envoi des emails en attente',
     'provide_label' => 'Saisir un intitulé',
     'uploading' => 'Téléversement ...',
+    'keys_encryption_not_ready' => 'Les clés de cryptage de vos objets sont actuellement en cours. Merci de patienter quelques minutes.',
+    'account_not_ready' => 'Compte en construction',
 
 );

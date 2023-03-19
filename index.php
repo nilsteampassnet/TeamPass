@@ -291,6 +291,12 @@ if (($session_validite_pw === null
 
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
+                    <!-- User encryption still ongoing -->
+                    <li id="user_not_ready" class="hidden pointer mr-4" style="position:absolute; left:50%;">
+                        <div class="alert alert-warning">
+                            <span class="align-middle infotip ml-2" title="<?php echo langHdl('keys_encryption_not_ready'); ?>"><?php echo langHdl('account_not_ready'); ?><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
+                        </div>
+                    </li>
                     <!-- Messages Dropdown Menu -->
                     <li class="nav-item dropdown">
                         <div class="dropdown show">

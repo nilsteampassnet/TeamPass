@@ -17,6 +17,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'keys_encryption_not_ready' => 'Be informed that your password keys are currently in process of being created. Please wait a few minutes more.',
+    'account_not_ready' => 'Account in construction',
     'provide_label' => 'Provide a label',
     'enable_backlog_mail' => 'Enable sending backlog emails',
     'ad_user_created_automatically' => 'Your account has been created automatically by Teampass. Your keys are in creation. You will receive an email when your account will be activated.',

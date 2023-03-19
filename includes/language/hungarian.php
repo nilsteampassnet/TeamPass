@@ -1053,5 +1053,7 @@ return array(
     'enable_backlog_mail' => 'Enable sending backlog emails',
     'provide_label' => 'Provide a label',
     'uploading' => 'Uploading...',
+    'keys_encryption_not_ready' => 'Be informed that your password keys are currently in process of being created. Please wait a few minutes more.',
+    'account_not_ready' => 'Account in construction',
 
 );

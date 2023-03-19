@@ -99,7 +99,7 @@ if (
                 // Check if new privatekey needs to be adapted
                 var data = {
                     'user_id': store.get('teampassUser').user_id,
-                    'fields' : 'special, auth_type',
+                    'fields' : 'special, auth_type, is_ready_for_usage',
                 }
                 $.post(
                     "sources/main.queries.php", {
@@ -122,6 +122,7 @@ if (
                             function(teampassUser) {
                                 teampassUser.special = data.queryResults.special;
                                 teampassUser.auth_type = data.queryResults.auth_type;
+                                teampassUser.is_ready_for_usage = data.queryResults.is_ready_for_usage;
                             }
                         );
 
@@ -642,8 +643,13 @@ if (
     setTimeout(
         function() {
             $(".fade").removeClass("out");
+
+            // Is user not ready
+            if (parseInt(store.get('teampassUser').is_ready_for_usage) === 0) {
+                $('#user_not_ready').removeClass('hidden');
+            }
         },
-        1000
+        5000
     );
 
 
@@ -941,7 +947,10 @@ if (
             'user_id': store.get('teampassUser').user_id,
             'password': $('#dialog-user-temporary-code-value').val(),
         }
-        if (debugJavascript === true) console.log(data);
+        if (debugJavascript === true) {
+            console.log('Testing if temporary code is correct');
+            console.log(data);
+        }
         $.post(
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
@@ -1060,7 +1069,10 @@ if (
             'user_id': store.get('teampassUser').user_id,
             'password' : $('#dialog-ldap-user-build-keys-database-code').val(),
         }
-        if (debugJavascript === true) console.log(data);
+        if (debugJavascript === true) {
+            console.log('Testing if temporary code is correct in LDAP user case');
+            console.log(data);
+        }
 
         $.post(
             'sources/main.queries.php', {

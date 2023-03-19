@@ -1184,7 +1184,7 @@ if (null !== $post_type) {
                 // get FUNCTIONS
                 $functionsList = array();
                 $selected = '';
-                $users_functions = explode(';', $rowUser['fonction_id']);
+                $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
                 // array of roles for actual user
                 $my_functions = explode(';', $_SESSION['fonction_id']);
 

@@ -108,7 +108,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         },
         'columnDefs': [
             {
-                'width': '100px',
+                'width': '120px',
                 'targets': 0,
                 'render': function(data, type, row, meta) {
                     if ($(data).data('type') === 'create_user_keys') {
