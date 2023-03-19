@@ -16,6 +16,9 @@
  * ---
  * @see       https://www.teampass.net
  */
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
 
 set_time_limit(600);
 
@@ -1463,6 +1466,35 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } elseif ($task === 'init') {
+                    echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                } elseif ($task === 'cronJob') {
+                    // Create cronjob
+                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+                    // Instantiate the adapter and repository
+                    try {
+                        $crontabRepository = new CrontabRepository(new CrontabAdapter());
+                        $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                        if (count($results) === 0) {
+                            // Add the job
+                            $crontabJob = new CrontabJob();
+                            $crontabJob
+                                ->setMinutes('*')
+                                ->setHours('*')
+                                ->setDayOfMonth('*')
+                                ->setMonths('*')
+                                ->setDayOfWeek('*')
+                                ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                                ->setComments('Teampass scheduler');
+                            
+                            $crontabRepository->addJob($crontabJob);
+                            $crontabRepository->persist();
+                        }
+                    } catch (Exception $e) {
+                        // do nothing
+                    }
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
             }

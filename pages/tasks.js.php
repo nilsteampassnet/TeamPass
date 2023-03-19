@@ -187,6 +187,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         });
     }
 
+    // confirm task deletion
     $(document).on('click', '.confirm', function() {
         if ($(this).data('type') === "task-delete") {
             // show confirmation dialog
@@ -263,6 +264,34 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                         '<?php echo langHdl('close'); ?>'
                     );
 
+                }
+            );
+        } else if ($(this).data('type') === "add-new-job") {
+            console.log('add new job')
+            $.post(
+                "sources/utilities.queries.php", {
+                    type: "handle_crontab_job",
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    console.log(data)
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('alert_page_will_reload'); ?>',
+                        '<?php echo langHdl('done'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+
+                    // Delay page submit
+                    $(this).delay(5000).queue(function() {
+                        document.location.reload(true);
+                        $(this).dequeue();
+                    });
                 }
             );
         }

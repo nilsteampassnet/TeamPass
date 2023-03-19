@@ -345,6 +345,7 @@ define('MIN_PHP_VERSION', 7.4);
 						<li>Chmod some folders and files <span id="res6_check1"></span></li>
 						<li>Create settings files <span id="res6_check2"></span></li>
 						<li>Initiate CSRF protection <span id="res6_check3"></span></li>
+						<li>Add new cron job <span id="res6_check5"></span></li>
 						<li>Clean temporary installation data <span id="res6_check4"></span></li>
 					</ul>
 				</div>

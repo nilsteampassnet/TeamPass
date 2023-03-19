@@ -19,7 +19,9 @@ declare(strict_types=1);
  * ---
  * @see       https://www.teampass.net
  */
-
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -796,6 +798,70 @@ if (null !== $post_type) {
                 WHERE increment_id = %i',
                 $post_id
             );
+
+            // send data
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
+
+        //CASE handle crontab job
+        case 'handle_crontab_job':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+            // Instantiate the adapter and repository
+            try {
+                $crontabRepository = new CrontabRepository(new CrontabAdapter());
+                $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                if (count($results) === 0) {
+                    // Add the job
+                    $crontabJob = new CrontabJob();
+                    $crontabJob
+                        ->setMinutes('*')
+                        ->setHours('*')
+                        ->setDayOfMonth('*')
+                        ->setMonths('*')
+                        ->setDayOfWeek('*')
+                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                        ->setComments('Teampass scheduler');
+                    
+                    $crontabRepository->addJob($crontabJob);
+                    $crontabRepository->persist();
+                }
+            } catch (Exception $e) {
+                // do nothing
+                print_r($e);
+            }
 
             // send data
             echo prepareExchangedData(
