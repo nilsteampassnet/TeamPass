@@ -757,5 +757,55 @@ if (null !== $post_type) {
                 'encode'
             );
             break;
+
+        //CASE delete a task
+        case 'task_delete':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+            DB::query(
+                'DELETE FROM ' . prefixTable('processes_tasks') . '
+                WHERE process_id = %i',
+                $post_id
+            );
+
+            DB::query(
+                'DELETE FROM ' . prefixTable('processes') . '
+                WHERE increment_id = %i',
+                $post_id
+            );
+
+            // send data
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+            break;
     }
 }

@@ -218,6 +218,21 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         </div>
     </div>
 
+    <!-- DELETE CONFIRM -->
+    <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" id="task-delete-user-confirm">
+        <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h4 class="modal-title"><?php echo langHdl('please_confirm_deletion'); ?></h4>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="modal-btn-delete" data-id=""><?php echo langHdl('yes'); ?></button>
+            <button type="button" class="btn btn-default" id="modal-btn-cancel"><?php echo langHdl('cancel'); ?></button>
+            </div>
+        </div>
+        </div>
+    </div>
+
 
 </div>
 <!-- /.content -->

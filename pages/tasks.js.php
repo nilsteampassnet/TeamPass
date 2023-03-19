@@ -112,10 +112,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                 'targets': 0,
                 'render': function(data, type, row, meta) {
                     if ($(data).data('type') === 'create_user_keys') {
-                        if ($(data).data('done') === 1) {
-                            return '<i class="fas fa-play text-warning"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                        if (parseInt($(data).data('done')) === 1) {
+                            return '<i class="fa-solid fa-play text-warning"></i><i class="fa-solid fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                         } else {
-                            return '<i class="fars fa-hand-papper text-info"></i><i class="fas fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i>';
+                            return '<i class="fars fa-hand-papper text-info"></i><i class="fa-solid fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                         }
                     } else {
                         return '';
@@ -187,6 +187,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         });
     }
 
+    $(document).on('click', '.confirm', function() {
+        if ($(this).data('type') === "task-delete") {
+            // show confirmation dialog
+            $('#modal-btn-delete').data('id', $(this).data('id'));
+            $("#task-delete-user-confirm").modal('show');
+        }
+    });
+
     $(document).on('click', '.action', function() {
         toastr.remove();
         toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
@@ -201,7 +209,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     console.log(data)
-
 
                     // Inform user
                     toastr.remove();
@@ -268,6 +275,42 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
 
     $(document).ready(function(){
         setTimeout(fetchTaskData,20000);
+
+        // Handle delete task
+        $("#modal-btn-delete").on("click", function() {
+            toastr.remove();
+            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            
+            $.post(
+                "sources/utilities.queries.php", {
+                    type: "task_delete",
+                    id: $(this).data('id'),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    console.log(data)
+
+                    $("#task-delete-user-confirm").modal('hide');
+
+                    // Rrefresh list of tasks in Teampass
+                    oTableProcesses.ajax.reload();
+                    
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            );
+        });
+
+        $("#modal-btn-cancel").on("click", function(){
+            $("#task-delete-user-confirm").modal('hide');
+        });
     });
 
     //]]>

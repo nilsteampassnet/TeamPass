@@ -28,7 +28,6 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\ActiveDirectory\User;
-use LdapRecord\Models\ActiveDirectory\Group;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
