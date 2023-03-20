@@ -24,6 +24,9 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -61,7 +64,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-tasks mr-2"></i><?php echo langHdl('tasks_manager'); ?>
+                    <i class="fa-solid fa-tasks mr-2"></i><?php echo langHdl('tasks_manager'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -94,10 +97,44 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <div class="card-body p-0">
 
                                     <div class="callout callout-info alert-dismissible mt-3">
-                                        <h5><i class="fas fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                                        <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                                         <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
 
-                                        <div class='row mt-4 option' data-keywords="favorite">
+                                        <div class="">
+                                            <?php if (defined('WIP') === true && WIP === true) { 
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+// Instantiate the adapter and repository
+try {
+    $crontabRepository = new CrontabRepository(new CrontabAdapter());
+    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+    if (count($results) === 0) {
+        ?>
+                                            <div class="alert alert-warning mt-2 " role="alert">
+                                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
+                                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
+                                                <div id="add-new-job-result">
+
+                                                </div>
+                                            </div>
+        <?php
+    } else {
+        ?>
+                                            <div class="alert alert-success mt-2 " role="alert">
+                                                <i class="fa-solid fa-check mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
+                                            </div>
+        <?php
+    }
+}
+catch (Exception $e) {
+    echo $e->getMessage();
+}
+} ?>
+                                        </div>
+
+                                        <div class='row mt-4 option'>
                                             <div class='col-10'>
                                             <h5><i class="fa-solid fa-rss mr-2"></i><?php echo langHdl('enable_tasks_log'); ?></h5>
                                                 <small class='form-text text-muted'>
@@ -112,7 +149,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                     <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-5'>
-                                        <i class="fas fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
+                                        <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
                                         </div>
                                         <div class='col-5 text-right'>
                                             <?php echo langHdl('task_frequency'); ?>
@@ -124,7 +161,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-5'>
-                                        <i class="fas fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
+                                        <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
                                         </div>
                                         <div class='col-5 text-right'>
                                             <?php echo langHdl('task_frequency'); ?>
@@ -215,6 +252,21 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRM -->
+    <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" id="task-delete-user-confirm">
+        <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h4 class="modal-title"><?php echo langHdl('please_confirm_deletion'); ?></h4>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="modal-btn-delete" data-id=""><?php echo langHdl('yes'); ?></button>
+            <button type="button" class="btn btn-default" id="modal-btn-cancel"><?php echo langHdl('cancel'); ?></button>
+            </div>
+        </div>
         </div>
     </div>
 

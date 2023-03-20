@@ -355,7 +355,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => 'user_not_exists2',
+                'error' => true,
                 'message' => langHdl('error_bad_credentials'),
             ],
             'encode'
@@ -479,6 +479,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('user_avatar_thumb', $userInfo['avatar_thumb'], 'SESSION');
         $superGlobal->put('user_upgrade_needed', $userInfo['upgrade_needed'], 'SESSION');
         $superGlobal->put('user_force_relog', $userInfo['force-relog'], 'SESSION');
+        $superGlobal->put('is_ready_for_usage', $userInfo['is_ready_for_usage'], 'SESSION');
         $superGlobal->put(
             'user_treeloadstrategy',
             (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy'],
@@ -831,7 +832,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
-            'error' => 'user_not_exists3',
+            'error' => true,
             'message' => langHdl('error_not_allowed_to_authenticate'),
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
@@ -1207,40 +1208,39 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? strtolower($SETTINGS['ldap_user_attribute']) : 'distinguishedname', '=', $username)
             ->firstOrFail();
 
-        // Check shadowexpire attribute - if === 1 then user disabled
-        if (
-            (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
-            ||
-            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
-        ) {
-            return [
-                'error' => true,
-                'message' => langHdl('error_ad_user_expired'),
-            ];
-        }
-
-        // User auth attempt
-        if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-            $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
-            $userAuthAttempt = $connection->auth()->attempt(
-                $userDN,
-                $passwordClear
-            );
-        } else {
-            $userDN = $userADInfos['dn'];
-            $userAuthAttempt = $connection->auth()->attempt(
-                $userDN,
-                $passwordClear
-            );
-        }
-
-    } catch (\LdapRecord\Auth\BindException $e) {
-        $error = $e->getDetailedError();
+    } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
         return [
             'error' => true,
-            'message' => langHdl('error').' : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage(),
+            'message' => langHdl('error_bad_credentials')
 
         ];
+    }
+
+    // Check shadowexpire attribute - if === 1 then user disabled
+    if (
+        (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
+        ||
+        (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
+    ) {
+        return [
+            'error' => true,
+            'message' => langHdl('error_ad_user_expired'),
+        ];
+    }
+
+    // User auth attempt
+    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+        $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
+        $userAuthAttempt = $connection->auth()->attempt(
+            $userDN,
+            $passwordClear
+        );
+    } else {
+        $userDN = $userADInfos['dn'];
+        $userAuthAttempt = $connection->auth()->attempt(
+            $userDN,
+            $passwordClear
+        );
     }
     
     // User is not auth then return error
@@ -1266,11 +1266,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         // prepapre background tasks for item keys generation        
         $val = DB::queryFirstRow(
-            'SELECT valeur
-            FROM ' . prefixTable('misc') . '
-            WHERE type = %s AND intitule = %s',
-            'secret',
-            'pwd'
+            'SELECT pw, public_key, private_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            TP_USER_ID
         );
         if (DB::count() > 0) {
             // Create process
@@ -1281,10 +1280,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                     'process_type' => 'create_user_keys',
                     'arguments' => json_encode([
                         'new_user_id' => (int) $userInfo['id'],
-                        'new_user_pwd' => cryption($passwordClear, '','encrypt', $SETTINGS)['string'],
-                        'new_user_code' => cryption(uniqidReal(20), '','encrypt', $SETTINGS)['string'],
-                        'owner_id' => (int) $_SESSION['user_id'],
-                        'creator_pwd' => $val['valeur'],
+                        'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
+                        'new_user_code' => cryption(uniqidReal(20), '','encrypt')['string'],
+                        'owner_id' => (int) TP_USER_ID,
+                        'creator_pwd' => $val['pw'],
                     ]),
                     'updated_at' => '',
                     'finished_at' => '',
@@ -1651,6 +1650,7 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
             'private_key' => $userKeys['private_key'],
             'special' => 'none',
             'auth_type' => 'ldap',
+            'otp_provided' => '1',
             'is_ready_for_usage' => '0',
         ]
     );
@@ -2168,7 +2168,7 @@ class initialChecks {
 
     // Methods
     public function get_is_too_much_attempts($attempts) {
-        if ($attempts > 300) {
+        if ($attempts > 3) {
             throw new Exception(
                 "error" 
             );

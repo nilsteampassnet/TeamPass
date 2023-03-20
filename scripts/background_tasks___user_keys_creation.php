@@ -381,19 +381,19 @@ function performUserCreationKeys(
 function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
 {
     $userInfo = DB::queryFirstRow(
-        'SELECT public_key, private_key
+        'SELECT pw, public_key, private_key
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $owner_id
     );
     
     // decrypt owner password
-    $owner_pwd = cryption($owner_pwd, '','decrypt', $SETTINGS)['string'];
-    provideLog('[USER][INFO]', $SETTINGS);
-    provideLog('[DEBUG] '.$owner_pwd." -- ", $SETTINGS);
+    $pwd = cryption($owner_pwd, '','decrypt', $SETTINGS)['string'];
+    provideLog('[USER][INFO] ID:'.$owner_id, $SETTINGS);
+    //provideLog('[DEBUG] '.$pwd." -- ", $SETTINGS);
     // decrypt private key and send back
     return [
-        'private_key' => decryptPrivateKey($owner_pwd, $userInfo['private_key']),
+        'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
     ];
 }
 
@@ -943,7 +943,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
     // if done then send email to new user
     // get user info
     $userInfo = DB::queryFirstRow(
-        'SELECT email, login, auth_type
+        'SELECT email, login, auth_type, special
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $extra_arguments['new_user_id']
@@ -964,30 +964,55 @@ function cronContinueReEncryptingUserSharekeysStep6(
             ),
             $SETTINGS
         );
-    } else {
-        sendMailToUser(
-            filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
-            langHdl('email_body_user_added_from_ldap_encryption_code'),
-            'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-            (array) filter_var_array(
-                [
-                    '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
-                ],
-                FILTER_SANITIZE_STRING
+
+        // Set user as ready for usage
+        DB::update(
+            prefixTable('users'),
+            array(
+                'is_ready_for_usage' => 1,
             ),
-            $SETTINGS
+            'id = %i',
+            $extra_arguments['new_user_id']
         );
+    } else {
+        if ($userInfo['special']  === 'user_added_from_ldap') {
+            sendMailToUser(
+                filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
+                langHdl('email_body_user_added_from_ldap_encryption_code'),
+                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+                (array) filter_var_array(
+                    [
+                        '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
+                    ],
+                    FILTER_SANITIZE_STRING
+                ),
+                $SETTINGS
+            );
+            
+            // Set user as ready for usage
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'is_ready_for_usage' => 1,
+                ),
+                'id = %i',
+                $extra_arguments['new_user_id']
+            );
+        } else {
+            // Set user as ready for usage
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'is_ready_for_usage' => 1,
+                    'otp_provided' => 1,
+                ),
+                'id = %i',
+                $extra_arguments['new_user_id']
+            );
+        }
     }
 
-    // Set user as ready for usage
-    DB::update(
-        prefixTable('users'),
-        array(
-            'is_ready_for_usage' => 1,
-        ),
-        'id = %i',
-        $extra_arguments['new_user_id']
-    );
+    
 
     return [
         'new_index' => 0,

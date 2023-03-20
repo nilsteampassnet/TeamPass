@@ -2450,10 +2450,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         ?>
         init: {
             BeforeUpload: function(up, file) {
+                // #3588 - check that a label exist before starting upload
+                // We need a temporary ID at this step
+                if (store.get('teampassItem').id === '') {
+                    toastr.error(
+                        '<?php echo langHdl('provide_label'); ?>',
+                        '', {
+                            timeOut: 5000
+                        }
+                    );
+                    $('#upload-file_' + file.id).remove();
+                    return false;
+                }
+
                 toastr.info(
-                    '<?php echo langHdl('please_wait'); ?>',
+                    '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-2"></i><?php echo langHdl('uploading'); ?>',
                     '', {
-                        timeOut: 1000
+                        timeOut: 0
                     }
                 );
 
@@ -2487,6 +2500,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     uploader_attachments.bind('UploadProgress', function(up, file) {
         //console.log('uploader_attachments.bind')
         $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' - ' + file.percent + '%');
+        if (file.percent === 100) {
+            toastr.remove();
+        }
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
@@ -2504,6 +2520,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userUploadedFile = true;
         $('#upload-file_' + file.id + '')
             .html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' <?php echo langHdl('uploaded'); ?>');
+        toastr.remove();
         toastr
             .info(
                 '<?php echo langHdl('success'); ?>',

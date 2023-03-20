@@ -648,8 +648,8 @@ function prepareNodeData(
             'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
         ];
 
-    } elseif ((int) $show_only_accessible_folders === 1
-        && (int) $nbSubfolders === 0
+    } elseif ((int) $nbSubfolders === 0
+        //&& (int) $show_only_accessible_folders === 1
     ) {
         // folder should not be visible
         // only if it has no descendants

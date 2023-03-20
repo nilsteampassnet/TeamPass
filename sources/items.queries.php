@@ -2152,7 +2152,7 @@ if (is_null($inputData['type']) === false) {
                         $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
                         if ($outstream === false) {
                             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                                $SETTINGS['cpassman_dir'],
                                 array(
                                     'error' => true,
                                     'message' => langHdl('error_cannot_open_file'),

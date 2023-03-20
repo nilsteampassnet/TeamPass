@@ -29,9 +29,9 @@ use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\OpenLdap\User;
 
-require_once 'SecureHandler.php';
+/*require_once 'SecureHandler.php';
 session_name('teampass_session');
-session_start();
+session_start();*/
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
 }

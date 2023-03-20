@@ -276,7 +276,36 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div class="card-header">
                         <h5>DataBase Informations</h5>
                     </div>
-                    <div class="card-body">';
+                    <div class="card-body">
+                        <!--<div class="form-group">
+                            <label>Host</label>
+                            <input type="text" class="form-control" name="db_host" id="db_host" class="ui-widget" value="'.DB_HOST.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Database name</label>
+                            <input type="text" class="form-control" name="db_name" id="db_name" class="ui-widget" value="'.DB_NAME.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Login</label>
+                            <input type="text" class="form-control" name="db_user" id="db_user" class="ui-widget" value="'.DB_USER.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.$visible_pwd.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Prefix</label>
+                            <input type="text" class="form-control" name="db_prefix" id="db_prefix" class="ui-widget" value="'.DB_PREFIX.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="text" class="form-control" name="db_port" id="db_port" class="ui-widget" value="'.DB_PORT.'">
+                        </div>-->';
 
     // check if all database  info are available
     if ($dbSettings === true) {
@@ -436,6 +465,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             <li>Anonymize saltkey file <span id="step5_saltkeyFile"></span></li>
             <li>Generate config file <span id="step5_configFile"></span></li>
             <li>Generate CSRFP config file <span id="step5_csrfpFile"></span></li>
+            <li>Add new cron job <span id="step5_cronJob"></span></li>
             </ul>
         </div>';
 
@@ -742,7 +772,7 @@ function manageUpgradeScripts(file_number)
                         console.log("Tash perform_nestedtree_categories_population_3.0.0.18 DONE");
                         $("#user_"+rand_number)
                             .html('Database update operations done <i class="fas fa-thumbs-up" style="color:green"></i>'); 
-                        migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, false);
+                        migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, 0);
 
                         alertify
                             .success('Done with initialization phase', 3)
@@ -764,10 +794,10 @@ var usersList = [],
     *
     * @return void
     */
-function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_finished)
+function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_finished, tp_user_done)
 {
-    //console.log("> "+step+" - Number: "+number + " - Previous step: "+previousStep);
-    //console.log(usersList);
+    console.log("> "+step+" - Number: "+number + " - Previous step: "+previousStep);
+    console.log(usersList);
     var d = new Date(),
         count_in_loop = <?php echo (int) NUMBER_ITEMS_IN_BATCH;?>,
         userSteps = {};
@@ -778,7 +808,7 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
     if (data !== '' && step === 'step1') {
         newData = JSON.parse(window.atob(data));
     }
-    //console.log("TO DO : "+step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData.id)
+    console.log("TO DO : "+step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData.id)
 
     if (step === 'step1') {
         userInfo = '';
@@ -788,8 +818,8 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
         if (newData !== '') {
             usersList.push(newData);
         }
-        //console.log('List of users');
-        //console.log(JSON.stringify(usersList))
+        console.log('List of users');
+        console.log(JSON.stringify(usersList))
         
         if (usersRestList.length > 0) {
             number = usersRestList[0];
@@ -882,36 +912,40 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                 step = 'step2';
             } else {
                 // Prepare list of users to be displayed
-                var htmlUsersList = '<i class="fas fa-info-circle mr-2"></i>You could provide those unique codes to users by your own.<br>'+
-                    '<ul>';
-                $.each(usersList, function(index, user) {
-                    htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otp+'</li>'
-                });
-                htmlUsersList += '</ul>';
+                if (usersList.length === 1 && usersList[0].login === 'TP') {
+                    // do nothing and finish
+                    sendPwdToUsers(usersList, true, 0, usersList.length);
+                } else {
+                    var htmlUsersList = '<i class="fas fa-info-circle mr-2"></i>You could provide those unique codes to users by your own.<br><ul>';
+                    $.each(usersList, function(index, user) {
+                        htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otp+'</li>'
+                    });
+                    htmlUsersList += '</ul>';
 
-                // Done
-                $("#user_"+rand_number).parent()
-					.prepend(
-						'<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
-						'<br>'+
-						'<div type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</div>'+
-						'<div class="hidden alert alert-secondary mt-2" id="htmlListOfUsers" role="alert">'+htmlUsersList+'</div>'+
-						'</div>'
-					);
+                    // Done
+                    $("#user_"+rand_number).parent()
+                        .prepend(
+                            '<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
+                            '<br>'+
+                            '<div type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</div>'+
+                            '<div class="hidden alert alert-secondary mt-2" id="htmlListOfUsers" role="alert">'+htmlUsersList+'</div>'+
+                            '</div>'
+                        );
 
-				// Act on button click
-				$(document).on('click', '#buttonListOfUsers', function() { 
-					if ($('#htmlListOfUsers').hasClass('hidden') === true) {
-						$('#htmlListOfUsers').removeClass('hidden');
-					} else {
-						$('#htmlListOfUsers').addClass('hidden');
-					}
-				});
+                    // Act on button click
+                    $(document).on('click', '#buttonListOfUsers', function() { 
+                        if ($('#htmlListOfUsers').hasClass('hidden') === true) {
+                            $('#htmlListOfUsers').removeClass('hidden');
+                        } else {
+                            $('#htmlListOfUsers').addClass('hidden');
+                        }
+                    });
 
-                console.log(usersList);
-                // Now send passwords
-                console.log("Send emails to users from now");
-                sendPwdToUsers(usersList, true, 0, usersList.length);
+                    console.log(usersList);
+                    // Now send passwords
+                    console.log("Send emails to users from now");
+                    sendPwdToUsers(usersList, true, 0, usersList.length);
+                }
 
                 return;
             }
@@ -954,16 +988,17 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
             count_in_loop : count_in_loop,
             info : $('#infotmp').val(),
             extra : number === 'end' ? 'all_users_created' : '',
+            tp_user_done : tp_user_done,
         },
         function(data) {
-            //console.log(data[0]);
+            console.log(data[0]);
             //console.log(JSON.parse(window.atob(data[0].rest)));
             //console.log(JSON.parse(window.atob(data[0].data)));
             previousStep = step;
 
             if (data[0].finish !== "1") {
                 // Manage list of users that is provide on number = 0
-                if ((number) === 'init' && step === 'step1') {
+                if (number === 'init' && step === 'step1') {
                     if (data[0].rest !== '') {
                         usersRestList = JSON.parse(window.atob(data[0].rest));
                     }else {
@@ -979,7 +1014,8 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
                     data[0].number,
                     rand_number,
                     loop_start,
-                    data[0].loop_finished
+                    data[0].loop_finished,
+                    1
                 );
             } else {
                 // Done

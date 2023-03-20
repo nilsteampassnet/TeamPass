@@ -38,10 +38,11 @@ $get['user_id'] = $superGlobal->get('user_id', 'GET');
 // Update table by deleting ID
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     $user_id = $_SESSION['user_id'];
-} elseif (isset($get['user_id']) === true && empty($get['user_id']) === false) {
-    $user_id = $get['user_id'];
+} elseif (isset($get['token']) === true && empty($get['token']) === false) {
+    $user_token = $get['token'];
 } else {
     $user_id = '';
+    $user_token = '';
 }
 
 if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
@@ -65,8 +66,9 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
             'timestamp' => '',
             'session_end' => '',
         ],
-        'id=%i',
-        $user_id
+        'id=%i || key_tempo=%s',
+        $user_id,
+        isset($user_token) === true ? $user_token : ''
     );
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) === true

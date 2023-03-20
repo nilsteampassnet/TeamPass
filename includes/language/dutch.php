@@ -1051,5 +1051,12 @@ return array(
     'ad_groupe_and_roles_mapping' => 'AD group and roles mapping',
     'select_adgroup_mapping' => 'Select the role to map with current AD group',
     'enable_backlog_mail' => 'Enable sending backlog emails',
+    'provide_label' => 'Provide a label',
+    'uploading' => 'Uploading...',
+    'keys_encryption_not_ready' => 'Be informed that your password keys are currently in process of being created. Please wait a few minutes more.',
+    'account_not_ready' => 'Account in construction',
+    'add_new_job' => 'Add new job',
+    'tasks_cron_not_running' => 'Cron job is not set. Please edit crontab with your server user (usually www-data) with command <code>crontab -u www-data -e</code>.<br>Or press the button to try its creation automatically.',
+    'tasks_cron_running' => 'Cron job is correctly set',
 
 );

@@ -16,7 +16,9 @@
  * ---
  * @see       https://www.teampass.net
  */
-
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
 
 require_once '../sources/SecureHandler.php';
 session_name('teampass_session');
@@ -961,6 +963,54 @@ if (isset($post_type)) {
 
             // save change in config file
             handleConfigFile('update', $SETTINGS, 'cpassman_version', TP_VERSION_FULL);
+
+
+            //<-- Add cronjob if not exist
+            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+            // Instantiate the adapter and repository
+            try {
+                $crontabRepository = new CrontabRepository(new CrontabAdapter());
+                $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                if (count($results) === 0) {
+                    // Add the job
+                    $crontabJob = new CrontabJob();
+                    $crontabJob
+                        ->setMinutes('*')
+                        ->setHours('*')
+                        ->setDayOfMonth('*')
+                        ->setMonths('*')
+                        ->setDayOfWeek('*')
+                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                        ->setComments('Teampass scheduler');
+                    
+                    $crontabRepository->addJob($crontabJob);
+                    $crontabRepository->persist();
+
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_cronJob', 
+                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i> <b>If you had manually defined a job in crontab then you should remove it now.</b>',
+                        )
+                    );
+                } else {
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_cronJob', 
+                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                        )
+                    );
+                }
+            } catch (Exception $e) {
+                // do nothing
+            }
+
+            
+            //-->
 
             echo '[{'.
                 '"error" : "",'.

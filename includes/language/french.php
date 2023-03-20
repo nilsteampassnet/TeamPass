@@ -679,7 +679,7 @@ return array(
     'error_group_exist' => 'Ce dossier existe déjà !',
     'error_html_codes' => 'Du texte contient du code html. Ceci n\'est pas une bonne idée !',
     'error_item_exists' => 'Cet élément existe déjà !',
-    'error_label' => 'Un label est obligatoire !',
+    'error_label' => 'Un intitulé est obligatoire !',
     'error_must_enter_all_fields' => 'Vous devez saisir chaque champs !',
     'error_pw' => 'Un mot de passe est obligatoire !',
     'error_tags' => 'Aucune ponctuation n\'est autorisée ! Seulement des espaces.',
@@ -1051,5 +1051,12 @@ return array(
     'ad_groupe_and_roles_mapping' => 'Liaison entre les groupes AD et les rôles',
     'select_adgroup_mapping' => 'Sélectionner le rôle à lier avec le groupe AD courant',
     'enable_backlog_mail' => 'Activer l\'envoi des emails en attente',
+    'provide_label' => 'Saisir un intitulé',
+    'uploading' => 'Téléversement ...',
+    'keys_encryption_not_ready' => 'Les clés de cryptage de vos objets sont actuellement en cours. Merci de patienter quelques minutes.',
+    'account_not_ready' => 'Compte en construction',
+    'add_new_job' => 'Ajouter un nouveau job',
+    'tasks_cron_not_running' => 'Cron job non trouvé. Merci d\'éditer le crontab avec l\'utilisateur du serveur (typiquement www-data) avec la commande <code>crontab -u www-data -e</code>.<br>Sinon appuyer le bouton ci-dessous.',
+    'tasks_cron_running' => 'Cron job trouvé',
 
 );

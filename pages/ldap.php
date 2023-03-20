@@ -456,7 +456,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
-                                <?php if (defined('WIP') === true && WIP === true) { ?>
+                                <!--<?php if (defined('WIP') === true && WIP === true) { ?>-->
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
                                         <?php echo langHdl('settings_ad_user_auto_creation'); ?>
@@ -468,7 +468,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         <div class='toggle toggle-modern' id='enable_ad_user_auto_creation' data-toggle-on='<?php echo isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_ad_user_auto_creation_input' value='<?php echo isset($SETTINGS['enable_ad_user_auto_creation']) && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? 1 : 0; ?>'>
                                     </div>
                                 </div>
-                                <?php } ?>
+                                <!--<?php } ?>-->
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>

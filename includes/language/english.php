@@ -17,6 +17,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'add_new_job' => 'Add new job',
+    'tasks_cron_not_running' => 'Cron job is not set. Please edit crontab with your server user (usually www-data) with command <code>crontab -u www-data -e</code>.<br>Or press the button to try its creation automatically.',
+    'tasks_cron_running' => 'Cron job is correctly set',
+    'keys_encryption_not_ready' => 'Be informed that your password keys are currently in process of being created. Please wait a few minutes more.',
+    'account_not_ready' => 'Account in construction',
+    'provide_label' => 'Provide a label',
     'enable_backlog_mail' => 'Enable sending backlog emails',
     'ad_user_created_automatically' => 'Your account has been created automatically by Teampass. Your keys are in creation. You will receive an email when your account will be activated.',
     'settings_ad_users_with_ad_groups' => 'AD user roles mapped with their AD groups',
@@ -50,7 +56,7 @@ return array(
     'user_keys_management' => 'User keys management',
     'sending_emails' => 'Sending emails',
     'task_frequency' => 'Frequency (in minutes)',
-    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
     'sync_new_ldap_password' => 'Synchronize new password',
     'error_new_ldap_password_detected' => 'It seems your password has changed and Teampass requires it to encrypt your master private key.',
     'settings_ldap_tls_certifacte_check' => 'Certificate check for LDAP TLS', 
