@@ -59,6 +59,7 @@ define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
+define('GITHUB_COMMIT_URL', 'https://github.com/nilsteampassnet/TeamPass/commit/');
 
 // Fontawesome icons
 define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');

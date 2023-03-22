@@ -84,10 +84,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                    <div class="alert bg-olive disabled" role="alert">
-                        <p>People sponsoring my open source work each month help motivate me to devote time and resources to producing the best quality work I can for everyone who uses Teampass.</p>
-                        <p>Read my <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
-                    </div>
+                        <div class="alert bg-olive disabled" role="alert">
+                            <p>People sponsoring my open source work each month help motivate me to devote time and resources to producing the best quality work I can for everyone who uses Teampass.</p>
+                            <p>Read my <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -135,6 +135,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 
             <!-- /.col -->
             <div class="col-md-6">
+                <div class="alert bg-lightblue disabled" role="alert">
+                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION_FULL."</b>"; ?></p>
+                    <p><i class="fa-solid fa-code-commit mr-2"></i>
+                    <?php
+                        $version = file_get_contents('version.txt', false, null, 543);
+                        echo langHdl('git_commit_value')." <b>".$version.
+                            '</b><href="'.GITHUB_COMMIT_URL.$version.'" target="_blank"><i class="fa-solid fa-up-right-from-square ml-2" pointer></i></a>'; 
+                    ?></p>
+                </div>
+
                 <div class="card card-default">
                     <div class="card-header">
                         <h3 class="card-title">
