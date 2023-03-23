@@ -497,7 +497,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_tasks_manager' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_manager_input' value='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern disabled' id='enable_tasks_manager' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_manager_input' value='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
 

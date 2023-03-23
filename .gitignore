@@ -35,3 +35,4 @@ EncryptedFile_*
 !/upload/empty_file.txt
 /~/*
 gitdo.sh
+version-commit.php

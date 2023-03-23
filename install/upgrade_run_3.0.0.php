@@ -1937,6 +1937,12 @@ if ((int) $data[0] === 0) {
     );
 }
 
+// Force Tasks manager to be enabled
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "misc` SET `enable_tasks_manager` = '1' WHERE `enable_tasks_manager` = 0;"
+);
+
 //---<END 3.0.0.23
 
 // Save timestamp

@@ -1058,5 +1058,7 @@ return array(
     'add_new_job' => 'Ajouter un nouveau job',
     'tasks_cron_not_running' => 'Cron job non trouvé. Merci d\'éditer le crontab avec l\'utilisateur du serveur (typiquement www-data) avec la commande <code>crontab -u www-data -e</code>.<br>Sinon appuyer le bouton ci-dessous.',
     'tasks_cron_running' => 'Cron job trouvé',
+    'currently_using_version' => 'Version actuellement chargée',
+    'git_commit_value' => 'Version du commit de Git',
 
 );

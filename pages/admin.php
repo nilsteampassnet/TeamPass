@@ -135,6 +135,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 
             <!-- /.col -->
             <div class="col-md-6">
+                <div class="alert bg-orange disabled" role="alert">
+                    <h4><i class="fa-solid fa-exclamation-triangle mr-2"></i>Since 3.0.0.23, TASKS manager is enabled by default and is mandatory.</h4>
+                    <p>Please ensure that cron job is set and enabled.<br />Open Tasks page and check status.</p>
+                    <p><a href="https://documentation.teampass.net/#/manage/tasks" target="_blank"><i class="fa-solid fa-book mr-2"></i>Check documentation</a>.</p>
+                </div>
+                <!--
                 <div class="alert bg-lightblue disabled" role="alert">
                     <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION_FULL."</b>"; ?></p>
                     <p><i class="fa-solid fa-code-commit mr-2"></i>
@@ -144,6 +150,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                             '</b><href="'.GITHUB_COMMIT_URL.$version.'" target="_blank"><i class="fa-solid fa-up-right-from-square ml-2" pointer></i></a>'; 
                     ?></p>
                 </div>
+                -->
 
                 <div class="card card-default">
                     <div class="card-header">
