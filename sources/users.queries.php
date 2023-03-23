@@ -1432,7 +1432,7 @@ if (null !== $post_type) {
 
             // If user disables administrator role 
             // then ensure that it exists still one administrator
-            if (empty($post_is_admin) === false) {
+            if (empty($post_is_admin) === true) {
                 // count number of admins
                 $users = DB::query(
                     'SELECT id
