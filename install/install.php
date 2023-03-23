@@ -345,7 +345,11 @@ define('MIN_PHP_VERSION', 7.4);
 						<li>Chmod some folders and files <span id="res6_check1"></span></li>
 						<li>Create settings files <span id="res6_check2"></span></li>
 						<li>Initiate CSRF protection <span id="res6_check3"></span></li>
-						<li>Add new cron job <span id="res6_check5"></span></li>
+						<li>Add new cron job <span id="res6_check5"></span></li>		
+						<div class="form-group">
+							<label>Teampass Administrator password</label>
+							<input type="password" class="form-control" id="admin_pwd" class="ui-widget" value=""><span id="res4_check10"></span>
+						</div
 						<li>Clean temporary installation data <span id="res6_check4"></span></li>
 					</ul>
 				</div>

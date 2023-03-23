@@ -1940,7 +1940,7 @@ if ((int) $data[0] === 0) {
 // Force Tasks manager to be enabled
 mysqli_query(
     $db_link,
-    "UPDATE `" . $pre . "misc` SET `enable_tasks_manager` = '1' WHERE `enable_tasks_manager` = 0;"
+    "UPDATE `" . $pre . "misc` SET `valeur` = '1' WHERE type = 'admin' AND intitule = 'enable_tasks_manager';"
 );
 
 //---<END 3.0.0.23
