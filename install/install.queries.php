@@ -1473,6 +1473,14 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
                     require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
+                    // get php location
+                    exec("locate php", $phpLocation, $return);
+                    if (count($phpLocation) > 0) {
+                        $phpLocation = $phpLocation[0];
+                    } else {
+                        $phpLocation = 'php';
+                    }
+
                     // Instantiate the adapter and repository
                     try {
                         $crontabRepository = new CrontabRepository(new CrontabAdapter());
@@ -1486,7 +1494,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 ->setDayOfMonth('*')
                                 ->setMonths('*')
                                 ->setDayOfWeek('*')
-                                ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                                ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
                                 ->setComments('Teampass scheduler');
                             
                             $crontabRepository->addJob($crontabJob);

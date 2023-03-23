@@ -28,6 +28,9 @@ Only one entry is expected, each job has its own execution frequency.
 
 First you need to get the location to php (you can run `locate php`).
 
+Notice that during installation, the server crontab is updated with the next job.
+More details may be found on how this works by reading [CrontabManager documentation](https://github.com/TiBeN/CrontabManager).
+
 Then open the crons manager with the same user as the one used by php (example: `crontab -u www-data -e`)
 and add the input permitting the job to run each 5 minutes for example.
 ``* * * * * /path/to/phpbin /path/to/Teampass/sources/scheduler.php  1>> /dev/null 2>&1``

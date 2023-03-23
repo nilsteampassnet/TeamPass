@@ -465,12 +465,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             <li>Anonymize saltkey file <span id="step5_saltkeyFile"></span></li>
             <li>Generate config file <span id="step5_configFile"></span></li>
             <li>Generate CSRFP config file <span id="step5_csrfpFile"></span></li>
-            <li>Add new cron job <span id="step5_cronJob"></span>	
-                <!--<div class="form-group">
-                    <label>Provide the crontab owner to use</label>
-                    <input type="text" class="form-control" id="crontab_user" class="ui-widget" value="www-data">
-                </div>-->
-                </li>	
+            <li>Add new cron job <span id="step5_cronJob"></span></li>	
             </ul>
         </div>';
 
