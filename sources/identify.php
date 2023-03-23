@@ -1461,6 +1461,17 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
             );
 
             $userInfo['roles_from_ad_groups'] = $user_ad_groups;
+        } else {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'roles_from_ad_groups' => null,
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            $userInfo['roles_from_ad_groups'] = [];
         }
     } else {
         // Delete all user's AD groups
@@ -2199,7 +2210,8 @@ class initialChecks {
         }*/
 
         // Prepare user roles (fonction_id + roles_from_ad_groups)
-        $data['fonction_id'] = is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']);
+        // Disable this as this happend repeadetly and is not necessary when working with AD groups
+        //$data['fonction_id'] = is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']);
 
         return $data;
     }
