@@ -803,10 +803,17 @@ if (null !== $post_type) {
                 $SETTINGS['ldap_group_object_filter'],
                 $matches
             );
-            $searchCriteria = array_map(function($item) {
-                $parts = explode("=", trim($item, '()')); // splits each match into an array of substrings
-                return [$parts[0], '=', $parts[1]]; // constructs the resulting array
-            }, $matches[0]);
+            $searchCriteria = [];
+            foreach($matches[0] as $match) {
+                $parts = [];
+                if (!str_contains($match, ',')) {
+                    $tmp = explode("=", trim($match, '()'));
+                    $parts = [$tmp[0], '=', $tmp[1]];
+                } else {
+                    $parts = explode(",", trim($match, '()'));
+                }
+                $searchCriteria[] = $parts;
+            }
             
             $retGroups = $connection->query()->where($searchCriteria)->get();
 
