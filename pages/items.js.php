@@ -93,6 +93,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             foldersList: [],
             personalSaltkeyRequired: 0,
             uploadedFileId: '',
+            tempScrollTop: 0,
         }
     );
 
@@ -329,9 +330,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // Keep the scroll position
     $(window).on("scroll", function() {
         if ($('#folders-tree-card').hasClass('hidden') === false) {
-            store.set(
-                'teampassApplication', {
-                    tempScrollTop: $(window).scrollTop(),
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    tempScrollTop: $(window).scrollTop()
                 }
             );
         }
@@ -914,7 +916,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         } else if ($('.item-details-card-menu').hasClass('hidden') === false) {
             element = '.item-details-card';
         }
-
+        
         if (debugJavascript === true) {console.log('>>> ' + element + ' -- ' + newElement);}
 
         if (element === '.item-details-card') element = '#folders-tree-card';
@@ -1117,8 +1119,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      */
     $('#form-item-folder').change(function() {
         if ($(this).val() !== null && store.get('teampass-folders') !== undefined) {
-            //if (debugJavascript === true) console.log('teampass-folders');
-            //if (debugJavascript === true) console.log(store.get('teampass-folders'))
+            if (debugJavascript === true) {
+                console.log('teampass-folders');
+                console.log(store.get('teampass-folders'))
+            }
             var folders = JSON.parse(store.get('teampass-folders'));
             $('#card-item-visibility').html(folders[$(this).val()].visibilityRoles);
             $('#card-item-minimum-complexity').html(folders[$(this).val()].complexity.text);
@@ -2078,7 +2082,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .prop('disabled', false);
                 }
             }
-
             if (debugJavascript === true) console.log('Edit for closed');
         }
 
