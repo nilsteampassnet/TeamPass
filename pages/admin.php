@@ -135,19 +135,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 
             <!-- /.col -->
             <div class="col-md-6">
-                <div class="alert bg-orange disabled" role="alert">
+                <?php
+if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
+                echo '<div class="alert bg-orange disabled" role="alert">
                     <h4><i class="fa-solid fa-exclamation-triangle mr-2"></i>Since 3.0.0.23, TASKS manager is enabled by default and is mandatory.</h4>
                     <p>Please ensure that cron job is set and enabled.<br />Open Tasks page and check status.</p>
                     <p><a href="https://documentation.teampass.net/#/manage/tasks" target="_blank"><i class="fa-solid fa-book mr-2"></i>Check documentation</a>.</p>
-                </div>
+                </div>';
+}
+?>
                 <!--
                 <div class="alert bg-lightblue disabled" role="alert">
                     <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION_FULL."</b>"; ?></p>
                     <p><i class="fa-solid fa-code-commit mr-2"></i>
                     <?php
-                        $version = file_get_contents('version.txt', false, null, 543);
-                        echo langHdl('git_commit_value')." <b>".$version.
-                            '</b><href="'.GITHUB_COMMIT_URL.$version.'" target="_blank"><i class="fa-solid fa-up-right-from-square ml-2" pointer></i></a>'; 
+                        //$version = file_get_contents('version.txt', false, null, 543);
+                        //echo langHdl('git_commit_value')." <b>".$version.
+                        //    '</b><href="'.GITHUB_COMMIT_URL.$version.'" target="_blank"><i class="fa-solid fa-up-right-from-square ml-2" pointer></i></a>'; 
                     ?></p>
                 </div>
                 -->
@@ -170,6 +174,27 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
+
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fa-solid fa-plug mr-2"></i>
+                            <?php echo langHdl('server'); ?>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <?php
+                        // Display information about server
+                        echo 
+                        '<p><i class="fa-brands fa-php mr-2"></i>PHP version: ' . phpversion().'</p>'.
+                        '<p><i class="fa-solid fa-server mr-2"></i>Server version: ' . DB::serverVersion().'</p>';
+                        ?>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+
             </div>
             <!-- /.col -->
         </div>
