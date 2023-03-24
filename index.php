@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      index.php
  * ---
  *
@@ -73,7 +73,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 // Quick major version check -> upgrade needed?
-if (isset($SETTINGS['cpassman_version']) === true && version_compare(TP_VERSION, $SETTINGS['cpassman_version']) > 0) {
+if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
     // Perform redirection
     if (headers_sent()) {
         echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
@@ -1012,7 +1012,7 @@ if (($session_validite_pw === null
             <footer class="main-footer">
                 <!-- To the right -->
                 <div class="float-right d-none d-sm-inline">
-                    <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION_FULL; ?>
+                    <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION; ?>
                 </div>
                 <!-- Default to the left -->
                 <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.

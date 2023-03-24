@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      admin.php
  * ---
  *
@@ -146,7 +146,7 @@ if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable
 ?>
                 <!--
                 <div class="alert bg-lightblue disabled" role="alert">
-                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION_FULL."</b>"; ?></p>
+                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION."</b>"; ?></p>
                     <p><i class="fa-solid fa-code-commit mr-2"></i>
                     <?php
                         //$version = file_get_contents('version.txt', false, null, 543);

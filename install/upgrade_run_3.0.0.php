@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      upgrade_run_3.0.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -105,7 +105,7 @@ $userId = $post_user_info[2];
 // Get current version
 $queryRes = mysqli_fetch_array(mysqli_query(
     $db_link,
-    "SELECT valeur FROM `".$pre."misc` WHERE `type` = 'admin' AND `intitule` = 'cpassman_version';"
+    "SELECT valeur FROM `".$pre."misc` WHERE `type` = 'admin' AND `intitule` = 'teampass_version';"
 ));
 if (mysqli_error($db_link)) {
     echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes(mysqli_error($db_link)).'"}]';
@@ -121,7 +121,7 @@ if ((int) $CurrentTPversion[0] === 3) {
 
 // Populate table MISC
 $val = array(
-    array('admin', 'cpassman_version', TP_VERSION_FULL, 1),
+    array('admin', 'teampass_version', TP_VERSION, 1),
     $TPIsBranch3 === true ? '' : array('admin', 'ldap_mode', 0, 1), // only disable if migrating from branch 2
 );
 foreach ($val as $elem) {

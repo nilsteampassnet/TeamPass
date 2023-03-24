@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -511,7 +511,7 @@ $SETTINGS = array (';
                             array('admin', 'maintenance_mode', '1'),
                             array('admin', 'enable_sts', '0'),
                             array('admin', 'encryptClientServer', '1'),
-                            array('admin', 'cpassman_version', TP_VERSION_FULL),
+                            array('admin', 'teampass_version', TP_VERSION),
                             array('admin', 'ldap_mode', '0'),
                             array('admin', 'ldap_type', '0'),
                             array('admin', 'ldap_suffix', '0'),

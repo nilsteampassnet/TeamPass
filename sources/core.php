@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      core.php
  * ---
  *
@@ -299,10 +299,11 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
         'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s_type AND intitule=%s_intitule',
         [
             'type' => 'admin',
-            'intitule' => 'cpassman_version',
+            'intitule' => 'teampass_version',
         ]
     );
-    if ($row['valeur'] !== TP_VERSION_FULL) {
+    $count = DB::count();
+    if ($count === 0 || $row['valeur'] !== TP_VERSION) {
         $SETTINGS['update_needed'] = true;
     } else {
         $SETTINGS['update_needed'] = false;

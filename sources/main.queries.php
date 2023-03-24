@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      main.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1373,7 +1373,7 @@ Tell us what happens instead
 
 **PHP version:** ' . PHP_VERSION . '
 
-**Teampass version:** ' . TP_VERSION_FULL . '
+**Teampass version:** ' . TP_VERSION . '
 
 **Teampass configuration file:**
 ```

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      install.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -140,7 +140,7 @@ define('MIN_PHP_VERSION', 7.4);
                         <h5><i class="fas fa-info-circle text-warning mr-2"></i>Welcome to Teampass installation</h5>
     
                         <p>This seems to be the 1st time Teampass will be installed on this server.<br>
-						It will proceed with installation of release <b>' . TP_VERSION_FULL . '</b>.</p>
+						It will proceed with installation of release <b>' . TP_VERSION . '</b>.</p>
                     </div>
 
                     <div class="callout callout-info col-12 mt-3">

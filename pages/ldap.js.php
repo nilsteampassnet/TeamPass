@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      ldap.js.php
  * ---
  *

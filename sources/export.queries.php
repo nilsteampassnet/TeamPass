@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      export.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -933,7 +933,7 @@ if (null !== $post_type) {
         </table></div>
         <input type="button" value="Hide all" onclick="hideAll()" />
         <div id="footer" style="text-align:center;">
-            <a href="https://teampass.net/about/" target="_blank" style="">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION_FULL . '&nbsp;' . TP_COPYRIGHT . '</a>
+            <a href="https://teampass.net/about/" target="_blank" style="">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION . '&nbsp;' . TP_COPYRIGHT . '</a>
         </div>
         <div id="enc_html" style="display:none;">' . $encrypted_text . '</div>
         </body>

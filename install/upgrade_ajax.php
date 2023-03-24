@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.1
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -954,15 +954,27 @@ if (isset($post_type)) {
             }
 
             // update with correct version
-            @mysqli_query(
-                $db_link,
-                "UPDATE `" . $pre . "misc`
-                SET `valeur` = '".TP_VERSION_FULL."'
-                WHERE type = 'admin' AND intitule = 'cpassman_version'"
-            );
+            // 1st - check if teampass_version exists
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_version';"));
+            if ((int) $data[0] === 0) {
+                // change variable name and put version
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."', `intitule` = 'teampass_version'
+                    WHERE intitule = 'cpassman_version' AND type = 'admin';"
+                );
+            } else {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."'
+                    WHERE intitule = 'teampass_version' AND type = 'admin';"
+                );
+            }
 
             // save change in config file
-            handleConfigFile('update', $SETTINGS, 'cpassman_version', TP_VERSION_FULL);
+            handleConfigFile('update', $SETTINGS, 'teampass_version', TP_VERSION);
 
 
             //<-- Add cronjob if not exist
