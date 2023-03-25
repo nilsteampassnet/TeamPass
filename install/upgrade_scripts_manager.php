@@ -38,6 +38,7 @@ $scripts_list = array(
     array('upgrade_run_3.0.0_fields.php', 'user_id'),
     array('upgrade_run_3.0.0_suggestions.php', 'user_id'),
     array('upgrade_run_3.0.0_files.php', 'user_id'),
+    array('upgrade_run_3.0.php', 'user_id'),
 );
 $param = '';
 

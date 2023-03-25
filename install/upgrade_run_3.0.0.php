@@ -84,9 +84,6 @@ if (mysqli_connect(
     exit();
 }
 
-
-
-
 // Load libraries
 require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -1945,19 +1942,8 @@ mysqli_query(
 
 //---<END 3.0.0.23
 
-// Save timestamp
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', ".time().")"
-    );
-} else {
-    mysqli_query(
-        $db_link,
-        "UPDATE `" . $pre . "misc` SET valeur = ".time()." WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"
-    );
-}
+// Close connection
+mysqli_close($db_link);
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

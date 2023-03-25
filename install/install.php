@@ -202,6 +202,8 @@ define('MIN_PHP_VERSION', 7.4);
 					<li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
 					<li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
 					<li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
+					<li>Directory "/files/" is writable&nbsp;<span id="res2_check17"></span></li>
+					<li>Directory "/upload/" is writable&nbsp;<span id="res2_check18"></span></li>
 					<li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check7"></span></li>
 					<li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check8"></span></li>
 					<li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check9"></span></li>
@@ -345,11 +347,7 @@ define('MIN_PHP_VERSION', 7.4);
 						<li>Chmod some folders and files <span id="res6_check1"></span></li>
 						<li>Create settings files <span id="res6_check2"></span></li>
 						<li>Initiate CSRF protection <span id="res6_check3"></span></li>
-						<li>Add new cron job <span id="res6_check5"></span></li>		
-						<div class="form-group">
-							<label>Teampass Administrator password</label>
-							<input type="password" class="form-control" id="admin_pwd" class="ui-widget" value=""><span id="res4_check10"></span>
-						</div
+						<li>Add new cron job <span id="res6_check5"></span></li>
 						<li>Clean temporary installation data <span id="res6_check4"></span></li>
 					</ul>
 				</div>
