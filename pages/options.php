@@ -489,65 +489,7 @@ $zones = timezone_list();
                     <!-- form start -->
                     <div class='card-body'>
 
-                        <div class='row mb-2 option' data-keywords="server setting cron job task">
-                            <div class='col-10'>
-                                <?php echo langHdl('enable_tasks_manager'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('enable_tasks_manager_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern disabled' id='enable_tasks_manager' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_manager_input' value='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-3 option' data-keywords="server setting cron job task email">
-                            <div class='col-10'>
-                                <?php echo langHdl('enable_backlog_mail'); ?>
-                                <!--<small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('enable_backlog_mail'); ?>
-                                </small>-->
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_backlog_mail' data-toggle-on='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_backlog_mail_input' value='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-5 option' data-keywords="server setting cron job task duration">
-                            <div class='col-10'>
-                                <?php echo langHdl('maximum_time_script_allowed_to_run'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('maximum_time_script_allowed_to_run_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-5 option' data-keywords="server setting cron job task number">
-                            <div class='col-10'>
-                                <?php echo langHdl('maximum_number_of_items_to_treat'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('maximum_number_of_items_to_treat_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-5 option' data-keywords="server setting cron job task duration">
-                            <div class='col-10'>
-                                <?php echo langHdl('refresh_data_every_on_screen'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('refresh_data_every_on_screen_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
-                            </div>
-                        </div>
+                        
 
                     </div>
                 </div>

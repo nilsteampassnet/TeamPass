@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.1
+ * @version   3.0.2
  * @file      core.php
  * ---
  *
@@ -309,26 +309,6 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
         $SETTINGS['update_needed'] = false;
     }
 }
-
-/*
- * Set the personal SaltKey if authorized
- */
-/*
-if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
-    && $SETTINGS['enable_personal_saltkey_cookie'] == 1
-    && isset($_SESSION['user_id']) === true
-    && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])]) === true
-) {
-    // Only defuse key
-    if (substr($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], 0, 3) === 'def') {
-        $_SESSION['user']['session_psk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
-    } else {
-        // Remove old cookie
-        unset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])]);
-        setcookie('TeamPass_PFSK_'.md5($_SESSION['user_id']), '', time() - 3600, '/'); // empty value and old timestamp
-    }
-}
-*/
 
 /* CHECK IF MAINTENANCE MODE
 * IF yes then authorize all ADMIN connections and

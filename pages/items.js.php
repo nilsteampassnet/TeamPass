@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.1
+ * @version   3.0.2
  * @file      items.js.php
  * ---
  *
@@ -2453,19 +2453,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         ?>
         init: {
             BeforeUpload: function(up, file) {
-                // #3588 - check that a label exist before starting upload
-                // We need a temporary ID at this step
-                if (store.get('teampassItem').id === '') {
-                    toastr.error(
-                        '<?php echo langHdl('provide_label'); ?>',
-                        '', {
-                            timeOut: 5000
-                        }
-                    );
-                    $('#upload-file_' + file.id).remove();
-                    return false;
-                }
-
                 toastr.info(
                     '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-2"></i><?php echo langHdl('uploading'); ?>',
                     '', {
@@ -2502,8 +2489,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // Uploader options
     uploader_attachments.bind('UploadProgress', function(up, file) {
         //console.log('uploader_attachments.bind')
-        $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' - ' + file.percent + '%');
+        $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'">- ' + file.percent + '%</span>');
         if (file.percent === 100) {
+            $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+            userUploadedFile = true;
+            userDidAChange = true;
             toastr.remove();
         }
     });
@@ -2518,20 +2508,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         );
 
         up.refresh(); // Reposition Flash/Silverlight
-    });
-    uploader_attachments.bind('FilesAdded', function(up, file) {
-        userUploadedFile = true;
-        $('#upload-file_' + file.id + '')
-            .html('<i class="fas fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + ' <?php echo langHdl('uploaded'); ?>');
-        toastr.remove();
-        toastr
-            .info(
-                '<?php echo langHdl('success'); ?>',
-                '', {
-                    timeOut: 1000
-                }
-            );
-        $('#form-item-hidden-pickFilesNumber').val(0);
     });
 
     $("#form-item-upload-pickfiles").click(function(e) {
@@ -2575,7 +2551,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     });
     uploader_attachments.init();
     uploader_attachments.bind('FilesAdded', function(up, files) {
-        if (debugJavascript === true) console.log('uploader_attachments.FilesAdded')
+        if (debugJavascript === true) {
+            console.log('uploader_attachments.FilesAdded')
+        }
         $('#form-item-upload-pickfilesList').removeClass('hidden');
         var addedFiles = '';
         $.each(files, function(i, file) {
@@ -2664,8 +2642,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 });
             }
         });
-        if (debugJavascript === true) console.log('CHANGED FIELDS');
-        if (debugJavascript === true) console.log(arrayQuery);
+        if (debugJavascript === true) {
+            console.log('CHANGED FIELDS '+userUploadedFile + ' ' + userDidAChange);
+            console.log(arrayQuery);
+        }
 
         // is user allowed to edit this item
         if (typeof store.get('teampassApplication').itemsList !== 'undefined') {
@@ -5202,7 +5182,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     PreviewImage = function(fileId) {
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('loading_image'); ?>...<i class="fa fa-circle-notch fa-spin fa-2x ml-2"></i>'
+            '<?php echo langHdl('loading_image'); ?>...<i class="fa-solid fa-circle-notch fa-spin fa-2x ml-2"></i>'
         );
 
         $.post(

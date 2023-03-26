@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.1
+ * @version   3.0.2
  * @file      items.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -3584,11 +3584,17 @@ if (is_null($inputData['type']) === false) {
                 $uniqueLoadData['path'] = $arr_arbo;
 
                 // store last folder accessed in cookie
+                $arr_cookie_options = array (
+                    'expires' => time() + TP_ONE_DAY_SECONDS * 5,
+                    'path' => '/', 
+                    'secure' => true,
+                    'httponly' => true,
+                    'samesite' => 'Lax' // None || Lax  || Strict
+                );
                 setcookie(
                     'jstree_select',
                     $inputData['id'],
-                    time() + TP_ONE_DAY_SECONDS * $SETTINGS['personal_saltkey_cookie_duration'],
-                    '/'
+                    $arr_cookie_options
                 );
 
                 // CHeck if roles have 'allow_pw_change' set to true

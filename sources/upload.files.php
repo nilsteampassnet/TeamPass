@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.1
+ * @version   3.0.2
  * @file      upload.files.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)

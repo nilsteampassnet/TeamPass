@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.1
+ * @version   3.0.2
  * @file      otv.php
  * ---
  *
