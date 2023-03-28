@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.2
+ * @version   3.0.3
  * @file      items.js.php
  * ---
  *
@@ -375,15 +375,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 .removeClass('far fa-eye')
                 .addClass('fas fa-circle-notch fa-spin text-warning');
 
-
+            // display raw password
             $('#card-item-pwd')
-                .html(
-                    '<span style="cursor:none;">' +
-                    $('#hidden-item-pwd').val()
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;') +
-                    '</span>'
-                );
+                .text($('#hidden-item-pwd').val())
+                .addClass('pointer_none');
 
             // log password is shown
             itemLog(
@@ -395,7 +390,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Autohide
             setTimeout(() => {
                 $(this).removeClass('pwd-shown');
-                $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+                $('#card-item-pwd')
+                    .html('<?php echo $var['hidden_asterisk']; ?>')
+                    .removeClass('pointer_none');
                 $('.pwd-show-spinner')
                     .removeClass('fas fa-circle-notch fa-spin text-warning')
                     .addClass('far fa-eye');
@@ -4260,7 +4257,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
                 requestRunning = true;
                 if (debugJavascript === true) {
-                    console.log("RECEIVED");
+                    console.log("RECEIVED object details");
                     console.log(data);
                 }
 

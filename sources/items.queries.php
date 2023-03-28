@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.2
+ * @version   3.0.3
  * @file      items.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -857,9 +857,9 @@ if (is_null($inputData['type']) === false) {
             if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $itemInfos = array();
-                $inputData['label'] = filter_var(($dataReceived['label']), FILTER_SANITIZE_STRING);
+                $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
-                $post_password = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
+                $post_password = $original_pw = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
                 $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
@@ -2487,18 +2487,6 @@ if (is_null($inputData['type']) === false) {
                         $dataItem['pw'],
                         $decryptedObject
                     );
-                /*} elseif ($_SESSION['user']['auth_type'] === 'ldap') {
-                    echo (string) prepareExchangedData(
-                        $SETTINGS['cpassman_dir'],
-                        array(
-                            'error' => true,
-                            'message' => langHdl('error_new_ldap_password_detected'),
-                            'show_detail_option' => 2,
-                            'error_type' => 'user_should_reencrypt_private_key',
-                        ),
-                        'encode'
-                    );
-                    break;*/
                 } else {
                     echo (string) prepareExchangedData(
                         $SETTINGS['cpassman_dir'],

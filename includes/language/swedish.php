@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.2
+ * @version   3.0.3
  * @file      swedish.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)

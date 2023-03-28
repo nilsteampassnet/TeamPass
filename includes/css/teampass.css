@@ -44,6 +44,10 @@
     cursor: pointer;
 }
 
+.pointer_none {
+    cursor: none;
+}
+
 .dragndrop {
     cursor: move;
 }
