@@ -480,20 +480,6 @@ $zones = timezone_list();
                 </div>
                 <!-- /.card -->
 
-                <!-- CRON SETTINGS -->
-                <div class='card card-primary'>
-                    <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('admin_settings_title').' - ' . langHdl('tasks_manager'); ?></h3>
-                    </div>
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    <div class='card-body'>
-
-                        
-
-                    </div>
-                </div>
-
             </div>
             <!-- /.col-md-6 -->
             <!--/.col (left) -->

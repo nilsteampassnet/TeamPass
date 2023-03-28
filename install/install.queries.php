@@ -799,7 +799,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
                             );
                         }
 
@@ -808,7 +808,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
                             );
                         }
                     } elseif ($task === 'tags') {
@@ -1405,7 +1405,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."')"
+                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1')"
                         );
                     }
 
