@@ -3234,6 +3234,7 @@ if (is_null($inputData['type']) === false) {
                 'id = %i',
                 $inputData['itemId']
             );
+
             // log
             logItems(
                 $SETTINGS,
