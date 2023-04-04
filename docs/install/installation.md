@@ -29,7 +29,7 @@ Install them by running next commands:
 
 ```
 sudo apt-get update
-sudo apt-get install php8.1-mysql php8.1-mcrypt php8.1-mbstring php8.1-fpm php8.1-common php8.1-xml php8.1-gd openssl php8.1-mysql php8.1-bcmath
+sudo apt-get install php8.2-mysql php8.2-mcrypt php8.2-mbstring php8.2-fpm php8.2-common php8.2-xml php8.2-gd openssl php8.2-mysql php8.2-bcmath php8.2-gmp
 ```
 > :bulb: **Note:**  Adapt version to your expectation
 

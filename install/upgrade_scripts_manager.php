@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      upgrade_scripts_manager.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -38,6 +38,7 @@ $scripts_list = array(
     array('upgrade_run_3.0.0_fields.php', 'user_id'),
     array('upgrade_run_3.0.0_suggestions.php', 'user_id'),
     array('upgrade_run_3.0.0_files.php', 'user_id'),
+    array('upgrade_run_3.0.php', 'user_id'),
 );
 $param = '';
 

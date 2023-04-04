@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      upgrade.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -123,7 +123,7 @@ echo '
         <div id="logo" class="lcol"><img src="../includes/images/teampass-logo2-home.png" /></div>
         <div class="lcol">
             <span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
-            <!--<span class="header-title-small"> v'.TP_VERSION_FULL.'</span>-->
+            <!--<span class="header-title-small"> v'.TP_VERSION.'</span>-->
         </div>
     <div id="content">
         <form name="install" method="post" action="">
@@ -153,7 +153,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div class="callout callout-warning col-12">
                         <h5>Information</h5>
     
-                        <p>Upgrade process is about to start. This will upgrade Teampass database to version '.TP_VERSION_FULL.'.</p>
+                        <p>Upgrade process is about to start. This will upgrade Teampass database to version '.TP_VERSION.'.</p>
                         <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a One-Time-Code for each user and send by email. It will be requested on first login. Please ensure your users have filled in their email with a valid value.</p>
                     </div>
 
@@ -465,7 +465,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             <li>Anonymize saltkey file <span id="step5_saltkeyFile"></span></li>
             <li>Generate config file <span id="step5_configFile"></span></li>
             <li>Generate CSRFP config file <span id="step5_csrfpFile"></span></li>
-            <li>Add new cron job <span id="step5_cronJob"></span></li>
+            <li>Add new cron job <span id="step5_cronJob"></span></li>	
             </ul>
         </div>';
 
@@ -547,7 +547,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px; font-size:16px;">
-            '.TP_TOOL_NAME.' '.TP_VERSION_FULL.' &#169; copyright 2009-'.date("Y").'
+            '.TP_TOOL_NAME.' '.TP_VERSION.' &#169; copyright 2009-'.date("Y").'
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>

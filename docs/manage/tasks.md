@@ -4,12 +4,7 @@
 
 > Permits to handle heavy treatment using background server jobs. 
 
-This option should be considered as a good practice and should be enabled.
-Currently implemented in case of:
-* new user creation (keys encryption step)
-* email sending (except immediate emails)
-
-Notice that when not enabled, emails are sent on page browsing which could lead to latencies for your users.
+It is by default enabled and mandatory for Teampass usage.
 
 ## Options
 
@@ -33,7 +28,10 @@ Only one entry is expected, each job has its own execution frequency.
 
 First you need to get the location to php (you can run `locate php`).
 
-Then open the crons manager (`crontab -e`)
+Notice that during installation, the server crontab is updated with the next job.
+More details may be found on how this works by reading [CrontabManager documentation](https://github.com/TiBeN/CrontabManager).
+
+Then open the crons manager with the same user as the one used by php (example: `crontab -u www-data -e`)
 and add the input permitting the job to run each 5 minutes for example.
 ``* * * * * /path/to/phpbin /path/to/Teampass/sources/scheduler.php  1>> /dev/null 2>&1``
 

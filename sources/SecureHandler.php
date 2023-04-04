@@ -148,10 +148,14 @@ class SecureHandler extends SessionHandler
             // if session cookie lifetime > 0 then add to current time
             // otherwise leave it as zero, honoring zero's special meaning
             // expire at browser close.
-            $expires     = ($cookieParam['lifetime'] > 0) ? time() + $cookieParam['lifetime'] : 0;
-            $cookieParam['expires'] = $expires;
-            unset($cookieParam['lifetime']);
-            setcookie($name, $encKey, $cookieParam);
+            $arr_cookie_options = array (
+                'expires' => ($cookieParam['lifetime'] > 0) ? time() + $cookieParam['lifetime'] : 0,
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax' // None || Lax  || Strict
+            );
+            setcookie($name, $encKey, $arr_cookie_options);
             $_COOKIE[$name] = $encKey;
         } else {
             $key = base64_decode($_COOKIE[$name]);

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -511,7 +511,7 @@ $SETTINGS = array (';
                             array('admin', 'maintenance_mode', '1'),
                             array('admin', 'enable_sts', '0'),
                             array('admin', 'encryptClientServer', '1'),
-                            array('admin', 'cpassman_version', TP_VERSION_FULL),
+                            array('admin', 'teampass_version', TP_VERSION),
                             array('admin', 'ldap_mode', '0'),
                             array('admin', 'ldap_type', '0'),
                             array('admin', 'ldap_suffix', '0'),
@@ -618,7 +618,6 @@ $SETTINGS = array (';
                             array('admin', 'duo_skey', ''),
                             array('admin', 'duo_host', ''),
                             array('admin', 'duo_failmode', 'secure'),
-                            array('admin', 'teampass_version', ''),
                             array('admin', 'roles_allowed_to_print_select', ''),
                             array('admin', 'clipboard_life_duration', '30'),
                             array('admin', 'mfa_for_roles', ''),
@@ -639,7 +638,7 @@ $SETTINGS = array (';
                             array('admin', 'ldap_username', ''),
                             array('admin', 'api_token_duration', '60'),
                             array('timestamp', 'last_folder_change', ''),
-                            array('admin', 'enable_tasks_manager', '0'),
+                            array('admin', 'enable_tasks_manager', '1'),
                             array('admin', 'task_maximum_run_time', '300'),
                             array('admin', 'tasks_manager_refreshing_period', '20'),
                             array('admin', 'maximum_number_of_items_to_treat', '100'),
@@ -789,7 +788,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1', 'none', 'none')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1', 'none', 'none', '1', '1')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . bCrypt($var['admin_pwd'], '13') . "' WHERE login = 'admin' AND id = '1'");
@@ -800,7 +799,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
                             );
                         }
 
@@ -809,7 +808,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
                             );
                         }
                     } elseif ($task === 'tags') {
@@ -1406,7 +1405,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."')"
+                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1')"
                         );
                     }
 
@@ -1473,6 +1472,14 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
                     require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
+                    // get php location
+                    exec("locate php", $phpLocation, $return);
+                    if (count($phpLocation) > 0) {
+                        $phpLocation = $phpLocation[0];
+                    } else {
+                        $phpLocation = 'php';
+                    }
+
                     // Instantiate the adapter and repository
                     try {
                         $crontabRepository = new CrontabRepository(new CrontabAdapter());
@@ -1486,7 +1493,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 ->setDayOfMonth('*')
                                 ->setMonths('*')
                                 ->setDayOfWeek('*')
-                                ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                                ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
                                 ->setComments('Teampass scheduler');
                             
                             $crontabRepository->addJob($crontabJob);

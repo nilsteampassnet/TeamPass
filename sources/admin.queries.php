@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      admin.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -139,8 +139,8 @@ switch ($post_type) {
                     $json_array = json_decode($json, true);
 
                     // About version
-                    $text .= '<li><u>' . $LANG['your_version'] . '</u> : ' . TP_VERSION_FULL;
-                    if (floatval(TP_VERSION_FULL) < floatval($json_array['info']['version'])) {
+                    $text .= '<li><u>' . $LANG['your_version'] . '</u> : ' . TP_VERSION;
+                    if (floatval(TP_VERSION) < floatval($json_array['info']['version'])) {
                         $text .= '&nbsp;&nbsp;<b>' . $LANG['please_update'] . '</b>';
                     }
                     $text .= '</li>';

@@ -120,9 +120,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
         public static function init($length = null, $action = null, $logger = null)
         {
             // Check if init has already been called.
-             if (count(self::$config) > 0) {
-                 throw new alreadyInitializedException("OWASP CSRFProtector: library was already initialized.");
-             }
+            if (count(self::$config) > 0) {
+                throw new alreadyInitializedException("OWASP CSRFProtector: library was already initialized.");
+            }
 
             // If mod_csrfp already enabled, no extra verification needed.
             if (getenv('mod_csrfp_enabled')) {
@@ -423,7 +423,8 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 time() + self::$cookieConfig->expire,
                 self::$cookieConfig->path,
                 self::$cookieConfig->domain,
-                (bool) self::$cookieConfig->secure);
+                (bool) self::$cookieConfig->secure,
+                (bool) self::$cookieConfig->httponly);
         }
 
         /*

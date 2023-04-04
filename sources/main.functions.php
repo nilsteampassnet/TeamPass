@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      main.functions.php
  * ---
  *
@@ -1247,7 +1247,7 @@ function getStatisticsData(array $SETTINGS): array
         'stat_kb' => $SETTINGS['enable_kb'],
         'stat_pf' => $SETTINGS['enable_pf_feature'],
         'stat_fav' => $SETTINGS['enable_favourites'],
-        'stat_teampassversion' => TP_VERSION_FULL,
+        'stat_teampassversion' => TP_VERSION,
         'stat_ldap' => $SETTINGS['ldap_mode'],
         'stat_agses' => $SETTINGS['agses_authentication_enabled'],
         'stat_duo' => $SETTINGS['duo'],

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      tasks.php
  * ---
  *
@@ -81,10 +81,13 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <div class="card-body">
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#settings" aria-controls="settings" aria-selected="false"><?php echo langHdl('settings'); ?></a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#jobs" aria-controls="jobs" aria-selected="true"><?php echo langHdl('tasks'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="false"><?php echo langHdl('in_progress'); ?></a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo langHdl('done'); ?></a>
@@ -93,6 +96,83 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 
                         <div class="tab-content mt-1" id="myTabContent">
+                            <!-- TAB SETTINGS -->
+                            <div class="tab-pane fade show" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                <div class="card-body">
+                                    <!--
+                                    <div class='row mb-2 option' data-keywords="server setting cron job task"></h5>
+                                        <div class='col-10'>
+                                            <?php echo langHdl('enable_tasks_manager'); ?>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('enable_tasks_manager_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <div class='toggle toggle-modern disabled' id='enable_tasks_manager' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_manager_input' value='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? '1' : '0'; ?>' />
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-envelopes-bulk mr-2"></i><?php echo langHdl('enable_backlog_mail'); ?></h5>
+                                        </div>
+                                        <div class='col-2'>
+                                            <div class='toggle toggle-modern' id='enable_backlog_mail' data-toggle-on='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_backlog_mail_input' value='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? '1' : '0'; ?>' />
+                                        </div>
+                                    </div>
+-->
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-rss mr-2"></i><?php echo langHdl('enable_tasks_log'); ?></h5>
+                                            <small class='form-text text-muted'>
+                                                <?php echo langHdl('enable_tasks_log_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <div class='toggle toggle-modern' id='enable_tasks_log' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_log']) === true && (int) $SETTINGS['enable_tasks_log'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_log_input' value='<?php echo isset($SETTINGS['enable_tasks_log']) && (int) $SETTINGS['enable_tasks_log'] === 1 ? 1 : 0; ?>' />
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo langHdl('maximum_time_script_allowed_to_run'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('maximum_time_script_allowed_to_run_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-object-group mr-2"></i><?php echo langHdl('maximum_number_of_items_to_treat'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('maximum_number_of_items_to_treat_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo langHdl('refresh_data_every_on_screen'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo langHdl('refresh_data_every_on_screen_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB JOBS -->
                             <div class="tab-pane fade show active" id="jobs" role="tabpanel" aria-labelledby="jobs-tab">
                                 <div class="card-body p-0">
 
@@ -101,7 +181,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
 
                                         <div class="">
-                                            <?php if (defined('WIP') === true && WIP === true) { 
+                                            <?php
 require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
 require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
 require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
@@ -130,20 +210,7 @@ try {
 }
 catch (Exception $e) {
     echo $e->getMessage();
-}
-} ?>
-                                        </div>
-
-                                        <div class='row mt-4 option'>
-                                            <div class='col-10'>
-                                            <h5><i class="fa-solid fa-rss mr-2"></i><?php echo langHdl('enable_tasks_log'); ?></h5>
-                                                <small class='form-text text-muted'>
-                                                    <?php echo langHdl('enable_tasks_log_tip'); ?>
-                                                </small>
-                                            </div>
-                                            <div class='col-2'>
-                                                <div class='toggle toggle-modern' id='enable_tasks_log' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_log']) === true && (int) $SETTINGS['enable_tasks_log'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_log_input' value='<?php echo isset($SETTINGS['enable_tasks_log']) && (int) $SETTINGS['enable_tasks_log'] === 1 ? 1 : 0; ?>' />
-                                            </div>
+}?>
                                         </div>
                                     </div>
 

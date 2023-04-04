@@ -9,16 +9,15 @@
  * @category  Teampass
  *
  * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2022 Nils Laumaillé
+ * @copyright 2009-2023 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
- * @version   3.0.0.23
+ * @version   3.0.3
  *
  * @see      http://www.teampass.net
  */
-define('TP_VERSION', '3.0.0');
-define('TP_VERSION_FULL', TP_VERSION.'.23');
-define("UPGRADE_MIN_DATE", "1679241264");
+define('TP_VERSION', '3.0.3');
+define("UPGRADE_MIN_DATE", "1679657348");
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -59,6 +58,7 @@ define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
 define("TEAMPASS_ROOT_PATH", __DIR__);
+define('GITHUB_COMMIT_URL', 'https://github.com/nilsteampassnet/TeamPass/commit/');
 
 // Fontawesome icons
 define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      install.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -140,7 +140,7 @@ define('MIN_PHP_VERSION', 7.4);
                         <h5><i class="fas fa-info-circle text-warning mr-2"></i>Welcome to Teampass installation</h5>
     
                         <p>This seems to be the 1st time Teampass will be installed on this server.<br>
-						It will proceed with installation of release <b>' . TP_VERSION_FULL . '</b>.</p>
+						It will proceed with installation of release <b>' . TP_VERSION . '</b>.</p>
                     </div>
 
                     <div class="callout callout-info col-12 mt-3">
@@ -202,6 +202,8 @@ define('MIN_PHP_VERSION', 7.4);
 					<li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
 					<li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
 					<li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
+					<li>Directory "/files/" is writable&nbsp;<span id="res2_check17"></span></li>
+					<li>Directory "/upload/" is writable&nbsp;<span id="res2_check18"></span></li>
 					<li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check7"></span></li>
 					<li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check8"></span></li>
 					<li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check9"></span></li>

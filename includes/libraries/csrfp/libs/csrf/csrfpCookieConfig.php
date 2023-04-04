@@ -34,6 +34,20 @@ if (!defined('__CSRF_PROTECTOR_COOKIE_CONFIG__')) {
         public $secure = false;
 
         /**
+         * Variable: $httponly
+         * httponly parameter for setcookie method
+         * @var bool
+         */
+        public $httponly = false;
+
+        /**
+         * Variable: $samesite
+         * samesite parameter for setcookie method
+         * @var string None || Lax  || Strict
+         */
+        public $samesite = false;
+
+        /**
          * Variable: $expire
          * expiry parameter in seconds from now for setcookie method, default is
          *  30 minutes
@@ -63,6 +77,14 @@ if (!defined('__CSRF_PROTECTOR_COOKIE_CONFIG__')) {
 
                 if (isset($cfg['expire']) && $cfg['expire']) {
                     $this->expire = (int)$cfg['expire'];
+                }
+
+                if (isset($cfg['httponly'])) {
+                    $this->httponly = (bool) $cfg['httponly'];
+                }
+
+                if (isset($cfg['samesite'])) {
+                    $this->samesite = (bool) $cfg['samesite'];
                 }
             }
         }

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      users.js.php
  * ---
  *
@@ -180,7 +180,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $('.infotip').tooltip();
 
             // Remove progress toast
-            $('.close-toastr-progress').closest('.toast').remove();
+            $('.toast').remove();
         },
         /*'createdRow': function( row, data, dataIndex ) {
             var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
@@ -205,7 +205,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = $.parseJSON(data);
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
+
                 $("#new_folder_role_domain").attr("disabled", "disabled");
                 if (data.folder === 'not_exists' && data.role === 'not_exists' && domain !== '') {
                     $('#form-create-special-folder').iCheck('enable');
@@ -229,7 +230,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         if ($('#warningModal-button-user-pwd').length === 0) {
             return false;
         } 
-        console.log('Closing warning dialog')
+        if (debugJavascript === true) console.log('Closing warning dialog')
         toastr.remove();
         $('#warningModal').modal('hide');
 
@@ -360,13 +361,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             key: '<?php echo $_SESSION['key']; ?>'
                         },
                         function(data) {
-                            console.log('User has been created');
+                            if (debugJavascript === true) console.log('User has been created');
 
                             // refresh table content
                             oTable.ajax.reload();
 
                             // Remove action from store
-                            console.log('Clear Store variables')
+                            if (debugJavascript === true) console.log('Clear Store variables')
                             store.update(
                                 'teampassApplication',
                                 function(teampassApplication) {
@@ -417,7 +418,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
                 if (data.error !== false) {
                     // Show error
                     toastr.remove();
@@ -464,8 +465,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.info("Réception des données :")
-                console.log(data);
+                if (debugJavascript === true)  {
+                    console.info("Réception des données :")
+                    console.log(data);
+                }
                 
                 if (data.error === true) {
                     // error
@@ -516,7 +519,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         ProcessInProgress = true;
         
         var stepText = '';
-        console.log('Performing '+step)
+        if (debugJavascript === true) console.log('Performing '+step)
 
         // Prepare progress string
         if (step === 'step0') {
@@ -572,8 +575,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 length: <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                 user_id: userId,
             }
-            console.info("Envoi des données :")
-            console.log(data);
+            if (debugJavascript === true) {
+                console.info("Envoi des données :")
+                console.log(data);
+            }
 
             // Do query
             $.post(
@@ -585,8 +590,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                    console.info("Réception des données :")
-                    console.log(data);
+                    if (debugJavascript === true) {
+                        console.info("Réception des données :")
+                        console.log(data);
+                    }
                     
                     if (data.error === true) {
                         // error
@@ -741,7 +748,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.formUserAction = 'store_user_changes',
-                        teampassApplication.formUserId = userID; // Store user ID
+                        teampassApplication.formUserId = userID; // Store user ID   
                 }
             );
 
@@ -757,7 +764,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error === false) {
                         // Prefil with user data
@@ -1024,7 +1031,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     'user_id': formUserId,
                                 };
 
-                                console.info('Prepare TASK for new user encryption keys')
+                                if (debugJavascript === true) console.info('Prepare TASK for new user encryption keys')
                                 $.post(
                                     'sources/main.queries.php', {
                                         type: 'generate_temporary_encryption_key',
@@ -1059,7 +1066,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     'user_id': formUserId,
                                 };
 
-                                console.info('Generating new encryption key')
+                                if (debugJavascript === true) console.info('Generating new encryption key')
                                 $.post(
                                     'sources/main.queries.php', {
                                         type: 'generate_temporary_encryption_key',
@@ -1168,7 +1175,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -1307,7 +1314,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -1375,7 +1382,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -1454,7 +1461,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -1491,9 +1498,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             //
         } else if ($(this).data('action') === 'refresh') {
             $('.form').addClass('hidden');
-            $('#users-list')
-                .removeClass('hidden');
-            toastr.remove();
+            $('#users-list').removeClass('hidden');
             toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             oTable.ajax.reload();
             //
@@ -1515,7 +1520,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                    console.log(data);
+                    if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
                         // Show error
@@ -1581,7 +1586,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 user_personalfolder: $("#propagate-from option:selected").data('personal-folder'),
                 user_rootfolder: $("#propagate-from option:selected").data('root-folder'),
             };
-            console.log(data);
+            if (debugJavascript === true) console.log(data);
             $.post(
                 "sources/users.queries.php", {
                     type: "update_users_rights_sharing",
@@ -1696,7 +1701,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'folderId' : -1,
                 }
 
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
                 
                 $.post(
                     'sources/roles.queries.php', {
@@ -1707,7 +1712,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     function(data) {
                         //decrypt data
                         data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                        console.log(data);
+                        if (debugJavascript === true) console.log(data);
 
                         if (data.error === true) {
                             // ERROR
@@ -1875,7 +1880,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         // Store current width and change it
         initialColumnWidth = $('#table-users thead th:eq(' + (columnId - 1) + ')').width();
         $('#table-users thead th:eq(' + (columnId - 1) + ')').width('300');
-        console.log('Width ' + initialColumnWidth)
+        if (debugJavascript === true) console.log('Width ' + initialColumnWidth)
 
         // Launch save on focus lost
         $('.save-me')
@@ -1896,7 +1901,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         item = $(this);
         field = $(this).data('field');
         columnId = tableDef[field].column;
-        console.log(columnId)
+        if (debugJavascript === true) console.log(columnId)
 
         $(this).addClass('hidden');
 
@@ -1979,7 +1984,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         $('.tmp-loader, .temp-button').remove();
 
                         // Show change
-                        console.log(change)
+                        if (debugJavascript === true) console.log(change)
                         item
                             .html(change.text())
                             .attr('data-value', change.val())
@@ -2021,7 +2026,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                console.log(data)
+                if (debugJavascript === true) console.log(data)
 
                 if (data.error === true) {
                     // ERROR
@@ -2147,7 +2152,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -2216,7 +2221,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error
@@ -2282,7 +2287,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'email': $('.selected-user').data('user-email'),
             'roles' : roles,
         };
-        console.log(data)
+        if (debugJavascript === true) console.log(data)
 
         $.post(
             'sources/users.queries.php', {
@@ -2292,7 +2297,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
                 userTemporaryCode = data.user_code;
                 constVisibleOTP = data.visible_otp;
 
@@ -2353,9 +2358,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'user_id': data.user_id,
                 'do_nothing': true,
             };
-            console.log(parameters);
 
-            console.info('Prepare TASK for new user encryption keys')
+            if (debugJavascript === true) {
+                console.log(parameters);
+                console.info('Prepare TASK for new user encryption keys')
+            }
             $.post(
                 'sources/main.queries.php', {
                     type: 'generate_temporary_encryption_key',
@@ -2467,7 +2474,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 ProcessInProgress = true;
                 
                 var stepText = '';
-                console.log('Performing '+step)
+                if (debugJavascript === true) console.log('Performing '+step)
 
                 // Prepare progress string
                 if (step === 'step0') {
@@ -2498,8 +2505,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         'user_id': userId,
                         'self_change': false,
                     }
-                    console.log("start encryption")
-                    console.log(data)
+                    if (debugJavascript === true) {
+                        console.log("start encryption")
+                        console.log(data)
+                    }
                     // Do query
                     $.post(
                         "sources/main.queries.php", {
@@ -2510,8 +2519,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            console.log(data);
-                            console.log("---")
+                            if (debugJavascript === true) {
+                                console.log(data);
+                                console.log("---")
+                            }
                             
                             if (data.error === true) {
                                 // error
@@ -2544,7 +2555,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         }
                     );
                 } else {
-                    console.log('Generation des clés terminée')
+                    if (debugJavascript === true) console.log('Generation des clés terminée')
                     // Finalizing
                     var data = {
                         'action': 'stepFinishing',
@@ -2552,7 +2563,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         'user_new_otp': userTemporaryCode,
                     }
                     //console.log("Finishing user creation from LDAP")
-                    console.log(data)
+                    if (debugJavascript === true) console.log(data)
 
                     // Do query
                     $.post(
@@ -2563,8 +2574,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            console.log(data);
-                            console.log("---");
+                            if (debugJavascript === true) {
+                                console.log(data);
+                                console.log("---");
+                            }
                             
                             // refresh the list of users in LDAP not added in Teampass
                             refreshListUsersLDAP();    
@@ -2598,7 +2611,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'id': $('.selected-user').data('user-id'),
             'auth_type': auth
         };
-        console.log(data)
+        if (debugJavascript === true) console.log(data)
 
         $.post(
             'sources/users.queries.php', {
@@ -2608,7 +2621,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.log(data);
+                if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
                     // Show error

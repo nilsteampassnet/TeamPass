@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      german.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1058,5 +1058,7 @@ return array(
     'add_new_job' => 'Add new job',
     'tasks_cron_not_running' => 'Cron job is not set. Please edit crontab with your server user (usually www-data) with command <code>crontab -u www-data -e</code>.<br>Or press the button to try its creation automatically.',
     'tasks_cron_running' => 'Cron job is correctly set',
+    'currently_using_version' => 'Current version loaded',
+    'git_commit_value' => 'Git commit value',
 
 );

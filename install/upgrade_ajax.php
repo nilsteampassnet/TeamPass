@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.0.23
+ * @version   3.0.3
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -954,15 +954,27 @@ if (isset($post_type)) {
             }
 
             // update with correct version
-            @mysqli_query(
-                $db_link,
-                "UPDATE `" . $pre . "misc`
-                SET `valeur` = '".TP_VERSION_FULL."'
-                WHERE type = 'admin' AND intitule = 'cpassman_version'"
-            );
+            // 1st - check if teampass_version exists
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_version';"));
+            if ((int) $data[0] === 0) {
+                // change variable name and put version
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."', `intitule` = 'teampass_version'
+                    WHERE intitule = 'cpassman_version' AND type = 'admin';"
+                );
+            } else {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."'
+                    WHERE intitule = 'teampass_version' AND type = 'admin';"
+                );
+            }
 
             // save change in config file
-            handleConfigFile('update', $SETTINGS, 'cpassman_version', TP_VERSION_FULL);
+            handleConfigFile('update', $SETTINGS, 'teampass_version', TP_VERSION);
 
 
             //<-- Add cronjob if not exist
@@ -970,9 +982,18 @@ if (isset($post_type)) {
             require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
             require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
+            // get php location
+            exec("locate php", $phpLocation, $return);
+            if (count($phpLocation) > 0) {
+                $phpLocation = $phpLocation[0];
+            } else {
+                $phpLocation = 'php';
+            }
+
             // Instantiate the adapter and repository
             try {
-                $crontabRepository = new CrontabRepository(new CrontabAdapter());
+                $crontabAdapter = new CrontabAdapter();
+                $crontabRepository = new CrontabRepository($crontabAdapter);
                 $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
                 if (count($results) === 0) {
                     // Add the job
@@ -983,7 +1004,7 @@ if (isset($post_type)) {
                         ->setDayOfMonth('*')
                         ->setMonths('*')
                         ->setDayOfWeek('*')
-                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                        ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
                         ->setComments('Teampass scheduler');
                     
                     $crontabRepository->addJob($crontabJob);
