@@ -58,7 +58,7 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
     //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
     session_regenerate_id(true);
 } else {
-    handleAttachmentError('No Session was found.', '');
+    handleAttachmentError('No Session was found.', 100);
 }
 
 // Prepare POST variables
@@ -454,9 +454,9 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "' . $newID . '"}');
  * Undocumented function.
  *
  * @param string $message Message
- * @param string $code    Code
+ * @param integer $code    Code
  */
 function handleAttachmentError($message, $code)
 {
-    echo '{"jsonrpc" : "2.0", "error" : {"code": ' . htmlentities((string) $code, ENT_QUOTES) . ', "message": "' . htmlentities($message, ENT_QUOTES) . '"}, "id" : "id"}';
+    echo '{"jsonrpc" : "2.0", "error" : {"code": ' . htmlentities((string) $code, ENT_QUOTES) . ', "message": "' . htmlentities((string) $message, ENT_QUOTES) . '"}, "id" : "id"}';
 }
