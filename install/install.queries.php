@@ -1493,7 +1493,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 ->setDayOfMonth('*')
                                 ->setMonths('*')
                                 ->setDayOfWeek('*')
-                                ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                                ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
                                 ->setComments('Teampass scheduler');
                             
                             $crontabRepository->addJob($crontabJob);
