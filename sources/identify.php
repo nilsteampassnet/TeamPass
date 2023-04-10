@@ -697,22 +697,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
-            $receivers = '';
-            $rows = DB::query('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
-            foreach ($rows as $record) {
-                if (empty($receivers)) {
-                    $receivers = $record['email'];
-                } else {
-                    $receivers = ',' . $record['email'];
-                }
-            }
-            // Add email to table
-            DB::insert(
-                prefixTable('emails'),
-                [
-                    'timestamp' => time(),
-                    'subject' => langHdl('email_subject_on_user_login'),
-                    'body' => str_replace(
+            $receivers = ['name' => '', 'email' => ''];
+            $val = DB::queryfirstrow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
+            if (DB::count() > 0) {
+                // Add email to table
+                prepareSendingEmail(
+                    langHdl('email_subject_on_user_login'),
+                    str_replace(
                         [
                             '#tp_user#',
                             '#tp_date#',
@@ -725,10 +716,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                         ],
                         langHdl('email_body_on_user_login')
                     ),
-                    'receivers' => $receivers,
-                    'status' => 'not_sent',
-                ]
-            );
+                    $val['email'],
+                    langHdl('administrator'),
+                    $SETTINGS
+                );
+            }
         }
 
         // Ensure Complexity levels are translated

@@ -1024,7 +1024,7 @@ return array(
     'user_keys_management' => 'Gestión de claves de usuario',
     'sending_emails' => 'Enviando correos electrónicos',
     'task_frequency' => 'Frecuencia (en minutos)',
-    'tasks_information' => 'La tarea se basa en un cron job dedicado. Para ello, es necesario añadir una nueva entrada a su crontab para ejecutar el programador de Teampass cada minuto.<br>Siguiente entrada a añadir:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Nota: por favor, adapta la ruta a php bin (en la mayoría de los casos, se puede sustituir por <code>php</code>).',
+    'tasks_information' => 'La tarea se basa en un cron job dedicado. Para ello, es necesario añadir una nueva entrada a su crontab para ejecutar el programador de Teampass cada minuto.<br>Siguiente entrada a añadir:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Nota: por favor, adapta la ruta a php bin (en la mayoría de los casos, se puede sustituir por <code>php</code>).',
     'bad_duo_mfa' => 'Código DUO erróneo',
     'creation_date' => 'Fecha de creación',
     'never' => 'Nunca',
