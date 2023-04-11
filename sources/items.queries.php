@@ -78,6 +78,12 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     );
 }
 
+// Load AntiXSS
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/ASCII.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/UTF8.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
+$antiXss = new voku\helper\AntiXSS();
+
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -195,7 +201,7 @@ if (is_null($inputData['type']) === false) {
                 // Prepare variables
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
-                $post_description = ($dataReceived['description']);
+                $post_description = $antiXss->xss_clean($dataReceived['description']);
                 $post_diffusion_list = filter_var(
                     $dataReceived['diffusion_list'],
                     FILTER_SANITIZE_STRING
@@ -898,7 +904,7 @@ if (is_null($inputData['type']) === false) {
                     $dataReceived['fields'],
                     FILTER_SANITIZE_STRING
                 ));
-                $post_description = ($dataReceived['description']);
+                $post_description = $antiXss->xss_clean($dataReceived['description']);
                 $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_STRING);
 
                 //-> DO A SET OF CHECKS

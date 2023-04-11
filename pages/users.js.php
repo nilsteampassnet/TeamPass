@@ -169,7 +169,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             }
         ],
         'preDrawCallback': function() {
-            //toastr.remove();
             toastr.info(
                 '<?php echo langHdl('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
@@ -487,7 +486,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $('#warningModal').modal('hide');
 
                     // Inform user
-                    toastr.remove();
                     toastr.success(
                         '<?php echo langHdl('done'); ?>',
                         '', {
@@ -2030,7 +2028,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 if (data.error === true) {
                     // ERROR
-                    //toastr.remove();
                     toastr.error(
                         data.message,
                         '<?php echo langHdl('caution'); ?>', {
@@ -2325,25 +2322,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         // If expected, show the OPT to the admin
         if (constVisibleOTP === true) {
-            toastr.info(
-                '<span id="user-creation-otp-toast"></span><?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
-                + '<br /><button type="button" class="btn btn-default clear close-toastr-button"><?php echo langHdl('close');?></button>',
-                '<?php echo langHdl('information'); ?>',
-                {
-                    extendedTimeOut: 0,
-                    timeOut: 0,
-                    tapToDismiss: false,
-                    newestOnTop: true,
-                    preventDuplicates: true,
-                    onHidden: (toast) => {
-                        // prevent against multiple occurances (#3305)
-                        constVisibleOTP = false;
-                    },
-                }
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo langHdl('your_attention_is_required'); ?>',
+                '<?php echo langHdl('show_encryption_code_to_admin'); ?>' +
+                '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + userTemporaryCode + '" readonly></div>',
+                '',
+                '<?php echo langHdl('close'); ?>'
             );
-            $('body').on('click', '.close-toastr-button', function () {
-                $('.close-toastr-button').closest('.toast').remove();
-            });
         }
 
         // Case where we need to encrypt new keys for the user

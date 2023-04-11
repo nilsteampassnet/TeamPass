@@ -852,7 +852,7 @@ if (null !== $post_type) {
                         ->setDayOfMonth('*')
                         ->setMonths('*')
                         ->setDayOfWeek('*')
-                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php 1>> /dev/null 2>&1')
+                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
                         ->setComments('Teampass scheduler');
                     
                     $crontabRepository->addJob($crontabJob);

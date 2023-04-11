@@ -1024,7 +1024,7 @@ return array(
     'user_keys_management' => 'Gerenciamento de chaves de usuário',
     'sending_emails' => 'Enviando e-mails',
     'task_frequency' => 'Frequência (em minutos)',
-    'tasks_information' => 'A tarefa depende de um trabalho cron dedicado. Para isso, é necessário adicionar uma nova entrada ao seu crontab para executar o agendador do TeamPass a cada minuto.<br>A entrada a seguir deve ser adicionada:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php 1>> /dev/null 2>&1</code><br><br>Nota: por favor, adapte o caminho para o executável do PHP (na maioria dos casos, ele pode ser substituído por <code>php</code>).',
+    'tasks_information' => 'A tarefa depende de um trabalho cron dedicado. Para isso, é necessário adicionar uma nova entrada ao seu crontab para executar o agendador do TeamPass a cada minuto.<br>A entrada a seguir deve ser adicionada:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Nota: por favor, adapte o caminho para o executável do PHP (na maioria dos casos, ele pode ser substituído por <code>php</code>).',
     'bad_duo_mfa' => 'Código DUO inválido',
     'creation_date' => 'Data de criação',
     'never' => 'Nunca',
