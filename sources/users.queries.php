@@ -1455,6 +1455,21 @@ if (null !== $post_type) {
             // Init post variables
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $action_to_perform_after = '';
+            
+            $adRoles = DB::query(
+                'SELECT roles_from_ad_groups
+                FROM ' . prefixTable('users') . '
+                WHERE id = '. $dataReceived['user_id']
+            )[0]['roles_from_ad_groups'];
+            $fonctions = [];
+            if (!is_null($post_groups) && !empty($adRoles)) {
+                foreach ($post_groups as $post_group) {
+                    if (!in_array($post_group, explode(';', $adRoles))) {
+                        $fonctions[] = $post_group;
+                    }
+                }
+            }
+            $post_groups = empty($fonctions) ? null : $fonctions;
 
             // Build array of update
             $changeArray = array(
