@@ -1437,9 +1437,10 @@ if (null !== $post_type) {
                 $users = DB::query(
                     'SELECT id
                     FROM ' . prefixTable('users') . '
-                    WHERE admin = 1 AND email != "" AND pw != ""'
+                    WHERE admin = 1 AND email != "" AND pw != "" AND id != %i',
+                    $post_id
                 );
-                if (DB::count() === 1) {
+                if (DB::count() === 0) {
                     echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
                         array(
@@ -1470,7 +1471,7 @@ if (null !== $post_type) {
                     }
                 }
             }
-            $post_groups = empty($fonctions) ? null : $fonctions;
+            $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
 
             // Build array of update
             $changeArray = array(
