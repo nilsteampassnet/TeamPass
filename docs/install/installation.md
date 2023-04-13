@@ -21,15 +21,16 @@ In addition to the Apache web server, the following PHP extensions are required 
 * `bcmath`
 * `iconv`
 * `gd`
-* `mysqli_fetch_all`
+* `mysql`
 * `xml`
 * `gmp`
+* `curl`
 
 Install them by running next commands:
 
 ```
 sudo apt-get update
-sudo apt-get install php8.2-mysql php8.2-mcrypt php8.2-mbstring php8.2-fpm php8.2-common php8.2-xml php8.2-gd openssl php8.2-mysql php8.2-bcmath php8.2-gmp
+sudo apt-get install php8.2-mcrypt php8.2-mbstring php8.2-fpm php8.2-common php8.2-xml php8.2-gd openssl php8.2-mysql php8.2-bcmath php8.2-gmp php8.2-curl
 ```
 > :bulb: **Note:**  Adapt version to your expectation
 
@@ -38,7 +39,7 @@ sudo apt-get install php8.2-mysql php8.2-mcrypt php8.2-mbstring php8.2-fpm php8.
 On some low ressource server, it may be required to increase `max_execution_time` to permit all installation queries to be performed.
 
 ```
-nano /etc/php8.1/apache2/php.ini
+nano /etc/php8.2/apache2/php.ini
 ```
 
 Find and adapt `max_execution_time` to 60
