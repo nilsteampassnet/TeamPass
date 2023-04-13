@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.4
+ * @version   3.0.5
  * @file      actions.js.php
  * ---
  *
