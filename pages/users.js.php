@@ -2628,22 +2628,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
     $(document)
         .on('click', '.add-user-icon', function() {
-            $(this).addClass('selected-user');
+            var thisElement = $(this);
+            $(thisElement).addClass('selected-user');
 
             showModalDialogBox(
                 '#warningModal',
                 '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo langHdl('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
                 '<div class="form-group">'+
                     '<label for="ldap-user-name"><?php echo langHdl('name'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $('.selected-user').data('user-name')+'">'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $(this).attr('data-user-name')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="ldap-user-name"><?php echo langHdl('lastname'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $('.selected-user').data('user-lastname')+'">'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="ldap-user-name"><?php echo langHdl('email'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $('.selected-user').data('user-email')+'">'+
+                    '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $(this).attr('data-user-email')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="ldap-user-roles"><?php echo langHdl('roles'); ?></label>'+
@@ -2656,7 +2657,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $(document).on('click', '#warningModalButtonAction', function() {
                 if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {
                     addUserInTeampass();
+                    $(thisElement).removeClass('selected-user');
                 }
+            });
+            $(document).on('click', '#warningModalButtonClose', function() {
+                $(thisElement).removeClass('selected-user');
             });
         })
         .on('click', '.auth-ldap', function() {

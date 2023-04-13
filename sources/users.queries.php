@@ -1456,6 +1456,7 @@ if (null !== $post_type) {
             $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $action_to_perform_after = '';
             
+            // Exclude roles from AD - PR #3635
             $adRoles = DB::query(
                 'SELECT roles_from_ad_groups
                 FROM ' . prefixTable('users') . '
