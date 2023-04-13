@@ -482,8 +482,8 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-            * User's public/private keys change
-            */
+        * User's public/private keys change
+        */
         case 'change_private_key_encryption_password'://action_key
             return changePrivateKeyEncryptionPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
@@ -494,8 +494,8 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-            * Generates a KEY with CRYPT
-            */
+        * Generates a KEY with CRYPT
+        */
         case 'generate_new_key'://action_key
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -504,6 +504,17 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             // generate key
             $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
             return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
+
+        /*
+        * Launch user keys change on his demand
+        */
+        case 'user_new_keys_generation'://action_key
+            return handleUserKeys(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
+            );
 
         /*
         * Default case

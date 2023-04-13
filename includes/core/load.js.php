@@ -131,7 +131,7 @@ if (
                             if (debugJavascript === true) console.log('User has to regenerate keys')
                             // HIde
                             $('.content-header, .content').addClass('hidden');
-                            $('#dialog-user-temporary-code-info').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+                            $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
 
                             // Show passwords inputs and form
                             $('#dialog-user-temporary-code').removeClass('hidden');
@@ -145,7 +145,7 @@ if (
 
                             // Show passwords inputs and form
                             $('#dialog-user-change-password-info')
-                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
                                 .removeClass('hidden');
                             $('#dialog-user-change-password').removeClass('hidden');
 
@@ -158,7 +158,7 @@ if (
 
                             // Show passwords inputs and form
                             $('#dialog-ldap-user-change-password-info')
-                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
                                 .removeClass('hidden');
                             $('#dialog-ldap-user-change-password').removeClass('hidden');
                             
@@ -264,7 +264,7 @@ if (
         console.log('User has to regenerate keys')
         // HIde
         $('.content-header, .content').addClass('hidden');
-        $('#dialog-user-temporary-code-info').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+        $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
 
         // Show passwords inputs and form
         $('#dialog-user-temporary-code').removeClass('hidden');
@@ -277,7 +277,7 @@ if (
         console.log('show password change')
         // HIde
         $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
-        $('#warning-text-reencryption').html('<i class="icon fas fa-info mr-2"></i>'.langHdl('ldap_password_change_warning'));
+        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i>'.langHdl('ldap_password_change_warning'));
 
         // Show passwords inputs and form
         $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
@@ -294,7 +294,7 @@ if (
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
             '<?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
             '<?php echo langHdl('see_detail'); ?>',
             '<?php echo langHdl('cancel'); ?>'
@@ -312,7 +312,7 @@ if (
         $(document).on('click', '#warningModalButtonAction', function() {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             // Action
             store.update(
@@ -334,7 +334,7 @@ if (
         $(document).on('click', '#button_do_personal_items_reencryption', function() {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0);
             
@@ -343,7 +343,7 @@ if (
                 if (step === 'psk') {
                     // Inform user
                     $("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
-                        '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+                        '... <?php echo langHdl('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
 
                     var data = {
                         'userPsk' : $('#user-current-defuse-psk').val(),
@@ -385,7 +385,7 @@ if (
                     );
                 } else {
                     // Finished
-                    $("#user-current-defuse-psk-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                    $("#user-current-defuse-psk-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
 
                     toastr.remove();
                 }
@@ -425,13 +425,13 @@ if (
 
                 // Show passwords inputs and form
                 $('#dialog-ldap-user-change-password-info')
-                    .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                    .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
                     .removeClass('hidden');
                 $('#dialog-ldap-user-change-password').removeClass('hidden');
 
                 // ----
             } else if ($(this).data('name') === 'password-change') {
-                console.log('show password change')
+                //console.log('show password change')
                 // HIde
                 $('.content-header, .content, #button_do_user_change_password').addClass('hidden');
 
@@ -439,7 +439,7 @@ if (
                 $('#button_do_user_change_password').after('<button class="btn btn-primary" id="button_do_pwds_checks"><?php echo langHdl('perform_checks'); ?></button>');
 
                 // Show passwords inputs and form
-                $('#dialog-user-change-password-progress').html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('change_your_password_info_message'); ?>');
+                $('#dialog-user-change-password-progress').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('change_your_password_info_message'); ?>');
                 $('#dialog-user-change-password').removeClass('hidden');
 
                 // Actions
@@ -477,13 +477,119 @@ if (
                         );
                     }
                 });
+                
                 // ----
             } else if ($(this).data('name') === 'profile') {
                 // Show profile page
                 document.location.href = "index.php?page=profile";
+
+                // ----
             } else if ($(this).data('name') === 'logout') {
                 // Logout directly to login form
                 window.location.href = "./includes/core/logout.php?token=<?php echo $_SESSION['key']; ?>";
+
+                // ----
+            } else if ($(this).data('name') === 'generate-new_keys') {
+                // User wants to generate new keys
+                console.log('show new keys generation');
+
+                // SHow modal
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fa-solid fa-person-digging fa-lg warning mr-2"></i><?php echo langHdl('generate_new_keys'); ?> <b>',
+                    '<div class="form-group">'+
+                        '<?php echo langHdl('generate_new_keys_info'); ?>' +
+                    '</div>' +
+                    '<div class="form-group hidden" id="encryption-otp-div">'+
+                        '<label for="encryption-otp"><?php echo langHdl('encryption_key'); ?></label>'+
+                        '<input readonly type="text" class="form-control disabled" id="encryption-otp" value="">'+
+                    '</div>',
+                    '<?php echo langHdl('perform'); ?>',
+                    '<?php echo langHdl('close'); ?>'
+                );
+                $(document).on('click', '#warningModalButtonAction', function() {
+                    // On PERFORM click
+                    // launch action
+                    $('#warningModalButtonAction')
+                        .addClass('disabled')
+                        .html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                    $('#warningModalButtonClose').addClass('disabled');
+                    var parameters = {
+                        'user_id': parseInt(store.get('teampassUser').user_id)
+                    };
+                    $.post(
+                        "sources/main.queries.php", {
+                            type: "generate_temporary_encryption_key",
+                            type_category: 'action_key',
+                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key: "<?php echo $_SESSION['key']; ?>"
+                        },
+                        function(data) {  
+                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            if (debugJavascript === true) console.log(data)
+
+                            if (data.error !== false) {
+                                // Show error
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo langHdl('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+                            } else {
+                                $("#encryption-otp").val(data.userTemporaryCode);
+                                $("#encryption-otp-div").removeClass('hidden');
+                                // update the process
+                                // add all tasks
+                                var parameters = {
+                                    'user_id': parseInt(store.get('teampassUser').user_id),
+                                    'user_pwd': data.user_pwd,
+                                    'encryption_key': data.userTemporaryCode,
+                                    'delete_existing_keys': true
+                                };
+                                $.post(
+                                    "sources/main.queries.php", {
+                                        type: "user_new_keys_generation",
+                                        type_category: 'action_key',
+                                        data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    },
+                                    function(data_next1) { 
+                                        data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                        if (debugJavascript === true) console.log(data_next1)
+
+                                        if (data_next1.error !== false) {
+                                            // Show error
+                                            toastr.remove();
+                                            toastr.error(
+                                                data_next1.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
+                                                }
+                                            );
+                                        } else {
+                                            $("#encryption-otp-div").after('<div><?php echo langHdl('generate_new_keys_end'); ?></div>');
+                                            // Show warning
+                                            $('#user_not_ready').removeClass('hidden');
+                                            // update local storage
+                                            store.update(
+                                                'teampassUser', {},
+                                                function(teampassUser) {
+                                                    teampassUser.is_ready_for_usage = 0;
+                                                }
+                                            );
+                                            $("#warningModalButtonAction").addClass('hidden');
+                                            $('#warningModalButtonClose').removeClass('disabled');
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                    );
+                });
             }
         }
     });
@@ -501,7 +607,7 @@ if (
     $('#button_save_user_psk').click(function() {
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         // Prepare data
@@ -675,10 +781,10 @@ if (
             console.log('Reencryption based upon user decision to change his auth password');
 
             // Show progress
-            $('#dialog-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+            $('#dialog-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
             
             // Disable buttons
@@ -766,10 +872,10 @@ if (
         console.log('Reencryption based upon admin decision to change user auth password');
 
         // Show progress
-        $('#dialog-admin-change-user-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-admin-change-user-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -867,7 +973,7 @@ if (
             $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
 
             // Launch action
@@ -933,10 +1039,10 @@ if (
         console.log('Reencryption based upon users temporary code');
 
         // Show progress
-        $('#dialog-user-temporary-code-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-user-temporary-code-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -1018,7 +1124,7 @@ if (
                                 $('#dialog-user-temporary-code-do').attr('disabled', 'disabled');
 
                                 // Finished
-                                $("#dialog-user-temporary-code-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                $("#dialog-user-temporary-code-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
                                 toastr.remove();
 
                                 store.update(
@@ -1055,10 +1161,10 @@ if (
         console.log('Building items keys database for new LDAP user');
 
         // Show progress
-        $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -1133,7 +1239,7 @@ if (
                                 );
 
                                 
-                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fas fa-exclamation-circle text-danger mr-3"></i><?php echo langHdl('bad_code'); ?>');
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-exclamation-circle text-danger mr-3"></i><?php echo langHdl('bad_code'); ?>');
 
                                 // Enable buttons
                                 $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
@@ -1144,7 +1250,7 @@ if (
                                 $('#dialog-ldap-user-build-keys-database-do').attr('disabled', 'disabled');
 
                                 // Finished
-                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
                                 toastr.remove();
 
                                 store.update(
@@ -1193,10 +1299,10 @@ if (
             console.log('Reencryption based upon user auth password changed in LDAP');
 
             // Show progress
-            $('#dialog-ldap-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+            $('#dialog-ldap-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
             
             // Disable buttons
@@ -1366,7 +1472,7 @@ if (
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fas fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
+            '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
             '<div class="form-group">' +
             '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
             '<input type="text" class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user']['session_duration']) === true ? (int) $_SESSION['user']['session_duration'] / 60 : 60; ?>">' +
@@ -1380,7 +1486,7 @@ if (
             // SHow user
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
 
             // Perform action
@@ -1480,7 +1586,7 @@ if (
         // Show circle-notch
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         if (window.location.href.indexOf('page=items') === -1) {
@@ -1550,11 +1656,11 @@ if (
     ) {
         console.log('USER SHAREKEYS RE-ENCRYPTION START');
 
-        $('#'+divIdDialog+'-progress').html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#'+divIdDialog+'-progress').html('<b><?php echo langHdl('clearing_old_sharekeys'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
 
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         var data = {
@@ -1628,7 +1734,7 @@ if (
             // Inform user
             $("#"+divIdDialog+'-progress').html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
-                '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+                '... <?php echo langHdl('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
 
             var data = {
                 'action': step,
@@ -1674,13 +1780,13 @@ if (
                 $('#'+divIdDialog+'-close').removeAttr('disabled');
 
                 // Finished
-                $("#"+divIdDialog+'-progress').html('<i class="fas fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                $("#"+divIdDialog+'-progress').html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
                 toastr.remove();
 
                 // Unlog if same user
                 if (userId === <?php echo $_SESSION['user_id']; ?>) {
                     toastr.success(
-                        '<?php echo langHdl('logout_on_going'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                        '<?php echo langHdl('logout_on_going'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>',
                         '', {
                             timeOut: 4000
                         }
@@ -1689,8 +1795,8 @@ if (
                     window.location.href = "./includes/core/logout.php?token=<?php echo $_SESSION['key']; ?>"
                 } else if (store.get('teampassUser').admin_user_password) {
                     // now select if sending by email
-                    $('#dialog-admin-change-user-password-info').html('<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?><br><br>'+
-                    '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
+                    $('#dialog-admin-change-user-password-info').html('<i class="fa-solid fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?><br><br>'+
+                    '<i class="fa-solid fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
                     '<div class="row">'+
                         '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2 temp-button"  data-action="show-user-pwd"><?php echo langHdl('show_user_password'); ?></button></div>'+
                         '<div class="col-lg-2"><input class="form-control form-item-control" type="hidden" id="temp-user-pwd" value="'+store.get('teampassUser').admin_user_password+'"></div>'+

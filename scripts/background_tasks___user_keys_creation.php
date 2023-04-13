@@ -173,7 +173,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
                 (bool) false,
                 (string) $args['step'],
                 (int) $args['index'],
-                (int) $args['nb'],
+                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
                 $SETTINGS,
                 $ProcessArguments
             );
@@ -188,7 +188,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
                     json_encode([
                         "step" => $taskStatus['new_action'],
                         "index" => $taskStatus['new_index'],
-                        "nb" => $args['nb'],
+                        "nb" => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
                     ]),
                     'is_in_progress' => $taskStatus['new_action'] !== $args['step'] ? -1 : 1,
                     'finished_at' => $taskStatus['new_action'] !== $args['step'] ? time() : NULL,

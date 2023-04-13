@@ -270,7 +270,7 @@ if (($session_validite_pw === null
                 <!-- Left navbar links -->
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+                        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa-solid fa-bars"></i></a>
                     </li>
                     <?php
                         if ($get['page'] === 'items') {
@@ -310,25 +310,28 @@ if (($session_validite_pw === null
                                     <i class="far fa-clock fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="profile">
-                                    <i class="fas fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
+                                    <i class="fa-solid fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
                                 </a>
                                 <?php
                                     if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="password-change">
-                                        <i class="fas fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
+                                        <i class="fa-solid fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
                                     </a>
                                 <?php
                                     } elseif ($session_auth_type === 'ldap') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="sync-new-ldap-password">
-                                        <i class="fas fa-key fa-fw mr-2"></i><?php echo langHdl('sync_new_ldap_password'); ?>
+                                        <i class="fa-solid fa-key fa-fw mr-2"></i><?php echo langHdl('sync_new_ldap_password'); ?>
                                     </a>
                                 <?php
                                     } ?>
+                                <a class="dropdown-item user-menu" href="#" data-name="generate-new_keys">
+                                    <i class="fa-solid fa-mask fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
+                                </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
-                                    <i class="fas fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
+                                    <i class="fa-solid fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
                                 </a>
                             </div>
                         </div>
@@ -337,7 +340,7 @@ if (($session_validite_pw === null
                         <span class="align-middle infotip ml-2 text-info" title="<?php echo langHdl('index_expiration_in'); ?>" id="countdown"></span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fas fa-th-large"></i></a>
+                        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fa-solid fa-th-large"></i></a>
                     </li>
                 </ul>
             </nav>
@@ -362,7 +365,7 @@ if (($session_validite_pw === null
                                     echo '
                     <li class="nav-item">
                         <a href="#" data-name="items" class="nav-link', $get['page'] === 'items' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-key"></i>
+                        <i class="nav-icon fa-solid fa-key"></i>
                         <p>
                             ' . langHdl('pw') . '
                         </p>
@@ -375,7 +378,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-file-import"></i>
+                        <i class="nav-icon fa-solid fa-file-import"></i>
                         <p>
                             ' . langHdl('import') . '
                         </p>
@@ -396,7 +399,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-file-export"></i>
+                        <i class="nav-icon fa-solid fa-file-export"></i>
                         <p>
                             ' . langHdl('export') . '
                         </p>
@@ -410,7 +413,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="offline" class="nav-link', $get['page'] === 'offline' ? ' active' : '' ,'">
-                        <i class="nav-icon fas fa-plug"></i>
+                        <i class="nav-icon fa-solid fa-plug"></i>
                         <p>
                             '.langHdl('offline').'
                         </p>
@@ -423,7 +426,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="search" class="nav-link', $get['page'] === 'search' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-search"></i>
+                        <i class="nav-icon fa-solid fa-search"></i>
                         <p>
                             ' . langHdl('find') . '
                         </p>
@@ -439,7 +442,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
-                        <i class="nav-icon fas fa-star"></i>
+                        <i class="nav-icon fa-solid fa-star"></i>
                         <p>
                             ' . langHdl('favorites') . '
                         </p>
@@ -453,7 +456,7 @@ if (($session_validite_pw === null
             echo '
                         <li class="nav-item">
                             <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '' ,'">
-                            <i class="nav-icon fas fa-map-signs"></i>
+                            <i class="nav-icon fa-solid fa-map-signs"></i>
                             <p>
     '.langHdl('kb_menu').'
                             </p>
@@ -469,7 +472,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="suggestion" class="nav-link', $get['page'] === 'suggestion' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-lightbulb"></i>
+                        <i class="nav-icon fa-solid fa-lightbulb"></i>
                         <p>
                             ' . langHdl('suggestion_menu') . '
                         </p>
@@ -482,7 +485,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="admin" class="nav-link', $get['page'] === 'admin' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-info"></i>
+                        <i class="nav-icon fa-solid fa-info"></i>
                         <p>
                             ' . langHdl('admin_main') . '
                         </p>
@@ -490,64 +493,64 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item has-treeview', $menuAdmin === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-wrench"></i>
+                            <i class="nav-icon fa-solid fa-wrench"></i>
                             <p>
                                 ' . langHdl('admin_settings') . '
-                                <i class="fas fa-angle-left right"></i>
+                                <i class="fa-solid fa-angle-left right"></i>
                             </p>
                         </a>
                         <ul class="nav-item nav-treeview">
                             <li class="nav-item">
                                 <a href="#" data-name="options" class="nav-link', $get['page'] === 'options' ? ' active' : '', '">
-                                    <i class="fas fa-check-double nav-icon"></i>
+                                    <i class="fa-solid fa-check-double nav-icon"></i>
                                     <p>' . langHdl('options') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="2fa" class="nav-link', $get['page'] === '2fa' ? ' active' : '', '">
-                                    <i class="fas fa-qrcode nav-icon"></i>
+                                    <i class="fa-solid fa-qrcode nav-icon"></i>
                                     <p>' . langHdl('mfa_short') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="api" class="nav-link', $get['page'] === 'api' ? ' active' : '', '">
-                                    <i class="fas fa-cubes nav-icon"></i>
+                                    <i class="fa-solid fa-cubes nav-icon"></i>
                                     <p>' . langHdl('api') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="backups" class="nav-link', $get['page'] === 'backups' ? ' active' : '', '">
-                                    <i class="fas fa-database nav-icon"></i>
+                                    <i class="fa-solid fa-database nav-icon"></i>
                                     <p>' . langHdl('backups') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="emails" class="nav-link', $get['page'] === 'emails' ? ' active' : '', '">
-                                    <i class="fas fa-envelope nav-icon"></i>
+                                    <i class="fa-solid fa-envelope nav-icon"></i>
                                     <p>' . langHdl('emails') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="fields" class="nav-link', $get['page'] === 'fields' ? ' active' : '', '">
-                                    <i class="fas fa-keyboard nav-icon"></i>
+                                    <i class="fa-solid fa-keyboard nav-icon"></i>
                                     <p>' . langHdl('fields') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="ldap" class="nav-link', $get['page'] === 'ldap' ? ' active' : '', '">
-                                    <i class="fas fa-id-card nav-icon"></i>
+                                    <i class="fa-solid fa-id-card nav-icon"></i>
                                     <p>' . langHdl('ldap') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
-                                    <i class="fas fa-file-upload nav-icon"></i>
+                                    <i class="fa-solid fa-file-upload nav-icon"></i>
                                     <p>' . langHdl('uploads') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
-                                    <i class="fas fa-chart-bar nav-icon"></i>
+                                    <i class="fa-solid fa-chart-bar nav-icon"></i>
                                     <p>' . langHdl('statistics') . '</p>
                                 </a>
                             </li>
@@ -558,7 +561,7 @@ if (($session_validite_pw === null
                         echo '
                     <li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
-                        <i class="fas fa-tasks nav-icon"></i>
+                        <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . langHdl('tasks') . '</p>
                         </a>
                     </li>';
@@ -566,7 +569,7 @@ if (($session_validite_pw === null
                     echo '
                     <li class="nav-item">
                         <a href="#" data-name="actions" class="nav-link', $get['page'] === 'actions' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-cogs"></i>
+                        <i class="nav-icon fa-solid fa-cogs"></i>
                         <p>
                             ' . langHdl('actions') . '
                         </p>
@@ -582,7 +585,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-folder-open"></i>
+                        <i class="nav-icon fa-solid fa-folder-open"></i>
                         <p>
                             ' . langHdl('folders') . '
                         </p>
@@ -590,7 +593,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="roles" class="nav-link', $get['page'] === 'roles' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-graduation-cap"></i>
+                        <i class="nav-icon fa-solid fa-graduation-cap"></i>
                         <p>
                             ' . langHdl('roles') . '
                         </p>
@@ -598,7 +601,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="users" class="nav-link', $get['page'] === 'users' ? ' active' : '', '">
-                        <i class="nav-icon fas fa-users"></i>
+                        <i class="nav-icon fa-solid fa-users"></i>
                         <p>
                             ' . langHdl('users') . '
                         </p>
@@ -606,8 +609,8 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                        <i class="nav-icon fas fa-cubes"></i>
-                        <p>' . langHdl('admin_views') . '<i class="fas fa-angle-left right"></i></p>
+                        <i class="nav-icon fa-solid fa-cubes"></i>
+                        <p>' . langHdl('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
@@ -618,19 +621,19 @@ if (($session_validite_pw === null
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
-                                <i class="fas fa-trash-alt nav-icon"></i>
+                                <i class="fa-solid fa-trash-alt nav-icon"></i>
                                 <p>' . langHdl('deletion') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
-                                <i class="fas fa-history nav-icon"></i>
+                                <i class="fa-solid fa-history nav-icon"></i>
                                 <p>' . langHdl('logs') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
-                                <i class="fas fa-database nav-icon"></i>
+                                <i class="fa-solid fa-database nav-icon"></i>
                                 <p>' . langHdl('database') . '</p>
                                 </a>
                             </li>
@@ -642,13 +645,13 @@ if (($session_validite_pw === null
                     <!-- /.sidebar-menu -->
                 <div class="menu-footer">
                     <div class="" id="sidebar-footer">
-                        <i class="fas fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
+                        <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
                             date($SETTINGS['date_format'], (int) $server['request_time']) . ' - ' .
                             date($SETTINGS['time_format'], (int) $server['request_time']); ?>"></i>
-                        <i class="fas fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . langHdl('users_online'); ?>"></i>
-                        <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?>"></i></a>
+                        <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . langHdl('users_online'); ?>"></i>
+                        <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?>"></i></a>
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
-                        <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
+                        <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
                     </div>
                 </div>
                 </div>
@@ -662,7 +665,7 @@ if (($session_validite_pw === null
                 <div class="card card-danger m-2 hidden" id="dialog-bug-report">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bug mr-2"></i>
+                            <i class="fa-solid fa-bug mr-2"></i>
                             <?php echo langHdl('defect_report'); ?>
                         </h3>
                     </div>
@@ -670,7 +673,7 @@ if (($session_validite_pw === null
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info">
-                                    <i class="icon fas fa-info mr-2"></i>
+                                    <i class="icon fa-solid fa-info mr-2"></i>
                                     <?php echo langHdl('bug_report_to_github'); ?>
                                 </div>
                                 <textarea class="form-control" style="min-height:300px;" id="dialog-bug-report-text" placeholder="<?php echo langHdl('please_wait_while_loading'); ?>"></textarea>
@@ -690,7 +693,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 hidden" id="dialog-user-change-password">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -739,7 +742,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 hidden" id="dialog-ldap-user-change-password">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -778,7 +781,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 hidden" id="dialog-admin-change-user-password">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -807,7 +810,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 hidden" id="dialog-user-temporary-code">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -846,7 +849,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 mt-3 hidden" id="dialog-encryption-keys">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -854,7 +857,7 @@ if (($session_validite_pw === null
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-reencryption">
-                                    <i class="icon fas fa-info mr-2"></i>
+                                    <i class="icon fa-solid fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
                                 </div>
                             </div>
@@ -873,7 +876,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 mt-3 hidden" id="dialog-ldap-user-build-keys-database">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -881,7 +884,7 @@ if (($session_validite_pw === null
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-reencryption">
-                                    <i class="icon fas fa-info mr-2"></i>
+                                    <i class="icon fa-solid fa-info mr-2"></i>
                                     <?php echo langHdl('help_for_launching_items_encryption'); ?>
                                 </div>
 
@@ -910,7 +913,7 @@ if (($session_validite_pw === null
                 <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-bullhorn mr-2"></i>
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
                             <?php echo langHdl('your_attention_is_required'); ?>
                         </h3>
                     </div>
@@ -918,7 +921,7 @@ if (($session_validite_pw === null
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-changing-password">
-                                    <i class="icon fas fa-info mr-2"></i>
+                                    <i class="icon fa-solid fa-info mr-2"></i>
                                     <?php echo langHdl('objects_encryption_explanation'); ?>
                                 </div>
                                 <div class="input-group mb-3">

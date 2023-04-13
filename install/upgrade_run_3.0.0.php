@@ -879,10 +879,17 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS CACHE ON ' . $pre . 'cache_tree (increment_id, user_id)'
+// Add the Primary INDEX CACHE to the cache_tree table
+$res = checkIndexExist(
+    $pre . 'cache_tree',
+    'CACHE',
+    "ADD KEY `CACHE` (`increment_id`, `user_id`)"
 );
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX CACHE to the cache_tree table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 mysqli_query(
     $db_link,
@@ -1639,22 +1646,53 @@ try {
 }
 
 // Add indexes
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS `OBJECT` ON ' . $pre . 'sharekeys_items (object_id)'
+// Add the Primary INDEX OBJECT to the sharekeys_items table
+$res = checkIndexExist(
+    $pre . 'sharekeys_items',
+    'OBJECT',
+    "ADD KEY `OBJECT` (`object_id`)"
 );
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'sharekeys_items (user_id)'
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX OBJECT to the sharekeys_items table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add the Primary INDEX USER to the sharekeys_items table
+$res = checkIndexExist(
+    $pre . 'sharekeys_items',
+    'USER',
+    "ADD KEY `USER` (`user_id`)"
 );
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS `OBJECT` ON ' . $pre . 'sharekeys_logs (object_id)'
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX USER to the sharekeys_items table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add the Primary INDEX OBJECT to the sharekeys_logs table
+$res = checkIndexExist(
+    $pre . 'sharekeys_logs',
+    'OBJECT',
+    "ADD KEY `OBJECT` (`object_id`)"
 );
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'sharekeys_logs (user_id)'
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX OBJECT to the sharekeys_logs table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add the Primary INDEX USER to the sharekeys_logs table
+$res = checkIndexExist(
+    $pre . 'sharekeys_logs',
+    'USER',
+    "ADD KEY `USER` (`user_id`)"
 );
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX USER to the sharekeys_logs table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // Add field nb_items_in_folder to NESTED_TREE table
 $res = addColumnIfNotExist(
@@ -1731,10 +1769,17 @@ $res = addColumnIfNotExist(
     "INT(12) DEFAULT NULL"
 );
 
-mysqli_query(
-    $db_link,
-    'CREATE INDEX IF NOT EXISTS USER ON ' . $pre . 'api (user_id)'
+// Add the Primary INDEX USER to the api table
+$res = checkIndexExist(
+    $pre . 'api',
+    'USER',
+    "ADD KEY `USER` (`user_id`)"
 );
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX USER to the api table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 try {
     mysqli_query(

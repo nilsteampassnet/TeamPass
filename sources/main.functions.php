@@ -3166,11 +3166,11 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
  *
  * @return bool
  */
-function deleteUserObjetsKeys(int $userId, array $SETTINGS): bool
+function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once __DIR__. '/../includes/config/settings.php';
+    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -3894,4 +3894,169 @@ function upgradeRequired(): bool
     }
 
     return false;
+}
+
+/**
+ * Permits to change the user keys on his demand
+ *
+ * @param integer $userId
+ * @param string $passwordClear
+ * @param string $encryptionKey
+ * @param boolean $deleteExistingKeys
+ * @return boolean
+ */
+function handleUserKeys(
+    int $userId,
+    string $passwordClear,
+    string $encryptionKey = '',
+    bool $deleteExistingKeys = false
+): string
+{
+
+    // prepapre background tasks for item keys generation        
+    $val = DB::queryFirstRow(
+        'SELECT pw, public_key, private_key
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        TP_USER_ID
+    );
+    if (DB::count() > 0) {
+        // Create process
+        DB::insert(
+            prefixTable('processes'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'create_user_keys',
+                'arguments' => json_encode([
+                    'new_user_id' => (int) $userId,
+                    'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
+                    'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
+                    'owner_id' => (int) TP_USER_ID,
+                    'creator_pwd' => $val['pw'],
+                ]),
+                'updated_at' => '',
+                'finished_at' => '',
+                'output' => '',
+            )
+        );
+        $processId = DB::insertId();
+
+        // Delete existing keys
+        if ($deleteExistingKeys === true) {
+            deleteUserObjetsKeys(
+                (int) $userId,
+            );
+        }
+
+        // Create tasks
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step0',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step1',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step2',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step3',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step4',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step5',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'step6',
+                    'index' => 0,
+                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                ]),
+            )
+        );
+
+        // update user's new status
+        DB::update(
+            prefixTable('users'),
+            [
+                'is_ready_for_usage' => 0,
+            ],
+            'id=%i',
+            $userId
+        );
+    }
+
+    return prepareExchangedData(
+        __DIR__.'/..',
+        array(
+            'error' => false,
+            'message' => '',
+        ),
+        'encode'
+    );
 }
