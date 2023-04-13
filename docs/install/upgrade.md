@@ -50,7 +50,7 @@ git pull
 ```
 ./includes/config/settings.php
 ./includes/config/tp.config.php
-./includes/librairies/csrfp/libs/csrfp.config.php
+./includes/libraries/csrfp/libs/csrfp.config.php
 ./includes/avatars/*
 ./files/*
 ./upload/*
@@ -58,9 +58,9 @@ git pull
 * Ensure that folders and files have correct rights. Next elements need to be writable:
   ```
 ./includes/config/
-./includes/librairies/csrfp/libs/
-./includes/librairies/csrfp/js/
-./includes/librairies/csrfp/log/
+./includes/libraries/csrfp/libs/
+./includes/libraries/csrfp/js/
+./includes/libraries/csrfp/log/
 ./includes/avatars/
 ./files/
 ./upload/
