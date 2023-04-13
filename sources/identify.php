@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.4
  * @file      identify.php
  * ---
  *
@@ -697,7 +697,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
-            $receivers = ['name' => '', 'email' => ''];
             $val = DB::queryfirstrow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
             if (DB::count() > 0) {
                 // Add email to table

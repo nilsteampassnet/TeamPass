@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.4
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1225,6 +1225,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_logs` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(20) NOT NULL,
                             `job` varchar(50) NOT NULL,
                             `status` varchar(10) NOT NULL,
