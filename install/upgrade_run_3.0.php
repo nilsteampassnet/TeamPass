@@ -97,6 +97,23 @@ mysqli_query(
 //---<END 3.0.1
 
 
+//--->BEGIN 3.0.5
+
+// Add the INDEX process_id_idx to the processes_tasks table
+$res = checkIndexExist(
+    $pre . 'processes_tasks',
+    'process_id_idx',
+    "ADD KEY `process_id_idx` (`process_id`)"
+);
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX process_id_idx to the processes_tasks table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+//---<END 3.0.5
+
+
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
 if (intval($tmp) === 0) {

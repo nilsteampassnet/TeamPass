@@ -203,8 +203,8 @@ if (isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] !==
 // CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
 if ((isset($get['session']) === true
         && $get['session'] === 'expired')
-    || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) !== null
-        && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired')
+    || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null
+        && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired')
 ) {
     // Clear User tempo key
     if (isset($_SESSION['user_id']) === true) {

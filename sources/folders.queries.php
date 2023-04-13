@@ -74,9 +74,9 @@ $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare post variables
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
@@ -307,15 +307,15 @@ if (null !== $post_type) {
                 $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
             // prepare variables
-            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
+            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : -1;
             $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
             $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
-            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
-            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
+            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Init
             $error = false;
@@ -523,20 +523,19 @@ if (null !== $post_type) {
                 $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
             // prepare variables
-            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
+            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_parent_id = isset($dataReceived['parentId']) === true ? filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_STRING);
-            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_STRING);
-            //$post_access_rights_strategy = filter_var($dataReceived['access_rights_strategy'], FILTER_SANITIZE_STRING);
+            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Init
             $error = false;
             $newId = $errorMessage = '';
-            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_STRING) : 'W';
+            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
 
             // check if title is numeric
             if (is_numeric($post_title) === true) {
@@ -892,7 +891,7 @@ if (null !== $post_type) {
             // prepare variables
             $post_folders = filter_var_array(
                 $dataReceived['selectedFolders'],
-                FILTER_SANITIZE_STRING
+                FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
 
             //decrypt and retreive data in JSON format
@@ -1069,7 +1068,7 @@ if (null !== $post_type) {
             // Init post variables
             $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_STRING);
+            $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             //Load Tree
             $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');

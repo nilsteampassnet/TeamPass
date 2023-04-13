@@ -110,7 +110,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
 // Load Core library
 require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
-$post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STRING);
+$post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 // Prepare superGlobal variables
 $session_user_language = $superGlobal->get('user_language', 'SESSION', 'user');
 $session_user_id = $superGlobal->get('user_id', 'SESSION');

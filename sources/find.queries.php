@@ -146,7 +146,7 @@ if (isset($_GET['order']) === true) {
     $sOrder = 'ORDER BY  ';
     if ($_GET['order'][0]['column'] >= 0) {
         $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
-                . filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING) . ', ';
+                . filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . ', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -161,9 +161,9 @@ if (isset($_GET['order']) === true) {
 $search_criteria = '';
 if (isset($_GET['search']) === true) {
     if (empty($_GET['search']['value']) === false) {
-        $search_criteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING);
+        $search_criteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     } elseif (empty($_GET['search']) === false) {
-        $search_criteria = filter_var($_GET['search'], FILTER_SANITIZE_STRING);
+        $search_criteria = filter_var($_GET['search'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 }
 
@@ -310,8 +310,8 @@ if (isset($_GET['type']) === false) {
         }
 
         // Manage the restricted_to variable
-        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING) !== null) {
-            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
+        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null) {
+            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         } else {
             $restrictedTo = '';
         }
@@ -451,8 +451,8 @@ if (isset($_GET['type']) === false) {
             }
         }
         // Manage the restricted_to variable
-        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING) !== null) {
-            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
+        if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null) {
+            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         } else {
             $restrictedTo = '';
         }
@@ -648,10 +648,10 @@ if (isset($_GET['type']) === false) {
     }
 
     $returnValues = [
-        'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_STRING),
+        'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
         'message' => filter_var(
             str_replace('%X%', (string) $iTotal, langHdl('find_message')),
-            FILTER_SANITIZE_STRING
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
         ),
         'total' => (int) $iTotal,
         'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,

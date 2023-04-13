@@ -2162,14 +2162,14 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
             }
 
             if (stristr($line, "'" . $field . "' => '")) {
-                $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_STRING) . "',\n";
+                $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "',\n";
                 $bFound = true;
                 break;
             }
             ++$inc;
         }
         if ($bFound === false) {
-            $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_STRING) . "',\n);\n";
+            $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "',\n);\n";
         }
     }
 
@@ -3078,7 +3078,7 @@ function isBase64(string $str): bool
 function filterString(string $field)
 {
     // Sanitize string
-    $field = filter_var(trim($field), FILTER_SANITIZE_STRING);
+    $field = filter_var(trim($field), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     if (empty($field) === false) {
         // Load AntiXSS
         include_once __DIR__.'/../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';

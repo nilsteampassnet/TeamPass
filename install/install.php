@@ -42,12 +42,12 @@ define('MIN_PHP_VERSION', 7.4);
 	<?php
 	// define root path
 	$abs_path = rtrim(
-		filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
+		filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
 		'/'
 	) . substr(
-		filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
+		filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
 		0,
-		strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
+		strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) - 20
 	);
 	if (isset($_SERVER['HTTPS'])) {
 		$protocol = 'https://';
@@ -57,41 +57,41 @@ define('MIN_PHP_VERSION', 7.4);
 
 
 	$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
-	$post_db_host = filter_input(INPUT_POST, 'db_host', FILTER_SANITIZE_STRING);
+	$post_db_host = filter_input(INPUT_POST, 'db_host', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_host) === true) {
-		$post_db_host = filter_input(INPUT_POST, 'hid_db_host', FILTER_SANITIZE_STRING);
+		$post_db_host = filter_input(INPUT_POST, 'hid_db_host', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_db_login = filter_input(INPUT_POST, 'db_login', FILTER_SANITIZE_STRING);
+	$post_db_login = filter_input(INPUT_POST, 'db_login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_login) === true) {
-		$post_db_login = filter_input(INPUT_POST, 'hid_db_login', FILTER_SANITIZE_STRING);
+		$post_db_login = filter_input(INPUT_POST, 'hid_db_login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_db_pwd = filter_input(INPUT_POST, 'db_pwd', FILTER_SANITIZE_STRING);
+	$post_db_pwd = filter_input(INPUT_POST, 'db_pwd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_pwd) === true) {
-		$post_db_pwd = filter_input(INPUT_POST, 'hid_db_pwd', FILTER_SANITIZE_STRING);
+		$post_db_pwd = filter_input(INPUT_POST, 'hid_db_pwd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_db_port = filter_input(INPUT_POST, 'db_port', FILTER_SANITIZE_STRING);
+	$post_db_port = filter_input(INPUT_POST, 'db_port', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_port) === true) {
-		$post_db_port = filter_input(INPUT_POST, 'hid_db_port', FILTER_SANITIZE_STRING);
+		$post_db_port = filter_input(INPUT_POST, 'hid_db_port', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_db_bdd = filter_input(INPUT_POST, 'db_bdd', FILTER_SANITIZE_STRING);
+	$post_db_bdd = filter_input(INPUT_POST, 'db_bdd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_bdd) === true) {
-		$post_db_bdd = filter_input(INPUT_POST, 'hid_db_bdd', FILTER_SANITIZE_STRING);
+		$post_db_bdd = filter_input(INPUT_POST, 'hid_db_bdd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_db_pre = filter_input(INPUT_POST, 'db_pre', FILTER_SANITIZE_STRING);
+	$post_db_pre = filter_input(INPUT_POST, 'db_pre', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_db_pre) === true) {
-		$post_db_pre = filter_input(INPUT_POST, 'hid_db_pre', FILTER_SANITIZE_STRING);
+		$post_db_pre = filter_input(INPUT_POST, 'hid_db_pre', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_absolute_path = filter_input(INPUT_POST, 'absolute_path', FILTER_SANITIZE_STRING);
+	$post_absolute_path = filter_input(INPUT_POST, 'absolute_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_absolute_path) === true) {
-		$post_absolute_path = filter_input(INPUT_POST, 'hid_absolute_path', FILTER_SANITIZE_STRING);
+		$post_absolute_path = filter_input(INPUT_POST, 'hid_absolute_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
+	$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_url_path) === true) {
-		$post_url_path = filter_input(INPUT_POST, 'hid_url_path', FILTER_SANITIZE_STRING);
+		$post_url_path = filter_input(INPUT_POST, 'hid_url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
-	$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
+	$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	if (empty($post_sk_path) === true) {
-		$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_STRING);
+		$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
 
 	// Get some data

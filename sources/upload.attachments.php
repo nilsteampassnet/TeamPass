@@ -51,22 +51,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) !== tr
 }
 
 //check for session
-if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
-    //session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+    //session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
     session_regenerate_id(true);
 } elseif (isset($_GET['PHPSESSID'])) {
-    //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
+    //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
     session_regenerate_id(true);
 } else {
     handleAttachmentError('No Session was found.', 100);
 }
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
-$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
+$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
 $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
-$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
+$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
 $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
 $post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);

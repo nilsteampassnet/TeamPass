@@ -102,7 +102,7 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
     if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['column'])
     ) {
         $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-        .filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_STRING).', ';
+        .filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -122,14 +122,14 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== 'None'
 ) {
     $sWhere = ' WHERE ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
     $sWhere = ' WHERE ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' ";
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
 }
 
 // enlarge the query in case of Manager
@@ -197,9 +197,9 @@ foreach ($rows as $record) {
             if (count($rolesList) > 0) {
                 foreach ($rolesList as $fonction) {
                     if (is_null($record['fonction_id']) === false && in_array($fonction['id'], explode(';', $record['fonction_id']))) {
-                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'<br />';
+                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)).'<br />';
                     } else if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && is_null($record['roles_from_ad_groups']) === false && in_array($fonction['id'], explode(';', $record['roles_from_ad_groups']))) {
-                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i><i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_STRING)).'</i><i class="fa-solid fa-rectangle-ad ml-1 infotip" title="'.langHdl('ad_group').'"></i><br />';
+                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i><i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)).'</i><i class="fa-solid fa-rectangle-ad ml-1 infotip" title="'.langHdl('ad_group').'"></i><br />';
                     }
                 }
             }

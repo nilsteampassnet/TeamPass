@@ -83,9 +83,9 @@ $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare post variables
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -202,7 +202,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_selectedFolders = filter_var_array($dataReceived['selectedFolders'], FILTER_SANITIZE_NUMBER_INT);
-            $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_STRING);
+            $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
             $post_propagate = filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -332,9 +332,9 @@ if (null !== $post_type) {
             // Prepare variables
             $post_folderId = filter_var($dataReceived['folderId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_allowEdit = filter_var($dataReceived['allowEdit'], FILTER_SANITIZE_NUMBER_INT);
-            $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+            $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Init
             $return = array(
@@ -899,7 +899,7 @@ if (null !== $post_type) {
             // Prepare variables
             $post_role_id = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
             $post_adgroup_id = filter_var($dataReceived['adGroupId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_adgroup_label = filter_var($dataReceived['adGroupLabel'], FILTER_SANITIZE_STRING);
+            $post_adgroup_label = filter_var($dataReceived['adGroupLabel'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             $data = DB::queryfirstrow(
                 'SELECT *

@@ -50,7 +50,7 @@ date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['tim
 // DO CHECKS
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 if (
     isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
@@ -71,7 +71,7 @@ if (
         && isset($_SESSION['key'])) === true
     || (isset($post_type) === true
         //&& $post_type === 'change_user_language'
-        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
+        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
     mainQuery($SETTINGS);
@@ -113,10 +113,10 @@ function mainQuery(array $SETTINGS)
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
 
     // Prepare post variables
-    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-    $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-    $post_type_category = filter_input(INPUT_POST, 'type_category', FILTER_SANITIZE_STRING);
-    $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $post_type_category = filter_input(INPUT_POST, 'type_category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
     // Check KEY
     if (isValueSetNullEmpty($post_key) === true) {
@@ -203,10 +203,10 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
     switch ($post_type) {
         case 'change_pw'://action_password
             return changePassword(
-                (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING),
-                isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_STRING) : '',
+                (string) filter_var($dataReceived['new_pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '',
                 (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
             );
@@ -217,8 +217,8 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
         case 'change_user_auth_password'://action_password
             return changeUserAuthenticationPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -228,8 +228,8 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
         case 'change_user_ldap_auth_password'://action_password
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_STRING),
-                filter_var($dataReceived['current_password'], FILTER_SANITIZE_STRING),
+                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -239,7 +239,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
         case 'test_current_user_password_is_correct'://action_password
             return isUserPasswordCorrect(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -249,9 +249,9 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
         case 'initialize_user_password'://action_password
             return initializeUserPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['special'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_STRING),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['special'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -286,7 +286,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         case 'get_user_info'://action_user
             return getUserInfo(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -338,10 +338,10 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         case 'ga_generate_qr'://action_user
             return generateQRCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -385,12 +385,12 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
         */
         case 'mail_me'://action_mail
             return sendMailToUser(
-                filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING),
+                filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $dataReceived['body'],
-                (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (array) filter_var_array(
                     $dataReceived['pre_replace'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 ),
                 $SETTINGS
             );
@@ -442,7 +442,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['do_nothing'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['do_nothing'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
         
@@ -452,7 +452,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'user_sharekeys_reencryption_start'://action_key
             return startReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -462,8 +462,8 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'user_sharekeys_reencryption_next'://action_key
             return continueReEncryptingUserSharekeys(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_STRING),
+                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 $SETTINGS
@@ -477,7 +477,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -487,9 +487,9 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'change_private_key_encryption_password'://action_key
             return changePrivateKeyEncryptionPassword(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_STRING),
-                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_STRING),
+                (string) filter_var($dataReceived['current_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -625,7 +625,7 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
                 array(
                     'user_id' => (int) $_SESSION['user_id'],
                     'token' => $token,
-                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
+                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     'creation_timestamp' => time(),
                     'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT), // in secs
                 )

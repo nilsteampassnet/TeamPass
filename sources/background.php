@@ -70,8 +70,8 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Check KEY
 if ($post_key !== $_SESSION['key']) {
@@ -102,10 +102,10 @@ $dataReceived = prepareExchangedData(
 );
 
 // Prepare variables
-$type = filter_var($dataReceived['type'], FILTER_SANITIZE_STRING);
+$type = filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 $creator_id = filter_var($dataReceived['creator_id'], FILTER_SANITIZE_NUMBER_INT);
-$creator_pwd = filter_var($dataReceived['creator_pwd'], FILTER_SANITIZE_STRING);
+$creator_pwd = filter_var($dataReceived['creator_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // Store process
 DB::insert(

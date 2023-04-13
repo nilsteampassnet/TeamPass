@@ -69,12 +69,12 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 }
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
-$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-$post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
 // Construction de la requ?te en fonction du type de valeur
@@ -178,7 +178,7 @@ if (null !== $post_type) {
 
         //CASE start user personal pwd re-encryption
         case 'reencrypt_personal_pwd_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $_SESSION['key']) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
                     array(
@@ -346,8 +346,8 @@ if (null !== $post_type) {
 
         case 'server_auto_update_password_frequency':
             if ($post_key !== $_SESSION['key']
-                || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
-                || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_STRING)
+                || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             ) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
@@ -368,7 +368,7 @@ if (null !== $post_type) {
                     'auto_update_pwd_next_date' => time() + (2592000 * $post_freq),
                 ],
                 'id = %i',
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
 
             echo '[{"error" : ""}]';

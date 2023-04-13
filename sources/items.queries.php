@@ -204,32 +204,32 @@ if (is_null($inputData['type']) === false) {
                 $post_description = $antiXss->xss_clean($dataReceived['description']);
                 $post_diffusion_list = filter_var(
                     $dataReceived['diffusion_list'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_diffusion_list = $post_diffusion_list !== false ? json_decode($post_diffusion_list) : '';
                 $post_diffusion_list_names = filter_var_array(
                     $dataReceived['diffusion_list_names'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
                 $post_fields = filter_var(
                     $dataReceived['fields'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_fields = $post_fields !== false ? json_decode($post_fields) : '';
                 $inputData['folderId'] = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
-                $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-                $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+                $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_password = htmlspecialchars_decode($dataReceived['pw']);
                 $post_restricted_to = filter_var(
                     $dataReceived['restricted_to'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_restricted_to = $post_restricted_to !== false ? json_decode($post_restricted_to) : '';
                 $post_restricted_to_roles = filter_var(
                     $dataReceived['restricted_to_roles'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
                 $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
@@ -239,9 +239,9 @@ if (is_null($inputData['type']) === false) {
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
                 $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
                 $inputData['userId'] = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-                $post_to_be_deleted_after_date = filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_STRING);
+                $post_to_be_deleted_after_date = filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_to_be_deleted_after_x_views = filter_var($dataReceived['to_be_deleted_after_x_views'], FILTER_SANITIZE_NUMBER_INT);
-                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_STRING);
+                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -863,10 +863,10 @@ if (is_null($inputData['type']) === false) {
             if (is_array($dataReceived) === true && count($dataReceived) > 0) {
                 // Prepare variables
                 $itemInfos = array();
-                $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+                $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
-                $post_password = $original_pw = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
-                $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
+                $post_password = $original_pw = filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
                 $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -877,19 +877,19 @@ if (is_null($inputData['type']) === false) {
                 $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $post_restricted_to = filter_var_array(
                     $dataReceived['restricted_to'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_restricted_to_roles = filter_var_array(
                     $dataReceived['restricted_to_roles'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_diffusion_list = filter_var_array(
                     $dataReceived['diffusion_list'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_diffusion_list_names = filter_var_array(
                     $dataReceived['diffusion_list_names'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 //$post_diffusion_list_names = $post_diffusion_list_names !== false ? json_decode($post_diffusion_list_names) : '';
                 $post_to_be_deleted_after_x_views = filter_var(
@@ -898,14 +898,14 @@ if (is_null($inputData['type']) === false) {
                 );
                 $post_to_be_deleted_after_date = filter_var(
                     $dataReceived['to_be_deleted_after_date'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_fields = (filter_var_array(
                     $dataReceived['fields'],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 ));
                 $post_description = $antiXss->xss_clean($dataReceived['description']);
-                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_STRING);
+                $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
                 //-> DO A SET OF CHECKS
                 // Perform a check in case of Read-Only user creating an item in his PF
@@ -1955,7 +1955,7 @@ if (is_null($inputData['type']) === false) {
             );
 
             // Prepare POST variables
-            $post_new_label = (string) filter_var($dataReceived['new_label'], FILTER_SANITIZE_STRING);
+            $post_new_label = (string) filter_var($dataReceived['new_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_source_id = (int) filter_var($dataReceived['source_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_dest_id = (int) filter_var($dataReceived['dest_id'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -2304,9 +2304,9 @@ if (is_null($inputData['type']) === false) {
             $inputData['id'] = filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
             $inputData['folderId'] = filter_var(($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
             $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_NUMBER_INT);
-            $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_STRING);
+            $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
-                filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
+                filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 : '';
             $post_item_rights = filter_var($dataReceived['rights'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -3188,7 +3188,7 @@ if (is_null($inputData['type']) === false) {
             );
 
             // Prepare POST variables
-            $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
+            $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['folderId'] = (int) filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_access_level = (int) filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
@@ -3296,7 +3296,7 @@ if (is_null($inputData['type']) === false) {
     $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
 
             // Prepare variables
-            $title = filter_var(htmlspecialchars_decode($dataReceived['title'], ENT_QUOTES), FILTER_SANITIZE_STRING);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title'], ENT_QUOTES), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['folderId'] = filter_var(htmlspecialchars_decode($dataReceived['folder']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check if user is allowed to access this folder
@@ -5032,7 +5032,7 @@ if (is_null($inputData['type']) === false) {
                 'decode'
             );
             $inputData['folderId'] = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_STRING);
+            $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // loop on items to move
             foreach (explode(';', $post_item_ids) as $item_id) {
@@ -5356,7 +5356,7 @@ if (is_null($inputData['type']) === false) {
                 $inputData['data'],
                 'decode'
             );
-            $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_STRING);
+            $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true) {
@@ -5472,9 +5472,9 @@ if (is_null($inputData['type']) === false) {
 
             // Prepare variables
             $inputData['id'] = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $inputData['receipt'] = filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING);
-            $inputData['cat'] = filter_var($dataReceived['cat'], FILTER_SANITIZE_STRING);
-            $post_content = isset($_POST['name']) === true ? explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING)) : '';
+            $inputData['receipt'] = filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['cat'] = filter_var($dataReceived['cat'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_content = isset($_POST['name']) === true ? explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
 
             // get links url
             if (empty($SETTINGS['email_server_url']) === true) {
@@ -5900,7 +5900,7 @@ if (is_null($inputData['type']) === false) {
             // get file info
             $result = DB::queryfirstrow(
                 'SELECT file FROM ' . prefixTable('files') . ' WHERE id=%i',
-                intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_STRING), 1))
+                intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 1))
             );
 
             fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $result['file'] . $inputData['fileSuffix'], $SETTINGS);
@@ -6511,7 +6511,7 @@ if (is_null($inputData['type']) === false) {
             );
 
             // prepare variables
-            //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_STRING);
+            //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Send email

@@ -71,7 +71,7 @@ switch ($inputData['type']) {
             $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
 
             // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         }
 
         break;

@@ -94,7 +94,7 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== ''
     && $_GET['letter'] !== 'None'
 ) {
-    $filterLetter = filter_var($_GET['letter'], FILTER_SANITIZE_STRING);
+    $filterLetter = filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 }
 */
 
@@ -104,7 +104,7 @@ $searchCriteria = '';
 if (isset($_GET['search']) === true
     && $_GET['search']['value'] !== ''
 ) {
-    $searchCriteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING);
+    $searchCriteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 }
 
 //Build tree

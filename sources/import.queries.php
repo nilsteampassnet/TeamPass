@@ -101,11 +101,11 @@ $aes->register();
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
 
 // POST Varaibles
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Build query
-switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
@@ -314,7 +314,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $post_folder = filter_var($dataReceived['folder-id'], FILTER_SANITIZE_NUMBER_INT);
         $post_items = filter_var_array(
             $dataReceived['items'],
-            FILTER_SANITIZE_STRING
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
         $post_edit_role = filter_var($dataReceived['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_edit_all = filter_var($dataReceived['edit-all'], FILTER_SANITIZE_NUMBER_INT);
@@ -467,7 +467,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_data,
             'decode'
         );
-        $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_STRING);
+        $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_folder_id = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
@@ -639,7 +639,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $post_edit_role = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
-            FILTER_SANITIZE_STRING
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
 
         // get destination folder informations
@@ -712,11 +712,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $post_edit_role = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
-            FILTER_SANITIZE_STRING
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
         $item = filter_var_array(
             $receivedParameters['items'],
-            FILTER_SANITIZE_STRING
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
         $ret = '';
 

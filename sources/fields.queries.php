@@ -74,9 +74,9 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 //$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
 if (null !== $post_type) {
@@ -263,9 +263,9 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_STRING);
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Store in DB
             DB::insert(
@@ -349,9 +349,9 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_STRING);
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_position = filter_var($dataReceived['position'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
 
             // Update category
@@ -433,7 +433,7 @@ echo "couocu2";
 
             // Prepare variables
             $post_idToRemove = filter_var($dataReceived['idToRemove'], FILTER_SANITIZE_NUMBER_INT);
-            $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+            $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if ($post_action === 'category') {
                 // DELETING A CATEGORY
@@ -537,14 +537,14 @@ echo "couocu2";
             );
 
             // Prepare variables
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_STRING);
-            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_STRING);
-            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING);
-            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING);
-            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_STRING);
+            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_fieldId = isset($dataReceived['fieldId']) === false ? '' :
                 filter_var($dataReceived['fieldId'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -666,14 +666,14 @@ echo "couocu2";
             );
 
             // Prepare variables
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_STRING);
-            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_STRING);
-            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING);
-            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING);
-            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_STRING);
+            $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_mandatory = filter_var($dataReceived['mandatory'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_masked = filter_var($dataReceived['masked'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_encrypted = filter_var($dataReceived['encrypted'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_roles = filter_var_array($dataReceived['roles'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // NEW FIELD
             DB::insert(
@@ -826,7 +826,7 @@ if (null !== $post_type) {
                 "decode"
             );
 
-            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
+            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // store key
             if (empty($post_title) === false) {
@@ -834,12 +834,12 @@ if (null !== $post_type) {
                     prefixTable("categories"),
                     array(
                         'parent_id' => filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
-                        'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING),
-                        'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
-                        'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
-                        'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
-                        'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_STRING),
-                        'role_visibility' => filter_var($dataReceived['field_visibility'], FILTER_SANITIZE_STRING),
+                        'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'role_visibility' => filter_var($dataReceived['field_visibility'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                         'level' => 1,
                         'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
                     )
@@ -883,17 +883,17 @@ if (null !== $post_type) {
 
             if (filter_var(($dataReceived['field_is_category']), FILTER_SANITIZE_NUMBER_INT) === 1) {
                 $array = array(
-                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING)
+                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 );
             } else {
                 $array = array(
-                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING),
+                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     'parent_id' => filter_var($dataReceived['category'], FILTER_SANITIZE_NUMBER_INT),
-                    'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
-                    'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
-                    'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_STRING),
-                    'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
-                    'role_visibility' => filter_var($dataReceived['roles'], FILTER_SANITIZE_STRING),
+                    'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    'role_visibility' => filter_var($dataReceived['roles'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
                 );
             }
@@ -1004,7 +1004,7 @@ if (null !== $post_type) {
 
         case "categoryInFolders":
             // Prepare POST variables
-            $post_foldersIds = filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING);
+            $post_foldersIds = filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_id = $post_id;
 
             // update order
@@ -1040,7 +1040,7 @@ if (null !== $post_type) {
 
         case "dataIsEncryptedInDB":
             // Prepare POST variables
-            $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING);
+            $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // store key
             DB::update(

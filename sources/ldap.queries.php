@@ -75,9 +75,9 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 switch ($post_type) {
     //CASE for getting informations about the tool
@@ -137,8 +137,8 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
 
         // prepare variables
-        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_STRING);
-        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
+        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         // Build ldap configuration array
         $config = [

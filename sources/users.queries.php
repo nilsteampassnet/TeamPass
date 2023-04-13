@@ -51,10 +51,10 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 // Prepare post variables
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $password_do_not_change = 'do_not_change';
 
 // DO check for "users" rights
@@ -123,19 +123,19 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $password = '';//filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
-            $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
-            $name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
+            $password = '';//filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
             $is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
             $is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
             $is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT) || 0;
             $has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
             $new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
-            $domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_STRING);
-            $is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_STRING);
+            $domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
@@ -499,7 +499,7 @@ if (null !== $post_type) {
          */
         case 'can_create_root_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
                 break;
@@ -523,7 +523,7 @@ if (null !== $post_type) {
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'can_create_root_folder' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING),
+                        'can_create_root_folder' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     ),
                     'id = %i',
                     $post_id
@@ -541,7 +541,7 @@ if (null !== $post_type) {
         case 'admin':
             // Check KEY
             if (
-                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
+                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || $_SESSION['is_admin'] !== '1'
             ) {
                 echo prepareExchangedData(
@@ -588,7 +588,7 @@ if (null !== $post_type) {
          */
         case 'gestionnaire':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
                 break;
@@ -636,7 +636,7 @@ if (null !== $post_type) {
          */
         case 'read_only':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
                 break;
@@ -681,7 +681,7 @@ if (null !== $post_type) {
          */
         case 'can_manage_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
                 break;
@@ -727,7 +727,7 @@ if (null !== $post_type) {
          */
         case 'personal_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
                 break;
@@ -771,7 +771,7 @@ if (null !== $post_type) {
          */
         case 'unlock_account':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -822,7 +822,7 @@ if (null !== $post_type) {
             $data = DB::query(
                 'SELECT * FROM ' . prefixTable('nested_tree') . '
                 WHERE title = %s AND parent_id = %i',
-                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 '0'
             );
             $counter = DB::count();
@@ -835,7 +835,7 @@ if (null !== $post_type) {
             $data = DB::query(
                 'SELECT * FROM ' . prefixTable('roles_title') . '
                 WHERE title = %s',
-                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING)
+                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
             $counter = DB::count();
             if ($counter != 0) {
@@ -857,15 +857,15 @@ if (null !== $post_type) {
 
             // Prepare POST variables
             $post_nb_items_by_page = filter_input(INPUT_POST, 'nb_items_by_page', FILTER_SANITIZE_NUMBER_INT);
-            $post_scope = filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING);
+            $post_scope = filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if ($post_scope === 'user_activity') {
                 if (
-                    null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)
-                    && !empty(filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING))
-                    && filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING) !== 'all'
+                    null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                    && !empty(filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_FULL_SPECIAL_CHARS))
+                    && filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'all'
                 ) {
-                    $sql_filter = " AND l.action = '" . filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING) . "'";
+                    $sql_filter = " AND l.action = '" . filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "'";
                 }
                 // get number of pages
                 DB::query(
@@ -982,7 +982,7 @@ if (null !== $post_type) {
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES),
                 'decode'
             );
             // Prepare variables
@@ -1042,7 +1042,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_user':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1082,7 +1082,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1414,17 +1414,17 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'],$post_data, 'decode');
 
             // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
-            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
-            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
+            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
             $post_has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_STRING);
+            $post_is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
@@ -1453,7 +1453,7 @@ if (null !== $post_type) {
             }
             
             // Init post variables
-            $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
+            $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $action_to_perform_after = '';
             
             // Exclude roles from AD - PR #3635
@@ -1707,9 +1707,9 @@ if (null !== $post_type) {
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'login' => filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING),
-                        'name' => filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING),
-                        'lastname' => filter_input(INPUT_POST, 'lastname', FILTER_SANITIZE_STRING),
+                        'login' => filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'name' => filter_input(INPUT_POST, 'name', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'lastname' => filter_input(INPUT_POST, 'lastname', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     ),
                     'id = %i',
                     $post_id
@@ -1747,7 +1747,7 @@ if (null !== $post_type) {
             DB::queryfirstrow(
                 'SELECT * FROM ' . prefixTable('users') . '
                 WHERE login = %s',
-                filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING)
+                filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
 
             echo prepareExchangedData(
@@ -2082,10 +2082,10 @@ if (null !== $post_type) {
 
             $post_source_id = filter_var(htmlspecialchars_decode($dataReceived['source_id']), FILTER_SANITIZE_NUMBER_INT);
             $post_destination_ids = filter_var_array($dataReceived['destination_ids'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_functions = filter_var(htmlspecialchars_decode($dataReceived['user_functions']), FILTER_SANITIZE_STRING);
-            $post_user_managedby = filter_var(htmlspecialchars_decode($dataReceived['user_managedby']), FILTER_SANITIZE_STRING);
-            $post_user_fldallowed = filter_var(htmlspecialchars_decode($dataReceived['user_fldallowed']), FILTER_SANITIZE_STRING);
-            $post_user_fldforbid = filter_var(htmlspecialchars_decode($dataReceived['user_fldforbid']), FILTER_SANITIZE_STRING);
+            $post_user_functions = filter_var(htmlspecialchars_decode($dataReceived['user_functions']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_user_managedby = filter_var(htmlspecialchars_decode($dataReceived['user_managedby']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_user_fldallowed = filter_var(htmlspecialchars_decode($dataReceived['user_fldallowed']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_user_fldforbid = filter_var(htmlspecialchars_decode($dataReceived['user_fldforbid']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_user_admin = filter_var(htmlspecialchars_decode($dataReceived['user_admin']), FILTER_SANITIZE_NUMBER_INT);
             $post_user_manager = filter_var(htmlspecialchars_decode($dataReceived['user_manager']), FILTER_SANITIZE_NUMBER_INT);
             $post_user_hr = filter_var(htmlspecialchars_decode($dataReceived['user_hr']), FILTER_SANITIZE_NUMBER_INT);
@@ -2191,25 +2191,25 @@ if (null !== $post_type) {
                     prefixTable('users'),
                     array(
                         'email' => filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL),
-                        'usertimezone' => filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_STRING),
-                        'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING),
-                        'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING),
+                        'usertimezone' => filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                         'agses-usercardid' => filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT),
-                        'name' => filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING),
-                        'lastname' => filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING)
+                        'name' => filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'lastname' => filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                     ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_timezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_STRING);
-                $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
-                $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+                $_SESSION['user_timezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $_SESSION['user_agsescardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
-                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_STRING);
+                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -2267,9 +2267,9 @@ if (null !== $post_type) {
 
             // prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
-            $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
-            $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_STRING);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // If
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
@@ -2377,7 +2377,7 @@ if (null !== $post_type) {
             }
 
             // Manage 1st step - is this needed?
-            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'refresh') {
+            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'refresh') {
                 $record = DB::queryFirstRow(
                     'SELECT user_ip_lastdate
                     FROM ' . prefixTable('users') . '
@@ -2399,7 +2399,7 @@ if (null !== $post_type) {
                     );
                     break;
                 }
-            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING) === 'perform') {
+            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'perform') {
                 DB::update(
                     prefixTable('users'),
                     array(
@@ -2647,9 +2647,9 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
-            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
-            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
+            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
             $post_roles = filter_var_array(
                 $dataReceived['roles'],
@@ -2845,8 +2845,8 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
-            $post_otp = filter_var($dataReceived['user_new_otp'], FILTER_SANITIZE_STRING);
+            $post_userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_otp = filter_var($dataReceived['user_new_otp'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             DB::update(
                 prefixTable('users'),
@@ -2913,7 +2913,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_auth = filter_var($dataReceived['auth_type'], FILTER_SANITIZE_STRING);
+            $post_auth = filter_var($dataReceived['auth_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 
             // Empty user
@@ -2992,8 +2992,8 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING);
-            $post_otc = filter_var($dataReceived['otc'], FILTER_SANITIZE_STRING);
+            $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_otc = filter_var($dataReceived['otc'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Empty user
             if (empty($post_userid) === true || empty($post_password) === true || empty($post_otc) === true) {
@@ -3217,8 +3217,8 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_STRING);
-            $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_STRING);
+            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Create process
             DB::insert(
@@ -3442,10 +3442,10 @@ if (null !== $post_type) {
             break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING))) {
+} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
     // Prepare POST variables
-    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
-    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
+    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Get info about user
     $data_user = DB::queryfirstrow(
@@ -3485,7 +3485,7 @@ if (null !== $post_type) {
                 'at_user_new_' . $value[0] . ':' . $value[1],
                 (string) $_SESSION['user_id'],
                 $_SESSION['login'],
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
             // refresh SESSION if requested
             if ($value[0] === 'treeloadstrategy') {
@@ -3509,7 +3509,7 @@ if (null !== $post_type) {
     }
     // # ADMIN FOR USER HAS BEEN DEFINED ##
 } elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
-    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
+    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
     // Get info about user
     $data_user = DB::queryfirstrow(

@@ -67,8 +67,8 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/
 mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, (int) DB_PORT, null);
 
 // Protect POST
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 if (is_null($post_type) === false) {
     switch ($post_type) {
@@ -79,12 +79,12 @@ if (is_null($post_type) === false) {
         case 'user_change_pair_keys':
             // Decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_STRING);
+            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Generate keys
             $userKeys = generateUserKeys($post_user_pwd);
