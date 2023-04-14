@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      login.php
  * ---
  *
@@ -87,7 +87,7 @@ if (
         $username = $superGlobal('PHP_AUTH_USER', 'SERVER');
     }
     echo '
-            <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_STRING), '" readonly>';
+            <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
             <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '">';

@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upload.files.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -35,10 +35,10 @@ if (
 
 /*
 //check for session
-if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
-    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } elseif (isset($_GET['PHPSESSID'])) {
-    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
+    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } else {
     handleUploadError('No Session was found.');
 }
@@ -70,15 +70,15 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS)) {
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
-$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
-$post_newFileName = filter_input(INPUT_POST, 'newFileName', FILTER_SANITIZE_STRING);
-$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
+$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_newFileName = filter_input(INPUT_POST, 'newFileName', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // Get parameters
 $chunk = isset($_REQUEST['chunk']) ? intval($_REQUEST['chunk']) : 0;
 $chunks = isset($_REQUEST['chunks']) ? intval($_REQUEST['chunks']) : 0;
-$fileName = isset($_REQUEST['name']) ? filter_var($_REQUEST['name'], FILTER_SANITIZE_STRING) : '';
+$fileName = isset($_REQUEST['name']) ? filter_var($_REQUEST['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
 // token check
 if (null === $post_user_token) {
@@ -196,7 +196,7 @@ $file_name = preg_replace(
     '',
     filter_var(
         strtolower(basename($_FILES['file']['name'])),
-        FILTER_SANITIZE_STRING
+        FILTER_SANITIZE_FULL_SPECIAL_CHARS
     )
 );
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
@@ -207,7 +207,7 @@ if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
 // Validate file extension
 $ext = strtolower(
     getFileExtension(
-        filter_var($_FILES['file']['name'], FILTER_SANITIZE_STRING)
+        filter_var($_FILES['file']['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     )
 );
 if (

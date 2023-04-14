@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      admin.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -88,21 +88,21 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
-$post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
-$post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
+$post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_NUMBER_INT);
-$post_object = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_STRING);
+$post_object = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 $post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
-$post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
+$post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
 $post_counter = filter_input(INPUT_POST, 'counter', FILTER_SANITIZE_NUMBER_INT);
-$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
+$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 switch ($post_type) {
         //CASE for getting informations about the tool
@@ -2039,7 +2039,7 @@ switch ($post_type) {
         }
 
         // Prepare variables
-        $post_list = filter_var_array($post_list, FILTER_SANITIZE_STRING);
+        $post_list = filter_var_array($post_list, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_counter = filter_var($post_counter, FILTER_SANITIZE_NUMBER_INT);
 
         include $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
@@ -2184,8 +2184,8 @@ switch ($post_type) {
             'decode'
         );
 
-        $post_label = isset($dataReceived['label']) === true ? filter_var($dataReceived['label'], FILTER_SANITIZE_STRING) : '';
-        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+        $post_label = isset($dataReceived['label']) === true ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $timestamp = time();
 
         // add new key
@@ -2213,7 +2213,7 @@ switch ($post_type) {
             $post_id = DB::insertId();
             // Update existing key
         } elseif (null !== $post_action && $post_action === 'update') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             DB::update(
                 prefixTable('api'),
@@ -2226,7 +2226,7 @@ switch ($post_type) {
             );
             // Delete existing key
         } elseif (null !== $post_action && $post_action === 'delete') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             DB::query(
                 'DELETE FROM ' . prefixTable('api') . ' WHERE increment_id = %i',
@@ -2283,12 +2283,12 @@ switch ($post_type) {
             'decode'
         );
 
-        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_STRING);
+        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         // add new key
         if (null !== $post_action && $post_action === 'add') {
-            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_STRING);
-            $post_ip = filter_var($dataReceived['ip'], FILTER_SANITIZE_STRING);
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_ip = filter_var($dataReceived['ip'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Store in DB
             DB::insert(
@@ -2305,9 +2305,9 @@ switch ($post_type) {
             $post_id = DB::insertId();
             // Update existing key
         } elseif (null !== $post_action && $post_action === 'update') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
-            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
-            $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             if ($post_field === 'value') {
                 $arr = array(
                     'value' => $post_value,
@@ -2327,7 +2327,7 @@ switch ($post_type) {
             );
             // Delete existing key
         } elseif (null !== $post_action && $post_action === 'delete') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_STRING);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             DB::query('DELETE FROM ' . prefixTable('api') . ' WHERE increment_id=%i', $post_id);
         }
 
@@ -2688,8 +2688,8 @@ switch ($post_type) {
         );
 
         // prepare data
-        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
-        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         
         require_once 'main.functions.php';
 
@@ -2783,7 +2783,7 @@ switch ($post_type) {
             $posJsUrl = strpos($data, '"jsUrl" => "');
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
-            $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_STRING) . '",', $data);
+            $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . '",', $data);
             file_put_contents($csrfp_file, $newdata);
         } elseif ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
             DB::update(

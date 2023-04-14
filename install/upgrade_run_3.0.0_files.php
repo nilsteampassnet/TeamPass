@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upgrade_run_3.0.0_files.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -84,7 +84,7 @@ if (mysqli_connect(
 }
 
 // Get POST with user info
-$post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+$post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
 $userLogin = $post_user_info[0];
 $userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];

@@ -173,7 +173,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
                 (bool) false,
                 (string) $args['step'],
                 (int) $args['index'],
-                (int) $args['nb'],
+                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
                 $SETTINGS,
                 $ProcessArguments
             );
@@ -188,7 +188,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
                     json_encode([
                         "step" => $taskStatus['new_action'],
                         "index" => $taskStatus['new_index'],
-                        "nb" => $args['nb'],
+                        "nb" => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
                     ]),
                     'is_in_progress' => $taskStatus['new_action'] !== $args['step'] ? -1 : 1,
                     'finished_at' => $taskStatus['new_action'] !== $args['step'] ? time() : NULL,
@@ -951,7 +951,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
 
     if ($userInfo['auth_type'] === 'local') {
         sendMailToUser(
-            filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
+            filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             langHdl('email_body_new_user'),
             'TEAMPASS - ' . langHdl('temporary_encryption_code'),
             (array) filter_var_array(
@@ -960,7 +960,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
                     '#login#' => $userInfo['login'],
                     '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
                 ],
-                FILTER_SANITIZE_STRING
+                FILTER_SANITIZE_FULL_SPECIAL_CHARS
             ),
             $SETTINGS
         );
@@ -977,14 +977,14 @@ function cronContinueReEncryptingUserSharekeysStep6(
     } else {
         if ($userInfo['special']  === 'user_added_from_ldap') {
             sendMailToUser(
-                filter_var($userInfo['email'], FILTER_SANITIZE_STRING),
+                filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 langHdl('email_body_user_added_from_ldap_encryption_code'),
                 'TEAMPASS - ' . langHdl('temporary_encryption_code'),
                 (array) filter_var_array(
                     [
                         '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
                     ],
-                    FILTER_SANITIZE_STRING
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 ),
                 $SETTINGS
             );

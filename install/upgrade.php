@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upgrade.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -42,14 +42,14 @@ define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 
 // Prepare POST variables
-$post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_STRING);
+$post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
-$post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER_SANITIZE_STRING);
-$post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_STRING);
-$post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_STRING);
-$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
-$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
-$post_infotmp = filter_input(INPUT_POST, 'infotmp', FILTER_SANITIZE_STRING);
+$post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_infotmp = filter_input(INPUT_POST, 'infotmp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 //###############
 //# Function permits to get the value from a line
@@ -103,12 +103,12 @@ if (empty($post_root_url) === false) {
 
 //define root path
 $abs_path = rtrim(
-    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
+    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
     '/'
 ).substr(
-    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
+    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
     0,
-    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
+    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) - 20
 );
 if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';

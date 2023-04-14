@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      export.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -93,17 +93,17 @@ require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user
 
 // Prepare POST variables
 $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_idTree = filter_input(INPUT_POST, 'idTree', FILTER_SANITIZE_NUMBER_INT);
-$post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_STRING);
-$post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
-$post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
-$post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
-$post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
-$post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
-$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 //Manage type of action asked
 if (null !== $post_type) {

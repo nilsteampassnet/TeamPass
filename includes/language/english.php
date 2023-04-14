@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      english.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -17,6 +17,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'generate_new_keys' => 'Generate new keys',
+    'generate_new_keys_info' => 'By continuing, you will generate new keys for all objects you have access to. This should only be done if you have no password shown. A code will be provided. Store it carrefully, it will be asked once the process is finished.',
+    'encryption_key' => 'Encryption key',
+    'generate_new_keys_end' => 'Process is on going in background and could take several minutes. You can now close this window.',
     'currently_using_version' => 'Current version loaded',
     'git_commit_value' => 'Git commit value',
     'add_new_job' => 'Add new job',

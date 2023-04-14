@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      admin.php
  * ---
  *
@@ -186,9 +186,17 @@ if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable
                     <div class="card-body">
                         <?php
                         // Display information about server
+                        $dbSize = DB::queryFirstRow("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size' FROM information_schema.TABLES WHERE table_schema = '" . DB_NAME . "'");
                         echo 
-                        '<p><i class="fa-brands fa-php mr-2"></i>PHP version: ' . phpversion().'</p>'.
-                        '<p><i class="fa-solid fa-server mr-2"></i>Server version: ' . DB::serverVersion().'</p>';
+                        '<p><i class="fa-brands fa-php mr-2"></i>PHP version: ' . phpversion().
+                            '<br><span class="ml-4">Memory limit: '.(ini_get('memory_limit')).'</span>'.
+                            '<br><span class="ml-4">Memory usage: '.formatSizeUnits(memory_get_usage()).'</span>'.
+                            '<br><span class="ml-4">Maximum time execution: '.ini_get('max_execution_time').'</span>'.
+                            '<br><span class="ml-4">Maximum file size upload: '.ini_get('upload_max_filesize').'</span>'.
+                        '</p>'.
+                        '<p><i class="fa-solid fa-server mr-2"></i>Server version: ' . DB::serverVersion().
+                            '<br><span class="ml-4">Database size: '.($dbSize['size']).'MB</span>'.
+                        '</p>';
                         ?>
                     </div>
                     <!-- /.card-body -->

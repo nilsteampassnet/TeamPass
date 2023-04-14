@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      items.logs.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -70,9 +70,9 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 }
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Check KEY and rights
 if (null === $post_key
@@ -111,10 +111,10 @@ if (null !== $post_type) {
                 logItems(
                     $SETTINGS,
                     (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
-                    filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING),
+                    filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                    filter_var(htmlspecialchars_decode($dataReceived['action']), FILTER_SANITIZE_STRING),
-                    filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING)
+                    filter_var(htmlspecialchars_decode($dataReceived['action']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 );
             }
             break;

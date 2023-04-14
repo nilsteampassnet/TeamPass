@@ -8,7 +8,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upgrade_run_3.0.0_users.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -80,10 +80,10 @@ if (mysqli_connect(
     exit();
 }
 
-$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_NUMBER_INT);
-$post_extra = filter_input(INPUT_POST, 'extra', FILTER_SANITIZE_STRING);
+$post_extra = filter_input(INPUT_POST, 'extra', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_tp_user = filter_input(INPUT_POST, 'tp_user_done', FILTER_SANITIZE_NUMBER_INT);
 
 if (null !== $post_step) {
@@ -264,7 +264,7 @@ if (null !== $post_step) {
         */
         case 'step2':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_count_in_loop = filter_input(INPUT_POST, 'count_in_loop', FILTER_SANITIZE_NUMBER_INT);
 
@@ -278,7 +278,7 @@ if (null !== $post_step) {
             }
 
             // Get POST with admin info
-            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
             $adminQuery = mysqli_fetch_array(
@@ -372,7 +372,7 @@ if (null !== $post_step) {
         */
         case 'step3':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_count_in_loop = filter_input(INPUT_POST, 'count_in_loop', FILTER_SANITIZE_NUMBER_INT);
 
@@ -380,7 +380,7 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             // Get POST with admin info
-            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
             $adminQuery = mysqli_fetch_array(
@@ -456,7 +456,7 @@ if (null !== $post_step) {
         */
         case 'step4':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_count_in_loop = filter_input(INPUT_POST, 'count_in_loop', FILTER_SANITIZE_NUMBER_INT);
 
@@ -464,7 +464,7 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             // Get POST with admin info
-            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
             $adminQuery = mysqli_fetch_array(
@@ -537,7 +537,7 @@ if (null !== $post_step) {
         */
         case 'step5':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_count_in_loop = filter_input(INPUT_POST, 'count_in_loop', FILTER_SANITIZE_NUMBER_INT);
 
@@ -545,7 +545,7 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             // Get POST with admin info
-            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
             $adminQuery = mysqli_fetch_array(
@@ -625,7 +625,7 @@ if (null !== $post_step) {
         */
         case 'step6':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_count_in_loop = filter_input(INPUT_POST, 'count_in_loop', FILTER_SANITIZE_NUMBER_INT);
 
@@ -633,7 +633,7 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             // Get POST with admin info
-            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_STRING)));
+            $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
             $adminQuery = mysqli_fetch_array(
@@ -712,7 +712,7 @@ if (null !== $post_step) {
         */
         case 'send_pwd_by_email':
             // Prepare post variables
-            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_STRING));
+            $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
             // Get POST with user info
             $userInfo = json_decode($post_user_info, true);

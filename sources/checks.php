@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      checks.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -71,7 +71,7 @@ switch ($inputData['type']) {
             $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
 
             // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         }
 
         break;

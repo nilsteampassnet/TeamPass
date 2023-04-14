@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      logs.datatables.php
  * ---
  *
@@ -102,7 +102,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -113,7 +113,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
@@ -178,7 +178,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -201,9 +201,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
             $sWhere,
             [
-                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             ]
     );
     $rows = DB::query(
@@ -215,9 +215,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $sOrder
             $sLimit',
             [
-                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             ]
     );
     $iFilteredTotal = DB::count();
@@ -262,7 +262,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -273,7 +273,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
@@ -337,7 +337,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -348,7 +348,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -409,7 +409,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -420,10 +420,10 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' WHERE (';
         if (isset($_GET['search']['column']) === true && $_GET['search']['column'] !== 'all') {
-            $sWhere .= $_GET['search']['column']." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%') ";
+            $sWhere .= $_GET['search']['column']." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%') ";
         } else {
             for ($i = 0; $i < count($aColumns); ++$i) {
-                $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+                $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
             }
             $sWhere = substr_replace($sWhere, '', -3).') ';
         }
@@ -503,7 +503,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -519,7 +519,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -584,7 +584,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -600,7 +600,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -661,7 +661,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -676,7 +676,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere = ' WHERE (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -743,7 +743,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -753,7 +753,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere = ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -822,7 +822,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -832,7 +832,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }
@@ -907,7 +907,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     ) {
         $sOrder = 'ORDER BY  '.
             $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).' ';
+            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
     } else {
         $sOrder = 'ORDER BY  '.
             $aColumns[0].' DESC';
@@ -917,7 +917,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
         $sWhere = substr_replace($sWhere, '', -3).') ';
     }

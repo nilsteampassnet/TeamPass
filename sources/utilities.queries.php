@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      utilities.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -71,9 +71,9 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 }
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // Construction de la requ?te en fonction du type de valeur
 if (null !== $post_type) {
@@ -209,8 +209,8 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
-            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_STRING);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Folders restore
             foreach ($post_folders as $folderId) {
@@ -348,8 +348,8 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_STRING);
-            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_STRING);
+            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Folders restore
             foreach ($post_folders as $folderId) {
@@ -483,11 +483,11 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_log_type = filter_var($dataReceived['dataType'], FILTER_SANITIZE_STRING);
-            $post_date_from = strtotime(filter_var($dataReceived['dateStart'], FILTER_SANITIZE_STRING));
-            $post_date_to = strtotime(filter_var($dataReceived['dateEnd'], FILTER_SANITIZE_STRING));
+            $post_log_type = filter_var($dataReceived['dataType'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_date_from = strtotime(filter_var($dataReceived['dateStart'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+            $post_date_to = strtotime(filter_var($dataReceived['dateEnd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
             $post_filter_user = filter_var($dataReceived['filter_user'], FILTER_SANITIZE_NUMBER_INT);
-            $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_STRING);
+            $post_filter_action = filter_var($dataReceived['filter_action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Check conditions
             if (

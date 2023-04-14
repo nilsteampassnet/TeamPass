@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      backups.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -65,8 +65,8 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(
     INPUT_POST,
     'data',
@@ -110,7 +110,7 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_STRING);
+            $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             $return = '';
@@ -266,8 +266,8 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_STRING);
-            $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_STRING);
+            $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
