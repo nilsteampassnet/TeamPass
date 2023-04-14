@@ -970,6 +970,8 @@ function cronContinueReEncryptingUserSharekeysStep6(
             prefixTable('users'),
             array(
                 'is_ready_for_usage' => 1,
+                'otp_provided' => 0,
+                'ongoing_process_id' => NULL,
             ),
             'id = %i',
             $extra_arguments['new_user_id']

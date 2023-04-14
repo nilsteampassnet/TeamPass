@@ -128,13 +128,64 @@ if (
 
                         if (data.error === false && data.queryResults.special === 'generate-keys') {
                             // Now we need to perform re-encryption due to LDAP password change
-                            if (debugJavascript === true) console.log('User has to regenerate keys')
-                            // HIde
-                            $('.content-header, .content').addClass('hidden');
-                            $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
 
-                            // Show passwords inputs and form
-                            $('#dialog-user-temporary-code').removeClass('hidden');
+                            // Get generation keys progress status
+                            getGenerateKeysProgress(store.get('teampassUser').user_id);
+                            
+                            // Perform call to get progress status
+                            function getGenerateKeysProgress(userId) {
+                                var data = {
+                                    'user_id': userId,
+                                };
+
+                                $.post(
+                                    "sources/users.queries.php", {
+                                        type: "get_generate_keys_progress",
+                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                                        key: "<?php echo $_SESSION['key']; ?>"
+                                    },
+                                    function(data) {
+                                        //decrypt data
+                                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                                        if (debugJavascript === true) {
+                                            console.info('Process generation keys status:');
+                                            console.log(data);
+                                        }
+
+                                        if (data.error === false) {
+                                            // Show progress
+                                            $('#user_not_ready_progress')
+                                                .text('(' + data.status + ')')
+                                                .addClass('ml-1')
+
+                                            if (data.status !== 'finished') {
+                                                // If not finished, then run again after 10 seconds
+                                                setTimeout(
+                                                    getGenerateKeysProgress,
+                                                    10000,
+                                                    store.get('teampassUser').user_id
+                                                );
+                                            } else {
+                                                // Progress is finished
+                                                // HIde
+                                                $('.content-header, .content, #user_not_ready').addClass('hidden');
+                                                $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+                                                $('#dialog-user-temporary-code-current-password').val(store.get('teampassUser').pwd);
+                                                $('#dialog-user-temporary-code-value').val(store.get('teampassUser').temporary_code);
+
+                                                if (store.get('teampassUser').pwd !== '' && store.get('teampassUser').pwd !== '') {
+                                                    $('#dialog-user-temporary-code-do').click();
+                                                }
+                                                
+                                                
+
+                                                // Show passwords inputs and form
+                                                $('#dialog-user-temporary-code').removeClass('hidden');
+                                            }
+                                        }
+                                    }
+                                );
+                            }
 
                             // ----
                         } else if (data.error === false && data.queryResults.special === 'auth-pwd-change' && data.queryResults.auth_type === 'local') {
@@ -261,13 +312,14 @@ if (
         store.get('teampassUser').special === 'generate-keys'
     ) {
         // Now we need to perform re-encryption due to LDAP password change
-        console.log('User has to regenerate keys')
+        /*console.log('User has to regenerate keys')
         // HIde
         $('.content-header, .content').addClass('hidden');
         $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
 
         // Show passwords inputs and form
         $('#dialog-user-temporary-code').removeClass('hidden');
+        */
         
         // ---
     } else if (store.get('teampassUser') !== undefined &&
@@ -492,6 +544,7 @@ if (
             } else if ($(this).data('name') === 'generate-new_keys') {
                 // User wants to generate new keys
                 console.log('show new keys generation');
+                $('#warningModalButtonAction').attr('data-button-confirm', 'false');
 
                 // SHow modal
                 showModalDialogBox(
@@ -509,86 +562,93 @@ if (
                 );
                 $(document).on('click', '#warningModalButtonAction', function() {
                     // On PERFORM click
-                    // launch action
-                    $('#warningModalButtonAction')
-                        .addClass('disabled')
-                        .html('<i class="fa-solid fa-spinner fa-spin"></i>');
-                    $('#warningModalButtonClose').addClass('disabled');
-                    var parameters = {
-                        'user_id': parseInt(store.get('teampassUser').user_id)
-                    };
-                    $.post(
-                        "sources/main.queries.php", {
-                            type: "generate_temporary_encryption_key",
-                            type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: "<?php echo $_SESSION['key']; ?>"
-                        },
-                        function(data) {  
-                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                            if (debugJavascript === true) console.log(data)
+                    if ($('#warningModalButtonAction').attr('data-button-confirm') === 'false') {
+                        $('#warningModalButtonAction')
+                            .html('<i class="fa-solid fa-triangle-exclamation warning mr-2"></i><?php echo langHdl('confirm'); ?>')
+                            .attr('data-button-confirm', 'true');
+                    } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
+                        // launch action
+                        $('#warningModalButtonAction')
+                            .addClass('disabled')
+                            .html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                        $('#warningModalButtonClose').addClass('disabled');
+                        var parameters = {
+                            'user_id': parseInt(store.get('teampassUser').user_id)
+                        };
+                        $.post(
+                            "sources/main.queries.php", {
+                                type: "generate_temporary_encryption_key",
+                                type_category: 'action_key',
+                                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key: "<?php echo $_SESSION['key']; ?>"
+                            },
+                            function(data) {  
+                                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                if (debugJavascript === true) console.log(data)
 
-                            if (data.error !== false) {
-                                // Show error
-                                toastr.remove();
-                                toastr.error(
-                                    data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 5000,
-                                        progressBar: true
-                                    }
-                                );
-                            } else {
-                                $("#encryption-otp").val(data.userTemporaryCode);
-                                $("#encryption-otp-div").removeClass('hidden');
-                                // update the process
-                                // add all tasks
-                                var parameters = {
-                                    'user_id': parseInt(store.get('teampassUser').user_id),
-                                    'user_pwd': data.user_pwd,
-                                    'encryption_key': data.userTemporaryCode,
-                                    'delete_existing_keys': true
-                                };
-                                $.post(
-                                    "sources/main.queries.php", {
-                                        type: "user_new_keys_generation",
-                                        type_category: 'action_key',
-                                        data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                        key: "<?php echo $_SESSION['key']; ?>"
-                                    },
-                                    function(data_next1) { 
-                                        data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $_SESSION['key']; ?>');
-                                        if (debugJavascript === true) console.log(data_next1)
-
-                                        if (data_next1.error !== false) {
-                                            // Show error
-                                            toastr.remove();
-                                            toastr.error(
-                                                data_next1.message,
-                                                '<?php echo langHdl('caution'); ?>', {
-                                                    timeOut: 5000,
-                                                    progressBar: true
-                                                }
-                                            );
-                                        } else {
-                                            $("#encryption-otp-div").after('<div><?php echo langHdl('generate_new_keys_end'); ?></div>');
-                                            // Show warning
-                                            $('#user_not_ready').removeClass('hidden');
-                                            // update local storage
-                                            store.update(
-                                                'teampassUser', {},
-                                                function(teampassUser) {
-                                                    teampassUser.is_ready_for_usage = 0;
-                                                }
-                                            );
-                                            $("#warningModalButtonAction").addClass('hidden');
-                                            $('#warningModalButtonClose').removeClass('disabled');
+                                if (data.error !== false) {
+                                    // Show error
+                                    toastr.remove();
+                                    toastr.error(
+                                        data.message,
+                                        '<?php echo langHdl('caution'); ?>', {
+                                            timeOut: 5000,
+                                            progressBar: true
                                         }
-                                    }
-                                );
+                                    );
+                                } else {
+                                    $("#encryption-otp").val(data.userTemporaryCode);
+                                    $("#encryption-otp-div").removeClass('hidden');
+                                    // update the process
+                                    // add all tasks
+                                    var parameters = {
+                                        'user_id': parseInt(store.get('teampassUser').user_id),
+                                        'user_pwd': data.user_pwd,
+                                        'encryption_key': data.userTemporaryCode,
+                                        'delete_existing_keys': true
+                                    };
+                                    $.post(
+                                        "sources/main.queries.php", {
+                                            type: "user_new_keys_generation",
+                                            type_category: 'action_key',
+                                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                            key: "<?php echo $_SESSION['key']; ?>"
+                                        },
+                                        function(data_next1) { 
+                                            data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                            if (debugJavascript === true) console.log(data_next1)
+
+                                            if (data_next1.error !== false) {
+                                                // Show error
+                                                toastr.remove();
+                                                toastr.error(
+                                                    data_next1.message,
+                                                    '<?php echo langHdl('caution'); ?>', {
+                                                        timeOut: 5000,
+                                                        progressBar: true
+                                                    }
+                                                );
+                                            } else {
+                                                $("#encryption-otp-div").after('<div><?php echo langHdl('generate_new_keys_end'); ?></div>');
+                                                // Show warning
+                                                $('#user_not_ready').removeClass('hidden');
+                                                // update local storage
+                                                store.update(
+                                                    'teampassUser', {},
+                                                    function(teampassUser) {
+                                                        teampassUser.is_ready_for_usage = 0;
+                                                        teampassUser.temporary_code = data.userTemporaryCode;
+                                                    }
+                                                );
+                                                $("#warningModalButtonAction").addClass('hidden');
+                                                $('#warningModalButtonClose').removeClass('disabled');
+                                            }
+                                        }
+                                    );
+                                }
                             }
-                        }
-                    );
+                        );
+                    }
                 });
             }
         }
@@ -744,7 +804,7 @@ if (
             }
         );
     });
-
+console.log(store.get('teampassUser'));
     // Progress bar
     setTimeout(
         function() {

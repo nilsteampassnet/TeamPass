@@ -780,6 +780,7 @@ $SETTINGS = array (';
                             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
                             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
                             `roles_from_ad_groups` varchar(1000) NULL,
+                            `ongoing_process_id` VARCHAR(100) DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

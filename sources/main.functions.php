@@ -4045,6 +4045,8 @@ function handleUserKeys(
             prefixTable('users'),
             [
                 'is_ready_for_usage' => 0,
+                'otp_provided' => 1,
+                'ongoing_process_id' => $processId,
             ],
             'id=%i',
             $userId

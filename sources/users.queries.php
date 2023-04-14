@@ -3441,6 +3441,75 @@ if (null !== $post_type) {
             );
 
             break;
+
+        /*
+        * WHAT IS THE PROGRESS OF GENERATING NEW KEYS AND OTP FOR A USER
+        */
+        case 'get_generate_keys_progress':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            // get user info
+            $processesProgress = DB::query(
+                'SELECT u.ongoing_process_id, pt.task, pt.updated_at, pt.finished_at, pt.is_in_progress
+                FROM ' . prefixTable('users') . ' AS u
+                INNER JOIN ' . prefixTable('processes_tasks') . ' AS pt ON (pt.process_id = u.ongoing_process_id)
+                WHERE u.id = %i',
+                $user_id
+            );
+
+            //print_r($processesProgress);
+            $finished_steps = 0;
+            $nb_steps = count($processesProgress);
+            foreach($processesProgress as $process) {
+                if ((int) $process['is_in_progress'] === -1) {
+                    $finished_steps ++;
+                }
+            }
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'user_id' => $user_id,
+                    'status' => $finished_steps === $nb_steps ? 'finished' : number_format($finished_steps/$nb_steps*100, 0).'%',
+                    'debug' => $finished_steps.",".$nb_steps,
+                ),
+                'encode'
+            );
+
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
