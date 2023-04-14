@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.6
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -649,6 +649,9 @@ $SETTINGS = array (';
                             array('admin', 'enable_ad_user_auto_creation', '0'),
                             array('admin', 'ldap_group_object_filter', ''),
                             array('admin', 'ldap_guid_attibute', 'objectguid'),
+                            array('admin', 'sending_emails_job_frequency', '2'),
+                            array('admin', 'user_keys_job_frequency', '1'),
+                            array('admin', 'items_statistics_job_frequency', '5'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
