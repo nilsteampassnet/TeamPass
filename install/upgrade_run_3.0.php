@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.6
  * @file      upgrade_run_3.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -112,6 +112,35 @@ if (!$res) {
 }
 
 //---<END 3.0.5
+
+
+//--->BEGIN 3.0.6
+// Add new setting 'sending_emails_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'sending_emails_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'sending_emails_job_frequency', '2')"
+    );
+}
+// Add new setting 'user_keys_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'user_keys_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'user_keys_job_frequency', '1')"
+    );
+}
+// Add new setting 'items_statistics_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'enable_tasks_items_statistics_job_frequencymanager'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'items_statistics_job_frequency', '5')"
+    );
+}
+
+//---<END 3.0.6
 
 
 // Save timestamp

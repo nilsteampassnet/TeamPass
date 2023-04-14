@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.6
  * @file      upgrade_run_3.0.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
