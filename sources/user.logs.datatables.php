@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      user.logs.datatables.php
  * ---
  *
@@ -80,7 +80,7 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
     if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['dir'])
     ) {
         $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-        .filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_STRING).', ';
+        .filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -103,12 +103,12 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== 'None'
 ) {
     $sWhere = ' AND ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%')";
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
     $sWhere = ' AND ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
-    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%')";
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
 }
 
 $rows = DB::query(

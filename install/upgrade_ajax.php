@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -37,21 +37,21 @@ require_once 'tp.functions.php';
 
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
-$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
-$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-$post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
-$post_fullurl = filter_input(INPUT_POST, 'fullurl', FILTER_SANITIZE_STRING);
-$post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_STRING);
-$post_no_previous_sk = filter_input(INPUT_POST, 'no_previous_sk', FILTER_SANITIZE_STRING);
-$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
-$post_previous_sk = filter_input(INPUT_POST, 'previous_sk', FILTER_SANITIZE_STRING);
-$post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_STRING);
-$post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_STRING);
-$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
-$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
+$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_fullurl = filter_input(INPUT_POST, 'fullurl', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_no_previous_sk = filter_input(INPUT_POST, 'no_previous_sk', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_previous_sk = filter_input(INPUT_POST, 'previous_sk', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 
 // Do we need to rewrite the settings.php file?

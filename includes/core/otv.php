@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      otv.php
  * ---
  *
@@ -96,7 +96,7 @@ if (!empty($superGlobal->get('code', 'GET')) === true
         'SELECT id, timestamp, code, item_id, encrypted
         FROM '.prefixTable('otv').'
         WHERE code = %s',
-        filter_input(INPUT_GET, 'code', FILTER_SANITIZE_STRING)
+        filter_input(INPUT_GET, 'code', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     if (DB::count() > 0  && (int) $data['timestamp'] === (int) filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT)) {
         // otv is too old
@@ -164,7 +164,7 @@ if (!empty($superGlobal->get('code', 'GET')) === true
             // Uncrypt PW
             $password_decrypted = cryption(
                 $data['encrypted'],
-                filter_input(INPUT_GET, 'key', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_GET, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 'decrypt',
                 $SETTINGS
             );

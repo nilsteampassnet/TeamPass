@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      install.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -103,13 +103,13 @@ function encryptFollowingDefuse($message, $ascii_key)
 }
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_activity = filter_input(INPUT_POST, 'activity', FILTER_SANITIZE_STRING);
-$post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_activity = filter_input(INPUT_POST, 'activity', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
-$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
-$post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_STRING);
+$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // Load libraries
 require_once '../sources/main.functions.php';
@@ -353,8 +353,8 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_items`
-                                ADD KEY `object_id` (`object_id`),
-                                ADD KEY `user_id` (`user_id`);'
+                                ADD KEY `object_id_idx` (`object_id`),
+                                ADD KEY `user_id_idx` (`user_id`);'
                         );
                     } elseif ($task === 'sharekeys_logs') {
                         $mysqli_result = mysqli_query(
@@ -370,8 +370,8 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_logs`
-                                ADD KEY `object_id` (`object_id`),
-                                ADD KEY `user_id` (`user_id`);'
+                                ADD KEY `object_id_idx` (`object_id`),
+                                ADD KEY `user_id_idx` (`user_id`);'
                         );
                     } elseif ($task === 'sharekeys_fields') {
                         $mysqli_result = mysqli_query(
@@ -1205,6 +1205,11 @@ $SETTINGS = array (';
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            'ALTER TABLE `' . $var['tbl_prefix'] . 'processes_tasks`
+                                ADD KEY `process_id_idx` (`process_id`);'
+                        );
                     } else if ($task === 'processes') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -1225,6 +1230,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_logs` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(20) NOT NULL,
                             `job` varchar(50) NOT NULL,
                             `status` varchar(10) NOT NULL,
@@ -1246,7 +1252,9 @@ $SETTINGS = array (';
                             ) CHARSET=utf8;"
                         );
                     }
-
+                    // CARREFULL - WHEN ADDING NEW TABLE
+                    // Add the command inside install.js file
+                    // in task array at step 5
                 }
                 // answer back
                 if ($mysqli_result) {

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      identify.php
  * ---
  *
@@ -57,10 +57,9 @@ include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGloba
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-//$post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // connect to the server
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -281,8 +280,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $SETTINGS,
         (string) $server['PHP_AUTH_USER'],
         (string) $server['PHP_AUTH_PW'],
-        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING),
-        (string) filter_var($dataReceived['login'], FILTER_SANITIZE_STRING)
+        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     $username = $userCredentials['username'];
     $passwordClear = $userCredentials['passwordClear'];
@@ -294,7 +293,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (string) $username,
         (int) $sessionAdmin,
         (string) $sessionUrl,
-        (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_STRING)
+        (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     // if user doesn't exist in Teampass then return error
     if ($userInitialData['error'] === true) {
@@ -739,7 +738,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
-            $receivers = ['name' => '', 'email' => ''];
             $val = DB::queryfirstrow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
             if (DB::count() > 0) {
                 // Add email to table

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.3
+ * @version   3.0.5
  * @file      upgrade_run_3.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -95,6 +95,23 @@ mysqli_query(
 );
 
 //---<END 3.0.1
+
+
+//--->BEGIN 3.0.5
+
+// Add the INDEX process_id_idx to the processes_tasks table
+$res = checkIndexExist(
+    $pre . 'processes_tasks',
+    'process_id_idx',
+    "ADD KEY `process_id_idx` (`process_id`)"
+);
+if (!$res) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX process_id_idx to the processes_tasks table! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+//---<END 3.0.5
 
 
 // Save timestamp
