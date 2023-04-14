@@ -391,3 +391,41 @@ function changeColumnName($table, $oldName, $newName, $type): void
         }
     }
 }
+
+/**
+ * Permits to locate the php binary
+ * 
+ * @return array
+ */
+function findPhpBinary(): array
+{
+    $phpPath = '';
+    
+    // Essayer de trouver le fichier binaire de PHP dans les chemins de recherche standards
+    $paths = explode(PATH_SEPARATOR, getenv('PATH'));
+    foreach ($paths as $path) {
+        $phpBinary = $path . DIRECTORY_SEPARATOR . 'php';
+        if (is_executable($phpBinary)) {
+        $phpPath = $phpBinary;
+        break;
+        }
+    }
+
+    // Si le fichier binaire de PHP n'a pas été trouvé, on essaie de le chercher via les variables d'environnement
+    if (!$phpPath && getenv('PHP_BINARY')) {
+        $phpPath = getenv('PHP_BINARY');
+    }
+
+    // Si on n'a toujours pas trouvé le fichier binaire de PHP, on lance une exception
+    if (!$phpPath) {
+        return [
+            'path' => '',
+            'error' => true,
+        ];
+    }
+
+    return [
+        'path' => $phpPath,
+        'error' => false,
+    ];
+}

@@ -780,7 +780,7 @@ $SETTINGS = array (';
                             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
                             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
                             `roles_from_ad_groups` varchar(1000) NULL,
-                            `ongoing_process_id` VARCHAR(100) DEFAULT NULL,
+                            `ongoing_process_id` VARCHAR(100) NULL,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -1485,34 +1485,33 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
                     // get php location
-                    exec("locate php", $phpLocation, $return);
-                    if (count($phpLocation) > 0) {
-                        $phpLocation = $phpLocation[0];
-                    } else {
-                        $phpLocation = 'php';
-                    }
-
-                    // Instantiate the adapter and repository
-                    try {
-                        $crontabRepository = new CrontabRepository(new CrontabAdapter());
-                        $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
-                        if (count($results) === 0) {
-                            // Add the job
-                            $crontabJob = new CrontabJob();
-                            $crontabJob
-                                ->setMinutes('*')
-                                ->setHours('*')
-                                ->setDayOfMonth('*')
-                                ->setMonths('*')
-                                ->setDayOfWeek('*')
-                                ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
-                                ->setComments('Teampass scheduler');
-                            
-                            $crontabRepository->addJob($crontabJob);
-                            $crontabRepository->persist();
+                    require_once 'tp.functions.php';
+                    $phpLocation = findPhpBinary();
+                    if ($phpLocation['error'] === false) {
+                        // Instantiate the adapter and repository
+                        try {
+                            $crontabRepository = new CrontabRepository(new CrontabAdapter());
+                            $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                            if (count($results) === 0) {
+                                // Add the job
+                                $crontabJob = new CrontabJob();
+                                $crontabJob
+                                    ->setMinutes('*')
+                                    ->setHours('*')
+                                    ->setDayOfMonth('*')
+                                    ->setMonths('*')
+                                    ->setDayOfWeek('*')
+                                    ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
+                                    ->setComments('Teampass scheduler');
+                                
+                                $crontabRepository->addJob($crontabJob);
+                                $crontabRepository->persist();
+                            }
+                        } catch (Exception $e) {
+                            // do nothing
                         }
-                    } catch (Exception $e) {
-                        // do nothing
+                    } else {
+                        echo '[{"error" : "Cannot find PHP binary location. Please add a cronjob manually (see documentation).", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                     }
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 }
