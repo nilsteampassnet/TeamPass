@@ -140,6 +140,19 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add field ongoing_process_id to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'ongoing_process_id',
+    "varchar(100) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field ongoing_process_id to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
 //---<END 3.0.6
 
 

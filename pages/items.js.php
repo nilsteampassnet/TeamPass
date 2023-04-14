@@ -4285,7 +4285,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             }
                         );
                         document.location.href = "index.php?page=items";
-                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key') {
+                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key' && store.get('teampassUser').temporary_code === '') {
                         // we have to ask the user to re-encrypt his privatekey
                         toastr.error(
                             data.message,
