@@ -326,7 +326,7 @@ if (($session_validite_pw === null
                                 <?php
                                     } ?>
                                 <a class="dropdown-item user-menu<?php echo (int) $session_user_admin === 1 ? ' hidden' : '';?>" href="#" data-name="generate-new_keys">
-                                    <i class="fa-solid fa-mask fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
+                                    <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">

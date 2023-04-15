@@ -2500,7 +2500,7 @@ if (is_null($inputData['type']) === false) {
                             'error' => true,
                             'message' => langHdl('error_new_ldap_password_detected'),
                             'show_detail_option' => 2,
-                            'error_type' => 'user_should_reencrypt_private_key',
+                            'error_type' => 'inconsistent_password',
                         ),
                         'encode'
                     );

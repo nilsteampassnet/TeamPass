@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class StripTags implements Filter
 {
     /**
-     * Strip tags from the given string.
+     * Strips HTML and PHP tags from the given string
      *
      * @param mixed $value
      * @param array $options

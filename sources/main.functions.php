@@ -3903,13 +3903,17 @@ function upgradeRequired(): bool
  * @param string $passwordClear
  * @param string $encryptionKey
  * @param boolean $deleteExistingKeys
+ * @param boolean $sendEmailToUser
+ * @param boolean $encryptWithUserPassword
  * @return boolean
  */
 function handleUserKeys(
     int $userId,
     string $passwordClear,
     string $encryptionKey = '',
-    bool $deleteExistingKeys = false
+    bool $deleteExistingKeys = false,
+    bool $sendEmailToUser = true,
+    bool $encryptWithUserPassword = false
 ): string
 {
 
@@ -3921,6 +3925,10 @@ function handleUserKeys(
         TP_USER_ID
     );
     if (DB::count() > 0) {
+        // Manage empty encryption key
+        // Let's take the user's password if asked and if no encryption key provided
+        $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
+
         // Create process
         DB::insert(
             prefixTable('processes'),
@@ -3933,6 +3941,8 @@ function handleUserKeys(
                     'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
                     'owner_id' => (int) TP_USER_ID,
                     'creator_pwd' => $val['pw'],
+                    'send_email' => $sendEmailToUser === true ? 1 : 0,
+                    'otp_provided_new_value' => 1,
                 ]),
                 'updated_at' => '',
                 'finished_at' => '',
@@ -4047,6 +4057,7 @@ function handleUserKeys(
                 'is_ready_for_usage' => 0,
                 'otp_provided' => 1,
                 'ongoing_process_id' => $processId,
+                'special' => 'generate-keys',
             ],
             'id=%i',
             $userId
