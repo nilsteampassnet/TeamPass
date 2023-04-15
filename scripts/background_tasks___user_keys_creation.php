@@ -950,7 +950,10 @@ function cronContinueReEncryptingUserSharekeysStep6(
     );
 
     if ($userInfo['auth_type'] === 'local') {
-        if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
+        if (
+            (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
+            || (isset($extra_arguments['send_email']) === false)
+        ) {
             // Send email to user
             sendMailToUser(
                 filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -982,7 +985,10 @@ function cronContinueReEncryptingUserSharekeysStep6(
         );
     } else {
         if ($userInfo['special']  === 'user_added_from_ldap') {
-            if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
+            if (
+                (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
+                || (isset($extra_arguments['send_email']) === false)
+            ) {
                 sendMailToUser(
                     filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     langHdl('email_body_user_added_from_ldap_encryption_code'),
