@@ -17,9 +17,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'show_password' => 'Show password',
     'generate_new_keys' => 'Generate new keys',
-    'generate_new_keys_info' => 'By continuing, you will generate new keys for all objects you have access to. This should only be done if you have no password shown. A code will be provided. Store it carrefully, it will be asked once the process is finished.',
-    'encryption_key' => 'Encryption key',
+    'generate_new_keys_info' => 'By continuing, you will generate new encryption keys for all objects you have access to. This should only be done if you have no password shown.',
+    'confirm_password' => 'We need you to confirm your password',
     'generate_new_keys_end' => 'Process is on going in background and could take several minutes. You can now close this window.',
     'currently_using_version' => 'Current version loaded',
     'git_commit_value' => 'Git commit value',

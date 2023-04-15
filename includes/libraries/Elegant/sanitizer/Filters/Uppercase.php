@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Uppercase implements Filter
 {
     /**
-     * Uppercase the given string.
+     * Converts the given string to all uppercase.
      *
      * @param mixed $value
      * @param array $options

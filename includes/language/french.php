@@ -1061,8 +1061,8 @@ return array(
     'currently_using_version' => 'Version actuellement chargée',
     'git_commit_value' => 'Version du commit de Git',
     'generate_new_keys' => 'Générer de nouvelles clés',
-    'generate_new_keys_info' => 'En poursuivant, de nouvelles clés pour les objets vont être générées. Cela devrait être effectué uniquement si les mots de passe ne s\'affichent plus. Une clé de cryptage sera fournie. Conservez la précieusement car elle sera demandé à la fin de l\'opération.',
-    'encryption_key' => 'Clé de cryptage',
+    'generate_new_keys_info' => 'En poursuivant, de nouvelles clés pour les objets vont être générées. Cela devrait être effectué uniquement si les mots de passe ne s\'affichent plus.',
     'generate_new_keys_end' => 'L\'opération est en cours en arrière plan et peut prendre plusieurs minutes. Vous pouvez maintenant fermer cette fenêtre.',
+    'confirm_password' => 'Merci de confirmer votre mot de passe',
 
 );

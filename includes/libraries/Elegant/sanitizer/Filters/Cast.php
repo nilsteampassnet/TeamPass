@@ -8,7 +8,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Cast implements Filter
 {
     /**
-     * Capitalize the given string.
+     * Casts the given value to into the given type.
      *
      * @param mixed $value
      * @param array $options
