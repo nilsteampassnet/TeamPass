@@ -1933,6 +1933,7 @@ console.log(store.get('teampassUser'));
                         // We need to finalize user public/private keys
                         
                         $('#user_not_ready').addClass('hidden');
+                        $("#warningModalButtonAction").removeClass('hidden');
                         $('#user_not_ready_progress').html('');
                         toastr.success(
                             data.message,
