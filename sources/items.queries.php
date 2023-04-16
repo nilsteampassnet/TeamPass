@@ -212,11 +212,10 @@ if (is_null($inputData['type']) === false) {
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $post_fields = filter_var(
+                $post_fields = filter_var_array(
                     $dataReceived['fields'],
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
-                $post_fields = $post_fields !== false ? json_decode($post_fields) : '';
                 $inputData['folderId'] = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -465,80 +464,47 @@ if (is_null($inputData['type']) === false) {
                         $SETTINGS
                     );
 
-                    /*
-                    // Prepare shareKey for users
-                    if ((int) $post_folder_is_personal === 1 && isset($post_folder_is_personal) === true) {
-                        // If this is a personal object
-                        DB::insert(
-                            prefixTable('sharekeys_items'),
-                            array(
-                                'object_id' => $newID,
-                                'user_id' => $_SESSION['user_id'],
-                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $_SESSION['user']['public_key']),
-                            )
-                        );
-                    } else {
-                        // This is a public object
-                        $users = DB::query(
-                            'SELECT id, public_key
-                            FROM '.prefixTable('users').'
-                            WHERE id NOT IN ("'.OTV_USER_ID.'","'.SSH_USER_ID.'","'.API_USER_ID.'")
-                            AND public_key != ""'
-                        );
-                        foreach ($users as $user) {
-                            // Insert in DB the new object key for this item by user
-                            DB::insert(
-                                prefixTable('sharekeys_items'),
-                                array(
-                                    'object_id' => $newID,
-                                    'user_id' => (int) $user['id'],
-                                    'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $user['public_key']),
-                                )
-                            );
-                        }
-                    }
-                    */
-
                     // update fields
                     if (
                         isset($SETTINGS['item_extra_fields']) === true
                         && (int) $SETTINGS['item_extra_fields'] === 1
                     ) {
-                        foreach (explode('_|_', $post_fields) as $field) {
-                            $field_data = explode('~~', $field);
-                            if (count($field_data) > 1 && empty($field_data[1]) === false) {
+                        foreach ($post_fields as $field) {
+                            if (empty($field['value']) === false) {
                                 // should we encrypt the data
                                 $dataTmp = DB::queryFirstRow(
                                     'SELECT encrypted_data
                                     FROM ' . prefixTable('categories') . '
                                     WHERE id = %i',
-                                    $field_data[0]
+                                    $field['id']
                                 );
 
                                 // Should we encrypt the data
                                 if ((int) $dataTmp['encrypted_data'] === 1) {
-                                    $cryptedStuff = doDataEncryption($field_data[1]);
-
                                     // Create sharekeys for users
-                                    storeUsersShareKey(
-                                        prefixTable('sharekeys_fields'),
-                                        (int) $post_folder_is_personal,
-                                        (int) $inputData['folderId'],
-                                        (int) $newId,
-                                        $cryptedStuff['objectKey'],
-                                        $SETTINGS
-                                    );
+                                    $cryptedStuff = doDataEncryption($field['value']);
 
-                                    // update value
+                                    // Store value
                                     DB::insert(
                                         prefixTable('categories_items'),
                                         array(
                                             'item_id' => $newID,
-                                            'field_id' => $field_data[0],
+                                            'field_id' => $field['id'],
                                             'data' => $cryptedStuff['encrypted'],
                                             'data_iv' => '',
                                             'encryption_type' => TP_ENCRYPTION_NAME,
                                         )
+                                    );
+                                    $newBojectId = DB::insertId();
+
+                                    // Store key
+                                    storeUsersShareKey(
+                                        prefixTable('sharekeys_fields'),
+                                        (int) $post_folder_is_personal,
+                                        (int) $inputData['folderId'],
+                                        (int) $newBojectId,
+                                        $cryptedStuff['objectKey'],
+                                        $SETTINGS
                                     );
                                 } else {
                                     // update value
@@ -546,8 +512,8 @@ if (is_null($inputData['type']) === false) {
                                         prefixTable('categories_items'),
                                         array(
                                             'item_id' => $newID,
-                                            'field_id' => $field_data[0],
-                                            'data' => $field_data[1],
+                                            'field_id' => $field['id'],
+                                            'data' => $field['value'],
                                             'data_iv' => '',
                                             'encryption_type' => 'not_set',
                                         )
@@ -2706,7 +2672,8 @@ if (is_null($inputData['type']) === false) {
                                 WHERE user_id = %i AND object_id = %i',
                                 $_SESSION['user_id'],
                                 $row['id']
-                            );//db::debugmode(false);
+                            );
+                            //db::debugmode(false);
                             $fieldText = [];
                             if (DB::count() === 0) {
                                 // Not encrypted
