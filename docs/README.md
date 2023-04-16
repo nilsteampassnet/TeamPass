@@ -12,7 +12,9 @@
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-> 💪 Work in progress - 📡 [Old documentation](https://teampass.readthedocs.io/en/latest/) is still available.
+> 💪 Work in progress
+> 
+> 📡 Old documentation is still available at [teampass.readthedocs.io](https://teampass.readthedocs.io/en/latest/).
 
 ## Features
 

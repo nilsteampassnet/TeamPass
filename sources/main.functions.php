@@ -3914,7 +3914,8 @@ function handleUserKeys(
     string $encryptionKey = '',
     bool $deleteExistingKeys = false,
     bool $sendEmailToUser = true,
-    bool $encryptWithUserPassword = false
+    bool $encryptWithUserPassword = false,
+    int $nbItemsToTreat
 ): string
 {
 
@@ -3968,7 +3969,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step0',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -3981,7 +3982,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step1',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -3994,7 +3995,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step2',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4007,7 +4008,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step3',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4020,7 +4021,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step4',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4033,7 +4034,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step5',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4046,7 +4047,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step6',
                     'index' => 0,
-                    'nb' => empty($nbItemsToTreat) === false ? $nbItemsToTreat : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );

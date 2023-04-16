@@ -4582,7 +4582,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 $('#card-item-field-' + field.id)
                                     .removeClass('hidden')
                                     .children(".card-item-field-value")
-                                    .text(field.value);
+                                    .html(field.value);
                             }
                             // Item edit form
                             $('#form-item-field-' + field.id)

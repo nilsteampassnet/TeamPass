@@ -16,10 +16,10 @@ User credentails are stored encrypted in the database. The encryption is perform
 Teampass encrypts sensitive data and especially password part of any defined item. 
 
 The encryption relies on public and private keys each user has. When a user is added, his keys are generated following the next process.
-![Generating user keys](./_media/tp3_encrypt_user.png)
+![Generating user keys](../_media/tp3_encrypt_user.png)
 
 Each encrypted element (password, custom fields) has one shared key by user. This key can only be decrypted with one user Password and Private key.
-![Element encryption](./_media/tp3_encrypt_item.png)
+![Element encryption](../_media/tp3_encrypt_item.png)
 
 When a user has to visualize an encrypted element, his password and private key is mandatory
-![encryption model](./_media/tp3_decrypt_item.png)
+![encryption model](../_media/tp3_decrypt_item.png)
