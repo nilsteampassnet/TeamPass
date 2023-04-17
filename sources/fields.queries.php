@@ -383,7 +383,7 @@ if (null !== $post_type) {
                     ]
                 );
             }
-echo "couocu2";
+
             // ensure categories are set
             handleFoldersCategories(
                 []
