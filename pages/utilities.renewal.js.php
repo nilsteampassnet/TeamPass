@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.6
+ * @version   3.0.7
  * @file      utilities.renewal.js.php
  * ---
  *

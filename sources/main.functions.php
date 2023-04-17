@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.6
+ * @version   3.0.7
  * @file      main.functions.php
  * ---
  *
@@ -3536,7 +3536,7 @@ function defineComplexity() : void
 function dataSanitizer(
     array $data,
     array $filters,
-    string $path
+    string $path = __DIR__. '/..' // Path to Teampass root
 ): array
 {
     // Load Sanitizer library
@@ -3864,6 +3864,23 @@ if (!function_exists('str_contains')) {
     function str_contains($haystack, $needle) {
         return $needle !== '' && mb_strpos($haystack, $needle) !== false;
     }
+}
+
+
+function getFullUserInfos(
+    int $userId
+): array
+{
+    if (empty($userId) === true) {
+        return array();
+    }
+
+    $val = DB::queryfirstrow(
+        'SELECT *
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
 }
 
 /**
