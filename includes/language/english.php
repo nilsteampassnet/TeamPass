@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.6
+ * @version   3.0.7
  * @file      english.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -17,6 +17,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'teampass_information' => 'Teampass information',
     'show_password' => 'Show password',
     'generate_new_keys' => 'Generate new keys',
     'generate_new_keys_info' => 'By continuing, you will generate new encryption keys for all objects you have access to. This should only be done if you have no password shown.',

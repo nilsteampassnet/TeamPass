@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.6
+ * @version   3.0.7
  * @file      users.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -2181,36 +2181,62 @@ if (null !== $post_type) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
 
             if (empty($dataReceived) === false) {
+                // Sanitize
+                $data = [
+                    'email' => isset($dataReceived['email']) === true ? $dataReceived['email'] : '',
+                    'timezone' => isset($dataReceived['timezone']) === true ? $dataReceived['timezone'] : '',
+                    'language' => isset($dataReceived['language']) === true ? $dataReceived['language'] : '',
+                    'treeloadstrategy' => isset($dataReceived['treeloadstrategy']) === true ? $dataReceived['treeloadstrategy'] : '',
+                    'agsescardid' => isset($dataReceived['agsescardid']) === true ? $dataReceived['agsescardid'] : '',
+                    'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
+                    'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
+                ];
+                
+                $filters = [
+                    'email' => 'trim|escape',
+                    'timezone' => 'trim|escape',
+                    'language' => 'trim|escape',
+                    'treeloadstrategy' => 'trim|escape',
+                    'agsescardid' => 'trim|escape',
+                    'name' => 'trim|escape',
+                    'lastname' => 'trim|escape',
+                ];
+                
+                $inputData = dataSanitizer(
+                    $data,
+                    (array) $filters
+                );
+
                 // update user
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'email' => filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL),
-                        'usertimezone' => filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'agses-usercardid' => filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT),
-                        'name' => filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'lastname' => filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                        'email' => $inputData['email'],
+                        'usertimezone' => $inputData['timezone'],
+                        'user_language' => $inputData['language'],
+                        'treeloadstrategy' => $inputData['treeloadstrategy'],
+                        'agses-usercardid' => $inputData['agsescardid'],
+                        'name' => $inputData['name'],
+                        'lastname' => $inputData['lastname'],
                     ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_timezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['user_agsescardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
-                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $_SESSION['user_timezone'] = $inputData['timezone'];
+                $_SESSION['name'] = $inputData['name'];
+                $_SESSION['lastname'] = $inputData['lastname'];
+                $_SESSION['user_email'] = $inputData['email'];
+                $_SESSION['user']['user_treeloadstrategy'] = $inputData['treeloadstrategy'];
+                $_SESSION['user_agsescardid'] = $inputData['agsescardid'];
+                $_SESSION['user']['user_language'] = $inputData['language'];
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -2229,6 +2255,9 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'message' => '',
+                    'name' => $_SESSION['name'],
+                    'lastname' => $_SESSION['lastname'],
+                    'email' => $_SESSION['user_email'],
                 ),
                 'encode'
             );
