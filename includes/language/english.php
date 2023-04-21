@@ -17,6 +17,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'no_code_is_requested' => 'No code is requested.',
+    'user_encryption_ongoing' => 'Account is currently being encrypting. Your request cannot continue. Please wait until this is finished.',
     'teampass_information' => 'Teampass information',
     'show_password' => 'Show password',
     'generate_new_keys' => 'Generate new keys',

@@ -1065,5 +1065,9 @@ return array(
 .',
     'generate_new_keys_end' => 'Process is on going in background and could take several minutes. You can now close this window.',
     'confirm_password' => 'We need you to confirm your password',
+    'no_code_is_requested' => 'No code is requested.',
+    'user_encryption_ongoing' => 'Account is currently being encrypting. Your request cannot continue. Please wait until this is finished.',
+    'teampass_information' => 'Teampass information',
+    'show_password' => 'Show password',
 
 );

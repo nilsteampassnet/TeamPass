@@ -3366,7 +3366,10 @@ if (null !== $post_type) {
             DB::update(
                 prefixTable('users'),
                 array(
-                    'is_ready_for_usage' => 0,
+                    'is_ready_for_usage' => 1,
+                    'otp_provided' => 0,
+                    'ongoing_process_id' => $processId,
+                    'special' => 'generate-keys',
                 ),
                 'id = %i',
                 $post_user_id
@@ -3464,7 +3467,7 @@ if (null !== $post_type) {
                     'user_id' => $user_id,
                     'user_code' => $password,
                     'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
-                    'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
+                    'post_action' => 'prepare_tasks',
                 ),
                 'encode'
             );
@@ -3505,6 +3508,21 @@ if (null !== $post_type) {
                 'decode'
             );
 
+            if (isset($dataReceived['user_id']) === false) {
+                // Exit nothing to be done
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => '',
+                        'user_id' => '',
+                        'status' => '',
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+            }
+
             // Prepare variables
             $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -3534,6 +3552,59 @@ if (null !== $post_type) {
                     'user_id' => $user_id,
                     'status' => $finished_steps === $nb_steps ? 'finished' : number_format($finished_steps/$nb_steps*100, 0).'%',
                     'debug' => $finished_steps.",".$nb_steps,
+                ),
+                'encode'
+            );
+
+            break;
+
+
+        /**
+         * CHECK IF USER IS FINISHED WITH GENERATING NEW KEYS AND OTP FOR A USER
+         */
+        case "get-user-infos":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+            // Prepare variables
+            $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            $userInfos = getFullUserInfos((int) $user_id);
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'user_id' => $user_id,
+                    'user_infos' => $userInfos,
+                    'debug' => '',
                 ),
                 'encode'
             );

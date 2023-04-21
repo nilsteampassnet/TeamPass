@@ -1185,7 +1185,7 @@ $SETTINGS = array (';
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "cache_tree` (
                             `increment_id` smallint(32) NOT NULL AUTO_INCREMENT,
-                            `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
+                            `data` longtext DEFAULT NULL CHECK (json_valid(`data`)),
                             `visible_folders` longtext NOT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(12) NOT NULL,

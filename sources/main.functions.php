@@ -1282,32 +1282,22 @@ function prepareSendingEmail(
     $SETTINGS
 ): void 
 {
-    if (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
-        DB::insert(
-            prefixTable('processes'),
-            array(
-                'created_at' => time(),
-                'process_type' => 'send_email',
-                'arguments' => json_encode([
-                    'subject' => $subject,
-                    'receivers' => $email,
-                    'body' => $body,
-                    'receiver_name' => $receiverName,
-                ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                'updated_at' => '',
-                'finished_at' => '',
-                'output' => '',
-            )
-        );
-    } else {
-        sendEmail(
-            $subject,
-            $body,
-            $email,
-            $SETTINGS,
-            $body
-        );
-    }
+    DB::insert(
+        prefixTable('processes'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'send_email',
+            'arguments' => json_encode([
+                'subject' => $subject,
+                'receivers' => $email,
+                'body' => $body,
+                'receiver_name' => $receiverName,
+            ], JSON_HEX_QUOT | JSON_HEX_TAG),
+            'updated_at' => '',
+            'finished_at' => '',
+            'output' => '',
+        )
+    );
 }
 
 /**
@@ -1709,7 +1699,7 @@ function prefixTable(string $table): string
  * @return string
  */
 function GenerateCryptKey(
-    int $size = 10,
+    int $size = 20,
     bool $secure = false,
     bool $numerals = false,
     bool $uppercase = false,
@@ -3866,7 +3856,12 @@ if (!function_exists('str_contains')) {
     }
 }
 
-
+/**
+ * Get all users informations
+ *
+ * @param integer $userId
+ * @return array
+ */
 function getFullUserInfos(
     int $userId
 ): array
@@ -3881,6 +3876,8 @@ function getFullUserInfos(
         WHERE id = %i',
         $userId
     );
+
+    return $val;
 }
 
 /**
@@ -3922,6 +3919,7 @@ function upgradeRequired(): bool
  * @param boolean $deleteExistingKeys
  * @param boolean $sendEmailToUser
  * @param boolean $encryptWithUserPassword
+ * @param boolean $encryptWithUserPassword
  * @param integer $nbItemsToTreat
  * @return string
  */
@@ -3932,18 +3930,56 @@ function handleUserKeys(
     bool $deleteExistingKeys = false,
     bool $sendEmailToUser = true,
     bool $encryptWithUserPassword = false,
+    bool $generate_user_new_password = false,
     int $nbItemsToTreat
 ): string
 {
 
     // prepapre background tasks for item keys generation        
-    $val = DB::queryFirstRow(
+    $userTP = DB::queryFirstRow(
         'SELECT pw, public_key, private_key
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         TP_USER_ID
     );
     if (DB::count() > 0) {
+        // Do we need to generate new user password
+        if ($generate_user_new_password === true) {
+            // Generate a new password
+            $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
+
+            // Hash the new password
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+            if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
+                echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('pw_hash_not_correct'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // Generate new keys
+            $userKeys = generateUserKeys($passwordClear);
+
+            // Save in DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'pw' => $hashedPassword,
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                ),
+                'id=%i',
+                $userId
+            );
+        }
+
         // Manage empty encryption key
         // Let's take the user's password if asked and if no encryption key provided
         $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
@@ -3959,7 +3995,7 @@ function handleUserKeys(
                     'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
                     'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
                     'owner_id' => (int) TP_USER_ID,
-                    'creator_pwd' => $val['pw'],
+                    'creator_pwd' => $userTP['pw'],
                     'send_email' => $sendEmailToUser === true ? 1 : 0,
                     'otp_provided_new_value' => 1,
                 ]),
