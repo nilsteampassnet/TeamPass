@@ -640,7 +640,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'teampassItem',
                     function(teampassItem) {
                         teampassItem.isNewItem = 1,
-                            teampassItem.id = ''
+                        teampassItem.id = ''
                     }
                 );
 
@@ -2479,6 +2479,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
                 });
+                console.log('DEBUG IMAGE - BeforeUpload')
+                console.log(up);
             }
         }
     });
@@ -2920,6 +2922,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
 
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.isNewItem = 0
+                }
+            );
 
             // Inform user
             toastr.info(
@@ -2999,7 +3007,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     function showItemEditForm(selectedFolderId) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
-
+        
         //$.when(
         //    getPrivilegesOnItem(selectedFolderId, 0)
         //).then(function() {
@@ -4260,6 +4268,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     console.log("RECEIVED object details");
                     console.log(data);
                 }
+
+                // Store not a new item
+                store.update(
+                    'teampassItem',
+                    function(teampassItem) {
+                        teampassItem.isNewItem = 0
+                    }
+                );
 
                 // remove any track-change class on item form
                 //$('.form-item-control').removeClass('track-change');
