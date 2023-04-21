@@ -164,6 +164,13 @@ try {
 } catch (Exception $e) {
     // Do nothing
 }
+
+// Fix for #3679
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "users` SET `treeloadstrategy` = 'full' WHERE treeloadstrategy NOT IN ('full','sequential');"
+);
+
 //---<END 3.0.7
 
 // Save timestamp

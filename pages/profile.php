@@ -405,11 +405,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
                                                 
-                                                <option value="<?php echo langHdl('sequential'); ?>"
+                                                <option value="sequential">
                                                     <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>
                                                 ><?php echo langHdl('sequential'); ?></option>
                                                 
-                                                <option value="<?php echo langHdl('full'); ?>"
+                                                <option value="full">
                                                     <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>
                                                 ><?php echo langHdl('full'); ?></option>
                                             </select>

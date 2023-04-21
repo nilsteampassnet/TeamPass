@@ -3954,8 +3954,8 @@ function handleUserKeys(
             $pwdlib = new PasswordLib\PasswordLib();
             $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
             if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
-                echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
+                return prepareExchangedData(
+                    __DIR__.'/..',
                     array(
                         'error' => true,
                         'message' => langHdl('pw_hash_not_correct'),
