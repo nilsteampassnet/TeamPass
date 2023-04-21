@@ -151,10 +151,20 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
-
-
 //---<END 3.0.6
 
+
+//--->BEGIN 3.0.7
+// Alter
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache_tree` CHANGE `data` `data` LONGTEXT DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+//---<END 3.0.7
 
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
