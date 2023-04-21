@@ -82,7 +82,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return addslashes($session_language);
+    return str_ireplace("'",  "&apos;", $session_language);
 }
 
 /**
