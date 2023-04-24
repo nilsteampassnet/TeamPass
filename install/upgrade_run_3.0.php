@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      upgrade_run_3.0.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -113,6 +113,65 @@ if (!$res) {
 
 //---<END 3.0.5
 
+
+//--->BEGIN 3.0.6
+// Add new setting 'sending_emails_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'sending_emails_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'sending_emails_job_frequency', '2')"
+    );
+}
+// Add new setting 'user_keys_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'user_keys_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'user_keys_job_frequency', '1')"
+    );
+}
+// Add new setting 'items_statistics_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'enable_tasks_items_statistics_job_frequencymanager'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'items_statistics_job_frequency', '5')"
+    );
+}
+
+// Add field ongoing_process_id to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'ongoing_process_id',
+    "varchar(100) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field ongoing_process_id to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+//---<END 3.0.6
+
+
+//--->BEGIN 3.0.7
+// Alter
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache_tree` CHANGE `data` `data` LONGTEXT DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+// Fix for #3679
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "users` SET `treeloadstrategy` = 'full' WHERE treeloadstrategy NOT IN ('full','sequential');"
+);
+
+//---<END 3.0.7
 
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));

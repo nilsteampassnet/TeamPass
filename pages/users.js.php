@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      users.js.php
  * ---
  *
@@ -1199,18 +1199,59 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             );
             // ---
         } else if ($(this).data('action') === 'new-password') {
-            // HIde
-            $('.content-header, .content').addClass('hidden');
+            var userId = $(this).data('id');
+            // Check if no tasks on-going for this user
+            data_to_send = {
+                'user_id': userId,
+            }
+            $.post(
+                "sources/users.queries.php", {
+                    type: "get-user-infos",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                    key: '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Continue   
+                        if (data.user_infos.ongoing_process_id !== null) {  
+                            toastr.remove();
+                            toastr.warning(
+                                data.message,
+                                '<?php echo langHdl('user_encryption_ongoing'); ?>', {
+                                    timeOut: 10000,
+                                    progressBar: true
+                                }
+                            ); 
+                        } else {                 
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
 
-            // PRepare info
-            $('#dialog-admin-change-user-password-info')
-                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('admin_change_user_password_info'); ?>');
-            $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                            // PRepare info
+                            $('#dialog-admin-change-user-password-info')
+                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('admin_change_user_password_info'); ?>');
+                            $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
 
-            // SHow form
-            $('#dialog-admin-change-user-password').removeClass('hidden');
+                            // SHow form
+                            $('#dialog-admin-change-user-password').removeClass('hidden');
 
-            $('#admin_change_user_password_target_user').val($(this).data('id'));
+                            $('#admin_change_user_password_target_user').val(userId);
+                        }
+                    }
+                }
+            );
+
             // ---
         } else if ($(this).data('action') === 'new-enc-code') {
             // HIde
@@ -1739,60 +1780,98 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             //
             // --- END
             //
-        } else if ($(this).data('action') === 'new-otp') {
-            var userID = $(this).data('id');
-            showModalDialogBox(
-                '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
-                '<div class="form-group">'+
-                    '<span class="mr-3"><?php echo langHdl('generate_new_otp_informations'); ?></span>'+
-                '</div>',
-                '<?php echo langHdl('perform'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
-            );
-            
-            $(document).on('click', '#warningModalButtonAction', function() {                
-                // prepare user
+        } else if ($(this).data('action') === 'new-otp') {// Check if no tasks on-going for this user
+            data_to_send = {
+                'user_id': $(this).data('id'),
+            }
+            $.post(
+                "sources/users.queries.php", {
+                    type: "get-user-infos",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                    key: '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
 
-                // Show spinner
-                toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
-
-                // Prepare data
-                var data = {
-                    'user_id': userID,
-                }
-                
-                $.post(
-                    'sources/users.queries.php', {
-                        type: 'generate_new_otp__preparation',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
-                    },
-                    function(data) {
-                        //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                        //console.log(data);
-                        userTemporaryCode = data.user_code;
-                        constVisibleOTP = data.visible_otp;
-
-                        if (data.error === true) {
-                            // ERROR
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Continue   
+                        if (data.user_infos.ongoing_process_id !== null) {  
                             toastr.remove();
-                            toastr.error(
+                            toastr.warning(
                                 data.message,
-                                '<?php echo langHdl('caution'); ?>', {
-                                    timeOut: 5000,
+                                '<?php echo langHdl('user_encryption_ongoing'); ?>', {
+                                    timeOut: 10000,
                                     progressBar: true
                                 }
+                            ); 
+                        } else {  
+                            var userID = data.user_infos.id;
+                            showModalDialogBox(
+                                '#warningModal',
+                                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                                '<div class="form-group">'+
+                                    '<span class="mr-3"><?php echo langHdl('generate_new_otp_informations'); ?></span>'+
+                                '</div>',
+                                '<?php echo langHdl('perform'); ?>',
+                                '<?php echo langHdl('cancel'); ?>'
                             );
-                        } else {
-                            // generate keys
-                            generateUserKeys(data, userTemporaryCode);
+                            
+                            $(document).on('click', '#warningModalButtonAction', function() {                
+                                // prepare user
+
+                                // Show spinner
+                                toastr.remove();
+                                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+                                // Prepare data
+                                var data = {
+                                    'user_id': userID,
+                                }
+                                
+                                $.post(
+                                    'sources/users.queries.php', {
+                                        type: 'generate_new_otp__preparation',
+                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key: '<?php echo $_SESSION['key']; ?>'
+                                    },
+                                    function(data) {
+                                        //decrypt data
+                                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                                        //console.log(data);return false;
+                                        userTemporaryCode = data.user_code;
+                                        constVisibleOTP = data.visible_otp;
+
+                                        if (data.error === true) {
+                                            // ERROR
+                                            toastr.remove();
+                                            toastr.error(
+                                                data.message,
+                                                '<?php echo langHdl('caution'); ?>', {
+                                                    timeOut: 5000,
+                                                    progressBar: true
+                                                }
+                                            );
+                                        } else {
+                                            // generate keys
+                                            generateUserKeys(data, userTemporaryCode);
+                                        }
+                                    }
+                                );
+                            });
                         }
                     }
-                );
-            });
+                }
+            );
 
             /**/
             //

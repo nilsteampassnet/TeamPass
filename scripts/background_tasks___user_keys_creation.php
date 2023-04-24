@@ -950,50 +950,67 @@ function cronContinueReEncryptingUserSharekeysStep6(
     );
 
     if ($userInfo['auth_type'] === 'local') {
-        sendMailToUser(
-            filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            langHdl('email_body_new_user'),
-            'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-            (array) filter_var_array(
-                [
-                    '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
-                    '#login#' => $userInfo['login'],
-                    '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
-                ],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            ),
-            $SETTINGS
-        );
+        if (
+            (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
+            || (isset($extra_arguments['send_email']) === false)
+        ) {
+            // Send email to user
+            sendMailToUser(
+                filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                langHdl('email_body_new_user'),
+                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+                (array) filter_var_array(
+                    [
+                        '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
+                        '#login#' => $userInfo['login'],
+                        '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
+                    ],
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                ),
+                $SETTINGS
+            );
+        }
 
         // Set user as ready for usage
         DB::update(
             prefixTable('users'),
             array(
                 'is_ready_for_usage' => 1,
+                'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
+                'ongoing_process_id' => NULL,
+                'special' => 'none',
             ),
             'id = %i',
             $extra_arguments['new_user_id']
         );
     } else {
         if ($userInfo['special']  === 'user_added_from_ldap') {
-            sendMailToUser(
-                filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                langHdl('email_body_user_added_from_ldap_encryption_code'),
-                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-                (array) filter_var_array(
-                    [
-                        '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
-                    ],
-                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                ),
-                $SETTINGS
-            );
+            if (
+                (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
+                || (isset($extra_arguments['send_email']) === false)
+            ) {
+                sendMailToUser(
+                    filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    langHdl('email_body_user_added_from_ldap_encryption_code'),
+                    'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+                    (array) filter_var_array(
+                        [
+                            '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
+                        ],
+                        FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                    ),
+                    $SETTINGS
+                );
+            }
             
             // Set user as ready for usage
             DB::update(
                 prefixTable('users'),
                 array(
                     'is_ready_for_usage' => 1,
+                    'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
+                    'ongoing_process_id' => NULL,
+                    'special' => 'none',
                 ),
                 'id = %i',
                 $extra_arguments['new_user_id']
@@ -1004,15 +1021,15 @@ function cronContinueReEncryptingUserSharekeysStep6(
                 prefixTable('users'),
                 array(
                     'is_ready_for_usage' => 1,
-                    'otp_provided' => 1,
+                    'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 1,
+                    'ongoing_process_id' => NULL,
+                    'special' => 'none',
                 ),
                 'id = %i',
                 $extra_arguments['new_user_id']
             );
         }
     }
-
-    
 
     return [
         'new_index' => 0,

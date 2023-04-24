@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      users.datatable.php
  * ---
  *
@@ -226,7 +226,7 @@ foreach ($rows as $record) {
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             addslashes(str_replace("'", '&lsquo;', empty($record['name']) === false ? $record['name'] : '')).' '.
             addslashes(str_replace("'", '&lsquo;', empty($record['lastname']) === false ? $record['lastname'] : '')).
-            '\" data-auth-type=\"'.$record['auth_type'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
+            '\" data-auth-type=\"'.$record['auth_type'].'\" data-special=\"'.$record['special'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
         //col2
         $sOutput .= '"'.
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
@@ -234,7 +234,7 @@ foreach ($rows as $record) {
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
             ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').
-            ((isset($record['is_ready_for_usage']) === true && (int) $record['is_ready_for_usage'] === 0 && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1) ? '<i class=\"fas fa-hourglass-half infotip text-info ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').
+            ((isset($record['is_ready_for_usage']) === true && (int) $record['is_ready_for_usage'] === 0 && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1) ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').
             '" , ';
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name'] === NULL ? '' : $record['name']).'</span>", ';

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      login.js.php
  * ---
  *
@@ -648,6 +648,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
     //Identify user
     function identifyUser(redirect, psk, data, randomstring) {
+        var old_data = data;
         // Check if session is still existing
         $.post(
             "sources/checks.php", {
@@ -793,7 +794,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                         teampassUser.sessionStartTimestamp = Date.now();
                                         teampassUser.sessionKey = data.session_key;
                                         teampassUser.user_id = data.user_id;
-                                        teampassUser.pwd = data.pw;
+                                        teampassUser.pwd = old_data.pw;
                                         teampassUser.user_has_psk = data.has_psk;
                                         teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
                                         teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;

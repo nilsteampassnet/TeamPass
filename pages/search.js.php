@@ -11,7 +11,7 @@ declare(strict_types=1);
   * ---
   *
   * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
   *
   * @file      search.js.php
   * ---
@@ -26,7 +26,7 @@ declare(strict_types=1);
   * @see       https://www.teampass.net
   */
 
- $var = [];
+$var = [];
 $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
 ?>
@@ -74,7 +74,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt"
         },
         "columns": [{
-                "width": "10%",
+                "width": "70px",
                 class: "details-control",
                 defaultContent: ""
             },

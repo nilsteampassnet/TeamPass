@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      admin.php
  * ---
  *
@@ -24,6 +24,9 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
 
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -136,13 +139,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
             <!-- /.col -->
             <div class="col-md-6">
                 <?php
-if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
-                echo '<div class="alert bg-orange disabled" role="alert">
-                    <h4><i class="fa-solid fa-exclamation-triangle mr-2"></i>Since 3.0.0.23, TASKS manager is enabled by default and is mandatory.</h4>
-                    <p>Please ensure that cron job is set and enabled.<br />Open Tasks page and check status.</p>
-                    <p><a href="https://documentation.teampass.net/#/manage/tasks" target="_blank"><i class="fa-solid fa-book mr-2"></i>Check documentation</a>.</p>
-                </div>';
-}
+
 ?>
                 <!--
                 <div class="alert bg-lightblue disabled" role="alert">
@@ -159,17 +156,66 @@ if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable
                 <div class="card card-default">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <?php echo langHdl('information'); ?>
+                            <i class="fa-solid fa-barcode mr-2"></i>
+                            <?php echo langHdl('teampass_information'); ?>
                         </h3>
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                        <?php
-                        // Display the readme file
-                        $homepage = file_get_contents('changelog.txt', false, null, 543);
-                        echo $homepage;
-                        ?>
+                        <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION."</b>"; ?></p>
+                        <?php   
+                        if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
+                            echo '<div class="alert bg-orange disabled" role="alert">
+                                <h5><i class="fa-solid fa-exclamation-triangle mr-2"></i>Since 3.0.0.23, TASKS manager is enabled by default and is mandatory.</h5>
+                                <p>Please ensure that cron job is set and enabled.<br />Open Tasks page and check status.</p>
+                                <p><a href="https://documentation.teampass.net/#/manage/tasks" target="_blank"><i class="fa-solid fa-book mr-2"></i>Check documentation</a>.</p>
+                            </div>';
+                        } else {
+                            ?>
+                            <div class="">
+<?php
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+// Instantiate the adapter and repository
+try {
+    $crontabRepository = new CrontabRepository(new CrontabAdapter());
+    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+    if (count($results) === 0) {
+        ?>
+                            <div class="callout callout-info alert-dismissible mt-3">
+                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+                            </div>
+                            <div class="alert alert-warning mt-2 " role="alert">
+                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
+                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
+                                <div id="add-new-job-result">
+
+                                </div>
+                            </div>
+        <?php
+    } else {
+        $job = (array) $results[0];//print_r($job);
+        ?>
+                            <div>
+                                <i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
+                                <div class="ml-3 mt-1">
+                                    <span class=""><code><?php echo $job['taskCommandLine']; ?></code></span>
+                                </div>
+                            </div>
+        <?php
+    }
+}
+catch (Exception $e) {
+    echo $e->getMessage();
+}
+?>
+                        </div>
+<?php                        
+                        }
+?>
                     </div>
                     <!-- /.card-body -->
                 </div>
@@ -187,7 +233,46 @@ if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable
                         <?php
                         // Display information about server
                         $dbSize = DB::queryFirstRow("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS 'size' FROM information_schema.TABLES WHERE table_schema = '" . DB_NAME . "'");
+
+                        // Get OS
+                        $uname = php_uname('s');
+                        if (strpos($uname, 'Linux') !== false) {
+                            $os = 'Linux';
+                            if (file_exists('/etc/os-release')) {
+                                $lines = file('/etc/os-release');
+                                foreach ($lines as $line) {
+                                    if (strpos($line, 'PRETTY_NAME=') !== false) {
+                                        $parts = explode('=', $line);
+                                        $os = trim($parts[1], "\"\n");
+                                        if (strpos($os, 'Ubuntu') !== false) {
+                                            $os = '<i class="fa-brands fa-ubuntu mr-2"></i>'.$os;
+                                        } else if (strpos($os, 'Suse') !== false) {
+                                            $os = '<i class="fa-brands fa-suse mr-2"></i>'.$os;
+                                        } else if (strpos($os, 'redhat') !== false) {
+                                            $os = '<i class="fa-brands fa-redhat mr-2"></i>'.$os;
+                                        } else if (strpos($os, 'fedora') !== false) {
+                                            $os = '<i class="fa-brands fa-fedora mr-2"></i>'.$os;
+                                        } else if (strpos($os, 'centos') !== false) {
+                                            $os = '<i class="fa-brands fa-centos mr-2"></i>'.$os;
+                                        } else {
+                                            $os = '<i class="fa-brands fa-linux mr-2"></i>'.$os;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        } elseif (strpos($uname, 'Darwin') !== false) {
+                            $os = '<i class="fa-solid fa-apple mr-2"></i>macOS';
+                        } elseif (strpos($uname, 'Windows') !== false) {
+                            $os = '<i class="fa-solid fa-windows mr-2"></i>Windows';
+                        } else {
+                            $os = 'Unknown';
+                        }
+
                         echo 
+                        '<p>' . $os.
+                            '<br><span class="ml-4"></span>'.
+                        '</p>'.
                         '<p><i class="fa-brands fa-php mr-2"></i>PHP version: ' . phpversion().
                             '<br><span class="ml-4">Memory limit: '.(ini_get('memory_limit')).'</span>'.
                             '<br><span class="ml-4">Memory usage: '.formatSizeUnits(memory_get_usage()).'</span>'.
@@ -197,6 +282,25 @@ if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable
                         '<p><i class="fa-solid fa-server mr-2"></i>Server version: ' . DB::serverVersion().
                             '<br><span class="ml-4">Database size: '.($dbSize['size']).'MB</span>'.
                         '</p>';
+                        ?>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <?php echo langHdl('information'); ?>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <?php
+                        // Display the readme file
+                        $homepage = file_get_contents('changelog.txt', false, null, 543);
+                        echo $homepage;
                         ?>
                     </div>
                     <!-- /.card-body -->

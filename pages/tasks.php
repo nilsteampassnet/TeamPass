@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      tasks.php
  * ---
  *
@@ -84,10 +84,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <a class="nav-link" data-toggle="tab" href="#settings" aria-controls="settings" aria-selected="false"><?php echo langHdl('settings'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#jobs" aria-controls="jobs" aria-selected="true"><?php echo langHdl('tasks'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="false"><?php echo langHdl('in_progress'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo langHdl('done'); ?></a>
@@ -99,28 +96,72 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <!-- TAB SETTINGS -->
                             <div class="tab-pane fade show" id="settings" role="tabpanel" aria-labelledby="settings-tab">
                                 <div class="card-body">
-                                    <!--
-                                    <div class='row mb-2 option' data-keywords="server setting cron job task"></h5>
+
+                                    <div class="">
+                                        <?php
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
+require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
+
+// Instantiate the adapter and repository
+try {
+    $crontabRepository = new CrontabRepository(new CrontabAdapter());
+    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+    if (count($results) === 0) {
+        ?>
+                                            <div class="callout callout-info alert-dismissible mt-3">
+                                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
+                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+                                            </div>
+                                            <div class="alert alert-warning mt-2 " role="alert">
+                                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
+                                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
+                                                <div id="add-new-job-result">
+
+                                                </div>
+                                            </div>
+        <?php
+    } else {
+        ?>
+                                            <div class="alert alert-success mt-2 " role="alert">
+                                                <i class="fa-solid fa-check mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
+                                            </div>
+        <?php
+    }
+}
+catch (Exception $e) {
+    echo $e->getMessage();
+}?>
+                                    </div>
+
+                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('task_frequency'); ?></h5>
+
+                                    <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-10'>
-                                            <?php echo langHdl('enable_tasks_manager'); ?>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('enable_tasks_manager_tip'); ?>
-                                            </small>
+                                        <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <div class='toggle toggle-modern disabled' id='enable_tasks_manager' data-toggle-on='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_tasks_manager_input' value='<?php echo isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1 ? '1' : '0'; ?>' />
+                                            <input type='text' class='form-control form-control-sm' id='sending_emails_job_frequency' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
                                         </div>
                                     </div>
 
-                                    <div class='row mb-3 option'>
+                                    <div class='row ml-1 mb-2'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-envelopes-bulk mr-2"></i><?php echo langHdl('enable_backlog_mail'); ?></h5>
+                                        <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <div class='toggle toggle-modern' id='enable_backlog_mail' data-toggle-on='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_backlog_mail_input' value='<?php echo isset($SETTINGS['enable_backlog_mail']) && (int) $SETTINGS['enable_backlog_mail'] === 1 ? '1' : '0'; ?>' />
+                                            <input type='text' class='form-control form-control-sm' id='user_keys_job_frequency' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                     </div>
--->
+
+                                    <div class='row ml-1 mb-4'>
+                                        <div class='col-10'>
+                                        <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='items_statistics_job_frequency' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                        </div>
+                                    </div>
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
@@ -169,91 +210,11 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <input type='text' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- TAB JOBS -->
-                            <div class="tab-pane fade show active" id="jobs" role="tabpanel" aria-labelledby="jobs-tab">
-                                <div class="card-body p-0">
-
-                                    <div class="callout callout-info alert-dismissible mt-3">
-                                        <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
-                                        <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
-
-                                        <div class="">
-                                            <?php
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
-
-// Instantiate the adapter and repository
-try {
-    $crontabRepository = new CrontabRepository(new CrontabAdapter());
-    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
-    if (count($results) === 0) {
-        ?>
-                                            <div class="alert alert-warning mt-2 " role="alert">
-                                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
-                                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
-                                                <div id="add-new-job-result">
-
-                                                </div>
-                                            </div>
-        <?php
-    } else {
-        ?>
-                                            <div class="alert alert-success mt-2 " role="alert">
-                                                <i class="fa-solid fa-check mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
-                                            </div>
-        <?php
-    }
-}
-catch (Exception $e) {
-    echo $e->getMessage();
-}?>
-                                        </div>
-                                    </div>
-
-                                    <div class='row ml-1 mt-3 mb-2'>
-                                        <div class='col-5'>
-                                        <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
-                                        </div>
-                                        <div class='col-5 text-right'>
-                                            <?php echo langHdl('task_frequency'); ?>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='sending_emails_job_frequency' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row ml-1 mb-2'>
-                                        <div class='col-5'>
-                                        <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
-                                        </div>
-                                        <div class='col-5 text-right'>
-                                            <?php echo langHdl('task_frequency'); ?>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='user_keys_job_frequency' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row ml-1 mb-2'>
-                                        <div class='col-5'>
-                                        <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
-                                        </div>
-                                        <div class='col-5 text-right'>
-                                            <?php echo langHdl('task_frequency'); ?>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='items_statistics_job_frequency' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
-                                        </div>
-                                    </div>
 
                                 </div>
                             </div>
 
-                            <div class="tab-pane fade" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
+                            <div class="tab-pane fade show active" id="in_progress" role="tabpanel" aria-labelledby="in_progress-tab">
                                 <table class="table table-striped" id="table-tasks_in_progress" style="width:100%;">
                                     <thead>
                                         <tr>

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      bulgarian.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -1061,8 +1061,13 @@ return array(
     'currently_using_version' => 'Current version loaded',
     'git_commit_value' => 'Git commit value',
     'generate_new_keys' => 'Generate new keys',
-    'generate_new_keys_info' => 'By continuing, you will generate new keys for all objects you have access to. This should only be done if you have no password shown. A code will be provided. Store it carrefully, it will be asked once the process is finished.',
-    'encryption_key' => 'Encryption key',
+    'generate_new_keys_info' => 'By continuing, you will generate new encryption keys for all objects you have access to. This should only be done if you have no password shown
+.',
     'generate_new_keys_end' => 'Process is on going in background and could take several minutes. You can now close this window.',
+    'confirm_password' => 'We need you to confirm your password',
+    'no_code_is_requested' => 'No code is requested.',
+    'user_encryption_ongoing' => 'Account is currently being encrypting. Your request cannot continue. Please wait until this is finished.',
+    'teampass_information' => 'Teampass information',
+    'show_password' => 'Show password',
 
 );

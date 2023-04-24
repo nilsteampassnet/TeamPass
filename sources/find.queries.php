@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      find.queries.php
  * ---
  *
@@ -78,11 +78,11 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 //Columns name
-$aColumns = ['id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url'];
+$aColumns = ['c.id', 'c.label', 'c.login', 'c.description', 'c.tags', 'c.id_tree', 'c.folder', 'c.login', 'c.url', 'ci.data'];//
 $aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
 $sOrder = $sLimit = $sWhere = '';
-$sWhere = 'id_tree IN %ls_idtree';
+$sWhere = 'c.id_tree IN %ls_idtree';
 //limit search to the visible folders
 
 if (isset($_GET['limited']) === false
@@ -190,6 +190,7 @@ if (empty($search_criteria) === false) {
         '6' => $search_criteria,
         '7' => $search_criteria,
         '8' => $search_criteria,
+        '9' => $search_criteria,
         'pf' => $arrayPf,
     ];
 }
@@ -207,6 +208,7 @@ if (count($crit) === 0) {
         '6' => $search_criteria,
         '7' => $search_criteria,
         '8' => $search_criteria,
+        '9' => $search_criteria,
         'pf' => $arrayPf,
     ];
 }
@@ -216,26 +218,41 @@ if (empty($listPf) === false) {
     if (empty($sWhere) === false) {
         $sWhere .= ' AND ';
     }
-    $sWhere = 'WHERE ' . $sWhere . 'id_tree NOT IN %ls_pf ';
+    $sWhere = 'WHERE ' . $sWhere . 'c.id_tree NOT IN %ls_pf ';
 } else {
     $sWhere = 'WHERE ' . $sWhere;
 }
 
+// Do queries
 DB::query(
-    'SELECT id FROM ' . prefixTable('cache') . "
+    "SELECT c.id
+    FROM " . prefixTable('cache') . " AS c
+    LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
     ${sWhere}
     ${sOrder}",
     $crit
 );
 $iTotal = DB::count();
 $rows = DB::query(
-    'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
-    FROM ' . prefixTable('cache') . "
+    "SELECT c.*, ci.data
+    FROM " . prefixTable('cache') . " AS c
+    LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
     ${sWhere}
     ${sOrder}
     ${sLimit}",
     $crit
 );
+
+/*
+// Search in fields
+$rows_fields = DB::query(
+    'SELECT item_id, data
+    FROM ' . prefixTable('categories_items') . "
+    WHERE encryption_type = 'not_set' AND data LIKE %ss_search
+    ${sOrder}
+    ${sLimit}",
+    $search_criteria
+);*/
 
 /*
  * Output
@@ -388,7 +405,7 @@ if (isset($_GET['type']) === false) {
 } elseif (isset($_GET['type']) && ($_GET['type'] === 'search_for_items' || $_GET['type'] === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-    
+
     $arr_data = [];
     foreach ($rows as $record) {
         $displayItem = false;

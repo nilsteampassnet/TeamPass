@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      index.php
  * ---
  *
@@ -267,6 +267,11 @@ if (($session_validite_pw === null
 
             <!-- Navbar -->
             <nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom">
+                <!-- User encryption still ongoing -->
+                <div id="user_not_ready" class="alert alert-warning hidden pointer p-2 mt-2" style="position:absolute; left:200px;">
+                    <span class="align-middle infotip ml-2" title="<?php echo langHdl('keys_encryption_not_ready'); ?>"><?php echo langHdl('account_not_ready'); ?><span id="user_not_ready_progress"></span><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
+                </div>
+
                 <!-- Left navbar links -->
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -291,12 +296,6 @@ if (($session_validite_pw === null
 
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
-                    <!-- User encryption still ongoing -->
-                    <li id="user_not_ready" class="hidden pointer mr-4" style="position:absolute; left:50%;">
-                        <div class="alert alert-warning">
-                            <span class="align-middle infotip ml-2" title="<?php echo langHdl('keys_encryption_not_ready'); ?>"><?php echo langHdl('account_not_ready'); ?><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
-                        </div>
-                    </li>
                     <!-- Messages Dropdown Menu -->
                     <li class="nav-item dropdown">
                         <div class="dropdown show">
@@ -326,8 +325,8 @@ if (($session_validite_pw === null
                                     </a>
                                 <?php
                                     } ?>
-                                <a class="dropdown-item user-menu" href="#" data-name="generate-new_keys">
-                                    <i class="fa-solid fa-mask fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
+                                <a class="dropdown-item user-menu<?php echo (int) $session_user_admin === 1 ? ' hidden' : '';?>" href="#" data-name="generate-new_keys">
+                                    <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">

@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      upgrade_ajax.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -983,51 +983,56 @@ if (isset($post_type)) {
             require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
             // get php location
-            exec("locate php", $phpLocation, $return);
-            if (count($phpLocation) > 0) {
-                $phpLocation = $phpLocation[0];
-            } else {
-                $phpLocation = 'php';
-            }
+            require_once 'tp.functions.php';
+            $phpLocation = findPhpBinary();
+            if ($phpLocation['error'] === false) {
+                // Instantiate the adapter and repository
+                try {
+                    $crontabAdapter = new CrontabAdapter();
+                    $crontabRepository = new CrontabRepository($crontabAdapter);
+                    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                    if (count($results) === 0) {
+                        // Add the job
+                        $crontabJob = new CrontabJob();
+                        $crontabJob
+                            ->setMinutes('*')
+                            ->setHours('*')
+                            ->setDayOfMonth('*')
+                            ->setMonths('*')
+                            ->setDayOfWeek('*')
+                            ->setTaskCommandLine($phpLocation['path'] . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
+                            ->setComments('Teampass scheduler');
+                        
+                        $crontabRepository->addJob($crontabJob);
+                        $crontabRepository->persist();
 
-            // Instantiate the adapter and repository
-            try {
-                $crontabAdapter = new CrontabAdapter();
-                $crontabRepository = new CrontabRepository($crontabAdapter);
-                $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
-                if (count($results) === 0) {
-                    // Add the job
-                    $crontabJob = new CrontabJob();
-                    $crontabJob
-                        ->setMinutes('*')
-                        ->setHours('*')
-                        ->setDayOfMonth('*')
-                        ->setMonths('*')
-                        ->setDayOfWeek('*')
-                        ->setTaskCommandLine($phpLocation . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
-                        ->setComments('Teampass scheduler');
-                    
-                    $crontabRepository->addJob($crontabJob);
-                    $crontabRepository->persist();
-
-                    array_push(
-                        $returnStatus, 
-                        array(
-                            'id' => 'step5_cronJob', 
-                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i> <b>If you had manually defined a job in crontab then you should remove it now.</b>',
-                        )
-                    );
-                } else {
-                    array_push(
-                        $returnStatus, 
-                        array(
-                            'id' => 'step5_cronJob', 
-                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
-                        )
-                    );
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_cronJob', 
+                                'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i> <b>If you had manually defined a job in crontab then you should remove it now.</b>',
+                            )
+                        );
+                    } else {
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_cronJob', 
+                                'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                            )
+                        );
+                    }
+                } catch (Exception $e) {
+                    // do nothing
                 }
-            } catch (Exception $e) {
-                // do nothing
+            } else {
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_cronJob', 
+                        'html' => '<i class="fa-solid fa-times-circle fa-lg text-danger ml-2 mr-2"></i> <b>The PHP path could not be found, please create manually the cron job (see documentation).</b>',
+                    )
+                );
             }
 
             

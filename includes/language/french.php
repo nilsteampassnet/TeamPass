@@ -7,7 +7,7 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      french.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -332,8 +332,8 @@ return array(
     'defect_report' => 'Rapport de défaut',
     'actions' => 'Actions',
     'no_user' => 'Mauvais utilisateur',
-    'generate_api_token' => 'Generate new API token',
-    'upload_feature' => 'Upload feature',
+    'generate_api_token' => 'Générer un nouveau jeton d\'API',
+    'upload_feature' => 'Téléversement',
     'profile' => 'Profil',
     'language' => 'Langue',
     'upload_new_avatar' => 'Sélectionner un avatar (.PNG)',
@@ -997,16 +997,16 @@ return array(
     'settings_api_token_duration_tip' => 'Delay during wich the generated JWT token is valid. After this delay, it is requested to post an authorize request to the API.',
     'show_encryption_code_to_admin' => 'This is the encrypted code the user will need on this logon. You have asked to see it, please copy it and share in a secure way. Code is',
     'previous_password' => 'Précédent mot de passe utilisé pour vous identifier dans Teampass',
-    'generate_new_otp' => 'Generate new OTP',
+    'generate_new_otp' => 'Générer un nouveau code de cryptage temporaire',
     'generate_new_otp_informations' => 'This operation consists in generating from scratch all keys for the selected user. As a consequence, the user will have to provide the new generated OTP at next login.',
     'html' => 'html',
     'execution_time' => 'Durée d\'exécution',
-    'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
-    'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
-    'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',
-    'maximum_time_script_allowed_to_run_tip' => 'By default, the PHP script cannot run more than the duration defined by max_execution_time parameter in php.ini file. The goal here is to define a more higher value to ensure that the script is performing completely.',
+    'maximum_number_of_items_to_treat' => 'Nombre maximum d\'objets traités sur un cycle',
+    'maximum_number_of_items_to_treat_tip' => 'De façon à s\'affranchir d\'un possible timeout lors de l\'exécution du script, il est possible de définir un temps d\'exécution différent.',
+    'maximum_time_script_allowed_to_run' => 'Temps d\'exécution en secondes autorisé pour le script',
+    'maximum_time_script_allowed_to_run_tip' => 'Par défaut, un script php ne peut pas s\'exécuter sur une durée supérieure à celle définie via le paramètre max_execution_time. Ici nous pouvons définir une durée différente permettant au script de s\'exécuter complètement.',
     'refresh_data_every_on_screen' => 'Temps de rafraichissement de l\'écran (en secondes)',
-    'refresh_data_every_on_screen_tip' => 'When browsing the tasks view, this permits to have an updated list based.',
+    'refresh_data_every_on_screen_tip' => 'Cela permet de rafraîchir la liste des taches à la fréquence indiquée.',
     'refreshed' => 'Rafraichi',
     'process_details' => 'Détails',
     'created_at' => 'Crée à',
@@ -1014,7 +1014,7 @@ return array(
     'finished_at' => 'Terminé à',
     'tasks_manager' => 'Gestionnaire de tâches',
     'tasks' => 'Tâches',
-    'task_in_progress_user_not_active' => 'Tasks in progress - User not active',
+    'task_in_progress_user_not_active' => 'Tache en cours - Utilisateur non activé',
     'enable_tasks_manager' => 'Activer le gestionnaire de tâches via cron',
     'enable_tasks_manager_tip' => 'This option should be enabled if you noticed that some tasks take long time. This permits to enable to handle those tasks using a background job performed by server cron manager. See documentation for more details.',
     'sync_new_ldap_password' => 'Synchroniser les nouveaux mots de passe',
@@ -1024,7 +1024,7 @@ return array(
     'user_keys_management' => 'Gestion des clés utilisateurs',
     'sending_emails' => 'Envoi d\'emails',
     'task_frequency' => 'Fréquence (en minutes)',
-    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+    'tasks_information' => 'Les taches dépendent du cron. Il est donc nécessaire de définir dans le crontab d\'un job permettant d\'exécuter le scheduler de Teampass chaque minute.<br>La commande à saisir est :<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note : Adapter le chemain vers le binaire php.',
     'bad_duo_mfa' => 'Code DUO eronné',
     'creation_date' => 'Date de création',
     'never' => 'Jamais',
@@ -1061,8 +1061,12 @@ return array(
     'currently_using_version' => 'Version actuellement chargée',
     'git_commit_value' => 'Version du commit de Git',
     'generate_new_keys' => 'Générer de nouvelles clés',
-    'generate_new_keys_info' => 'En poursuivant, de nouvelles clés pour les objets vont être générées. Cela devrait être effectué uniquement si les mots de passe ne s\'affichent plus. Une clé de cryptage sera fournie. Conservez la précieusement car elle sera demandé à la fin de l\'opération.',
-    'encryption_key' => 'Clé de cryptage',
+    'generate_new_keys_info' => 'En poursuivant, de nouvelles clés pour les objets vont être générées. Cela devrait être effectué uniquement si les mots de passe ne s\'affichent plus.',
     'generate_new_keys_end' => 'L\'opération est en cours en arrière plan et peut prendre plusieurs minutes. Vous pouvez maintenant fermer cette fenêtre.',
+    'confirm_password' => 'Merci de confirmer votre mot de passe',
+    'no_code_is_requested' => 'Code non requis.',
+    'user_encryption_ongoing' => 'Le cryptage des clés est en cours. Merci de patientez pour exécuter cette action.',
+    'teampass_information' => 'Informations Teampass',
+    'show_password' => 'Montrer le mot de passe',
 
 );

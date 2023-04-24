@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      folders.js.php
  * ---
  *
@@ -732,6 +732,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'submit') {
             // STORE CHANGES
             var currentFolderId = $(this).data('id');
+
+            // loop on all checked folders
+            var selectedFolders = [];
+            $("input:checkbox[class=checkbox-folder]:checked").each(function() {
+                selectedFolders.push($(this).data('id'));
+            });
 
             // Prepare data
             var data = {

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      main.functions.php
  * ---
  *
@@ -82,7 +82,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return addslashes($session_language);
+    return str_ireplace("'",  "&apos;", $session_language);
 }
 
 /**
@@ -1282,32 +1282,22 @@ function prepareSendingEmail(
     $SETTINGS
 ): void 
 {
-    if (isKeyExistingAndEqual('enable_tasks_manager', 1, $SETTINGS) === true) {
-        DB::insert(
-            prefixTable('processes'),
-            array(
-                'created_at' => time(),
-                'process_type' => 'send_email',
-                'arguments' => json_encode([
-                    'subject' => $subject,
-                    'receivers' => $email,
-                    'body' => $body,
-                    'receiver_name' => $receiverName,
-                ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                'updated_at' => '',
-                'finished_at' => '',
-                'output' => '',
-            )
-        );
-    } else {
-        sendEmail(
-            $subject,
-            $body,
-            $email,
-            $SETTINGS,
-            $body
-        );
-    }
+    DB::insert(
+        prefixTable('processes'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'send_email',
+            'arguments' => json_encode([
+                'subject' => $subject,
+                'receivers' => $email,
+                'body' => $body,
+                'receiver_name' => $receiverName,
+            ], JSON_HEX_QUOT | JSON_HEX_TAG),
+            'updated_at' => '',
+            'finished_at' => '',
+            'output' => '',
+        )
+    );
 }
 
 /**
@@ -1709,7 +1699,7 @@ function prefixTable(string $table): string
  * @return string
  */
 function GenerateCryptKey(
-    int $size = 10,
+    int $size = 20,
     bool $secure = false,
     bool $numerals = false,
     bool $uppercase = false,
@@ -3536,7 +3526,7 @@ function defineComplexity() : void
 function dataSanitizer(
     array $data,
     array $filters,
-    string $path
+    string $path = __DIR__. '/..' // Path to Teampass root
 ): array
 {
     // Load Sanitizer library
@@ -3867,6 +3857,30 @@ if (!function_exists('str_contains')) {
 }
 
 /**
+ * Get all users informations
+ *
+ * @param integer $userId
+ * @return array
+ */
+function getFullUserInfos(
+    int $userId
+): array
+{
+    if (empty($userId) === true) {
+        return array();
+    }
+
+    $val = DB::queryfirstrow(
+        'SELECT *
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+
+    return $val;
+}
+
+/**
  * Is required an upgrade
  *
  * @return boolean
@@ -3903,24 +3917,73 @@ function upgradeRequired(): bool
  * @param string $passwordClear
  * @param string $encryptionKey
  * @param boolean $deleteExistingKeys
- * @return boolean
+ * @param boolean $sendEmailToUser
+ * @param boolean $encryptWithUserPassword
+ * @param boolean $encryptWithUserPassword
+ * @param integer $nbItemsToTreat
+ * @return string
  */
 function handleUserKeys(
     int $userId,
     string $passwordClear,
     string $encryptionKey = '',
-    bool $deleteExistingKeys = false
+    bool $deleteExistingKeys = false,
+    bool $sendEmailToUser = true,
+    bool $encryptWithUserPassword = false,
+    bool $generate_user_new_password = false,
+    int $nbItemsToTreat
 ): string
 {
 
     // prepapre background tasks for item keys generation        
-    $val = DB::queryFirstRow(
+    $userTP = DB::queryFirstRow(
         'SELECT pw, public_key, private_key
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         TP_USER_ID
     );
     if (DB::count() > 0) {
+        // Do we need to generate new user password
+        if ($generate_user_new_password === true) {
+            // Generate a new password
+            $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
+
+            // Hash the new password
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+            if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
+                return prepareExchangedData(
+                    __DIR__.'/..',
+                    array(
+                        'error' => true,
+                        'message' => langHdl('pw_hash_not_correct'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // Generate new keys
+            $userKeys = generateUserKeys($passwordClear);
+
+            // Save in DB
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'pw' => $hashedPassword,
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                ),
+                'id=%i',
+                $userId
+            );
+        }
+
+        // Manage empty encryption key
+        // Let's take the user's password if asked and if no encryption key provided
+        $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
+
         // Create process
         DB::insert(
             prefixTable('processes'),
@@ -3932,7 +3995,9 @@ function handleUserKeys(
                     'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
                     'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
                     'owner_id' => (int) TP_USER_ID,
-                    'creator_pwd' => $val['pw'],
+                    'creator_pwd' => $userTP['pw'],
+                    'send_email' => $sendEmailToUser === true ? 1 : 0,
+                    'otp_provided_new_value' => 1,
                 ]),
                 'updated_at' => '',
                 'finished_at' => '',
@@ -3957,7 +4022,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step0',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -3970,7 +4035,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step1',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -3983,7 +4048,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step2',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -3996,7 +4061,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step3',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4009,7 +4074,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step4',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4022,7 +4087,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step5',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4035,7 +4100,7 @@ function handleUserKeys(
                 'task' => json_encode([
                     'step' => 'step6',
                     'index' => 0,
-                    'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    'nb' => $nbItemsToTreat,
                 ]),
             )
         );
@@ -4045,6 +4110,9 @@ function handleUserKeys(
             prefixTable('users'),
             [
                 'is_ready_for_usage' => 0,
+                'otp_provided' => 1,
+                'ongoing_process_id' => $processId,
+                'special' => 'generate-keys',
             ],
             'id=%i',
             $userId

@@ -10,7 +10,7 @@ declare(strict_types=1);
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * ---
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      users.queries.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -2181,36 +2181,62 @@ if (null !== $post_type) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
 
             if (empty($dataReceived) === false) {
+                // Sanitize
+                $data = [
+                    'email' => isset($dataReceived['email']) === true ? $dataReceived['email'] : '',
+                    'timezone' => isset($dataReceived['timezone']) === true ? $dataReceived['timezone'] : '',
+                    'language' => isset($dataReceived['language']) === true ? $dataReceived['language'] : '',
+                    'treeloadstrategy' => isset($dataReceived['treeloadstrategy']) === true ? $dataReceived['treeloadstrategy'] : '',
+                    'agsescardid' => isset($dataReceived['agsescardid']) === true ? $dataReceived['agsescardid'] : '',
+                    'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
+                    'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
+                ];
+                
+                $filters = [
+                    'email' => 'trim|escape',
+                    'timezone' => 'trim|escape',
+                    'language' => 'trim|escape',
+                    'treeloadstrategy' => 'trim|escape',
+                    'agsescardid' => 'trim|escape',
+                    'name' => 'trim|escape',
+                    'lastname' => 'trim|escape',
+                ];
+                
+                $inputData = dataSanitizer(
+                    $data,
+                    (array) $filters
+                );
+
                 // update user
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'email' => filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL),
-                        'usertimezone' => filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'user_language' => filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'treeloadstrategy' => filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'agses-usercardid' => filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT),
-                        'name' => filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                        'lastname' => filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                        'email' => $inputData['email'],
+                        'usertimezone' => $inputData['timezone'],
+                        'user_language' => $inputData['language'],
+                        'treeloadstrategy' => $inputData['treeloadstrategy'],
+                        'agses-usercardid' => $inputData['agsescardid'],
+                        'name' => $inputData['name'],
+                        'lastname' => $inputData['lastname'],
                     ),
                     'id = %i',
                     $_SESSION['user_id']
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_timezone'] = filter_var(htmlspecialchars_decode($dataReceived['timezone']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['name'] = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['lastname'] = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['user_email'] = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-                $_SESSION['user']['user_treeloadstrategy'] = filter_var(htmlspecialchars_decode($dataReceived['treeloadstrategy']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                $_SESSION['user_agsescardid'] = filter_var(htmlspecialchars_decode($dataReceived['agsescardid']), FILTER_SANITIZE_NUMBER_INT);
-                $_SESSION['user']['user_language'] = filter_var(htmlspecialchars_decode($dataReceived['language']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $_SESSION['user_timezone'] = $inputData['timezone'];
+                $_SESSION['name'] = $inputData['name'];
+                $_SESSION['lastname'] = $inputData['lastname'];
+                $_SESSION['user_email'] = $inputData['email'];
+                $_SESSION['user']['user_treeloadstrategy'] = $inputData['treeloadstrategy'];
+                $_SESSION['user_agsescardid'] = $inputData['agsescardid'];
+                $_SESSION['user']['user_language'] = $inputData['language'];
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -2229,6 +2255,9 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'message' => '',
+                    'name' => $_SESSION['name'],
+                    'lastname' => $_SESSION['lastname'],
+                    'email' => $_SESSION['user_email'],
                 ),
                 'encode'
             );
@@ -3337,7 +3366,10 @@ if (null !== $post_type) {
             DB::update(
                 prefixTable('users'),
                 array(
-                    'is_ready_for_usage' => 0,
+                    'is_ready_for_usage' => 1,
+                    'otp_provided' => 0,
+                    'ongoing_process_id' => $processId,
+                    'special' => 'generate-keys',
                 ),
                 'id = %i',
                 $post_user_id
@@ -3435,7 +3467,144 @@ if (null !== $post_type) {
                     'user_id' => $user_id,
                     'user_code' => $password,
                     'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
-                    'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
+                    'post_action' => 'prepare_tasks',
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+        * WHAT IS THE PROGRESS OF GENERATING NEW KEYS AND OTP FOR A USER
+        */
+        case 'get_generate_keys_progress':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            if (isset($dataReceived['user_id']) === false) {
+                // Exit nothing to be done
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => '',
+                        'user_id' => '',
+                        'status' => '',
+                        'debug' => '',
+                    ),
+                    'encode'
+                );
+            }
+
+            // Prepare variables
+            $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            // get user info
+            $processesProgress = DB::query(
+                'SELECT u.ongoing_process_id, pt.task, pt.updated_at, pt.finished_at, pt.is_in_progress
+                FROM ' . prefixTable('users') . ' AS u
+                INNER JOIN ' . prefixTable('processes_tasks') . ' AS pt ON (pt.process_id = u.ongoing_process_id)
+                WHERE u.id = %i',
+                $user_id
+            );
+
+            //print_r($processesProgress);
+            $finished_steps = 0;
+            $nb_steps = count($processesProgress);
+            foreach($processesProgress as $process) {
+                if ((int) $process['is_in_progress'] === -1) {
+                    $finished_steps ++;
+                }
+            }
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'user_id' => $user_id,
+                    'status' => $finished_steps === $nb_steps ? 'finished' : number_format($finished_steps/$nb_steps*100, 0).'%',
+                    'debug' => $finished_steps.",".$nb_steps,
+                ),
+                'encode'
+            );
+
+            break;
+
+
+        /**
+         * CHECK IF USER IS FINISHED WITH GENERATING NEW KEYS AND OTP FOR A USER
+         */
+        case "get-user-infos":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+            // Prepare variables
+            $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            $userInfos = getFullUserInfos((int) $user_id);
+
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'user_id' => $user_id,
+                    'user_infos' => $userInfos,
+                    'debug' => '',
                 ),
                 'encode'
             );

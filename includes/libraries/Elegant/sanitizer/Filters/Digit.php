@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Digit implements Filter
 {
     /**
-     * Get only digit characters from the string.
+     * Removes all characters except digits from the given string.
      *
      * @param mixed $value
      * @param array $options
@@ -15,6 +15,6 @@ class Digit implements Filter
      */
     public function apply($value, array $options = [])
     {
-        return preg_replace('/[^0-9]/si', '', $value);
+        return is_string($value) ? preg_replace('/[^0-9]/si', '', $value) : $value;
     }
 }

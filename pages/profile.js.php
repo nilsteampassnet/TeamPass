@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      profile.js.php
  * ---
  *
@@ -202,7 +202,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     );
                     return false;
                 }
-                //console.log(data)
 
                 if (data.error === true) {
                     toastr.remove();
@@ -213,7 +212,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         }
                     );
                 } else {
-                    $('#profile-username').html($('#profile-user-name').val() + ' ' + $('#profile-user-lastname').val());
+                    $('#profile-username').html(data.name + ' ' + data.lastname);
+                    $('#profile-user-name').val(data.name)
+                    $('#profile-user-lastname').val(data.lastname)
+                    $('#profile-user-email').val(data.email)
 
                     // reload page in case of language change
                     if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $_SESSION['user']['user_language'];?>') {

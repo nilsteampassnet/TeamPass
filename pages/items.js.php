@@ -11,7 +11,7 @@ declare(strict_types=1);
  * ---
  *
  * @project   Teampass
- * @version   3.0.5
+ * @version   3.0.7
  * @file      items.js.php
  * ---
  *
@@ -640,7 +640,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'teampassItem',
                     function(teampassItem) {
                         teampassItem.isNewItem = 1,
-                            teampassItem.id = ''
+                        teampassItem.id = ''
                     }
                 );
 
@@ -2479,6 +2479,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
                 });
+                console.log('DEBUG IMAGE - BeforeUpload')
+                console.log(up);
             }
         }
     });
@@ -2920,6 +2922,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
 
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.isNewItem = 0
+                }
+            );
 
             // Inform user
             toastr.info(
@@ -2999,7 +3007,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     function showItemEditForm(selectedFolderId) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
-
+        
         //$.when(
         //    getPrivilegesOnItem(selectedFolderId, 0)
         //).then(function() {
@@ -4261,6 +4269,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     console.log(data);
                 }
 
+                // Store not a new item
+                store.update(
+                    'teampassItem',
+                    function(teampassItem) {
+                        teampassItem.isNewItem = 0
+                    }
+                );
+
                 // remove any track-change class on item form
                 //$('.form-item-control').removeClass('track-change');
 
@@ -4285,7 +4301,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             }
                         );
                         document.location.href = "index.php?page=items";
-                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key') {
+                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key' && store.get('teampassUser').temporary_code === '') {
                         // we have to ask the user to re-encrypt his privatekey
                         toastr.error(
                             data.message,
@@ -4582,7 +4598,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 $('#card-item-field-' + field.id)
                                     .removeClass('hidden')
                                     .children(".card-item-field-value")
-                                    .text(field.value);
+                                    .html(field.value);
                             }
                             // Item edit form
                             $('#form-item-field-' + field.id)
