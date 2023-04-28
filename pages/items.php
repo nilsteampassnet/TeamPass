@@ -423,7 +423,7 @@ foreach ($rows as $reccord) {
                                                             $field['is_mandatory'] === '1' ?
                                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
                                                             '</label>
-                                                        <textarea class="form-control form-item-control form-item-field-custom" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0"></textarea>
+                                                        <textarea class="form-control form-item-control form-item-field-custom" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0"></textarea>
                                                     </div>';
                                                     } else {
                                                         echo '
@@ -434,8 +434,13 @@ foreach ($rows as $reccord) {
                                                                 '<span class="fas fa-fire text-danger ml-1 infotip" title="' . langHdl('is_mandatory') . '"></span>' : '',
                                                             '</span>
                                                         </div>
-                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-change-ongoing="0">
+                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0">
                                                     </div>';
+                                                    }
+                                                    if (!empty($field['regex'])) {
+                                                        echo '
+                                                    <div>Regex: '. $field['regex'] .'</div>
+                                                        ';
                                                     }
                                                 }
                                                 // Manage template
