@@ -204,6 +204,11 @@ foreach ($folders as $folder) {
                                 </div>
 
                                 <div class="form-group">
+                                    <label>Regex</label>
+                                    <input type="text" class="form-control form-item-control" id="form-field-regex" data-id="">
+                                </div>
+
+                                <div class="form-group">
                                     <input type="checkbox" class="form-check-input form-control flat-blue" id="form-field-mandatory">
                                     <label for="form-field-mandatory" class="pointer ml-2"><?php echo langHdl('is_mandatory'); ?></label>
                                 </div>

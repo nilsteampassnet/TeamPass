@@ -93,6 +93,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         $('#form-field-type, #form-field-roles').val('').change();
         $('#form-field-order, #form-field-category').html('');
         $('#form-field-label').val('');
+        $('#form-field-regex').val('');
 
         // Show Category selection
         var categoriesOptions = [];
@@ -266,6 +267,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 // Prepare data
                 var data = {
                         'label': $('#form-field-label').val(),
+                        'regex': $('#form-field-regex').val(),
                         'type': $('#form-field-type').val(),
                         'roles': $('#form-field-roles').val(),
                         'mandatory': $('#form-field-mandatory').prop('checked') === true ? 1 : 0,
@@ -524,6 +526,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             var categoryId = row.data('category'),
                 fieldId = row.data('field'),
                 fieldPosition = row.data('position'),
+                fieldRegex = row.data('regex'),
                 fieldOrder = row.data('order'),
                 fieldText = $(row).find('td:eq(1)').text(),
                 characteristicsHtml = $(row).find('td:eq(2)').html(),
@@ -568,6 +571,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 fieldOrder = 'bottom';
             }
 
+            $('#form-field-regex').val(fieldRegex).change();
             $('#form-field-order').val(fieldOrder).change();
 
             // Field characterics
@@ -721,6 +725,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                                 var encrypted = '',
                                     masked = '',
                                     mandatory = '',
+                                    regex = '',
                                     type = '<i class="fas fa-paragraph ml-2 infotip text" title="<?php echo langHdl('text'); ?>"></i>',
                                     roles = '';
 
@@ -729,11 +734,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                                 }
 
                                 if (val.masked === 1) {
-                                    masked = '<i class="fas fa-mask ml-2" infotip masked" title="<?php echo langHdl('data_is_masked'); ?>></i>';
+                                    masked = '<i class="fas fa-mask ml-2 infotip masked" title="<?php echo langHdl('data_is_masked'); ?>"></i>';
                                 }
 
                                 if (val.mandatory === 1) {
                                     mandatory = '<i class="fas fa-fire text-danger ml-2 infotip mandatory" title="<?php echo langHdl('is_mandatory'); ?>"></i>';
+                                }
+
+                                if (!empty(val.regex)) {
+                                    regex = '<i class="fas fa-filter ml-2 infotip regex" title="Regex"></i>';
                                 }
 
                                 if (val.type === 'textarea') {
@@ -747,13 +756,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                                 }
 
                                 // Prepare html
-                                html += '<tr class="field" data-category="' + categoryId + '" data-field="' + val.id + '" data-order="' + val.order + '" data-position="' + positionField + '">' +
+                                html += '<tr class="field" data-category="' + categoryId + '" data-field="' + val.id + '" data-order="' + val.order + '" data-position="' + positionField + '" data-regex="' + val.regex + '">' +
                                     '<td class="text-left">' +
                                     '<i class="far fa-edit pointer mr-1 action-field" data-action="edit"></i>' +
                                     '<i class="far fa-trash-alt pointer action-field" data-action="delete"></i>' +
                                     '</td>' +
                                     '<td class="text-left"><i class="fas fa-angle-right mr-2"></i>' + val.title + '</td>' +
-                                    '<td class="text-center">' + mandatory + encrypted + masked + type + '</td>' +
+                                    '<td class="text-center">' + regex + mandatory + encrypted + masked + type + '</td>' +
                                     '<td class="">' + roles + '</td>' +
                                     '</tr>';
 
