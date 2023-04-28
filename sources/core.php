@@ -506,6 +506,7 @@ if (
                             'type' => $field['type'],
                             'masked' => $field['masked'],
                             'is_mandatory' => $field['is_mandatory'],
+                            'regex' => $field['regex'],
                         ]
                     );
                 }
