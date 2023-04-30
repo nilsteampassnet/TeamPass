@@ -741,7 +741,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                                     mandatory = '<i class="fas fa-fire text-danger ml-2 infotip mandatory" title="<?php echo langHdl('is_mandatory'); ?>"></i>';
                                 }
 
-                                if (!empty(val.regex)) {
+                                if (val.regex !== '') {
                                     regex = '<i class="fas fa-filter ml-2 infotip regex" title="Regex"></i>';
                                 }
 
