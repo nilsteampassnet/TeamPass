@@ -583,6 +583,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 WHERE id IN %li',
                 $superGlobal->get('user_roles', 'SESSION')
             );
+            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($superGlobal->get('login'), $SETTINGS['exclude_user']) : false;
+            $adjustPermissions = ($superGlobal->get('user_id', 'SESSION') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
+            if ($adjustPermissions) {
+                $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+            }
             foreach ($rolesList as $role) {
                 $superGlobal->put(
                     $role['id'],
@@ -593,10 +598,47 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'SESSION',
                     'arr_roles'
                 );
+                
+                if ($adjustPermissions) {
+                    if (isset($SETTINGS['admin_needle']) && str_contains($role['title'], $SETTINGS['admin_needle'])) {
+                         $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+                         $userInfo['admin'] = 1;
+                    }    
+                    if (isset($SETTINGS['manager_needle']) && str_contains($role['title'], $SETTINGS['manager_needle'])) {
+                         $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+                         $userInfo['gestionnaire'] = 1;
+                    }
+                    if (isset($SETTINGS['tp_manager_needle']) && str_contains($role['title'], $SETTINGS['tp_manager_needle'])) {
+                         $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
+                         $userInfo['can_manage_all_users'] = 1;
+                    }
+                    if (isset($SETTINGS['read_only_needle']) && str_contains($role['title'], $SETTINGS['read_only_needle'])) {
+                         $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
+                         $userInfo['read_only'] = 1;
+                    }
+                }
+
                 // get highest complexity
                 if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($role['complexity'])) {
                     $superGlobal->put('user_pw_complexity', $role['complexity'], 'SESSION');
                 }
+            }
+            if ($adjustPermissions) {
+                $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
+                $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
+                $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
+                $superGlobal->put('user_read_only', (bool) $userInfo['read_only'], 'SESSION');
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'admin' => $userInfo['admin'],
+                        'gestionnaire' => $userInfo['gestionnaire'],
+                        'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                        'read_only' => $userInfo['read_only'],
+                    ],
+                    'id = %i',
+                    $superGlobal->get('user_id', 'SESSION')
+                );
             }
         }
 
