@@ -52,15 +52,7 @@ function langHdl(string $string): string
     }
 
     // Load superglobal
-    if (file_exists(__DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    } elseif (file_exists(__DIR__.'/includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once __DIR__.'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    } elseif (file_exists(__DIR__.'/../../includes/libraries/protect/SuperGlobal/SuperGlobal.php')) {
-        include_once __DIR__.'/../../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    } else {
-        throw new Exception("Error file '/includes/libraries/protect/SuperGlobal/SuperGlobal.php' not exists", 1);
-    }
+    include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
@@ -82,7 +74,8 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return (string) str_replace("'",  "&apos;", $session_language);
+    //return (string) str_replace("'",  "&apos;", $session_language);
+    return (string) $session_language;
 }
 
 /**
