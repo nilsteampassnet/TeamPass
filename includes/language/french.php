@@ -1075,5 +1075,5 @@ return array(
     'email_body_user_config_4' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Keys encryption is now finished. Your Teampass account is fully ready.<br><br>Cheers',
     'email_body_user_config_5' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Keys encryption is now finished. Following code is expected next time using Teampass:<br><br><b>#code#</b><br><br><br>Cheers',
     'email_body_user_config_6' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following credentials are expected next time using Teampass:<ul><li>login: #login#</li><li>Password: #password#</li></ul><br><br><br>Cheers',
-
+    
 );
