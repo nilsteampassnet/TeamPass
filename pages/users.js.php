@@ -974,6 +974,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     },
                     function(data) {
                         data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
                             // Show error
@@ -985,127 +986,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     progressBar: true
                                 }
                             );
-                        } else if (store.get('teampassApplication').formUserAction === 'add_new_user' && data.post_action !== "") {
-                            // Case where we need to encrypt new keys for the user
-                            // Process is: 
-                            // 1/ generate encryption key (to be shared by email)
-                            // 2/ clear all keys for this user
-                            // 3/ generate keys for this user with encryption key
-                            // 4/ send email to user
-
-                            // STEP 0 - Prepare Modal
-
+                        } else if (store.get('teampassApplication').formUserAction === 'add_new_user') {
+                            // Inform user
                             toastr.remove();
-                            showModalDialogBox(
-                                '#warningModal',
-                                '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
-                                '<?php echo langHdl('please_wait'); ?>',
-                                '',
-                                '',
-                                true,
-                                false,
-                                false
-                            );
-
-                            store.update(
-                                'teampassUser',
-                                function(teampassUser) {
-                                    teampassUser.admin_new_user_id = data.user_id,
-                                    teampassUser.admin_new_user_password = data.user_pwd,
-                                    teampassUser.admin_new_user_login = $('#form-login').val();
+                            toastr.success(
+                                '<?php echo langHdl('new_user_info_by_mail'); ?>',
+                                '', {
+                                    timeOut: 4000
                                 }
                             );
-
-                            //console.log(store.get('teampassUser'))
-
-                            if (formUserId === undefined || formUserId === '') {
-                                formUserId = data.user_id;
-                            }
-
-
-                            if (data.post_action === 'prepare_tasks') {
-                                // If expected to create new encryption key
-                                var parameters = {
-                                    'user_id': formUserId,
-                                };
-
-                                if (debugJavascript === true) console.info('Prepare TASK for new user encryption keys')
-                                $.post(
-                                    'sources/main.queries.php', {
-                                        type: 'generate_temporary_encryption_key',
-                                        type_category: 'action_key',
-                                        data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                        key: "<?php echo $_SESSION['key']; ?>"
-                                    },
-                                    function(data_tasks) {
-                                        data_tasks = prepareExchangedData(data_tasks, 'decode', '<?php echo $_SESSION['key']; ?>');
-
-                                        if (data_tasks.error !== false) {
-                                            // Show error
-                                            toastr.remove();
-                                            toastr.error(
-                                                data_tasks.message,
-                                                '<?php echo langHdl('caution'); ?>', {
-                                                    timeOut: 5000,
-                                                    progressBar: true
-                                                }
-                                            );
-                                        } else {
-                                            // update the process
-                                            // add all tasks
-                                            userTasksCreation(formUserId, data.user_pwd, data_tasks.userTemporaryCode);
-                                        }
-                                    }
-                                );
-                                
-                            } else if (data.post_action === 'encrypt_keys') {
-                                // If expected to create new encryption key
-                                var data = {
-                                    'user_id': formUserId,
-                                };
-
-                                if (debugJavascript === true) console.info('Generating new encryption key')
-                                $.post(
-                                    'sources/main.queries.php', {
-                                        type: 'generate_temporary_encryption_key',
-                                        type_category: 'action_key',
-                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                        key: "<?php echo $_SESSION['key']; ?>"
-                                    },
-                                    function(data) {
-                                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                                        //console.log(data);
-
-                                        store.update(
-                                            'teampassUser',
-                                            function(teampassUser) {
-                                                teampassUser.admin_new_user_temporary_encryption_code = data.userTemporaryCode;
-                                            }
-                                        );
-
-                                        if (data.error !== false) {
-                                            // Show error
-                                            toastr.remove();
-                                            toastr.error(
-                                                data.message,
-                                                '<?php echo langHdl('caution'); ?>', {
-                                                    timeOut: 5000,
-                                                    progressBar: true
-                                                }
-                                            );
-                                        } else {
-                                            userTemporaryCode = data.userTemporaryCode;
-                                            constVisibleOTP = data.visible_otp;
-                                            // call the recursive function
-                                            //console.log('Starting encryption for '+formUserId+' at step0')
-                                            callRecursiveUserDataEncryption(formUserId, 'step0', 0);
-                                        }
-                                    }
-                                );
-                            } else {
-                                // call the recursive function
-                                callRecursiveUserDataEncryption(formUserId, 'step0', 0); 
-                            }
                             // ---
                         } else {
                             // Inform user
@@ -1116,14 +1005,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     timeOut: 2000
                                 }
                             );
-
-                            // Reload list of users
-                            oTable.ajax.reload();
-
-                            // Prepare UI
-                            $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
-                            $('#row-form').addClass('hidden');
                         }
+
+                        // Reload list of users
+                        oTable.ajax.reload();
+
+                        // Prepare UI
+                        $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                        $('#row-form').addClass('hidden');
                     }
                 )
             } else {
@@ -1833,39 +1722,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 toastr.remove();
                                 toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
-                                // Prepare data
-                                var data = {
-                                    'user_id': userID,
-                                }
-                                
-                                $.post(
-                                    'sources/users.queries.php', {
-                                        type: 'generate_new_otp__preparation',
-                                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                        key: '<?php echo $_SESSION['key']; ?>'
+                                // generate keys
+                                generateUserKeys(
+                                    {
+                                        'user_id': userID,
                                     },
-                                    function(data) {
-                                        //decrypt data
-                                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                                        //console.log(data);return false;
-                                        userTemporaryCode = data.user_code;
-                                        constVisibleOTP = data.visible_otp;
-
-                                        if (data.error === true) {
-                                            // ERROR
-                                            toastr.remove();
-                                            toastr.error(
-                                                data.message,
-                                                '<?php echo langHdl('caution'); ?>', {
-                                                    timeOut: 5000,
-                                                    progressBar: true
-                                                }
-                                            );
-                                        } else {
-                                            // generate keys
-                                            generateUserKeys(data, userTemporaryCode);
-                                        }
-                                    }
+                                    ''
                                 );
                             });
                         }
@@ -2398,268 +2260,110 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function generateUserKeys(data, userTemporaryCode)
     {
         // manage keys encryption for new user
-
-        // If expected, show the OPT to the admin
-        if (constVisibleOTP === true) {
-            showModalDialogBox(
-                '#warningModal',
-                '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo langHdl('your_attention_is_required'); ?>',
-                '<?php echo langHdl('show_encryption_code_to_admin'); ?>' +
-                '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + userTemporaryCode + '" readonly></div>',
-                '',
-                '<?php echo langHdl('close'); ?>'
-            );
-        }
-
         // Case where we need to encrypt new keys for the user
         // Process is: 
         // 2/ clear all keys for this user
         // 3/ generate keys for this user with encryption key
 
         
-        if (data.post_action === 'prepare_tasks') {
-            // If expected to create new encryption key
-            var parameters = {
-                'user_id': data.user_id,
-                'do_nothing': true,
-            };
+        // If expected to create new encryption key
+        var parameters = {
+            'user_id': data.user_id,
+        };
 
-            if (debugJavascript === true) {
-                console.log(parameters);
-                console.info('Prepare TASK for new user encryption keys')
-            }
-            $.post(
-                'sources/main.queries.php', {
-                    type: 'generate_temporary_encryption_key',
-                    type_category: 'action_key',
-                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
-                },
-                function(data_otc) {
-                    data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $_SESSION['key']; ?>');
+        if (debugJavascript === true) {
+            console.log(parameters);
+            console.info('Prepare TASK for new user encryption keys')
+        }
+        $.post(
+            'sources/main.queries.php', {
+                type: 'generate_temporary_encryption_key',
+                type_category: 'action_key',
+                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data_otc) {
+                data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $_SESSION['key']; ?>');
 
-                    if (data_otc.error !== false) {
-                        // Show error
-                        toastr.remove();
-                        toastr.error(
-                            data_otc.message,
-                            '<?php echo langHdl('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        // update the process
-                        // add all tasks
-                        var data_to_send = {
-                            user_id: data.user_id,
-                            user_pwd: data.user_code,
-                            user_code: userTemporaryCode,
+                if (data_otc.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data_otc.message,
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
                         }
-
-                        //console.log(data_to_send);
-                        //return false;
-
-                        // Do query
-                        $.post(
-                            "sources/users.queries.php", {
-                                type: "create_new_user_tasks",
-                                data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                                key: '<?php echo $_SESSION['key']; ?>'
-                            },
-                            function(data_tasks) {
-                                data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $_SESSION['key']; ?>");
-                                
-                                if (data_tasks.error === true) {
-                                    // error
-                                    toastr.remove();
-                                    toastr.error(
-                                        data_tasks.message,
-                                        '<?php echo langHdl('caution'); ?>', {
-                                            timeOut: 5000,
-                                            progressBar: true
-                                        }
-                                    );
-                                } else {
-                                    // show message to user
-                                    // Finalizing
-                                    //$('#warningModal').modal('hide');
-
-                                    // Now close in progress toast
-                                    $('.close-toastr-progress').closest('.toast').remove();
-                                    
-                                    // refresh the list of users in LDAP not added in Teampass
-                                    refreshListUsersLDAP();    
-
-                                    // Rrefresh list of users in Teampass
-                                    oTable.ajax.reload();
-
-                                    toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
-                                        '', {
-                                            timeOut: 1000
-                                        }
-                                    );
-                                }
-                            }
+                    );
+                } else {
+                    // If expected, show the OPT to the admin
+                    if (data_otc.visible_otp === true) {
+                        showModalDialogBox(
+                            '#warningModal',
+                            '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo langHdl('your_attention_is_required'); ?>',
+                            '<?php echo langHdl('show_encryption_code_to_admin'); ?>' +
+                            '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + data_otc.code + '" readonly></div>',
+                            '',
+                            '<?php echo langHdl('close'); ?>'
                         );
                     }
-                }
-            );
-        } else {
-            // Case where we need to encrypt new keys for the user
 
-            // Now close in progress toast
-            $('.close-toastr-progress').closest('.toast').remove();
-            showModalDialogBox(
-                '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('generating_keys'); ?>',
-                '<div class="form-group">'+
-                    '<?php echo langHdl('this_may_take_time'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>' +
-                '</div>' +
-                '<div class="form-group" id="warningModal-progress"></div>' +
-                '<div class="alert alert-info hidden" id="warningModal-user-otp"><div>',
-                '',
-                '',
-                false,
-                false,
-                false,
-            );
-
-            // call the recursive function
-            callRecurive(data.user_id, 'step0', 0); 
-
-            // recursive action to encrypt the keys
-            function callRecurive(
-                userId,
-                step,
-                start
-            ) {
-                var dfd = $.Deferred();
-                ProcessInProgress = true;
-                
-                var stepText = '';
-                if (debugJavascript === true) console.log('Performing '+step)
-
-                // Prepare progress string
-                if (step === 'step0') {
-                    stepText = '<?php echo langHdl('inititialization'); ?>';
-                } else if (step === 'step1') {
-                    stepText = '<?php echo langHdl('items'); ?>';
-                } else if (step === 'step2') {
-                    stepText = '<?php echo langHdl('logs'); ?>';
-                } else if (step === 'step3') {
-                    stepText = '<?php echo langHdl('suggestions'); ?>';
-                } else if (step === 'step4') {
-                    stepText = '<?php echo langHdl('fields'); ?>';
-                } else if (step === 'step5') {
-                    stepText = '<?php echo langHdl('files'); ?>';
-                } else if (step === 'step6') {
-                    stepText = '<?php echo langHdl('personal_items'); ?>';
-                }
-
-                if (step !== 'finished') {
-                    // Inform user
-                    $("#warningModal-progress").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
-                        stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']');
-
-                    var data = {
-                        'action': step,
-                        'start': start,
-                        'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
-                        'user_id': userId,
-                        'self_change': false,
+                    // update the process
+                    // add all tasks
+                    var data_to_send = {
+                        user_id: data.user_id,
+                        user_code: data_otc.code,
                     }
-                    if (debugJavascript === true) {
-                        console.log("start encryption")
-                        console.log(data)
-                    }
+
+                    //console.log(data_to_send);
+                    //return false;
+
                     // Do query
                     $.post(
-                        "sources/main.queries.php", {
-                            type: "user_sharekeys_reencryption_next",
-                            type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                        "sources/users.queries.php", {
+                            type: "create_new_user_tasks",
+                            data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
                             key: '<?php echo $_SESSION['key']; ?>'
                         },
-                        function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            if (debugJavascript === true) {
-                                console.log(data);
-                                console.log("---")
-                            }
+                        function(data_tasks) {
+                            data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $_SESSION['key']; ?>");
                             
-                            if (data.error === true) {
+                            if (data_tasks.error === true) {
                                 // error
-                                $('#warningModal').modal('hide');
-                                //toastr.remove();
+                                toastr.remove();
                                 toastr.error(
-                                    data.message,
+                                    data_tasks.message,
                                     '<?php echo langHdl('caution'); ?>', {
                                         timeOut: 5000,
                                         progressBar: true
                                     }
                                 );
-
-                                dfd.reject();
                             } else {
-                                // Prepare variables
-                                userId = data.userId;
-                                step = data.step;
-                                start = data.start;
+                                // show message to user
+                                // Finalizing
+                                //$('#warningModal').modal('hide');
 
-                                // Do recursive call until step = finished
-                                callRecurive(
-                                    userId,
-                                    step,
-                                    start
-                                ).done(function(response) {
-                                    dfd.resolve(response);
-                                });
+                                // Now close in progress toast
+                                $('.close-toastr-progress').closest('.toast').remove();
+                                
+                                // refresh the list of users in LDAP not added in Teampass
+                                refreshListUsersLDAP();    
+
+                                // Rrefresh list of users in Teampass
+                                oTable.ajax.reload();
+
+                                toastr.success(
+                                    '<?php echo langHdl('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
                             }
-                        }
-                    );
-                } else {
-                    if (debugJavascript === true) console.log('Generation des clés terminée')
-                    // Finalizing
-                    var data = {
-                        'action': 'stepFinishing',
-                        'user_id': userId,
-                        'user_new_otp': userTemporaryCode,
-                    }
-                    //console.log("Finishing user creation from LDAP")
-                    if (debugJavascript === true) console.log(data)
-
-                    // Do query
-                    $.post(
-                        "sources/users.queries.php", {
-                            type: "finishing_user_keys_creation",
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                            key: '<?php echo $_SESSION['key']; ?>'
-                        },
-                        function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-                            if (debugJavascript === true) {
-                                console.log(data);
-                                console.log("---");
-                            }
-                            
-                            // refresh the list of users in LDAP not added in Teampass
-                            refreshListUsersLDAP();    
-
-                            // Rrefresh list of users in Teampass
-                            oTable.ajax.reload();
-
-                            $('#warningModal').modal('hide');
-
-                            // restart time expiration counter
-                            ProcessInProgress = false;
                         }
                     );
                 }
-                return dfd.promise();
             }
-        }
+        );
     }
 
     /**

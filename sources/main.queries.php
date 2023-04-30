@@ -442,7 +442,6 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['do_nothing'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
         
@@ -518,6 +517,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (bool) filter_var($dataReceived['encrypt_with_user_pwd'], FILTER_VALIDATE_BOOLEAN),
                 (bool) isset($dataReceived['generate_user_new_password']) === true ? filter_var($dataReceived['generate_user_new_password'], FILTER_VALIDATE_BOOLEAN) : false,
                 (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                (string) filter_var($dataReceived['email_body'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
         /*
@@ -1766,20 +1766,10 @@ function sendMailToUser(
 
 function generateOneTimeCode(
     int $post_user_id,
-    bool $do_nothing,
     array $SETTINGS
 ): string
 {
-    if ($do_nothing === true) {
-        return prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
-            array(
-                'error' => false,
-                'message' => '',
-            ),
-            'encode'
-        );
-    } elseif (isUserIdValid($post_user_id) === true) {
+    if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT email, auth_type, login
@@ -1811,7 +1801,7 @@ function generateOneTimeCode(
                 array(
                     'error' => false,
                     'message' => '',
-                    'userTemporaryCode' => $password,
+                    'code' => $password,
                     'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                 ),
                 'encode'

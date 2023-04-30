@@ -314,6 +314,20 @@ if (null !== $post_type) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
 
+                // Launch process for user keys creation
+                // No OTP is provided here, no need.
+                handleUserKeys(
+                    (int) $new_user_id,
+                    (string) $password,
+                    "",
+                    true,
+                    true,
+                    true,
+                    false,
+                    (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    (string) langHdl('email_body_user_config_6'),
+                );
+
                 // update LOG
                 logEvents(
                     $SETTINGS,
@@ -328,9 +342,8 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'],
                     array(
                         'error' => false,
-                        'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                         'user_id' => $new_user_id,
-                        'user_pwd' => $password,
+                        //'user_pwd' => $password,
                         'message' => '',
                     ),
                     'encode'
@@ -3247,7 +3260,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_pwd = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_user_pwd = isset($dataReceived['user_pwd']) === true ? filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
             $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Create process
@@ -3258,10 +3271,12 @@ if (null !== $post_type) {
                     'process_type' => 'create_user_keys',
                     'arguments' => json_encode([
                         'new_user_id' => (int) $post_user_id,
-                        'new_user_pwd' => cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
+                        'new_user_pwd' => empty($post_user_pwd) === true ? '' : cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) $_SESSION['user_id'],
                         'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
+                        'email_body' => langHdl('email_body_user_config_5'),
+                        'send_email' => 1,
                     ]),
                     'updated_at' => '',
                     'finished_at' => '',
@@ -3443,13 +3458,8 @@ if (null !== $post_type) {
                 'private_key' => $userKeys['private_key'],
                 'is_ready_for_usage' => 0,
                 'otp_provided' => 0,
+                'special' => $userInfo['auth_type'] === 'local' ? 'otc_is_required_on_next_login' : ($userInfo['auth_type'] === 'ldap' ? 'user_added_from_ldap' : ''),
             );
-
-            if ($userInfo['auth_type'] === 'local') {
-                $values['special'] = 'otc_is_required_on_next_login';
-            } elseif ($userInfo['auth_type'] === 'ldap') {
-                $values['special'] = 'user_added_from_ldap';
-            }
 
             // update profil
             DB::update(

@@ -381,7 +381,7 @@ function performUserCreationKeys(
 function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
 {
     $userInfo = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key
+        'SELECT pw, public_key, private_key, login, name
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $owner_id
@@ -394,6 +394,8 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
     // decrypt private key and send back
     return [
         'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
+        'login' => $userInfo['login'],
+        'name' => $userInfo['name'],
     ];
 }
 
@@ -943,93 +945,47 @@ function cronContinueReEncryptingUserSharekeysStep6(
     // if done then send email to new user
     // get user info
     $userInfo = DB::queryFirstRow(
-        'SELECT email, login, auth_type, special
+        'SELECT email, login, auth_type, special, lastname, name
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $extra_arguments['new_user_id']
     );
 
-    if ($userInfo['auth_type'] === 'local') {
-        if (
-            (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
-            || (isset($extra_arguments['send_email']) === false)
-        ) {
-            // Send email to user
-            sendMailToUser(
-                filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                langHdl('email_body_new_user'),
-                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-                (array) filter_var_array(
-                    [
-                        '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
-                        '#login#' => $userInfo['login'],
-                        '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
-                    ],
-                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                ),
-                $SETTINGS
-            );
-        }
-
-        // Set user as ready for usage
-        DB::update(
-            prefixTable('users'),
-            array(
-                'is_ready_for_usage' => 1,
-                'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
-                'ongoing_process_id' => NULL,
-                'special' => 'none',
+    // SEND EMAIL TO USER depending on context
+    // Config 1: new user is a local user
+    // Config 2: new user is an LDAP user
+    // Config 3: send new password
+    // COnfig 4: send new encryption code
+    if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
+        sendMailToUser(
+            filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : langHdl('email_body_user_config_1'),
+            'TEAMPASS - ' . langHdl('login_credentials'),
+            (array) filter_var_array(
+                [
+                    '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
+                    '#lastname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
+                    '#login#' => isset($userInfo['login']) === true ? $userInfo['login'] : '',
+                    '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
+                ],
+                FILTER_SANITIZE_FULL_SPECIAL_CHARS
             ),
-            'id = %i',
-            $extra_arguments['new_user_id']
+            $SETTINGS
         );
-    } else {
-        if ($userInfo['special']  === 'user_added_from_ldap') {
-            if (
-                (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1)
-                || (isset($extra_arguments['send_email']) === false)
-            ) {
-                sendMailToUser(
-                    filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                    langHdl('email_body_user_added_from_ldap_encryption_code'),
-                    'TEAMPASS - ' . langHdl('temporary_encryption_code'),
-                    (array) filter_var_array(
-                        [
-                            '#enc_code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
-                        ],
-                        FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                    ),
-                    $SETTINGS
-                );
-            }
-            
-            // Set user as ready for usage
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'is_ready_for_usage' => 1,
-                    'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
-                    'ongoing_process_id' => NULL,
-                    'special' => 'none',
-                ),
-                'id = %i',
-                $extra_arguments['new_user_id']
-            );
-        } else {
-            // Set user as ready for usage
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'is_ready_for_usage' => 1,
-                    'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 1,
-                    'ongoing_process_id' => NULL,
-                    'special' => 'none',
-                ),
-                'id = %i',
-                $extra_arguments['new_user_id']
-            );
-        }
     }
+        
+    // Set user as ready for usage
+    DB::update(
+        prefixTable('users'),
+        array(
+            'is_ready_for_usage' => 1,
+            'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
+            'ongoing_process_id' => NULL,
+            'special' => 'none',
+        ),
+        'id = %i',
+        $extra_arguments['new_user_id']
+    );
 
     return [
         'new_index' => 0,

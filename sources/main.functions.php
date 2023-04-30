@@ -3931,7 +3931,8 @@ function handleUserKeys(
     bool $sendEmailToUser = true,
     bool $encryptWithUserPassword = false,
     bool $generate_user_new_password = false,
-    int $nbItemsToTreat
+    int $nbItemsToTreat,
+    string $emailBody = ''
 ): string
 {
 
@@ -3998,6 +3999,7 @@ function handleUserKeys(
                     'creator_pwd' => $userTP['pw'],
                     'send_email' => $sendEmailToUser === true ? 1 : 0,
                     'otp_provided_new_value' => 1,
+                    'email_body' => empty($emailBody) === true ? '' : langHdl($emailBody),
                 ]),
                 'updated_at' => '',
                 'finished_at' => '',

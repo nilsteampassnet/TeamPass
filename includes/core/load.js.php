@@ -556,9 +556,12 @@ if (
                                 'user_pwd': $('#encryption-otp').val(),
                                 'encryption_key': '',
                                 'delete_existing_keys': true,
-                                'send_email_to_user': false,
                                 'encrypt_with_user_pwd': true,
+                                'send_email_to_user': true,
+                                'email_body': 'email_body_user_config_4',
+                                'generate_user_new_password': false,
                             };
+                            //console.log(parameters);
 
                             $.post(
                                 "sources/main.queries.php", {
@@ -911,6 +914,7 @@ if (
                 'send_email_to_user': true,
                 'encrypt_with_user_pwd': true,
                 'generate_user_new_password': true,
+                'email_body': 'email_body_user_config_3',
             };
 
             $.post(

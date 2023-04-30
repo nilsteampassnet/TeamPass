@@ -1070,5 +1070,12 @@ return array(
     'user_encryption_ongoing' => 'Account is currently being encrypting. Your request cannot continue. Please wait until this is finished.',
     'teampass_information' => 'Teampass information',
     'show_password' => 'Show password',
+    'new_user_info_by_mail' => 'New user will receive an email with his credentials',
+    'login_credentials' => 'Login credentials',
+    'email_body_user_config_1' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following credentials are expected next time using Teampass:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
+    'email_body_user_config_3' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following password is expected next time using Teampass:<br><br><b>#password#</b><br><br><br>Cheers',
+    'email_body_user_config_4' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Keys encryption is now finished. Your Teampass account is fully ready.<br><br>Cheers',
+    'email_body_user_config_5' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Keys encryption is now finished. Following code is expected next time using Teampass:<br><br><b>#code#</b><br><br><br>Cheers',
+    'email_body_user_config_6' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following credentials are expected next time using Teampass:<ul><li>login: #login#</li><li>Password: #password#</li></ul><br><br><br>Cheers',
 
 );
