@@ -1987,6 +1987,17 @@ mysqli_query(
 
 //---<END 3.0.0.23
 
+//---<BEGIN 3.0.7
+
+// Add field regex to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre . 'categories',
+    'regex',
+    "varchar(255) default ''"
+);
+
+//---<END 3.0.7
+
 // Close connection
 mysqli_close($db_link);
 

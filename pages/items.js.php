@@ -2742,8 +2742,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Get item field values
                 // Ensure that mandatory ones are filled in too
+                // and they are compliant to regexes
                 var fields = [];
                 var errorExit = false;
+                var reason = '';
                 $('.form-item-field-custom').each(function(key, data) {
                     fields.push({
                         'id': $(this).data('field-name'),
@@ -2759,16 +2761,34 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         errorExit = true;
                         return false;
                     }
+                    if ($(this).val().length > 0 && $(this).data('field-regex').length > 0 &&
+                        !$(this).val().match($(this).data('field-regex'))
+                    ) {
+                        //if (debugJavascript === true) console.log($(this))
+                        errorExit = true;
+                        reason = 'regex';
+                        return false;
+                    }
                 });
                 if (errorExit === true) {
                     toastr.remove();
-                    toastr.error(
-                        '<?php echo langHdl('error_field_is_mandatory'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
+                    if (reason === 'regex') {
+                        toastr.error(
+                            '<?php echo langHdl('error_field_regex'); ?>',
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        toastr.error(
+                            '<?php echo langHdl('error_field_is_mandatory'); ?>',
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    }
                     return false;
                 }
                 //prepare data

@@ -213,6 +213,7 @@ if (null !== $post_type) {
                                 'roles' => $arrayRoles,
                                 //'role' => $field['role_visibility'],
                                 'mandatory' => (int) $field['is_mandatory'],
+                                'regex' => $field['regex'],
                             )
                         );
                     }
@@ -538,6 +539,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_regex = filter_var($dataReceived['regex'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
             $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -556,6 +558,7 @@ if (null !== $post_type) {
                     prefixTable('categories'),
                     array(
                         'title' => $post_label,
+                        'regex' => $post_regex,
                         'parent_id' => $post_categoryId,
                         'type' => $post_type,
                         'encrypted_data' => $post_encrypted,
@@ -667,6 +670,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_regex = filter_var($dataReceived['regex'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_order = filter_var($dataReceived['order'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_categoryId = filter_var($dataReceived['categoryId'], FILTER_SANITIZE_NUMBER_INT);
             $post_type = filter_var($dataReceived['type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -681,6 +685,7 @@ if (null !== $post_type) {
                 array(
                     'parent_id' => $post_categoryId,
                     'title' => $post_label,
+                    'regex' => $post_regex,
                     'type' => $post_type,
                     'masked' => $post_masked,
                     'encrypted_data' => $post_encrypted,

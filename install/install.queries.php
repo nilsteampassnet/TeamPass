@@ -1048,6 +1048,7 @@ $SETTINGS = array (';
                             `encrypted_data` tinyint(1) NOT NULL default '1',
                             `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
                             `is_mandatory` tinyint(1) NOT NULL DEFAULT '0',
+                            `regex` varchar(255) NULL default '',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
