@@ -1263,19 +1263,12 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }
 
     // User auth attempt
-    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-        $userDN = $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0];
-        $userAuthAttempt = $connection->auth()->attempt(
-            $userDN,
-            $passwordClear
-        );
-    } else {
-        $userDN = $userADInfos['dn'];
-        $userAuthAttempt = $connection->auth()->attempt(
-            $userDN,
-            $passwordClear
-        );
-    }
+    $userAuthAttempt = $connection->auth()->attempt(
+        $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
+            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+            $userADInfos['dn'],
+        $passwordClear
+    );
     
     // User is not auth then return error
     if ($userAuthAttempt === false) {
@@ -1286,9 +1279,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }
 
     // Create LDAP user if not exists and tasks enabled
-    if ($userInfo['ldap_user_to_be_created'] === true 
-        && (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1)
-    ) {   
+    if ($userInfo['ldap_user_to_be_created'] === true) {   
         $userInfo = ldapCreateUser(
             $username,
             $passwordClear,
@@ -1298,126 +1289,18 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             $SETTINGS
         );
 
-        // prepapre background tasks for item keys generation        
-        $val = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            TP_USER_ID
+        // prepapre background tasks for item keys generation  
+        handleUserKeys(
+            (int) $userInfo['id'],
+            (string) $passwordClear,
+            uniqidReal(20),
+            true,
+            true,
+            true,
+            false,
+            (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+            langHdl('email_body_user_config_2'),
         );
-        if (DB::count() > 0) {
-            // Create process
-            DB::insert(
-                prefixTable('processes'),
-                array(
-                    'created_at' => time(),
-                    'process_type' => 'create_user_keys',
-                    'arguments' => json_encode([
-                        'new_user_id' => (int) $userInfo['id'],
-                        'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
-                        'new_user_code' => cryption(uniqidReal(20), '','encrypt')['string'],
-                        'owner_id' => (int) TP_USER_ID,
-                        'creator_pwd' => $val['pw'],
-                    ]),
-                    'updated_at' => '',
-                    'finished_at' => '',
-                    'output' => '',
-                )
-            );
-            $processId = DB::insertId();
-
-            // Create tasks
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step0',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step1',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step2',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step3',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step4',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step5',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step6',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-        }
 
         // Complete $userInfo
         $userInfo['has_been_created'] = 1;
@@ -1432,7 +1315,9 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         require_once 'ldap.openldap.php';
     }   
     $ret = getUserADGroups(
-        $userDN, 
+        $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
+            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+            $userADInfos['dn'], 
         $connection, 
         $SETTINGS
     );

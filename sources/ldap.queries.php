@@ -215,17 +215,12 @@ switch ($post_type) {
         }
         
         try {
-            if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-                $userAuthAttempt = $connection->auth()->attempt(
-                    $user[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0],
-                    $post_password
-                );
-            } else {
-                $userAuthAttempt = $connection->auth()->attempt(
+            $userAuthAttempt = $connection->auth()->attempt(
+                $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
+                    $user[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
                     $user['dn'],
-                    $post_password
-                );
-            }
+                $post_password
+            );
         } catch (\LdapRecord\LdapRecordException $e) {
             $error = $e->getDetailedError();
             
