@@ -2795,30 +2795,30 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? $('#form-item-description').summernote('code') : '',
+                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? DOMPurify.sanitize($('#form-item-description').summernote('code'), {USE_PROFILES: {html: true}}) : '',
                     'diffusion_list': diffusion,
                     'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
-                    'email': $('#form-item-email').val(),
+                    'email': DOMPurify.sanitize($('#form-item-email').val()),
                     'fields': fields,
                     'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                     'id': store.get('teampassItem').id,
-                    'label': $('#form-item-label').val(),
-                    'login': $('#form-item-login').val(),
+                    'label': DOMPurify.sanitize($('#form-item-label').val()),
+                    'login': DOMPurify.sanitize($('#form-item-login').val()),
                     'pw': $('#form-item-password').val(),
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
-                    'tags': $('#form-item-tags').val(),
+                    'tags': DOMPurify.sanitize($('#form-item-tags').val()),
                     'template_id': parseInt($('input.form-check-input-template:checkbox:checked').data('category-id')),
                     'to_be_deleted_after_date': ($('#form-item-deleteAfterDate').length !== 0 &&
                         $('#form-item-deleteAfterDate').val() !== '') ? $('#form-item-deleteAfterDate').val() : '',
                     'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown').length !== 0 &&
                             $('#form-item-deleteAfterShown').val() !== '' && $('#form-item-deleteAfterShown').val() >= 1) ?
                         parseInt($('#form-item-deleteAfterShown').val()) : '',
-                    'url': $('#form-item-url').val(),
+                    'url': DOMPurify.sanitize($('#form-item-url').val()),
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
-                    'fa_icon': $('#form-item-icon').val(),
+                    'fa_icon': DOMPurify.sanitize($('#form-item-icon').val()),
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');

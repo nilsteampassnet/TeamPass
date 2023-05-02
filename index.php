@@ -1154,6 +1154,8 @@ if (($session_validite_pw === null
     <script type="text/javascript" src="./plugins/icheck/icheck.min.js"></script>
     <!-- bootstrap-add-clear -->
     <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script>
+    <!-- DOMPurify -->
+    <script type="text/javascript" src="plugins/DOMPurify/purify.min.js"></script>
 
     <?php
     $get = [];
