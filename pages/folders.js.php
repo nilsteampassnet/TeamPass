@@ -99,15 +99,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             //--- SAVE NEW FOLDER
             // Prepare data
             var data = {
-                'title': $('#new-title').val(),
+                'title': DOMPurify.sanitize($('#new-title').val()),
                 'parentId': parseInt($('#new-parent').val()),
                 'complexity': parseInt($('#new-complexity').val()),
                 'accessRight': $('#new-access-right').val(),
-                'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
+                'renewalPeriod': DOMPurify.sanitize($('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val())),
                 'addRestriction': $('#new-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
-                'icon': $('#new-folder-add-icon').val(),
-                'iconSelected': $('#new-folder-add-icon-selected').val(),
+                'icon': DOMPurify.sanitize($('#new-folder-add-icon').val(), {USE_PROFILES: {html: true}}),
+                'iconSelected': DOMPurify.sanitize($('#new-folder-add-icon-selected').val(), {USE_PROFILES: {html: true}}),
             }
             console.log(data)
             // Launch action
@@ -742,14 +742,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // Prepare data
             var data = {
                 'id': currentFolderId,
-                'title': $('#folder-edit-title').val(),
+                'title': DOMPurify.sanitize($('#folder-edit-title').val()),
                 'parentId': $('#folder-edit-parent').val(),
                 'complexity': $('#folder-edit-complexity').val(),
-                'renewalPeriod': $('#folder-edit-renewal').val(),
+                'renewalPeriod': DOMPurify.sanitize($('#folder-edit-renewal').val()),
                 'addRestriction': $('#folder-edit-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#folder-edit-edit-restriction').prop("checked") === true ? 1 : 0,
-                'icon': $('#folder-edit-icon').val(),
-                'iconSelected': $('#folder-edit-icon-selected').val(),
+                'icon': DOMPurify.sanitize($('#folder-edit-icon').val(), {USE_PROFILES: {html: true}}),
+                'iconSelected': DOMPurify.sanitize($('#folder-edit-icon-selected').val(), {USE_PROFILES: {html: true}})
             }
             console.log(data)
             // Launch action

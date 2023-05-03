@@ -477,7 +477,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Prepare data
             var data = {
-                'label': $('#form-role-label').val(),
+                'label': DOMPurify.sanitize($('#form-role-label').val()),
                 'complexity': $('#form-complexity-list').val() === null ? 0 : $('#form-complexity-list').val(),
                 'folderId': $('#roles-list').find(':selected').val(),
                 'allowEdit': $('#form-role-privilege').is(":checked") === true ? 1 : 0,

@@ -941,10 +941,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 //prepare data
                 var data = {
                     'user_id': store.get('teampassApplication').formUserId,
-                    'login': $('#form-login').val(),
-                    'name': $('#form-name').val(),
-                    'lastname': $('#form-lastname').val(),
-                    'email': $('#form-email').val(),
+                    'login': DOMPurify.sanitize($('#form-login').val()),
+                    'name': DOMPurify.sanitize($('#form-name').val()),
+                    'lastname': DOMPurify.sanitize($('#form-lastname').val()),
+                    'email': DOMPurify.sanitize($('#form-email').val()),
                     'admin': $('#privilege-admin').prop('checked'),
                     'manager': $('#privilege-manager').prop('checked'),
                     'hr': $('#privilege-hr').prop('checked'),
@@ -1622,7 +1622,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Prepare data
                 var data = {
-                    'label': $('#ldap-new-role-selection').val(),
+                    'label': DOMPurify.sanitize($('#ldap-new-role-selection').val()),
                     'complexity': $('#ldap-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -2219,10 +2219,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         // prepare data
         var data = {
-            'login': $('.selected-user').data('user-login'),
-            'name': $('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name'),
-            'lastname': $('.selected-user').data('user-lastname'),
-            'email': $('.selected-user').data('user-email'),
+            'login': DOMPurify.sanitize($('.selected-user').data('user-login')),
+            'name': DOMPurify.sanitize($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
+            'lastname': DOMPurify.sanitize($('.selected-user').data('user-lastname')),
+            'email': DOMPurify.sanitize($('.selected-user').data('user-email')),
             'roles' : roles,
         };
         if (debugJavascript === true) console.log(data)

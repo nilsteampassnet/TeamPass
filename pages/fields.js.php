@@ -190,7 +190,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             ) {
                 // Prepare data
                 var data = {
-                        'label': $('#form-category-label').val(),
+                        'label': DOMPurify.sanitize($('#form-category-label').val()),
                         'folders': $('#form-category-folders').val(),
                         'position': $('#form-category-list').val(),
                         'edit': $('#button-save-category').data('edit') === true ? true : false,

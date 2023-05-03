@@ -166,9 +166,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     // Save user settings
     $('#profile-user-save-settings').click(function() {
         var data = {
-            'name': $('#profile-user-name').val(),
-            'lastname': $('#profile-user-lastname').val(),
-            'email': $('#profile-user-email').val(),
+            'name': DOMPurify.sanitize($('#profile-user-name').val()),
+            'lastname': DOMPurify.sanitize($('#profile-user-lastname').val()),
+            'email': DOMPurify.sanitize($('#profile-user-email').val()),
             'timezone': $('#profile-user-timezone').val(),
             'language': $('#profile-user-language').val().toLowerCase(),
             'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
@@ -391,7 +391,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
         var data = {
-            'new_pw': $('#profile-password').val(),
+            'new_pw': DOMPurify.sanitize($('#profile-password').val()),
             'complexity': $('#profile-password-complex').val(),
             "change_request": 'user_decides_to_change_password',
             "user_id": store.get('teampassUser').user_id,

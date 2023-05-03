@@ -1054,7 +1054,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         var data = {
             'id': store.get('teampassItem').id,
-            'email': $('#form-item-request-access-reason').val(),
+            'email': DOMPurify.sanitize($('#form-item-request-access-reason').val()),
         }
         // NOw send the email
         $.post(
@@ -1210,7 +1210,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // Prepare data
         var data = {
             'id': store.get('teampassItem').id,
-            'receipt': $('#form-item-share-email').val(),
+            'receipt': DOMPurify.sanitize($('#form-item-share-email').val()),
             'cat': 'share_this_item',
         }
 
@@ -1270,7 +1270,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var data = {
             'item_id': store.get('teampassItem').id,
             'folder_id': selectedFolderId,
-            'label': $('#form-item-copy-new-label').val(),
+            'label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
             'access_level': store.get('teampassItem').hasAccessLevel,
         }
 
@@ -1388,7 +1388,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'item_id': store.get('teampassItem').id,
             'source_id': selectedFolderId,
             'dest_id': $('#form-item-copy-destination').val(),
-            'new_label': $('#form-item-copy-new-label').val(),
+            'new_label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
         }
 
         // Launch action
@@ -1475,9 +1475,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             var data = {
                 'item_id': store.get('teampassItem').id,
-                'new_pwd': $('#form-item-server-password').val(),
-                'ssh_root': $('#form-item-server-login').val(),
-                'ssh_pwd': $('#form-item-server-old-password').val(),
+                'new_pwd': DOMPurify.sanitize($('#form-item-server-password').val()),
+                'ssh_root': DOMPurify.sanitize($('#form-item-server-login').val()),
+                'ssh_pwd': DOMPurify.sanitize($('#form-item-server-old-password').val()),
                 'user_id': <?php echo $_SESSION['user_id']; ?>,
             }
 
@@ -1581,13 +1581,13 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userUploadedFile = false;
 
         var data = {
-            'label': $('#form-item-suggestion-label').val(),
-            'login': $('#form-item-suggestion-login').val(),
-            'password': $('#form-item-suggestion-password').val(),
-            'email': $('#form-item-suggestion-email').val(),
-            'url': $('#form-item-suggestion-url').val(),
-            'description': $('#form-item-suggestion-description').summernote('code'),
-            'comment': $('#form-item-suggestion-comment').val(),
+            'label': DOMPurify.sanitize($('#form-item-suggestion-label').val()),
+            'login': DOMPurify.sanitize($('#form-item-suggestion-login').val()),
+            'password': DOMPurify.sanitize($('#form-item-suggestion-password').val()),
+            'email': DOMPurify.sanitize($('#form-item-suggestion-email').val()),
+            'url': DOMPurify.sanitize($('#form-item-suggestion-url').val()),
+            'description': DOMPurify.sanitize($('#form-item-suggestion-description').summernote('code'), {USE_PROFILES: {html: true}}),
+            'comment': DOMPurify.sanitize($('#form-item-suggestion-comment').val(), {USE_PROFILES: {html: true}}),
             'folder_id': selectedFolderId,
             'item_id': store.get('teampassItem').id
         }
@@ -1681,7 +1681,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userUploadedFile = false;
 
         var data = {
-            'title': $('#form-folder-add-label').val(),
+            'title': DOMPurify.sanitize($('#form-folder-add-label').val()),
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
             //'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),
@@ -1909,7 +1909,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var data = {
             'source_folder_id': $('#form-folder-copy-source option:selected').val(),
             'target_folder_id': $('#form-folder-copy-destination option:selected').val(),
-            'folder_label': $('#form-folder-copy-label').val(),
+            'folder_label': DOMPurify.sanitize($('#form-folder-copy-label').val()),
         }
 
         // Launch action
@@ -5121,9 +5121,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Insert new entry
             var data = {
                 'item_id': store.get('teampassItem').id,
-                'label': $('#form-item-history-label').val(),
-                'date': $('#form-item-history-date').val(),
-                'time': $('#form-item-history-time').val(),
+                'label': DOMPurify.sanitize($('#form-item-history-label').val()),
+                'date': DOMPurify.sanitize($('#form-item-history-date').val()),
+                'time': DOMPurify.sanitize($('#form-item-history-time').val()),
             }
             $.post(
                 "sources/items.queries.php", {
@@ -5295,7 +5295,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         var data = {
             "id": itemId,
-            "label": itemLabel,
+            "label": DOMPurify.sanitize(itemLabel),
             "user_id": "<?php echo $_SESSION['user_id']; ?>",
             "action": logCase,
             "login": "<?php echo $_SESSION['login']; ?>"

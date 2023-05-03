@@ -712,7 +712,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         var data = {
             "id": itemId,
-            "label": itemLabel,
+            "label": DOMPurify.sanitize(itemLabel),
             "user_id": "<?php echo $_SESSION['user_id']; ?>",
             "action": logCase,
             "login": "<?php echo $_SESSION['login']; ?>"
