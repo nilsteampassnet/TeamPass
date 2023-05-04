@@ -219,6 +219,7 @@ if (
         )
     ) === false
     && $post_type_upload !== 'import_items_from_keepass'
+    && $post_type_upload !== 'restore_db'
 ) {
     handleUploadError('Invalid file extension.');
     die();

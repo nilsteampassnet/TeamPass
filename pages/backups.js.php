@@ -252,16 +252,22 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             runtimes: "gears,html5,flash,silverlight,browserplus",
             browse_button: "onthefly-restore-file-select",
             container: "onthefly-restore-file",
-            max_file_size: "50mb",
-            chunk_size: "0",
+            max_file_size: '<?php
+            if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
+                echo $SETTINGS['upload_maxfilesize'] . 'mb';
+            } else {
+                echo $SETTINGS['upload_maxfilesize'];
+            }
+            ?>',
+            chunk_size: '5mb',
             unique_names: true,
             dragdrop: true,
             multiple_queues: false,
             multi_selection: false,
             max_file_count: 1,
-            url: "sources/upload.files.php",
-            flash_swf_url: "includes/libraries/Plupload/plupload.flash.swf",
-            silverlight_xap_url: "includes/libraries/Plupload/plupload.silverlight.xap",
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
+            flash_swf_url: "<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/plupload.flash.swf",
+            silverlight_xap_url: "<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/plupload.silverlight.xap",
             filters: [{
                 title: "SQL files",
                 extensions: "sql"
@@ -299,6 +305,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     // Show cog
                     toastr.remove();
                     toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                    console.log("Upload token: "+store.get('teampassUser').uploadToken);
 
                     up.settings.multipart_params = {
                         "PHPSESSID": "<?php echo $_SESSION['user_id']; ?>",
