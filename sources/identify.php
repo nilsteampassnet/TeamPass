@@ -1116,7 +1116,7 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
     if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true) {
         return [
             'validite_pw' => true,
-            'last_pw_change' => true,
+            'last_pw_change' => $userInfo['last_pw_change'],
             'user_force_relog' => '',
             'numDaysBeforePwExpiration' => '',
         ];
@@ -1134,7 +1134,7 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
         
         return [
             'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
-            'last_pw_change' => '',
+            'last_pw_change' => $userInfo['last_pw_change'],
             'user_force_relog' => 'infinite',
             'numDaysBeforePwExpiration' => $SETTINGS['pw_life_duration'] - round(
                 (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $lastPwChange) / (24 * 60 * 60)),

@@ -83,7 +83,7 @@ $userSeenItemsNumber = DB::count();
 DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
 $userSeenPasswordsNumber = DB::count();
 $userInfo = DB::queryFirstRow(
-    'SELECT avatar 
+    'SELECT avatar, last_pw_change
     FROM ' . prefixTable('users') . ' 
     WHERE id = "' . $_SESSION['user_id'] . '"'
 );
@@ -224,7 +224,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         // Handle last password change string
                                         if (isset($_SESSION['last_pw_change']) === true) {
                                             if (isset($SETTINGS['date_format']) === true) {
-                                                $last_pw_change = date($SETTINGS['date_format'], (int) $_SESSION['last_pw_change']);
+                                                $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) $userInfo['last_pw_change']);
                                             } else {
                                                 $last_pw_change = date('d/m/Y', (int) $_SESSION['last_pw_change']);
                                             }

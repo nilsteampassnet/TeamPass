@@ -479,7 +479,6 @@ if (null !== $post_type) {
                         $process_id
                     );
                 }
-
                 
                 // update LOG
                 logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);

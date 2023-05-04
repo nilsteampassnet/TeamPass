@@ -770,7 +770,7 @@ if (
             $(".fade").removeClass("out");
 
             // Is user not ready
-            if (parseInt(store.get('teampassUser').is_ready_for_usage) === 0) {
+            if (typeof store.get('teampassUser').is_ready_for_usage !== 'undefined' && parseInt(store.get('teampassUser').is_ready_for_usage) === 0) {
                 $('#user_not_ready').removeClass('hidden');
             }
         },

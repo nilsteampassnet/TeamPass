@@ -1757,7 +1757,14 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * 
  * @return void
  */
-function logEvents(array $SETTINGS, string $type, string $label, string $who, ?string $login = null, ?string $field_1 = null): void
+function logEvents(
+    array $SETTINGS, 
+    string $type, 
+    string $label, 
+    string $who, 
+    ?string $login = null, 
+    ?string $field_1 = null
+): void
 {
     if (empty($who)) {
         $who = getClientIpServer();

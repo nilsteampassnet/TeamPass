@@ -941,6 +941,16 @@ function cronContinueReEncryptingUserSharekeysStep6(
             'new_action' => 'finished',
         ];
     }
+    
+    // update LOG
+    logEvents(
+        $SETTINGS,
+        'user_mngt',
+        'at_user_new_keys',
+        TP_USER_ID,
+        "",
+        (string) $extra_arguments['new_user_id']
+    );
 
     // if done then send email to new user
     // get user info
