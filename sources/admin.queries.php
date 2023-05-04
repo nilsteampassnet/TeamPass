@@ -2687,7 +2687,7 @@ switch ($post_type) {
         );
 
         // prepare data
-        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         
         require_once 'main.functions.php';
