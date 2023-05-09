@@ -2794,7 +2794,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? DOMPurify.sanitize($('#form-item-description').summernote('code'), {USE_PROFILES: {html: true}}) : '',
+                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? DOMPurify.sanitize($('#form-item-description').summernote('code'), {USE_PROFILES: {html: true, svg: false, svgFilters: false}}) : '',
                     'diffusion_list': diffusion,
                     'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
@@ -2802,7 +2802,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     'fields': fields,
                     'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                     'id': store.get('teampassItem').id,
-                    'label': DOMPurify.sanitize($('#form-item-label').val()),
+                    'label': DOMPurify.sanitize($('#form-item-label').val(), {USE_PROFILES: {html:false, svg: false, svgFilters: false}}),
                     'login': DOMPurify.sanitize($('#form-item-login').val()),
                     'pw': $('#form-item-password').val(),
                     'restricted_to': restriction,
