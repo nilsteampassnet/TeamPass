@@ -1060,8 +1060,7 @@ return array(
     'currently_using_version' => '現在のバージョンが読み込まれました',
     'git_commit_value' => 'Gitのコミット値',
     'generate_new_keys' => 'Generate new keys',
-    'generate_new_keys_info' => 'By continuing, you will generate new encryption keys for all objects you have access to. This should only be done if you have no password shown
-.',
+    'generate_new_keys_info' => 'By continuing, you will generate new encryption keys for all objects you have access to. This should only be done if you have no password shown.',
     'generate_new_keys_end' => 'Process is on going in background and could take several minutes. You can now close this window.',
     'confirm_password' => 'We need you to confirm your password',
     'no_code_is_requested' => 'No code is requested.',
