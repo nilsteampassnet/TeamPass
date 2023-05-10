@@ -656,7 +656,7 @@ if (null !== $post_type) {
                         'parent_id' => $post_parent_id,
                         'title' => $post_title,
                         'personal_folder' => $isPersonal,
-                        'renewal_period' => $post_duration,
+                        'renewal_period' => isset($post_duration) === true && (int) $post_duration !== 0 ? $post_duration : 0,
                         'bloquer_creation' => isset($post_create_auth_without) === true && (int) $post_create_auth_without === 1 ? '1' : $parentBloquerCreation,
                         'bloquer_modification' => isset($post_edit_auth_without) === true && (int) $post_edit_auth_without === 1 ? '1' : $parentBloquerModification,
                         'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
