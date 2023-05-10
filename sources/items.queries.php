@@ -830,7 +830,7 @@ if (is_null($inputData['type']) === false) {
                 $itemInfos = array();
                 $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
-                $post_password = $original_pw = filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                $post_password = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
                 $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
