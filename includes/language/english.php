@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_data_not_valid' => 'Data is not valid',
     'new_user_info_by_mail' => 'New user will receive an email with his credentials',
     'login_credentials' => 'Login credentials',
     'email_body_user_config_1' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following credentials are expected next time using Teampass:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',

@@ -4129,3 +4129,40 @@ function handleUserKeys(
         'encode'
     );
 }
+
+/**
+ * Permeits to check the consistency of date versus columns definition
+ *
+ * @param string $table
+ * @param array $dataFields
+ * @return array
+ */
+function validateDataFields(
+    string $table,
+    array $dataFields,
+): array
+{
+    // Get table structure
+    $result = DB::query("DESCRIBE %l", $table);
+
+    foreach ($result as $row) {
+        $field = $row['Field'];
+        $type = $row['Type'];
+        $length = preg_replace('/[^0-9]/', '', $type);
+        $type = explode('(', $type)[0];
+
+        if (array_key_exists($field, $dataFields) === true && in_array($type, ['int', 'tinyint', 'smallint', 'text', 'bigint', 'float', 'double', 'varchar']) === true) {
+            if (strlen((string) $dataFields[$field]) > $length) {
+                return [
+                    'state' => false,
+                    'message' => 'Field '.strtoupper($field).' exceeds maximum length of '.$length,
+                ];
+            }
+        }
+    }
+    
+    return [
+        'state' => true,
+        'message' => '',
+    ];
+}

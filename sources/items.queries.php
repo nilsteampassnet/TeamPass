@@ -890,6 +890,19 @@ if (is_null($inputData['type']) === false) {
                     break;
                 }
 
+                $dataCheck = validateDataFields(prefixTable('items'), $dataReceived);
+                if ($dataCheck['state'] !== true) {
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_data_not_valid').' - '.$dataCheck['message'],
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+break;
                 // Check PWD EMPTY
                 if (
                     empty($pw) === true
