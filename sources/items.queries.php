@@ -902,7 +902,7 @@ if (is_null($inputData['type']) === false) {
                     );
                     break;
                 }
-break;
+
                 // Check PWD EMPTY
                 if (
                     empty($pw) === true

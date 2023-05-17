@@ -4151,7 +4151,7 @@ function validateDataFields(
         $length = preg_replace('/[^0-9]/', '', $type);
         $type = explode('(', $type)[0];
 
-        if (array_key_exists($field, $dataFields) === true && in_array($type, ['int', 'tinyint', 'smallint', 'text', 'bigint', 'float', 'double', 'varchar']) === true) {
+        if (array_key_exists($field, $dataFields) === true && in_array($type, ['int', 'tinyint', 'smallint', 'text', 'bigint', 'float', 'double', 'varchar']) === true && is_array($dataFields[$field]) === false) {
             if (strlen((string) $dataFields[$field]) > $length) {
                 return [
                     'state' => false,
