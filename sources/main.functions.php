@@ -2136,7 +2136,7 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
             'admin'
         );
         foreach ($rows as $record) {
-            array_push($data, "    '" . $record['intitule'] . "' => '" . $record['valeur'] . "',\n");
+            array_push($data, "    '" . $record['intitule'] . "' => '" . htmlspecialchars_decode($record['valeur'], ENT_COMPAT) . "',\n");
         }
         array_push($data, ");\n");
         $data = array_unique($data);
@@ -2151,14 +2151,14 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
             }
 
             if (stristr($line, "'" . $field . "' => '")) {
-                $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "',\n";
+                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
                 $bFound = true;
                 break;
             }
             ++$inc;
         }
         if ($bFound === false) {
-            $data[$inc] = "    '" . $field . "' => '" . filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "',\n);\n";
+            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT). "',\n);\n";
         }
     }
 

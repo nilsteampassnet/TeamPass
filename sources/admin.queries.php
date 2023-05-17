@@ -2687,7 +2687,7 @@ switch ($post_type) {
         );
 
         // prepare data
-        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         
         require_once 'main.functions.php';
@@ -2801,10 +2801,10 @@ switch ($post_type) {
 
         // save change in config file
         handleConfigFile(
-            'rebuild',
+            'update',
             $SETTINGS,
             $post_field,
-            $post_value
+            $dataReceived['value']
         );
 
         // Encrypt data to return
