@@ -74,16 +74,16 @@ echo '
 if (
     isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
+    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
-    if (strpos($superGlobal('PHP_AUTH_USER', 'SERVER'), '@') !== false) {
-        $username = explode('@', $superGlobal('PHP_AUTH_USER', 'SERVER'))[0];
-    } elseif (strpos($superGlobal('PHP_AUTH_USER', 'SERVER'), '\\') !== false) {
-        $username = explode('\\', $superGlobal('PHP_AUTH_USER', 'SERVER'))[1];
+    if (strpos($superGlobal->get('PHP_AUTH_USER', 'SERVER'), '@') !== false) {
+        $username = explode('@', $superGlobal->get('PHP_AUTH_USER', 'SERVER'))[0];
+    } elseif (strpos($superGlobal->get('PHP_AUTH_USER', 'SERVER'), '\\') !== false) {
+        $username = explode('\\', $superGlobal->get('PHP_AUTH_USER', 'SERVER'))[1];
     } else {
-        $username = $superGlobal('PHP_AUTH_USER', 'SERVER');
+        $username = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
     }
     echo '
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
@@ -96,7 +96,7 @@ echo '
         </div>';
 if (! (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
+    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
@@ -181,7 +181,7 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
 
 if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal('PHP_AUTH_USER', 'SERVER') !== null
+    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
     && (isset($SETTINGS['maintenance_mode']) === false
     && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
