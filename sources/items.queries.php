@@ -201,11 +201,10 @@ if (is_null($inputData['type']) === false) {
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
                 $post_description = $antiXss->xss_clean($dataReceived['description']);
-                $post_diffusion_list = filter_var(
+                $post_diffusion_list = filter_var_array(
                     $dataReceived['diffusion_list'],
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 );
-                $post_diffusion_list = $post_diffusion_list !== false ? json_decode($post_diffusion_list) : '';
                 $post_diffusion_list_names = filter_var_array(
                     $dataReceived['diffusion_list_names'],
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -720,7 +719,7 @@ if (is_null($inputData['type']) === false) {
                         // send email
                         if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
                             $cpt = 0;
-                            foreach (explode(';', $post_diffusion_list) as $emailAddress) {
+                            foreach ($post_diffusion_list as $emailAddress) {
                                 if (empty($emailAddress) === false) {
                                     prepareSendingEmail(
                                         langHdl('email_subject_item_updated'),
