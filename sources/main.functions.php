@@ -1879,7 +1879,7 @@ function logItems(
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
         // Extract reason
-        $attribute = is_null($raison) === true ? '' : explode(' : ', $raison);
+        $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
         // Get item info if not known
         if (empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
