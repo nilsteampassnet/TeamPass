@@ -2586,7 +2586,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     string $post_user_psk,
     array $SETTINGS
 ) {
-    $next_step = '';
+    $next_step = '';  
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2600,7 +2600,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
             // check if psk is correct.
             if (empty($userInfo['encrypted_psk']) === false) {//echo $post_user_psk." ;; ".$userInfo['encrypted_psk']." ;; ";
                 $user_key_encoded = defuse_validate_personal_key(
-                    $post_user_psk,
+                    html_entity_decode($post_user_psk), // convert tspecial string back to their original characters due to FILTER_SANITIZE_FULL_SPECIAL_CHARS
                     $userInfo['encrypted_psk']
                 );
 

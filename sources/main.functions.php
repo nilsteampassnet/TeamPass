@@ -4166,3 +4166,26 @@ function validateDataFields(
         'message' => '',
     ];
 }
+
+/**
+ * Adapt special characters sanitized during filter_var with option FILTER_SANITIZE_SPECIAL_CHARS operation
+ *
+ * @param string $string
+ * @return string
+ */
+function filterVarBack(string $string): string
+{
+    $arr = [
+        '&#060;' => '<',
+        '&#062;' => '>',
+        '&#034;' => '"',
+        '&#039;' => "'",
+        '&#038;' => '&',
+    ];
+
+    foreach ($arr as $key => $value) {
+        $string = str_replace($key, $value, $string);
+    }
+
+    return $string;
+}
