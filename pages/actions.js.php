@@ -66,16 +66,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         var askedAction = $(this).data('action'),
             option = {};
 
-        if (askedAction === 'config-file') {
-            action = 'admin_action_rebuild_config_file';
-        } else if (askedAction === 'personal-folder') {
-            action = 'admin_action_check_pf';
-        } else if (askedAction === 'remove-orphans') {
-            action = 'admin_action_db_clean_items';
-        } else if (askedAction === 'optimize-db') {
+        if (askedAction === 'optimize-db') {
             action = 'admin_action_db_optimize';
-        } else if (askedAction === 'purge-files') {
-            action = 'admin_action_purge_old_files';
         } else if (askedAction === 'reload-cache') {
             action = 'admin_action_reload_cache_table';
         } else if (askedAction === 'change-sk') {

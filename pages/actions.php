@@ -112,62 +112,6 @@ if (DB::count() > 0) {
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="personal-folder" title="<?php echo langHdl('start'); ?>">
-                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
-                                    <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
-                                </span>
-                                <?php echo langHdl('admin_action_check_pf');
-$data = DB::queryfirstrow(
-    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
-                                    WHERE label = %s
-                                    ORDER BY id DESC',
-    'admin_action_check_pf'
-);
-if (DB::count() > 0) {
-    $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
-    $tmp .= $data['field_1'] === 'success' ?
-                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
-} else {
-    $tmp = langHdl('never_performed');
-}
-                                ?>
-
-                                <span class="ml-3 text-muted" id="personal-folder-result"><?php echo $tmp; ?></span>
-                            </div>
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="remove-orphans" title="<?php echo langHdl('start'); ?>">
-                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
-                                    <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
-                                </span>
-                                <?php echo langHdl('admin_action_db_clean_items');
-$data = DB::queryfirstrow(
-    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
-                                    WHERE label = %s
-                                    ORDER BY id DESC',
-    'admin_action_db_clean_items'
-);
-if (DB::count() > 0) {
-    $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
-    $tmp .= $data['field_1'] === 'success' ?
-                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
-} else {
-    $tmp = langHdl('never_performed');
-}
-                                ?>
-                                <span class="ml-3 text-muted" id="remove-orphans-result"><?php echo $tmp; ?></span>
-                                <small class='form-text text-muted'>
-                                    <?php echo langHdl('admin_action_db_clean_items_tip'); ?>
-                                </small>
-                            </div>
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-12">
                                 <span class="fa-stack mr-3 infotip pointer button-action" data-action="optimize-db" title="<?php echo langHdl('start'); ?>">
                                     <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
                                     <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
@@ -189,35 +133,6 @@ if (DB::count() > 0) {
 }
                                 ?>
                                 <span class="ml-3 text-muted" id="optimize-db-result"><?php echo $tmp; ?></span>
-                            </div>
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <span class="fa-stack mr-3 infotip pointer button-action" data-action="purge-files" title="<?php echo langHdl('start'); ?>">
-                                    <i class="fas fa-square fa-stack-2x" style="color:tomato"></i>
-                                    <i class="fas fa-cog fa-stack-1x fa-inverse"></i>
-                                </span>
-                                <?php echo langHdl('admin_action_purge_old_files');
-$data = DB::queryfirstrow(
-    'SELECT field_1, date FROM ' . prefixTable('log_system') . '
-                                    WHERE label = %s
-                                    ORDER BY id DESC',
-    'admin_action_purge_old_files'
-);
-if (DB::count() > 0) {
-    $tmp = langHdl('last_execution') . ' ' .
-                                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']);
-    $tmp .= $data['field_1'] === 'success' ?
-                                        '<i class="fas fa-check ml-2 text-success"></i>' : '<i class="fas fa-times ml-2 text-danger"></i>';
-} else {
-    $tmp = langHdl('never_performed');
-}
-                                ?>
-                                <span class="ml-3 text-muted" id="purge-files-result"><?php echo $tmp; ?></span>
-                                <small class='form-text text-muted'>
-                                    <?php echo langHdl('admin_action_purge_old_files_tip'); ?>
-                                </small>
                             </div>
                         </div>
 

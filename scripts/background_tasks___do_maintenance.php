@@ -62,6 +62,7 @@ $logID = doLog('start', 'do_maintenance', (isset($SETTINGS['enable_tasks_log']) 
 foreach(json_decode($SETTINGS['maintenance_job_tasks']) as $task) {
     if ($task === "users-personal-folder") createUserPersonalFolder();
     elseif ($task === "clean-orphan-objects") cleanOrphanObjects();
+    elseif ($task === "purge-old-files") purgeTemporaryFiles();
 }
 
 // log end
@@ -152,7 +153,11 @@ function createUserPersonalFolder(): void
     }
 }
 
-
+/**
+ * Delete all orphan objects from DB
+ *
+ * @return void
+ */
 function cleanOrphanObjects(): void
 {
     //Libraries call
@@ -163,7 +168,6 @@ function cleanOrphanObjects(): void
 
     //init
     $foldersIds = array();
-    $nbItemsDeleted = 0;
 
     // Get an array of all folders
     $folders = $tree->getDescendants();
@@ -187,8 +191,6 @@ function cleanOrphanObjects(): void
 
         //log
         DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-
-        ++$nbItemsDeleted;
     }
 
     // delete orphan items
@@ -208,10 +210,58 @@ function cleanOrphanObjects(): void
             DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
             DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
             DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-            ++$nbItemsDeleted;
         }
     }
 
-    //Update CACHE table
+    // Update CACHE table
     updateCacheTable('reload', $SETTINGS, null);
+}
+
+/**
+ * Purge old files in FILES and UPLOAD folders.
+ *
+ * @return void
+ */
+function purgeTemporaryFiles(): void
+{
+    // Load expected files
+    require_once __DIR__. '/../sources/main.functions.php';
+    include __DIR__. '/../includes/config/tp.config.php';
+
+    //read folder
+    if (is_dir($SETTINGS['path_to_files_folder']) === true) {
+        $dir = opendir($SETTINGS['path_to_files_folder']);
+        if ($dir !== false) {
+            //delete file FILES
+            while (false !== ($f = readdir($dir))) {
+                if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
+                    if (file_exists($dir . $f) && ((time() - filectime($dir . $f)) > 604800)) {
+                        fileDelete($dir . '/' . $f, $SETTINGS);
+                    }
+                }
+            }
+
+            //Close dir
+            closedir($dir);
+        }
+    }
+
+    //read folder  UPLOAD
+    if (is_dir($SETTINGS['path_to_upload_folder']) === true) {
+        $dir = opendir($SETTINGS['path_to_upload_folder']);
+
+        if ($dir !== false) {
+            //delete file
+            while (false !== ($f = readdir($dir))) {
+                if ($f !== '.' && $f !== '..') {
+                    if (strpos($f, '_delete.') > 0) {
+                        fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $f, $SETTINGS);
+                    }
+                }
+            }
+            //Close dir
+            closedir($dir);
+        }
+    }
+    
 }

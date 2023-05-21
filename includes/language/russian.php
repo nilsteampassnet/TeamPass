@@ -1081,5 +1081,6 @@ return array(
     'users_personal_folder' => 'Users personal folder',
     'maintenance_operations' => 'Maintenance operations',
     'maintenance_operations_tip' => 'Selected maintenance operations on Teampass database.',
+    'purge_temporary_files' => 'Purge temporary files',
 
 );

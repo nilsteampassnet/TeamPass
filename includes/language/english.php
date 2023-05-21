@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'purge_temporary_files' => 'Purge temporary files',
     'clean_orphan_objects' => 'Clean orphan objects',
     'users_personal_folder' => 'Users personal folder',
     'maintenance_operations' => 'Maintenance operations',

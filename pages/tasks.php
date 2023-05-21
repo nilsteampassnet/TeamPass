@@ -184,6 +184,7 @@ catch (Exception $e) {
                                                 
                                                 echo '<option value="users-personal-folder"',in_array('users-personal-folder', $tasks) === true ? ' selected' : '','>'.langHdl('users_personal_folder').'</option>';
                                                 echo '<option value="clean-orphan-objects"',in_array('clean-orphan-objects', $tasks) === true ? ' selected' : '','>'.langHdl('clean_orphan_objects').'</option>';
+                                                echo '<option value="purge-old-files"',in_array('purge-old-files', $tasks) === true ? ' selected' : '','>'.langHdl('purge_old_files').'</option>';
                                                 ?>
                                             </select>
                                         </div>

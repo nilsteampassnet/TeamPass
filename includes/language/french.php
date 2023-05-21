@@ -1080,5 +1080,6 @@ return array(
     'users_personal_folder' => 'Répertoire personnel des utilisateurs',
     'maintenance_operations' => 'Opérations de maintenance',
     'maintenance_operations_tip' => 'Opérations de maintenance sur la base de données sélectionnées.',
+    'purge_temporary_files' => 'Purger les fichiers temporaires',
 
 );
