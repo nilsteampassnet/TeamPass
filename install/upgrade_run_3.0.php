@@ -172,6 +172,22 @@ mysqli_query(
 
 //---<END 3.0.7
 
+
+//--->BEGIN 3.0.8
+// Add field mfa_disabled to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'mfa_enabled',
+    "tinyint(1) NOT null DEFAULT '1';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field mfa_disabled to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+//---<END 3.0.8
+
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
 if (intval($tmp) === 0) {

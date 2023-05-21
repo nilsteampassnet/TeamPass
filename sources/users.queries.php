@@ -139,6 +139,7 @@ if (null !== $post_type) {
             $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
+            $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // Empty user
             if (empty($login) === true) {
@@ -226,6 +227,7 @@ if (null !== $post_type) {
                         'is_ready_for_usage' => 0,
                         'otp_provided' => 0,
                         'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
+                        'mfa_enabled' => empty($mfa_enabled) === true ? 0 : $mfa_enabled,
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -1374,6 +1376,7 @@ if (null !== $post_type) {
                 $arrData['can_manage_all_users'] = (int) $rowUser['can_manage_all_users'];
                 $arrData['admin'] = (int) $rowUser['admin'];
                 $arrData['password'] = $password_do_not_change;
+                $arrData['mfa_enabled'] = (int) $rowUser['mfa_enabled'];
 
                 echo prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
@@ -1440,6 +1443,7 @@ if (null !== $post_type) {
             $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
+            $post_mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // If user disables administrator role 
             // then ensure that it exists still one administrator
@@ -1501,6 +1505,7 @@ if (null !== $post_type) {
                 'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', $post_allowed_flds),
                 'isAdministratedByRole' => $post_is_administrated_by,
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
+                'mfa_enabled' => empty($post_mfa_enabled) === true ? 0 : $post_mfa_enabled,
             );
 
             // Manage user password change

@@ -1075,5 +1075,7 @@ return array(
     'email_body_user_config_5' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Keys encryption is now finished. Following code is expected next time using Teampass:<br><br><b>#code#</b><br><br><br>Cheers',
     'email_body_user_config_6' => 'Hello #lastname#,<br><br>This is a generated email from Teampass passwords manager.<br><br>Following credentials are expected next time using Teampass:<ul><li>login: #login#</li><li>Password: #password#</li></ul><br><br><br>Cheers',
     'error_data_not_valid' => 'Donnée non valide',
+    'mfa_enabled' => 'AMF activée',
+    'mfa_disabled_for_user' => 'AMF désactivée pour l&apos;utilisateur',
 
 );

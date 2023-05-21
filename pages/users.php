@@ -121,7 +121,7 @@ foreach ($treeDesc as $t) {
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-users mr-2"></i><?php echo langHdl('users'); ?>
+                    <i class="fa-solid fa-users mr-2"></i><?php echo langHdl('users'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -136,17 +136,17 @@ foreach ($treeDesc as $t) {
                 <div class="card-header align-middle">
                     <h3 class="card-title">
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="new">
-                            <i class="fas fa-plus mr-2"></i><?php echo langHdl('new'); ?>
+                            <i class="fa-solid fa-plus mr-2"></i><?php echo langHdl('new'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="propagate">
-                            <i class="fas fa-share-alt mr-2"></i><?php echo langHdl('propagate'); ?>
+                            <i class="fa-solid fa-share-alt mr-2"></i><?php echo langHdl('propagate'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
-                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
+                            <i class="fa-solid fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button><?php
                                     echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
-                            <i class="fas fa-address-card mr-2"></i>' . langHdl('ldap_synchronization') . '
+                            <i class="fa-solid fa-address-card mr-2"></i>' . langHdl('ldap_synchronization') . '
                         </button>' : '';
                                     ?>
                     </h3>
@@ -163,9 +163,9 @@ foreach ($treeDesc as $t) {
                                 <th scope="col"><?php echo langHdl('lastname'); ?></th>
                                 <th scope="col"><?php echo langHdl('managed_by'); ?></th>
                                 <th scope="col"><?php echo langHdl('functions'); ?></th>
-                                <th scope="col"><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
-                                <th scope="col"><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
-                                <th scope="col"><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
+                                <th scope="col"><i class="fa-solid fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
+                                <th scope="col"><i class="fa-solid fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
+                                <th scope="col"><i class="fa-solid fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -192,21 +192,21 @@ foreach ($treeDesc as $t) {
                 <div class="card-body">
                     <div class="row col-12">
                         <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="ldap-existing-users">
-                            <i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('list_users'); ?>
+                            <i class="fa-solid fa-sync-alt mr-2"></i><?php echo langHdl('list_users'); ?>
                         </button>
                         <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="ldap-add-role">
-                            <i class="fas fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
+                            <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
                         </button>
                     </div>
                     <div class="row">
                         <div class="col-12">
                             <div class="card hidden mt-4 mb-5 card-info" id="ldap-new-role">
                                 <div class="card-header">
-                                    <i class="fas fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
+                                    <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo langHdl('add_role_tip'); ?>
                                 </div>
                                 <div class="card-body">
                                     <div class="callout callout-info">
-                                        <i class="fas fa-info-circle text-info mr-2"></i><?php echo langHdl('adding_ldap_role_to_teampass'); ?>
+                                        <i class="fa-solid fa-info-circle text-info mr-2"></i><?php echo langHdl('adding_ldap_role_to_teampass'); ?>
                                     </div>
                                     <div class="form-group row">
                                         <label for="ldap-new-role-selection"><?php echo langHdl('select_role_to_create'); ?></label>
@@ -233,11 +233,11 @@ foreach ($treeDesc as $t) {
                                 <table class="table table-hover table-responsive">
                                     <thead>
                                         <tr>
-                                            <th style="width: 25%;"><i class="fas fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
-                                            <th style="width: 60px; text-align:center;"><i class="fas fa-info infotip pointer" title="<?php echo langHdl('more_information'); ?>"></i></th>
-                                            <th style="width: 60px;"><i class="fas fa-sync-alt infotip pointer" title="<?php echo langHdl('synchronized'); ?>"></i></th>
-                                            <th style=""><i class="fas fa-graduation-cap mr-1"></i><?php echo langHdl('roles'); ?></th>
-                                            <th style="width: 15%;"><i class="fas fa-wrench mr-1"></i><?php echo langHdl('action'); ?></th>
+                                            <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo langHdl('login'); ?></th>
+                                            <th style="width: 60px; text-align:center;"><i class="fa-solid fa-info infotip pointer" title="<?php echo langHdl('more_information'); ?>"></i></th>
+                                            <th style="width: 60px;"><i class="fa-solid fa-sync-alt infotip pointer" title="<?php echo langHdl('synchronized'); ?>"></i></th>
+                                            <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo langHdl('roles'); ?></th>
+                                            <th style="width: 15%;"><i class="fa-solid fa-wrench mr-1"></i><?php echo langHdl('action'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody id="row-ldap-body">
@@ -302,7 +302,7 @@ foreach ($treeDesc as $t) {
                                         <input type="password" class="form-control clear-me required infotip track-change" id="form-password">
                                         <div class="input-group-append">
                                             <span class="input-group-text p-1"><div id="form-password-strength"></div></span>
-                                            <button class="btn btn-outline-secondary btn-no-click infotip" id="button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
+                                            <button class="btn btn-outline-secondary btn-no-click infotip" id="button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fa-solid fa-random"></i></button>
                                         </div>
                                     </div>
                                     <input type="hidden" id="form-password-complex" value="0">
@@ -366,6 +366,10 @@ foreach ($treeDesc as $t) {
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-special-folder">
                             <label class="form-check-label mr-2" for="form-create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
                             <input type="text" class="form-control clear-me mt-1" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
+                        </div>
+                        <div class="form-group not-for-admin" id="form-create-mfa-enabled-div">
+                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-mfa-enabled">
+                            <label class="form-check-label mr-2" for="form-create-mfa-enabled"><?php echo langHdl('mfa_enabled'); ?></label>
                         </div>
                     </div>
                     <!-- /.card-body -->
@@ -444,7 +448,7 @@ foreach ($treeDesc as $t) {
                 <div class="card-body">
                     <div class="row">
                         <div class="callout callout-info col-12">
-                            <i class="fas fa-info fa-lg mr-2"></i><?php echo langHdl('share_rights_info'); ?>
+                            <i class="fa-solid fa-info fa-lg mr-2"></i><?php echo langHdl('share_rights_info'); ?>
                         </div>
                     </div>
 

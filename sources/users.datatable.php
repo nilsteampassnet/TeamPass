@@ -84,7 +84,7 @@ foreach ($rows as $record) {
 
 $html = '';
 //Columns name
-$aColumns = ['id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id'];
+$aColumns = ['id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id', 'mfa_enabled'];
 $aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
@@ -220,19 +220,25 @@ foreach ($rows as $record) {
             ((int) $record['last_connexion'] > 0 ? '<i class=\"far fa-clock infotip text-info ml-2\" title=\"'.langHdl('index_last_seen').": ".
             date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['last_connexion']).'\"></i>' : '')
             .
-            ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.langHdl('ip').": ".($record['user_ip']).'\"></i>' : '');
+            ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.langHdl('ip').": ".($record['user_ip']).'\"></i>' : '')
+            .
+            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '')
+            .
+            ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
+                ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.langHdl('mfa_disabled_for_user').'\"></i>') :
+                ''
+            );
         
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             addslashes(str_replace("'", '&lsquo;', empty($record['name']) === false ? $record['name'] : '')).' '.
             addslashes(str_replace("'", '&lsquo;', empty($record['lastname']) === false ? $record['lastname'] : '')).
-            '\" data-auth-type=\"'.$record['auth_type'].'\" data-special=\"'.$record['special'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
+            '\" data-auth-type=\"'.$record['auth_type'].'\" data-special=\"'.$record['special'].'\" data-mfa-enabled=\"'.$record['mfa_enabled'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
         //col2
         $sOutput .= '"'.
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
-            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '').
             (is_null($record['ongoing_process_id']) === false ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').
             '" , ';
         //col3

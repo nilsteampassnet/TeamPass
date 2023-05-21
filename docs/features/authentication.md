@@ -58,3 +58,31 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 * __AD user roles mapped with their AD groups (1)__ - When enabled, Administrator will be able to map existing AD Groups with local Teampass roles. By doing so, any AD user belonging with one of this AD group will automatically be promoted to the mapped Teampass role.
 * __Hide forgot password link on Home page__ - If LDAP authentication is enabled, you should disable forgot password feature but it can be enabled for locally managed users.
 * __AD user to get created automatically__ - Valid AD user will have an account automatically created in Teampass and his AD groups mapped with corresponding Teampass roles.
+
+
+## Multi Factor Authentication (MFA)
+
+> User authentication can be completed with an MFA protocol. Currently, `Google Authentication` and `DUO Security` can be enabled for users.
+
+### Setting up
+
+As an Administrator, select the `Settings \ MFA` option in the left menu.
+
+![Settings tasks options](../_media/tp3_auth_mfa_1.png)
+
+### Generalities
+
+🔔 Once an MFA protocol is enabled, the MFA code is mandatory for each user to get authenticated in Teampass. 2 exceptions are possible.
+
+👉 Administrator users can have this rule disabled globally using dedicated option.
+
+![Settings tasks options](../_media/tp3_auth_mfa_2.png)
+
+👉 By default, each user has to authenticated with an MFA code. But this can be disabled through the user form inside page `Users` using the input `MFA enabled`.
+
+![Settings tasks options](../_media/tp3_auth_mfa_4.png)
+
+If disabled for a user, a red fingerprint symbol is shown in the users list.
+
+![Settings tasks options](../_media/tp3_auth_mfa_3.png)
+

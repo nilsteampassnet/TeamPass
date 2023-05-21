@@ -323,7 +323,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-    if (isset($userLdap['user_info']) === true && $userLdap['user_info']['has_been_created'] === 1) {
+    if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
         /*$userInfo = DB::queryfirstrow(
             'SELECT *
             FROM ' . prefixTable('users') . '
@@ -372,7 +372,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 1
             ) === true)
-        && ((int) $userInfo['admin'] !== 1 || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1) || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
         && $userInfo['mfa_auth_requested_roles'] === true
     ) {
         // Check user against MFA method if selected
@@ -2149,7 +2149,8 @@ class initialChecks {
         $admin,
         $adminMfaRequired,
         $mfa,
-        $userMfaSelection
+        $userMfaSelection,
+        $userMfaEnabled
     ) {
         if (
             (empty($userMfaSelection) === true &&
@@ -2161,7 +2162,7 @@ class initialChecks {
                 ],
                 1
             ) === true)
-            && ((int) $admin !== 1 || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
+            && (((int) $admin !== 1 && $userMfaEnabled === true) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
             && $mfa === true
         ) {
             throw new Exception(
@@ -2264,7 +2265,7 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-    
+
     // user should use MFA?
     $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
         (string) $userInfo['fonction_id'],
@@ -2280,7 +2281,8 @@ function identifyDoInitialChecks(
             $userInfo['admin'],
             $SETTINGS['admin_2fa_required'],
             $userInfo['mfa_auth_requested_roles'],
-            $user_2fa_selection
+            $user_2fa_selection,
+            $userInfo['mfa_enabled']
         );
     } catch (Exception $e) {
         return [

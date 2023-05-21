@@ -1075,5 +1075,7 @@ return array(
     'email_body_user_config_5' => 'Hola #lastname#,<br><br>Este es un correo electrónico generado por Teampass.<br><br>El cifrado de claves ya ha finalizado. Se espera el siguiente código la próxima vez que use Teampass:<br><br><b>#code#</b><br><br>Saludos.',
     'email_body_user_config_6' => 'Hola #lastname#,<br><br>Este es un correo electrónico generado por Teampass.<br><br>Se esperan las siguientes credenciales la próxima vez que use Teampass:<br><br><ul><li>Usuario: #login#</li><li>Contraseña: #contraseña#</li></ul><br><br>Saludos.',
     'error_data_not_valid' => 'Data is not valid',
+    'mfa_enabled' => 'MFA enabled',
+    'mfa_disabled_for_user' => 'MFA disabled for user',
 
 );

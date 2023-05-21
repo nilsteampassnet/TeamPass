@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'mfa_enabled' => 'MFA enabled',
+    'mfa_disabled_for_user' => 'MFA disabled for user',
     'error_data_not_valid' => 'Data is not valid',
     'new_user_info_by_mail' => 'New user will receive an email with his credentials',
     'login_credentials' => 'Login credentials',

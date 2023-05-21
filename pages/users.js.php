@@ -708,6 +708,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             } else {
                 $('#form-create-personal-folder').iCheck('disable');
             }
+            
+            // MFA enabled
+            if (store.get('teampassSettings').duo === '1' || store.get('teampassSettings').google_authentication === '1') {
+                $('#form-create-mfa-enabled')
+                    .iCheck('enable')
+                    .iCheck('check');
+                $('#form-create-mfa-enabled-div').removeClass('hidden');
+            } else {
+                $('#form-create-mfa-enabled').iCheck('disable');
+                $('#form-create-mfa-enabled-div').addClass('hidden');
+            }
 
             // What type of form? Edit or new user
             store.update(
@@ -771,6 +782,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         $('#form-lastname').val(data.lastname);
                         $('#form-create-root-folder').iCheck(data.can_create_root_folder === 1 ? 'check' : 'uncheck');
                         $('#form-create-personal-folder').iCheck(data.personal_folder === 1 ? 'check' : 'uncheck');
+                        $('#form-create-mfa-enabled').iCheck(data.mfa_enabled === 1 ? 'check' : 'uncheck');
 
                         // Case of user locked
                         if (data.disabled === 1) {
@@ -958,6 +970,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'action_on_user': 'update',
                     'form-create-root-folder': $('#form-create-root-folder').prop('checked'),
                     'form-user-disabled': $('#form-user-disabled').prop('checked'),
+                    'mfa_enabled': $('#form-create-mfa-enabled').prop('checked'),
                 };
                 if (debugJavascript === true) {
                     console.log(data);
@@ -1012,6 +1025,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Prepare UI
                         $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
                         $('#row-form').addClass('hidden');
+
+                        // Clean form
+                        $('.clear-me').val('');
+                        $('.select2').val('').change();
+                        $('.extra-form, #row-folders').addClass('hidden');
+                        $('#row-list').removeClass('hidden');
+
+                        // Prepare checks
+                        $('.form-check-input').iCheck('uncheck');
+
+                        // Remove action from store
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.formUserAction = '',
+                                    teampassApplication.formUserId = '';
+                            }
+                        );
                     }
                 )
             } else {
