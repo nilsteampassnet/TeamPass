@@ -188,6 +188,27 @@ if ($res === false) {
 
 //---<END 3.0.8
 
+
+//--->BEGIN 3.0.9
+// Add new setting 'maintenance_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maintenance_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_frequency', '60')"
+    );
+}
+// Add new setting 'maintenance_job_tasks'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maintenance_job_tasks'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_tasks', '[]')"
+    );
+}
+
+//---<END 3.0.9
+
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
 if (intval($tmp) === 0) {

@@ -153,12 +153,39 @@ catch (Exception $e) {
                                         </div>
                                     </div>
 
-                                    <div class='row ml-1 mb-4'>
+                                    <div class='row ml-1 mb-2'>
                                         <div class='col-10'>
                                         <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
                                         </div>
                                         <div class='col-2'>
                                             <input type='text' class='form-control form-control-sm' id='items_statistics_job_frequency' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-1'>
+                                        <div class='col-10'>
+                                        <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo langHdl('maintenance_operations'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='text' class='form-control form-control-sm' id='maintenance_job_frequency' value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '60'; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-4'>
+                                        <div class='col-6'>
+                                            <small class='form-text text-muted ml-4'>
+                                                <?php echo langHdl('maintenance_operations_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-6'>
+                                            <select class='form-control form-control-sm select2' id='maintenance_job_tasks' onchange='' multiple="multiple" style="width:100%;">
+                                                <?php
+                                                $tasks = isset($SETTINGS['maintenance_job_tasks']) === true ? json_decode($SETTINGS['maintenance_job_tasks']) : [];
+                                                
+                                                echo '<option value="users-personal-folder"',in_array('users-personal-folder', $tasks) === true ? ' selected' : '','>'.langHdl('users_personal_folder').'</option>';
+                                                echo '<option value="clean-orphan-objects"',in_array('clean-orphan-objects', $tasks) === true ? ' selected' : '','>'.langHdl('clean_orphan_objects').'</option>';
+                                                ?>
+                                            </select>
                                         </div>
                                     </div>
 

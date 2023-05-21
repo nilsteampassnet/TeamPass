@@ -3914,23 +3914,24 @@ function upgradeRequired(): bool
  *
  * @param integer $userId
  * @param string $passwordClear
+ * @param integer $nbItemsToTreat
  * @param string $encryptionKey
  * @param boolean $deleteExistingKeys
  * @param boolean $sendEmailToUser
  * @param boolean $encryptWithUserPassword
- * @param boolean $encryptWithUserPassword
- * @param integer $nbItemsToTreat
+ * @param boolean $generate_user_new_password
+ * @param string $emailBody
  * @return string
  */
 function handleUserKeys(
     int $userId,
     string $passwordClear,
+    int $nbItemsToTreat,
     string $encryptionKey = '',
     bool $deleteExistingKeys = false,
     bool $sendEmailToUser = true,
     bool $encryptWithUserPassword = false,
     bool $generate_user_new_password = false,
-    int $nbItemsToTreat,
     string $emailBody = ''
 ): string
 {

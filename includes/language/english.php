@@ -16,6 +16,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'clean_orphan_objects' => 'Clean orphan objects',
+    'users_personal_folder' => 'Users personal folder',
+    'maintenance_operations' => 'Maintenance operations',
+    'maintenance_operations_tip' => 'Selected maintenance operations on Teampass database.',
     'mfa_enabled' => 'MFA enabled',
     'mfa_disabled_for_user' => 'MFA disabled for user',
     'error_data_not_valid' => 'Data is not valid',

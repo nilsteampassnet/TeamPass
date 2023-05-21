@@ -1077,5 +1077,8 @@ return array(
     'error_data_not_valid' => 'Donnée non valide',
     'mfa_enabled' => 'AMF activée',
     'mfa_disabled_for_user' => 'AMF désactivée pour l&apos;utilisateur',
+    'users_personal_folder' => 'Répertoire personnel des utilisateurs',
+    'maintenance_operations' => 'Opérations de maintenance',
+    'maintenance_operations_tip' => 'Opérations de maintenance sur la base de données sélectionnées.',
 
 );

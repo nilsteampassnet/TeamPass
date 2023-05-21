@@ -270,7 +270,7 @@ switch ($post_type) {
         );
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
@@ -287,7 +287,7 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -299,7 +299,7 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -378,7 +378,7 @@ switch ($post_type) {
 
         //show some info
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .

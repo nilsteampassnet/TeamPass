@@ -1077,5 +1077,8 @@ return array(
     'error_data_not_valid' => 'Data is not valid',
     'mfa_enabled' => 'MFA enabled',
     'mfa_disabled_for_user' => 'MFA disabled for user',
+    'users_personal_folder' => 'Users personal folder',
+    'maintenance_operations' => 'Maintenance operations',
+    'maintenance_operations_tip' => 'Selected maintenance operations on Teampass database.',
 
 );

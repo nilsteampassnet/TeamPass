@@ -320,12 +320,12 @@ if (null !== $post_type) {
                 handleUserKeys(
                     (int) $new_user_id,
                     (string) $password,
+                    (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                     "",
                     true,
                     true,
                     true,
                     false,
-                    (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                     (string) langHdl('email_body_user_config_6'),
                 );
 

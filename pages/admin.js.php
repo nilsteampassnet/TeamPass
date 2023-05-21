@@ -134,6 +134,13 @@ declare(strict_types=1);
             return false;
         }
 
+        // Special case where field is select2
+        if ($(this).hasClass('select2')) {
+            value = JSON.stringify($(this).select2('data').map(function(item) {
+                return item.id;
+            }));
+        }
+
         requestRunning = true;
 
         var data = {
