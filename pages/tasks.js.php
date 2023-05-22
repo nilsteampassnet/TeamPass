@@ -304,6 +304,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
     $(document).ready(function(){
         setTimeout(fetchTaskData,20000);
 
+        // show value on slider
+        $('.form-control-range').on("input", function() {
+            $('#'+$(this).attr('id')+'_text').val($(this).val());
+        });
+
         // Handle delete task
         $("#modal-btn-delete").on("click", function() {
             toastr.remove();

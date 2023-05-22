@@ -136,38 +136,50 @@ catch (Exception $e) {
                                     <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('task_frequency'); ?></h5>
 
                                     <div class='row ml-1 mt-3 mb-2'>
-                                        <div class='col-10'>
-                                        <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='sending_emails_job_frequency' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='sending_emails_job_frequency_text' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-10'>
-                                        <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='user_keys_job_frequency' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='user_keys_job_frequency_text' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-10'>
-                                        <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='items_statistics_job_frequency' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_statistics_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='items_statistics_job_frequency_text' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-1'>
-                                        <div class='col-10'>
-                                        <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo langHdl('maintenance_operations'); ?>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo langHdl('maintenance_operations'); ?>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='maintenance_job_frequency' value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '60'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='maintenance_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '59'; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='maintenance_job_frequency_text' value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '59'; ?>'>
                                         </div>
                                     </div>
 

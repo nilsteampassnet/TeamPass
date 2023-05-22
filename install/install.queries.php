@@ -651,7 +651,7 @@ $SETTINGS = array (';
                             array('admin', 'sending_emails_job_frequency', '2'),
                             array('admin', 'user_keys_job_frequency', '1'),
                             array('admin', 'items_statistics_job_frequency', '5'),
-                            array('admin', 'maintenance_job_frequency', '60'),
+                            array('admin', 'maintenance_job_frequency', '59'),
                             array('admin', 'maintenance_job_tasks', '[]'),
                         );
                         foreach ($aMiscVal as $elem) {

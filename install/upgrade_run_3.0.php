@@ -195,7 +195,7 @@ $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` 
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_frequency', '60')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_frequency', '59')"
     );
 }
 // Add new setting 'maintenance_job_tasks'
@@ -206,6 +206,11 @@ if (intval($tmp) === 0) {
         "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_tasks', '[]')"
     );
 }
+// Ensure that maintenance_job_frequency is not greater than 59
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "misc` SET `valeur`=if(valeur>=60,59,valeur) WHERE `intitule`='maintenance_job_frequency';"
+);
 
 //---<END 3.0.9
 
