@@ -287,32 +287,9 @@ foreach ($treeDesc as $t) {
                                 </div>
                                 <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('email'); ?></label>
-                                    <input type="email" class="form-control clear-me required track-change" id="form-email">
+                                    <input type="email" class="form-control clear-me required track-change validate-email" id="form-email">
                                 </div>
                             </div>
-                            <!--
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="form-email"><?php echo langHdl('email'); ?></label>
-                                    <input type="email" class="form-control clear-me required track-change" id="form-email">
-                                </div>
-                                <div class="form-group">
-                                    <label for="form-password"><?php echo langHdl('password'); ?></label>
-                                    <div class="input-group mb-0">
-                                        <input type="password" class="form-control clear-me required infotip track-change" id="form-password">
-                                        <div class="input-group-append">
-                                            <span class="input-group-text p-1"><div id="form-password-strength"></div></span>
-                                            <button class="btn btn-outline-secondary btn-no-click infotip" id="button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fa-solid fa-random"></i></button>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" id="form-password-complex" value="0">
-                                </div>
-                                <div class="form-group">
-                                    <label for="form-confirm"><?php echo langHdl('confirm'); ?></label>
-                                    <input type="password" class="form-control clear-me required" id="form-confirm">
-                                </div>
-                            </div>
-                            -->
                         </div>
                         <div class="form-group">
                             <label for="form-login" class="mr-2"><?php echo langHdl('privileges'); ?></label>

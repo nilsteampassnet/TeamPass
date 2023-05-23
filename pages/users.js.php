@@ -897,7 +897,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 });
 
                 // Mandatory?
-                var validated = true;
+                var validated = true,
+                    validEmailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
                 $('.required').each(function(i, obj) {
                     if ($(this).val() === '' && $(this).hasClass('select2') === false) {
                         $(this).addClass('is-invalid');
@@ -905,6 +906,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     } else if ($('#' + $(this).attr('id') + ' :selected').length === 0 && $(this).hasClass('select2') === true) {
                         $('#' + $(this).attr('id') + ' + span').addClass('is-invalid');
                         validated = false;
+                    } else if ($(this).hasClass('validate-email') === true) {
+                        if ($(this).val().match(validEmailRegex)) {
+                            $(this).removeClass('is-invalid');
+                        } else {
+                            $(this).addClass('is-invalid');
+                            validated = false;
+                        }
                     } else {
                         $(this).removeClass('is-invalid');
                         $('#' + $(this).attr('id') + ' + span').removeClass('is-invalid');
