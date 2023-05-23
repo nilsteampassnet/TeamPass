@@ -4140,7 +4140,7 @@ function handleUserKeys(
  */
 function validateDataFields(
     string $table,
-    array $dataFields,
+    array $dataFields
 ): array
 {
     // Get table structure
