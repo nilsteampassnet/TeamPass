@@ -29,7 +29,7 @@ define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 100);
-define('WIP', true);
+define('WIP', false);
 
 define('ERR_NOT_ALLOWED', '1000');
 define('ERR_NOT_EXIST', '1001');

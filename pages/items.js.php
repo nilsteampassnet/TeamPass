@@ -76,7 +76,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder=-1,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -1680,12 +1680,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userUploadedFile = false;
 
         var data = {
-            'title': DOMPurify.sanitize($('#form-folder-add-label').val()),
+            'title': DOMPurify.sanitize($('#form-folder-add-label').val(), {USE_PROFILES: {html: false}}),
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
             //'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),
-            'icon': $('#form-folder-add-icon').val(),
-            'iconSelected': $('#form-folder-add-icon-selected').val(),
+            'icon': DOMPurify.sanitize($('#form-folder-add-icon').val(), {USE_PROFILES: {html: false}}),
+            'iconSelected': DOMPurify.sanitize($('#form-folder-add-icon-selected').val(), {USE_PROFILES: {html: false}}),
             'id': selectedFolderId,
         }
         if (debugJavascript === true) console.log(data);
@@ -1908,7 +1908,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var data = {
             'source_folder_id': $('#form-folder-copy-source option:selected').val(),
             'target_folder_id': $('#form-folder-copy-destination option:selected').val(),
-            'folder_label': DOMPurify.sanitize($('#form-folder-copy-label').val()),
+            'folder_label': DOMPurify.sanitize($('#form-folder-copy-label').val(), {USE_PROFILES: {html: false}}),
         }
 
         // Launch action
