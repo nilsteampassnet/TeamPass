@@ -60,7 +60,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
-        debugJavascript = false;
+        debugJavascript = true;
 
     browserSession(
         'init',
