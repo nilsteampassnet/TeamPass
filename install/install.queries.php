@@ -651,8 +651,11 @@ $SETTINGS = array (';
                             array('admin', 'sending_emails_job_frequency', '2'),
                             array('admin', 'user_keys_job_frequency', '1'),
                             array('admin', 'items_statistics_job_frequency', '5'),
-                            array('admin', 'maintenance_job_frequency', '59'),
-                            array('admin', 'maintenance_job_tasks', '[]'),
+                            array('admin', 'users_personal_folder_task', ''),
+                            array('admin', 'clean_orphan_objects_task', ''),
+                            array('admin', 'purge_temporary_files_task', ''),
+                            array('admin', 'rebuild_config_file', ''),
+                            array('admin', 'reload_cache_table_task', ''),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

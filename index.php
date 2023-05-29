@@ -564,15 +564,6 @@ if (($session_validite_pw === null
                         </a>
                     </li>';
                     }
-                    echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="actions" class="nav-link', $get['page'] === 'actions' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-cogs"></i>
-                        <p>
-                            ' . langHdl('actions') . '
-                        </p>
-                        </a>
-                    </li>';
     }
 
     if (
@@ -1302,8 +1293,6 @@ if (
             include_once $SETTINGS['cpassman_dir'] . '/pages/ldap.js.php';
         } elseif ($get['page'] === 'uploads') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/uploads.js.php';
-        } elseif ($get['page'] === 'actions') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/actions.js.php';
         } elseif ($get['page'] === 'fields') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/fields.js.php';
         } elseif ($get['page'] === 'options') {

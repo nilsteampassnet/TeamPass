@@ -56,14 +56,14 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-$logID = doLog('start', 'do_maintenance', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$logID = doLog('start', 'do_maintenance - '.$_COOKIE['task_to_run'], (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
 // Perform maintenance tasks
-foreach(json_decode($SETTINGS['maintenance_job_tasks']) as $task) {
-    if ($task === "users-personal-folder") createUserPersonalFolder();
-    elseif ($task === "clean-orphan-objects") cleanOrphanObjects();
-    elseif ($task === "purge-old-files") purgeTemporaryFiles();
-}
+if ($_COOKIE['task_to_run'] === "users-personal-folder") createUserPersonalFolder();
+elseif ($_COOKIE['task_to_run'] === "clean-orphan-objects") cleanOrphanObjects();
+elseif ($_COOKIE['task_to_run'] === "purge-old-files") purgeTemporaryFiles();
+elseif ($_COOKIE['task_to_run'] === "reload-cache-table") reloadCacheTable();
+elseif ($_COOKIE['task_to_run'] === "rebuild-config-file") rebuildConfigFile();
 
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
@@ -264,4 +264,32 @@ function purgeTemporaryFiles(): void
         }
     }
     
+}
+
+/**
+ * Relead cache table
+ *
+ * @return void
+ */
+function reloadCacheTable(): void
+{
+    // Load expected files
+    require_once __DIR__. '/../sources/main.functions.php';
+    include __DIR__. '/../includes/config/tp.config.php';
+
+    updateCacheTable('reload', $SETTINGS, NULL);
+}
+
+/**
+ * Rebuild configuration file
+ *
+ * @return void
+ */
+function rebuildConfigFile(): void
+{
+    // Load expected files
+    require_once __DIR__. '/../sources/main.functions.php';
+    include __DIR__. '/../includes/config/tp.config.php';
+
+    handleConfigFile('rebuild', $SETTINGS);
 }

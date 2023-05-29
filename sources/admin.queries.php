@@ -2351,6 +2351,7 @@ switch ($post_type) {
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         
         require_once 'main.functions.php';
 
@@ -2475,6 +2476,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
+                'message' => empty($post_translate) === false ? langHdl($post_translate) : '',
             ),
             'encode'
         );

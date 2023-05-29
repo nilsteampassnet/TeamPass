@@ -127,7 +127,7 @@ declare(strict_types=1);
         var field = $(this).attr('id'),
             value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val().map(Number));
 
-        if (field === '' || field === undefined) return false;
+        if (field === '' || field === undefined || $(this).hasClass('no-save') === true) return false;
         
         // prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {

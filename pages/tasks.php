@@ -133,11 +133,11 @@ catch (Exception $e) {
 }?>
                                     </div>
 
-                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('task_frequency'); ?></h5>
+                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('frequency'); ?></h5>
 
                                     <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails'); ?>
+                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails')." (".langHdl('in_minutes').")"; ?>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
@@ -149,7 +149,7 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management'); ?>
+                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management')." (".langHdl('in_minutes').")"; ?>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
@@ -161,7 +161,7 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics'); ?>
+                                            <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics')." (".langHdl('in_minutes').")"; ?>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_statistics_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
@@ -171,34 +171,99 @@ catch (Exception $e) {
                                         </div>
                                     </div>
 
-                                    <div class='row ml-1 mb-1'>
+                                    <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo langHdl('maintenance_operations'); ?>
                                         </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><?php echo langHdl('users_personal_folder'); ?>
+                                        </div>
                                         <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='maintenance_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '59'; ?>'>
+                                            <?php
+                                            $task = isset($SETTINGS['users_personal_folder_task']) === true ? explode(";", $SETTINGS['users_personal_folder_task']) : [];
+                                            ?>
+                                            <input type='text' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='hidden' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
                                         <div class='col-1'>
-                                            <input type='text' disabled class='form-control form-control-sm' id='maintenance_job_frequency_text' value='<?php echo $SETTINGS['maintenance_job_frequency'] ?? '59'; ?>'>
+                                            <button class="btn btn-primary task-define" data-task="users_personal_folder_task">
+                                                <i class="fa-solid fa-cogs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-binoculars ml-4 mr-2"></i><?php echo langHdl('clean_orphan_objects'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <?php
+                                            $task = isset($SETTINGS['clean_orphan_objects_task']) === true ? explode(";", $SETTINGS['clean_orphan_objects_task']) : [];
+                                            ?>
+                                            <input type='text' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='hidden' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <button class="btn btn-primary task-define" data-task="clean_orphan_objects_task">
+                                                <i class="fa-solid fa-cogs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-broom ml-4 mr-2"></i><?php echo langHdl('purge_temporary_files'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <?php
+                                            $task = isset($SETTINGS['purge_temporary_files_task']) === true ? explode(";", $SETTINGS['purge_temporary_files_task']) : [];
+                                            ?>
+                                            <input type='text' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='hidden' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <button class="btn btn-primary task-define" data-task="purge_temporary_files_task">
+                                                <i class="fa-solid fa-cogs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-sliders ml-4 mr-2"></i><?php echo langHdl('rebuild_config_file'); ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <?php
+                                            $task = isset($SETTINGS['rebuild_config_file_task']) === true ? explode(";", $SETTINGS['rebuild_config_file_task']) : [];
+                                            ?>
+                                            <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='hidden' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : ''; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <button class="btn btn-primary task-define" data-task="rebuild_config_file_task">
+                                                <i class="fa-solid fa-cogs"></i>
+                                            </button>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-4'>
-                                        <div class='col-6'>
-                                            <small class='form-text text-muted ml-4'>
-                                                <?php echo langHdl('maintenance_operations_tip'); ?>
-                                            </small>
+                                        <div class='col-9'>
+                                            <i class="fa-solid fa-database ml-4 mr-2"></i><?php echo langHdl('admin_action_reload_cache_table'); ?>
                                         </div>
-                                        <div class='col-6'>
-                                            <select class='form-control form-control-sm select2' id='maintenance_job_tasks' onchange='' multiple="multiple" style="width:100%;">
-                                                <?php
-                                                $tasks = isset($SETTINGS['maintenance_job_tasks']) === true ? json_decode($SETTINGS['maintenance_job_tasks']) : [];
-                                                
-                                                echo '<option value="users-personal-folder"',in_array('users-personal-folder', $tasks) === true ? ' selected' : '','>'.langHdl('users_personal_folder').'</option>';
-                                                echo '<option value="clean-orphan-objects"',in_array('clean-orphan-objects', $tasks) === true ? ' selected' : '','>'.langHdl('clean_orphan_objects').'</option>';
-                                                echo '<option value="purge-old-files"',in_array('purge-old-files', $tasks) === true ? ' selected' : '','>'.langHdl('purge_temporary_files').'</option>';
-                                                ?>
-                                            </select>
+                                        <div class='col-2'>
+                                            <?php
+                                            $task = isset($SETTINGS['reload_cache_table_task']) === true ? explode(";", $SETTINGS['reload_cache_table_task']) : [];
+                                            ?>
+                                            <input type='text' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='hidden' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <button class="btn btn-primary task-define" data-task="reload_cache_table_task">
+                                                <i class="fa-solid fa-cogs"></i>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -332,6 +397,75 @@ catch (Exception $e) {
             <div class="modal-footer">
             <button type="button" class="btn btn-primary" id="modal-btn-delete" data-id=""><?php echo langHdl('yes'); ?></button>
             <button type="button" class="btn btn-default" id="modal-btn-cancel"><?php echo langHdl('cancel'); ?></button>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ADAPT TASK -->
+    <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" id="task-define-modal">
+        <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fa-solid fa-calendar-check mr-2"></i><?php echo langHdl('task_scheduling'); ?></h4>
+            </div>
+            
+            <div class="modal-body" id="warningModalBody">
+                <div>
+                    <h5><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo langHdl('frequency'); ?></h5>              
+                    <select class='form-control form-control-sm no-save' id='task-define-modal-frequency' style="width:100%;">
+                        <?php
+                        echo '<optgroup label="'.langHdl('run_once').'">
+                        <option value="hourly">'.langHdl('hourly').'</option>
+                        <option value="daily">'.langHdl('daily').'</option>
+                        <option value="monthly">'.langHdl('monthly').'</option>
+                        </optgroup>
+                        <optgroup label="'.langHdl('run_weekday').'">
+                        <option value="monday">'.langHdl('monday').'</option>
+                        <option value="tuesday">'.langHdl('tuesday').'</option>
+                        <option value="wednesday">'.langHdl('wednesday').'</option>
+                        <option value="thursday">'.langHdl('thursday').'</option>
+                        <option value="friday">'.langHdl('friday').'</option>
+                        <option value="saturday">'.langHdl('saturday').'</option>
+                        <option value="sunday">'.langHdl('sunday').'</option>
+                        </optgroup>';
+                        ?>
+                    </select>
+                </div>
+
+                <div id="task-define-modal-parameter-monthly" class="hidden ml-2">
+                    <div class="row mt-2">
+                        <h5><?php echo langHdl('day_of_month'); ?></h5>              
+                        <select class='form-control form-control-sm no-save' id='task-define-modal-parameter-monthly-value' style="width:100%;">
+                            <?php
+                            for ($i=1; $i<=31; $i++) {
+                                echo '<option value="'.$i.'">'.langHdl('day').' '.$i.'</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="task-define-modal-parameter-daily" class="hidden ml-2">
+                    <div class="row mt-2">
+                        <h5 class=""><?php echo langHdl('at'); ?></h5>
+                        <input type="time" class="form-control form-control-sm no-save" id="task-define-modal-parameter-daily-value" min="00:00" max="23:59"/>
+                    </div>
+                </div>
+
+                <div id="task-define-modal-parameter-hourly" class="ml-2">
+                    <div class="row mt-2">
+                        <h5><?php echo langHdl('at'); ?></h5>              
+                        <input type="time" class="form-control form-control-sm no-save" id="task-define-modal-parameter-hourly-value" min="00:00" max="00:59"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="modal-btn-task-reset" data-id=""><?php echo langHdl('reset'); ?></button>
+                <button type="button" class="btn btn-primary" id="modal-btn-task-save" data-id=""><?php echo langHdl('save'); ?></button>
+                <button type="button" class="btn btn-default" id="modal-btn-task-cancel"><?php echo langHdl('cancel'); ?></button>
+                <input type="hidden" id="task-define-modal-type"/>
             </div>
         </div>
         </div>

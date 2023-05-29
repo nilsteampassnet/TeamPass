@@ -301,6 +301,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         setTimeout(fetchTaskData, 20000);
     }
 
+
     $(document).ready(function(){
         setTimeout(fetchTaskData,20000);
 
@@ -344,6 +345,127 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         $("#modal-btn-cancel").on("click", function(){
             $("#task-delete-user-confirm").modal('hide');
         });
+
+        // Handle define task - Click CANCEL button
+        $("#modal-btn-task-cancel").on("click", function(){
+            $("#task-define-modal").modal('hide');
+        });
+
+        // Handle define task - Click RESET button
+        $("#modal-btn-task-reset").on("click", function(){
+            $('#task-define-modal-parameter-hourly-value, #task-define-modal-parameter-daily-value, #task-define-modal-parameter-monthly-value, #task-define-modal-frequency').val('');
+        });
+
+        // Handle define task - Click SAVE button
+        $('#modal-btn-task-save').on("click", function(){
+            var field = $('#task-define-modal-type').val(),
+                frequency = $('#task-define-modal-frequency').val(),
+                value = $('#task-define-modal-frequency').val() === 'hourly' ? $('#task-define-modal-parameter-hourly-value').val() : 
+                    ($('#task-define-modal-frequency').val() === 'monthly' ? $('#task-define-modal-parameter-daily-value').val() + ';' + $('#task-define-modal-parameter-monthly-value').val() :
+                    ($('#task-define-modal-parameter-daily-value').val()));
+
+            requestRunning = true;
+
+            var data = {
+                "field": field,
+                "value": frequency === null ? '' : frequency + ';' +value,
+                "translate": frequency,
+            }
+            console.log(data);
+            
+            // Store in DB   
+            $.post(
+                "sources/admin.queries.php", {
+                    type: "save_option_change",
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key: "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    // Handle server answer
+                    try {
+                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    } catch (e) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                            '', {
+                                closeButton: true,
+                                positionClass: 'toastr-top-right'
+                            }
+                        );
+                        return false;
+                    }
+                    console.log(data)
+                    if (data.error === false) {
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo langHdl('saved'); ?>',
+                            '', {
+                                timeOut: 2000,
+                                progressBar: true
+                            }
+                        );
+
+                        // Manage feedback to user
+                        $('#'+field+'_parameter_value').val(frequency === null ? '' : frequency + ';' +value,);
+                        param = value.split(';');
+                        if (param.length === 1) {
+                            txt = ' <?php echo langHdl('at');?> ' + param[0];
+                        } else {
+                            txt = ' <?php echo langHdl('day');?> ' + param[1] + ' <?php echo langHdl('at');?> ' + param[0];
+                        }
+                        $('#'+field+'_parameter').val(frequency === null ? '<?php echo langHdl('not_defined');?>' : (data.message + txt));
+                        $("#task-define-modal").modal('hide');
+                        $('#task-define-modal-type, #task-define-modal-parameter-hourly-value, #task-define-modal-parameter-daily-value, #task-define-modal-frequency').val('');
+                    }
+                    requestRunning = false;
+                }
+            );
+        });
+    });
+
+    // MANAGE TASK DEFINITION
+    $(document).on('click', '.task-define', function() {
+        // Open modal
+        console.log($(this).data('task'))
+        let task = $(this).data('task'),
+            definition = $('#'+task+'_parameter_value').val().split(';');
+        $('#task-define-modal-frequency option[value="'+definition[0]+'"]').prop('selected', true);
+        console.log($('#'+task+'_parameter_value').val()+" -- "+definition[0]+";"+definition[1]+";"+definition[2])
+        if (definition[0] === "hourly") {
+            $('#task-define-modal-parameter-hourly').removeClass('hidden');
+            $('#task-define-modal-parameter-daily, #task-define-modal-parameter-monthly').addClass('hidden');
+            $('#task-define-modal-parameter-hourly-value').val(definition[1]);
+        } else if (definition[0] === "daily") {
+            $('#task-define-modal-parameter-daily').removeClass('hidden');
+            $('#task-define-modal-parameter-hourly, #task-define-modal-parameter-monthly').addClass('hidden');
+            $('#task-define-modal-parameter-daily-value').val(definition[1]);
+        } else if (definition[0] === "monthly") {
+            $('#task-define-modal-parameter-monthly, #task-define-modal-parameter-daily').removeClass('hidden');
+            $('#task-define-modal-parameter-hourly').addClass('hidden');
+            $('#task-define-modal-parameter-monthly-value').val(definition[2]);
+            $('#task-define-modal-parameter-daily-value').val(definition[1]);
+        } else {
+            $('#task-define-modal-parameter-monthly, #task-define-modal-parameter-hourly').addClass('hidden');
+            $('#task-define-modal-parameter-daily').removeClass('hidden');
+            $('#task-define-modal-parameter-daily-value').val(definition[1]);
+        }
+        $('#task-define-modal-type').val(task);
+        $("#task-define-modal").modal('show');
+    });
+
+    $(document).on('change', '#task-define-modal-frequency', function() {
+        if ($(this).val() === "hourly") {
+            $('#task-define-modal-parameter-hourly').removeClass('hidden');
+            $('#task-define-modal-parameter-daily, #task-define-modal-parameter-monthly').addClass('hidden');
+        } else if ($(this).val() === "monthly") {
+            $('#task-define-modal-parameter-monthly, #task-define-modal-parameter-daily').removeClass('hidden');
+            $('#task-define-modal-parameter-hourly').addClass('hidden');
+        } else if ($(this).val() === "daily" || $(this).val() !== null) {
+            $('#task-define-modal-parameter-daily').removeClass('hidden');
+            $('#task-define-modal-parameter-hourly, #task-define-modal-parameter-monthly').addClass('hidden');
+        }
     });
 
     //]]>

@@ -889,7 +889,7 @@ function cacheTableRefresh(array $SETTINGS): void
     DB::$ssl = DB_SSL;
     DB::$connect_options = DB_CONNECT_OPTIONS;
     //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] .'/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // truncate table

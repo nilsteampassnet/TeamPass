@@ -190,26 +190,54 @@ if ($res === false) {
 
 
 //--->BEGIN 3.0.9
-// Add new setting 'maintenance_job_frequency'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maintenance_job_frequency'"));
+// Add new setting 'reload_cache_table_task'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'reload_cache_table_task'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_frequency', '59')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'reload_cache_table_task', '')"
     );
 }
-// Add new setting 'maintenance_job_tasks'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maintenance_job_tasks'"));
+// Add new setting 'rebuild_config_file'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'rebuild_config_file'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_job_tasks', '[]')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'rebuild_config_file', '')"
+    );
+}// Add new setting 'purge_temporary_files_task'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'purge_temporary_files_task'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'purge_temporary_files_task', '')"
     );
 }
-// Ensure that maintenance_job_frequency is not greater than 59
+// Add new setting 'clean_orphan_objects_task'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'clean_orphan_objects_task'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'clean_orphan_objects_task', '')"
+    );
+}
+// Add new setting 'users_personal_folder_task'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'users_personal_folder_task'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'users_personal_folder_task', '')"
+    );
+}
+
+// Remove unused settings
 mysqli_query(
     $db_link,
-    "UPDATE `" . $pre . "misc` SET `valeur`=if(valeur>=60,59,valeur) WHERE `intitule`='maintenance_job_frequency';"
+    "DELETE FROM `" . $pre . "misc` WHERE `intitule`='maintenance_job_tasks';"
+);
+mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "misc` WHERE `intitule`='maintenance_job_frequency';"
 );
 
 //---<END 3.0.9

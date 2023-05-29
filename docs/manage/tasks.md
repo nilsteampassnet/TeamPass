@@ -6,20 +6,38 @@
 
 It is by default enabled and mandatory for Teampass usage.
 
+As an administrator, open Menu option `Tasks` and select tab `Settings`.
+
+## Tasks scheduling definition
+
+![Settings tasks options](../_media/tp3_tasks_04.png)
+
+Mandatory tasks are:
+* sending emails,
+* managing user keys,
+* performing statistics (used in the tree view).
+
+For those, you need to the frequency at which they have to be executed.
+They need to run several times by hour in order to garantee a kind of real-time for users.
+
+Maintenance tasks can run on lower frequencies. You can select how to run them or keep them to value `Not defined` to disabled the corresponding task.
+
+> Tip, you should ensure that maintenance tasks are not performed at the same minute.
+
 ## Options
 
 > You should use the options to set up the tasks management to fit your PHP server configuration.
 
-As an administrator, open Menu option `Tasks` and select tab `Settings`.
 
-![Settings tasks options](../_media/settings_tasks_options_03.png)
+![Settings tasks options](../_media/tp3_tasks_05.png)
 
-1. Define the task frequencies for sending emails, managing user keys and performing statistics (used in the tree view).
+1. Define if logging in database each task execution is requested.
+_It permits to check if everything works as defined and should be disabled once working_
 2. Set the maximum duration a script can execute in background. 
 _It is suggested to define a higher value that the `max_execution_time` defined in `php.ini` file. Value `0` indicates that any time for the script is allowed._ 
-3. Set the number of items will be treated by the script.
+1. Set the number of items will be treated by the script.
 _This value is to adapt depending on what happen. But you should not change it._
-4. Set the delay after which the data is refreshed in the tasks management follow up page.
+1. Set the delay after which the data is refreshed in the tasks management follow up page.
 
 
 ## Setting up the cron job
