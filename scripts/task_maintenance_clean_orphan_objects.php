@@ -125,5 +125,7 @@ function cleanOrphanObjects(): void
     }
 
     // Update CACHE table
-    updateCacheTable('reload', $SETTINGS, null);
+    if (isset($SETTINGS) === true) {
+        updateCacheTable('reload', $SETTINGS, null);
+    }
 }

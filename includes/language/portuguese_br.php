@@ -40,7 +40,7 @@ return array(
     'new_ldap_user_info' => 'Por favor, complete as definições para o usuário',
     'email_body_user_added_from_ldap_encryption_code' => 'Olá,<br><br>Este é um e-mail gerado pelo gerenciador de senhas Teampass.<br><br>Agora você possui uma conta no Teampass. Você pode usar suas credenciais do AD para entrar.<br><br>No seu primeiro acesso, será solicitado seu código de criptografia, por favor informe:<br><br><b>#enc_code#</b><br><br><br>Atenciosamente',
     'settings_ldap_user_object_filter' => 'Filtro de Objeto de Usuário',
-    'settings_ldap_user_object_filter_tip' => 'O filtro a ser utilizado ao pesquisar objetos de usuário. Exemplo: (objectCategory=Person)(sAMAccountName=*)',
+    'settings_ldap_user_object_filter_tip' => 'O filtro a ser utilizado ao pesquisar objetos de usuário. Exemplo: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'Esse valor é usado adicionalmente ao DN base ao buscar e carregar usuários. Se nenhum valor for informado, a busca de subárvore iniciará à partir da DN base. Exemplos: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'DN Adicional de Usuário',
     'ldap_user_has_changed_his_password' => 'Sua senha de autenticação foi alterada no AD desde a última vez que você entrou no Teampass. Nós precisamos adaptar sua chave de criptografia. Por favor, informe sua senha anterior e a sua senha atual.',

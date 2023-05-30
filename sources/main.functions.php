@@ -3109,7 +3109,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         // Custom LDAP Options
         'options' => [
             // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => LDAP_OPT_X_TLS_HARD,
+            LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
         ],
     ];
     // Load expected libraries
@@ -4144,19 +4144,23 @@ function validateDataFields(
 ): array
 {
     // Get table structure
-    $result = DB::query("DESCRIBE %l", $table);
+    $result = DB::query(
+        "SELECT `COLUMN_NAME`, `CHARACTER_MAXIMUM_LENGTH` FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '%l' AND TABLE_NAME = '%l';",
+        DB_NAME,
+        $table
+    );
 
     foreach ($result as $row) {
-        $field = $row['Field'];
-        $type = $row['Type'];
-        $length = preg_replace('/[^0-9]/', '', $type);
-        $type = explode('(', $type)[0];
+        $field = $row['COLUMN_NAME'];
+        $maxLength = is_null($row['CHARACTER_MAXIMUM_LENGTH']) === false ? (int) $row['CHARACTER_MAXIMUM_LENGTH'] : '';
 
-        if (isset($dataFields[$field]) === true && in_array($type, ['int', 'tinyint', 'smallint', 'bigint', 'float', 'double', 'varchar']) === true && is_array($dataFields[$field]) === false) {
-            if (empty($length) === false && strlen((string) $dataFields[$field]) > $length) {
+        if (isset($dataFields[$field]) === true && is_array($dataFields[$field]) === false && empty($maxLength) === false) {
+            if (strlen((string) $dataFields[$field]) > $maxLength) {
                 return [
                     'state' => false,
-                    'message' => 'Field '.strtoupper($field).' exceeds maximum length of '.$length,
+                    'field' => $field,
+                    'maxLength' => $maxLength,
+                    'currentLength' => strlen((string) $dataFields[$field]),
                 ];
             }
         }

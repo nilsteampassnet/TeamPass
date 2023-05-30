@@ -40,7 +40,7 @@ return array(
     'new_ldap_user_info' => 'Bitte vervollständigen sie den Benutzer',
     'email_body_user_added_from_ldap_encryption_code' => 'Hallo, <br><br> Dies ist eine generierte E-Mail von Teampass Passwort Manager. <br><br>Sie haben jetzt ein Konto bei Teampass. Sie können sich mit Ihren AD-Anmeldedaten anmelden. <br><br>Wenn Sie sich zum ersten Mal anmelden, werden Sie aufgefordert, einen Verschlüsselungscode einzugeben, bitte verwenden Sie ihn: <br><br><b>#enc_code#</b><br><br><br> Herzliche Grüße',
     'settings_ldap_user_object_filter' => 'Benutzer Object Filter',
-    'settings_ldap_user_object_filter_tip' => 'Der Filter wird genutzt, um nach Benutzerobjekte zu filtern. Zum Beispiel: (objectCategory=Person)(sAMAccountName=*)',
+    'settings_ldap_user_object_filter_tip' => 'Der Filter wird genutzt, um nach Benutzerobjekte zu filtern. Zum Beispiel: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'Der Wert wird benutzt, um die base DN zu ergänzen zum suchen und laden der Benutzer. Wenn keine Eingabe vorhanden ist, startet die Suche von der base DN. Zum Beispiel: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Erweiterete Benutzer DN',
     'ldap_user_has_changed_his_password' => 'Ihr Authentifizierungspasswort wurde in Ihrem AD geändert, seit Sie sich das letzte Mal in Teampass angemeldet haben. Wir müssen Ihren Verschlüsselungscode anpassen. Bitte geben Sie Ihr vorheriges und das aktuelle Passwort an.',

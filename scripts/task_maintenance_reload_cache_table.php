@@ -75,5 +75,7 @@ function reloadCacheTable(): void
     require_once __DIR__. '/../sources/main.functions.php';
     include __DIR__. '/../includes/config/tp.config.php';
 
-    updateCacheTable('reload', $SETTINGS, NULL);
+    if (isset($SETTINGS) === true) {
+        updateCacheTable('reload', $SETTINGS, NULL);
+    }
 }

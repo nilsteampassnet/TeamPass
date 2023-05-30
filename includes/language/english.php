@@ -16,6 +16,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'field' => 'Field',
+    'exceeds_maximum_length_of' => 'exceeds maximum length of',
+    'session_expiration_in_minutes' => 'Session expiration in minutes',
+    'mfa_unique_code' => 'MFA unique code',
     'task_scheduling' => 'Task scheduling',
     'parameter' => 'Parameter',
     'frequency' => 'Frequency',
@@ -176,7 +180,7 @@ return array(
     'new_ldap_user_info' => 'Please complete the definition for user',
     'email_body_user_added_from_ldap_encryption_code' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>You now have an account in Teampass. You can use your AD credentials to get logged.<br><br>On first login, an encryption code will be expected from you, please use:<br><br><b>#enc_code#</b><br><br><br>Cheers',
     'settings_ldap_user_object_filter' => 'User Object Filter',
-    'settings_ldap_user_object_filter_tip' => 'The filter to use when searching user objects. Example: (objectCategory=Person)(sAMAccountName=*)',
+    'settings_ldap_user_object_filter_tip' => 'The filter to use when searching user objects. Several filters are separated by a comma (,). Example: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. Examples: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Additional User DN',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',

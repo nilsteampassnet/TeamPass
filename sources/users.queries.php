@@ -2582,11 +2582,26 @@ if (null !== $post_type) {
                 'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
             );
 
-            $results = $connection->query()
-                ->rawfilter($SETTINGS['ldap_user_object_filter'])
-                ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
-                ->whereHas($SETTINGS['ldap_user_attribute'])
-                ->paginate(100);
+            try {
+                $results = $connection->query()
+                    ->rawfilter(explode(',',$SETTINGS['ldap_user_object_filter']))
+                    ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+                    ->whereHas($SETTINGS['ldap_user_attribute'])
+                    ->paginate(100);
+            } catch (\LdapRecord\Auth\BindException $e) {
+                $error = $e->getDetailedError();
+
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            
             foreach ($results as $adUser) {
                 if (isset($adUser[$SETTINGS['ldap_user_attribute']][0]) === false) continue;
                 // Build the list of all groups in AD

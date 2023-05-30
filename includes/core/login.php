@@ -68,8 +68,8 @@ echo '
 
         <div class="card-body login-card-body1">
             <div class="input-group has-feedback mb-2">
-                <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fas fa-user fa-fw"></i></span>
+                <div class="input-group-prepend infotip" title="' . langHdl('login') . '">
+                    <span class="input-group-text"><i class="fa-solid fa-user fa-fw"></i></span>
                 </div>';
 if (
     isset($SETTINGS['enable_http_request_login']) === true
@@ -101,8 +101,8 @@ if (! (isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
         <div class="input-group has-feedback mb-2">
-            <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-lock fa-fw"></i></span>
+            <div class="input-group-prepend infotip" title="' . langHdl('password') . '">
+                <span class="input-group-text"><i class="fa-solid fa-lock fa-fw"></i></span>
             </div>
             <input type="password" id="pw" class="form-control submit-button" placeholder="' . langHdl('index_password') . '">
         </div>';
@@ -110,8 +110,8 @@ if (! (isset($SETTINGS['enable_http_request_login']) === true
 
 echo '
         <div class="input-group has-feedback mb-2">
-            <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fas fa-clock fa-fw"></i></span>
+            <div class="input-group-prepend infotip" title="' . langHdl('session_expiration_in_minutes') . '">
+                <span class="input-group-text"><i class="fa-solid fa-clock fa-fw"></i></span>
             </div>
             <input type="text" id="session_duration" class="form-control submit-button" 
             placeholder="' . langHdl('index_session_duration') .'&nbsp;(' . langHdl('minutes') . ')" 
@@ -157,23 +157,17 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
 if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1) {
     echo '
         <div id="div-2fa-google" class="mb-3 div-2fa-method hidden">
-            <div class="row">
-                <div class="col-1">
+            <div class="input-group has-feedback mb-2">
+                <div class="input-group-prepend infotip" title="' . langHdl('mfa_unique_code') . '">
+                    <span class="input-group-text"><i class="fa-solid fa-key fa-fw"></i></span>
                 </div>
-                <div class="col-8">
-                    <img src="includes/images/otp.png">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-1">
-                </div>
-                <div class="col-8">
-                    <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
-                </div>
-                <div class="col-1">
-                    <i class="fas fa-envelope form-control-feedback pointer infotip text-info" 
-                    title="' . langHdl('i_need_to_generate_new_ga_code') . '" onclick="send_user_new_temporary_ga_code()"></i>
-                </div>
+                <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
+                <span class="input-group-append">
+                    <button type="button" class="btn btn-info btn-flat" onclick="send_user_new_temporary_ga_code()">
+                        <i class="fa-solid fa-envelope form-control-feedback pointer infotip" 
+                    title="' . langHdl('i_need_to_generate_new_ga_code') . '"></i>
+                    </button>
+                </span>
             </div>
             <div id="div-2fa-google-qr" class="row mt-2 "></div>
         </div>';
@@ -244,7 +238,7 @@ echo '
 
                     <div class="input-group has-feedback mb-2 mt-4">
                         <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-unlock-alt"></i></span>
+                            <span class="input-group-text"><i class="fa-solid fa-unlock-alt"></i></span>
                         </div>
                         <input type="password" id="user-one-time-code" class="form-control" placeholder="' . langHdl('one_time_code') . '">
                     </div>

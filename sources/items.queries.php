@@ -895,7 +895,7 @@ if (is_null($inputData['type']) === false) {
                         $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
-                            'message' => langHdl('error_data_not_valid').' - '.$dataCheck['message'],
+                            'message' => langHdl('error_data_not_valid').' - '.langHdl('field').' '.strtoupper($dataCheck['field']).' '.langHdl('exceeds_maximum_length_of').' '.$dataCheck['maxLength'].' ('.$dataCheck['currentLength'].')',
                         ),
                         'encode'
                     );

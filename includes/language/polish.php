@@ -40,7 +40,7 @@ return array(
     'new_ldap_user_info' => 'Uzupełnij definicję użytkownika',
     'email_body_user_added_from_ldap_encryption_code' => 'Cześć,<br><br>To jest wiadomość e-mail wygenerowana od menedżera haseł Teampass.<br><br>Masz teraz aktywne konto w systemie Teampass. Możesz użyć swoich danych logowania AD, aby się zalogować do systemu.<br><br>Przy pierwszym logowaniu będzie oczekiwany od Ciebie kod szyfrujący wskazany poniżej:<br><br><b>#enc_code#</b><br><br><br>',
     'settings_ldap_user_object_filter' => 'Filtr użytkowników',
-    'settings_ldap_user_object_filter_tip' => 'The filter to use when searching user objects. Example: (objectCategory=Person)(sAMAccountName=*)',
+    'settings_ldap_user_object_filter_tip' => 'The filter to use when searching user objects. Example: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. Examples: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Dodatkowy DN użytkownika',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',

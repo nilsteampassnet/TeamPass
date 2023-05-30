@@ -75,5 +75,7 @@ function rebuildConfigFile(): void
     require_once __DIR__. '/../sources/main.functions.php';
     include __DIR__. '/../includes/config/tp.config.php';
 
-    handleConfigFile('rebuild', $SETTINGS);
+    if (isset($SETTINGS) === true) {
+        handleConfigFile('rebuild', $SETTINGS);
+    }
 }

@@ -40,7 +40,7 @@ return array(
     'new_ldap_user_info' => 'Completa la definición de usuario',
     'email_body_user_added_from_ldap_encryption_code' => 'Hola,<br><br>Este es un correo electrónico generado por el gestor de contraseñas Teampass.<br><br>Ahora tienes una cuenta en Teampass. Puedes utilizar tus credenciales DA para iniciar la sesión.<br><br>En el primer inicio de sesión, se espera un código de cifrado de ti, por favor, utiliza:<br><br><b>#enc_code#</b><br><br><br>Saludos',
     'settings_ldap_user_object_filter' => 'Filtro de objetos del usuario',
-    'settings_ldap_user_object_filter_tip' => 'El filtro a utilizar en la búsqueda de objetos de usuario. Ejemplo: (objectCategory=Person)(sAMAccountName=*)',
+    'settings_ldap_user_object_filter_tip' => 'El filtro a utilizar en la búsqueda de objetos de usuario. Ejemplo: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'Este valor se utiliza además del DN base al buscar y cargar usuarios. Si no se proporciona ningún valor, la búsqueda en el subárbol comenzará desde el DN base. Ejemplos: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'DN de usuario adicional',
     'ldap_user_has_changed_his_password' => 'Tu contraseña de autentificación ha sido cambiada en tu DA desde la última vez que te conectaste en Teampass. Necesitamos adaptar tu clave de cifrado. Por favor, indica tu contraseña anterior y la actual.',
