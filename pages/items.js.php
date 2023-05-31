@@ -2653,12 +2653,34 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             userItemRight = itemsList[store.get('teampassItem').id]?.rights;
         }
 
+        
+
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
             var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
+            // Sanitize text fields
+            let formLabel = fieldSanitizeStep1('#form-item-label', false, false, false),
+                formDescription = $('#form-item-description').summernote('code') !== "<p><br></p>" ? fieldSanitizeStep1('#form-item-description', true, false, false, $('#form-item-description').summernote('code')) : '',
+                formEmail = fieldSanitizeStep1('#form-item-email'),
+                formTags = fieldSanitizeStep1('#form-item-tags'),
+                formUrl = fieldSanitizeStep1('#form-item-url'),
+                formIcon = fieldSanitizeStep1('#form-item-icon');
+            if (formLabel === false || formDescription === false || formEmail === false || formTags === false || formUrl === false || formIcon === false) {
+                // Label is empty
+                toastr.remove();
+                toastr.warning(
+                    'XSS attempt detected. Field has been emptied.',
+                    'Error', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+            
             // Do some easy checks
-            if ($('#form-item-label').val() === '') {
+            if (formLabel === '') {
                 // Label is empty
                 toastr.remove();
                 toastr.error(
@@ -2669,8 +2691,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 );
                 return false;
-            } else if ($('#form-item-tags').val() !== '' &&
-                reg.test($('#form-item-tags').val())
+            } else if (formTags !== '' &&
+                reg.test(formTags)
             ) {
                 // Tags not wel formated
                 toastr.remove();
@@ -2790,39 +2812,41 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                     return false;
                 }
+                    
                 //prepare data
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': $('#form-item-description').summernote('code') !== "<p><br></p>" ? DOMPurify.sanitize($('#form-item-description').summernote('code'), {USE_PROFILES: {html: true, svg: false, svgFilters: false}}) : '',
+                    'description': formDescription,
                     'diffusion_list': diffusion,
                     'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
-                    'email': DOMPurify.sanitize($('#form-item-email').val()),
+                    'email': formEmail,
                     'fields': fields,
                     'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                     'id': store.get('teampassItem').id,
-                    'label': DOMPurify.sanitize($('#form-item-label').val(), {USE_PROFILES: {html:false, svg: false, svgFilters: false}}),
+                    'label': formLabel,
                     'login': DOMPurify.sanitize($('#form-item-login').val()),
                     'pw': $('#form-item-password').val(),
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
-                    'tags': DOMPurify.sanitize($('#form-item-tags').val()),
+                    'tags': formTags,
                     'template_id': parseInt($('input.form-check-input-template:checkbox:checked').data('category-id')),
                     'to_be_deleted_after_date': ($('#form-item-deleteAfterDate').length !== 0 &&
                         $('#form-item-deleteAfterDate').val() !== '') ? $('#form-item-deleteAfterDate').val() : '',
                     'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown').length !== 0 &&
                             $('#form-item-deleteAfterShown').val() !== '' && $('#form-item-deleteAfterShown').val() >= 1) ?
                         parseInt($('#form-item-deleteAfterShown').val()) : '',
-                    'url': DOMPurify.sanitize($('#form-item-url').val()),
+                    'url': formUrl,
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
-                    'fa_icon': DOMPurify.sanitize($('#form-item-icon').val()),
+                    'fa_icon': formIcon,
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');
                     console.log(data);
                 }
+
                 // Inform user
                 toastr.remove();
                 toastr.info(

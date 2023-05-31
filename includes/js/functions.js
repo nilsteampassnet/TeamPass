@@ -389,3 +389,34 @@ if (typeof String.prototype.utf8Decode == 'undefined') {
         }
     };
 }
+
+function fieldSanitizeStep1(
+    field,
+    bHtml=true,
+    bSvg=true,
+    bSvgFilters=true,
+    text=''
+)
+{
+    if (field === undefined ||field === '') {
+        return false;
+    }
+    let string = '';
+    text = (text === '') ? $(field).val() : text;
+    
+    // Purify string
+    string = DOMPurify.sanitize(
+        text
+            .replaceAll('&lt;', '<')
+            .replaceAll('&gt;', '>'),
+        {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
+    );
+    
+    // Clear field if string is empty and warn user
+    if (string === '' && text !== '') {
+        $(field).val('');
+        return false;
+    }
+
+    return string;
+}
