@@ -3539,10 +3539,16 @@ function dataSanitizer(
     require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EscapeHTML.php';
     require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EmptyStringToNull.php';
     require_once $path . '/includes/libraries/Elegant/sanitizer/Sanitizer.php';
+    $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
+
+    // Load AntiXSS
+    include_once $path. '/includes/libraries/anti-xss-master/src/voku/helper/ASCII.php';
+    include_once $path . '/includes/libraries/anti-xss-master/src/voku/helper/UTF8.php';
+    include_once $path . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
+    $antiXss = new voku\helper\AntiXSS();
 
     // Sanitize post and get variables
-    $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
-    return $sanitizer->sanitize();
+    return $antiXss->xss_clean($sanitizer->sanitize());
 }
 
 /**

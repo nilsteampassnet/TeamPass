@@ -164,16 +164,36 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     // Save user settings
     $('#profile-user-save-settings').click(function() {
+        // Sanitize text fields
+        let formName = fieldSanitizeStep1('#profile-user-name', false, false, false),
+            formLastname = fieldSanitizeStep1('#profile-user-lastname', false, false, false),
+            formEmail = fieldSanitizeStep1('#profile-user-email', false, false, false);
+        if (formName === false || formLastname === false || formEmail === false) {
+            // Label is empty
+            toastr.remove();
+            toastr.warning(
+                'XSS attempt detected. Field has been emptied.',
+                'Error', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
+        // Prepare data
         var data = {
-            'name': DOMPurify.sanitize($('#profile-user-name').val()),
-            'lastname': DOMPurify.sanitize($('#profile-user-lastname').val()),
-            'email': DOMPurify.sanitize($('#profile-user-email').val()),
+            'name': formName,
+            'lastname': formLastname,
+            'email': formEmail,
             'timezone': $('#profile-user-timezone').val(),
             'language': $('#profile-user-language').val().toLowerCase(),
             'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
             'agsescardid': $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
         }
-        //console.log(data)
+        console.log(data);
+        //return false;
+        // " onmouseover="confirm(document.cookie)"
         // Inform user
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');

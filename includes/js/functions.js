@@ -403,12 +403,27 @@ function fieldSanitizeStep1(
     }
     let string = '';
     text = (text === '') ? $(field).val() : text;
-    
+/*
+    // Sanitize string
+    var tagsToReplace = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'" : '&#39;',
+        '"' : '&quot;'
+    };
+    text = text.replace(/[&<>'"]/g, function(tag) {
+        return tagsToReplace[tag] || tag;
+    });
+    */
     // Purify string
     string = DOMPurify.sanitize(
         text
             .replaceAll('&lt;', '<')
-            .replaceAll('&gt;', '>'),
+            .replaceAll('&gt;', '>')
+            .replaceAll('&amp;', '&')
+            .replaceAll('&quot;', '"')
+            .replaceAll('&#39;', "'"),
         {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
     );
     
