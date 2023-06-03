@@ -386,7 +386,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if ($userMfa['error'] === true) {
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
-                $userMfa['mfaData'],
+                [
+                    'error' => true,
+                    'message' => $userMfa['mfaData']['message'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
                 'encode'
             );
             return false;

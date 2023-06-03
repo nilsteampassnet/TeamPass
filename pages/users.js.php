@@ -884,7 +884,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             let formLogin = fieldSanitizeStep1('#form-login', false, false, false),
                 formName = fieldSanitizeStep1('#form-name', false, false, false),
                 formLastname = fieldSanitizeStep1('#form-lastname', false, false, false),
-                formEmail = fieldSanitizeStep1('#form-email', false, false, false),
+                formEmail = fieldSanitizeStep1('#form-email', false, false, false);
             if (formLogin === false || formName === false || formLastname === false || formEmail === false) {
                 // Label is empty
                 toastr.remove();

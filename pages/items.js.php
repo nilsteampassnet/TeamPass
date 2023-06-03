@@ -1679,13 +1679,30 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userDidAChange = false;
         userUploadedFile = false;
 
+        // Sanitize text fields
+        let formLabel = fieldSanitizeStep1('#form-folder-add-label', false, false, false),
+            formIcon = fieldSanitizeStep1('#form-folder-add-icon', false, false, false),
+            formIconSelected = fieldSanitizeStep1('#form-folder-add-icon-selected', false, false, false);
+        if (formLabel === false || formIcon === false || formIconSelected === false) {
+            // Label is empty
+            toastr.remove();
+            toastr.warning(
+                'XSS attempt detected. Field has been emptied.',
+                'Error', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
         var data = {
-            'title': DOMPurify.sanitize($('#form-folder-add-label').val(), {USE_PROFILES: {html: false}}),
+            'title': formLabel,
             'parentId': $('#form-folder-add-parent option:selected').val(),
             'complexity': $('#form-folder-add-complexicity option:selected').val(),
             //'access_rights_strategy': $('#form-folder-add-rights option:selected').val(),
-            'icon': DOMPurify.sanitize($('#form-folder-add-icon').val(), {USE_PROFILES: {html: false}}),
-            'iconSelected': DOMPurify.sanitize($('#form-folder-add-icon-selected').val(), {USE_PROFILES: {html: false}}),
+            'icon': formIcon,
+            'iconSelected': formIconSelected,
             'id': selectedFolderId,
         }
         if (debugJavascript === true) console.log(data);
