@@ -880,6 +880,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             });
 
+            // Sanitize text fields
+            let formLogin = fieldSanitizeStep1('#form-login', false, false, false),
+                formName = fieldSanitizeStep1('#form-name', false, false, false),
+                formLastname = fieldSanitizeStep1('#form-lastname', false, false, false),
+                formEmail = fieldSanitizeStep1('#form-email', false, false, false),
+            if (formLogin === false || formName === false || formLastname === false || formEmail === false) {
+                // Label is empty
+                toastr.remove();
+                toastr.warning(
+                    'XSS attempt detected. Field has been emptied.',
+                    'Error', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
             if (arrayQuery.length > 0) {
                 // Now save
                 // get lists
@@ -960,10 +978,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 //prepare data
                 var data = {
                     'user_id': store.get('teampassApplication').formUserId,
-                    'login': DOMPurify.sanitize($('#form-login').val()),
-                    'name': DOMPurify.sanitize($('#form-name').val()),
-                    'lastname': DOMPurify.sanitize($('#form-lastname').val()),
-                    'email': DOMPurify.sanitize($('#form-email').val()),
+                    'login': formLogin,
+                    'name': formName,
+                    'lastname': formLastname,
+                    'email': formEmail,
                     'admin': $('#privilege-admin').prop('checked'),
                     'manager': $('#privilege-manager').prop('checked'),
                     'hr': $('#privilege-hr').prop('checked'),

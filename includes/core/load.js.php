@@ -54,6 +54,20 @@ if (
         debugJavascript = true;
     let hourInMinutes = 60;
 
+
+    $(document).ready(function() {
+        //console.log('-- PAGE LOADED --'+$(location).attr('href').includes('?')+" -- "+store.get('teampassUser'));
+        if ($(location).attr('href').includes('?') === true && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
+            $(location).attr('href', 'index.php?session=expired');
+            return false;
+        }
+
+        // prevent a resubmit on refresh and back button
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    });
+
     /**
     *   Add 1 hour to session duration
     **/

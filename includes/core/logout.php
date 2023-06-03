@@ -95,6 +95,7 @@ echo '
         store.remove("teampassUser");
         store.remove("teampassItem");
         sessionStorage.clear();
+        localStorage.clear();
         
         setTimeout(function() {
             document.location.href="../../index.php"

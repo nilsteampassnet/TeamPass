@@ -86,7 +86,7 @@ if (
 function mainQuery(array $SETTINGS)
 {
     header('Content-type: text/html; charset=utf-8');
-    header('Cache-Control: no-cache, must-revalidate');
+    header('Cache-Control: no-cache');
     error_reporting(E_ERROR);
 
 

@@ -26,6 +26,9 @@ declare(strict_types=1);
 
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID
 //ini_set('session.cookie_httponly', 1);
@@ -218,6 +221,14 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
                 location.replace('./includes/core/logout.php');
             }
         }
+
+        //history.pushState(null, null, 'index.php?session=expired');
+        /*function preventBack() {
+            window.history.forward(); 
+        }        
+        setTimeout("preventBack()", 0);        
+        window.onunload = function () { null };
+        */
         //]]>
     </script>
 
