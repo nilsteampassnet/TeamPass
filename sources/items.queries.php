@@ -448,6 +448,7 @@ if (is_null($inputData['type']) === false) {
                             'complexity_level' => $post_complexity_level,
                             'encryption_type' => 'teampass_aes',
                             'fa_icon' => $post_fa_icon,
+                            'unique' => uniqidReal(50),
                         )
                     );
                     $newID = DB::insertId();
@@ -2609,6 +2610,7 @@ if (is_null($inputData['type']) === false) {
                 $arrData['tags'] = $tags;
                 $arrData['folder'] = (int) $dataItem['id_tree'];
                 $arrData['fa_icon'] = $dataItem['fa_icon'];
+                $arrData['item_key'] = $dataItem['item_key'];
 
                 if (
                     isset($SETTINGS['enable_server_password_change'])
@@ -3815,7 +3817,7 @@ if (is_null($inputData['type']) === false) {
                         $post_nb_items_to_display_once;
                     //db::debugmode(true);
                     $rows = DB::query(
-                        'SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        'SELECT i.id AS id, i.item_key AS item_key, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
                         MIN(n.renewal_period) AS renewal_period,
@@ -3836,7 +3838,7 @@ if (is_null($inputData['type']) === false) {
                     $where->add('i.inactif=%i', 0);
 
                     $rows = DB::query(
-                        'SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        'SELECT i.id AS id, i.item_key AS item_key, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
                         MIN(n.renewal_period) AS renewal_period,
@@ -3923,6 +3925,7 @@ if (is_null($inputData['type']) === false) {
                         // Init
                         $html_json[$record['id']]['expired'] = (int) $expired_item;
                         $html_json[$record['id']]['item_id'] = (int) $record['id'];
+                        $html_json[$record['id']]['item_key'] = (string) $record['item_key'];
                         $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                         $html_json[$record['id']]['label'] = strip_tags($record['label']);
                         if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1) {
@@ -4162,9 +4165,9 @@ if (is_null($inputData['type']) === false) {
                 'SELECT i.pw AS pw, s.share_key AS share_key
                 FROM ' . prefixTable('items') . ' AS i
                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-                WHERE user_id = %i AND i.id = %i',
+                WHERE user_id = %i AND i.item_key = %i',
                 $_SESSION['user_id'],
-                $inputData['itemId']
+                $inputData['item_key']
             );
 
             // Uncrypt PW

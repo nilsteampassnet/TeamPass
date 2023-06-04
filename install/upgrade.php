@@ -1090,11 +1090,17 @@ function sendPwdToUsers(usersList, init, cpt, total)
 function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop_number, file_number)
 {
     var d = new Date(),
-        info = '';
+        info = '',
+        text_action_in_progress = script_file;
     loop_number ++;
     var rand_number = createRandomId();
 
-    $("#step4_progress").html("<div>" + getTime() +" - <i>"+script_file+"</i> - Loop #"+loop_number+" <span id='span_"+rand_number+"'>is now running ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
+    // Inform
+    if (script_file === 'upgrade_operations.php') {
+        text_action_in_progress = 'Performing operation ' + type_parameter;
+    }
+
+    $("#step4_progress").html("<div>" + getTime() +" - <i>"+text_action_in_progress+"</i> - Loop #"+loop_number+" <span id='span_"+rand_number+"'>is now running ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
 
     if (type_parameter === 'user_id') {
         info = $("#infotmp").val();
