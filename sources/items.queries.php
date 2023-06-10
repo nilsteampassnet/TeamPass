@@ -447,7 +447,7 @@ switch ($inputData['type']) {
                         'complexity_level' => $post_complexity_level,
                         'encryption_type' => 'teampass_aes',
                         'fa_icon' => $post_fa_icon,
-                        'unique' => uniqidReal(50),
+                        'item_key' => uniqidReal(50),
                     )
                 );
                 $newID = DB::insertId();

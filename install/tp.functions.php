@@ -215,6 +215,32 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
 }
 
 /**
+ * Remove column from table if exists
+ *
+ * @param string $table      Table
+ * @param string $column     Column
+ *
+ * @return boolean
+ */
+function removeColumnIfNotExist($table, $column)
+{
+    global $db_link;
+    $exists = false;
+    $columns = mysqli_query($db_link, "show columns from $table");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ((string) $col['Field'] === $column) {
+            $exists = true;
+            return true;
+        }
+    }
+    if (!$exists) {
+        return mysqli_query($db_link, "ALTER TABLE `$table` DROP `$column`;");
+    }
+
+    return false;
+}
+
+/**
  * Check if an INDEX exist, run the SQL query if not
  *
  * @param string $table Table
