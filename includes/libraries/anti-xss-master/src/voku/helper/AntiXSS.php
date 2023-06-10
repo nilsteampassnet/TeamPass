@@ -659,7 +659,6 @@ final class AntiXSS
             ||
             (string) $strFloat === $str
         ) {
-
             // no xss found
             if ($this->_xss_found !== true) {
                 $this->_xss_found = false;
@@ -888,7 +887,6 @@ final class AntiXSS
             \preg_match_all('/(?<html_entity>&[A-Za-z]{2,};{0})/', $str, $matches)
         ) {
             if ($HTML_ENTITIES_CACHE === null) {
-
                 // links:
                 // - http://dev.w3.org/html5/html-author/charref
                 // - http://www.w3schools.com/charsets/ref_html_entities_n.asp

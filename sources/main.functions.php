@@ -3520,13 +3520,13 @@ function defineComplexity() : void
  * @param array     $data
  * @param array     $filters
  * @param string    $path
- * @return array
+ * @return array|string
  */
 function dataSanitizer(
     array $data,
     array $filters,
     string $path = __DIR__. '/..' // Path to Teampass root
-): array
+)
 {
     // Load Sanitizer library
     require_once $path . '/includes/libraries/Illuminate/Support/Traits/Macroable.php';

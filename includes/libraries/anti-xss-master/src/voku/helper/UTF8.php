@@ -866,7 +866,7 @@ final class UTF8
     /**
      * Accepts a string and removes all non-UTF-8 characters from it + extras if needed.
      *
-     * EXAMPLE: <code>UTF8::clean("\xEF\xBB\xBF„Abcdef\xc2\xa0\x20…” — 😃 - DÃ¼sseldorf", true, true); // '„Abcdef  …” — 😃 - DÃ¼sseldorf'</code>
+     * EXAMPLE: <code>UTF8::clean("\xEF\xBB\xBF„Abcdef\xc2\xa0\x20…” — 😃 - DÃ¼sseldorf", true, true); // '„Abcdef  …” — 😃 - DÃ¼sseldorf'</code>
      *
      * @param string $str                                     <p>The string to be sanitized.</p>
      * @param bool   $remove_bom                              [optional] <p>Set to true, if you need to remove
@@ -946,7 +946,7 @@ final class UTF8
     /**
      * Clean-up a string and show only printable UTF-8 chars at the end  + fix UTF-8 encoding.
      *
-     * EXAMPLE: <code>UTF8::cleanup("\xEF\xBB\xBF„Abcdef\xc2\xa0\x20…” — 😃 - DÃ¼sseldorf", true, true); // '„Abcdef  …” — 😃 - Düsseldorf'</code>
+     * EXAMPLE: <code>UTF8::cleanup("\xEF\xBB\xBF„Abcdef\xc2\xa0\x20…” — 😃 - DÃ¼sseldorf", true, true); // '„Abcdef  …” — 😃 - Düsseldorf'</code>
      *
      * @param string $str <p>The input string.</p>
      *

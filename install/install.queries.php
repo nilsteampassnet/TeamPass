@@ -430,7 +430,7 @@ if (null !== $post_type) {
                             `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             `fa_icon` varchar(100) DEFAULT NULL,
-                            `item_key` varchar(500) NOT NULL DEFAULT '1',
+                            `item_key` varchar(500) NOT NULL DEFAULT '-1',
                             PRIMARY KEY (`id`),
                             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
