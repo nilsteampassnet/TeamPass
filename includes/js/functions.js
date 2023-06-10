@@ -390,34 +390,14 @@ if (typeof String.prototype.utf8Decode == 'undefined') {
     };
 }
 
-function fieldSanitizeStep1(
-    field,
-    bHtml=true,
-    bSvg=true,
-    bSvgFilters=true,
-    text=''
+function simplePurifier(
+    text,
+    bHtml = false,
+    bSvg = false,
+    bSvgFilters = false
 )
 {
-    if (field === undefined ||field === '') {
-        return false;
-    }
-    let string = '';
-    text = (text === '') ? $(field).val() : text;
-/*
-    // Sanitize string
-    var tagsToReplace = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'" : '&#39;',
-        '"' : '&quot;'
-    };
-    text = text.replace(/[&<>'"]/g, function(tag) {
-        return tagsToReplace[tag] || tag;
-    });
-    */
-    // Purify string
-    string = DOMPurify.sanitize(
+    return DOMPurify.sanitize(
         text
             .replaceAll('&lt;', '<')
             .replaceAll('&gt;', '>')
@@ -426,10 +406,127 @@ function fieldSanitizeStep1(
             .replaceAll('&#39;', "'"),
         {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
     );
+}
+
+/**
+ * Permits to purify the content of a string using domPurify
+ * @param {*} field 
+ * @param {*} bHtml 
+ * @param {*} bSvg 
+ * @param {*} bSvgFilters 
+ * @param {*} text 
+ * @returns bool||string
+ */
+function fieldDomPurifier(
+    field,
+    bHtml = false,
+    bSvg = false,
+    bSvgFilters = false,
+    text = ''
+)
+{
+    if (field === undefined ||field === '') {
+        return false;
+    }
+    let string = '';
+    text = (text === '') ? $(field).val() : text;
+
+    // Purify string
+    string = simplePurifier(text, bHtml, bSvg, bSvgFilters);
     
     // Clear field if string is empty and warn user
     if (string === '' && text !== '') {
         $(field).val('');
+        return false;
+    }
+
+    return string;
+}
+
+/**
+ * Permits to get all fields of a class and purify them
+ * @param {*} elementClass 
+ * @returns array
+ */
+function fieldDomPurifierLoop(elementClass)
+{
+    let purifyStop = false,
+        arrFields = [];
+    $.each($(elementClass), function(index, element) {
+        purifiedField = fieldDomPurifier(
+            '#' + $(element).attr('id'), 
+            $(element).hasClass('purifyHtml') === true ? true : false,
+            $(element).hasClass('purifySvg') === true ? true : false,
+            $(element).hasClass('purifySvgFilter') === true ? true : false,
+            typeof $(element).data('purify-text') !== undefined ? $(element).data('purify-text') : ''
+        );
+
+        if (purifiedField === false) {
+            // Label is empty
+            toastr.remove();
+            toastr.warning(
+                'XSS attempt detected. Please remove all special characters from your input.',
+                'Error', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            $('#' + $(element).attr('id')).focus();
+            purifyStop = true;
+            return {
+                'purifyStop' : purifyStop,
+                'arrFields' : arrFields
+            };
+        } else {
+            $(element).val(purifiedField);
+            arrFields[$(element).data('field')] = purifiedField;
+        }
+    });
+    
+    // return
+    return {
+        'purifyStop' : purifyStop,
+        'arrFields' : arrFields
+    };
+}
+
+/**
+ * Permits to purify the content of a string using domPurify
+ * @param {*} field 
+ * @param {*} bHtml 
+ * @param {*} bSvg 
+ * @param {*} bSvgFilters 
+ * @returns bool||string
+ */
+function fieldDomPurifierWithWarning(
+    field,
+    bHtml = false,
+    bSvg = false,
+    bSvgFilters = false,
+)
+{
+    if (field === undefined || field === '') {
+        return false;
+    }
+    if ($(field).val() === '') {
+        return '';
+    }
+    let string = '';
+
+    // Purify string
+    string = simplePurifier($(field).val(), bHtml, bSvg, bSvgFilters);
+    
+    // Clear field if string is empty and warn user
+    if (string === '') {
+        toastr.remove();
+        toastr.warning(
+            'XSS attempt detected. Please remove all special characters from your input.',
+            'Error', {
+                timeOut: 5000,
+                progressBar: true
+            }
+        );
+        $(field).focus();
         return false;
     }
 

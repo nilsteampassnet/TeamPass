@@ -880,24 +880,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 }
             });
 
-            // Sanitize text fields
-            let formLogin = fieldSanitizeStep1('#form-login', false, false, false),
-                formName = fieldSanitizeStep1('#form-name', false, false, false),
-                formLastname = fieldSanitizeStep1('#form-lastname', false, false, false),
-                formEmail = fieldSanitizeStep1('#form-email', false, false, false);
-            if (formLogin === false || formName === false || formLastname === false || formEmail === false) {
-                // Label is empty
-                toastr.remove();
-                toastr.warning(
-                    'XSS attempt detected. Field has been emptied.',
-                    'Error', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
-                return false;
-            }
-
             if (arrayQuery.length > 0) {
                 // Now save
                 // get lists
@@ -975,13 +957,20 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     }
                 );
 
+                // Sanitize text fields
+                purifyRes = fieldDomPurifierLoop('#form-user .purify');
+                if (purifyRes.purifyStop === true) {
+                    // if purify failed, stop
+                    return false;
+                }
+
                 //prepare data
                 var data = {
                     'user_id': store.get('teampassApplication').formUserId,
-                    'login': formLogin,
-                    'name': formName,
-                    'lastname': formLastname,
-                    'email': formEmail,
+                    'login': purifyRes.arrFields['login'],
+                    'name': purifyRes.arrFields['name'],
+                    'lastname': purifyRes.arrFields['lastname'],
+                    'email': purifyRes.arrFields['email'],
                     'admin': $('#privilege-admin').prop('checked'),
                     'manager': $('#privilege-manager').prop('checked'),
                     'hr': $('#privilege-hr').prop('checked'),
@@ -1678,7 +1667,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Prepare data
                 var data = {
-                    'label': DOMPurify.sanitize($('#ldap-new-role-selection').val()),
+                    'label': simplePurifier($('#ldap-new-role-selection').val()),
                     'complexity': $('#ldap-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -2273,12 +2262,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             roles.push($(this).val())
         });
 
+        // Sanitize text fields
+        purifyRes = fieldDomPurifierLoop('#form-user .purify');
+        if (purifyRes.purifyStop === true) {
+            // if purify failed, stop
+            return false;
+        }
+
         // prepare data
         var data = {
-            'login': DOMPurify.sanitize($('.selected-user').data('user-login')),
-            'name': DOMPurify.sanitize($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
-            'lastname': DOMPurify.sanitize($('.selected-user').data('user-lastname')),
-            'email': DOMPurify.sanitize($('.selected-user').data('user-email')),
+            'login': simplePurifier($('.selected-user').data('user-login')),
+            'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
+            'lastname': simplePurifier($('.selected-user').data('user-lastname')),
+            'email': simplePurifier($('.selected-user').data('user-email')),
             'roles' : roles,
         };
         if (debugJavascript === true) console.log(data)

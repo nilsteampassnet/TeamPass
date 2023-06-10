@@ -165,9 +165,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     // Save user settings
     $('#profile-user-save-settings').click(function() {
         // Sanitize text fields
-        let formName = fieldSanitizeStep1('#profile-user-name', false, false, false),
-            formLastname = fieldSanitizeStep1('#profile-user-lastname', false, false, false),
-            formEmail = fieldSanitizeStep1('#profile-user-email', false, false, false);
+        let formName = fieldDomPurifier('#profile-user-name', false, false, false),
+            formLastname = fieldDomPurifier('#profile-user-lastname', false, false, false),
+            formEmail = fieldDomPurifier('#profile-user-email', false, false, false);
         if (formName === false || formLastname === false || formEmail === false) {
             // Label is empty
             toastr.remove();

@@ -161,7 +161,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <span class="text-bold"><?php echo langHdl('adding_new_api_key'); ?></span>
 
                                         <div class="row mt-1 ml-1">
-                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control form-control-sm" id="new_api_key_label">
+                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control form-control-sm purify" id="new_api_key_label" data-field="label">
                                             <span class="fa-stack ml-2 infotip pointer" title="<?php echo langHdl('adding_new_api_key'); ?>" id="button-new-api-key">
                                                 <i class="fas fa-square fa-stack-2x"></i>
                                                 <i class="fas fa-plus fa-stack-1x fa-inverse"></i>
@@ -211,13 +211,13 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                     </div>
                                 </div>
 
-                                <div class="form-group mt-4">
+                                <div class="form-group mt-4" id="new-api-ip">
                                     <div class="callout callout-info">
                                         <span class="text-bold"><?php echo langHdl('adding_new_api_ip'); ?></span>
 
                                         <div class="row mt-1 ml-1">
-                                            <input type="text" placeholder="<?php echo langHdl('ip'); ?>" class="col-4 form-control" id="new_api_ip_value" data-inputmask="'alias': 'ip'" data-mask>
-                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control ml-2" id="new_api_ip_label">
+                                            <input type="text" placeholder="<?php echo langHdl('ip'); ?>" class="col-4 form-control" id="new_api_ip_value" data-inputmask="'alias': 'ip'">
+                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control ml-2 purify" id="new_api_ip_label" data-field="label">
                                             <span class="fa-stack ml-2 infotip pointer" title="<?php echo langHdl('settings_api_add_ip'); ?>" id="button-new-api-ip">
                                                 <i class="fas fa-square fa-stack-2x"></i>
                                                 <i class="fas fa-plus fa-stack-1x fa-inverse"></i>

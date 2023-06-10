@@ -65,10 +65,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         if ($('#new_api_key_label') === '') {
             return false;
         }
+        
+        // Sanitize text fields
+        purifyRes = fieldDomPurifierLoop('#new_api_key_label');
+        if (purifyRes.purifyStop === true) {
+            // if purify failed, stop
+            return false;
+        }
 
         // Prepare data
         var data = {
-            'label': $('#new_api_key_label').val(),
+            'label': purifyRes.arrFields['label'], //$('#new_api_key_label').val(),
             'action': 'add',
         }
 
@@ -196,7 +203,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
 
     $(document).on('click', '#new-api-key-save', function() {
         var keyId = $(this).closest('tr').data('id'),
-            label = $(this).prev('input').val(),
+            label = simplePurifier($(this).prev('input').val()),
             cell = $(this).closest('td');
 
         // Prepare data
@@ -205,7 +212,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             'label': label,
             'action': 'update',
         }
-
+        
         // Launch action
         $.post(
             'sources/admin.queries.php', {
@@ -258,9 +265,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             return false;
         }
 
+        // Sanitize text fields
+        purifyRes = fieldDomPurifierLoop('#new-api-ip .purify');
+        if (purifyRes.purifyStop === true) {
+            // if purify failed, stop
+            return false;
+        }
+
         // Prepare data
         var data = {
-            'label': $('#new_api_ip_label').val(),
+            'label': purifyRes.arrFields['label'],
             'ip': $('#new_api_ip_value').val(),
             'action': 'add',
         }
@@ -398,7 +412,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         // Prepare data
         var data = {
             'id': ipId,
-            'value': label,
+            'value': simplePurifier(label),
             'field': field,
             'action': 'update',
         }

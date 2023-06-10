@@ -96,17 +96,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         } else if ($(this).data('action') === 'new-submit') {
             //--- SAVE NEW FOLDER
+
+            // Sanitize text fields
+            purifyRes = fieldDomPurifierLoop('#folder-new .purify');
+            if (purifyRes.purifyStop === true) {
+                // if purify failed, stop
+                return false;
+            }
+
             // Prepare data
             var data = {
-                'title': DOMPurify.sanitize($('#new-title').val()),
+                'title': purifyRes.arrFields['title'],
                 'parentId': parseInt($('#new-parent').val()),
                 'complexity': parseInt($('#new-complexity').val()),
                 'accessRight': $('#new-access-right').val(),
-                'renewalPeriod': DOMPurify.sanitize($('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val())),
+                'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
                 'addRestriction': $('#new-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
-                'icon': DOMPurify.sanitize($('#new-folder-add-icon').val(), {USE_PROFILES: {html: true}}),
-                'iconSelected': DOMPurify.sanitize($('#new-folder-add-icon-selected').val(), {USE_PROFILES: {html: true}}),
+                'icon': purifyRes.arrFields['icon'],
+                'iconSelected': purifyRes.arrFields['iconSelected'],
             }
             console.log(data)
             // Launch action
@@ -647,7 +655,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '<div class="card-body">' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-title"><?php echo langHdl('label'); ?></label>' +
-            '<input type="text" class="form-control clear-me" id="folder-edit-title" value="' + folderTitle + '">' +
+            '<input type="text" class="form-control clear-me purify" id="folder-edit-title" data-field="title" value="' + folderTitle + '">' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-parent"><?php echo langHdl('parent'); ?></label><br>' +
@@ -663,14 +671,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label><?php echo langHdl('icon'); ?></label>' +
-            '<input type="text" class="form-control form-folder-control" id="folder-edit-icon" value="'+folderIcon+'">' +
+            '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon" data-field="icon" value="'+folderIcon+'">' +
             '<small class="form-text text-muted">' +
             '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label><?php echo langHdl('icon_on_selection'); ?></label>' +
-            '<input type="text" class="form-control form-folder-control" id="folder-edit-icon-selected" value="'+folderIconSelection+'">' +
+            '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon-selected" data-field="iconSelected" value="'+folderIconSelection+'">' +
             '<small class="form-text text-muted">' +
             '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
@@ -738,17 +746,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 selectedFolders.push($(this).data('id'));
             });
 
+            // Sanitize text fields
+            purifyRes = fieldDomPurifierLoop('#table-folders .purify');
+            if (purifyRes.purifyStop === true) {
+                // if purify failed, stop
+                return false;
+            }
+
             // Prepare data
             var data = {
                 'id': currentFolderId,
-                'title': DOMPurify.sanitize($('#folder-edit-title').val()),
+                'title': purifyRes.arrFields['title'],    //$('#folder-edit-title').val(),
                 'parentId': $('#folder-edit-parent').val(),
                 'complexity': $('#folder-edit-complexity').val(),
-                'renewalPeriod': DOMPurify.sanitize($('#folder-edit-renewal').val()),
+                'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
                 'addRestriction': $('#folder-edit-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#folder-edit-edit-restriction').prop("checked") === true ? 1 : 0,
-                'icon': DOMPurify.sanitize($('#folder-edit-icon').val(), {USE_PROFILES: {html: true}}),
-                'iconSelected': DOMPurify.sanitize($('#folder-edit-icon-selected').val(), {USE_PROFILES: {html: true}})
+                'icon': purifyRes.arrFields['icon'],    //$('#folder-edit-icon').val(),
+                'iconSelected': purifyRes.arrFields['iconSelected'],    //$('#folder-edit-icon-selected').val(),
             }
             console.log(data)
             // Launch action

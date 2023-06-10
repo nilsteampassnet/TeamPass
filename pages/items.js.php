@@ -1680,9 +1680,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         userUploadedFile = false;
 
         // Sanitize text fields
-        let formLabel = fieldSanitizeStep1('#form-folder-add-label', false, false, false),
-            formIcon = fieldSanitizeStep1('#form-folder-add-icon', false, false, false),
-            formIconSelected = fieldSanitizeStep1('#form-folder-add-icon-selected', false, false, false);
+        let formLabel = fieldDomPurifier('#form-folder-add-label', false, false, false),
+            formIcon = fieldDomPurifier('#form-folder-add-icon', false, false, false),
+            formIconSelected = fieldDomPurifier('#form-folder-add-icon-selected', false, false, false);
         if (formLabel === false || formIcon === false || formIconSelected === false) {
             // Label is empty
             toastr.remove();
@@ -2115,6 +2115,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             // Load item info
             Details(
+                //$(this).hasClass('but-prev-item') === true ? $('#list-item-row_' + $(this).attr('data-prev-item-key')) : $('#list-item-row_' + $(this).attr('data-next-item-key')),
                 $(this).hasClass('but-prev-item') === true ? $('#list-item-row_' + $(this).attr('data-prev-item-id')) : $('#list-item-row_' + $(this).attr('data-next-item-id')),
                 'show'
             );
@@ -2677,12 +2678,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
             // Sanitize text fields
-            let formLabel = fieldSanitizeStep1('#form-item-label', false, false, false),
-                formDescription = $('#form-item-description').summernote('code') !== "<p><br></p>" ? fieldSanitizeStep1('#form-item-description', true, false, false, $('#form-item-description').summernote('code')) : '',
-                formEmail = fieldSanitizeStep1('#form-item-email'),
-                formTags = fieldSanitizeStep1('#form-item-tags'),
-                formUrl = fieldSanitizeStep1('#form-item-url'),
-                formIcon = fieldSanitizeStep1('#form-item-icon');
+            let formLabel = fieldDomPurifier('#form-item-label', false, false, false),
+                formDescription = $('#form-item-description').summernote('code') !== "<p><br></p>" ? fieldDomPurifier('#form-item-description', true, false, false, $('#form-item-description').summernote('code')) : '',
+                formEmail = fieldDomPurifier('#form-item-email'),
+                formTags = fieldDomPurifier('#form-item-tags'),
+                formUrl = fieldDomPurifier('#form-item-url'),
+                formIcon = fieldDomPurifier('#form-item-icon');
             if (formLabel === false || formDescription === false || formEmail === false || formTags === false || formUrl === false || formIcon === false) {
                 // Label is empty
                 toastr.remove();
@@ -3948,8 +3949,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     console.log(prevIdForNextItem);
                 }
                 if (prevIdForNextItem !== -1) {
-                    $('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
-                    $('#list-item-row_' + value.item_id).attr('data-next-item-label', value.label);
+                    //$('#list-item-row_' + value.item_id).attr('data-next-item-id', prevIdForNextItem.item_id);
+                    //$('#list-item-row_' + value.item_id).attr('data-next-item-label', value.label);
+                    $('[data-item-key="'+value.item_key+'"]')
+                        //.attr('data-next-item-id', prevIdForNextItem.item_id)
+                        .attr('data-next-item-key', prevIdForNextItem.item_key)
+                        .attr('data-next-item-label', value.label);
                 }
                 
                 // Prepare anyone can modify icon
@@ -3986,9 +3991,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     value.rights > 10
                 ) {
                     if (value.is_favourited === 1) {
-                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('unfavorite'); ?>" data-item-id="' + value.item_id + '" data-item-favourited="1"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-star fa-stack-1x fa-inverse text-warning"></i></span>';
+                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('unfavorite'); ?>" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-favourited="1"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-star fa-stack-1x fa-inverse text-warning"></i></span>';
                     } else {
-                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('favorite'); ?>" data-item-id="' + value.item_id + '" data-item-favourited="0"><i class="fas fa-circle fa-stack-2x"></i><i class="far fa-star fa-stack-1x fa-inverse"></i></span>';
+                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('favorite'); ?>" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-favourited="0"><i class="fas fa-circle fa-stack-2x"></i><i class="far fa-star fa-stack-1x fa-inverse"></i></span>';
                     }
                 }
 
@@ -3998,7 +4003,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
 
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
+                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fas fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
@@ -4011,7 +4016,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
-                    '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '">' +
+                    '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
                     '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
@@ -4027,7 +4032,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Save id for usage
                 prevIdForNextItem = {
-                    'item_id' : value.item_id,
+                    //'item_id' : value.item_id,
+                    'item_key' : value.item_key,
                     'label': value.label,
                 };
 
@@ -4216,11 +4222,15 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      *
      */
     function Details(itemDefinition, actionType, hotlink = false) {
-        if (debugJavascript === true) console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ')
+        if (debugJavascript === true) {
+            console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ');
+            console.log(itemDefinition);
+        }
 
         // Init
         if (hotlink === false) {
             var itemId = parseInt($(itemDefinition).data('item-id')) || '';
+            var itemKey = parseInt($(itemDefinition).data('item-key')) || '';
             var itemTreeId = parseInt($(itemDefinition).data('item-tree-id')) || '';
             var itemSk = parseInt($(itemDefinition).data('item-sk')) || 0;
             var itemExpired = parseInt($(itemDefinition).data('item-expired')) || '';
@@ -4231,6 +4241,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
         } else {
             var itemId = itemDefinition || '';
+            var itemKey = itemDefinition || '';
             var itemTreeId = store.get('teampassApplication').selectedFolder || '';
             var itemSk = 0;
             var itemExpired = '';
@@ -4885,8 +4896,24 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
                         .removeClass('hidden');
                 }
+
+                /*
+                dataItemKey = $('[data-item-key="'+data.item_key+'"]');
+                if (dataItemKey.prev('.list-item-row').attr('data-item-key') !== undefined) {
+                    $('.but-prev-item')
+                        .html('<i class="fas fa-arrow-left mr-2"></i>' + unescape(dataItemKey.prev('.list-item-row').attr('data-label')))
+                        .attr('data-prev-item-key', dataItemKey.attr('data-item-key'))
+                        .removeClass('hidden');
+                }
+                if (dataItemKey.next('.list-item-row').attr('data-item-key') !== undefined) {
+                    $('.but-next-item')
+                        .html('<i class="fas fa-arrow-right mr-2"></i>' + unescape(dataItemKey.next('.list-item-row').attr('data-label')))
+                        .attr('data-next-item-id', dataItemKey.next('.list-item-row').attr('data-item-id'))
+                        .removeClass('hidden');
+                }
+                */
                 if (debugJavascript === true) {
-                    console.log("PREV: " + $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+                    //console.log("PREV: " + dataItemKey.attr('data-item-key') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
                 }
 
                 // Inform user

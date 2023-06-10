@@ -143,7 +143,7 @@ foreach ($tst as $t) {
                             <div class="card-body">
                                 <div class="form-group">
                                     <label for="new-title"><?php echo langHdl('label'); ?></label>
-                                    <input type="text" class="form-control clear-me" id="new-title">
+                                    <input type="text" class="form-control clear-me purify" id="new-title" data-field="title">
                                 </div>
                                 <div class="form-group">
                                     <label for="new-parent"><?php echo langHdl('parent'); ?></label>
@@ -171,14 +171,14 @@ foreach ($tst as $t) {
                                 </div>
                                 <div class="form-group">
                                     <label><?php echo langHdl('icon'); ?></label>
-                                    <input type="text" class="form-control form-folder-control" id="new-folder-add-icon">
+                                    <input type="text" class="form-control form-folder-control purify" id="new-folder-add-icon" data-field="icon">
                                     <small class='form-text text-muted'>
                                         <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                                     </small>
                                 </div>
                                 <div class="form-group">
                                     <label><?php echo langHdl('icon_on_selection'); ?></label>
-                                    <input type="text" class="form-control form-folder-control" id="new-folder-add-icon-selected">
+                                    <input type="text" class="form-control form-folder-control purify" id="new-folder-add-icon-selected" data-field="iconSelected">
                                     <small class='form-text text-muted'>
                                         <?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
                                     </small>
@@ -193,7 +193,7 @@ foreach ($tst as $t) {
                                         <input type="checkbox" class="form-check-input form-control" id="new-edit-restriction">
                                         <label for="new-edit-restriction" class="form-check-label pointer ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
                                     </div>
-</div>
+                                </div>
                             </div>
                             <!-- /.card-body -->
 

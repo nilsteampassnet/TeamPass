@@ -271,11 +271,11 @@ foreach ($treeDesc as $t) {
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="form-name"><?php echo langHdl('name'); ?></label>
-                                    <input type="text" class="form-control clear-me required track-change" id="form-name">
+                                    <input type="text" class="form-control clear-me required track-change purify" id="form-name" data-field="name">
                                 </div>
                                 <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('login'); ?></label>
-                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-login">
+                                    <input type="text" class="form-control clear-me required build-login track-change purify" id="form-login" data-field="login">
                                     <input type="hidden" id="form-login-conform" value="0">
                                 </div>
                             </div>
@@ -283,11 +283,11 @@ foreach ($treeDesc as $t) {
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
-                                    <input type="text" class="form-control clear-me required track-change" id="form-lastname">
+                                    <input type="text" class="form-control clear-me required track-change purify" id="form-lastname" data-field="lastname">
                                 </div>
                                 <div class="form-group">
                                     <label for="form-login"><?php echo langHdl('email'); ?></label>
-                                    <input type="email" class="form-control clear-me required track-change validate-email" id="form-email">
+                                    <input type="email" class="form-control clear-me required track-change validate-email purify" id="form-email" data-field="email">
                                 </div>
                             </div>
                         </div>
@@ -342,7 +342,7 @@ foreach ($treeDesc as $t) {
                         <div class="form-group not-for-admin" id="group-create-special-folder">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-special-folder">
                             <label class="form-check-label mr-2" for="form-create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
-                            <input type="text" class="form-control clear-me mt-1" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
+                            <input type="text" class="form-control clear-me mt-1 purify" id="form-special-folder" data-field="" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
                         </div>
                         <div class="form-group not-for-admin" id="form-create-mfa-enabled-div">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-mfa-enabled">

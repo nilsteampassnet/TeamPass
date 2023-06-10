@@ -134,6 +134,13 @@ declare(strict_types=1);
             return false;
         }
 
+        // Sanitize value
+        value = fieldDomPurifierWithWarning('#' + field);
+        if (value === false) {
+            return false;
+        }
+        $('#' + field).val(value);
+
         requestRunning = true;
 
         var data = {

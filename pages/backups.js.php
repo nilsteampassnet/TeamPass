@@ -96,7 +96,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 
                 // Prepare data
                 var data = {
-                    'encryptionKey': $('#onthefly-backup-key').val(),
+                    'encryptionKey': simplePurifier($('#onthefly-backup-key').val()),
                 };
 
                 //send query
@@ -125,7 +125,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                             // Store KEY in DB
                             var newData = {
                                 "field": 'bck_script_passkey',
-                                "value": $('#onthefly-backup-key').val(),
+                                "value": simplePurifier($('#onthefly-backup-key').val()),
                             }
 
                             $.post(
@@ -193,7 +193,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 
                 // Prepare data
                 var data = {
-                    'encryptionKey': $('#onthefly-restore-key').val(),
+                    'encryptionKey': simplePurifier($('#onthefly-restore-key').val()),
                     'backupFile': $('#onthefly-restore-file').data('operation-id')
                 };
                 console.log(data);

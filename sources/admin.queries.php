@@ -1874,7 +1874,7 @@ switch ($post_type) {
             $post_id = DB::insertId();
             // Update existing key
         } elseif (null !== $post_action && $post_action === 'update') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefixTable('api'),
@@ -1882,12 +1882,12 @@ switch ($post_type) {
                     'label' => $post_label,
                     'timestamp' => $timestamp,
                 ),
-                'id=%i',
+                'increment_id=%i',
                 $post_id
             );
             // Delete existing key
         } elseif (null !== $post_action && $post_action === 'delete') {
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::query(
                 'DELETE FROM ' . prefixTable('api') . ' WHERE increment_id = %i',

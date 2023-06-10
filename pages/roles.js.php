@@ -474,9 +474,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             toastr.remove();
             toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
+            // Sanitize value
+            value = fieldDomPurifierWithWarning('#form-role-label');
+            if (value === false) {
+                return false;
+            }
+            $('#form-role-label').val(value);
+
             // Prepare data
             var data = {
-                'label': DOMPurify.sanitize($('#form-role-label').val()),
+                'label': value,
                 'complexity': $('#form-complexity-list').val() === null ? 0 : $('#form-complexity-list').val(),
                 'folderId': $('#roles-list').find(':selected').val(),
                 'allowEdit': $('#form-role-privilege').is(":checked") === true ? 1 : 0,

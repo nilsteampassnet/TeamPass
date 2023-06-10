@@ -145,52 +145,5 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         );
     }
 
-
-    $(document).on('click', '#button-duo-save', function() {
-        // Prepare data
-        var data = {
-            'akey': $('#duo_akey').val(),
-            'ikey': $('#duo_ikey').val(),
-            'skey': $('#duo_skey').val(),
-            'host': $('#duo_host').val(),
-        }
-        console.log(data);
-
-        // Launch action
-        $.post(
-            'sources/admin.queries.php', {
-                type: 'save_duo_in_sk_file',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-
-                if (data.error === true) {
-                    // ERROR
-                    toastr.remove();
-                    toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                } else {
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo langHdl('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-                }
-            }
-        );
-    });
-
-
     //]]>
 </script>
