@@ -141,11 +141,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         ),
     );
     // Convert to array
-    if (is_array(json_decode($pageVisited, true)) === true) {
-        $pageVisited = json_decode($pageVisited, true);
-    } else {
-        $pageVisited = [$pageVisited];
-    }
+    $pageVisited = (is_array(json_decode($pageVisited, true)) === true) ? json_decode($pageVisited, true) : [$pageVisited];
 
     // Load
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
@@ -169,12 +165,9 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
+    DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
@@ -190,15 +183,25 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     // check if user exists and tempo key is coherant
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;
-    } else if (
-        ((int) $data['admin'] === 1
-        && isInArray($pageVisited, $pagesRights['admin']) === true)
-        ||
-        (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
-        && (isInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true))
-        ||
-        (isInArray($pageVisited, $pagesRights['user']) === true)
-    ) {
+    }
+
+    // is admin
+    if ((int) $data['admin'] === 1 && isInArray($pageVisited, $pagesRights['admin']) === true) {
+        return true;
+    }
+
+    // is user
+    if (isInArray($pageVisited, $pagesRights['user']) === true) {
+        return true;
+    }
+
+    // is manager
+    if ((int) $data['gestionnaire'] === 1 && isInArray($pageVisited, $pagesRights['manager']) === true) {
+        return true;
+    }
+
+    // is HR
+    if ((int) $data['can_manage_all_users'] === 1 && isInArray($pageVisited, $pagesRights['human_resources']) === true) {
         return true;
     }
 
