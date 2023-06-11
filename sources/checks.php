@@ -184,24 +184,15 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;
     }
-
-    // is admin
-    if ((int) $data['admin'] === 1 && isInArray($pageVisited, $pagesRights['admin']) === true) {
-        return true;
-    }
-
-    // is user
-    if (isInArray($pageVisited, $pagesRights['user']) === true) {
-        return true;
-    }
-
-    // is manager
-    if ((int) $data['gestionnaire'] === 1 && isInArray($pageVisited, $pagesRights['manager']) === true) {
-        return true;
-    }
-
-    // is HR
-    if ((int) $data['can_manage_all_users'] === 1 && isInArray($pageVisited, $pagesRights['human_resources']) === true) {
+    
+    if (
+        ((int) $data['admin'] === 1 && isInArray($pageVisited, $pagesRights['admin']) === true)
+        ||
+        (((int) $data['gestionnaire'] === 1 || (int) $data['can_manage_all_users'] === 1)
+        && (isInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true))
+        ||
+        (isInArray($pageVisited, $pagesRights['user']) === true)
+    ) {
         return true;
     }
 
