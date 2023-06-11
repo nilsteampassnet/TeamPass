@@ -78,8 +78,8 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 }
 
 // Load AntiXSS
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/ASCII.php';
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/UTF8.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
 include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
 $antiXss = new voku\helper\AntiXSS();
 

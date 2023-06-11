@@ -47,8 +47,8 @@ if (file_exists('../includes/config/tp.config.php')) {
 function redirect($url)
 {
     // Load AntiXSS
-    include_once '../includes/libraries/anti-xss-master/src/voku/helper/ASCII.php';
-    include_once '../includes/libraries/anti-xss-master/src/voku/helper/UTF8.php';
+    include_once '../includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    include_once '../includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
     include_once '../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
     if (! headers_sent()) {    //If headers not sent yet... then do php redirect

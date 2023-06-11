@@ -3542,8 +3542,8 @@ function dataSanitizer(
     $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
 
     // Load AntiXSS
-    include_once $path. '/includes/libraries/anti-xss-master/src/voku/helper/ASCII.php';
-    include_once $path . '/includes/libraries/anti-xss-master/src/voku/helper/UTF8.php';
+    include_once $path. '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    include_once $path . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
     include_once $path . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
     $antiXss = new voku\helper\AntiXSS();
 
