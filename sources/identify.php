@@ -196,8 +196,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare GET variables
-    $sessionUserLanguage = $superGlobal->get('user_language', 'SESSION', 'user');
-    $sessionKey = $superGlobal->get('key', 'SESSION');
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
@@ -216,19 +214,19 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     DB::$ssl = DB_SSL;
     DB::$connect_options = DB_CONNECT_OPTIONS;
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $sessionUserLanguage . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION', 'user') . '.php';
     
     // decrypt and retreive data in JSON format
-    if (empty($sessionKey) === true) {
+    if (empty($superGlobal->get('key', 'SESSION')) === true) {
         $dataReceived = $sentData;
     } else {
         $dataReceived = prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             $sentData,
             'decode',
-            $sessionKey
+            $superGlobal->get('key', 'SESSION')
         );
-        $superGlobal->put('key', $sessionKey, 'SESSION');
+        $superGlobal->put('key', $superGlobal->get('key', 'SESSION'), 'SESSION');
     }
 
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process

@@ -144,27 +144,26 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     $pageVisited = (is_array(json_decode($pageVisited, true)) === true) ? json_decode($pageVisited, true) : [$pageVisited];
 
     // Load
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    include_once __DIR__ . '/../includes/config/include.php';
+    include_once __DIR__ . '/../includes/config/settings.php';
+    include_once __DIR__ . '/../includes/libraries/Database/Meekrodb/db.class.php';
+    include_once 'SplClassLoader.php';
+    include_once 'main.functions.php';
 
-    // Load libraries
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
+    /*
     // Securize language
+    include_once __DIR__ . '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
     if (
         is_null($superGlobal->get('user_language', 'SESSION', 'user')) === true
         || empty($superGlobal->get('user_language', 'SESSION', 'user')) === true
     ) {
         $superGlobal->put('user_language', 'english', 'SESSION', 'user');
     }
-
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $superGlobal->get('user_language', 'SESSION', 'user') . '.php';
-    include_once 'SplClassLoader.php';
-    include_once 'main.functions.php';
+    include_once __DIR__ . '/../includes/language/' . $superGlobal->get('user_language', 'SESSION', 'user') . '.php';
+    */
 
     // Connect to mysql server
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;

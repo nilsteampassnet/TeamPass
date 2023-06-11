@@ -5579,7 +5579,7 @@ final class UTF8
                 $replacement_char_helper = \ord($replacement_char);
             }
 
-            if (self::$SUPPORT['mbstring'] === false) {
+            if (isset(self::$SUPPORT['mbstring']) === true && self::$SUPPORT['mbstring'] === false) {
                 // if there is no native support for "mbstring",
                 // then we need to clean the string before ...
                 $str = self::clean($str);
