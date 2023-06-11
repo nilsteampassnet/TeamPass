@@ -257,11 +257,6 @@ $res = removeColumnIfNotExist(
     $pre . 'items',
     'unique'
 );
-if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when removing field unique to table ITEMS! ' . mysqli_error($db_link) . '!"}]';
-    mysqli_close($db_link);
-    exit();
-}
 
 //---<END 3.0.9
 

@@ -230,14 +230,11 @@ function removeColumnIfNotExist($table, $column)
     while ($col = mysqli_fetch_assoc($columns)) {
         if ((string) $col['Field'] === $column) {
             $exists = true;
-            return true;
         }
     }
-    if (!$exists) {
+    if ($exists === true) {
         return mysqli_query($db_link, "ALTER TABLE `$table` DROP `$column`;");
     }
-
-    return false;
 }
 
 /**
