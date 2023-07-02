@@ -258,6 +258,62 @@ $res = removeColumnIfNotExist(
     'unique'
 );
 
+// Add field export_tag to EXPORT table
+$res = addColumnIfNotExist(
+    $pre . 'export',
+    'export_tag',
+    "varchar(20) NOT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field export_tag to table EXPORT! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field folder_id to EXPORT table
+$res = addColumnIfNotExist(
+    $pre . 'export',
+    'folder_id',
+    "varchar(10) NOT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field folder_id to table EXPORT! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field perso to EXPORT table
+$res = addColumnIfNotExist(
+    $pre . 'export',
+    'perso',
+    "tinyint(1) NOT NULL default '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field perso to table EXPORT! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field restricted_to to EXPORT table
+$res = addColumnIfNotExist(
+    $pre . 'export',
+    'restricted_to',
+    "varchar(200) DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field restricted_to to table EXPORT! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Rename column id to item_id in EXPORT table
+changeColumnName(
+    $pre . 'export',
+    'id',
+    'item_id',
+    "int(12) NOT NULL"
+);
+
 //---<END 3.0.9
 
 // Save timestamp

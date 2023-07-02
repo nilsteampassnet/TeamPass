@@ -684,7 +684,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="import export print">
+                        <div class='row mb-2 option' data-keywords="export print">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_printing'); ?>
                                 <small class='form-text text-muted'>
@@ -696,7 +696,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="import export print">
+                        <div class='row mb-2 option' data-keywords="export print">
                             <div class='col-6'>
                                 <?php echo langHdl('settings_roles_allowed_to_print'); ?>
                                 <small class='form-text text-muted'>
@@ -728,7 +728,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="import export">
+                        <div class='row mb-2 option' data-keywords="import">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_importing'); ?>
                             </div>
@@ -876,7 +876,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="offline">
+                        <div class='row mb-2 option' data-keywords="offline export">
                             <div class='col-10'>
                                 <?php echo langHdl('settings_offline_mode'); ?>
                                 <small class='form-text text-muted'>

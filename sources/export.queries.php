@@ -284,14 +284,38 @@ if (null !== $post_type) {
             /*
          * PDF - step 1 - Prepare database
          */
-        case 'initialize_export_table':
-            DB::query('TRUNCATE TABLE ' . prefixTable('export'));
+        case 'clean_export_table':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            // Prepare variables
+            $post_export_tag = filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if (empty($post_export_tag) === false) {
+                DB::query('DELETE FROM ' . prefixTable('export') . ' WHERE export_tag = %s', $post_export_tag);
+            }
             break;
 
             /*
          * PDF - step 2 - Export the items inside database
          */
-        case 'export_to_pdf_format':
+        case 'export_prepare_data':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
@@ -315,6 +339,7 @@ if (null !== $post_type) {
             // Prepare variables
             $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_ids = filter_var_array($dataReceived['ids'], FILTER_SANITIZE_NUMBER_INT);
+            $post_export_tag = filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if (
                 in_array($post_id, $_SESSION['forbiden_pfs']) === false
@@ -333,7 +358,8 @@ if (null !== $post_type) {
                 $rows = DB::query(
                     'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
                         l.date as date, i.pw_iv as pw_iv,
-                        n.renewal_period as renewal_period
+                        n.renewal_period as renewal_period,
+                        i.id_tree as tree_id
                         FROM ' . prefixTable('items') . ' as i
                         INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
                         INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
@@ -420,7 +446,8 @@ if (null !== $post_type) {
                             DB::insert(
                                 prefixTable('export'),
                                 array(
-                                    'id' => $record['id'],
+                                    'export_tag' => $post_export_tag,
+                                    'item_id' => $record['id'],
                                     'description' => cleanStringForExport((string) $record['description']),
                                     'label' => cleanStringForExport((string) $record['label']),
                                     'pw' => cleanStringForExport(html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
@@ -430,6 +457,9 @@ if (null !== $post_type) {
                                     'email' => cleanStringForExport((string) $record['email']),
                                     'kbs' => $arr_kbs,
                                     'tags' => $arr_tags,
+                                    'folder_id' => $record['tree_id'],
+                                    'perso' => $record['perso'],
+                                    'restricted_to' => $record['restricted_to'],
                                 )
                             );
 
@@ -453,7 +483,8 @@ if (null !== $post_type) {
                 $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
-                    'message' => '',
+                    //'message' => 'Loop on folder id finished',
+                    'exportTag' => $post_export_tag,
                 ),
                 'encode'
             );
@@ -486,7 +517,12 @@ if (null !== $post_type) {
             //header('Content-type: application/pdf');
 
             // query
-            $rows = DB::query('SELECT * FROM ' . prefixTable('export'));
+            $rows = DB::query(
+                'SELECT * 
+                FROM ' . prefixTable('export') . ' 
+                WHERE export_tag = %s',
+                $dataReceived['export_tag']
+            );
             $counter = DB::count();
             if ($counter > 0) {
                 define('K_TCPDF_THROW_EXCEPTION_ERROR', true);
@@ -622,8 +658,33 @@ if (null !== $post_type) {
             }
             break;
 
+
             //CASE export in HTML format
         case 'export_to_html_format':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            
             // step 1:
             // - prepare export file
             // - get full list of objects id to export
@@ -631,52 +692,60 @@ if (null !== $post_type) {
             include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
             $idsList = array();
 
-            foreach (explode(';', $post_ids) as $id) {
-                if (
-                    in_array($id, $_SESSION['forbiden_pfs']) === false
-                    && in_array($id, $_SESSION['groupes_visibles']) === true
-                    && (in_array($id, $_SESSION['no_access_folders']) === false)
-                ) {
-                    // count elements to display
-                    $result = DB::query(
-                        'SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
-                    FROM ' . prefixTable('items') . ' as i
-                    INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
-                    WHERE i.inactif = %i
-                    AND i.id_tree= %i
-                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                    ORDER BY i.label ASC, l.date DESC',
-                        '0',
-                        $id,
-                        'at_creation',
-                        'at_modification',
-                        'at_pw :%'
-                    );
-                    foreach ($result as $record) {
-                        $restricted_users_array = explode(';', $record['restricted_to']);
-                        if (((in_array($id, $_SESSION['personal_visible_groups']) === true
-                                && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to'])
-                                && empty($record['restricted_to']) === false)
-                                || (empty($record['restricted_to']) === false
-                                    && in_array($_SESSION['user_id'], $restricted_users_array) === false)
-                                || (in_array($id, $_SESSION['groupes_visibles']))) && (in_array($record['id'], $idsList) === false)
+            // query
+            $rows = DB::query(
+                'SELECT * 
+                FROM ' . prefixTable('export') . ' 
+                WHERE export_tag = %s',
+                $inputData['export_tag']
+            );
+            $counter = DB::count();
+            if ($counter > 0) {
+                foreach ($rows as $record) {
+                    // check if folder allowed
+                    if (
+                        in_array($record['folder_id'], $_SESSION['forbiden_pfs']) === false
+                        && in_array($record['folder_id'], $_SESSION['groupes_visibles']) === true
+                        && (in_array($record['folder_id'], $_SESSION['no_access_folders']) === false)
+                    ) {
+                        // check if item allowed
+                        $restricted_users_array = is_null($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : '';
+                        if ((
+                                (
+                                    in_array($record['folder_id'], $_SESSION['personal_visible_groups']) === true
+                                    && !((int) $record['perso'] === 1 && $_SESSION['user_id'] === $record['restricted_to'])
+                                    && empty($record['restricted_to']) === false
+                                ) ||
+                                (
+                                    empty($record['restricted_to']) === false && in_array($_SESSION['user_id'], $restricted_users_array) === false
+                                ) || 
+                                (
+                                    in_array($record['folder_id'], $_SESSION['groupes_visibles'])
+                                )
+                            )                                
+                            && (in_array($record['item_id'], $idsList) === false)
                         ) {
-                            array_push($idsList, $record['id']);
+                            array_push($idsList, $record['item_id']);
                         }
                     }
                 }
             }
-
             // prepare export file
             //save the file
-            $html_file = '/teampass_export_' . time() . '_' . generateKey() . '.html';
-            //print_r($full_listing);
-            $outstream = fopen($SETTINGS['path_to_files_folder'] . $html_file, 'w');
+            $outstream = fopen($SETTINGS['path_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'], 'w');
             if ($outstream === false) {
-                echo '[{"error":"true"}]';
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    [
+                        'error' => true,
+                        'message' => langHdl('error_while_creating_file'),
+                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
+                    ],
+                    'encode'
+                );
                 break;
             }
+                        
             fwrite(
                 $outstream,
                 '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -696,7 +765,7 @@ if (null !== $post_type) {
     </style>
     </head>
     <body>
-    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(/** @scrutinizer ignore-type */ (string) time(), $post_pdf_password) . '" />
+    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(/** @scrutinizer ignore-type */ (string) time(), $inputData['password']) . '" />
     <div id="header">
     ' . TP_TOOL_NAME . ' - Off Line mode
     </div>
@@ -712,11 +781,11 @@ if (null !== $post_type) {
     <div>
     <table id="itemsTable">
         <thead><tr>
-            <th style="width:15%;">' . $LANG['label'] . '</th>
-            <th style="width:10%;">' . $LANG['pw'] . '</th>
-            <th style="width:30%;">' . $LANG['description'] . '</th>
-            <th style="width:5%;">' . $LANG['user_login'] . '</th>
-            <th style="width:20%;">' . $LANG['url'] . '</th>
+            <th style="width:15%;">' . langHdl('label') . '</th>
+            <th style="width:10%;">' . langHdl('pw') . '</th>
+            <th style="width:30%;">' . langHdl('description') . '</th>
+            <th style="width:5%;">' . langHdl('user_login') . '</th>
+            <th style="width:20%;">' . langHdl('url') . '</th>
         </tr></thead>
         <tbody id="itemsTable_tbody">'
             );
@@ -724,53 +793,86 @@ if (null !== $post_type) {
             fclose($outstream);
 
             // send back and continue
-            //echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'error' => false,
+                    'loop' => true,
+                    'ids_list' => json_encode($idsList),
+                    'ids_count' => count($idsList),
+                    'file_path' => $SETTINGS['path_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'],
+                    'file_link' => $SETTINGS['url_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'],
+                    'export_tag' => $inputData['export_tag'],
+                ],
+                'encode'
+            );
             break;
 
-            //CASE export in HTML format - Iteration loop
+        //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
-            // do checks ... if fails, return an error
-            if (null === $post_idTree || null === $post_idsList) {
-                echo '[{"error":"true"}]';
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            // exclude this folder if not allowed
-            if (
-                in_array($post_idTree, $_SESSION['forbiden_pfs']) === true
-                || in_array($post_idTree, $_SESSION['groupes_visibles']) === false
-                || (in_array($post_idTree, $_SESSION['no_access_folders']) === true)
-            ) {
-                echo '[{"loop":"true", "number":"' . $post_number . '", "cpt":"' . $post_cpt . '", "file":"' . $post_file . '", "idsList":"' . $post_idsList . '" , "file_link":"' . $post_file_link . '"}]';
-                break;
-            }
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['idsList'] = filter_var_array($dataReceived['idsList'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['idsListRemaining'] = filter_var_array($dataReceived['idsListRemaining'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['cpt'] = (int) filter_var($dataReceived['cpt'], FILTER_SANITIZE_NUMBER_INT);
+            $inputData['number'] = (int) filter_var($dataReceived['number'], FILTER_SANITIZE_NUMBER_INT);
+            $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            //print_r($inputData);
 
             $full_listing = array();
             $items_id_list = array();
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
             include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
+            // query
             $rows = DB::query(
-                'SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
-                l.date as date, i.pw_iv as pw_iv,
-                n.renewal_period as renewal_period
-            FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
-            WHERE i.inactif = %i
-            AND i.id_tree= %i
-            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-            ORDER BY i.label ASC, l.date DESC',
-                '0',
-                $post_idTree,
-                'at_creation',
-                'at_modification',
-                'at_pw :%'
+                'SELECT * 
+                FROM ' . prefixTable('export') . ' 
+                WHERE export_tag = %s AND item_id IN %ls',
+                $inputData['export_tag'],
+                $inputData['idsList']
             );
+            $counter = DB::count();
+            if ($counter > 0) {
+                //save in export file
+                $outstream = fopen($inputData['filename'].'.txt', 'a');
+                if ($outstream === false) {
+                    echo (string) prepareExchangedData(
+                        $SETTINGS['cpassman_dir'],
+                        [
+                            'error' => true,
+                            'message' => langHdl('error_while_creating_file'),
+                            'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
+                        ],
+                        'encode'
+                    );
+                    break;
+                }
 
-            foreach ($rows as $record) {
-                //exclude all results except the first one returned by query
-                if (empty($id_managed) || $id_managed != $record['id']) {
+                $lineType = 'line1';
+                foreach ($rows as $record) {
                     // decrypt PW
                     if (empty($post_salt_key) === false && null !== $post_salt_key) {
                         $pw = cryption(
@@ -787,68 +889,14 @@ if (null !== $post_type) {
                             $SETTINGS
                         );
                     }
-                    array_push(
-                        $full_listing,
-                        array(
-                            'id_tree' => $record['id_tree'],
-                            'id' => $record['id'],
-                            'label' => $record['label'],
-                            'description' => addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                            'pw' => $pw['string'],
-                            'login' => $record['login'],
-                            'url' => $record['url'],
-                            'perso' => $record['perso'],
-                        )
-                    );
-                    array_push($items_id_list, $record['id']);
 
-                    // log
-                    /*logItems(
-                        $record['id'],
-                        $record['l SeekableIteratorabel'],
-                        $_SESSION['user_id'],
-                        'at_export',
-                        $_SESSION['login'],
-                        'html'
-                    );*/
-                }
-                $id_managed = $record['id'];
-            }
+                    // Build line
+                    $idTree = '';
+                    $arboHtml = '';
+                    $lineType === 'line0' ? $lineType = 'line1' : $lineType = 'line0';
 
-            //save in export file
-            $outstream = fopen($post_file . '.txt', 'a');
-            if ($outstream === false) {
-                echo '[{"error":"true"}]';
-                break;
-            }
-
-            $lineType = 'line1';
-            $idTree = '';
-            foreach ($full_listing as $elem) {
-                if ($lineType == 'line0') {
-                    $lineType = 'line1';
-                } else {
-                    $lineType = 'line0';
-                }
-                if (empty($elem['description'])) {
-                    $desc = '&nbsp;';
-                } else {
-                    $desc = addslashes($elem['description']);
-                }
-                if (empty($elem['login'])) {
-                    $login = '&nbsp;';
-                } else {
-                    $login = addslashes($elem['login']);
-                }
-                if (empty($elem['url'])) {
-                    $url = '&nbsp;';
-                } else {
-                    $url = addslashes($elem['url']);
-                }
-
-                // Prepare tree
-                if ($idTree != $elem['id_tree']) {
-                    $arbo = $tree->getPath($elem['id_tree'], true);
+                    // Prepare tree
+                    $arbo = $tree->getPath($record['folder_id'], true);
                     foreach ($arbo as $folder) {
                         $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
                         if (empty($arboHtml)) {
@@ -862,49 +910,102 @@ if (null !== $post_type) {
                         '
         <tr class="path"><td colspan="5">' . $arboHtml . '</td></tr>'
                     );
-                    $idTree = $elem['id_tree'];
-                }
+                    $idTree = $record['folder_id'];
 
-                $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
-                fputs(
-                    $outstream,
-                    '
+                    $encPw = GibberishAES::enc($record['pw'], $inputData['password']);
+                    fputs(
+                        $outstream,
+                        '
         <tr class="' . $lineType . '">
-            <td>' . addslashes($elem['label']) . '</td>
-            <td align="center"><span class="span_pw" id="span_' . $elem['id'] . '"><a href="#" onclick="decryptme(' . $elem['id'] . ', \'' . $encPw . '\');return false;">Decrypt </a></span><input type="hidden" id="hide_' . $elem['id'] . '" value="' . $encPw . '" /></td>
-            <td>' . $desc . '</td>
-            <td align="center">' . $login . '</td>
-            <td align="center">' . $url . '</td>
-            </tr>'
-                );
+            <td>' . addslashes($record['label']) . '</td>
+            <td align="center"><span class="span_pw" id="span_' . $record['item_id'] . '"><a href="#" onclick="decryptme(' . $record['item_id'] . ', \'' . $encPw . '\');return false;">Decrypt </a></span><input type="hidden" id="hide_' . $record['item_id'] . '" value="' . $encPw . '" /></td>
+            <td>' . (empty($record['description']) === true ? '&nbsp;' : addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(utf8_decode($record['description']))))) . '</td>
+            <td align="center">' . (empty($record['login']) === true ? '&nbsp;' : addslashes($record['login'])) . '</td>
+            <td align="center">' . (empty($record['url']) === true ? '&nbsp;' : addslashes($record['url'])) . '</td>
+        </tr>'
+                    );
+                }
             }
 
             fclose($outstream);
 
             // send back and continue
-            echo '[{"loop":"true", "number":"' . $post_number . '", "cpt":"' . $post_cpt . '", "file":"' . $post_file . '", "idsList":"' . $post_idsList . '" , "file_link":"' . $post_file_link . '"}]';
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'error' => false,
+                    //'message' => 'loop treatment finished',
+                    'loop' => count($inputData['idsListRemaining']) > 0 ? true : false,
+                    'ids_list' => json_encode($inputData['idsListRemaining']),
+                    'ids_count' => count($inputData['idsListRemaining']),
+                    'file_path' => $inputData['filename'],
+                    'file_link' => $inputData['file_link'],
+                    'export_tag' => $inputData['export_tag'],
+                ],
+                'encode'
+            );
             break;
 
-            //CASE export in HTML format - Iteration loop
+        //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
+
+            $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            
             // Load includes
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
             // read the content of the temporary file
-            $handle = fopen($post_file . '.txt', 'r');
+            $handle = fopen($inputData['filename'].'.txt', 'r');
             if ($handle === false) {
-                echo '[{"error":"true"}]';
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    [
+                        'error' => true,
+                        'message' => langHdl('error_while_creating_file'),
+                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
+                    ],
+                    'encode'
+                );
                 break;
             }
-            $contents = fread($handle, filesize($post_file . '.txt'));
+            $contents = fread($handle, filesize($inputData['filename'].'.txt'));
             if ($contents === false) {
-                echo '[{"error":"true"}]';
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    [
+                        'error' => true,
+                        'message' => langHdl('error_while_creating_file'),
+                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
+                    ],
+                    'encode'
+                );
                 break;
             }
             fclose($handle);
-            if (is_file($post_file . '.txt')) {
-                unlink($post_file . '.txt');
+            if (is_file($inputData['filename'].'.txt')) {
+                //unlink($inputData['filename'].'.txt');
             }
 
             // Encrypt its content
@@ -913,16 +1014,24 @@ if (null !== $post_type) {
             $chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
             foreach ($chunks as $chunk) {
                 if (empty($encrypted_text) === true) {
-                    $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
+                    $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $inputData['password'] );
                 } else {
-                    $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $post_pdf_password);
+                    $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $inputData['password'] );
                 }
             }
 
             // open file
-            $outstream = fopen($post_file, 'a');
+            $outstream = fopen($inputData['filename'], 'a');
             if ($outstream === false) {
-                echo '[{"error":"true"}]';
+                echo (string) prepareExchangedData(
+                    $SETTINGS['cpassman_dir'],
+                    [
+                        'error' => true,
+                        'message' => langHdl('error_while_creating_file'),
+                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
+                    ],
+                    'encode'
+                );
                 break;
             }
 
@@ -1021,28 +1130,30 @@ if (null !== $post_type) {
                 elements[i].innerHTML = "<a href=\"#\" onclick=\"decryptme("+dataPw[1]+", \'"+document.getElementById("hide_"+dataPw[1]).value+"\')\">Decrypt</a>";
             }
         }
-    		function prepareString(string) {
-    			try {
-    				 result = decodeURIComponent(string);
-    			}
-    			catch (e) {
-    				 result =  unescape(string);
-    			}
-    			return result;
-    		}
+        function prepareString(string) {
+            try {
+                    result = decodeURIComponent(string);
+            }
+            catch (e) {
+                    result =  unescape(string);
+            }
+            return result;
+        }
         (function(e,r){"object"==typeof exports?module.exports=r():"function"==typeof define&&define.amd?define(r):e.GibberishAES=r()})(this,function(){"use strict";var e=14,r=8,n=!1,f=function(e){try{return unescape(encodeURIComponent(e))}catch(r){throw"Error on UTF-8 encode"}},c=function(e){try{return prepareString(escape(e))}catch(r){throw"Bad Key"}},t=function(e){var r,n,f=[];for(16>e.length&&(r=16-e.length,f=[r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r]),n=0;e.length>n;n++)f[n]=e[n];return f},a=function(e,r){var n,f,c="";if(r){if(n=e[15],n>16)throw"Decryption error: Maybe bad key";if(16===n)return"";for(f=0;16-n>f;f++)c+=String.fromCharCode(e[f])}else for(f=0;16>f;f++)c+=String.fromCharCode(e[f]);return c},o=function(e){var r,n="";for(r=0;e.length>r;r++)n+=(16>e[r]?"0":"")+e[r].toString(16);return n},d=function(e){var r=[];return e.replace(/(..)/g,function(e){r.push(parseInt(e,16))}),r},u=function(e,r){var n,c=[];for(r||(e=f(e)),n=0;e.length>n;n++)c[n]=e.charCodeAt(n);return c},i=function(n){switch(n){case 128:e=10,r=4;break;case 192:e=12,r=6;break;case 256:e=14,r=8;break;default:throw"Invalid Key Size Specified:"+n}},b=function(e){var r,n=[];for(r=0;e>r;r++)n=n.concat(Math.floor(256*Math.random()));return n},h=function(n,f){var c,t=e>=12?3:2,a=[],o=[],d=[],u=[],i=n.concat(f);for(d[0]=L(i),u=d[0],c=1;t>c;c++)d[c]=L(d[c-1].concat(i)),u=u.concat(d[c]);return a=u.slice(0,4*r),o=u.slice(4*r,4*r+16),{key:a,iv:o}},l=function(e,r,n){r=S(r);var f,c=Math.ceil(e.length/16),a=[],o=[];for(f=0;c>f;f++)a[f]=t(e.slice(16*f,16*f+16));for(0===e.length%16&&(a.push([16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16]),c++),f=0;a.length>f;f++)a[f]=0===f?x(a[f],n):x(a[f],o[f-1]),o[f]=s(a[f],r);return o},v=function(e,r,n,f){r=S(r);var t,o=e.length/16,d=[],u=[],i="";for(t=0;o>t;t++)d.push(e.slice(16*t,16*(t+1)));for(t=d.length-1;t>=0;t--)u[t]=p(d[t],r),u[t]=0===t?x(u[t],n):x(u[t],d[t-1]);for(t=0;o-1>t;t++)i+=a(u[t]);return i+=a(u[t],!0),f?i:c(i)},s=function(r,f){n=!1;var c,t=M(r,f,0);for(c=1;e+1>c;c++)t=g(t),t=y(t),e>c&&(t=k(t)),t=M(t,f,c);return t},p=function(r,f){n=!0;var c,t=M(r,f,e);for(c=e-1;c>-1;c--)t=y(t),t=g(t),t=M(t,f,c),c>0&&(t=k(t));return t},g=function(e){var r,f=n?D:B,c=[];for(r=0;16>r;r++)c[r]=f[e[r]];return c},y=function(e){var r,f=[],c=n?[0,13,10,7,4,1,14,11,8,5,2,15,12,9,6,3]:[0,5,10,15,4,9,14,3,8,13,2,7,12,1,6,11];for(r=0;16>r;r++)f[r]=e[c[r]];return f},k=function(e){var r,f=[];if(n)for(r=0;4>r;r++)f[4*r]=F[e[4*r]]^R[e[1+4*r]]^j[e[2+4*r]]^z[e[3+4*r]],f[1+4*r]=z[e[4*r]]^F[e[1+4*r]]^R[e[2+4*r]]^j[e[3+4*r]],f[2+4*r]=j[e[4*r]]^z[e[1+4*r]]^F[e[2+4*r]]^R[e[3+4*r]],f[3+4*r]=R[e[4*r]]^j[e[1+4*r]]^z[e[2+4*r]]^F[e[3+4*r]];else for(r=0;4>r;r++)f[4*r]=E[e[4*r]]^U[e[1+4*r]]^e[2+4*r]^e[3+4*r],f[1+4*r]=e[4*r]^E[e[1+4*r]]^U[e[2+4*r]]^e[3+4*r],f[2+4*r]=e[4*r]^e[1+4*r]^E[e[2+4*r]]^U[e[3+4*r]],f[3+4*r]=U[e[4*r]]^e[1+4*r]^e[2+4*r]^E[e[3+4*r]];return f},M=function(e,r,n){var f,c=[];for(f=0;16>f;f++)c[f]=e[f]^r[n][f];return c},x=function(e,r){var n,f=[];for(n=0;16>n;n++)f[n]=e[n]^r[n];return f},S=function(n){var f,c,t,a,o=[],d=[],u=[];for(f=0;r>f;f++)c=[n[4*f],n[4*f+1],n[4*f+2],n[4*f+3]],o[f]=c;for(f=r;4*(e+1)>f;f++){for(o[f]=[],t=0;4>t;t++)d[t]=o[f-1][t];for(0===f%r?(d=m(w(d)),d[0]^=K[f/r-1]):r>6&&4===f%r&&(d=m(d)),t=0;4>t;t++)o[f][t]=o[f-r][t]^d[t]}for(f=0;e+1>f;f++)for(u[f]=[],a=0;4>a;a++)u[f].push(o[4*f+a][0],o[4*f+a][1],o[4*f+a][2],o[4*f+a][3]);return u},m=function(e){for(var r=0;4>r;r++)e[r]=B[e[r]];return e},w=function(e){var r,n=e[0];for(r=0;4>r;r++)e[r]=e[r+1];return e[3]=n,e},A=function(e,r){var n,f=[];for(n=0;e.length>n;n+=r)f[n/r]=parseInt(e.substr(n,r),16);return f},C=function(e){var r,n=[];for(r=0;e.length>r;r++)n[e[r]]=r;return n},I=function(e,r){var n,f;for(f=0,n=0;8>n;n++)f=1===(1&r)?f^e:f,e=e>127?283^e<<1:e<<1,r>>>=1;return f},O=function(e){var r,n=[];for(r=0;256>r;r++)n[r]=I(e,r);return n},B=A("637c777bf26b6fc53001672bfed7ab76ca82c97dfa5947f0add4a2af9ca472c0b7fd9326363ff7cc34a5e5f171d8311504c723c31896059a071280e2eb27b27509832c1a1b6e5aa0523bd6b329e32f8453d100ed20fcb15b6acbbe394a4c58cfd0efaafb434d338545f9027f503c9fa851a3408f929d38f5bcb6da2110fff3d2cd0c13ec5f974417c4a77e3d645d197360814fdc222a908846eeb814de5e0bdbe0323a0a4906245cc2d3ac629195e479e7c8376d8dd54ea96c56f4ea657aae08ba78252e1ca6b4c6e8dd741f4bbd8b8a703eb5664803f60e613557b986c11d9ee1f8981169d98e949b1e87e9ce5528df8ca1890dbfe6426841992d0fb054bb16",2),D=C(B),K=A("01020408102040801b366cd8ab4d9a2f5ebc63c697356ad4b37dfaefc591",2),E=O(2),U=O(3),z=O(9),R=O(11),j=O(13),F=O(14),G=function(e,r,n){var f,c=b(8),t=h(u(r,n),c),a=t.key,o=t.iv,d=[[83,97,108,116,101,100,95,95].concat(c)];return e=u(e,n),f=l(e,a,o),f=d.concat(f),T.encode(f)},H=function(e,r,n){var f=T.decode(e),c=f.slice(8,16),t=h(u(r,n),c),a=t.key,o=t.iv;return f=f.slice(16,f.length),e=v(f,a,o,n)},L=function(e){function r(e,r){return e<<r|e>>>32-r}function n(e,r){var n,f,c,t,a;return c=2147483648&e,t=2147483648&r,n=1073741824&e,f=1073741824&r,a=(1073741823&e)+(1073741823&r),n&f?2147483648^a^c^t:n|f?1073741824&a?3221225472^a^c^t:1073741824^a^c^t:a^c^t}function f(e,r,n){return e&r|~e&n}function c(e,r,n){return e&n|r&~n}function t(e,r,n){return e^r^n}function a(e,r,n){return r^(e|~n)}function o(e,c,t,a,o,d,u){return e=n(e,n(n(f(c,t,a),o),u)),n(r(e,d),c)}function d(e,f,t,a,o,d,u){return e=n(e,n(n(c(f,t,a),o),u)),n(r(e,d),f)}function u(e,f,c,a,o,d,u){return e=n(e,n(n(t(f,c,a),o),u)),n(r(e,d),f)}function i(e,f,c,t,o,d,u){return e=n(e,n(n(a(f,c,t),o),u)),n(r(e,d),f)}function b(e){for(var r,n=e.length,f=n+8,c=(f-f%64)/64,t=16*(c+1),a=[],o=0,d=0;n>d;)r=(d-d%4)/4,o=8*(d%4),a[r]=a[r]|e[d]<<o,d++;return r=(d-d%4)/4,o=8*(d%4),a[r]=a[r]|128<<o,a[t-2]=n<<3,a[t-1]=n>>>29,a}function h(e){var r,n,f=[];for(n=0;3>=n;n++)r=255&e>>>8*n,f=f.concat(r);return f}var l,v,s,p,g,y,k,M,x,S=[],m=A("67452301efcdab8998badcfe10325476d76aa478e8c7b756242070dbc1bdceeef57c0faf4787c62aa8304613fd469501698098d88b44f7afffff5bb1895cd7be6b901122fd987193a679438e49b40821f61e2562c040b340265e5a51e9b6c7aad62f105d02441453d8a1e681e7d3fbc821e1cde6c33707d6f4d50d87455a14eda9e3e905fcefa3f8676f02d98d2a4c8afffa39428771f6816d9d6122fde5380ca4beea444bdecfa9f6bb4b60bebfbc70289b7ec6eaa127fad4ef308504881d05d9d4d039e6db99e51fa27cf8c4ac5665f4292244432aff97ab9423a7fc93a039655b59c38f0ccc92ffeff47d85845dd16fa87e4ffe2ce6e0a30143144e0811a1f7537e82bd3af2352ad7d2bbeb86d391",8);for(S=b(e),y=m[0],k=m[1],M=m[2],x=m[3],l=0;S.length>l;l+=16)v=y,s=k,p=M,g=x,y=o(y,k,M,x,S[l+0],7,m[4]),x=o(x,y,k,M,S[l+1],12,m[5]),M=o(M,x,y,k,S[l+2],17,m[6]),k=o(k,M,x,y,S[l+3],22,m[7]),y=o(y,k,M,x,S[l+4],7,m[8]),x=o(x,y,k,M,S[l+5],12,m[9]),M=o(M,x,y,k,S[l+6],17,m[10]),k=o(k,M,x,y,S[l+7],22,m[11]),y=o(y,k,M,x,S[l+8],7,m[12]),x=o(x,y,k,M,S[l+9],12,m[13]),M=o(M,x,y,k,S[l+10],17,m[14]),k=o(k,M,x,y,S[l+11],22,m[15]),y=o(y,k,M,x,S[l+12],7,m[16]),x=o(x,y,k,M,S[l+13],12,m[17]),M=o(M,x,y,k,S[l+14],17,m[18]),k=o(k,M,x,y,S[l+15],22,m[19]),y=d(y,k,M,x,S[l+1],5,m[20]),x=d(x,y,k,M,S[l+6],9,m[21]),M=d(M,x,y,k,S[l+11],14,m[22]),k=d(k,M,x,y,S[l+0],20,m[23]),y=d(y,k,M,x,S[l+5],5,m[24]),x=d(x,y,k,M,S[l+10],9,m[25]),M=d(M,x,y,k,S[l+15],14,m[26]),k=d(k,M,x,y,S[l+4],20,m[27]),y=d(y,k,M,x,S[l+9],5,m[28]),x=d(x,y,k,M,S[l+14],9,m[29]),M=d(M,x,y,k,S[l+3],14,m[30]),k=d(k,M,x,y,S[l+8],20,m[31]),y=d(y,k,M,x,S[l+13],5,m[32]),x=d(x,y,k,M,S[l+2],9,m[33]),M=d(M,x,y,k,S[l+7],14,m[34]),k=d(k,M,x,y,S[l+12],20,m[35]),y=u(y,k,M,x,S[l+5],4,m[36]),x=u(x,y,k,M,S[l+8],11,m[37]),M=u(M,x,y,k,S[l+11],16,m[38]),k=u(k,M,x,y,S[l+14],23,m[39]),y=u(y,k,M,x,S[l+1],4,m[40]),x=u(x,y,k,M,S[l+4],11,m[41]),M=u(M,x,y,k,S[l+7],16,m[42]),k=u(k,M,x,y,S[l+10],23,m[43]),y=u(y,k,M,x,S[l+13],4,m[44]),x=u(x,y,k,M,S[l+0],11,m[45]),M=u(M,x,y,k,S[l+3],16,m[46]),k=u(k,M,x,y,S[l+6],23,m[47]),y=u(y,k,M,x,S[l+9],4,m[48]),x=u(x,y,k,M,S[l+12],11,m[49]),M=u(M,x,y,k,S[l+15],16,m[50]),k=u(k,M,x,y,S[l+2],23,m[51]),y=i(y,k,M,x,S[l+0],6,m[52]),x=i(x,y,k,M,S[l+7],10,m[53]),M=i(M,x,y,k,S[l+14],15,m[54]),k=i(k,M,x,y,S[l+5],21,m[55]),y=i(y,k,M,x,S[l+12],6,m[56]),x=i(x,y,k,M,S[l+3],10,m[57]),M=i(M,x,y,k,S[l+10],15,m[58]),k=i(k,M,x,y,S[l+1],21,m[59]),y=i(y,k,M,x,S[l+8],6,m[60]),x=i(x,y,k,M,S[l+15],10,m[61]),M=i(M,x,y,k,S[l+6],15,m[62]),k=i(k,M,x,y,S[l+13],21,m[63]),y=i(y,k,M,x,S[l+4],6,m[64]),x=i(x,y,k,M,S[l+11],10,m[65]),M=i(M,x,y,k,S[l+2],15,m[66]),k=i(k,M,x,y,S[l+9],21,m[67]),y=n(y,v),k=n(k,s),M=n(M,p),x=n(x,g);return h(y).concat(h(k),h(M),h(x))},T=function(){var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",r=e.split(""),n=function(e){var n,f,c=[],t="";for(Math.floor(16*e.length/3),n=0;16*e.length>n;n++)c.push(e[Math.floor(n/16)][n%16]);for(n=0;c.length>n;n+=3)t+=r[c[n]>>2],t+=r[(3&c[n])<<4|c[n+1]>>4],t+=void 0!==c[n+1]?r[(15&c[n+1])<<2|c[n+2]>>6]:"=",t+=void 0!==c[n+2]?r[63&c[n+2]]:"=";for(f=t.slice(0,64)+"\n",n=1;Math.ceil(t.length/64)>n;n++)f+=t.slice(64*n,64*n+64)+(Math.ceil(t.length/64)===n+1?"":"\n");return f},f=function(r){r=r.replace(/\n/g,"");var n,f=[],c=[],t=[];for(n=0;r.length>n;n+=4)c[0]=e.indexOf(r.charAt(n)),c[1]=e.indexOf(r.charAt(n+1)),c[2]=e.indexOf(r.charAt(n+2)),c[3]=e.indexOf(r.charAt(n+3)),t[0]=c[0]<<2|c[1]>>4,t[1]=(15&c[1])<<4|c[2]>>2,t[2]=(3&c[2])<<6|c[3],f.push(t[0],t[1],t[2]);return f=f.slice(0,f.length-f.length%16)};return"function"==typeof Array.indexOf&&(e=r),{encode:n,decode:f}}();return{size:i,h2a:d,expandKey:S,encryptBlock:s,decryptBlock:p,Decrypt:n,s2a:u,rawEncrypt:l,rawDecrypt:v,dec:H,openSSLKey:h,a2h:o,enc:G,Hash:{MD5:L},Base64:T}});
-
-        $("a").click(function(event){
-            event.preventDefault();
-        });
     </script>'
             );
 
             fclose($outstream);
 
-            echo '[{"text":"<a href=\'' .
-                $post_file_link .
-                '\' target=\'_blank\'>' . $LANG['pdf_download'] . '</a>"}]';
+            echo (string) prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                [
+                    'error' => false,
+                    //'message' => 'file treatment finished',
+                    'filelink' => $inputData['file_link'] ,
+                ],
+                'encode'
+            );
             break;
     }
 }

@@ -33,6 +33,5 @@
     <li>Update server password</li>
     <li>Suggestion</li>
     <li>Knowledge base</li>
-    <li>Offline mode</li>
     <li>Backups</li>
  </ul></p>

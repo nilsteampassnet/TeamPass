@@ -1132,7 +1132,8 @@ $SETTINGS = array (';
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "export` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-                            `id` int(12) NOT NULL,
+                            `export_tag` varchar(20) NOT NULL,
+                            `item_id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
                             `login` varchar(100) NOT NULL,
                             `description` text NOT NULL,
@@ -1142,6 +1143,9 @@ $SETTINGS = array (';
                             `url` varchar(500) NOT NULL default 'none',
                             `kbs` varchar(500) NOT NULL default 'none',
                             `tags` varchar(500) NOT NULL default 'none',
+                            `folder_id` varchar(10) NOT NULL,
+                            `perso` tinyint(1) NOT NULL default '0',
+                            `restricted_to` varchar(200) DEFAULT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );

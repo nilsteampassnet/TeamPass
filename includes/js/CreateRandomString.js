@@ -1,7 +1,7 @@
 /**
 *   Generate a random string
 **/
-function CreateRandomString(size, type) {
+function CreateRandomString(size, type = '') {
     let chars = '';
 
     // CHoose what kind of string we want

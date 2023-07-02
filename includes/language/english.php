@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_while_creating_file' => 'Error while creating file',
     'field' => 'Field',
     'exceeds_maximum_length_of' => 'exceeds maximum length of',
     'session_expiration_in_minutes' => 'Session expiration in minutes',

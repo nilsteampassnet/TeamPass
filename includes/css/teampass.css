@@ -87,7 +87,18 @@
     padding: 10px 5px 0 5px;
     margin: 10px;
     width: 25%;
-  }
+}
+
+.meterFail { border: 1px solid #daa; background-color: #fdd; }
+.meterWarn { border: 1px solid #fd6; background-color: #feb; }
+.meterGood { border: 1px solid #ada; background-color: #dfd; }
+.meterExcel { border: 1px solid #aad; background-color: #ddf; }
+
+.simplePassMeterBar { background-color: #ddd; }
+.meterFail .simplePassMeterProgress  { background-color: #f66; }
+.meterWarn .simplePassMeterProgress  { background-color: #fd6; }
+.meterGood .simplePassMeterProgress  { background-color: #ada; }
+.meterExcel .simplePassMeterProgress { background-color: #88f; }
 
 .ui-autocomplete {
     position: absolute;

@@ -1203,7 +1203,6 @@ if (($session_validite_pw === null
             <!-- VALIDATE -->
             <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
             <!-- PWSTRENGHT -->
-            <!--<script type="text/javascript" src="plugins/jquery.pwstrength/i18next.js"></script>-->
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
         <?php
@@ -1241,6 +1240,9 @@ if (($session_validite_pw === null
             ?>
             <!-- FILESAVER -->
             <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
+            <!-- PWSTRENGHT -->
+            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
+            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
         <?php
         }
     }

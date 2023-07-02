@@ -73,13 +73,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="form-group">
-                        <label><?php echo langHdl('export_format_type'); ?></label>
-                        <select class="form-control select2" style="width:100%;" id="export-format">
-                            <option value="csv"><?php echo langHdl('csv'); ?></option>
-                            <option value="pdf"><?php echo langHdl('pdf'); ?></option>
-                        </select>
-                    </div>
 
                     <div class="row mt-3">
                         <div class="form-group col-12">
@@ -89,12 +82,35 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class="form-group hidden" id="pdf-password">
-                        <label><?php echo langHdl('file_protection_password'); ?></label>
-                        <input type="password" class="form-control form-item-control" id="export-password">
+                    <div class="form-group">
+                        <label><?php echo langHdl('export_format_type'); ?></label>
+                        <select class="form-control select2" style="width:100%;" id="export-format">
+                            <option value="csv"><?php echo langHdl('csv'); ?></option>
+                            <?php
+                            if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1 && WIP === true) {
+                                echo '<option value="html">'.strtoupper(langHdl('html')).'</option>';
+                            }
+                            ?>
+                            <option value="pdf"><?php echo langHdl('pdf'); ?></option>
+                        </select>
                     </div>
 
-                    <div class="form-group">
+                    <div id="pwd" class="hidden">
+                        <div class="form-group mb-1" id="pdf-password">
+                            <label><?php echo langHdl('file_protection_password'); ?></label>
+                            <input type="password" class="form-control form-item-control col-md-12" id="export-password">
+                        </div>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-md-12 justify-content-center">
+                                    <div id="export-password-strength" class="justify-content-center" style=""></div>
+                                    <input type="hidden" id="export-password-complex" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
                         <label><?php echo langHdl('filename'); ?></label>
                         <input type="text" class="form-control form-item-control" id="export-filename" value="Teampass_export_<?php echo time(); ?>">
                     </div>
@@ -105,10 +121,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         </div>
                     </div>
 
-                    <div class="row mt-3 hidden" id="export-get-link">
                 </div>
 
                 <div class="card-footer">
+                    <a class="hidden" href='' target='_blank' id="download-export-file">
+                        <button type="button" class="btn btn-success"><i class="fa-solid fa-file-export mr-2"></i><?php echo langHdl('download'); ?></button>
+                    </a>
                     <button type="submit" class="btn btn-primary" id="form-item-export-perform"><?php echo langHdl('perform'); ?></button>
                 </div>
             </div>
