@@ -1101,5 +1101,8 @@ return array(
     'day' => 'Jour',
     'reset' => 'Réinitialiser',
     'error_while_creating_file' => 'Création du fichier impossible',
+    'new_keys_generated' => 'Nouvelles clés générées',
+    'user_creation' => 'Utilisateur créé',
+    'user_deletion' => 'Utilisateur supprimé',
 
 );

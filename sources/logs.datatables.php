@@ -328,7 +328,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
      */
 } elseif (isset($_GET['action']) && $_GET['action'] === 'admin') {
     //Columns name
-    $aColumns = ['l.date', 'u.login', 'l.label'];
+    $aColumns = ['l.date', 'u.login', 'l.label', 'l.field_1'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -343,7 +343,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 
     // Filtering
-    $sWhere = "WHERE l.type = 'admin_action'";
+    $sWhere = "WHERE l.type IN ('admin_action', 'user_mngt')";
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
@@ -359,7 +359,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sWhere
     );
     $rows = DB::query(
-        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label
+        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label, l.field_1 as field_1
             FROM '.prefixTable('log_system').' as l
             INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
             $sWhere.
@@ -383,7 +383,34 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'" ';
+        if ($record['label'] === 'at_user_added') {
+            $cell = langHdl('user_creation');
+        } elseif ($record['label'] === 'at_user_deleted' || $record['label'] === 'user_deleted') {
+            $cell = langHdl('user_deletion');
+        } elseif ($record['label'] === 'at_user_updated') {
+            $cell = langHdl('user_updated');
+        } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
+            $change = explode(':', $record['label']);
+            $cell = langHdl('log_user_email_changed').' '.$change[1];
+        } elseif ($record['label'] === 'at_user_new_keys') {
+            $cell = langHdl('new_keys_generated');
+        } else {
+            $cell = htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES);
+        }
+        $sOutput_item .= '"'.$cell.'" ';
+        //col4
+        if (empty($record['field_1']) === false) {
+            // get user name
+            $info = DB::queryfirstrow(
+                'SELECT u.login as login, u.name AS name, u.lastname AS lastname
+                    FROM '.prefixTable('users').' as u
+                    WHERE u.id = %i',
+                    $record['field_1']
+            );
+            $sOutput_item .= ', "'.(empty($info['name']) === false ? htmlspecialchars(stripslashes((string) $info['name'].' '.$info['lastname']), ENT_QUOTES) : 'Removed user ('.$record['field_1'].')').'" ';
+        } else {
+            $sOutput_item .= ', "" ';
+        }
         //Finish the line
         $sOutput_item .= '], ';
         if ($get_item_in_list === true) {

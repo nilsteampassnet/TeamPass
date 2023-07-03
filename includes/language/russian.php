@@ -1102,5 +1102,8 @@ return array(
     'day' => 'Day',
     'reset' => 'Reset',
     'error_while_creating_file' => 'Error while creating file',
+    'new_keys_generated' => 'New keys generated',
+    'user_creation' => 'User creation',
+    'user_deletion' => 'User deletion',
 
 );

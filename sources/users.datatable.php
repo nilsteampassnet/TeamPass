@@ -146,6 +146,13 @@ if ((int) $_SESSION['is_admin'] === 0
     }
 }
 
+// exclude any deleted user
+if (empty($sWhere) === true) {
+    $sWhere = ' WHERE deleted_at IS NULL ';
+} else {
+    $sWhere .= ' AND deleted_at IS NULL ';
+}
+
 $rows = DB::query(
     'SELECT * FROM '.prefixTable('users').
     $sWhere.

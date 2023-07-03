@@ -787,6 +787,9 @@ $SETTINGS = array (';
                             `roles_from_ad_groups` varchar(1000) NULL,
                             `ongoing_process_id` VARCHAR(100) NULL,
                             `mfa_enabled` tinyint(1) NOT null DEFAULT '1',
+                            `created_at` varchar(30) NULL,
+                            `updated_at` varchar(30) NULL,
+                            `deleted_at` varchar(30) NULL,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

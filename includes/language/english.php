@@ -16,6 +16,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'new_keys_generated' => 'New keys generated',
+    'user_creation' => 'User creation',
+    'user_deletion' => 'User deletion',
     'error_while_creating_file' => 'Error while creating file',
     'field' => 'Field',
     'exceeds_maximum_length_of' => 'exceeds maximum length of',

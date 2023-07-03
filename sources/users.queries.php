@@ -409,8 +409,16 @@ if (null !== $post_type) {
                 || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete user in database
-                DB::delete(
+                /*DB::delete(
                     prefixTable('users'),
+                    'id = %i',
+                    $post_id
+                );*/
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'deleted_at' => time(),
+                    ),
                     'id = %i',
                     $post_id
                 );

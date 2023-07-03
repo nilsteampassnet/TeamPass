@@ -98,7 +98,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                         <div class="tab-content mt-1" id="myTabContent">
                             <div class="tab-pane fade show active" id="connections" role="tabpanel" aria-labelledby="connections-tab">
-                                <table class="table table-striped table-responsive" id="table-connections" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-connections" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>
@@ -109,7 +109,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="errors" role="tabpanel" aria-labelledby="errors-tab">
-                                <table class="table table-striped table-responsive" table-responsive id="table-errors" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-errors" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>
@@ -120,7 +120,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="copy" role="tabpanel" aria-labelledby="copy-tab">
-                                <table class="table table-striped table-responsive" id="table-copy" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-copy" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>
@@ -131,18 +131,19 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
-                                <table class="table table-striped table-responsive" id="table-admin" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-admin" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo langHdl('author'); ?></th>
                                             <th style=""><?php echo langHdl('action'); ?></th>
+                                            <th style=""><?php echo langHdl('who'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="items" role="tabpanel" aria-labelledby="items-tab">
-                                <table class="table table-striped table-responsive" id="table-items" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-items" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>
@@ -157,7 +158,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </table>
                             </div>
                             <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
-                                <table class="table table-striped table-responsive" id="table-failed" style="width:100%;">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
                                     <thead>
                                         <tr>
                                             <th style=""><?php echo langHdl('date'); ?></th>

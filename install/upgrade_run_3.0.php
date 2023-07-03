@@ -314,6 +314,51 @@ changeColumnName(
     "int(12) NOT NULL"
 );
 
+// Add field created_at to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'created_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field created_at to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field updated_at to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'updated_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field updated_at to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field deleted_at to USERS table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'deleted_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field deleted_at to table USERS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+//
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE created_at IS NOT NULL"));
+if (intval($tmp) === 0) {
+    populateUsersTable($pre);
+}
+
+
+// populate created_at, updated_at and deleted_at fields in USERS table
+
 //---<END 3.0.9
 
 // Save timestamp
@@ -337,3 +382,43 @@ mysqli_close($db_link);
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
+
+
+//---< FUNCTIONS
+
+function populateUsersTable($pre)
+{
+    global $db_link;
+    // loop on users - created_at
+    $users = mysqli_query(
+        $db_link,
+        "select u.id as uid, ls.date as datetime
+        from `" . $pre . "users` as u
+        inner join `" . $pre . "log_system` as ls on ls.field_1 = u.id
+        WHERE ls.type = 'user_mngt' AND ls.label = 'at_user_added'"
+    );
+    while ($user = mysqli_fetch_assoc($users)) {
+        if (empty((string) $user['datetime']) === false && is_null($user['datetime']) === false) {
+            // update created_at field
+            mysqli_query(
+                $db_link,
+                "UPDATE `" . $pre . "users` SET created_at = '".$user['datetime']."' WHERE id = ".$user['uid']
+            );
+        }
+    }
+
+    // loop on users - updated_at
+    $users = mysqli_query(
+        $db_link,
+        "select u.id as uid, (select date from " . $pre . "log_system where type = 'user_mngt' and field_1=uid order by date DESC limit 1) as datetime from `" . $pre . "users` as u;"
+    );
+    while ($user = mysqli_fetch_assoc($users)) {
+        if (empty((string) $user['datetime']) === false && is_null($user['datetime']) === false) {
+            // update updated_at field
+            mysqli_query(
+                $db_link,
+                "UPDATE `" . $pre . "users` SET updated_at = '".$user['datetime']."' WHERE id = ".$user['uid']
+            );
+        }
+    }
+}

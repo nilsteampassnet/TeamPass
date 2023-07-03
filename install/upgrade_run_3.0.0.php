@@ -1195,7 +1195,6 @@ if ($res === false) {
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "export`
-        MODIFY COLUMN `id` int(12) NOT NULL,
         MODIFY COLUMN `label` VARCHAR(500) NOT NULL,
         MODIFY COLUMN `path` VARCHAR(500) NOT NULL;"
 );
