@@ -87,7 +87,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <select class="form-control select2" style="width:100%;" id="export-format">
                             <option value="csv"><?php echo langHdl('csv'); ?></option>
                             <?php
-                            if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1 && WIP === true) {
+                            if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
                                 echo '<option value="html">'.strtoupper(langHdl('html')).'</option>';
                             }
                             ?>
