@@ -3680,11 +3680,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                     error = false;
 
                                 // Warn user that it starts
-                                toastr.remove();
+                                /*toastr.remove();
                                 toastr.info(
                                     '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
-                                );
-
+                                );*/
+                                
                                 $.ajax({
                                     type: "POST",
                                     async: false,
@@ -3712,10 +3712,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                             } else {
                                                 result = atob(data.password).utf8Decode();
                                             }
+                                            if (result === '') {
+                                                toastr.info(
+                                                    '<?php echo langHdl('password_is_empty'); ?>',
+                                                    '', {
+                                                        timeOut: 2000,
+                                                        positionClass: 'toast-bottom-right',
+                                                        progressBar: true
+                                                    }
+                                                );
+                                            }
                                         }
-
-                                        // Remove cog
-                                        toastr.remove();
                                     }
                                 });
                                 return result;

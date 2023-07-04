@@ -124,6 +124,7 @@ $data = [
     'context' => isset($_POST['context']) === true ? $_POST['context'] : '',
     'notifyType' => isset($_POST['notify_type']) === true ? $_POST['notify_type'] : '',
     'timestamp' => isset($_POST['timestamp']) === true ? $_POST['timestamp'] : '',
+    'itemKey' => isset($_POST['item_key']) === true ? $_POST['item_key'] : '',
 ];
 
 $filters = [
@@ -147,6 +148,7 @@ $filters = [
     'context' => 'trim|escape',
     'notifyType' => 'trim|escape',
     'timestamp' => 'cast:integer',
+    'itemKey' => 'trim|escape',
 ];
 
 $inputData = dataSanitizer(
@@ -4164,9 +4166,9 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
             'SELECT i.pw AS pw, s.share_key AS share_key
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-            WHERE user_id = %i AND i.item_key = %i',
+            WHERE user_id = %i AND i.item_key = %s',
             $_SESSION['user_id'],
-            $inputData['item_key']
+            $inputData['itemKey']
         );
 
         // Uncrypt PW
