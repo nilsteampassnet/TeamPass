@@ -400,9 +400,17 @@ function simplePurifier(
     return DOMPurify.sanitize(
         text
             .replaceAll('&lt;', '<')
+            .replaceAll('&#x3C;', '<')
+            .replaceAll('&#60;', '<')
             .replaceAll('&gt;', '>')
+            .replaceAll('&#x3E;', '>')
+            .replaceAll('&#62;', '>')
             .replaceAll('&amp;', '&')
+            .replaceAll('&#38;', '&')
+            .replaceAll('&#x26;', '&')
             .replaceAll('&quot;', '"')
+            .replaceAll('&#34;;', '"')
+            .replaceAll('&#x22;', '"')
             .replaceAll('&#39;', "'"),
         {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
     );
@@ -458,7 +466,7 @@ function fieldDomPurifierLoop(elementClass)
             $(element).hasClass('purifyHtml') === true ? true : false,
             $(element).hasClass('purifySvg') === true ? true : false,
             $(element).hasClass('purifySvgFilter') === true ? true : false,
-            typeof $(element).data('purify-text') !== undefined ? $(element).data('purify-text') : ''
+            typeof $(element).data('purify-text') !== 'undefined' ? $(element).data('purify-text') : ''
         );
 
         if (purifiedField === false) {
@@ -479,7 +487,11 @@ function fieldDomPurifierLoop(elementClass)
             };
         } else {
             $(element).val(purifiedField);
-            arrFields[$(element).data('field')] = purifiedField;
+            if (typeof $(element).data('field') !== 'undefined') {
+                arrFields[$(element).data('field')] = purifiedField;
+            } else if (typeof $(element).data('field-name') !== 'undefined') {
+                arrFields[$(element).data('field-name')] = purifiedField;
+            }
         }
     });
     

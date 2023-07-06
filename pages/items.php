@@ -175,18 +175,18 @@ foreach ($rows as $reccord) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('label'); ?></span>
                                     </div>
-                                    <input id="form-item-label" type="text" class="form-control form-item-control" data-change-ongoing="" data-field-name="label">
+                                    <input id="form-item-label" type="text" class="form-control form-item-control purify" data-change-ongoing="" data-field-name="label">
                                 </div>
                                 <!-- DESCRIPTION -->
                                 <div class="mb-3">
-                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html" data-field-name="description" data-change-ongoing=""></div>
+                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html purify purifyHtml" data-field-name="description" data-change-ongoing=""></div>
                                 </div>
                                 <!-- LOGIN -->
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('login'); ?></span>
                                     </div>
-                                    <input id="form-item-login" type="text" class="form-control form-item-control" data-field-name="login" data-change-ongoing="">
+                                    <input id="form-item-login" type="text" class="form-control form-item-control purify" data-field-name="login" data-change-ongoing="">
                                 </div>
                                 <!-- PASSWORD -->
                                 <div class="input-group mb-2">
@@ -243,21 +243,21 @@ foreach ($rows as $reccord) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('email'); ?></span>
                                     </div>
-                                    <input id="form-item-email" type="email" class="form-control form-item-control" data-field-name="email" data-change-ongoing="">
+                                    <input id="form-item-email" type="email" class="form-control form-item-control purify" data-field-name="email" data-change-ongoing="">
                                 </div>
                                 <!-- URL -->
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('url'); ?></span>
                                     </div>
-                                    <input id="form-item-url" type="url" class="form-control form-item-control" data-field-name="url" data-change-ongoing="">
+                                    <input id="form-item-url" type="url" class="form-control form-item-control purify" data-field-name="url" data-change-ongoing="">
                                 </div>
                                 <!-- ICON -->
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('icon'); ?></span>
                                     </div>
-                                    <input id="form-item-icon" type="text" class="form-control form-item-control" data-field-name="icon" data-change-ongoing="">
+                                    <input id="form-item-icon" type="text" class="form-control form-item-control " data-field-name="icon" data-change-ongoing="">
                                     <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
                                 </div>
                                 <small class='form-text text-muted'>
@@ -284,7 +284,7 @@ foreach ($rows as $reccord) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('tags'); ?></span>
                                     </div>
-                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete" data-change-ongoing="">
+                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
                                 </div>
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
@@ -323,7 +323,7 @@ foreach ($rows as $reccord) {
                                                     <?php echo langHdl('item_deleted_after_being_viewed_x_times'); ?>
                                                 </div>
                                                 <div class="d-inline p-2">
-                                                    <input type="text" class="form-control form-item-control" id="form-item-deleteAfterShown" data-change-ongoing="">
+                                                    <input type="text" class="form-control form-item-control purify" data-field-name="deleteAfterShown" id="form-item-deleteAfterShown" data-change-ongoing="">
                                                 </div>
                                             </div>
                                             <div class="row">
@@ -337,7 +337,7 @@ foreach ($rows as $reccord) {
                                                                 <i class="fas fa-calendar"></i>
                                                             </span>
                                                         </div>
-                                                        <input type="text" class="form-control float-right form-item-control" id="form-item-deleteAfterDate" data-change-ongoing="">
+                                                        <input type="text" class="form-control float-right form-item-control purify" data-field-name="deleteAfterDate" id="form-item-deleteAfterDate" data-change-ongoing="">
                                                     </div>
                                                 </div>
                                             </div>
@@ -408,6 +408,7 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
+                                        echo "coucou ".count($_SESSION['item_fields']);
                                         if (isset($_SESSION['item_fields']) === true) {
                                             foreach ($_SESSION['item_fields'] as $category) {
                                                 echo '
@@ -457,6 +458,12 @@ foreach ($rows as $reccord) {
                                                 </p>
                                             </div>';
                                             }
+                                        } else {
+                                            echo
+                                            '<div class="alert alert-info">
+                                                <h5><i class="icon fa fa-info mr-3"></i>' . langHdl('information') . '</h5>
+                                                ' . langHdl('no_fields') . '
+                                            </div>';
                                         } ?>
                                 </div>
                                 <div class="alert alert-info hidden no-item-fields">

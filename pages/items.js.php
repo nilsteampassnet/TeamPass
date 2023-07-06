@@ -702,6 +702,16 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 } else {
                     $('#form-item-field, .form-item-category').addClass('hidden');
                 }
+
+
+
+                // Prepare datePicker
+                $('#form-item-deleteAfterDate, .datepicker').datepicker({
+                    format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
+                    todayHighlight: true,
+                    todayBtn: true,
+                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+                });
                 
                 // Add track-change class
                 //$('#form-item-label, #form-item-description, #form-item-login, #form-item-password, #form-item-email, #form-item-url, #form-item-folder, #form-item-restrictedto, #form-item-tags, #form-item-anyoneCanModify, #form-item-deleteAfterShown, #form-item-deleteAfterDate, #form-item-anounce, .form-item-field-custom').addClass('track-change');
@@ -1269,10 +1279,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         var data = {
             'item_id': store.get('teampassItem').id,
             'folder_id': selectedFolderId,
-            'label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
             'access_level': store.get('teampassItem').hasAccessLevel,
         }
-
+        
         // Launch action
         $.post(
             'sources/items.queries.php', {
@@ -2678,27 +2687,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
             // Sanitize text fields
-            let formLabel = fieldDomPurifier('#form-item-label', false, false, false),
-                formDescription = $('#form-item-description').summernote('code') !== "<p><br></p>" ? fieldDomPurifier('#form-item-description', true, false, false, $('#form-item-description').summernote('code')) : '',
-                formEmail = fieldDomPurifier('#form-item-email'),
-                formTags = fieldDomPurifier('#form-item-tags'),
-                formUrl = fieldDomPurifier('#form-item-url'),
-                formIcon = fieldDomPurifier('#form-item-icon');
-            if (formLabel === false || formDescription === false || formEmail === false || formTags === false || formUrl === false || formIcon === false) {
-                // Label is empty
-                toastr.remove();
-                toastr.warning(
-                    'XSS attempt detected. Field has been emptied.',
-                    'Error', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
+            purifyRes = fieldDomPurifierLoop('#form-item .purify');
+            if (purifyRes.purifyStop === true) {
+                // if purify failed, stop
                 return false;
             }
             
             // Do some easy checks
-            if (formLabel === '') {
+            if (purifyRes.arrFields['label'] === '') {
                 // Label is empty
                 toastr.remove();
                 toastr.error(
@@ -2709,8 +2705,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 );
                 return false;
-            } else if (formTags !== '' &&
-                reg.test(formTags)
+            } else if (purifyRes.arrFields['tags'] !== '' && reg.test(purifyRes.arrFields['tags'])
             ) {
                 // Tags not wel formated
                 toastr.remove();
@@ -2835,30 +2830,27 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': formDescription,
+                    'description': $('#form-item-description').summernote('code'),
                     'diffusion_list': diffusion,
                     'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
-                    'email': formEmail,
+                    'email': purifyRes.arrFields['email'],
                     'fields': fields,
                     'folder_is_personal': store.get('teampassItem').IsPersonalFolder === 1 ? 1 : 0,
                     'id': store.get('teampassItem').id,
-                    'label': formLabel,
-                    'login': DOMPurify.sanitize($('#form-item-login').val()),
+                    'label': purifyRes.arrFields['label'],
+                    'login': purifyRes.arrFields['login'],
                     'pw': $('#form-item-password').val(),
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
-                    'tags': formTags,
+                    'tags': purifyRes.arrFields['tags'],
                     'template_id': parseInt($('input.form-check-input-template:checkbox:checked').data('category-id')),
-                    'to_be_deleted_after_date': ($('#form-item-deleteAfterDate').length !== 0 &&
-                        $('#form-item-deleteAfterDate').val() !== '') ? $('#form-item-deleteAfterDate').val() : '',
-                    'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown').length !== 0 &&
-                            $('#form-item-deleteAfterShown').val() !== '' && $('#form-item-deleteAfterShown').val() >= 1) ?
-                        parseInt($('#form-item-deleteAfterShown').val()) : '',
-                    'url': formUrl,
+                    'to_be_deleted_after_date': purifyRes.arrFields['deleteAfterDate'] !== '' ? purifyRes.arrFields['deleteAfterDate'] : '',
+                    'to_be_deleted_after_x_views': parseInt(purifyRes.arrFields['deleteAfterShown']) > 0 ? parseInt(purifyRes.arrFields['deleteAfterShown']) : '',
+                    'url': purifyRes.arrFields['url'],
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
-                    'fa_icon': formIcon,
+                    'fa_icon': purifyRes.arrFields['icon'],
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');

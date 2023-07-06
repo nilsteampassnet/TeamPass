@@ -431,6 +431,9 @@ if (null !== $post_type) {
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             `fa_icon` varchar(100) DEFAULT NULL,
                             `item_key` varchar(500) NOT NULL DEFAULT '-1',
+                            `created_at` varchar(30) NULL,
+                            `updated_at` varchar(30) NULL,
+                            `deleted_at` varchar(30) NULL,
                             PRIMARY KEY (`id`),
                             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"

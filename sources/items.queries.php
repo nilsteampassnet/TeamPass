@@ -450,6 +450,7 @@ switch ($inputData['type']) {
                         'encryption_type' => 'teampass_aes',
                         'fa_icon' => $post_fa_icon,
                         'item_key' => uniqidReal(50),
+                        'created_at' => time(),
                     )
                 );
                 $newID = DB::insertId();
@@ -1194,6 +1195,7 @@ switch ($inputData['type']) {
                         'encryption_type' => TP_ENCRYPTION_NAME,
                         'perso' => in_array($inputData['folderId'], $_SESSION['personal_folders']) === true ? 1 : 0,
                         'fa_icon' => $post_fa_icon,
+                        'updated_at' => time(),
                     ),
                     'id=%i',
                     $inputData['itemId']
@@ -2030,6 +2032,7 @@ switch ($inputData['type']) {
 
             // generate the query to update the new record with the previous values
             $aSet = array();
+            $aSet['created_at'] = time();
             foreach ($originalRecord as $key => $value) {
                 if ($key === 'id_tree') {
                     $aSet['id_tree'] = $post_dest_id;
@@ -2641,6 +2644,7 @@ switch ($inputData['type']) {
                 prefixTable('items'),
                 array(
                     'viewed_no' => $dataItem['viewed_no'] + 1,
+                    'updated_at' => time(),
                 ),
                 'id = %i',
                 $inputData['id']
@@ -2793,6 +2797,7 @@ switch ($inputData['type']) {
                             prefixTable('items'),
                             array(
                                 'inactif' => 1,
+                                'deleted_at' => time(),
                             ),
                             'id = %i',
                             $inputData['id']
@@ -3169,26 +3174,9 @@ switch ($inputData['type']) {
         );
 
         // Prepare POST variables
-        $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['folderId'] = (int) filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
         $post_access_level = (int) filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
-
-        // perform a check in case of Read-Only user creating an item in his PF
-        if (($_SESSION['user_read_only'] === true
-                && in_array($inputData['label'], $_SESSION['personal_folders']) === false)
-            || (int) $post_access_level <= 20
-        ) {
-            echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                array(
-                    'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
 
         // Check that user can access this item
         $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
@@ -3217,6 +3205,7 @@ switch ($inputData['type']) {
             prefixTable('items'),
             array(
                 'inactif' => '1',
+                'deleted_at' => time(),
             ),
             'id = %i',
             $inputData['itemId']
@@ -3867,6 +3856,7 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
                             prefixTable('items'),
                             array(
                                 'perso' => 1,
+                                'updated_at' => time(),
                             ),
                             'id=%i',
                             $record['id']
@@ -4742,6 +4732,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 prefixTable('items'),
                 array(
                     'id_tree' => $inputData['folderId'],
+                    'updated_at' => time(),
                 ),
                 'id=%i',
                 $inputData['itemId']
@@ -4801,6 +4792,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 array(
                     'id_tree' => $inputData['folderId'],
                     'perso' => 1,
+                    'updated_at' => time(),
                 ),
                 'id=%i',
                 $inputData['itemId']
@@ -4814,6 +4806,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 prefixTable('items'),
                 array(
                     'id_tree' => $inputData['folderId'],
+                    'updated_at' => time(),
                 ),
                 'id=%i',
                 $inputData['itemId']
@@ -4941,6 +4934,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 array(
                     'id_tree' => $inputData['folderId'],
                     'perso' => 0,
+                    'updated_at' => time(),
                 ),
                 'id=%i',
                 $inputData['itemId']
@@ -5060,6 +5054,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         prefixTable('items'),
                         array(
                             'id_tree' => $inputData['folderId'],
+                            'updated_at' => time(),
                         ),
                         'id = %i',
                         $item_id
@@ -5123,6 +5118,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         array(
                             'id_tree' => $inputData['folderId'],
                             'perso' => 1,
+                            'updated_at' => time(),
                         ),
                         'id = %i',
                         $item_id
@@ -5140,6 +5136,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         prefixTable('items'),
                         array(
                             'id_tree' => $inputData['folderId'],
+                            'updated_at' => time(),
                         ),
                         'id = %i',
                         $item_id
@@ -5271,6 +5268,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         array(
                             'id_tree' => $inputData['folderId'],
                             'perso' => 0,
+                            'updated_at' => time(),
                         ),
                         'id=%i',
                         $item_id
@@ -5369,7 +5367,7 @@ $SETTINGS['cpassman_dir'],
                     in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                 ) {
                     echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],
+                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to'),
@@ -5384,6 +5382,7 @@ $SETTINGS['cpassman_dir'],
                     prefixTable('items'),
                     array(
                         'inactif' => '1',
+                        'deleted_at' => time(),
                     ),
                     'id = %i',
                     $item_id

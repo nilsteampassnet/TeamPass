@@ -39,6 +39,9 @@ $scripts_list = array(
     array('upgrade_run_3.0.0_files.php', 'user_id'),
     array('upgrade_run_3.0.php', 'user_id'),
     array('upgrade_operations.php', '20230604_1'),
+    array('upgrade_operations.php', 'populateItemsTable_CreatedAt'),
+    array('upgrade_operations.php', 'populateItemsTable_UpdatedAt'),
+    array('upgrade_operations.php', 'populateItemsTable_DeletedAt'),
 );
 $param = '';
 

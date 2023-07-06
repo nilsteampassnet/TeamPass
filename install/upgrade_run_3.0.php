@@ -83,6 +83,8 @@ require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 
+//---------------------------------------------------------------------
+
 //--->BEGIN 3.0.1
 
 // Ensure admin user is ready
@@ -95,6 +97,7 @@ mysqli_query(
 
 //---<END 3.0.1
 
+//---------------------------------------------------------------------
 
 //--->BEGIN 3.0.5
 
@@ -112,6 +115,7 @@ if (!$res) {
 
 //---<END 3.0.5
 
+//---------------------------------------------------------------------
 
 //--->BEGIN 3.0.6
 // Add new setting 'sending_emails_job_frequency'
@@ -152,6 +156,7 @@ if ($res === false) {
 }
 //---<END 3.0.6
 
+//---------------------------------------------------------------------
 
 //--->BEGIN 3.0.7
 // Alter
@@ -172,6 +177,7 @@ mysqli_query(
 
 //---<END 3.0.7
 
+//---------------------------------------------------------------------
 
 //--->BEGIN 3.0.8
 // Add field mfa_disabled to USERS table
@@ -188,6 +194,7 @@ if ($res === false) {
 
 //---<END 3.0.8
 
+//---------------------------------------------------------------------
 
 //--->BEGIN 3.0.9
 // Add new setting 'reload_cache_table_task'
@@ -350,16 +357,61 @@ if ($res === false) {
     exit();
 }
 
-//
+// populate created_at, updated_at and deleted_at fields in USERS table
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE created_at IS NOT NULL"));
 if (intval($tmp) === 0) {
     populateUsersTable($pre);
 }
-
-
-// populate created_at, updated_at and deleted_at fields in USERS table
-
 //---<END 3.0.9
+
+//---------------------------------------------------------------------
+
+//--->BEGIN 3.0.10
+
+// Add field created_at to ITEMS table
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'created_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field created_at to table ITEMS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field updated_at to ITEMS table
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'updated_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field updated_at to table ITEMS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field deleted_at to ITEMS table
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'deleted_at',
+    "varchar(30) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field deleted_at to table ITEMS! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+/*
+// populate created_at, updated_at and deleted_at fields in ITEMS table
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "items` WHERE created_at IS NOT NULL"));
+if (intval($tmp) === 0) {
+    populateItemsTable($pre);
+}*/
+//---<END 3.0.10
+
+//---------------------------------------------------------------------
 
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
