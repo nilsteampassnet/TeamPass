@@ -186,7 +186,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_default_session_expiration_time'); ?>
                             </div>
                             <div class='col-2 mb-2'>
-                                <input type='text' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo $SETTINGS['default_session_expiration_time'] ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo $SETTINGS['default_session_expiration_time'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -231,7 +231,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='proxy_port' value='<?php echo $SETTINGS['proxy_port'] ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='proxy_port' value='<?php echo $SETTINGS['proxy_port'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -243,7 +243,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo $SETTINGS['pwd_maximum_length'] ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo $SETTINGS['pwd_maximum_length'] ?? '60'; ?>'>
                             </div>
                         </div>
 
@@ -332,7 +332,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('pw_life_duration'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo $SETTINGS['pw_life_duration'] ?? '5'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo $SETTINGS['pw_life_duration'] ?? '5'; ?>'>
                             </div>
                         </div>
 
@@ -341,7 +341,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo $SETTINGS['nb_bad_authentication'] ?? '0'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo $SETTINGS['nb_bad_authentication'] ?? '0'; ?>'>
                             </div>
                         </div>
 
@@ -500,7 +500,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
                             </div>
                         </div>
 
@@ -518,7 +518,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('settings_otv_expiration_period'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo $SETTINGS['otv_expiration_period'] ?? '7'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo $SETTINGS['otv_expiration_period'] ?? '7'; ?>'>
                             </div>
                         </div>
 
@@ -545,7 +545,7 @@ $zones = timezone_list();
                                 <?php echo langHdl('max_last_items'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='max_last_items' value='<?php echo isset($SETTINGS['max_last_items']) === true ? $SETTINGS['max_last_items'] : '7'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='max_last_items' value='<?php echo isset($SETTINGS['max_last_items']) === true ? $SETTINGS['max_last_items'] : '7'; ?>'>
                             </div>
                         </div>
 
@@ -656,7 +656,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='password_overview_delay' value='<?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] : '4'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='password_overview_delay' value='<?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] : '4'; ?>'>
                             </div>
                         </div>
 
@@ -796,7 +796,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='clipboard_life_duration' value='<?php echo isset($SETTINGS['clipboard_life_duration']) === true ? $SETTINGS['clipboard_life_duration'] : '30'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='clipboard_life_duration' value='<?php echo isset($SETTINGS['clipboard_life_duration']) === true ? $SETTINGS['clipboard_life_duration'] : '30'; ?>'>
                             </div>
                         </div>
 
@@ -927,7 +927,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 <?php echo langHdl('syslog_port'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='syslog_port' value='<?php echo isset($SETTINGS['syslog_port']) === true ? $SETTINGS['syslog_port'] : ''; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='syslog_port' value='<?php echo isset($SETTINGS['syslog_port']) === true ? $SETTINGS['syslog_port'] : ''; ?>'>
                             </div>
                         </div>
 

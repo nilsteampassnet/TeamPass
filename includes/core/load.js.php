@@ -1515,7 +1515,7 @@ if (
             // Perform action
             $.when(
                 IncreaseSessionTime(
-                    $('#warningModal-input').val()
+                    fieldDomPurifierWithWarning('#warningModal-input')
                 )
             ).then(function() {
                 toastr.remove();
