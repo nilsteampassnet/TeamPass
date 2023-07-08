@@ -157,7 +157,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </small>
                                     </div>
                                     <div class="col-3">
-                                        <input type="text" class="form-control form-control-sm" id="ga_website_name" value="<?php echo isset($SETTINGS['ga_website_name']) === true ? $SETTINGS['ga_website_name'] : ''; ?>">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="ga_website_name" value="<?php echo isset($SETTINGS['ga_website_name']) === true ? $SETTINGS['ga_website_name'] : ''; ?>">
                                     </div>
                                 </div>
 
@@ -205,7 +205,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <?php echo langHdl('admin_duo_ikey'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_ikey" value="<?php echo isset($SETTINGS['duo_ikey']) === true ? $SETTINGS['duo_ikey'] : ''; ?>">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_ikey" value="<?php echo isset($SETTINGS['duo_ikey']) === true ? $SETTINGS['duo_ikey'] : ''; ?>">
                                     </div>
                                 </div>
                                 <div class="row mb-2">
@@ -213,7 +213,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <?php echo langHdl('admin_duo_skey'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_skey" value="<?php echo isset($SETTINGS['duo_skey']) === true ? $SETTINGS['duo_skey'] : ''; ?>">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_skey" value="<?php echo isset($SETTINGS['duo_skey']) === true ? $SETTINGS['duo_skey'] : ''; ?>">
                                     </div>
                                 </div>
                                 <div class="row mb-2">
@@ -221,7 +221,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         <?php echo langHdl('admin_duo_host'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm" id="duo_host" value="<?php echo isset($SETTINGS['duo_host']) === true ? $SETTINGS['duo_host'] : ''; ?>">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_host" value="<?php echo isset($SETTINGS['duo_host']) === true ? $SETTINGS['duo_host'] : ''; ?>">
                                     </div>
                                 </div>
 

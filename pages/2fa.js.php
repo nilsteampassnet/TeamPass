@@ -55,34 +55,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
 <script type='text/javascript'>
     //<![CDATA[
 
-    console.log('2FA loaded')
-
-    $(document).on('click', '.generate-key', function() {
-        var size = $(this).data('length'),
-            target = $(this).closest('.input-group').find('input').attr('id');
-
-        $.post(
-            'sources/main.queries.php', {
-                type: 'generate_new_key',
-                type_category: 'action_key',
-                size: size
-            },
-            function(data) {
-                $('#' + target).val(data[0].key);
-            },
-            'json'
-        );
-    })
-
-
     $(document).on('click', '#button-duo-config-check', function() {
-        var data = "{\"ikey\":\"" + sanitizeString($("#duo_ikey").val()) + "\", \"skey\":\"" + sanitizeString($("#duo_skey").val()) + "\", \"host\":\"" + sanitizeString($("#duo_host").val()) + "\"}";
+        toastr
+            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Prepare data
         var data = {
-            'duo_ikey': $('#duo_ikey').val(),
-            'duo_skey': $('#duo_skey').val(),
-            'duo_host': $('#duo_host').val()
+            'duo_ikey': sanitizeString($('#duo_ikey').val()),
+            'duo_skey': sanitizeString($('#duo_skey').val()),
+            'duo_host': sanitizeString($('#duo_host').val())
         }
         console.log(data);
 
@@ -110,7 +91,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                 } else {
                     // Inform user
                     toastr.remove();
-                    toastr.info(
+                    toastr.success(
                         '<?php echo langHdl('duo-config-check-success'); ?>',
                         '', {
                             timeOut: 5000

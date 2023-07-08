@@ -838,7 +838,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 } elseif (isset($_GET['action']) && $_GET['action'] === 'tasks_in_progress') {
     //Columns name
-    $aColumns = ['increment_id', 'created_at', 'updated_at', 'process_type', 'is_in_progress'];
+    $aColumns = ['p.increment_id', 'p.created_at', 'p.updated_at', 'p.process_type', 'p.is_in_progress'];
     //Ordering
     if (isset($_GET['order'][0]['dir']) === true
         && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
@@ -854,7 +854,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $aColumns[0].' DESC';
     }
 
-    $sWhere = ' WHERE ((finished_at = "")';
+    $sWhere = ' WHERE ((p.finished_at = "")';
     if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
         $sWhere .= ' AND (';
         for ($i = 0; $i < count($aColumns); ++$i) {
@@ -865,13 +865,13 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $sWhere .= ') ';
     DB::debugmode(false);
     $iTotal = DB::queryFirstField(
-    'SELECT COUNT(increment_id)
+    'SELECT COUNT(p.increment_id)
         FROM '.prefixTable('processes').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
         $sWhere
     );
     $rows = DB::query(
-        'SELECT *
+        'SELECT p.*
             FROM '.prefixTable('processes').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere.
@@ -951,14 +951,14 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     
     DB::debugmode(false);
     $iTotal = DB::queryFirstField(
-        'SELECT COUNT(increment_id)
+        'SELECT COUNT(p.increment_id)
             FROM '.prefixTable('processes').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere
     );
 
     $rows = DB::query(
-        'SELECT *
+        'SELECT p.*
             FROM '.prefixTable('processes').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere.

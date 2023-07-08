@@ -455,6 +455,7 @@ final class AntiXSS
     {
         $this->_initNeverAllowedStr();
         $this->_initNeverAllowedRegex();
+        UTF8::checkForSupport();
     }
 
     /**

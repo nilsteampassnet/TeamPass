@@ -898,7 +898,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Mandatory?
                 var validated = true,
-                    validEmailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+                    validEmailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,15})+$/;
                 $('.required').each(function(i, obj) {
                     if ($(this).val() === '' && $(this).hasClass('select2') === false) {
                         $(this).addClass('is-invalid');

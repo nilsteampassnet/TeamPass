@@ -135,7 +135,7 @@ declare(strict_types=1);
         }
 
         // Sanitize value
-        value = fieldDomPurifierWithWarning('#' + field);
+        value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
         if (value === false) {
             return false;
         }

@@ -395,10 +395,10 @@ function simplePurifier(
     bHtml = false,
     bSvg = false,
     bSvgFilters = false
-)
+) 
 {
     return DOMPurify.sanitize(
-        text
+        sanitizeDom(text)
             .replaceAll('&lt;', '<')
             .replaceAll('&#x3C;', '<')
             .replaceAll('&#60;', '<')
@@ -515,6 +515,7 @@ function fieldDomPurifierWithWarning(
     bHtml = false,
     bSvg = false,
     bSvgFilters = false,
+    bSetting = false,
 )
 {
     if (field === undefined || field === '') {
@@ -523,10 +524,22 @@ function fieldDomPurifierWithWarning(
     if ($(field).val() === '') {
         return '';
     }
-    let string = '';
+    let string = '',
+        currentString = $(field).val();
+
+    // if bSetting is true, we use the setting value
+    // remove any closing ', string that could corrupt the setting
+    if (bSetting === true) {
+        currentString = currentString.replace(/',/g, '');
+    }
 
     // Purify string
-    string = simplePurifier($(field).val(), bHtml, bSvg, bSvgFilters);
+    string = simplePurifier(
+        sanitizeDom(currentString),
+        bHtml,
+        bSvg,
+        bSvgFilters
+    );
     
     // Clear field if string is empty and warn user
     if (string === '') {
@@ -543,4 +556,12 @@ function fieldDomPurifierWithWarning(
     }
 
     return string;
+}
+
+const sanitizeDom = (str) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    newString = div.innerHTML;
+    div.remove();
+    return newString;
 }
