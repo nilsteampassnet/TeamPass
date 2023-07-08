@@ -602,20 +602,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 
                 if ($adjustPermissions) {
                     if (isset($SETTINGS['admin_needle']) && str_contains($role['title'], $SETTINGS['admin_needle'])) {
-                         $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                         $userInfo['admin'] = 1;
+                        $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+                        $userInfo['admin'] = 1;
                     }    
                     if (isset($SETTINGS['manager_needle']) && str_contains($role['title'], $SETTINGS['manager_needle'])) {
-                         $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                         $userInfo['gestionnaire'] = 1;
+                        $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+                        $userInfo['gestionnaire'] = 1;
                     }
                     if (isset($SETTINGS['tp_manager_needle']) && str_contains($role['title'], $SETTINGS['tp_manager_needle'])) {
-                         $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
-                         $userInfo['can_manage_all_users'] = 1;
+                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
+                        $userInfo['can_manage_all_users'] = 1;
                     }
                     if (isset($SETTINGS['read_only_needle']) && str_contains($role['title'], $SETTINGS['read_only_needle'])) {
-                         $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
-                         $userInfo['read_only'] = 1;
+                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
+                        $userInfo['read_only'] = 1;
                     }
                 }
 
@@ -708,6 +708,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
         // Get some more elements
         $superGlobal->put('screenHeight', $dataReceived['screenHeight'], 'SESSION');
+
         // Get last seen items
         $superGlobal->put('latest_items_tab', [], 'SESSION');
         $superGlobal->put('nb_roles', 0, 'SESSION');
@@ -731,6 +732,34 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 );
             }
         }
+
+        // Get cahce tree info
+        $cacheTreeData = DB::queryFirstRow(
+            'SELECT visible_folders
+            FROM ' . prefixTable('cache_tree') . '
+            WHERE user_id=%i',
+            (int) $superGlobal->get('user_id', 'SESSION')
+        );
+        if (DB::count() > 0) {
+            $superGlobal->put('cache_tree', '', 'SESSION');
+            // Prepare new task
+            DB::insert(
+                prefixTable('processes'),
+                array(
+                    'created_at' => time(),
+                    'process_type' => 'user_build_cache_tree',
+                    'arguments' => json_encode([
+                        'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
+                    ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                    'updated_at' => '',
+                    'finished_at' => '',
+                    'output' => '',
+                )
+            );
+        } else {
+            $superGlobal->put('cache_tree', $cacheTreeData['visible_folders'], 'SESSION');
+        }
+
         // send back the random key
         $return = $dataReceived['randomstring'];
         // Send email

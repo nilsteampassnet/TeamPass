@@ -403,12 +403,16 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
-/*
-// populate created_at, updated_at and deleted_at fields in ITEMS table
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "items` WHERE created_at IS NOT NULL"));
-if (intval($tmp) === 0) {
-    populateItemsTable($pre);
-}*/
+
+// Alter
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache_tree` CHANGE `process_type` `process_type` VARCHAR(100) NOT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
 //---<END 3.0.10
 
 //---------------------------------------------------------------------

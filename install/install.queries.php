@@ -1240,7 +1240,7 @@ $SETTINGS = array (';
                             `updated_at` varchar(50) DEFAULT NULL,
                             `finished_at` varchar(50) DEFAULT NULL,
                             `process_id` int(12) DEFAULT NULL,
-                            `process_type` varchar(20) NOT NULL,
+                            `process_type` varchar(100) NOT NULL,
                             `output` text DEFAULT NULL,
                             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,

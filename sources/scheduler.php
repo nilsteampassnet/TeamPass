@@ -53,6 +53,7 @@ $scheduler = new scheduler();
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_keys_creation.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___sending_emails.php')->everyMinute($SETTINGS['sending_emails_job_frequency'] ?? '2');
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___do_calculation.php')->everyMinute($SETTINGS['items_statistics_job_frequency'] ?? '5');
+$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_task.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
 
 if (isset($SETTINGS['users_personal_folder_task']) === true && empty($SETTINGS['users_personal_folder_task']) === false) {
     runTask(
