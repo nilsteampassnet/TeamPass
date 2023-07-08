@@ -117,6 +117,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'iconSelected': purifyRes.arrFields['iconSelected'],
             }
             console.log(data)
+            return false;
             // Launch action
             $.post(
                 'sources/folders.queries.php', {
