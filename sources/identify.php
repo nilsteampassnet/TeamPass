@@ -740,7 +740,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             WHERE user_id=%i',
             (int) $superGlobal->get('user_id', 'SESSION')
         );
-        if (DB::count() > 0) {
+        if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
             $superGlobal->put('cache_tree', '', 'SESSION');
             // Prepare new task
             DB::insert(

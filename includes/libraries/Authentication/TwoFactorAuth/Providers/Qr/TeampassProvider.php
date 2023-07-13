@@ -1,5 +1,4 @@
 <?php
-//echo "coucou1 ";
 
 require_once (dirname(__FILE__).'/../../phpqrcode.php');                 // Yeah, we're gonna need that
 

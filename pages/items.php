@@ -408,7 +408,6 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
-                                        echo "coucou ".count($_SESSION['item_fields']);
                                         if (isset($_SESSION['item_fields']) === true) {
                                             foreach ($_SESSION['item_fields'] as $category) {
                                                 echo '
