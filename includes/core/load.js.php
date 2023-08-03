@@ -1498,14 +1498,22 @@ if (
             '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
             '<div class="form-group">' +
             '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
-            '<input type="text" class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user']['session_duration']) === true ? (int) $_SESSION['user']['session_duration'] / 60 : 60; ?>">' +
-            '</div>',
+            '<input type="number" max="<?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? (int) $SETTINGS['maximum_session_expiration_time'] : 60*60*24; ?>" ' +
+                'class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user']['session_duration']) === true ? (int) $_SESSION['user']['session_duration'] / 60 : 60; ?>">' +
+            '</div>' +
+            '<div class="form-text text-muted"><?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? "<i class=\"fa-solid fa-info-circle mr-2\"></i>".langHdl('maximum_session_expiration_time').": ".$SETTINGS['maximum_session_expiration_time'] : ""; ?></div>',
             '<?php echo langHdl('confirm'); ?>',
             '<?php echo langHdl('cancel'); ?>'
         );
 
         // Actions on modal buttons
         $(document).on('click', '#warningModalButtonAction', function() {
+            // Check if max value is not reached
+            if ($('#warningModal-input').val() > <?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? (int) $SETTINGS['maximum_session_expiration_time'] : 60*60*24; ?>) {
+                $('#warningModal-input').addClass('is-invalid');
+                return false;
+            }
+
             // SHow user
             toastr.remove();
             toastr.info(
@@ -1527,6 +1535,13 @@ if (
                 );
                 $('#warningModal').modal('hide');
             });
+        });
+
+        // Remove css
+        $(document).on('focus', '#warningModal-input', function() {
+            if ($(this).hasClass('is-invalid')) {
+                $(this).removeClass('is-invalid');
+            }
         });
     }
 

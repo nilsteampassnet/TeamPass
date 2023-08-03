@@ -1793,6 +1793,9 @@ function duoMFACheck(
 
     // Ensure state matches from initial request
     if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
+        $superGlobal->put('duo_state', '','SESSION');
+        $superGlobal->put('duo_status','SESSION');
+
         // We did not received a proper Duo state
         return [
             'error' => true,

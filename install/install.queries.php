@@ -660,6 +660,7 @@ $SETTINGS = array (';
                             array('admin', 'purge_temporary_files_task', ''),
                             array('admin', 'rebuild_config_file', ''),
                             array('admin', 'reload_cache_table_task', ''),
+                            array('admin', 'maximum_session_expiration_time', '60'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

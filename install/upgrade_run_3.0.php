@@ -413,6 +413,15 @@ try {
 } catch (Exception $e) {
     // Do nothing
 }
+
+// Add new setting 'maximum_session_expiration_time'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maximum_session_expiration_time'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maximum_session_expiration_time', '60')"
+    );
+}
 //---<END 3.0.10
 
 //---------------------------------------------------------------------

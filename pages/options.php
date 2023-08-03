@@ -190,6 +190,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="server setting session expiration time">
+                            <div class='col-10'>
+                                <?php echo langHdl('maximum_session_expiration_time'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo langHdl('maximum_session_expiration_time_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2 mb-2'>
+                                <input type='number' class='form-control form-control-sm' id='maximum_session_expiration_time' value='<?php echo $SETTINGS['maximum_session_expiration_time'] ?? '60'; ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="server setting ">
                             <div class='col-10'>
                                 <?php echo langHdl('enable_http_request_login'); ?>

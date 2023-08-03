@@ -1100,9 +1100,12 @@ return array(
     'day_of_month' => 'Dia do mês',
     'day' => 'Dia',
     'reset' => 'Redefinir',
-    'error_while_creating_file' => 'Error while creating file',
-    'new_keys_generated' => 'New keys generated',
-    'user_creation' => 'User creation',
-    'user_deletion' => 'User deletion',
+    'error_while_creating_file' => 'Erro durante a criação do arquivo',
+    'new_keys_generated' => 'Novas chaves geradas',
+    'user_creation' => 'Criação de usuário',
+    'user_deletion' => 'Deleção de usuário',
+    'maximum_session_expiration_time' => 'Maximum session expiration time',
+    'maximum_session_expiration_time_tip' => 'Maximum time in minutes a session can be extended by a user',
+    'index_session_duration_too_long' => 'Session duration is too long',
 
 );

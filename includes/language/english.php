@@ -16,6 +16,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'maximum_session_expiration_time' => 'Maximum session expiration time',
+    'maximum_session_expiration_time_tip' => 'Maximum time in minutes a session can be extended by a user',
+    'index_session_duration_too_long' => 'Session duration is too long',
     'new_keys_generated' => 'New keys generated',
     'user_creation' => 'User creation',
     'user_deletion' => 'User deletion',
