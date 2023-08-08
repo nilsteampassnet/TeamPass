@@ -1026,7 +1026,7 @@ return array(
     'bad_duo_mfa' => 'Niepoprawny kod DUO',
     'creation_date' => 'Data utworzenia',
     'never' => 'Nigdy',
-    'loading_main_page' => 'Proszę poczekać, ładowana jest strona główna …',
+    'loading_main_page' => 'ładowana jest strona główna …',
     'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
     'link' => 'Link',
     'error_not_allowed_to_authenticate' => 'You are not allowed to authenticate',

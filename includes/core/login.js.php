@@ -63,6 +63,9 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
         // Manage DUO SEC login
         if ($("#2fa_user_selection").val() === "duo" && $("#duo_code").val() !== "" && $("#duo_state").val() !== "") {
+            // disable form fields
+            $("#login, #pw, #session_duration, #but_identify_user").prop("disabled", true);
+
             if (debugJavascript === true) {
                 console.log('After identify_duo_user_check');
                 console.log('{ Duo code: ' + $("#duo_code").val() + ', Duo state: ' + $("#duo_state").val() + '}');
@@ -70,7 +73,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             
             toastr.success(
                 '<?php echo langHdl('loading_main_page'); ?><i class="fas fa-circle-notch fa-spin ml-3"></i>',
-                '',
+                '<h5><?php echo langHdl('please_wait'); ?></h5>',
                 {
                     positionClass: "toast-top-center",
                     preventDuplicates: true
@@ -81,6 +84,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             if (debugJavascript === true) {
                 console.log('User starts auth');
             }
+            
             launchIdentify(true, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         }
 
@@ -89,7 +93,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             if (debugJavascript === true) {
                 console.log('User starts auth');
             }
-            launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
+            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
         // Show tooltips
@@ -117,13 +121,13 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
 
     $('.submit-button').keypress(function(event) {
         if (event.keyCode === 10 || event.keyCode === 13) {
-            launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
             event.preventDefault();
         }
     });
 
     $('#yubico_key').change(function(event) {
-        launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+        launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
         event.preventDefault();
     });
 
@@ -483,7 +487,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             }
             return false;
         }
-
+        
         // 2FA method
         var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
         //console.log(user2FaMethod)

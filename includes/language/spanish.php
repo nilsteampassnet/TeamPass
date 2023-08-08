@@ -1026,7 +1026,7 @@ return array(
     'bad_duo_mfa' => 'Código DUO erróneo',
     'creation_date' => 'Fecha de creación',
     'never' => 'Nunca',
-    'loading_main_page' => 'Por favor espera, cargando página principal...',
+    'loading_main_page' => 'Cargando página principal...',
     'alert_session_not_consistent' => 'La sesión actual no es consistente y necesita ser actualizada. La página se recargará.',
     'link' => 'Enlace',
     'error_not_allowed_to_authenticate' => 'No tiene permiso para autenticarse',

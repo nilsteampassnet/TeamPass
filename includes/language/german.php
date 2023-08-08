@@ -1026,7 +1026,7 @@ return array(
     'bad_duo_mfa' => 'Schlechter DUO code',
     'creation_date' => 'Erstellungsdatum',
     'never' => 'Nie',
-    'loading_main_page' => 'Bitte warten, lade Hauptseite ...',
+    'loading_main_page' => 'Lade Hauptseite ...',
     'alert_session_not_consistent' => 'Die aktuelle Sitzung ist nicht konsistent und muss aufgefrischt werden. Die Seite wird neu geladen.',
     'link' => 'Link',
     'error_not_allowed_to_authenticate' => 'Dir ist es nicht erlaubt sich anzumelden',

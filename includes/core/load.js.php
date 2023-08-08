@@ -57,7 +57,7 @@ if (
 
     $(document).ready(function() {
         //console.log('-- PAGE LOADED --'+$(location).attr('href').includes('?')+" -- "+store.get('teampassUser'));
-        if ($(location).attr('href').includes('?') === true && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
+        if ($(location).attr('href').includes('?') === true && $(location).attr('href').includes('post_type') === false && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
             $(location).attr('href', 'index.php?session=expired');
             return false;
         }

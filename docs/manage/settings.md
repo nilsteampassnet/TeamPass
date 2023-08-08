@@ -19,7 +19,7 @@ As an example when searching for keyword `password`.
 > :bulb: **Note:**  All options are not detailled here. Please read tips for explanations.
 
 | Option | Description (if enabled) | Available |
-| -- | -- |
+| -- | -- | -- |
 | 👉 __Log password item views by users__  | Each time a user is viewing an object password, a log is perfomed.| ✅ |
 | 👉 __Personal folders with private password storage__ | Each user has a personal folder. Only this user will access the sub-folders and objects created in it. | ✅ |
 | 👉 __Enable secure image display__ | Any attached item to an object can only be read through Teampass. This image is secure but the process requires a little more server performance. | ✅ |
@@ -35,10 +35,3 @@ As an example when searching for keyword `password`.
 | 👉 __Knowledge base feature__ | A knowledge base is available directly in Teampass permitting to provide more information about objects. | ❌ |
 | 👉 __Manual insertions in item history log allowed__ | Manual insertion in the object history is possible. | ❌ |
 | 👉 __Password suggestion feature enabled__ |  | ❌ |
-
-> **Note:**  ❌ indicates the feature is not yet released.
-
-| 👉 ____ |  |
-| 👉 ____ |  |
-| 👉 ____ |  |
-| 👉 ____ |  |
