@@ -900,7 +900,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 var validated = true,
                     validEmailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,15})+$/;
                 $('.required').each(function(i, obj) {
-                    if ($(this).val() === '' && $(this).hasClass('select2') === false) {
+                    // exclude fields when user is admin
+                    if ($(this).hasClass('no-root') === true && $('#privilege-admin').prop('checked') === true) {
+                        // do nothing
+                    } else if ($(this).val() === '' && $(this).hasClass('select2') === false) {
                         $(this).addClass('is-invalid');
                         validated = false;
                     } else if ($('#' + $(this).attr('id') + ' :selected').length === 0 && $(this).hasClass('select2') === true) {
