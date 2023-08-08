@@ -264,6 +264,7 @@ if (($session_validite_pw === null
     && empty($get['otv']) === false)
     {
     include './includes/core/otv.php';
+    exit;
 } elseif (
     $session_validite_pw !== null
     && $session_validite_pw === true
