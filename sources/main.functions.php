@@ -4041,7 +4041,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step1',
+                    'step' => 'step10',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),
@@ -4054,7 +4054,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step2',
+                    'step' => 'step20',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),
@@ -4067,7 +4067,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step3',
+                    'step' => 'step30',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),
@@ -4080,7 +4080,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step4',
+                    'step' => 'step40',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),
@@ -4093,7 +4093,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step5',
+                    'step' => 'step50',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),
@@ -4106,7 +4106,7 @@ function handleUserKeys(
                 'process_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
-                    'step' => 'step6',
+                    'step' => 'step60',
                     'index' => 0,
                     'nb' => $nbItemsToTreat,
                 ]),

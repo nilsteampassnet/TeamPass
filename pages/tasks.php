@@ -410,7 +410,7 @@ catch (Exception $e) {
                 <h4 class="modal-title"><i class="fa-solid fa-calendar-check mr-2"></i><?php echo langHdl('task_scheduling'); ?></h4>
             </div>
             
-            <div class="modal-body" id="warningModalBody">
+            <div class="modal-body" id="taskSchedulingModalBody">
                 <div>
                     <h5><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo langHdl('frequency'); ?></h5>              
                     <select class='form-control form-control-sm no-save' id='task-define-modal-frequency' style="width:100%;">

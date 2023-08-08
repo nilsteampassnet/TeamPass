@@ -287,7 +287,7 @@ if (
         console.log('show password change')
         // HIde
         $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
-        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i>'.langHdl('ldap_password_change_warning'));
+        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_password_change_warning'); ?>');
 
         // Show passwords inputs and form
         $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
@@ -1792,11 +1792,17 @@ if (
                         $('#user_not_ready_progress').html('');
                         toastr.success(
                             data.message,
-                            '<?php echo langHdl('done'); ?>', {
-                                timeOut: 5000,
+                            '<?php echo langHdl('alert_page_will_reload'); ?>', {
+                                timeOut: 3000,
                                 progressBar: true
                             }
                         );
+
+                        // Delay page submit
+                        $(this).delay(2000).queue(function() {
+                            document.location.reload(true);
+                            $(this).dequeue();
+                        });
                     }
                 }
             }

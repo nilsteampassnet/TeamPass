@@ -521,17 +521,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         // Prepare progress string
         if (step === 'step0') {
             stepText = '<?php echo langHdl('inititialization'); ?>';
-        } else if (step === 'step1') {
+        } else if (step === 'step10') {
             stepText = '<?php echo langHdl('items'); ?>';
-        } else if (step === 'step2') {
+        } else if (step === 'step20') {
             stepText = '<?php echo langHdl('logs'); ?>';
-        } else if (step === 'step3') {
+        } else if (step === 'step30') {
             stepText = '<?php echo langHdl('suggestions'); ?>';
-        } else if (step === 'step4') {
+        } else if (step === 'step40') {
             stepText = '<?php echo langHdl('fields'); ?>';
-        } else if (step === 'step5') {
+        } else if (step === 'step50') {
             stepText = '<?php echo langHdl('files'); ?>';
-        } else if (step === 'step6') {
+        } else if (step === 'step60') {
             stepText = '<?php echo langHdl('personal_items'); ?>';
         }
 
@@ -1997,8 +1997,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      * @return void
      */
     function refreshListUsersLDAP() {
+        // IS LDAP enabled? (#3800)
+        if (parseInt(<?php echo $SETTINGS['ldap_mode']; ?>) === 0) {
+            console.log("LDAP is enabled, refreshing list of users from LDAP "+parseInt(<?php echo $SETTINGS['ldap_mode']; ?>));
+            return false;
+        }
+
         // FIND ALL USERS IN LDAP
-        //toastr.remove();
         toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-ldap-body')

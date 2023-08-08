@@ -1925,12 +1925,12 @@ function continueReEncryptingUserSharekeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                $return['post_action'] = 'step1';
+                $return['post_action'] = 'step10';
             }
             
             // STEP 1 - ITEMS
-            elseif ($post_action === 'step1') {
-                $return = continueReEncryptingUserSharekeysStep1(
+            elseif ($post_action === 'step10') {
+                $return = continueReEncryptingUserSharekeysStep10(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -1942,8 +1942,8 @@ function continueReEncryptingUserSharekeys(
             }
 
             // STEP 2 - LOGS
-            elseif ($post_action === 'step2') {
-                $return = continueReEncryptingUserSharekeysStep2(
+            elseif ($post_action === 'step20') {
+                $return = continueReEncryptingUserSharekeysStep20(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -1955,8 +1955,8 @@ function continueReEncryptingUserSharekeys(
             }
 
             // STEP 3 - FIELDS
-            elseif ($post_action === 'step3') {
-                $return = continueReEncryptingUserSharekeysStep3(
+            elseif ($post_action === 'step30') {
+                $return = continueReEncryptingUserSharekeysStep30(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -1968,8 +1968,8 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 4 - SUGGESTIONS
-            elseif ($post_action === 'step4') {
-                $return = continueReEncryptingUserSharekeysStep4(
+            elseif ($post_action === 'step40') {
+                $return = continueReEncryptingUserSharekeysStep40(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -1981,8 +1981,8 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 5 - FILES
-            elseif ($post_action === 'step5') {
-                $return = continueReEncryptingUserSharekeysStep5(
+            elseif ($post_action === 'step50') {
+                $return = continueReEncryptingUserSharekeysStep50(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -1994,8 +1994,8 @@ function continueReEncryptingUserSharekeys(
             }
             
             // STEP 6 - PERSONAL ITEMS
-            elseif ($post_action === 'step6') {
-                $return = continueReEncryptingUserSharekeysStep6(
+            elseif ($post_action === 'step60') {
+                $return = continueReEncryptingUserSharekeysStep60(
                     $post_user_id,
                     $post_self_change,
                     $post_action,
@@ -2048,7 +2048,7 @@ function continueReEncryptingUserSharekeys(
     );
 }
 
-function continueReEncryptingUserSharekeysStep1(
+function continueReEncryptingUserSharekeysStep10(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2141,11 +2141,11 @@ function continueReEncryptingUserSharekeysStep1(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'step2' : 'step1',
+        'post_action' => $next_start > DB::count() ? 'step20' : 'step10',
     ];
 }
 
-function continueReEncryptingUserSharekeysStep2(
+function continueReEncryptingUserSharekeysStep20(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2227,11 +2227,11 @@ function continueReEncryptingUserSharekeysStep2(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'step3' : 'step2',
+        'post_action' => $next_start > DB::count() ? 'step30' : 'step20',
     ];
 }
 
-function continueReEncryptingUserSharekeysStep3(
+function continueReEncryptingUserSharekeysStep30(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2313,11 +2313,11 @@ function continueReEncryptingUserSharekeysStep3(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'step4' : 'step3',
+        'post_action' => $next_start > DB::count() ? 'step40' : 'step30',
     ];
 }
 
-function continueReEncryptingUserSharekeysStep4(
+function continueReEncryptingUserSharekeysStep40(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2397,11 +2397,11 @@ function continueReEncryptingUserSharekeysStep4(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'step5' : 'step4',
+        'post_action' => $next_start > DB::count() ? 'step50' : 'step40',
     ];
 }
 
-function continueReEncryptingUserSharekeysStep5(
+function continueReEncryptingUserSharekeysStep50(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2483,11 +2483,11 @@ function continueReEncryptingUserSharekeysStep5(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'step6' : 'step5',
+        'post_action' => $next_start > DB::count() ? 'step60' : 'step50',
     ];
 }
 
-function continueReEncryptingUserSharekeysStep6(
+function continueReEncryptingUserSharekeysStep60(
     int $post_user_id,
     bool $post_self_change,
     string $post_action,
@@ -2575,7 +2575,7 @@ function continueReEncryptingUserSharekeysStep6(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'next_start' => $next_start > DB::count() ? 0 : $next_start,
-        'post_action' => $next_start > DB::count() ? 'finished' : 'step6',
+        'post_action' => $next_start > DB::count() ? 'finished' : 'step60',
     ];
 }
 

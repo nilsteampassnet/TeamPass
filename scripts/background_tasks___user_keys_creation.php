@@ -133,7 +133,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
 
             // handle next task
             $args = json_decode($task_to_perform['task'], true);
-            //print_r($args);
+            //print_r($args);return false;
 
             // flag as in progress
             DB::update(
@@ -200,7 +200,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
 
             provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
 
-            if ($args['step'] === 'step6') {
+            if ($args['step'] === 'step60') {
                 // all done
                 provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
                 DB::debugmode(false);
@@ -269,15 +269,26 @@ function performUserCreationKeys(
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
                 }
 
-                $return['new_action'] = 'step1';
+                $return['new_action'] = 'step10';
                 $return['new_index'] = 0;
                 provideLog('[STEP][0][FINISHED]', $SETTINGS);
             }
             
-            // STEP 1 - ITEMS
-            elseif ($post_action === 'step1') {
-                provideLog('[STEP][1][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep1(
+            // STEP 10 - EMAIL
+            elseif ($post_action === 'step10') {
+                provideLog('[STEP][10][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep10(
+                    $post_user_id,
+                    $SETTINGS,
+                    $extra_arguments
+                );
+                provideLog('[STEP][10][FINISHED]', $SETTINGS);
+            }
+            
+            // STEP 20 - ITEMS
+            elseif ($post_action === 'step20') {
+                provideLog('[STEP][20][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep20(
                     $post_user_id,
                     $post_self_change,
                     $post_start,
@@ -286,13 +297,13 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][1][FINISHED]', $SETTINGS);
+                provideLog('[STEP][20][FINISHED]', $SETTINGS);
             }
 
-            // STEP 2 - LOGS
-            elseif ($post_action === 'step2') {
-                provideLog('[STEP][2][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep2(
+            // STEP 30 - LOGS
+            elseif ($post_action === 'step30') {
+                provideLog('[STEP][30][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep30(
                     $post_user_id,
                     $post_self_change,
                     $post_start,
@@ -301,13 +312,13 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][2][FINISHED]', $SETTINGS);
+                provideLog('[STEP][30][FINISHED]', $SETTINGS);
             }
 
-            // STEP 3 - FIELDS
-            elseif ($post_action === 'step3') {
-                provideLog('[STEP][3][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep3(
+            // STEP 40 - FIELDS
+            elseif ($post_action === 'step40') {
+                provideLog('[STEP][40][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep40(
                     $post_user_id,
                     $post_self_change,
                     $post_start,
@@ -316,13 +327,13 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][3][FINISHED]', $SETTINGS);
+                provideLog('[STEP][40][FINISHED]', $SETTINGS);
             }
             
-            // STEP 4 - SUGGESTIONS
-            elseif ($post_action === 'step4') {
-                provideLog('[STEP][4][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep4(
+            // STEP 50 - SUGGESTIONS
+            elseif ($post_action === 'step50') {
+                provideLog('[STEP][50][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep50(
                     $post_user_id,
                     $post_self_change,
                     $post_start,
@@ -331,13 +342,13 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][4][FINISHED]', $SETTINGS);
+                provideLog('[STEP][50][FINISHED]', $SETTINGS);
             }
             
-            // STEP 5 - FILES
-            elseif ($post_action === 'step5') {
-                provideLog('[STEP][5][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep5(
+            // STEP 60 - FILES
+            elseif ($post_action === 'step60') {
+                provideLog('[STEP][60][START][INDEX]['.$post_start.']', $SETTINGS);
+                $return = cronContinueReEncryptingUserSharekeysStep60(
                     $post_user_id,
                     $post_self_change,
                     $post_start,
@@ -346,18 +357,7 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][5][FINISHED]', $SETTINGS);
-            }
-            
-            // STEP 6 - PERSONAL ITEMS
-            elseif ($post_action === 'step6') {
-                provideLog('[STEP][16][START][INDEX]['.$post_start.']', $SETTINGS);
-                $return = cronContinueReEncryptingUserSharekeysStep6(
-                    $post_user_id,
-                    $SETTINGS,
-                    $extra_arguments
-                );
-                provideLog('[STEP][6][FINISHED]', $SETTINGS);
+                provideLog('[STEP][60][FINISHED]', $SETTINGS);
             }
             
             // Continu with next step
@@ -412,7 +412,7 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep1(
+function cronContinueReEncryptingUserSharekeysStep20(
     int $post_user_id,
     bool $post_self_change,
     int $post_start,
@@ -509,7 +509,7 @@ function cronContinueReEncryptingUserSharekeysStep1(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'new_index' => $next_start > DB::count() ? 0 : $next_start,
-        'new_action' => $next_start > DB::count() ? 'step2' : 'step1',
+        'new_action' => $next_start > DB::count() ? 'step30' : 'step20',
     ];
 }
 
@@ -526,7 +526,7 @@ function cronContinueReEncryptingUserSharekeysStep1(
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep2(
+function cronContinueReEncryptingUserSharekeysStep30(
     int $post_user_id,
     bool $post_self_change,
     int $post_start,
@@ -611,7 +611,7 @@ function cronContinueReEncryptingUserSharekeysStep2(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'new_index' => $next_start > DB::count() ? 0 : $next_start,
-        'new_action' => $next_start > DB::count() ? 'step3' : 'step2',
+        'new_action' => $next_start > DB::count() ? 'step40' : 'step30',
     ];
 }
 
@@ -628,7 +628,7 @@ function cronContinueReEncryptingUserSharekeysStep2(
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep3(
+function cronContinueReEncryptingUserSharekeysStep40(
     int $post_user_id,
     bool $post_self_change,
     int $post_start,
@@ -710,7 +710,7 @@ function cronContinueReEncryptingUserSharekeysStep3(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'new_index' => $next_start > DB::count() ? 0 : $next_start,
-        'new_action' => $next_start > DB::count() ? 'step4' : 'step3',
+        'new_action' => $next_start > DB::count() ? 'step50' : 'step40',
     ];
 }
 
@@ -727,7 +727,7 @@ function cronContinueReEncryptingUserSharekeysStep3(
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep4(
+function cronContinueReEncryptingUserSharekeysStep50(
     int $post_user_id,
     bool $post_self_change,
     int $post_start,
@@ -810,7 +810,7 @@ function cronContinueReEncryptingUserSharekeysStep4(
     $next_start = (int) $post_start + (int) $post_length;
     return [
         'new_index' => $next_start > DB::count() ? 0 : $next_start,
-        'new_action' => $next_start > DB::count() ? 'step5' : 'step4',
+        'new_action' => $next_start > DB::count() ? 'step60' : 'step50',
     ];
 }
 
@@ -827,7 +827,7 @@ function cronContinueReEncryptingUserSharekeysStep4(
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep5(
+function cronContinueReEncryptingUserSharekeysStep60(
     int $post_user_id,
     bool $post_self_change,
     int $post_start,
@@ -902,17 +902,31 @@ function cronContinueReEncryptingUserSharekeysStep5(
         }
     }
 
-    // SHould we change step?
+    // SHould we change step? Finished ?
     DB::query(
         'SELECT *
         FROM ' . prefixTable('files') . '
         WHERE status = "' . TP_ENCRYPTION_NAME . '"'
     );
-
+    $counter = DB::count();
     $next_start = (int) $post_start + (int) $post_length;
+
+    if ($next_start > $counter) {
+        // Set user as ready for usage
+        DB::update(
+            prefixTable('users'),
+            array(
+                'ongoing_process_id' => NULL,
+                'special' => 'none',
+            ),
+            'id = %i',
+            $extra_arguments['new_user_id']
+        );
+    }
+
     return [
-        'new_index' => $next_start > DB::count() ? 0 : $next_start,
-        'new_action' => $next_start > DB::count() ? 'step6' : 'step5',
+        'new_index' => $next_start > $counter ? 0 : $next_start,
+        'new_action' => $next_start > $counter ? 'finished' : 'step60',
     ];
 }
 
@@ -928,7 +942,7 @@ function cronContinueReEncryptingUserSharekeysStep5(
  * @param array $extra_arguments
  * @return array
  */
-function cronContinueReEncryptingUserSharekeysStep6(
+function cronContinueReEncryptingUserSharekeysStep10(
     int $post_user_id,
     array $SETTINGS,
     array $extra_arguments
@@ -989,9 +1003,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
         prefixTable('users'),
         array(
             'is_ready_for_usage' => 1,
-            'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0,
-            'ongoing_process_id' => NULL,
-            'special' => 'none',
+            'otp_provided' => isset($extra_arguments['otp_provided_new_value']) === true && (int) $extra_arguments['otp_provided_new_value'] === 1 ? $extra_arguments['otp_provided_new_value'] : 0
         ),
         'id = %i',
         $extra_arguments['new_user_id']
@@ -999,7 +1011,7 @@ function cronContinueReEncryptingUserSharekeysStep6(
 
     return [
         'new_index' => 0,
-        'new_action' => 'finished',
+        'new_action' => 'step20',
     ];
 }
 

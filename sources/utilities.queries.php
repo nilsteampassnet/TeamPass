@@ -717,18 +717,18 @@ if (null !== $post_type) {
                 if (isset($detail['step']) === true) {
                     if ($detail['step'] === 'step0' || (int) $detail['index'] === 0) {
                         $task_progress = '0%';
-                    } elseif ($detail['step'] === 'step1') {
+                    } elseif ($detail['step'] === 'step10') {
+                        $task_progress = pourcentage($detail['index'], 1, 100) .'%';
+                    } elseif ($detail['step'] === 'step20') {
                         $task_progress = pourcentage($detail['index'], $items_number, 100) .'%';
-                    } elseif ($detail['step'] === 'step2') {
+                    } elseif ($detail['step'] === 'step30') {
                         $task_progress = pourcentage($detail['index'], $logs_number, 100) .'%';
-                    } elseif ($detail['step'] === 'step3') {
+                    } elseif ($detail['step'] === 'step40') {
                         $task_progress = pourcentage($detail['index'], $items_categories, 100) .'%';
-                    } elseif ($detail['step'] === 'step4') {
+                    } elseif ($detail['step'] === 'step50') {
                         $task_progress = pourcentage($detail['index'], $items_suggestions, 100) .'%';
-                    } elseif ($detail['step'] === 'step5') {
+                    } elseif ($detail['step'] === 'step60') {
                         $task_progress = pourcentage($detail['index'], $items_files, 100) .'%';
-                    } elseif ($detail['step'] === 'step6') {
-                        $task_progress = pourcentage($detail['index'], $items_number, 100) .'%';
                     }
                 }
 
@@ -786,17 +786,38 @@ if (null !== $post_type) {
 
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-            DB::query(
-                'DELETE FROM ' . prefixTable('processes_tasks') . '
-                WHERE process_id = %i',
+            // Get info about task
+            $taskInfo = DB::queryfirstrow(
+                'SELECT p.process_type as process_type
+                FROM ' . prefixTable('processes') . ' as p
+                WHERE p.increment_id = %i',
                 $post_id
             );
+            if ($taskInfo !== null) {
+                // delete task
+                DB::query(
+                    'DELETE FROM ' . prefixTable('processes_tasks') . '
+                    WHERE process_id = %i',
+                    $post_id
+                );
+                DB::query(
+                    'DELETE FROM ' . prefixTable('processes') . '
+                    WHERE increment_id = %i',
+                    $post_id
+                );
 
-            DB::query(
-                'DELETE FROM ' . prefixTable('processes') . '
-                WHERE increment_id = %i',
-                $post_id
-            );
+                // if user creation then update user status
+                if ($taskInfo['process_type'] === 'create_user_keys') {
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'ongoing_process_id' => NULL,
+                        ),
+                        'ongoing_process_id = %i',
+                        (int) $post_id
+                    );
+                }     
+            }
 
             // send data
             echo prepareExchangedData(
