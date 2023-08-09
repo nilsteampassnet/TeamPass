@@ -1107,5 +1107,6 @@ return array(
     'maximum_session_expiration_time' => 'Délai d&apos;expiration maximal de la session',
     'maximum_session_expiration_time_tip' => 'Durée d&apos;extension maximum en minutes d&apos;une session utilisateur',
     'index_session_duration_too_long' => 'Durée de session trop grande',
+    'extend_session_duration_by' => 'Augmenter la session de',
 
 );

@@ -120,12 +120,12 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== ''
     && $_GET['letter'] !== 'None'
 ) {
-    $sWhere = ' WHERE ';
+    $sWhere = ' WHERE deleted_at IS NULL AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-    $sWhere = ' WHERE ';
+    $sWhere = ' WHERE deleted_at IS NULL AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
@@ -136,7 +136,7 @@ if ((int) $_SESSION['is_admin'] === 0
     && (int) $_SESSION['user_can_manage_all_users'] === 0
 ) {
     if (empty($sWhere) === true) {
-        $sWhere = ' WHERE ';
+        $sWhere = ' WHERE deleted_at IS NULL';
     } else {
         $sWhere .= ' AND ';
     }
@@ -148,9 +148,14 @@ if ((int) $_SESSION['is_admin'] === 0
 
 // exclude any deleted user
 if (empty($sWhere) === true) {
-    $sWhere = ' WHERE deleted_at IS NULL ';
+    $sWhere = ' WHERE deleted_at IS NULL';
 } else {
     $sWhere .= ' AND deleted_at IS NULL ';
+}
+
+// Close the WHERE clause
+if (str_contains($sWhere, ' AND ') === true) {
+    $sWhere .= ')';
 }
 
 $rows = DB::query(

@@ -157,7 +157,8 @@ if (null !== $post_type) {
             $data = DB::query(
                 'SELECT id, fonction_id, groupes_interdits, groupes_visibles
                 FROM ' . prefixTable('users') . '
-                WHERE login = %s',
+                WHERE login = %s
+                AND deleted_at IS NULL',
                 $login
             );
 
@@ -390,14 +391,17 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],$post_data, 'decode');
+                $SETTINGS['cpassman_dir'],
+                $post_data,
+                'decode'
+            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
+                'SELECT login, admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
@@ -417,6 +421,7 @@ if (null !== $post_type) {
                 DB::update(
                     prefixTable('users'),
                     array(
+                        'login' => $data_user['login'].'_deleted',
                         'deleted_at' => time(),
                     ),
                     'id = %i',
@@ -1771,7 +1776,8 @@ if (null !== $post_type) {
 
             DB::queryfirstrow(
                 'SELECT * FROM ' . prefixTable('users') . '
-                WHERE login = %s',
+                WHERE login = %s
+                AND deleted_at IS NULL',
                 filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
 

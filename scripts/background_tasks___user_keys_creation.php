@@ -288,6 +288,7 @@ function performUserCreationKeys(
             // STEP 20 - ITEMS
             elseif ($post_action === 'step20') {
                 provideLog('[STEP][20][START][INDEX]['.$post_start.']', $SETTINGS);
+                $logID = doLog('start', 'user_keys-ITEMS', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
                 $return = cronContinueReEncryptingUserSharekeysStep20(
                     $post_user_id,
                     $post_self_change,
@@ -297,6 +298,7 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
+                $logID = doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
                 provideLog('[STEP][20][FINISHED]', $SETTINGS);
             }
 
@@ -510,6 +512,7 @@ function cronContinueReEncryptingUserSharekeysStep20(
     return [
         'new_index' => $next_start > DB::count() ? 0 : $next_start,
         'new_action' => $next_start > DB::count() ? 'step30' : 'step20',
+        'treated_items' => $next_start > DB::count() ? (DB::count() - (int) $post_start) : $post_length,
     ];
 }
 

@@ -1258,6 +1258,7 @@ $SETTINGS = array (';
                             `status` varchar(10) NOT NULL,
                             `updated_at` varchar(20) DEFAULT NULL,
                             `finished_at` varchar(20) DEFAULT NULL,
+                            `treated_objects` varchar(20) DEFAULT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );

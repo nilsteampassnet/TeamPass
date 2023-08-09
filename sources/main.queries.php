@@ -136,7 +136,7 @@ function mainQuery(array $SETTINGS)
         $post_data,
         'decode'
     ) : '';
-
+    
     switch ($post_type_category) {
         case 'action_password':
             echo passwordHandler($post_type, $dataReceived, $SETTINGS);
@@ -351,6 +351,16 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
             return userIsReady(
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) $SETTINGS['cpassman_dir']
+            );
+
+        /*
+        * This post type is used to check if the user session is still valid
+        */
+        case 'user_get_session_time'://action_user
+            return userGetSessionTime(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) $SETTINGS['cpassman_dir'],
+                (int) $SETTINGS['maximum_session_expiration_time'],
             );
 
         /*
@@ -690,6 +700,28 @@ function userIsReady(int $userid, string $dir): string
     ); 
 }
 
+
+/**
+ * Permits to set the user ready
+ *
+ * @param integer $userid
+ * @return string
+ */
+function userGetSessionTime(int $userid, string $dir, int $maximum_session_expiration_time): string
+{
+    // Send back
+    return prepareExchangedData(
+        $dir,
+        array(
+            'error' => false,
+            'timestamp' => $_SESSION['sessionDuration'],
+            'max_time_to_add' => intdiv((($maximum_session_expiration_time*60) - ((int) $_SESSION['sessionDuration'] - time())), 60),
+            'max_session_duration' => $maximum_session_expiration_time,
+        ),
+        'encode'
+    ); 
+}
+
 /**
  * Provides the number of items
  *
@@ -713,7 +745,7 @@ function getNumberOfItemsToTreat(
 
     // Send back
     return prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
+        $SETTINGS['cpassman_dir'],
         array(
             'error' => false,
             'nbItems' => DB::count(),

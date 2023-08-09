@@ -41,7 +41,7 @@ header('Cache-Control: no-cache, must-revalidate');
  * @param integer|null $id
  * @return integer
  */
-function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id = null): int
+function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id = null, int $treated_objects = null): int
 {
     // is log enabled?
     if ((int) $enable_tasks_log === 1) {
@@ -57,6 +57,12 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
             );
             return DB::insertId();
         }
+
+        // Read start_time
+        $start_time = DB::queryFirstField(
+            'SELECT created_at FROM '.prefixTable('processes_logs').' WHERE increment_id = %i',
+            $id
+        );
         
         // Case is an update
         DB::update(
@@ -64,6 +70,7 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
             array(
                 'status' => $status,
                 'finished_at' => time(),
+                'treated_objects' => $treated_objects,
             ),
             'increment_id = %i',
             $id

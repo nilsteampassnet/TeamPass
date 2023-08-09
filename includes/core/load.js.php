@@ -1492,57 +1492,92 @@ if (
      * @return void
      */
     function showExtendSession() {
-        // Prepare modal
-        showModalDialogBox(
-            '#warningModal',
-            '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
-            '<div class="form-group">' +
-            '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('index_session_duration') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
-            '<input type="number" max="<?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? (int) $SETTINGS['maximum_session_expiration_time'] : 60*60*24; ?>" ' +
-                'class="form-control" id="warningModal-input" value="<?php echo isset($_SESSION['user']['session_duration']) === true ? (int) $_SESSION['user']['session_duration'] / 60 : 60; ?>">' +
-            '</div>' +
-            '<div class="form-text text-muted"><?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? "<i class=\"fa-solid fa-info-circle mr-2\"></i>".langHdl('maximum_session_expiration_time').": ".$SETTINGS['maximum_session_expiration_time'] : ""; ?></div>',
-            '<?php echo langHdl('confirm'); ?>',
-            '<?php echo langHdl('cancel'); ?>'
+        // Calculate the max time to be added
+        var data = {
+            'user_id': store.get('teampassUser').user_id,
+        }
+        $.post(
+            "sources/main.queries.php", {
+                type: 'user_get_session_time',
+                type_category: 'action_user',
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key: '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                if (debugJavascript === true) {
+                    console.log('debug')
+                    console.log(data);
+                }
+
+                if (data.timestamp !== undefined && data.max_session_duration > 0) {
+                    // Prepare modal
+                    showModalDialogBox(
+                        '#warningModal',
+                        '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
+                        '<div class="form-group">' +
+                        '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('extend_session_duration_by') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
+                        '<input type="number" max="'+(60*60*24)+'" class="form-control" id="warningModal-input" value="60">' +
+                        '</div>' +
+                        '<div class="form-text text-muted"><i class=\"fa-solid fa-info-circle mr-2\"></i><?php echo langHdl('maximum_session_expiration_time'); ?>: '+data.max_session_duration+'</div>',
+                        '<?php echo langHdl('confirm'); ?>',
+                        '<?php echo langHdl('cancel'); ?>'
+                    );
+
+                    // Limit the user choice
+                    $('#warningModal-input')
+                        .attr('max', data.max_time_to_add)
+                        .val(data.max_time_to_add);
+
+
+                    // Actions on modal buttons
+                    $(document).on('click', '#warningModalButtonAction', function() {
+                        // Check if max value is not reached
+                        if ($('#warningModal-input').val() > data.max_time_to_add) {
+                            $('#warningModal-input').addClass('is-invalid');
+                            return false;
+                        }
+
+                        // SHow user
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                        );
+
+                        // Perform action
+                        $.when(
+                            IncreaseSessionTime(
+                                fieldDomPurifierWithWarning('#warningModal-input')
+                            )
+                        ).then(function() {
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo langHdl('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                            $('#warningModal').modal('hide');
+                        });
+                    });
+
+                    // Remove css
+                    $(document).on('focus', '#warningModal-input', function() {
+                        if ($(this).hasClass('is-invalid')) {
+                            $(this).removeClass('is-invalid');
+                        }
+                    });
+                } else {
+                    toastr.remove();
+                    toastr.warning(
+                        '<?php echo langHdl('error_unknown'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
         );
-
-        // Actions on modal buttons
-        $(document).on('click', '#warningModalButtonAction', function() {
-            // Check if max value is not reached
-            if ($('#warningModal-input').val() > <?php echo isset($SETTINGS['maximum_session_expiration_time']) === true ? (int) $SETTINGS['maximum_session_expiration_time'] : 60*60*24; ?>) {
-                $('#warningModal-input').addClass('is-invalid');
-                return false;
-            }
-
-            // SHow user
-            toastr.remove();
-            toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
-            );
-
-            // Perform action
-            $.when(
-                IncreaseSessionTime(
-                    fieldDomPurifierWithWarning('#warningModal-input')
-                )
-            ).then(function() {
-                toastr.remove();
-                toastr.success(
-                    '<?php echo langHdl('done'); ?>',
-                    '', {
-                        timeOut: 1000
-                    }
-                );
-                $('#warningModal').modal('hide');
-            });
-        });
-
-        // Remove css
-        $(document).on('focus', '#warningModal-input', function() {
-            if ($(this).hasClass('is-invalid')) {
-                $(this).removeClass('is-invalid');
-            }
-        });
     }
 
     /**

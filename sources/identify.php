@@ -2143,7 +2143,7 @@ class initialChecks {
             'SELECT u.*, a.value AS api_key
             FROM ' . prefixTable('users') . ' AS u
             LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-            WHERE login = %s',
+            WHERE login = %s AND deleted_at IS NULL',
             $login
         );
         

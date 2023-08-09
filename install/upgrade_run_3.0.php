@@ -422,6 +422,18 @@ if (intval($tmp) === 0) {
         "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maximum_session_expiration_time', '60')"
     );
 }
+
+// Add field treated_objects to processes_logs table
+$res = addColumnIfNotExist(
+    $pre . 'processes_logs',
+    'treated_objects',
+    "varchar(20) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field treated_objects to table processes_logs! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 //---<END 3.0.10
 
 //---------------------------------------------------------------------
