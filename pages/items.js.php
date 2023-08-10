@@ -5116,7 +5116,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>',
+                    theme: "bootstrap4",
                 });
 
                 // Prepare datePicker
@@ -5497,7 +5498,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     // Prepare Select2
                     $('.select2').select2({
-                        language: '<?php echo $_SESSION['user_language_code']; ?>'
+                        language: '<?php echo $_SESSION['user_language_code']; ?>',
+                        theme: "bootstrap4",
                     });
 
                     // Show selected restricted inputs

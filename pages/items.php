@@ -268,23 +268,29 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_2">
                                 <!-- FOLDERS -->
                                 <div class="form-group mb-3">
-                                    <label><?php echo langHdl('folder'); ?></label>
-                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root" style="width:100%;" data-change-ongoing=""></select>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend input-group-text"><?php echo langHdl('folder'); ?></div>
+                                        <select id="form-item-folder" class="form-control form-item-control select2-hidden-accessible select2 no-root" data-change-ongoing=""></select>
+                                    </div>
                                 </div>
 
                                 <!-- RESTRICTED TO -->
                                 <div class="input-group mb-3">
-                                    <label><?php echo langHdl('restricted_to'); ?></label>
-                                    <select id="form-item-restrictedto" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
-                                    <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
-                                    <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend input-group-text"><?php echo langHdl('restricted_to'); ?></div>
+                                        <select id="form-item-restrictedto" class="form-control form-item-control select2-hidden-accessible select2" multiple="multiple" data-change-ongoing=""></select>
+                                        <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
+                                        <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
+                                    </div>
                                 </div>
                                 <!-- TAGS -->
                                 <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('tags'); ?></span>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend input-group-text"><?php echo langHdl('tags'); ?></div>
+                                        <!--<select id="form-item-tags" class="form-control form-item-control select2-hidden-accessible select2 no-root" multiple="multiple" data-change-ongoing=""></select>-->
+                                        <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
                                     </div>
-                                    <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
+                                    <!---->
                                 </div>
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
@@ -323,7 +329,7 @@ foreach ($rows as $reccord) {
                                                     <?php echo langHdl('item_deleted_after_being_viewed_x_times'); ?>
                                                 </div>
                                                 <div class="d-inline p-2">
-                                                    <input type="text" class="form-control form-item-control purify" data-field-name="deleteAfterShown" id="form-item-deleteAfterShown" data-change-ongoing="">
+                                                    <input type="number" class="form-control form-item-control purify" data-field-name="deleteAfterShown" id="form-item-deleteAfterShown" data-change-ongoing="">
                                                 </div>
                                             </div>
                                             <div class="row">

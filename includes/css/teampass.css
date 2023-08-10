@@ -126,9 +126,9 @@
     -webkit-background-clip: padding-box;
     -moz-background-clip: padding;
     background-clip: padding-box;
-    *border-right-width: 2px;
-    *border-bottom-width: 2px;
-  }
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+}
 
 .ui-menu-item {
     display: block;
@@ -281,4 +281,10 @@
     -ms-transition: opacity 0.5s;
     -o-transition:  opacity 0.5s;
     transition:  opacity 0.5s;
+}
+
+.input-group > .select2-container--bootstrap4 .select2-selection--single {
+	height: 100%;
+	line-height: inherit;
+	padding-top: 10px;
 }

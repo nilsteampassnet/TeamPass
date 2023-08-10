@@ -31,6 +31,22 @@ if (session_id() === '') {
 class SuperGlobal
 {
     /**
+     * Call to dataSanitizer function
+     *
+     * @param string $key
+     * @return array
+     */
+    protected function dataSanitizerCall($key)
+    {
+        include_once __DIR__ . '/../../../../sources/main.functions.php';
+        return  dataSanitizer(
+            ['key' => $key],
+            ['key' => 'trim|escape'],
+            __DIR__ . '/../../../../'
+        );
+    }
+
+    /**
      * Sets a variable
      *
      * @param  string            $key         Key to use
@@ -72,7 +88,7 @@ class SuperGlobal
      * @param  string $special Is this a special superglobal definition
      * @return mixed
      */
-    public static function get($key, $type, $special = false)
+    public function get($key, $type, $special = false)
     {
         if ($type === 'SESSION') {
             if ($special === 'lang') {
@@ -88,11 +104,11 @@ class SuperGlobal
             }
             return (isset($_SESSION[$key]) === true ? $_SESSION[$key] : null);
         } elseif ($type === 'SERVER') {
-            return (isset($_SERVER[$key]) === true ? filter_var($_SERVER[$key], FILTER_SANITIZE_STRING) : null);
+            return (isset($_SERVER[$key]) === true ? $this->dataSanitizerCall($_SERVER[$key])['key'] : null);
         } elseif ($type === 'GET') {
-            return (isset($_GET[$key]) === true ? filter_var($_GET[$key], FILTER_SANITIZE_STRING) : null);
+            return (isset($_GET[$key]) === true ? $this->dataSanitizerCall($_GET[$key])['key']  : null);
         } elseif ($type === 'COOKIE') {
-            return (isset($_COOKIE[$key]) === true ? filter_var($_COOKIE[$key], FILTER_SANITIZE_STRING) : null);
+            return (isset($_COOKIE[$key]) === true ? $this->dataSanitizerCall($_COOKIE[$key])['key'] : null);
         }
     }
 
