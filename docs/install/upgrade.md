@@ -51,12 +51,13 @@ git pull
 ./includes/config/settings.php
 ./includes/config/tp.config.php
 ./includes/libraries/csrfp/libs/csrfp.config.php
+./includes/teampass-seckey.txt
 ./includes/avatars/*
 ./files/*
 ./upload/*
 ```
 * Ensure that folders and files have correct rights. Next elements need to be writable:
-  ```
+```
 ./includes/config/
 ./includes/libraries/csrfp/libs/
 ./includes/libraries/csrfp/js/
@@ -65,5 +66,7 @@ git pull
 ./files/
 ./upload/
 ./install/
-  ```
+```
+* In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8"`
+* In file `/includes/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
 * Browse to `Teampass`
