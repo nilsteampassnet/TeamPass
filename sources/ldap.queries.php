@@ -20,7 +20,7 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
-
+use LdapRecord\Container;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -101,6 +101,19 @@ switch ($post_type) {
             'decode'
         );
 
+        // Check if data is correct
+        if (empty($post_username) === true && empty($post_password) === true) {
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => true,
+                    'message' => "Error : ".langHdl('error_empty_data'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         // Load expected libraries
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
@@ -134,6 +147,8 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
+        $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+        $ad->register();
 
         // prepare variables
         $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -159,13 +174,13 @@ switch ($post_type) {
                 LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
             ]
         ];
-
-        $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
-        $ad->register();
+        //prepare connection
         $connection = new Connection($config);
 
         try {
             $connection->connect();
+            Container::addConnection($connection);
+
         } catch (\LdapRecord\Auth\BindException $e) {
             $error = $e->getDetailedError();
 
@@ -174,18 +189,6 @@ switch ($post_type) {
                 array(
                     'error' => true,
                     'message' => "Error : ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        if (empty($post_username) === true && empty($post_password) === true) {
-            echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
-                array(
-                    'error' => true,
-                    'message' => "Error : ".langHdl('error_empty_data'),
                 ),
                 'encode'
             );
@@ -235,6 +238,19 @@ switch ($post_type) {
         }
         
         if ($userAuthAttempt === true) {
+            // Update user info with his AD groups
+            if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+                require_once 'ldap.activedirectory.php';
+            } else {
+                require_once 'ldap.openldap.php';
+            }   
+            $ret = getUserADGroups(
+                $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
+                    $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+                    $userADInfos['dn'], 
+                $connection, 
+                $SETTINGS
+            );
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(

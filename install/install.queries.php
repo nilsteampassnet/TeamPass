@@ -805,7 +805,7 @@ $SETTINGS = array (';
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', '" . $var['admin_name'] . "', '" . $var['admin_lastname'] . "', '1', 'none', 'none', '1', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', 'Change me', 'Change me', '1', 'none', 'none', '1', '1')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . bCrypt($var['admin_pwd'], '13') . "' WHERE login = 'admin' AND id = '1'");

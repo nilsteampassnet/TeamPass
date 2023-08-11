@@ -116,48 +116,38 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
    * word by word on any field. It's possible to do here, but concerned about efficiency
    * on very large tables, and MySQL's regex functionality is very limited
 */
+
+// exclude any deleted user
+$sWhere = ' WHERE deleted_at IS NULL AND id NOT IN (9999991,9999997,9999998,9999999)';
 if (isset($_GET['letter']) === true
     && $_GET['letter'] !== ''
     && $_GET['letter'] !== 'None'
 ) {
-    $sWhere = ' WHERE deleted_at IS NULL AND (';
+    $sWhere = ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
+    $sWhere = ')';
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-    $sWhere = ' WHERE deleted_at IS NULL AND (';
+    $sWhere = ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
+    $sWhere = ')';
 }
 
 // enlarge the query in case of Manager
 if ((int) $_SESSION['is_admin'] === 0
     && (int) $_SESSION['user_can_manage_all_users'] === 0
 ) {
-    if (empty($sWhere) === true) {
-        $sWhere = ' WHERE deleted_at IS NULL';
-    } else {
-        $sWhere .= ' AND ';
-    }
+    $sWhere .= ' AND ';
     $arrUserRoles = array_filter($_SESSION['user_roles']);
     if (count($arrUserRoles) > 0) {
         $sWhere .= 'isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
     }
 }
 
-// exclude any deleted user
-if (empty($sWhere) === true) {
-    $sWhere = ' WHERE deleted_at IS NULL';
-} else {
-    $sWhere .= ' AND deleted_at IS NULL ';
-}
-
-// Close the WHERE clause
-if (str_contains($sWhere, ' AND ') === true) {
-    $sWhere .= ')';
-}
-
+db::debugmode(false);
 $rows = DB::query(
     'SELECT * FROM '.prefixTable('users').
     $sWhere.

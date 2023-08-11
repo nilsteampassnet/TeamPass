@@ -1295,7 +1295,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     // User auth attempt
     $userAuthAttempt = $connection->auth()->attempt(
         $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+            $userADInfos[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
             $userADInfos['dn'],
         $passwordClear
     );
@@ -1346,7 +1346,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }   
     $ret = getUserADGroups(
         $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+            $userADInfos[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
             $userADInfos['dn'], 
         $connection, 
         $SETTINGS

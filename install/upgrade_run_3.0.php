@@ -408,7 +408,7 @@ if ($res === false) {
 try {
     mysqli_query(
         $db_link,
-        'ALTER TABLE `' . $pre . 'cache_tree` CHANGE `process_type` `process_type` VARCHAR(100) NOT NULL;'
+        'ALTER TABLE `' . $pre . 'processes` CHANGE `process_type` `process_type` VARCHAR(100) NOT NULL;'
     );
 } catch (Exception $e) {
     // Do nothing
