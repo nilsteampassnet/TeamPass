@@ -434,6 +434,9 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
+
+// Ensure admin has name and lastname
+
 //---<END 3.0.10
 
 //---------------------------------------------------------------------

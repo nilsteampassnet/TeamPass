@@ -101,6 +101,10 @@ switch ($post_type) {
             'decode'
         );
 
+        // prepare variables
+        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+
         // Check if data is correct
         if (empty($post_username) === true && empty($post_password) === true) {
             echo prepareExchangedData(
@@ -149,10 +153,6 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
-
-        // prepare variables
-        $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
         // Build ldap configuration array
         $config = [
@@ -219,7 +219,7 @@ switch ($post_type) {
         try {
             $userAuthAttempt = $connection->auth()->attempt(
                 $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                    $user[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+                    $user[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
                     $user['dn'],
                 $post_password
             );
@@ -243,14 +243,8 @@ switch ($post_type) {
                 require_once 'ldap.activedirectory.php';
             } else {
                 require_once 'ldap.openldap.php';
-            }   
-            $ret = getUserADGroups(
-                $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                    $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
-                    $userADInfos['dn'], 
-                $connection, 
-                $SETTINGS
-            );
+            }
+            
             echo prepareExchangedData(
                 $SETTINGS['cpassman_dir'],
                 array(
