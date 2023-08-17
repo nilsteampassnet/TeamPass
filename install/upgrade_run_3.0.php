@@ -436,6 +436,21 @@ if ($res === false) {
 }
 
 // Ensure admin has name and lastname
+$resAdmin = mysqli_query(
+    $db_link,
+    "select name, lastname
+    from `" . $pre . "users`
+    WHERE id = 1"
+);
+$admin = mysqli_fetch_array($resAdmin);
+if (is_null($admin['name']) === true && is_null($admin['lastname']) === true) {
+    // update created_at field
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "users` SET name = 'Change me', lastname = 'Change me' WHERE id = 1"
+    );
+}
+
 
 //---<END 3.0.10
 

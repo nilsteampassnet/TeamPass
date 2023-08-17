@@ -3,9 +3,10 @@
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
 {
-    if (defined('SECUREFILE') === false) {
+    if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(SECUREPATH.'/teampass-seckey.txt') === true) {
+        // Anonymize the file if needed
         define('SECUREFILE', generateRandomKey(25));
-        
+    
         // manage the file itself by renaming it
         if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
             echo '[{

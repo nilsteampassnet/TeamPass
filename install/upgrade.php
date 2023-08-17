@@ -267,6 +267,10 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     } else {
         $dbSettings = false;
     }
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        require_once '../sources/main.functions.php';
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     //ETAPE 2
     echo '
         <div class="row">
@@ -293,7 +297,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         
                         <div class="form-group">
                             <label>Password</label>
-                            <input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.$visible_pwd.'">
+                            <input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.DB_PASSWD_CLEAR.'">
                         </div>
                         
                         <div class="form-group">
