@@ -333,7 +333,7 @@ catch (Exception $e) {
                             </div>
 
                             <div class="tab-pane fade" id="finished" role="tabpanel" aria-labelledby="finished-tab">
-                                <table class="table table-striped" id="table-tasks_finished" style="">
+                                <table class="table table-striped" id="table-tasks_finished" style="width:100%;">
                                     <thead>
                                         <tr>
                                             <th style=""></th>
