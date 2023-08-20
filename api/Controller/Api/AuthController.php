@@ -39,16 +39,14 @@ class AuthController extends BaseController
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'POST') {
-            // Get data
-            $data = json_decode(file_get_contents("php://input"));
-            $login = $data->login;
-            $password = $data->password;
-            $apikey = $data->apikey;
-
             require API_ROOT_PATH . "/Model/AuthModel.php";
             try {
                 $authModel = new AuthModel();
-                $arrUser = $authModel->getUserAuth($login, $password, $apikey);
+                $arrUser = $authModel->getUserAuth(
+                    $arrQueryStringParams['login'],
+                    $arrQueryStringParams['password'],
+                    $arrQueryStringParams['apikey']
+                );
                 if (array_key_exists("token", $arrUser)) {
                     $responseData = json_encode($arrUser);
                 } else {

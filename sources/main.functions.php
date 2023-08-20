@@ -1503,7 +1503,8 @@ function dateToStamp(string $date, string $date_format): int
 {
     $date = date_parse_from_format($date_format, $date);
     if ((int) $date['warning_count'] === 0 && (int) $date['error_count'] === 0) {
-        return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
+        //return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
+        return mktime($date['hour'], $date['minute'], $date['second'], $date['month'], $date['day'], $date['year']);
     }
     return 0;
 }
@@ -1835,7 +1836,8 @@ function logItems(
     string $action,
     ?string $login = null,
     ?string $raison = null,
-    ?string $encryption_type = null
+    ?string $encryption_type = null,
+    ?string $time = null
 ): void {
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1855,7 +1857,7 @@ function logItems(
         prefixTable('log_items'),
         [
             'id_item' => $item_id,
-            'date' => time(),
+            'date' => is_null($time) === true ? time() : $time,
             'id_user' => $id_user,
             'action' => $action,
             'raison' => $raison,
@@ -2786,7 +2788,7 @@ function doDataDecryption(string $data, string $key): string
     $cipher = new Crypt_AES();
     // Set the object key
     $cipher->setPassword(base64_decode($key));
-    return base64_encode($cipher->decrypt(base64_decode($data)));
+    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
 }
 
 /**

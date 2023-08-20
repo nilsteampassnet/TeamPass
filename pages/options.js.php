@@ -56,21 +56,15 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     $(document).on('click', '#button-find-options', function() {
         searchKeyword($('#find-options').val());
     });
-
-    $('#find-options').on('keypress', function(e) {
-        var code = e.keyCode || e.which,
-            character = '';
-        //console.log('> '+code)
-        if (code === 13 || code === 8 || code === 46) {
-            //console.log('GO')
-        } else {
-            character = String.fromCharCode(event.keyCode).toLowerCase();
+        
+    $("#find-options").on('keyup search', function() {
+        if ($(this).val() === "") {
+            $('.option').removeClass('hidden');
+            return false;
         }
 
-        // Launch
-        searchKeyword($('#find-options').val() + character);
+        searchKeyword($(this).val());
     });
-
 
     function searchKeyword(criteria) {
         var rows = $('[data-keywords*="' + criteria + '"]');
@@ -83,8 +77,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $.each(rows, function(i, value) {
                 $(value).removeClass('hidden');
             });
-        } else {
-            $('.option').removeClass('hidden');
         }
     }
 </script>

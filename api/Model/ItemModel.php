@@ -60,15 +60,31 @@ class ItemModel extends Database
                 // Exit this item
                 continue;
             }
-            
-            // Get password
-            $pwd = base64_decode(doDataDecryption(
+
+            // Decrypt password
+            $stepPw = doDataDecryption(
                 $row['pw'],
                 decryptUserObjectKey(
                     $userKey[0]['share_key'],
                     $userPrivateKey
                 )
-            ));
+            );
+            // Get password
+            try {
+                $pwd = base64_decode(
+                    (string) doDataDecryption(
+                        $row['pw'],
+                        decryptUserObjectKey(
+                            $userKey[0]['share_key'],
+                            $userPrivateKey
+                        )
+                    )
+                );
+            } catch (Exception $e) {
+                // Password is not encrypted
+                echo "ERROR";
+            }
+            
 
             // get path to item
             require_once API_ROOT_PATH. '/../includes/libraries/Tree/NestedTree/NestedTree.php';

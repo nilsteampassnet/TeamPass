@@ -64,7 +64,7 @@ $zones = timezone_list();
             </div><!-- /.col -->
             <div class='col-sm-6 text-right'>
                 <div class="input-group input-group-sm">
-                    <input type="text" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find-options">
+                    <input type="search" class="form-control" placeholder="<?php echo langHdl('find'); ?>" id="find-options">
                     <div class="input-group-append">
                         <div class="btn btn-primary" id="button-find-options">
                             <i class="fas fa-search"></i>

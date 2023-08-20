@@ -45,12 +45,12 @@ $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
-if ($uri[3] === 'authorize') {
+if ($uri[0] === 'authorize') {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
-        require API_ROOT_PATH . "/Controller/AuthController.php";
+        require API_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
-        $strMethodName = $uri[3] . 'Action';
+        $strMethodName = $uri[0] . 'Action';
         $objFeedController->{$strMethodName}();
     } else {
         // Error management
@@ -64,8 +64,8 @@ if ($uri[3] === 'authorize') {
     $userData = json_decode(getDataFromToken(), true);
 
     // define the position of controller in $uri
-    $controller = $uri[3];
-    $action = $uri[3];
+    $controller = $uri[0];
+    $action = $uri[1];
 
     if ($userData['error'] === true) {
         // Error management
@@ -76,7 +76,7 @@ if ($uri[3] === 'authorize') {
 
     // action related to USER
     } elseif ($controller === 'user') {
-        require API_ROOT_PATH . "/Controller/UserController.php";
+        require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
         $strMethodName = $action . 'Action';
         $objFeedController->{$strMethodName}();
@@ -85,7 +85,7 @@ if ($uri[3] === 'authorize') {
     } elseif ($controller === 'item') {
         // Manage requested action
         itemAction(
-            array_slice($uri, 4),
+            array_slice($uri, 1),
             $userData['data']
         ); 
 
@@ -93,7 +93,7 @@ if ($uri[3] === 'authorize') {
     } elseif ($controller === 'folder') {
         // Manage requested action
         folderAction(
-            array_slice($uri, 4),
+            array_slice($uri, 1),
             $userData['data']
         );
     } else {

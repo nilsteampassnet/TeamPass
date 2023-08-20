@@ -5597,13 +5597,19 @@ $SETTINGS['cpassman_dir'],
             $inputData['data'],
             'decode'
         );
+
+        $item_id = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
         // Get all informations for this item
         $dataItem = DB::queryfirstrow(
             'SELECT *
             FROM ' . prefixTable('items') . ' as i
             INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
             WHERE i.id=%i AND l.action = %s',
-            $dataReceived['item_id'],
+            $item_id,
             'at_creation'
         );
         // check that actual user can access this item
@@ -5623,19 +5629,21 @@ $SETTINGS['cpassman_dir'],
             // Query
             logItems(
                 $SETTINGS,
-                (int) $dataReceived['item_id'],
+                (int) $item_id,
                 $dataItem['label'],
                 $_SESSION['user_id'],
                 'at_manual',
                 $_SESSION['login'],
-                htmlspecialchars_decode($dataReceived['label'], ENT_QUOTES)
+                htmlspecialchars_decode($label, ENT_QUOTES),
+                null,
+                (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
             );
             // Prepare new line
             $data = DB::queryfirstrow(
                 'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
-                $dataReceived['item_id']
+                $item_id
             );
-            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . langHdl($data['action']) . ' - ' . $data['raison'];
+            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . langHdl($data['action']) . ' - ' . $data['raison'];
             // send back
             $data = array(
                 'error' => '',

@@ -35,7 +35,7 @@ require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.p
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // include the base controller file
-require API_ROOT_PATH . "/Controller/BaseController.php";
+require API_ROOT_PATH . "/Controller/Api/BaseController.php";
 
 // include the use model file
 require API_ROOT_PATH . "/Model/UserModel.php";
@@ -51,7 +51,7 @@ require API_ROOT_PATH . "/Model/FolderModel.php";
  */
 function itemAction(array $actions, array $userData)
 {
-    require API_ROOT_PATH . "/Controller/ItemController.php";
+    require API_ROOT_PATH . "/Controller/Api/ItemController.php";
     
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
@@ -67,7 +67,7 @@ function itemAction(array $actions, array $userData)
  */
 function folderAction(array $actions, array $userData)
 {
-    require API_ROOT_PATH . "/Controller/FolderController.php";
+    require API_ROOT_PATH . "/Controller/Api/FolderController.php";
 
     $objFeedController = new FolderController();
     $strMethodName = $actions[0] . 'Action';
@@ -125,7 +125,7 @@ function verifyAuth(): string
         return json_encode(
             [
                 'error' => true,
-                'error_message' => 'Access denied',
+                'error_message' => 'Access denied1',
                 'error_header' => 'HTTP/1.1 404 Not Found',
             ]
         );
@@ -156,7 +156,7 @@ function getDataFromToken(): string
         return json_encode(
             [
                 'error' => true,
-                'error_message' => 'Access denied',
+                'error_message' => 'Access denied2',
                 'error_header' => 'HTTP/1.1 404 Not Found',
             ]
         );
