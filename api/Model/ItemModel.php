@@ -61,14 +61,6 @@ class ItemModel extends Database
                 continue;
             }
 
-            // Decrypt password
-            $stepPw = doDataDecryption(
-                $row['pw'],
-                decryptUserObjectKey(
-                    $userKey[0]['share_key'],
-                    $userPrivateKey
-                )
-            );
             // Get password
             try {
                 $pwd = base64_decode(
