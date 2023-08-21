@@ -61,9 +61,9 @@ class BaseController
      * Undocumented function
      *
      * @param array $array
-     * @return array
+     * @return array|string
      */
-    public function sanitizeUrl(array $array) : array
+    public function sanitizeUrl(array $array)
     {
         $filters = [];
         $array_size = count($array);
@@ -74,7 +74,7 @@ class BaseController
         return dataSanitizer(
             $array,
             $filters,
-            (string) __DIR__.'/../../..'
+            __DIR__.'/../../..'
         );
     }
 

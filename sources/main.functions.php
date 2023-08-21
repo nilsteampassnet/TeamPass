@@ -1503,8 +1503,14 @@ function dateToStamp(string $date, string $date_format): int
 {
     $date = date_parse_from_format($date_format, $date);
     if ((int) $date['warning_count'] === 0 && (int) $date['error_count'] === 0) {
-        //return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
-        return mktime($date['hour'], $date['minute'], $date['second'], $date['month'], $date['day'], $date['year']);
+        return mktime(
+            empty($date['hour']) === false ? $date['hour'] : 23,
+            empty($date['minute']) === false ? $date['minute'] : 59,
+            empty($date['second']) === false ? $date['second'] : 59,
+            $date['month'],
+            $date['day'],
+            $date['year']
+        );
     }
     return 0;
 }
