@@ -73,6 +73,16 @@ foreach ($rows as $record) {
     // get email properties
     $arguments = json_decode($record['arguments'], true);
 
+    // update DB - started_at
+    DB::update(
+        prefixTable('processes'),
+        array(
+            'started_at' => time(),
+        ),
+        'increment_id = %i',
+        $record['increment_id']
+    );
+
     // update visible_folders HTML
     performVisibleFoldersHtmlUpdate($arguments['user_id'], $SETTINGS);
 

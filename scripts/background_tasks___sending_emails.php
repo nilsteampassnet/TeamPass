@@ -73,6 +73,16 @@ foreach ($rows as $record) {
     // get email properties
     $email = json_decode($record['arguments'], true);
 
+    // update DB - started_at
+    DB::update(
+        prefixTable('processes'),
+        array(
+            'started_at' => time(),
+        ),
+        'increment_id = %i',
+        $record['increment_id']
+    );
+
     // send email
     sendEmail(
         $email['subject'],

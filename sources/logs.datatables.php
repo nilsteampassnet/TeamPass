@@ -986,10 +986,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
-        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['finished_at']).'", ';
+        $sOutput .= is_null($record['started_at']) === false ?
+            ('"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['started_at']).'", ') :
+                ('"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ');
         //col4
+        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['finished_at']).'", ';
+        // col7
+        $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
+        //col5
         $sOutput .= '"'.$record['process_type'].'", ';
-        // col5
+        // col6
         $newUserId = json_decode($record['arguments'], true)['new_user_id'];
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
             $data_user = DB::queryfirstrow(
@@ -999,20 +1005,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             );
             if (DB::count() > 0) {
                 $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
-                $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'", ';
+                $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
             } else {
-                $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>", ';
+                $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
             }
         } elseif ($record['process_type'] === 'send_email') {
             $user = json_decode($record['arguments'], true)['receiver_name'];
-            $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'", ';
+            $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
         } else {
-            $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
         }
-        // col6
-        //$diff = abs($end - $start) / 60;
-        //$sOutput .= '"'.floor($diff / 60).':'.($diff % 60).'"';
-        $sOutput .= '"'.gmdate('H:i:s', ((int) $record['finished_at'] - (int) $record['created_at'])).'"';
         //Finish the line
         $sOutput .= '],';
     }

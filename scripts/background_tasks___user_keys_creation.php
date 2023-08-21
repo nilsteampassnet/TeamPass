@@ -91,6 +91,16 @@ if (DB::count() > 0) {
     );
     //print_r($process_to_perform);
     if (DB::count() > 0) {
+        // update DB - started_at
+        DB::update(
+            prefixTable('processes'),
+            array(
+                'started_at' => time(),
+            ),
+            'increment_id = %i',
+            $process_to_perform['increment_id']
+        );
+
         provideLog('[PROCESS][#'. $process_to_perform['increment_id'].'][START]', $SETTINGS);
         handleTask(
             $process_to_perform['increment_id'],

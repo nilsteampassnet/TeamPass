@@ -338,10 +338,11 @@ catch (Exception $e) {
                                         <tr>
                                             <th style=""></th>
                                             <th style=""><?php echo langHdl('created_at'); ?></th>
+                                            <th style=""><?php echo langHdl('started_at'); ?></th>
                                             <th style=""><?php echo langHdl('finished_at'); ?></th>
+                                            <th style=""><?php echo langHdl('execution_time'); ?></th>
                                             <th style=""><?php echo langHdl('type'); ?></th>
                                             <th style=""><?php echo langHdl('user'); ?></th>
-                                            <th style=""><?php echo langHdl('execution_time'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>

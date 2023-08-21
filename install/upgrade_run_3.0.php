@@ -451,6 +451,18 @@ if (is_null($admin['name']) === true && is_null($admin['lastname']) === true) {
     );
 }
 
+// Add field started_at to processes table
+$res = addColumnIfNotExist(
+    $pre . 'processes',
+    'started_at',
+    "varchar(50) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field started_at to table processes! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 //---<END 3.0.10
 

@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'started_at' => 'Started at',
     'extend_session_duration_by' => 'Extend session duration by',
     'maximum_session_expiration_time' => 'Maximum session expiration time',
     'maximum_session_expiration_time_tip' => 'Maximum time in minutes a session can be extended by a user',
