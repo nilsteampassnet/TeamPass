@@ -43,7 +43,7 @@ return array(
     'settings_ldap_user_object_filter_tip' => 'Der Filter wird genutzt, um nach Benutzerobjekte zu filtern. Zum Beispiel: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'Der Wert wird benutzt, um die base DN zu ergänzen zum suchen und laden der Benutzer. Wenn keine Eingabe vorhanden ist, startet die Suche von der base DN. Zum Beispiel: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Erweiterete Benutzer DN',
-    'ldap_user_has_changed_his_password' => 'Ihr Authentifizierungspasswort wurde in Ihrem AD geändert, seit Sie sich das letzte Mal in Teampass angemeldet haben. Wir müssen Ihren Verschlüsselungscode anpassen. Bitte geben Sie Ihr vorheriges und das aktuelle Passwort an.',
+    'ldap_user_has_changed_his_password' => 'Ihr Authentifizierungspasswort wurde in Ihrem LDAP geändert, seit Sie sich das letzte Mal in Teampass angemeldet haben. Wir müssen Ihren Verschlüsselungscode anpassen. Bitte geben Sie Ihr vorheriges und das aktuelle Passwort an.',
     'provide_your_previous_password' => 'Vorheriges Passwort',
     'admin_change_user_password_info' => 'Diese Handlung wird Passwort des ausgewählten Benutzers zurücksetzen.',
     'sending_email_message' => 'E-Mail wird an Benutzer gesendet, bitte warten',

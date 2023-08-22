@@ -43,7 +43,7 @@ return array(
     'settings_ldap_user_object_filter_tip' => 'ユーザー オブジェクトを検索するときに使用するフィルター. 例: (objectCategory=Person),(sAMAccountName=*)',
     'settings_ldap_additional_user_dn_tip' => 'This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. Examples: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'ユーザーDNの追加',
-    'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
+    'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your LDAP since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
     'provide_your_previous_password' => '以前のパスワード',
     'admin_change_user_password_info' => 'この操作により、ユーザーのパスワードがリセットされます。',
     'sending_email_message' => 'ユーザーにメールを送信しています、しばらくお待ちください',
