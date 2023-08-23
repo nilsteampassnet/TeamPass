@@ -531,9 +531,10 @@ function fieldDomPurifierWithWarning(
     let string = '',
         currentString = $(field).val();
 
+        console.log(currentString);
     // if bSetting is true, we use the setting value
     // remove any closing ', string that could corrupt the setting
-    if (bSetting === true) {
+    if (bSetting === true && currentString.isArray() === false) {
         currentString = currentString.replace(/',/g, '');
     }
 

@@ -135,7 +135,9 @@ declare(strict_types=1);
         }
 
         // Sanitize value
-        value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
+        if ($(this).hasClass('select2') === false) {
+            value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
+        }
         if (value === false) {
             return false;
         }

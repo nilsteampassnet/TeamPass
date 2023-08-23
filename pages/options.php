@@ -732,7 +732,7 @@ $zones = timezone_list();
                                         );
                                         foreach ($roles as $role) {
                                             echo '
-                                <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
+                                    <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';
                                         }
                                     }
                                     ?>
