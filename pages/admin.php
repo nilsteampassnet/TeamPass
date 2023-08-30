@@ -142,7 +142,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 ?>
                 <!--
                 <div class="alert bg-lightblue disabled" role="alert">
-                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION."</b>"; ?></p>
+                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
                     <p><i class="fa-solid fa-code-commit mr-2"></i>
                     <?php
                         //$version = file_get_contents('version.txt', false, null, 543);
@@ -161,7 +161,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                        <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION."</b>"; ?></p>
+                        <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
                         <?php   
                         if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
                             echo '<div class="alert bg-orange disabled" role="alert">
