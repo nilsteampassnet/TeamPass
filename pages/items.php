@@ -161,8 +161,6 @@ foreach ($rows as $reccord) {
                         <?php
                         echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fas fa-cubes mr-2"></i>' . langHdl('fields') . '</a></li>' : '';
-                        echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? '
-                            <li class="nav-item"><a class="nav-link" href="#tab_5" data-toggle="tab"><i class="fas fa-history mr-2"></i>' . langHdl('history') . '</a></li>' : '';
                         ?>
                     </ul>
                 </div><!-- /.card-header -->
@@ -476,45 +474,6 @@ foreach ($rows as $reccord) {
                                     <?php echo langHdl('no_fields'); ?>
                                 </div>
                             </div>
-
-                            <!-- HISTORY -->
-                            <div class="tab-pane" id="tab_5">
-                                <div class="alert alert-info">
-                                    <h5><i class="icon fa fa-info mr-3"></i><?php echo langHdl('information'); ?></h5>
-                                    <?php echo langHdl('info_about_history_insertion'); ?>
-                                </div>
-                                <!-- LABEL -->
-                                <div class="row">
-                                    <div class="col-12 input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><?php echo langHdl('label'); ?></span>
-                                        </div>
-                                        <input id="form-item-history-label" type="text" class="form-control form-item-control history" data-change-ongoing="" data-field-name="history-label">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-6 input-group date inline">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-calendar"></i>
-                                            </span>
-                                        </div>
-                                        <input type="text" class="form-control float-right form-item-control datepicker history" id="form-item-history-date" data-change-ongoing="" data-field-name="history-date">
-                                    </div>
-                                    <div class="col-6 input-group time inline">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text">
-                                                <i class="fas fa-clock"></i>
-                                            </span>
-                                        </div>
-                                        <input type="text" class="form-control float-right form-item-control timepicker history" id="form-item-history-time" data-change-ongoing="" data-field-name="history-time">
-                                    </div>
-                                </div>
-                                <div class="row col-12 mt-3">
-                                    <button type="button" class="btn btn-default mr-2" id="form-item-history-insert" data-action=""><i class="fas fa-broom mr-2"></i><?php echo langHdl('history_insert_entry'); ?></button>
-                                    <button type="button" class="btn btn-default" id="form-item-history-clear" data-action=""><i class="fas fa-broom mr-2"></i><?php echo langHdl('clear_form'); ?></button>
-                                </div>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -728,10 +687,11 @@ foreach ($rows as $reccord) {
         <div class="col-12">
             <div class="card card-default collapsed">
                 <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-attachments">
+                    <h3 class="card-title pointer" id="add-item-attachment" data-toggle="collapse" data-target="#card-item-attachments">
                         <i class="fas fa-paperclip mr-2"></i><?php echo langHdl('attachments'); ?>
                         <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
                     </h3>
+                    <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo langHdl('add_new_file'); ?>" data-add-type="attachment"></i>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body collapse clear-me-html" id="card-item-attachments">
@@ -748,10 +708,11 @@ foreach ($rows as $reccord) {
         <div class="col-12">
             <div class="card card-default collapsed">
                 <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-history">
+                    <h3 class="card-title pointer" id="add-item-history" data-toggle="collapse" data-target="#card-item-history">
                         <i class="fas fa-history mr-2"></i><?php echo langHdl('history'); ?>
                         <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
                     </h3>
+                    <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo langHdl('history_insert_entry'); ?>" data-add-type="history"></i>
                     <!-- /.card-tools -->
                 </div>
                 <!-- /.card-header -->
@@ -1273,6 +1234,44 @@ foreach ($rows as $reccord) {
         <div class="col-12">
 
         </div>
+    </div>
+
+
+    <div class="hidden" id="add_history_element">
+            <div class="alert alert-info">
+                <h5><i class="icon fa fa-info mr-3"></i><?php echo langHdl('information'); ?></h5>
+                <?php echo langHdl('info_about_history_insertion'); ?>
+            </div>
+            <div class="row">
+                <div class="col-12 input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><?php echo langHdl('label'); ?></span>
+                    </div>
+                    <input id="add-history-label" type="text" class="form-control form-item-control history" data-field-name="history-label">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6 input-group date inline">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                    </div>
+                    <input type="text" class="form-control float-right form-item-control datepicker history" id="add-history-date" data-field-name="history-date">
+                </div>
+                <div class="col-6 input-group time inline">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">
+                            <i class="fas fa-clock"></i>
+                        </span>
+                    </div>
+                    <input type="time" step="2" class="form-control float-right form-item-control timepicker history" id="add-history-time" data-field-name="history-time">
+                </div>
+            </div>
+            <!--<div class="row col-12 mt-3">
+                <button type="button" class="btn btn-default mr-2" id="form-item-history-insert" data-action=""><i class="fas fa-broom mr-2"></i><?php echo langHdl('history_insert_entry'); ?></button>
+                <button type="button" class="btn btn-default" id="form-item-history-clear" data-action=""><i class="fas fa-broom mr-2"></i><?php echo langHdl('clear_form'); ?></button>
+            </div>-->
     </div>
 
 

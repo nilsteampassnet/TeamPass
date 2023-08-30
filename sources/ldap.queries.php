@@ -199,7 +199,7 @@ switch ($post_type) {
         // We want to isolate attribute ldap_user_attribute
         try {
             $user = $connection->query()
-            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'distinguishedname', '=', $post_username)
+            ->where((isset($SETTINGS['ldap_user_dn_attribute']) ===true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname', '=', $post_username)
             ->firstOrFail();
             //print_r($user);
         } catch (\LdapRecord\LdapRecordException $e) {
@@ -219,7 +219,7 @@ switch ($post_type) {
         try {
             $userAuthAttempt = $connection->auth()->attempt(
                 $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                    $user[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
+                    $user[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
                     $user['dn'],
                 $post_password
             );

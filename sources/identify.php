@@ -1258,29 +1258,48 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
         ],
     ];
-    //prepare connection
-    $connection = new Connection($config);
     
     try {
-        // Connect to LDAP
+        // 1- Connect to LDAP
+        $connection = new Connection($config);
         $connection->connect();
         Container::addConnection($connection);
 
-        // Get user info from AD
+        // 2- Get user info from AD
         // We want to isolate attribute ldap_user_attribute
         $userADInfos = $connection->query()
-            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? strtolower($SETTINGS['ldap_user_attribute']) : 'distinguishedname', '=', $username)
+            ->where((isset($SETTINGS['ldap_user_dn_attribute']) ===true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'samaccountname', '=', $username)
             ->firstOrFail();
+        print_r($userADInfos);
+        exit;
+        // 3- User auth attempt
+        $userAuthAttempt = $connection->auth()->attempt(
+            $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
+                //$userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
+                $userADInfos['userPrincipalName'][0] :  // refeing to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
+                $userADInfos['dn'],
+            $passwordClear
+        );        
+        // User is not auth then return error
+        if ($userAuthAttempt === false) {
+            return [
+                'error' => true,
+                'message' => "Error : User could not be authentificated",
+            ];
+        }
 
     } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
+        print_r($userADInfos);
+        $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => langHdl('error_bad_credentials')
+            'message' => langHdl('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
 
         ];
     }
 
-    // Check shadowexpire attribute - if === 1 then user disabled
+    // 4- Check shadowexpire attribute
+    // if === 1 then user disabled
     if (
         (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
         ||
@@ -1289,22 +1308,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         return [
             'error' => true,
             'message' => langHdl('error_ad_user_expired'),
-        ];
-    }
-
-    // User auth attempt
-    $userAuthAttempt = $connection->auth()->attempt(
-        $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-            $userADInfos[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
-            $userADInfos['dn'],
-        $passwordClear
-    );
-    
-    // User is not auth then return error
-    if ($userAuthAttempt === false) {
-        return [
-            'error' => true,
-            'message' => "Error : User could not be authentificated",
         ];
     }
 

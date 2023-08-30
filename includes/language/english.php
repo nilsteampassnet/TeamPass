@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'add_new_file' => 'Add new file',
     'started_at' => 'Started at',
     'extend_session_duration_by' => 'Extend session duration by',
     'maximum_session_expiration_time' => 'Maximum session expiration time',

@@ -624,6 +624,7 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
                         'duo' => '',
                         'personal_saltkey_security_level' => '',
                         'enable_tasks_manager' => '',
+                        'insert_manual_entry_item_history' => '',
                     )
                 ),
                 'encode'

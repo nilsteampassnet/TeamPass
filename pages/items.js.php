@@ -5068,45 +5068,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Now load History
                 if (actionType === 'show') {
-                    $.post(
-                        "sources/items.queries.php", {
-                            type: "load_item_history",
-                            item_id: store.get('teampassItem').id,
-                            key: "<?php echo $_SESSION['key']; ?>"
-                        },
-                        function(data) {
-                            //decrypt data
-                            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'load_item_history');
-                            if (debugJavascript === true) {
-                                console.info('History:');
-                                console.log(data);
-                            }
-                            if (data.error === '') {
-                                var html = '',
-                                    nbHistoryEvents = 0;
-                                $.each(data.history, function(i, value) {
-                                    html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                                        '<span class="direct-chat-name float-left">' + value.name + '</span>' +
-                                        '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
-                                        '</div>' +
-                                        '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
-                                        '<div class="direct-chat-text"><span class="text-capitalize">' +
-                                        (value.action === '' ? '' : (value.action)) + '</span> ' +
-                                        (value.detail === '' ? '' : (' | ' + value.detail)) + '</div></div>';
-                                    nbHistoryEvents += 1;
-                                });
-                                // Display
-                                $('#card-item-history').html(html);
-                                $('#card-item-history-badge').html(nbHistoryEvents);
-                            }
-
-                            // Collapse History
-                            $('#card-item-history').closest().addClass('collapsed');
-
-                            // Hide loading state
-                            $('#card-item-history').nextAll().addClass('hidden');
-                        }
-                    );
+                    loadItemHistory(store.get('teampassItem').id);
                 } else if (actionType === 'edit') {
                     getPrivilegesOnItem(
                         selectedFolderId,
@@ -5273,6 +5235,108 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
     });
 
+    // Handle quick add button for History and Attachments
+    /*$(document).on('click', '#add-item-attachment', function() {
+        if ($(this).next().hasClass('hidden') === true && store.get('teampassItem').user_can_modify === 1) {
+            $(this).next().removeClass('hidden');
+        } else {
+            $(this).next().addClass('hidden');
+        }
+    });*/
+    $(document).on('click', '#add-item-history', function() {
+        if ($(this).next().hasClass('hidden') === true && store.get('teampassItem').user_can_modify === 1) {
+            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
+                $(this).next().removeClass('hidden');
+            }
+        } else {
+            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
+                $(this).next().addClass('hidden');
+            }
+        }
+    });
+    
+    // Handle the icon + is clicked
+    $(document).on('click', '.add-button', function() {
+        if ($(this).data('add-type') === 'history') {
+            // HISTORY
+            // SHow dialog
+            showModalDialogBox(
+                '#warningModal',
+                "<?php echo langHdl('history_insert_entry'); ?>",
+                $('#add_history_element').html(),
+                '<?php echo langHdl('history_insert_entry'); ?>',
+                '<?php echo langHdl('close'); ?>',
+                'modal-xl'
+            );
+
+            // Prepare datepicker
+            $('.datepicker').datepicker({
+                format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
+                todayHighlight: true,
+                todayBtn: true,
+                language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+            });
+
+            $('#warningModal #add-history-label').focus();
+
+            // Launch insertion
+            $(document).on('click', '#warningModalButtonAction', function() {
+                console.log($('#warningModal #add-history-label').val())
+                if ($('#warningModal #add-history-label').val() === '' ||
+                    $('#warningModal #add-history-date').val() === '' ||
+                    $('#warningModal #add-history-time').val() === ''
+                ) {
+                    // Inform user
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo langHdl('all_fields_mandatory'); ?>',
+                        '<?php echo langHdl('warning'); ?>', {
+                            timeOut: 2000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // Insert new entry
+                var data = {
+                    'item_id': store.get('teampassItem').id,
+                    'label': DOMPurify.sanitize($('#warningModal #add-history-label').val()),
+                    'date': DOMPurify.sanitize($('#warningModal #add-history-date').val()),
+                    'time': DOMPurify.sanitize($('#warningModal #add-history-time').val()),
+                }
+                $.post(
+                    "sources/items.queries.php", {
+                        type: 'history_entry_add',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                        key: '<?php echo $_SESSION['key']; ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'history_entry_add');
+                        if (debugJavascript === true) console.log(data);
+                        $('#warningModal .history').val('');
+
+                        // Reload history
+                        loadItemHistory(store.get('teampassItem').id);
+
+                        // Inform user
+                        toastr.info(
+                            '<?php echo langHdl('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                );
+            });
+            
+        } else if ($(this).data('add-type') === 'attachment') {
+            // ATTACHMENTS
+            console.log('attachment')
+        }
+    });
+
+
     //calling image lightbox when clicking on link
     $(document).on('click', '.preview-image', function(event) {
         event.preventDefault();
@@ -5354,6 +5418,51 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             }
         );
     };
+
+    function loadItemHistory(item_id, collapsed = true)
+    {
+        $.post(
+            "sources/items.queries.php", {
+                type: "load_item_history",
+                item_id: item_id,
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'load_item_history');
+                if (debugJavascript === true) {
+                    console.info('History:');
+                    console.log(data);
+                }
+                if (data.error === '') {
+                    var html = '',
+                        nbHistoryEvents = 0;
+                    $.each(data.history, function(i, value) {
+                        html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
+                            '<span class="direct-chat-name float-left">' + value.name + '</span>' +
+                            '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
+                            '</div>' +
+                            '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
+                            '<div class="direct-chat-text"><span class="text-capitalize">' +
+                            (value.action === '' ? '' : (value.action)) + '</span> ' +
+                            (value.detail === '' ? '' : (' | ' + value.detail)) + '</div></div>';
+                        nbHistoryEvents += 1;
+                    });
+                    // Display
+                    $('#card-item-history').html(html);
+                    $('#card-item-history-badge').html(nbHistoryEvents);
+                }
+
+                // Collapse History
+                if (collapsed === true) {
+                    $('#card-item-history').closest().addClass('collapsed');
+                }
+
+                // Hide loading state
+                $('#card-item-history').nextAll().addClass('hidden');
+            }
+        );
+    }
 
     /**
      */
