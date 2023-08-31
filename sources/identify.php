@@ -1325,7 +1325,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         handleUserKeys(
             (int) $userInfo['id'],
             (string) $passwordClear,
-            (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
             uniqidReal(20),
             true,
             true,
