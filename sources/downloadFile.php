@@ -97,7 +97,7 @@ if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
         decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
     );
     // Set the filename of the download
-    $filename = basename($file_info['name'], $file_info['extension']);
+    $filename = basename($file_info['name'], '.' . $file_info['extension']);
     // Output CSV-specific headers
     header('Pragma: public');
     header('Expires: 0');
