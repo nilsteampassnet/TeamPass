@@ -1266,17 +1266,17 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         Container::addConnection($connection);
 
         // 2- Get user info from AD
-        // We want to isolate attribute ldap_user_attribute
+        // We want to isolate attribute ldap_user_attribute or mostly samAccountName
         $userADInfos = $connection->query()
-            ->where((isset($SETTINGS['ldap_user_dn_attribute']) ===true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'samaccountname', '=', $username)
+            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'samaccountname', '=', $username)
             ->firstOrFail();
-        print_r($userADInfos);
-        exit;
+
         // 3- User auth attempt
+        // For AD, we use attribute userPrincipalName
+        // For OpenLDAP and others, we use attribute dn
         $userAuthAttempt = $connection->auth()->attempt(
             $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                //$userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'cn'][0] :
-                $userADInfos['userPrincipalName'][0] :  // refeing to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
+                $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
                 $userADInfos['dn'],
             $passwordClear
         );        
@@ -1289,7 +1289,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
 
     } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-        print_r($userADInfos);
         $error = $e->getDetailedError();
         return [
             'error' => true,
@@ -1349,7 +1348,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }   
     $ret = getUserADGroups(
         $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-            $userADInfos[(isset($SETTINGS['ldap_user_attribute']) === true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'cn'][0] :
+            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname'][0] :
             $userADInfos['dn'], 
         $connection, 
         $SETTINGS

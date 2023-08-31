@@ -491,7 +491,8 @@ if (
                 // ----
             } else if ($(this).data('name') === 'profile') {
                 // Show profile page
-                document.location.href = "index.php?page=profile";
+                //document.location.href = "index.php?page=profile";
+                window.location.replace("index.php?page=profile");
 
                 // ----
             } else if ($(this).data('name') === 'logout') {
