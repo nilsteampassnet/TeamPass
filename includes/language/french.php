@@ -821,7 +821,7 @@ return array(
     'expand' => 'Étendre ',
     'collapse' => 'Réduire',
     'settings_ldap_user_attribute' => 'Attribut dans lequel rechercher l&apos;utilisateur',
-    'settings_ldap_user_attribute_tip' => 'Attribut LDAP dans lequel rechercher l&apos;utilisateur',
+    'settings_ldap_user_attribute_tip' => 'Attribut LDAP dans lequel rechercher l&apos;utilisateur.<br>Par défaut, l&apos;attribut samaccountname est utilisé.',
     'log_user_initial_pwd_changed' => 'Mot de passe initial défini',
     'log_user_email_changed' => 'Email de l&apos;utilisateur changé par ',
     'log_user_created' => 'Compte utilisateur créé',
@@ -1108,5 +1108,7 @@ return array(
     'maximum_session_expiration_time_tip' => 'Durée d&apos;extension maximum en minutes d&apos;une session utilisateur',
     'index_session_duration_too_long' => 'Durée de session trop grande',
     'extend_session_duration_by' => 'Augmenter la session de',
+    'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
+    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD. Example: dn.<br>By default, attribute distinguishedname is used.',
 
 );
