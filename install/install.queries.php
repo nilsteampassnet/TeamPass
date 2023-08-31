@@ -1218,7 +1218,6 @@ $SETTINGS = array (';
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `process_id` int(12) NOT NULL,
                             `created_at` varchar(50) NOT NULL,
-                            `started_at` varchar(50) DEFAULT NULL,
                             `updated_at` varchar(50) DEFAULT NULL,
                             `finished_at` varchar(50) DEFAULT NULL,
                             `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
@@ -1239,6 +1238,7 @@ $SETTINGS = array (';
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(50) NOT NULL,
+                            `started_at` varchar(50) DEFAULT NULL,
                             `updated_at` varchar(50) DEFAULT NULL,
                             `finished_at` varchar(50) DEFAULT NULL,
                             `process_id` int(12) DEFAULT NULL,
