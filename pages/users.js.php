@@ -843,6 +843,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         $('input:radio[name=privilege]').on('ifChanged', function() {
                             userDidAChange = true;
                             $(this).data('change-ongoing', true);
+                            
+                            // show extra fields or not
+                            if ($(this).attr('id') === 'privilege-admin') {
+                                $('.not-for-admin').addClass('hidden');
+                            } else {
+                                $('.not-for-admin').removeClass('hidden');
+                            }
                         });
 
                         // Inform user
