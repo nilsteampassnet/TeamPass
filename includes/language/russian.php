@@ -1109,6 +1109,6 @@ return array(
     'index_session_duration_too_long' => 'Session duration is too long',
     'extend_session_duration_by' => 'Extend session duration by',
     'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
-    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD. Example: dn.<br>By default, attribute distinguishedname is used.',
+    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD.<br>Example: For openLDAP: dn. For Active Directory:  distinguishedname.',
 
 );

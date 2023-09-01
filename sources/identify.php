@@ -1243,7 +1243,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         'base_dn' => $SETTINGS['ldap_bdn'],
         'username' => $SETTINGS['ldap_username'],
         'password' => $SETTINGS['ldap_password'],
-
         // Optional Configuration Options
         'port' => $SETTINGS['ldap_port'],
         'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
@@ -1251,11 +1250,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         'version' => 3,
         'timeout' => 5,
         'follow_referrals' => false,
-
         // Custom LDAP Options
         'options' => [
             // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
+            LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
         ],
     ];
     

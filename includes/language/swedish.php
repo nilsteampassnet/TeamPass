@@ -821,7 +821,7 @@ return array(
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'settings_ldap_user_attribute' => 'User name attribute',
-    'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username. Examples: cn ; uid<br>The attribute samaccountname is used by default.',
+    'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username.<br>Examples: For openLDAP: cn ; uid. For Active Directory: samaccountname.',
     'log_user_initial_pwd_changed' => 'Initial password defined',
     'log_user_email_changed' => 'User email changed to ',
     'log_user_created' => 'User account created',
@@ -1109,6 +1109,6 @@ return array(
     'index_session_duration_too_long' => 'Session duration is too long',
     'extend_session_duration_by' => 'Extend session duration by',
     'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
-    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD. Example: dn.<br>By default, attribute distinguishedname is used.',
+    'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD.<br>Example: For openLDAP: dn. For Active Directory:  distinguishedname.',
 
 );

@@ -2544,12 +2544,14 @@ if (null !== $post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
             require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
+            $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
+            $ad->register();
 
             // Build ldap configuration array
             $config = [
                 // Mandatory Configuration Options
                 'hosts'            => [explode(',', $SETTINGS['ldap_hosts'])],
-                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+                'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
@@ -2564,12 +2566,10 @@ if (null !== $post_type) {
                 // Custom LDAP Options
                 'options' => [
                     // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
                 ]
             ];
-
-            $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
-            $ad->register();
+            //prepare connection
             $connection = new Connection($config);
 
             // Connect to LDAP
@@ -2590,7 +2590,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            $ldapUserAttribute = $SETTINGS['ldap_user_attribute'];
             $adUsersToSync = array();
             $adRoles = array();
             $usersAlreadyInTeampass = array();

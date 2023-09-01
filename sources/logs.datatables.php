@@ -994,7 +994,16 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         // col7
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
-        $sOutput .= '"'.$record['process_type'].'", ';
+        if ($record['process_type'] === 'create_user_keys') {
+            $processIcon = '<i class=\"fa-solid fa-user-gear\"></i>';
+        } else if ($record['process_type'] === 'send_email') {
+            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check\"></i>';
+        } else if ($record['process_type'] === 'user_build_cache_tree') {
+            $processIcon = '<i class=\"fa-solid fa-folder-tree\"></i>';
+        } else {
+            $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
+        }
+        $sOutput .= '"'.$processIcon.'", ';
         // col6
         $newUserId = json_decode($record['arguments'], true)['new_user_id'];
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
