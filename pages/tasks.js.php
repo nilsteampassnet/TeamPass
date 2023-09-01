@@ -303,6 +303,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
 
 
     $(document).ready(function(){
+        // Handle tab selection from url
+        let url = location.href.replace(/\/$/, "");
+        if (location.hash) {
+            const hash = url.split("#");
+            $('#tasksSettingsPage a[href="#'+hash[1]+'"]').tab("show");
+        }
+
+        // Fetch data
         setTimeout(fetchTaskData,20000);
 
         // show value on slider

@@ -78,7 +78,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <ul class="nav nav-tabs">
+                        <ul class="nav nav-tabs" id="tasksSettingsPage">
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#settings" aria-controls="settings" aria-selected="false"><?php echo langHdl('settings'); ?></a>
                             </li>

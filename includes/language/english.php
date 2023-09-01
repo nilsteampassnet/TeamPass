@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'open_tasks_settings' => 'Open tasks settings',
     'add_new_file' => 'Add new file',
     'started_at' => 'Started at',
     'extend_session_duration_by' => 'Extend session duration by',

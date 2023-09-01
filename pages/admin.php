@@ -183,15 +183,11 @@ try {
     $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
     if (count($results) === 0) {
         ?>
-                            <div class="callout callout-info alert-dismissible mt-3">
+                            <div class="callout callout-info alert-dismissible mt-3" role="alert">
                                 <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
                                 <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
-                            </div>
-                            <div class="alert alert-warning mt-2 " role="alert">
-                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
-                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
-                                <div id="add-new-job-result">
-
+                                <div class="mt-2">
+                                    <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo langHdl('open_tasks_settings'); ?></a>
                                 </div>
                             </div>
         <?php
