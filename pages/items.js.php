@@ -865,7 +865,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             // Store current view
             savePreviousView('.form-item-otv');
 
+
             // Generate link
+            $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
+            $('#form-item-otv-views').val('1');
             prepareOneTimeView();
 
             $('#form-item-otv-link').val('');
@@ -5492,17 +5495,25 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
      * @return void
      */
     function prepareOneTimeView() {
+        var data = {
+            "id": store.get('teampassItem').id,
+            "days": $('#form-item-otv-days').val(),
+            "views": $('#form-item-otv-views').val(),
+        };
+
         //Send query
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
-                id: store.get('teampassItem').id,
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key: "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 //check if format error
                 if (data.error == "") {
                     $('#form-item-otv-link').val(data.url);
+                    $('#form-item-otv-link').data('otv-id', data.otv_id);
+
                     // prepare clipboard
                     var clipboard = new ClipboardJS("#form-item-otv-copy-button", {
                         text: function() {
@@ -5526,6 +5537,41 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             "json"
         );
     }
+
+    // Handle update OTV button
+    $(document).on('click', '#form-item-otv-update', function() {
+        var data = {
+            "otv_id": $('#form-item-otv-link').data('otv-id'),
+            "days": $('#form-item-otv-days').val(),
+            "views": $('#form-item-otv-views').val(),
+        };
+
+        $.post(
+            "sources/items.queries.php", {
+                type: "update_OTV_url",
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key: "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                toastr.remove();
+                toastr.info(
+                    '<?php echo langHdl('updated'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+            }
+        );
+    });
+
+    // Handle max value for OTV days number
+    $('#form-item-otv-days').change(function () {
+        console.log(parseInt($(this).attr('max')));
+        if ($(this).val() > parseInt($(this).attr('max'))) {
+            $(this).val($(this).attr('max'));
+        }
+    });
 
     /**
      */

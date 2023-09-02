@@ -398,7 +398,7 @@ class NestedTree
 
             // now process the array and build the child data
             foreach ($arr as $folder_id => $row) {
-                if (isset($row->$parentField)) {
+                if (isset($row->$parentField) && is_null($folder_id) === false && $folder_id >= 0) {
                     $arr[$row->$parentField]->children[$folder_id] = $folder_id;
                 }
             }

@@ -1113,6 +1113,9 @@ $SETTINGS = array (';
                             `item_id` int(12) NOT NULL,
                             `originator` int(12) NOT NULL,
                             `encrypted` text NOT NULL,
+                            `views` INT(10) NOT NULL DEFAULT '0',
+                            `max_views` INT(10) NULL DEFAULT NULL,
+                            `time_limit` varchar(100) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

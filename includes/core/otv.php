@@ -92,21 +92,26 @@ if (!empty($superGlobal->get('code', 'GET')) === true
 
     // check session validity
     $data = DB::queryfirstrow(
-        'SELECT id, timestamp, code, item_id, encrypted
+        'SELECT *
         FROM '.prefixTable('otv').'
         WHERE code = %s',
         filter_input(INPUT_GET, 'code', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     if (DB::count() > 0  && (int) $data['timestamp'] === (int) filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT)) {
         // otv is too old
-        if ($data['timestamp'] < time() - ($SETTINGS['otv_expiration_period'] * 86400)) {
+        if ($data['time_limit'] < time() || ($data['views'] + 1) > $data['max_views']) {
             $html = 'Link is too old!';
+            
+            // delete entry
+            DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
+
         } else {
             // get from DB
             $dataItem = DB::queryfirstrow(
                 'SELECT *
                 FROM '.prefixTable('items').' as i
                 INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
+                INNER JOIN '.prefixTable('otv').' as otv ON (otv.item_id = i.id)
                 WHERE i.id = %i AND l.action = %s',
                 $data['item_id'],
                 'at_creation'
@@ -117,7 +122,7 @@ if (!empty($superGlobal->get('code', 'GET')) === true
                 'SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i',
                 $data['item_id']
             );
-            if (isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1) {
+            if (DB::count() > 0 && isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1) {
                 if ((int) $dataDelete['del_enabled'] === 1) {
                     if ((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] >= 1) {
                         // decrease counter
@@ -184,7 +189,8 @@ if (!empty($superGlobal->get('code', 'GET')) === true
                 <tr><th>login:</th><td>'.$login.'</td></tr>
                 <tr><th>URL:</th><td>'.$url.'</td></tr>
                 </table></div>
-                <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>Copy carefully the data you need. This page is only visible once.</div>
+                <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>Copy carefully the data you need.<br>This page is visible until <b>'.
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $dataItem['time_limit']).'</b> OR <b>'.($dataItem['max_views'] - ($dataItem['views']+1)).' more time(s)</b>.</div>
                 </div>';
             // log
             logItems(
@@ -195,8 +201,17 @@ if (!empty($superGlobal->get('code', 'GET')) === true
                 'at_shown',
                 'otv'
             );
-            // delete entry
-            DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
+
+            // update views
+            DB::update(
+                prefixTable('otv'),
+                [
+                    'views' => $data['views'] + 1,
+                ],
+                'id = %i',
+                $data['id']
+            );
+
             // display
             echo $html."</div></div>";
         }

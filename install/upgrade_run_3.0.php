@@ -463,6 +463,47 @@ if ($res === false) {
     exit();
 }
 
+// Add field views to otv table
+$res = addColumnIfNotExist(
+    $pre . 'otv',
+    'views',
+    "INT(10) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field views to table otv! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field max_views to otv table
+$res = addColumnIfNotExist(
+    $pre . 'otv',
+    'max_views',
+    "INT(10) NULL DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field max_views to table otv! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field time_limit to otv table
+$res = addColumnIfNotExist(
+    $pre . 'otv',
+    'time_limit',
+    "varchar(100) DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field time_limit to table otv! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// delete old otv
+mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "otv` WHERE max_views IS NULL;"
+);
 
 //---<END 3.0.10
 

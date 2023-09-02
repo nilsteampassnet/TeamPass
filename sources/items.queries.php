@@ -5714,8 +5714,15 @@ $SETTINGS['cpassman_dir'],
             break;
         }
 
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            $inputData['data'],
+            'decode'
+        );
+
         // delete all existing old otv codes
-        $rows = DB::query('SELECT id FROM ' . prefixTable('otv') . ' WHERE timestamp < ' . (time() - $SETTINGS['otv_expiration_period'] * 86400));
+        $rows = DB::query('SELECT id FROM ' . prefixTable('otv') . ' WHERE time_limit < ' . time());
         foreach ($rows as $record) {
             DB::delete(prefixTable('otv'), 'id=%i', $record['id']);
         }
@@ -5741,7 +5748,7 @@ $SETTINGS['cpassman_dir'],
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
             $_SESSION['user_id'],
-            $inputData['id']
+            $dataReceived['id']
         );
         if (DB::count() === 0 || empty($itemQ['pw']) === true) {
             // No share key found
@@ -5769,11 +5776,13 @@ $SETTINGS['cpassman_dir'],
             prefixTable('otv'),
             array(
                 'id' => null,
-                'item_id' => $inputData['id'],
+                'item_id' => $dataReceived['id'],
                 'timestamp' => time(),
                 'originator' => intval($_SESSION['user_id']),
                 'code' => $otv_code,
                 'encrypted' => $passwd['string'],
+                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
+                'max_views' => (int) $dataReceived['views'],
             )
         );
         $newID = DB::insertId();
@@ -5789,20 +5798,53 @@ $SETTINGS['cpassman_dir'],
             $SETTINGS['otv_expiration_period'] = 7;
         }
         $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&' . http_build_query($otv_session);
-        //$exp_date = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time() + (intval($SETTINGS['otv_expiration_period']) * 86400));
 
         echo json_encode(
             array(
                 'error' => '',
                 'url' => $url,
-                /*'text' => str_replace(
-                    array('#URL#', '#DAY#'),
-                    array('<span id=\'otv_link\'>'.$url.'</span>&nbsp;<span class=\'fa-stack tip" title=\''.langHdl('copy').'\' style=\'cursor:pointer;\' id=\'button_copy_otv_link\'><span class=\'fa fa-square fa-stack-2x\'></span><span class=\'fa fa-clipboard fa-stack-1x fa-inverse\'></span></span>', $exp_date),
-                    langHdl('one_time_view_item_url_box')
-                ),*/
+                'otv_id' => $newID,
             )
         );
         break;
+
+        /*
+    * CASE
+    * Check if Item has been changed since loaded
+    */
+    case 'update_OTV_url':
+        // Check KEY
+        if ($inputData['key'] !== $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            $inputData['data'],
+            'decode'
+        );
+
+        $days = (int) $dataReceived['days'] > (int) $SETTINGS['otv_expiration_period'] ? (int) $SETTINGS['otv_expiration_period'] : (int) $dataReceived['days'];
+
+        DB::update(
+            prefixTable('otv'),
+            array(
+                'time_limit' => $days * (int) TP_ONE_DAY_SECONDS + time(),
+                'max_views' => (int) $dataReceived['views'],
+            ),
+            'id = %i',
+            $dataReceived['otv_id']
+        );
+
+        echo json_encode(
+            array(
+                'error' => false,
+            )
+        );
+        break;
+
 
         /*
     * CASE

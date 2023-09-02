@@ -52,9 +52,11 @@ More details may be found on how this works by reading [CrontabManager documenta
 
 Then open the crons manager with the same user as the one used by php (example: `crontab -u www-data -e`)
 and add the input permitting the job to run each 5 minutes for example.
-``* * * * * /path/to/phpbin /path/to/Teampass/sources/scheduler.php``
+``* * * * * /path/to/phpbin /path/to/Teampass/sources/scheduler.php #Teampass scheduler``
 
-It is mandatory to define it to run every minute.
+> :pushpin: 
+> Set it to run every minute.
+> Add the comment `#Teampass scheduler` after the command
 
 ## Tasks management follow up page
 

@@ -16,6 +16,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'maximum' => 'maximum',
+    'updated' => 'Updated',
+    'number_of_days' => 'Number of days',
+    'number_of_times' => 'Number of times',
     'open_tasks_settings' => 'Open tasks settings',
     'add_new_file' => 'Add new file',
     'started_at' => 'Started at',
@@ -284,7 +288,7 @@ return array(
     'export_format_type' => 'Select the export format type',
     'export_items' => 'Export items',
     'loading_item' => 'Loading item',
-    'otv_message' => 'You can share this item with someone without a Teampass account. One-Time-View permits your guest to access basic fields of this item only once without being authenticated in Teampass. Please notice that this link is valid for a period of ##otv_expiration_period##  days. Copy and share the link below.',
+    'otv_message' => 'You can share this item with someone without a Teampass account. One-Time-View permits your guest to access basic fields of this item only once without being authenticated in Teampass. Please notice that this link is valid until one of following settings is reached. Copy and share the link below.',
     'no_sharekey_found' => 'No key found for this file and your account',
     'otv_link' => 'One-time-view link',
     'one_time_view' => 'One-time-view',

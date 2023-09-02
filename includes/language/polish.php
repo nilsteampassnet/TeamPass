@@ -1111,5 +1111,9 @@ return array(
     'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
     'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD.<br>Example: For openLDAP: dn. For Active Directory:  distinguishedname.',
     'open_tasks_settings' => 'Open tasks settings',
+    'maximum' => 'maximum',
+    'updated' => 'Updated',
+    'number_of_days' => 'Number of days',
+    'number_of_times' => 'Number of times',
 
 );

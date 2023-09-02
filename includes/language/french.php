@@ -133,7 +133,7 @@ return array(
     'export_format_type' => 'Choisir le format d&apos;export',
     'export_items' => 'Export d&apos;objets',
     'loading_item' => 'Chargement de l&apos;objet',
-    'otv_message' => 'Vous pouvez partager cet objet avec un invité. Cette vue permet à cet invité d’accéder à un certain nombre de champs de l&apos;objet sans avoir à s&apos;identifier. Merci de noter que le lien généré sera valide uniquement pour une durée de ##otv_expiration_period##  jours. Copier et partager le lien ci-dessous.',
+    'otv_message' => 'Vous pouvez partager cet objet avec un invité. Cette vue permet à cet invité d’accéder à un certain nombre de champs de l&apos;objet sans avoir à s&apos;identifier. Merci de noter que le lien généré sera valide jusqu&apos;à expiration du 1er élément de configuration ci-dessous. Copier et partager le lien ci-dessous.',
     'no_sharekey_found' => 'Aucune clé de chiffrement trouvée pour ce fichier',
     'otv_link' => 'Lien à visualisation unique',
     'one_time_view' => 'Visualisation unique',
@@ -420,7 +420,7 @@ return array(
     'folders' => 'Dossiers',
     'find_message' => '<i class="fa fa-info-circle"></i> %X% objets trouvés',
     'auto_update_server_password_info' => 'En cliquant sur le bouton COMMENCER, les différentes actions seront réalisées :<ul><li>Une connexion SSH sera ouverte avec le serveur Linux en utilisant les identifiants et l&apos;URL fournis,</li><li>Le mot de passe de l&apos;utilisateur sera changé,</li><li>Le nouveau mot de passe sera sauvegardé dans Teampass,</li><li>La connexion SSH sera fermée.</li></ul><br><b>Merci de vous assurer que l&apos;utilisateur dispose des privilèges Root sur le serveur avant de commencer (sinon vous disposez de champs supplémentaires pour saisir les identifiants d&apos;un compte root).',
-    'share' => 'Partager cet élément',
+    'share' => 'Partager',
     'notify' => 'Notifier',
     'error_no_selected_folder' => 'Vous devez sélectionner un dossier',
     'email_subject_item_updated' => 'Mot de passe mis à jour',
@@ -1111,5 +1111,9 @@ return array(
     'settings_ldap_user_dn_attribute' => 'User Distinguished Name',
     'settings_ldap_user_dn_attribute_tip' => 'The attribute label for the user Distinguished Name (DN) in the AD.<br>Example: For openLDAP: dn. For Active Directory:  distinguishedname.',
     'open_tasks_settings' => 'Ouvrir les paramètres des tâches',
+    'maximum' => 'maximum',
+    'updated' => 'Mis à jour',
+    'number_of_days' => 'Nombre de jours',
+    'number_of_times' => 'Nombre de visualisations',
 
 );
