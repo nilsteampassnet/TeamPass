@@ -117,6 +117,29 @@ if (null !== $post_step) {
             // 3.0.0.23 - special case of TP user just created.
             // We need to create all its keys
             if ((int) $post_tp_user === 0) {
+                // Create TP USER
+                require_once '../includes/config/include.php';
+                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $pre . "users` WHERE id = '" . TP_USER_ID . "'"));
+                if (intval($tmp) === 0) {
+                    // generate key for password
+                    $pwd = GenerateCryptKey(25, true, true, true, true);
+                    $salt = file_get_contents(SECUREPATH . '/' . SECUREFILE);
+                    $encrypted_pwd = cryption(
+                        $pwd,
+                        $salt,
+                        'encrypt'
+                    )['string'];
+
+                    // GEnerate new public and private keys
+                    $userKeys = generateUserKeys($pwd);
+
+                    // Store
+                    $mysqli_result = mysqli_query(
+                        $dbTmp,
+                        "INSERT INTO `" . $pre . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1')"
+                    );
+                }
+
                 $TPUserKeysExist = mysqli_fetch_array(
                     mysqli_query(
                         $db_link,
@@ -271,9 +294,27 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             if ($userInfo['public_key'] === null) {
-                echo '[{"finish":"1" , "next":"step3", "error":"Public key is null; provided key is '.$post_user_info.'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
-                exit();
-                break;
+                if ($userInfo['id'] !== TP_USER_ID) {
+                    echo '[{"finish":"1" , "next":"step3", "error":"Public key is null; provided key is '.$post_user_info.'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                    exit();
+                    break;
+                } else {
+                    /// get innffo for TP__USEER___IID
+                    $userQuery = mysqli_fetch_array(
+                        mysqli_query(
+                            $db_link,
+                            'SELECT pw, public_key, private_key, name, lastname, login
+                            FROM ' . $pre . 'users
+                            WHERE id = ' . TP_USER_ID
+                        )
+                    );
+
+                    $userInfo['public_key'] ==  $userQuery['public_key'];
+                    $userInfo['private_key'] ==  $userQuery['private_key'];
+                    $userInfo['login'] ==  $userQuery['login'];
+                    $userInfo['name'] ==  $userQuery['name'];
+                    $userInfo['lastname'] ==  $userQuery['lastname'];
+                }
             }
 
             // Get POST with admin info

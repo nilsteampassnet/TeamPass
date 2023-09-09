@@ -5413,8 +5413,6 @@ $SETTINGS['cpassman_dir'],
         );
         break;
 
-        break;
-
         /*
         * CASE
         * Send email
@@ -5523,6 +5521,14 @@ $SETTINGS['cpassman_dir'],
             );
         }
 
+        echo (string) prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*

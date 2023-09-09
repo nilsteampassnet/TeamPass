@@ -777,7 +777,7 @@ $SETTINGS = array (';
                             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
-                            `encrypted_psk` text NULL,
+                            `encrypted_psk` text NULL DEFAULT NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
                             `user_ip_lastdate` varchar(50) NULL DEFAULT NULL,
                             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',

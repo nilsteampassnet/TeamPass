@@ -103,6 +103,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 // if purify failed, stop
                 return false;
             }
+            // Show spinner
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {

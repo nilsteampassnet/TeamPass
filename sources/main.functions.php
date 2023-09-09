@@ -605,7 +605,7 @@ function identUser(
         'SELECT id, id_tree FROM ' . prefixTable('items') . '
             WHERE restricted_to LIKE %ss AND inactif = %s'.
             (count($allowedFolders) > 0 ? ' AND id_tree NOT IN ('.implode(',', $allowedFolders).')' : ''),
-        $globalsUserId . ';',
+        $globalsUserId,
         '0'
     );
     foreach ($rows as $record) {
@@ -621,8 +621,9 @@ function identUser(
         'SELECT i.id_tree, r.item_id
         FROM ' . prefixTable('items') . ' as i
         INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (r.item_id=i.id)
-        WHERE r.role_id IN %li AND i.id_tree <> ""
-        ORDER BY i.id_tree ASC',
+        WHERE i.id_tree <> "" '.
+        (count($userRoles) > 0 ? 'AND r.role_id IN %li ' : '').
+        'ORDER BY i.id_tree ASC',
         $userRoles
     );
     $inc = 0;
@@ -711,9 +712,9 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
     $rows = DB::query(
         'SELECT *
         FROM ' . prefixTable('roles_values') . '
-        WHERE role_id IN %li AND type IN %ls',
+        WHERE type IN %ls'.(count($userRoles) > 0 ? ' AND role_id IN %li' : ''),
+        ['W', 'ND', 'NE', 'NDNE', 'R'],
         $userRoles,
-        ['W', 'ND', 'NE', 'NDNE', 'R']
     );
     foreach ($rows as $record) {
         if ($record['type'] === 'R') {
@@ -3851,7 +3852,7 @@ function getUsersWithRoles(
             $_SESSION['user_id']
         );
         foreach ($rows as $user) {
-            $userRoles = explode(';', is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? $user['fonction_id'] : []);
+            $userRoles = is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? explode(';', $user['fonction_id']) : [];
             if (in_array($role, $userRoles, true) === true) {
                 array_push($arrUsers, $user['id']);
             }

@@ -123,17 +123,17 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== ''
     && $_GET['letter'] !== 'None'
 ) {
-    $sWhere = ' AND (';
+    $sWhere .= ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
     $sWhere = ')';
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-    $sWhere = ' AND (';
+    $sWhere .= ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
-    $sWhere = ')';
+    $sWhere .= ')';
 }
 
 // enlarge the query in case of Manager

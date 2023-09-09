@@ -505,6 +505,16 @@ mysqli_query(
     "DELETE FROM `" . $pre . "otv` WHERE max_views IS NULL;"
 );
 
+// Alter encrypted_psk in Users
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'userrs` CHANGE `encrypted_psk` `encrypted_psk` text NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
 //---<END 3.0.10
 
 //---------------------------------------------------------------------
