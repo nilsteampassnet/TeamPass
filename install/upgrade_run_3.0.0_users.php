@@ -119,7 +119,7 @@ if (null !== $post_step) {
             if ((int) $post_tp_user === 0) {
                 // Create TP USER
                 require_once '../includes/config/include.php';
-                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $pre . "users` WHERE id = '" . TP_USER_ID . "'"));
+                $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = '" . TP_USER_ID . "'"));
                 if (intval($tmp) === 0) {
                     // generate key for password
                     $pwd = GenerateCryptKey(25, true, true, true, true);
@@ -135,7 +135,7 @@ if (null !== $post_step) {
 
                     // Store
                     $mysqli_result = mysqli_query(
-                        $dbTmp,
+                        $db_link,
                         "INSERT INTO `" . $pre . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1')"
                     );
                 }
