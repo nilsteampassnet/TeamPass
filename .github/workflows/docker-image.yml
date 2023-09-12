@@ -17,7 +17,7 @@ jobs:
         password: ${{ secrets['DOCKERHUB_TOKEN'] }}
     - name: Extract metadata (tags, labels) for Docker
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: teampass/teampass
     - name: Build and push Docker image
