@@ -863,10 +863,11 @@ switch ($inputData['type']) {
                 $dataReceived['to_be_deleted_after_x_views'],
                 FILTER_SANITIZE_NUMBER_INT
             );
-            $post_to_be_deleted_after_date = filter_var(
-                $dataReceived['to_be_deleted_after_date'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            );
+            $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var(
+                    $dataReceived['to_be_deleted_after_date'],
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                ) :
+                '';
             $post_fields = (filter_var_array(
                 $dataReceived['fields'],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
