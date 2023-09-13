@@ -415,7 +415,7 @@ if (null !== $post_type) {
                             `pw` text DEFAULT NULL,
                             `pw_iv` text DEFAULT NULL,
                             `pw_len` int(5) NOT NULL DEFAULT '0',
-                            `url` varchar(500) DEFAULT NULL,
+                            `url` text DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
                             `login` varchar(200) DEFAULT NULL,
@@ -885,7 +885,7 @@ $SETTINGS = array (';
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
-                            `url` varchar(500) NOT NULL DEFAULT '0',
+                            `url` text NOT NULL DEFAULT '0',
                             `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"

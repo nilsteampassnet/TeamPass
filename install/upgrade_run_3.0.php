@@ -509,11 +509,23 @@ mysqli_query(
 try {
     mysqli_query(
         $db_link,
-        'ALTER TABLE `' . $pre . 'userrs` CHANGE `encrypted_psk` `encrypted_psk` text NULL DEFAULT NULL;'
+        'ALTER TABLE `' . $pre . 'users` CHANGE `encrypted_psk` `encrypted_psk` text NULL DEFAULT NULL;'
     );
 } catch (Exception $e) {
     // Do nothing
 }
+
+// Alter url field in ITEMS
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'items` CHANGE `url` `url` TEXT NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+
 
 //---<END 3.0.10
 

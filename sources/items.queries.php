@@ -872,7 +872,7 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             ));
             $post_description = $antiXss->xss_clean($dataReceived['description']);
-            $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
