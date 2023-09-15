@@ -4323,8 +4323,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             'rights': itemRights,
         };
 
-        if (debugJavascript === true) console.log("SEND");
-        if (debugJavascript === true) console.log(data);
+        if (debugJavascript === true) {
+            console.log("SEND");
+            console.log(data);
+        }
 
         //Send query
         $.post(

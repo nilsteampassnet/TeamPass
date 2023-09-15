@@ -233,9 +233,10 @@ DB::query(
 );
 $iTotal = DB::count();
 $rows = DB::query(
-    "SELECT c.*, ci.data
+    "SELECT c.*, ci.data, i.item_key
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
+    INNER JOIN " . prefixTable('items') . " AS i ON (i.id = c.id)
     ${sWhere}
     ${sOrder}
     ${sLimit}",
@@ -410,10 +411,12 @@ if (isset($_GET['type']) === false) {
         $displayItem = false;
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];
         $arr_data[$record['id']]['tree_id'] = (int) $record['id_tree'];
-        $arr_data[$record['id']]['label'] = $record['label'];
-        $arr_data[$record['id']]['desc'] = strip_tags(explode('<br>', $record['description'])[0]);
-        $arr_data[$record['id']]['folder'] = $record['folder'];
-        $arr_data[$record['id']]['login'] = strtr($record['login'], '"', '&quot;');
+        $arr_data[$record['id']]['label'] = (string) $record['label'];
+        $arr_data[$record['id']]['desc'] = (string) strip_tags(explode('<br>', $record['description'])[0]);
+        $arr_data[$record['id']]['folder'] = (string)$record['folder'];
+        $arr_data[$record['id']]['login'] = (string) strtr($record['login'], '"', '&quot;');
+        $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
+        $arr_data[$record['id']]['link'] = (string) $record['url'] !== '0' && empty($record['url']) === false ? filter_var($record['url'], FILTER_SANITIZE_URL) : '';
         // Is favorite?
         if (in_array($record['id'], $_SESSION['favourites']) === true) {
             $arr_data[$record['id']]['enable_favourites'] = 1;
